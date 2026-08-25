@@ -13,5 +13,12 @@ namespace UnityEditor.UIElements
         {
             return true;
         }
+
+        public override VisualElement CreateInspectorGUI()
+        {
+            var root = new VisualElement();
+            InspectorElement.FillDefaultInspector(root, serializedObject, this);
+            return root;
+        }
     }
 }

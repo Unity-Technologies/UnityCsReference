@@ -68,6 +68,9 @@ namespace UnityEditor
         public static GUIStyle miniToolbarButton = new GUIStyle(EditorStyles.toolbarButton);
         public static GUIStyle toolbarLabel = new GUIStyle(AnimationWindowStyles.animClipToolbarPopup);
 
+        public static readonly GUIStyle plusButton = "IconButton";
+        public static readonly GUIStyle plusButtonBackground = "Tag MenuItem";
+
         public static void Initialize()
         {
             toolbarLabel.normal.background = null;

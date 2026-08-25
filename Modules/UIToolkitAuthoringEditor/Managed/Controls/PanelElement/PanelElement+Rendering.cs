@@ -189,7 +189,7 @@ sealed partial class PanelElement
             // We reset the panel's scale and size here because we want to apply it to the SubRootVisualElement
             // instead. This is because the PanelElement have a concept of a render window analog to a
             // viewport and a canvas. This allows to show overflow in some cases.
-            runtimePanel.scale = 1.0f;
+            runtimePanel.scale = 1.0f / SubPanelPixelsPerPoint;
             runtimePanel.visualTree.SetSize(SubPanelSize);
 
             // We calculate the resolved scale manually because we don't want it based on the panel's size,
@@ -226,7 +226,7 @@ sealed partial class PanelElement
     void ApplyDefaultSettingsToRuntimePanel(RuntimePanel runtimePanel)
     {
         Assert.IsNotNull(runtimePanel);
-        runtimePanel.scale = 1.0f;
+        runtimePanel.scale = 1.0f / SubPanelPixelsPerPoint;
         runtimePanel.visualTree.SetSize(SubPanelSize);
         runtimePanel.Root.SetSize(Size);
         runtimePanel.Root.style.scale = Vector2.one * (ScaleFactor * SubPanelPixelsPerPoint);
@@ -310,7 +310,8 @@ sealed partial class PanelElement
             else
             {
                 var graphicsFormat = QualitySettings.activeColorSpace == ColorSpace.Linear ? GraphicsFormat.R8G8B8A8_SRGB : GraphicsFormat.R8G8B8A8_UNorm;
-                var descriptor = new RenderTextureDescriptor(m_SubPanelSize.x, m_SubPanelSize.y, graphicsFormat, GraphicsFormat.D24_UNorm_S8_UInt);
+                var depthStencilFormat = GraphicsFormatUtility.GetDepthStencilFormat(24, 8);
+                var descriptor = new RenderTextureDescriptor(m_SubPanelSize.x, m_SubPanelSize.y, graphicsFormat, depthStencilFormat);
 
                 if (RenderTexture == null)
                 {

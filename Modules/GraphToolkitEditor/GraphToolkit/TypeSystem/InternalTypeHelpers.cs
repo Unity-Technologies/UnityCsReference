@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Unity.GraphToolkit.Editor;
-using UnityEngine;
 
 namespace Unity.GraphToolkit
 {
@@ -97,6 +96,7 @@ namespace Unity.GraphToolkit
             return asmQualifiedTypeName.Replace(k_CoreClrSystemAssemblyName, s_CurrentSystemAssemblyName);
         }
 
+        static readonly Dictionary<Type, bool> k_IsTypeSerializableCache = new();
 
         /// <summary>
         /// Check if the given type is serializable or a Unity Object reference.
@@ -108,7 +108,16 @@ namespace Unity.GraphToolkit
         /// <returns>True if the given type is serializable or a Unity Object reference.</returns>
         public static bool IsTypeSerializable(Type type)
         {
-            return type != null && (type.IsSerializable || typeof(UnityEngine.Object).IsAssignableFrom(type));
+            if (type == null)
+                return false;
+
+            if (!k_IsTypeSerializableCache.TryGetValue(type, out bool serializable))
+            {
+                serializable = type.IsSerializable || typeof(UnityEngine.Object).IsAssignableFrom(type);
+                k_IsTypeSerializableCache[type] = serializable;
+            }
+
+            return serializable;
         }
     }
 }

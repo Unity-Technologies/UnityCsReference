@@ -78,7 +78,7 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string portContainerPartName = "port-container";
 
         /// <summary>
-        /// The name of the <see cref="ModelViewPart"/> for the LOD cache.
+        /// The name of the <see cref="ModelViewPart"/> for the level of detail (LOD) cache.
         /// </summary>
         public static readonly string cachePartName = "cache";
 
@@ -141,7 +141,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Builds the list of <see cref="NodeToolbarButton"/>'s. Overrides this function to add more buttons to the node.
+        /// Builds the list of <see cref="NodeToolbarButton"/> instances. Overrides this function to add more buttons to the node.
         /// </summary>
         /// <remarks>Created buttons need to be added using <see cref="AddNodeToolbarButton"/>.</remarks>
         protected virtual void BuildNodeToolbarButtons()
@@ -285,9 +285,9 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Shows the <see cref="NodeToolbarButton"/>'s on the node. These buttons only appear when hovering on the node.
+        /// Shows the <see cref="NodeToolbarButton"/> instances on the node. These buttons only appear when hovering on the node.
         /// </summary>
-        /// <param name="show">Whether the <see cref="NodeToolbarButtons"/>s are shown on the node.</param>
+        /// <param name="show">Whether the <see cref="NodeToolbarButtons"/> are shown on the node.</param>
         public void ShowNodeToolbarButtons(bool show)
         {
             m_ShowToolbarButtons = show;

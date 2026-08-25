@@ -186,6 +186,18 @@ namespace UnityEditor
 
         // Inspected quality level (separate from current active level)
         private int? m_InspectedQualityLevelField;
+
+        // Helper method to elide text for menu items
+        private static string ElideText(string text, int maxLength = 50, string ellipsis = "...")
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+                return text;
+
+            if (maxLength <= ellipsis.Length)
+                return ellipsis;
+
+            return text.Substring(0, maxLength - ellipsis.Length) + ellipsis;
+        }
         private const string kInspectedQualityLevelPrefKey = "QualitySettingsEditor.selectedLevel";
 
         private int selectedLevel
@@ -760,7 +772,8 @@ namespace UnityEditor
                         string qualityName = currentSettings[i].m_Name;
                         bool isSelected = (i == currentDefault);
 
-                        menu.AddItem(new GUIContent(qualityName), isSelected, () =>
+                        var content = new GUIContent(ElideText(qualityName));
+                        menu.AddItem(content, isSelected, () =>
                         {
                             var defs = GetDefaultQualityForPlatforms();
                             defs[capturedPlatformName] = qualityIndex;
@@ -1221,7 +1234,11 @@ namespace UnityEditor
                 name = "QualityLevelNameLabel",
                 style = {
                     unityFontStyleAndWeight = FontStyle.Bold,
-                    fontSize = 18
+                    fontSize = 18,
+                    maxWidth = 500,
+                    overflow = Overflow.Hidden,
+                    textOverflow = TextOverflow.Ellipsis,
+                    whiteSpace = WhiteSpace.NoWrap
                 }
             };
             m_QualityLevelHeader.Add(m_QualityLevelNameLabel);

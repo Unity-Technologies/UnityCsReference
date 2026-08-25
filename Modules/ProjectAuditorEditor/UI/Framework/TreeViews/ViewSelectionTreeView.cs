@@ -186,6 +186,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             {
                 foreach (var category in foundTab.categories)
                 {
+                    if (category.Value.IsPopulatedByPlayerBuild())
+                        continue;
+
                     if (!m_ViewManager.Report.HasCategory(category) && !m_ViewManager.HasPendingCategory(category))
                         return true;
                 }

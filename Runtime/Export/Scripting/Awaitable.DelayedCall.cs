@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using UnityEngine.Bindings;
@@ -97,7 +98,7 @@ namespace UnityEngine
             _endOfFrameAwaitables.Clear();
         }
 
-        private static readonly DoubleBufferedAwaitableList _nextFrameAwaitables = new();
+        private static readonly DoubleBufferedAwaitableList _nextFrameAwaitables = new(keepsEditorPlayerLoopUpdating: true);
         private static readonly DoubleBufferedAwaitableList _endOfFrameAwaitables = new();
 
         private struct AwaitableAndFrameIndex
@@ -116,6 +117,29 @@ namespace UnityEngine
         {
             private List<AwaitableAndFrameIndex> _awaitables = new();
             private List<AwaitableAndFrameIndex> _scratch = new();
+            private readonly bool _keepsEditorPlayerLoopUpdating;
+
+            public DoubleBufferedAwaitableList(bool keepsEditorPlayerLoopUpdating = false)
+            {
+                _keepsEditorPlayerLoopUpdating = keepsEditorPlayerLoopUpdating;
+            }
+
+            // In edit mode the player loop only runs on demand; awaitables in this list are only
+            // completed from the player loop, so the editor must be told to keep it running while
+            // any are pending (UUM-148723).
+            // Only the main thread notifies: Awaitable.Cancel() calls Remove from a CancellationToken
+            // callback on whatever thread cancelled the token, and the native count is a plain int
+            // read by the main-thread editor loop — a racing background-thread write could publish a
+            // stale 0 with awaitables still pending, re-introducing the hang this fixes. A skipped
+            // notification instead leaves the count stale but >0, which at worst runs one extra
+            // player loop update whose SwapAndComplete publishes the correct count again.
+            [Conditional("UNITY_EDITOR")]
+            private void NotifyPendingAwaitableCount()
+            {
+                if (_keepsEditorPlayerLoopUpdating && Thread.CurrentThread.ManagedThreadId == _mainThreadId)
+                    SetPendingNextFrameAwaitableCount(_awaitables.Count);
+            }
+
             public void SwapAndComplete()
             {
                 var oldScratch = _scratch;
@@ -142,20 +166,24 @@ namespace UnityEngine
                 finally
                 {
                     toIterate.Clear();
+                    NotifyPendingAwaitableCount();
                 }
             }
 
             public void Add(Awaitable item, int frameIndex)
             {
                 _awaitables.Add(new AwaitableAndFrameIndex(item, frameIndex));
+                NotifyPendingAwaitableCount();
             }
             public void Remove(Awaitable item)
             {
                 _awaitables.RemoveAll(x => x.Awaitable == item);
+                NotifyPendingAwaitableCount();
             }
             public void Clear()
             {
                 _awaitables.Clear();
+                NotifyPendingAwaitableCount();
             }
         }
 
@@ -181,5 +209,7 @@ namespace UnityEngine
         private static extern IntPtr EndOfFrameInternal();
         [FreeFunction("Scripting::Awaitables::WireupNextFrameAndEndOfFrameCallbacks")]
         private static extern void WireupNextFrameAndEndOfFrameCallbacks();
+        [FreeFunction("Scripting::Awaitables::SetPendingNextFrameAwaitableCount")]
+        private static extern void SetPendingNextFrameAwaitableCount(int count);
     }
 }

@@ -107,7 +107,7 @@ internal partial class DictionaryView : ListView
     SerializedProperty m_DictionaryFieldProperty;
     SerializedProperty m_ArrayProperty;
     Hash128 m_StateCacheKey;
-    Hash128 m_LinkedViewsKey;
+    bool m_ShouldLinkWithSiblings;
     bool m_IsLinked;
 
     readonly Foldout m_Foldout;
@@ -247,7 +247,7 @@ internal partial class DictionaryView : ListView
     {
         if (m_IsLinked || m_ArrayProperty == null || panel == null)
             return;
-        if (!DictionaryDrawer.ShouldLinkViewStateWithSiblings(m_DictionaryFieldProperty.propertyPath))
+        if (!m_ShouldLinkWithSiblings)
             return;
 
         if (!s_LinkedViews.TryGetValue(m_StateCacheKey, out var list))
@@ -256,7 +256,6 @@ internal partial class DictionaryView : ListView
             s_LinkedViews[m_StateCacheKey] = list;
         }
         list.Add(this);
-        m_LinkedViewsKey = m_StateCacheKey;
         m_IsLinked = true;
     }
 
@@ -265,19 +264,18 @@ internal partial class DictionaryView : ListView
         if (!m_IsLinked)
             return;
 
-        if (s_LinkedViews.TryGetValue(m_LinkedViewsKey, out var list))
+        if (s_LinkedViews.TryGetValue(m_StateCacheKey, out var list))
         {
             list.Remove(this);
             if (list.Count == 0)
-                s_LinkedViews.Remove(m_LinkedViewsKey);
+                s_LinkedViews.Remove(m_StateCacheKey);
         }
         m_IsLinked = false;
-        m_LinkedViewsKey = default;
     }
 
     void PerformActionOnLinkedViews(Action<DictionaryView> action)
     {
-        if (!m_IsLinked || !s_LinkedViews.TryGetValue(m_LinkedViewsKey, out var siblings) || siblings.Count <= 1)
+        if (!m_IsLinked || !s_LinkedViews.TryGetValue(m_StateCacheKey, out var siblings) || siblings.Count <= 1)
             return;
 
         foreach (var view in siblings)
@@ -325,7 +323,9 @@ internal partial class DictionaryView : ListView
         ResetBoundState();
 
         m_DictionaryFieldProperty = property.Copy();
-        m_StateCacheKey = DictionaryDrawer.ComputeStateCacheKey(m_DictionaryFieldProperty.propertyPath);
+        var dictionaryPropertyPath = m_DictionaryFieldProperty.propertyPath;
+        m_StateCacheKey = DictionaryDrawer.ComputeStateCacheKey(dictionaryPropertyPath);
+        m_ShouldLinkWithSiblings = DictionaryDrawer.ShouldLinkViewStateWithSiblings(dictionaryPropertyPath);
 
         var fieldInfo = ScriptAttributeUtility.GetFieldInfoAndStaticTypeFromProperty(m_DictionaryFieldProperty, out var dictionaryType);
         m_AttributeLayout = DictionaryDrawer.ResolveDefaultLayout(fieldInfo, dictionaryType);
@@ -354,7 +354,7 @@ internal partial class DictionaryView : ListView
             ? m_DictionaryFieldProperty.localizedDisplayName
             : preferredLabel;
         m_Foldout.text = foldoutLabel;
-        m_Foldout.bindingPath = m_DictionaryFieldProperty.propertyPath;
+        m_Foldout.bindingPath = dictionaryPropertyPath;
         headerTitle = foldoutLabel;
 
         if (DictionaryDrawer.IsEditingMultipleObjects(m_DictionaryFieldProperty))
@@ -454,6 +454,7 @@ internal partial class DictionaryView : ListView
 
         m_DictionaryFieldProperty = null;
         m_ArrayProperty = null;
+        m_ShouldLinkWithSiblings = false;
 
         m_DuplicateEntryIndices.Clear();
         m_NullKeyEntryIndices.Clear();
@@ -1077,7 +1078,7 @@ internal partial class DictionaryView : ListView
 
     void PropagateColumnFractionToLinkedViews(float fraction)
     {
-        if (!m_IsLinked || !s_LinkedViews.TryGetValue(m_LinkedViewsKey, out var list) || list.Count <= 1)
+        if (!m_IsLinked || !s_LinkedViews.TryGetValue(m_StateCacheKey, out var list) || list.Count <= 1)
             return;
 
         foreach (var view in list)

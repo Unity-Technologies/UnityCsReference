@@ -84,6 +84,9 @@ internal partial class DictionaryDrawer
             public const float k_SortArrowSize = 12f;
             public const float k_SelectionBorderWidth = 3f;
             public const float k_VerticalScrollbarWidth = 16f;
+            public const float k_BoxBottomBorder = 1f;
+            public const float k_EmptyRowsAreaPadding = 8f;
+            public const float k_EmptyLabelIndent = 18f;
             public const float k_IgnoredHelpBoxTopMargin = 4f;
             public const float k_IgnoredHelpBoxBottomMargin = 4f;
 
@@ -187,6 +190,9 @@ internal partial class DictionaryDrawer
         public readonly float attributeKeyFraction;
         public readonly Hash128 stateCacheKey;
         public float availableWidth;
+        // Room the host has below the drawer. 0 means something outside can scroll and reveal the
+        // rows by itself, or that no Repaint has measured yet.
+        public float hostRoomForRows;
 
         DictionaryState m_CachedViewState;
         int m_CachedStateVersion = -1;
@@ -423,39 +429,51 @@ internal partial class DictionaryDrawer
             // repeatedly clamp the scroll and walk it away from a framed position. Measuring all
             // rows once makes totalHeight exact and stable, so framing (and the scrollbar) hold.
             MeasureRowHeightsIfNeeded();
+            
+            ApplyPendingFrameIfReady();
 
-            // Apply a deferred frame request (e.g. a newly added row) once row heights are
-            // settled — after the measure/refresh above on this Layout pass — so the scroll uses
-            // final row rects instead of the pre-measurement estimate. Repaint so the scroll
-            // position the frame sets is rendered.
-            if (pendingFrameDisplayIndex >= 0 && Event.current.type == EventType.Layout
-                && !needsHeightMeasure && !needsHeightRefresh)
-            {
-                if (pendingFrameDisplayIndex < displayedItemCount)
-                {
-                    treeView.FrameItem(pendingFrameDisplayIndex);
-                    HandleUtility.Repaint();
-                }
-                pendingFrameDisplayIndex = -1;
-            }
-
-            float foldoutLine = EditorGUIUtility.singleLineHeight;
-            float columnHeader = header.height;
-            float rowsArea;
-
-            if (displayedItemCount == 0)
-            {
-                rowsArea = EditorGUIUtility.singleLineHeight + 8f;
-            }
-            else
-            {
-                rowsArea = Mathf.Min(treeView.totalHeight, Styles.k_TreeViewHeight);
-            }
-
-            float footer = Styles.k_FooterHeight + Styles.k_FooterSpacing;
-            float ignoredBlock = CalcIgnoredHelpBoxHeight(availableWidth);
-            return foldoutLine + columnHeader + rowsArea + 1f + footer + ignoredBlock;
+            return GetHeightAroundRows() + GetRowsAreaHeight();
         }
+
+        float GetHeightAroundRows()
+        {
+            // The help box is reserved with its margins; HasIgnoredHelpBox reports the box
+            // alone, since that is what DrawIgnoredHelpBox needs for the rect it draws into.
+            float heightOfHelpboxAndMargins = 0f;
+            if (HasIgnoredHelpBox(out float helpboxHeight, out _))
+                heightOfHelpboxAndMargins = Styles.k_IgnoredHelpBoxTopMargin + helpboxHeight + Styles.k_IgnoredHelpBoxBottomMargin;
+
+            return EditorGUIUtility.singleLineHeight
+                + header.height
+                + Styles.k_BoxBottomBorder
+                + Styles.k_FooterHeight + Styles.k_FooterSpacing
+                + heightOfHelpboxAndMargins;
+        }
+
+        float GetRowsAreaHeight()
+        {
+            if (displayedItemCount == 0)
+                return EditorGUIUtility.singleLineHeight + Styles.k_EmptyRowsAreaPadding;
+
+            return Mathf.Min(treeView.totalHeight, GetMaxRowsAreaHeight());
+        }
+
+        // GUI.BeginScrollView takes its scroll range from the rect it is given, so in a host that
+        // cannot scroll, rows below the part of that rect it can show would be unreachable. (UUM-149490)
+        float GetMaxRowsAreaHeight()
+        {
+            if (hostRoomForRows <= 0f)
+                return Styles.k_TreeViewHeight;
+
+            return Mathf.Clamp(hostRoomForRows - GetHeightAroundRows(),
+                EditorGUIUtility.singleLineHeight, Styles.k_TreeViewHeight);
+        }
+
+        // An enclosing IMGUI scroll view counts too: a nested dictionary sits inside the outer
+        // list's, and clamping it there would tie its height to the outer scroll position.
+        bool HostCanScroll()
+            => GUI.GetTopScrollView() != null
+            || imguiContainer?.GetFirstAncestorOfType<ScrollView>() != null;
 
         void MeasureRowHeightsIfNeeded()
         {
@@ -476,21 +494,49 @@ internal partial class DictionaryDrawer
             }
         }
 
-        float CalcIgnoredHelpBoxHeight(float availWidth)
+        // Apply a deferred frame request (e.g. a newly added row) once row heights are settled —
+        // after MeasureRowHeightsIfNeeded has run on this Layout pass — so the scroll uses final
+        // row rects instead of the pre-measurement estimate. Repaint so the scroll position the
+        // frame sets is rendered.
+        void ApplyPendingFrameIfReady()
         {
+            if (pendingFrameDisplayIndex < 0 || Event.current.type != EventType.Layout || needsHeightMeasure || needsHeightRefresh)
+                return;
+
+            if (pendingFrameDisplayIndex < displayedItemCount)
+            {
+                treeView.FrameItem(pendingFrameDisplayIndex);
+                HandleUtility.Repaint();
+            }
+            pendingFrameDisplayIndex = -1;
+        }
+
+        // True when the ignored-entries help box is rendered: something to report, and the content
+        // width is known (it is sampled from the first Repaint — see UpdateAvailableWidth). The
+        // height and the draw both go through here, so a block can't be drawn without being
+        // reserved, which would land it outside the drawer's rect and over the rest of the inspector.
+        bool HasIgnoredHelpBox(out float height, out string text)
+        {
+            height = 0f;
+            text = null;
             int duplicateCount = duplicateEntryIndices.Count;
             int nullKeyCount = nullKeyEntryIndices.Count;
-            if (duplicateCount + nullKeyCount == 0 || availWidth <= 0f)
-                return 0f;
+            if (duplicateCount + nullKeyCount == 0 || availableWidth <= 0f)
+                return false;
 
-            string text = Texts.GetIgnoredHelpBoxText(duplicateCount, nullKeyCount);
-            float helpBoxHeight = DrawerEditorGUI.GetHelpBoxWithButtonHeight(MessageType.Warning, text, availWidth);
-            return Styles.k_IgnoredHelpBoxTopMargin + helpBoxHeight  + Styles.k_IgnoredHelpBoxBottomMargin;
+            text = Texts.GetIgnoredHelpBoxText(duplicateCount, nullKeyCount);
+            height = DrawerEditorGUI.GetHelpBoxWithButtonHeight(MessageType.Warning, text, availableWidth);
+            return true;
         }
 
         void OnGUI(Rect position, SerializedProperty property, GUIContent label, bool isMultiEdit)
         {
             UpdateAvailableWidth(position);
+            RepaintIfNeeded();
+
+            // Only Repaint carries the drawer's final rect; a Layout pass hands out a dummy one.
+            if (Event.current.type == EventType.Repaint)
+                hostRoomForRows = HostCanScroll() ? 0f : GUIClip.visibleRect.yMax - position.y;
 
             var foldoutRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
 
@@ -707,6 +753,33 @@ internal partial class DictionaryDrawer
             EditorApplication.delayCall += RunDeferredStructuralWork;
         }
 
+        // Set by RepaintForHeightChange, consumed on the next Repaint pass.
+        bool m_NeedsFollowUpRepaint;
+
+        // Use instead of MarkDirtyRepaint when the height from GetPropertyHeight changes with no
+        // user event left to settle the layout (deferred structural work, context-menu actions,
+        // first width sample). Two repaints are needed: whoever lays us out from a cached height
+        // — an enclosing ReorderableList, the IMGUIContainer's measured layout — only notices
+        // while repainting and drops the stale value after drawing that frame, so the first
+        // repaint lands against the old geometry and the second comes out right. Same reason
+        // moving the mouse over the Inspector fixes it.
+        void RepaintForHeightChange()
+        {
+            m_NeedsFollowUpRepaint = true;
+            imguiContainer?.MarkDirtyRepaint();
+        }
+
+        // Chained from a Repaint pass rather than requested up front, so it cannot be coalesced
+        // into the repaint RepaintForHeightChange already asked for.
+        void RepaintIfNeeded()
+        {
+            if (!m_NeedsFollowUpRepaint || Event.current.type != EventType.Repaint)
+                return;
+
+            m_NeedsFollowUpRepaint = false;
+            HandleUtility.Repaint();
+        }
+
         // Installs a single EditorApplication.update handler that re-checks the
         // EditorInteractionMonitor gate every k_InteractionCheckIntervalSeconds. Only one
         // handler is registered per instance at a time; subsequent calls are no-ops while
@@ -840,8 +913,10 @@ internal partial class DictionaryDrawer
                     needsRepaint = true;
             }
 
+            // Every branch above changes our height: the row set (reload / sort / layout) or the
+            // ignored-entries help box (marker refresh), so this needs a re-layout, not a repaint.
             if (needsRepaint)
-                imguiContainer?.MarkDirtyRepaint();
+                RepaintForHeightChange();
         }
 
         static bool IsGenericInlineType(Type type, bool hasCustomDrawer)
@@ -989,10 +1064,10 @@ internal partial class DictionaryDrawer
             bool wasUnknown = availableWidth <= 0f;
             availableWidth = position.width;
 
-            // First valid width sample: repaint so GetPropertyHeight can reserve space
-            // on the next frame using the now-known width.
+            // First valid width sample: the width-dependent blocks (multi-edit / ignored-entries
+            // help boxes) reserve and draw nothing until now, so re-layout to pick them up.
             if (wasUnknown)
-                HandleUtility.Repaint();
+                RepaintForHeightChange();
         }
 
         // Multi-edit fallback: the dictionary drawer can't merge two TreeViews / sort
@@ -1014,19 +1089,15 @@ internal partial class DictionaryDrawer
         void DrawExpandedBody(Rect position, float startY, SerializedProperty property)
         {
             float headerH = header.height;
-            float fullContentH = displayedItemCount == 0
-                ? EditorGUIUtility.singleLineHeight + 8f
-                : treeView.totalHeight;
-            float contentH = Mathf.Min(fullContentH, Styles.k_TreeViewHeight);
+            float contentH = GetRowsAreaHeight();
 
-            const float borderBottom = 1f;
             float y = startY;
 
             // Backgrounds first so the column header / rows draw on top.
             if (Event.current.type == EventType.Repaint)
             {
                 var headerRect = new Rect(position.x, y, position.width, headerH);
-                var contentRect = new Rect(position.x, y + headerH, position.width, contentH + borderBottom);
+                var contentRect = new Rect(position.x, y + headerH, position.width, contentH + Styles.k_BoxBottomBorder);
                 Styles.headerBackground.Draw(headerRect, false, false, false, false);
                 Styles.boxBackground.Draw(contentRect, false, false, false, false);
             }
@@ -1041,7 +1112,7 @@ internal partial class DictionaryDrawer
             // Rows (or "empty dictionary" placeholder when there are no entries).
             if (displayedItemCount == 0)
             {
-                var emptyRect = new Rect(position.x + 18f, y, position.width - 18f, EditorGUIUtility.singleLineHeight + 8f);
+                var emptyRect = new Rect(position.x + Styles.k_EmptyLabelIndent, y, position.width - Styles.k_EmptyLabelIndent, contentH);
                 EditorGUI.LabelField(emptyRect, Texts.EmptyDictionaryLabel);
                 y += emptyRect.height;
             }
@@ -1054,7 +1125,7 @@ internal partial class DictionaryDrawer
                 treeView.OnGUI(treeRect);
                 y += contentH;
             }
-            y += borderBottom;
+            y += Styles.k_BoxBottomBorder;
 
             // Cmd+D / context-menu duplicate is queued during the TreeView OnGUI and
             // flushed here, after the rows have already drawn for this frame so we
@@ -1069,22 +1140,16 @@ internal partial class DictionaryDrawer
             var footerRect = new Rect(position.x, y + Styles.k_FooterSpacing - 1f, position.width, Styles.k_FooterHeight);
             DrawFooter(footerRect, property);
 
-            DrawIgnoredHelpBox(position, footerRect.yMax);
+            if (HasIgnoredHelpBox(out float helpBoxHeight, out var helpBoxText))
+                DrawIgnoredHelpBox(position, footerRect.yMax, helpBoxHeight, helpBoxText);
         }
 
-        void DrawIgnoredHelpBox(Rect position, float startY)
+        void DrawIgnoredHelpBox(Rect position, float startY, float helpBoxHeight, string helpBoxText)
         {
-            int duplicateCount = duplicateEntryIndices.Count;
-            int nullKeyCount = nullKeyEntryIndices.Count;
-            if (duplicateCount + nullKeyCount == 0)
-                return;
-
-            string text = Texts.GetIgnoredHelpBoxText(duplicateCount, nullKeyCount);
-            float helpBoxHeight = DrawerEditorGUI.GetHelpBoxWithButtonHeight(MessageType.Warning, text, position.width);
             float helpBoxY = startY + Styles.k_IgnoredHelpBoxTopMargin;
             var helpBoxRect = new Rect(position.x, helpBoxY, position.width, helpBoxHeight);
 
-            if (DrawerEditorGUI.HelpBoxWithButton(helpBoxRect, MessageType.Warning, text, Texts.SelectFirstIgnoredButtonLabel))
+            if (DrawerEditorGUI.HelpBoxWithButton(helpBoxRect, MessageType.Warning, helpBoxText, Texts.SelectFirstIgnoredButtonLabel))
                 SelectFirstIgnored();
         }
 
@@ -1215,13 +1280,7 @@ internal partial class DictionaryDrawer
                 ClassifyRowHeights();
             treeView.Reload();
 
-            int newDisplayIndex = sortedIndices.ToDisplayIndex(lastIndex);
-            treeView.SetSelection(new[] { newDisplayIndex }, TreeViewSelectionOptions.RevealAndFrame);
-            // Row heights for the just-rebuilt tree are measured on the next Layout pass, so the
-            // RevealAndFrame above scrolls against the pre-measurement estimate. Re-frame the new
-            // row once heights have settled (see GetExpandedPropertyHeight) so it lands correctly
-            // at the bottom even when the tree is tall enough to show the scroll view.
-            pendingFrameDisplayIndex = newDisplayIndex;
+            SelectAndFrameAfterRebuild(new[] { sortedIndices.ToDisplayIndex(lastIndex) });
             treeView.SetFocus();
         }
 
@@ -1248,7 +1307,7 @@ internal partial class DictionaryDrawer
             else
             {
                 int clampedSelection = Mathf.Min(newSelectedDisplayIndex, displayedItemCount - 1);
-                treeView.SetSelection(new[] { clampedSelection }, TreeViewSelectionOptions.RevealAndFrame);
+                SelectAndFrameAfterRebuild(new[] { clampedSelection });
                 needsTreeViewFocus = true;
             }
         }
@@ -1322,8 +1381,16 @@ internal partial class DictionaryDrawer
                 if (sortedIndices.ContainsArrayIndex(arrayIdx))
                     newSelection.Add(sortedIndices.ToDisplayIndex(arrayIdx));
             }
-            if (newSelection.Count > 0)
-                treeView.SetSelection(newSelection, TreeViewSelectionOptions.RevealAndFrame);
+            SelectAndFrameAfterRebuild(newSelection);
+        }
+
+        void SelectAndFrameAfterRebuild(IList<int> displayIndices)
+        {
+            if (displayIndices.Count == 0)
+                return;
+
+            treeView.SetSelection(displayIndices);
+            pendingFrameDisplayIndex = displayIndices[displayIndices.Count - 1];
         }
 
         void ResetToDefaults()
@@ -1339,7 +1406,7 @@ internal partial class DictionaryDrawer
             lastKnownKeysHash = GetKeysContentHash(arrayProperty);
             ClassifyRowHeights();
             treeView.Reload();
-            imguiContainer?.MarkDirtyRepaint();
+            RepaintForHeightChange();
         }
 
         // Single entry point for every layout change from the context menu. Persists the
@@ -1362,7 +1429,7 @@ internal partial class DictionaryDrawer
         {
             ClassifyRowHeights();
             treeView.Reload();
-            imguiContainer?.MarkDirtyRepaint();
+            RepaintForHeightChange();
         }
 
         static int[] MapSelectionToArrayIndices(IList<int> displayIndices, SortedIndexMap sortedIndices)

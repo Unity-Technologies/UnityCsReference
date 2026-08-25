@@ -73,8 +73,26 @@ namespace UnityEditorInternal.Profiling
         // whether to take its lightweight append-only layout path. timeSinceStartup is
         // paused-aware, so a debugger break or modal dialogue can't strand the flag true.
         double m_LastFrameRecordedTime;
+        // DisplayedFrameCount as of the last Changed we raised. Lets Refresh notice that the visible
+        // set moved even when m_Frames itself did not.
+        // -1 means "never reported", so the first Refresh always notifies.
+        int m_LastNotifiedDisplayedFrameCount = -1;
 
         public IReadOnlyList<ScreenshotFrame> Frames => m_Frames;
+
+        // How many entries in Frames the user can actually see. Both thumbnail strips hide entries
+        // whose depicted (logical) frame sits below FirstSelectableFrameIndex: frames evicted from
+        // memory, frames trimmed by the frame-count setting, and entries whose LogicalFrame resolved
+        // negative because the frame they depict predates the capture. Anything reporting a
+        // screenshot count to the user wants this rather than Frames.Count, or it claims more
+        // screenshots than are on screen.
+        public int DisplayedFrameCount
+        {
+            // m_Frames is kept sorted by LogicalFrame, so the lower bound is the split between the
+            // hidden entries and the shown ones.
+            get => m_Frames.Count - LowerBoundByLogicalFrame(FirstSelectableFrameIndex());
+        }
+
         public event Action Changed;
         // Fires the moment OnNewFrameRecorded arrives and IsRecordingBurst was false beforehand —
         // i.e. the transition from "not recording" to "actively recording". Consumers that need
@@ -134,7 +152,7 @@ namespace UnityEditorInternal.Profiling
                     m_Frames.Clear();
                     m_LastScannedFrameIndex = -1;
                     SaveToCache();
-                    Changed?.Invoke();
+                    RaiseChanged();
                 }
                 return;
             }
@@ -173,10 +191,13 @@ namespace UnityEditorInternal.Profiling
                 }
             }
 
+            if (!changed && m_LastNotifiedDisplayedFrameCount != DisplayedFrameCount)
+                changed = true;
+
             if (changed)
             {
                 SaveToCache();
-                Changed?.Invoke();
+                RaiseChanged();
             }
         }
 
@@ -383,8 +404,14 @@ namespace UnityEditorInternal.Profiling
             {
                 m_Frames.Clear();
                 SaveToCache();
-                Changed?.Invoke();
+                RaiseChanged();
             }
+        }
+
+        void RaiseChanged()
+        {
+            m_LastNotifiedDisplayedFrameCount = DisplayedFrameCount;
+            Changed?.Invoke();
         }
 
         void OnNewFrameRecorded(int connectionId, int newFrameIndex)
@@ -622,6 +649,16 @@ namespace UnityEditorInternal.Profiling
             var firstInMemory = ProfilerDriver.firstFrameIndex;
             var firstDisplayed = ProfilerDriver.lastFrameIndex + 1 - ProfilerUserSettings.frameCount;
             return Mathf.Max(firstInMemory, firstDisplayed);
+        }
+
+        // FirstDisplayedFrameIndex as a lower bound for deciding whether a screenshot is shown:
+        // clamped so it is never negative, which also excludes entries whose LogicalFrame resolved
+        // below zero (the frame they depict predates the capture) when no data is loaded and
+        // FirstDisplayedFrameIndex is itself -1. Every site that decides whether a screenshot is
+        // visible shares this, so the strips and the reported count cannot drift apart.
+        public static int FirstSelectableFrameIndex()
+        {
+            return Mathf.Max(0, FirstDisplayedFrameIndex());
         }
 
         // Cancels and disposes an existing CTS, then either reallocates it (recreate: true — for sites

@@ -16,7 +16,7 @@ namespace UnityEngine
     /// <see cref="DictionarySerialization.GetDictionaryEntriesForSerialization"/>) are reachable from worker
     /// threads through the native transfer pipeline, while editor cleanup
     /// (<see cref="DictionarySerialization.PruneIgnoredDictionaryEntriesForUnloadedHosts"/>) and the public
-    /// <c>SerializedProperty.GetDictionaryDuplicateEntryIndices</c> API are invoked from the main thread.
+    /// <c>SerializedProperty.GetDictionaryIgnoredEntries</c> API are invoked from the main thread.
     /// </summary>
     internal sealed class DictionaryIgnoredEntriesCache : IDictionaryIgnoredEntriesCache
     {

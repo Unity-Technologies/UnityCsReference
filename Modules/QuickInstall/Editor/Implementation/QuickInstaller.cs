@@ -57,7 +57,7 @@ namespace UnityEditor.QuickInstall
             s_Initialized = InitializeState.InProgress;
             EditorApplication.update += CreatePackageListHandler();
             PackageManager.Events.registeredPackages += OnPackagesRegistered;
-            AssemblyReloadEvents.beforeAssemblyReload += RemoveMenuItemsForAllInstallers;
+            PackageManager.Events.registeringPackages += _ => RemoveMenuItemsForAllInstallers();
         }
 
         internal static AddRequest InstallPackage(string packageName, InstallMethod installationMethod)

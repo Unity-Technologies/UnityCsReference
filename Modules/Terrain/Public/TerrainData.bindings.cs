@@ -663,7 +663,7 @@ namespace UnityEngine
                 throw new ArgumentException("Trying to access out-of-bounds terrain holes information.");
             }
 
-            bool[,] holes = new bool[width, height];
+            bool[,] holes = new bool[height, width];
             Internal_GetHoles(xBase, yBase, width, height, holes);
             return holes;
         }
@@ -863,7 +863,7 @@ namespace UnityEngine
 
         public int[,] GetDetailLayer(int xBase, int yBase, int width, int height, int layer)
         {
-            int[,] detailLayer = new int[width, height];
+            int[,] detailLayer = new int[height, width];
             GetDetailLayer(xBase, yBase, width, height, layer, detailLayer);
             return detailLayer;
         }

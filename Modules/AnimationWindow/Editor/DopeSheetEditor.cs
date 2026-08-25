@@ -890,11 +890,14 @@ namespace UnityEditorInternal
 
         private void SelectTypeForCreatingNewPptrDopeline(object userData, string[] options, int selected)
         {
+            if (selected < 0)
+                return;
+
             List<object> userDataList = userData as List<object>;
             var clip = userDataList[0] as IAnimationWindowClip;
-            List<EditorCurveBinding> bindings = userDataList[1] as List<EditorCurveBinding>;
+            var bindings = userDataList[1] as EditorCurveBinding[];
 
-            if (bindings.Count > selected)
+            if (bindings.Length > selected)
                 DoSpriteDropAfterGeneratingNewDopeline(clip, bindings[selected]);
         }
 

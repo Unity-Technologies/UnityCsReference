@@ -89,6 +89,10 @@ namespace UnityEditorInternal.Profiling
             // Rebuild the strip so its visible thumbnails match the (possibly) trimmed display window,
             // and re-apply the selection so the detail image tracks the new window.
             m_TimelineViewController?.ReloadTimeline();
+            // The frame-count setting moves the display window without touching the catalogue, so no
+            // Changed event arrives to refresh the count. Update it here or the label keeps reporting
+            // the screenshots that this rebuild just trimmed off the strip.
+            UpdateScreenshotCountAndEmptyState();
             ApplyFrameSelection((int)ProfilerWindow.selectedFrameIndex);
         }
 
@@ -98,8 +102,11 @@ namespace UnityEditorInternal.Profiling
                 return;
 
             // Refresh may be a no-op (nothing changed since the last scan) and so not raise Changed,
-            // so re-apply the selection explicitly to repopulate the stale strip and detail image.
+            // so re-apply the count and selection explicitly to repopulate the stale strip and
+            // detail image. The count needs it even on the no-op path: recording moves
+            // lastFrameIndex, which moves the display window the count is measured against.
             m_Catalogue?.Refresh();
+            UpdateScreenshotCountAndEmptyState();
             ApplyFrameSelection((int)ProfilerWindow.selectedFrameIndex);
         }
 
@@ -120,9 +127,7 @@ namespace UnityEditorInternal.Profiling
 
             // Bound the detail image's nearest-prior fallback to the same display window the strip and
             // chart use, so it never surfaces a screenshot from a frame trimmed out of the window.
-            var firstDisplayedFrame = ScreenshotIndexCatalogue.FirstDisplayedFrameIndex();
-            if (firstDisplayedFrame < 0)
-                firstDisplayedFrame = 0;
+            var firstDisplayedFrame = ScreenshotIndexCatalogue.FirstSelectableFrameIndex();
 
             m_TimelineViewController?.UpdateSelection(ResolveDisplayFrame(profilerFrame));
             m_DetailsViewController?.LoadScreenshot(profilerFrame, firstDisplayedFrame);
@@ -156,10 +161,13 @@ namespace UnityEditorInternal.Profiling
 
         // Source the toolbar count and the details empty-state from the catalogue (the authoritative,
         // always-current frame list) so both stay correct during a live recording, not just once it
-        // pauses.
+        // pauses. DisplayedFrameCount rather than Frames.Count: screenshots whose depicted frame has
+        // dropped out of the Profiler window's frame range are hidden from both strips, so counting
+        // them would report screenshots the user cannot see - and would keep the empty state
+        // suppressed once every screenshot has been trimmed away.
         void UpdateScreenshotCountAndEmptyState()
         {
-            var count = m_Catalogue?.Frames.Count ?? 0;
+            var count = m_Catalogue?.DisplayedFrameCount ?? 0;
             UpdateScreenshotCountLabel(count);
             m_DetailsViewController?.ShowEmptyState(count == 0);
         }

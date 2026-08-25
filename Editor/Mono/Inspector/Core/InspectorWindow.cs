@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Pool;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -254,6 +253,9 @@ namespace UnityEditor
             }
         }
 
+        [NoAutoStaticsCleanup]
+        static List<EditorWindow> s_WindowsSnapshot = new List<EditorWindow>(32);
+
         [UsedByNativeCode]
         internal static void RedrawFromNative()
         {
@@ -263,15 +265,28 @@ namespace UnityEditor
 
             // Acquire a snapshot instead of directly iterating over activeEditorWindows as calling
             // RebuildContentsContainers can mutate activeEditorWindows.
-            var activeWindowCount = activeEditorWindows.Count;
-            using var windowsSnapshot = new RentSpan<EditorWindow>(activeWindowCount);
-            for (int i = 0; i < activeWindowCount; ++i)
-                windowsSnapshot.Span[i] = activeEditorWindows[i];
+            var snapshot = s_WindowsSnapshot;
 
-            foreach (var editorWindow in windowsSnapshot)
+            // Guard against re-entry by setting s_WindowsSnapshot to null for the current entry (the finally statement will restore it).
+            if (snapshot != null)
+                s_WindowsSnapshot = null;
+            else  // If snapshot is null, we're re-entering. We shouldn't overwrite s_WindowsSnapshot therefore fallback to allocating new.
+                snapshot = new List<EditorWindow>(32);
+
+            try
             {
-                if (editorWindow != null && editorWindow is PropertyEditor propertyEditor)
-                    propertyEditor.RebuildContentsContainers();
+                snapshot.AddRange(activeEditorWindows);
+
+                for (int i = 0; i < snapshot.Count; ++i)
+                {
+                    if (snapshot[i] is PropertyEditor propertyEditor && propertyEditor != null)
+                        propertyEditor.RebuildContentsContainers();
+                }
+            }
+            finally
+            {
+                snapshot.Clear();
+                s_WindowsSnapshot = snapshot;
             }
         }
 

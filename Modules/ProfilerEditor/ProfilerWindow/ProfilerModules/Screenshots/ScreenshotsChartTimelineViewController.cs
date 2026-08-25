@@ -433,13 +433,15 @@ namespace UnityEditorInternal.Profiling
             return false;
         }
 
-        // Append-only layout path taken during recording bursts. Doesn't clear roles or re-run
-        // PickIntermediatesByStride; only:
+        // Append-only layout path taken during recording bursts. Never re-runs
+        // PickIntermediatesByStride, and only clears a role when the entry has left the display
+        // window (step 2); otherwise:
         //   1. prunes entries that have scrolled out of the ring buffer,
-        //   2. recomputes the layout context for the (likely larger) frame range,
-        //   3. re-positions existing picks (their pixel X shifts as FrameCount grows),
-        //   4. merges new catalogue entries into m_Screenshots,
-        //   5. attempts to promote the newest entry to Last if it has clearance, demoting the
+        //   2. unpicks entries whose depicted frame has left the display window,
+        //   3. recomputes the layout context for the (likely larger) frame range,
+        //   4. re-positions existing picks (their pixel X shifts as FrameCount grows),
+        //   5. merges new catalogue entries into m_Screenshots,
+        //   6. attempts to promote the newest entry to Last if it has clearance, demoting the
         //      previous Last to Middle (skipping the append when there isn't room).
         // Loads are (re)started only when the picked set actually changed, so the per-editor-frame
         // re-layouts during recording don't starve in-flight thumbnail loads.
@@ -458,13 +460,13 @@ namespace UnityEditorInternal.Profiling
             // m_Screenshots count tracks catalogue.Frames.Count even during a burst (without
             // this, the merge check below would fail once catalogue eviction outpaces
             // capture, and append would silently stop).
-            var anyPickedPruned = false;
+            var pickedSetChanged = false;
             for (var i = m_Screenshots.Count - 1; i >= 0; i--)
             {
                 if (m_Screenshots[i].EmissionFrame >= firstFrame)
                     continue;
                 if (m_Screenshots[i].Role != ChartScreenshotRole.Unpicked)
-                    anyPickedPruned = true;
+                    pickedSetChanged = true;
                 DisposeScreenshot(m_Screenshots[i]);
                 m_Screenshots.RemoveAt(i);
             }
@@ -472,13 +474,40 @@ namespace UnityEditorInternal.Profiling
             if (m_Screenshots.Count == 0)
                 return;
 
+            // Entries can survive the eviction prune above while the frame they DEPICT has already
+            // aged out: the readback offset puts EmissionFrame 1-3 frames after LogicalFrame, so an
+            // entry can hold EmissionFrame >= firstFrame while LogicalFrame < firstFrame. The full
+            // DoLayout drops those (it filters LogicalFrame against the display window); mirror that
+            // here, or they stay picked and rendered hard against the left edge until the burst ends,
+            // anchored to a frame the user can no longer select — and disagree with
+            // ScreenshotIndexCatalogue.DisplayedFrameCount, which applies the same LogicalFrame cutoff.
+            //
+            // Must run before the early-out below: with a full ring buffer firstFrame and lastFrame
+            // advance in lockstep, so frameCount stays pinned at capacity on exactly the frames where
+            // an entry crosses this boundary, and the early-out would skip the unpick entirely.
+            //
+            // Unpicking leaves a gap at the left edge rather than re-picking a replacement. That's the
+            // same deferral TryAppendAtRightEdge makes: the burst-end full DoLayout reconciles it.
+            var firstSelectableFrame = ScreenshotIndexCatalogue.FirstSelectableFrameIndex();
+            foreach (var screenshot in m_Screenshots)
+            {
+                if (screenshot.Role == ChartScreenshotRole.Unpicked || screenshot.LogicalFrame >= firstSelectableFrame)
+                    continue;
+                screenshot.Role = ChartScreenshotRole.Unpicked;
+                // PositionByRole is the only thing that sets display back to Flex and it skips
+                // Unpicked entries, so hide the element here or it lingers at its last position.
+                if (screenshot.Element != null)
+                    screenshot.Element.style.display = DisplayStyle.None;
+                pickedSetChanged = true;
+            }
+
             var frameCount = (lastFrame - firstFrame) + 1;
             var catalogueFrameCount = m_Catalogue?.Frames.Count ?? 0;
 
-            // Early-out only when nothing changed AND nothing was pruned. FrameCount changes
+            // Early-out only when nothing changed AND the picked set is untouched. FrameCount changes
             // every editor frame during recording, so this rarely triggers — but it's cheap
             // insurance for the no-op case.
-            if (!anyPickedPruned
+            if (!pickedSetChanged
                 && frameCount == m_LastAppendFrameCount
                 && catalogueFrameCount == m_Screenshots.Count)
                 return;
@@ -530,7 +559,7 @@ namespace UnityEditorInternal.Profiling
                     appended = TryAppendAtRightEdge(newestAddition);
             }
 
-            if (appended || anyPickedPruned)
+            if (appended || pickedSetChanged)
             {
                 m_LastPickedSetSignature = ComputePickedSetSignature();
                 if (appended)

@@ -7,6 +7,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Threading;
 
+using Unity.Scripting.LifecycleManagement;
 using Unity.UI.Builder;
 using UnityEditor.Search;
 using UnityEditor.PackageManager;
@@ -241,6 +242,10 @@ namespace UnityEditor.Experimental.GraphView
         private const float PackageManagerTimeout = 5f; // 5s
 
         private static readonly List<string> s_HideInstallSampleButtonByTool = new ();
+        // Must not be auto-cleaned: with domain reload disabled the window survives a play mode
+        // transition, and clearing would drop the registration of a window that is still open.
+        [NoAutoStaticsCleanup]
+        private static readonly Dictionary<string, GraphViewTemplateWindow> s_OpenWindowsByTool = new ();
         private readonly List<TreeViewItemData<ITemplateDescriptor>> m_TemplatesTree = new ();
 
         private TreeView m_ListOfTemplates;
@@ -320,15 +325,20 @@ namespace UnityEditor.Experimental.GraphView
 
         private static void ShowInternal(CreateMode mode, ITemplateHelper templateHelper, Action<string, string> callback, string hiddenSearchQuery, string initialSearchQuery, bool adbOnly)
         {
-            if (EditorWindow.HasOpenInstances<GraphViewTemplateWindow>())
+            // Only block re-opening the *same* tool's window; a different tool gets its own instance.
+            if (s_OpenWindowsByTool.TryGetValue(templateHelper.toolKey, out var existingWindow) && existingWindow != null)
             {
-                Debug.LogWarning("A template window is already open, close it before opening a new one.");
+                existingWindow.Focus();
+                Debug.LogWarning($"A template window is already open for '{templateHelper.toolKey}', close it before opening a new one.");
                 return;
             }
 
-            var templateWindow = EditorWindow.GetWindow<GraphViewTemplateWindow>(true, string.Empty, false);
+            // GetWindow<T> is singleton-per-type; create a dedicated instance so each tool has its own.
+            var templateWindow = ScriptableObject.CreateInstance<GraphViewTemplateWindow>();
             templateWindow.titleContent = new GUIContent(mode == CreateMode.Insert ? templateHelper.insertTemplateTitle : templateHelper.createNewAssetTitle);
+            templateWindow.ShowUtility();
             templateWindow.Setup(mode, templateHelper, callback, hiddenSearchQuery, initialSearchQuery, adbOnly);
+            s_OpenWindowsByTool[templateHelper.toolKey] = templateWindow;
         }
 
         private void Setup(CreateMode mode, ITemplateHelper templateHelper, Action<string, string> callback, string hiddenSearchQuery, string initialSearchQuery, bool adbOnly)
@@ -471,10 +481,24 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnDestroy()
         {
+            UnregisterOpenWindow();
             Dispatcher.Off(SearchEvent.ItemFavoriteStateChanged, SearchEventManager.GetSearchEventHandlerHashCode(OnFavoriteStateChanged));
             Dispatcher.Off(SearchEvent.SearchIndexReady, OnSearchIndexReady);
             this.m_templateWindowPrefs.LastUsedTemplateGuid = m_SelectedTemplate.assetGuid;
             this.m_templateWindowPrefs?.SavePrefs(this.m_TemplateHelper.toolKey);
+        }
+
+        private void UnregisterOpenWindow()
+        {
+            // Remove by value so a stale key is never left behind, even if setup didn't complete.
+            foreach (var kvp in s_OpenWindowsByTool)
+            {
+                if (kvp.Value == this)
+                {
+                    s_OpenWindowsByTool.Remove(kvp.Key);
+                    break;
+                }
+            }
         }
 
         private void HidePackageIndexingBanner()

@@ -158,4 +158,9 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         FirstCustomCategory
     }
+
+    internal static class IssueCategoryExtensions
+    {
+        public static bool IsPopulatedByPlayerBuild(this IssueCategory category) => category == IssueCategory.ShaderVariant || category == IssueCategory.ComputeShaderVariant;
+    }
 }

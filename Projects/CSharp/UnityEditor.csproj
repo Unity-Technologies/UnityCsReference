@@ -8738,6 +8738,9 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\HashUtils.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\HashUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\PackageUtils.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\PackageUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\PlatformUtils.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\PlatformUtils.cs</Link>
     </Compile>
@@ -9004,6 +9007,9 @@
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Editors\SetupEditorTagsNode.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Editors\SetupEditorTagsNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Editors\ValidateMainEditorSettingsNode.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Editors\ValidateMainEditorSettingsNode.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Local\Adb\AdbBridgeHelper.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Local\Adb\AdbBridgeHelper.cs</Link>
@@ -17125,7 +17131,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_y0ng3l8c/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_p4i1n9i6/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

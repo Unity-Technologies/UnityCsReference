@@ -367,6 +367,15 @@ namespace Unity.UIToolkit.Editor
                 return true;
             }
 
+            // Whole-property enum channels (e.g. UnityFontStyleAndWeight) carry no sub-channel
+            // suffix; render the enum popup so only valid values can be entered.
+            if (suffix == null && TryGetWholePropertyEnumType(propName, out var wholePropertyEnumType))
+            {
+                newValue = currentValue;
+                HandleEnumProperty(wholePropertyEnumType, valueFieldRect, ref newValue);
+                return true;
+            }
+
             // BackgroundRepeat.x / .y reuse single-char suffixes shared with Translate / Scale /
             // TransformOrigin / Color, so we disambiguate by resolving the property from the
             // propertyName rather than the suffix alone. ".x" / ".y" are excluded from the
@@ -547,10 +556,37 @@ namespace Unity.UIToolkit.Editor
             return null;
         }
 
+        internal static bool TryGetWholePropertyEnumType(string propertyName, out Type enumType)
+        {
+            enumType = null;
+            if (string.IsNullOrEmpty(propertyName))
+                return false;
+
+            // Per-element bindings carry an element-path prefix ("#elem/UnityFontStyleAndWeight").
+            var baseName = propertyName.Substring(propertyName.LastIndexOf('/') + 1);
+            // Guard against TryParse accepting numeric strings ("1" -> StylePropertyId.AlignContent); names are identifiers.
+            if (baseName.Length == 0 || !char.IsLetter(baseName[0]))
+                return false;
+
+            if (!Enum.TryParse(baseName, out StylePropertyId id))
+                return false;
+
+            if (AnimationRecordingStyleBridge.GetRecordingChannelKind(id) != StylePropertyRecordingChannel.EnumInt)
+                return false;
+
+            var type = StyleDebug.GetComputedStyleType(id);
+            if (type == null || !type.IsEnum)
+                return false;
+
+            enumType = type;
+            return true;
+        }
+
         private void HandleEnumProperty(System.Type enumType, Rect rect, ref object value)
         {
             // Value may be a float encoding an int via BitConverter; route through Int32.
-            int intValue = Convert.ToInt32(value);
+            // Clamp through double: an out-of-range keyframe value must not overflow the conversion.
+            int intValue = (int)Math.Clamp(Convert.ToDouble(value), int.MinValue, int.MaxValue);
 
             Rect valueFieldRect = new Rect(rect.xMax - k_ValueFieldWidth - k_ValueFieldOffsetFromRightSide, rect.y, k_ValueFieldWidth, rect.height);
 

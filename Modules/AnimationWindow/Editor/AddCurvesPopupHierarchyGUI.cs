@@ -16,9 +16,7 @@ namespace UnityEditorInternal
     {
         public EditorWindow owner;
         public bool showPlusButton { get; set; }
-        private GUIStyle buttonStyle = "IconButton";
         private GUIContent plusIcon = EditorGUIUtility.TrIconContent("Toolbar Plus");
-        private GUIStyle plusButtonBackgroundStyle = "Tag MenuItem";
         private GUIContent addPropertiesContent = EditorGUIUtility.TrTextContent("Add Properties");
         private const float plusButtonWidth = 17;
 
@@ -42,14 +40,14 @@ namespace UnityEditorInternal
             if (hierarchyNode == null || hierarchyNode.curveBindings == null || hierarchyNode.curveBindings.Length == 0)
                 return;
 
-            Rect buttonRect = new Rect(rowRect.width - plusButtonWidth, rowRect.yMin, plusButtonWidth, buttonStyle.fixedHeight);
+            Rect buttonRect = new Rect(rowRect.width - plusButtonWidth, rowRect.yMin, plusButtonWidth, AnimationWindowStyles.plusButton.fixedHeight);
 
             // TODO Make a style for add curves popup
             // Draw background behind plus button to prevent text overlapping
-            GUI.Box(buttonRect, GUIContent.none, plusButtonBackgroundStyle);
+            GUI.Box(buttonRect, GUIContent.none, AnimationWindowStyles.plusButtonBackground);
 
             // Check if the curve already exists and remove plus button
-            if (GUI.Button(buttonRect, plusIcon, buttonStyle))
+            if (GUI.Button(buttonRect, plusIcon, AnimationWindowStyles.plusButton))
             {
                 AddCurvesPopup.AddNewCurve(hierarchyNode);
 

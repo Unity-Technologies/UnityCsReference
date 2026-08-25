@@ -258,6 +258,8 @@ namespace Unity.GraphToolkit.Editor
                     return PortCapacity.Multi;
 
                 // If not set, fallback to default behavior.
+                if (DataTypeHandle == TypeHandle.Untyped || PortDataType == typeof(Untyped))
+                    return PortCapacity.Multi;
                 return PortDataType != typeof(Untyped) && Direction == PortDirection.Input ? PortCapacity.Single : PortCapacity.Multi;
             }
             set
@@ -617,7 +619,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Gets whether this port model has reorderable wires or not.
         /// </summary>
-        public virtual bool HasReorderableWires => PortDataType == typeof(Untyped) && Direction == PortDirection.Output && IsConnected();
+        public virtual bool HasReorderableWires => (DataTypeHandle == TypeHandle.Untyped || PortDataType == typeof(Untyped)) && Direction == PortDirection.Output && IsConnected();
 
         /// <summary>
         /// A constant representing the port default value.

@@ -156,10 +156,9 @@ sealed partial class PanelElement
 
     internal Vector2 LocalToPanelPosition(Vector2 localPosition)
     {
-        var scaledPos = localPosition * SubPanel.pixelsPerPoint;
         return SubPanel is RuntimePanel runtimePanel
-            ? (Vector2)runtimePanel.ScreenToPanel(scaledPos)
-            : scaledPos;
+            ? (Vector2)runtimePanel.ScreenToPanel(localPosition)
+            : localPosition * SubPanel.pixelsPerPoint;
     }
 
     internal void PickAll(Vector2 localPosition, List<VisualElement> results)

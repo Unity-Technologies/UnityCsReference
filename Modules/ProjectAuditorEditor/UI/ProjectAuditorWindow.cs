@@ -489,22 +489,20 @@ namespace Unity.ProjectAuditor.Editor.UI
             // is what keeps the panel up while the viewed category is still pending and reveals it as
             // soon as its own data arrives, regardless of when siblings finish. (UUM-144826)
             var activeCategory = m_ViewManager.GetActiveView().Desc.Category;
-            bool activeHasData = m_ViewManager.Report?.HasCategory(activeCategory) ?? false;
             bool activePending = m_ViewManager.HasPendingCategory(activeCategory);
+            bool activeHasData = (m_ViewManager.Report?.HasCategory(activeCategory) ?? false)
+                || (activeCategory.IsPopulatedByPlayerBuild() && !activePending);
 
-            if (!activeHasData)
+            if (activeHasData)
             {
-                // The viewed category has no data yet: override with the info / analyze button (and
-                // the "analysis running" variant while its module is still running).
-                m_IsNonAnalyzedViewSelected = true;
-                m_IsPendingAnalysisViewSelected = activePending;
-                m_SelectedNonAnalyzedTab = selectedTab;
+                m_IsNonAnalyzedViewSelected = false;
+                m_IsPendingAnalysisViewSelected = false;
             }
             else
             {
-                // The viewed category has its data: stop overriding and show the populated view.
-                m_IsNonAnalyzedViewSelected = false;
-                m_IsPendingAnalysisViewSelected = false;
+                m_IsNonAnalyzedViewSelected = true;
+                m_IsPendingAnalysisViewSelected = activePending;
+                m_SelectedNonAnalyzedTab = selectedTab;
             }
         }
 

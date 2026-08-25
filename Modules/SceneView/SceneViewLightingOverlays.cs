@@ -157,9 +157,13 @@ namespace UnityEditor
 
         VisualElement CreateInteractiveBakingContent()
         {
-            var useInteractiveLightBakingDataChanged = SceneView.lastActiveSceneView?.debugDrawModesUseInteractiveLightBakingData ?? false;
-
             var root = new VisualElement();
+
+            // Interactive baking data only exists in processes with GI, so there is nothing to preview elsewhere.
+            if (!InteractiveLightBaking.isAvailable)
+                return root;
+
+            var useInteractiveLightBakingDataChanged = SceneView.lastActiveSceneView?.debugDrawModesUseInteractiveLightBakingData ?? false;
 
             var dropdown = new EnumField("Lighting Data", LightingDataSource.Baked);
             dropdown.tooltip = "Select which lighting data is shown in Debug Draw Modes.\n\nBaked displays the most recent lighting data generated from the Lighting Window.\n\nPreview displays an interactive preview which updates in relation to Scene changes.";
