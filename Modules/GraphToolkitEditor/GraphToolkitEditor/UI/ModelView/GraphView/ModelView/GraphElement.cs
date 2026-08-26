@@ -147,7 +147,7 @@ namespace Unity.GraphToolkit.Editor
         public DynamicBorder Border { get; private set; }
 
         /// <summary>
-        /// Prevent culling from acting on this <see cref="GraphElement"/>.
+        /// Whether culling is prevented for this <see cref="GraphElement"/>.
         /// </summary>
         public bool PreventCulling { get; set; }
 
@@ -245,7 +245,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Update the element so that it looks selected if <paramref name="selected"/> is true, or unselected otherwise.
+        /// Updates the element so that it looks selected if <paramref name="selected"/> is true, or unselected otherwise.
         /// This will be called by UpdateElementSelection, but might also be called for displaying a selection state without changing the selection.
         /// </summary>
         /// <param name="selected">If the element should look selected.</param>
@@ -266,7 +266,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Set the visual appearance of the <see cref="GraphElement"/> and its parts depending on the current zoom.
+        /// Sets the visual appearance of the <see cref="GraphElement"/> and its parts depending on the current zoom.
         /// </summary>
         /// <param name="zoom">The current zoom.</param>
         /// <param name="newZoomMode">The <see cref="GraphViewZoomMode"/> that will be active from now.</param>
@@ -285,7 +285,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Can be overriden to set the visual appearance of the <see cref="GraphElement"/> depending on the current zoom.
+        /// Sets the visual appearance of the <see cref="GraphElement"/> depending on the current zoom.
         /// </summary>
         /// <param name="zoom">The current zoom.</param>
         /// <param name="newZoomMode">The <see cref="GraphViewZoomMode"/> that will be active from now.</param>
@@ -348,6 +348,9 @@ namespace Unity.GraphToolkit.Editor
 
         bool m_OverrideHighlighed;
 
+        /// <summary>
+        /// Whether highlighting is overridden for this <see cref="GraphElement"/>.
+        /// </summary>
         public bool OverrideHighlighted
         {
             get => m_OverrideHighlighed;
@@ -385,7 +388,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Callback for the KeyDownEvent to handle renames.
+        /// Handles the <see cref="KeyDownEvent"/> to process renames.
         /// </summary>
         /// <param name="e">The event.</param>
         protected internal void OnRenameKeyDown(KeyDownEvent e)
@@ -411,7 +414,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Refresh the borders of this <see cref="GraphElement"/>
+        /// Refreshes the borders of this <see cref="GraphElement"/>.
         /// </summary>
         public virtual void RefreshBorder()
         {

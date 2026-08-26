@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.TextCore;
@@ -68,12 +69,29 @@ namespace UnityEngine.UIElements
             /// </summary>
             public readonly GlyphKind kind;
 
-            internal Glyph(NativeSlice<Vertex> vertices, int line, string linkID, GlyphKind kind)
+            readonly RangeInt m_TextRange;
+
+            /// <summary>
+            /// Range of characters (UTF-16 code units) of <see cref="parsedText"/> that this
+            /// glyph renders.
+            /// </summary>
+            public RangeInt textRange
+            {
+                get
+                {
+                    if (m_TextRange.start < 0)
+                        throw new NotImplementedException("Glyph.textRange is only implemented for the Advanced text generator.");
+                    return m_TextRange;
+                }
+            }
+
+            internal Glyph(NativeSlice<Vertex> vertices, int line, string linkID, GlyphKind kind, RangeInt textRange)
             {
                 this.vertices = vertices;
                 this.line = line;
                 this.linkID = linkID;
                 this.kind = kind;
+                m_TextRange = textRange;
             }
         }
 
@@ -180,7 +198,7 @@ namespace UnityEngine.UIElements
                         continue;
 
                     var slice = m_Vertices[ei.materialReferenceIndex].Slice(ei.vertexIndex, 4);
-                    Current = new Glyph(slice, ei.lineNumber, null, GlyphKind.Character);
+                    Current = new Glyph(slice, ei.lineNumber, null, GlyphKind.Character, new RangeInt(-1, 0));
                     return true;
                 }
 
@@ -209,7 +227,8 @@ namespace UnityEngine.UIElements
                         continue;
 
                     string linkID = ResolveLinkID(handle, info.linkID);
-                    Current = new Glyph(slice, info.lineIndex, linkID, (GlyphKind)info.kind);
+                    var textRange = new RangeInt(info.textRangeStart, info.textRangeLength);
+                    Current = new Glyph(slice, info.lineIndex, linkID, (GlyphKind)info.kind, textRange);
                     return true;
                 }
 

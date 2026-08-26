@@ -1161,6 +1161,7 @@ namespace Unity.Hierarchy.Editor
             SearchableEditorWindow[] windows;
             if ((windows = Resources.FindObjectsOfTypeAll<SearchableEditorWindow>()) != null && windows.Length > 0)
             {
+                var searching = !string.IsNullOrEmpty(query);
                 if (!UnityEditor.SearchService.SceneSearch.HasEngineOverride())
                 {
                     var queryDesc = m_HierarchyView.ViewModel.QueryParser.ParseQuery(query);
@@ -1170,6 +1171,8 @@ namespace Unity.Hierarchy.Editor
                 {
                     if (sw.m_HierarchyType != HierarchyType.Assets)
                     {
+                        if (sw is SceneView sceneView)
+                            sceneView.SetSceneViewFilteringForSearch(searching);
                         sw.SetSearchFilter(query, SearchMode.All, false, true);
                     }
                 }

@@ -80,6 +80,10 @@ namespace UnityEngine.UIElements
                 // We must set the animator even if we set the values directly afterwards, so that it is treated the same way in other callbacks.
                 Animate(m_OffsetItem, m_SelectionHeight);
 
+                // Pin the animator's start to its target so it doesn't animate up from the stale (0) resolved padding.
+                if (m_OffsetItem.animator != null)
+                    m_OffsetItem.animator.from = m_OffsetItem.animator.to;
+
                 m_OffsetItem.rootElement.style.paddingTop = m_SelectionHeight;
                 if (targetView.virtualizationMethod == CollectionVirtualizationMethod.FixedHeight)
                     m_OffsetItem.rootElement.style.height = targetView.fixedItemHeight + m_SelectionHeight;

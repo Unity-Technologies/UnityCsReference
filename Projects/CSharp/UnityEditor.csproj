@@ -8389,6 +8389,9 @@
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\HashUtils.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\HashUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\PackageUtils.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\PackageUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\PlatformUtils.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Common\Utils\PlatformUtils.cs</Link>
     </Compile>
@@ -8646,6 +8649,9 @@
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Editors\SetupEditorTagsNode.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Editors\SetupEditorTagsNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Editors\ValidateMainEditorSettingsNode.cs">
+      <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Editors\ValidateMainEditorSettingsNode.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Local\Adb\AdbBridgeHelper.cs">
       <Link>Modules\MultiplayerEditor\Managed\MultiplayerPlayMode\Scenarios\Nodes\Local\Adb\AdbBridgeHelper.cs</Link>

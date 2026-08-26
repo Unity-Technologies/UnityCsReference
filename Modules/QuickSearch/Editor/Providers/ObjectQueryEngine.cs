@@ -616,10 +616,21 @@ namespace UnityEditor.Search.Providers
         {
             // Note: This parser is used by ref= and compares the raw ulong entity Id (what we actually save in the GOD).
 
-            // Utils.TryParse handles both <index>:<version> and ulong entity id.
-            if (Utils.TryParse(filterValue, out EntityId entityId))
-                return new ParseResult<ulong>(true, EntityId.ToULong(entityId));
-            return ParseResult<ulong>.none;
+            // Utils.TryParse handles <index>:<version> and ulong entity id.
+            if (!Utils.TryParse(filterValue, out EntityId entityId))
+            {
+                // The above parse can fail if the filterValue is appended with an asset path (as a hint for UI as noted in SearchableEditorWindow).
+                // Assuming filterValue is of <index>[:<version>]:<path> form, reparse the leading <index>[:<version>] since the path itself can contain colons.
+                var firstColon = filterValue.IndexOf(':');
+                var secondColon = firstColon < 0 ? -1 : filterValue.IndexOf(':', firstColon + 1);
+                if (secondColon < 0 || !Utils.TryParse(filterValue.Substring(0, secondColon), out entityId))
+                {
+                    if (firstColon <= 0 || !Utils.TryParse(filterValue.Substring(0, firstColon), out entityId))
+                        return ParseResult<ulong>.none;
+                }
+            }
+
+            return new ParseResult<ulong>(true, EntityId.ToULong(entityId));
         }
 
         static ParseResult<ulong> DefaultRefTypeParser(string filterValue)

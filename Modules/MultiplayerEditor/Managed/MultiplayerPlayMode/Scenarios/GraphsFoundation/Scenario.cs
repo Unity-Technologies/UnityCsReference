@@ -78,7 +78,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 if (instance.IsFreeRunMode())
                     continue;
-                
+
                 if (instance.StatusData.OverallStatus.State is not ExecutionState.Failed)
                 {
                     instance.Reset();
@@ -300,6 +300,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             if (cancellationToken.IsCancellationRequested)
                 ResetAfterCancellation();
+            else if (!validationSuccess)
+            {
+                // Validation runs before anything is deployed, so a failed run started nothing and has no result worth showing.
+                // The dialog already reported why; leaving instances in their post-run states would strand them as Failed or mid-run in the UI.
+                Reset();
+            }
 
             // This will make sure that the status will be updated after the last ExecutionStage is finished
             // even in the case where the scenario has no nodes.

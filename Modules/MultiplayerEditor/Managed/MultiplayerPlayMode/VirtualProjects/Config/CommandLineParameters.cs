@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using UnityEngine.Rendering;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
@@ -90,6 +91,22 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public static string BuildProjectPathArgument(string path)
             => $"{k_ProjectPath} \"{path}\"";
+
+        // A clone must render through the same graphics API as the main editor. Importers whose
+        // dependencies include graphics device capabilities (for example .urtshader) otherwise hash
+        // differently in the clone, which makes up-to-date assets look out of date. The clone's asset
+        // database is read only, so it cannot reimport them and asserts instead. Returns an empty
+        // string for devices with no force argument, leaving the clone to pick its own API as before.
+        public static string BuildForceGraphicsApiArgument(GraphicsDeviceType deviceType)
+            => deviceType switch
+            {
+                GraphicsDeviceType.Direct3D11 => "-force-d3d11",
+                GraphicsDeviceType.Direct3D12 => "-force-d3d12",
+                GraphicsDeviceType.Vulkan => "-force-vulkan",
+                GraphicsDeviceType.Metal => "-force-metal",
+                GraphicsDeviceType.OpenGLCore => "-force-glcore",
+                _ => string.Empty
+            };
 
         public static string BuildEditorModeArgument(string editorModeName)
             => $"{k_EditorMode} {editorModeName}";

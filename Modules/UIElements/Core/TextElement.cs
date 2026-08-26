@@ -142,6 +142,38 @@ namespace UnityEngine.UIElements
         /// implement custom per‑glyph effects.
         /// </summary>
         public Action<GlyphsEnumerable> PostProcessTextVertices { get; set; }
+
+        /// <summary>
+        /// The text as it is laid out, after rich text tags are parsed out and text
+        /// transforms are applied. <see cref="Glyph.textRange"/> indexes into this string.
+        /// </summary>
+        /// <remarks>
+        /// The value depends on resolved styles, so it is only available once the element
+        /// is attached to a panel and its styles have been resolved (after the first panel
+        /// update following attachment); throws <see cref="InvalidOperationException"/> before that.
+        /// Style changes are reflected on the next panel update, while text changes are reflected immediately.
+        /// </remarks>
+        public string parsedText
+        {
+            get
+            {
+                if (panel == null || !styleInitialized)
+                    throw new InvalidOperationException("TextElement.parsedText requires the element to be attached to a panel with resolved styles. It becomes available after the first panel update following attachment.");
+
+                if (computedStyle.unityTextGenerator != TextGeneratorType.Advanced)
+                    throw new NotImplementedException("TextElement.parsedText is only implemented for the Advanced text generator.");
+
+                // Empty input fields shape a synthetic zero-width space (see
+                // EnsureNonEmptyBufferForInputField); don't leak it as content.
+                if (string.IsNullOrEmpty(text) && !showPlaceholderText)
+                    return string.Empty;
+
+                uitkTextHandle.ShapeText();
+                var tgi = uitkTextHandle.textGenerationInfo;
+                return tgi != IntPtr.Zero ? TextGenerationInfo.GetParsedText(tgi) : string.Empty;
+            }
+        }
+
         internal UITKTextHandle uitkTextHandle { get; set; }
 
         // From SelectingManipulator.HandleEventBubbleUp, EditingManipulator.HandleEventBubbleUp

@@ -139,6 +139,12 @@ namespace UnityEditor.IMGUI.Controls
             return item is HelpBoxDropdownItem;
         }
 
+        // Separators and help boxes are decorative: they can't be hovered, selected, or clicked.
+        internal bool IsSelectable()
+        {
+            return !IsSeparator() && !IsHelpBox(this);
+        }
+        
         public override string ToString()
         {
             return m_Name;

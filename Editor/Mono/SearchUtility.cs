@@ -160,16 +160,17 @@ namespace UnityEditor
                 if (secondColon >= 0)
                 {
                     var refString = "";
+                    var refStart = searchString[firstColon + 1] == '"' ? firstColon + 2 : firstColon + 1;
                     var thirdColon = searchString.IndexOf(':', secondColon + 1);
                     if (thirdColon != -1)
                     {
-                        refString = searchString.Substring(firstColon + 1, thirdColon - firstColon - 1);
+                        refString = searchString.Substring(refStart, thirdColon - refStart);
                     }
                     else
                     {
                         // Instead of resolving a path passed-in pathname to an instance-id, use a supplied one.
                         // The pathname is effectively just a UI hint of whose references we're filtering out.
-                        refString = searchString.Substring(firstColon + 1, secondColon - firstColon - 1);
+                        refString = searchString.Substring(refStart, secondColon - refStart);
                     }
                     ClipboardParser.ParseEntityId(refString, out entityId);
                 }

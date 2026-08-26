@@ -50,6 +50,9 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal class GraphView : RootView, IDragSource, IHasItemLibrary, IHasContextualMenuItems
     {
+        /// <summary>
+        /// The default border, in pixels, used when framing the graph view.
+        /// </summary>
         public const int frameBorder = 30;
 
         /// <summary>

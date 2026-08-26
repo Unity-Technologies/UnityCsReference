@@ -2061,11 +2061,17 @@ namespace UnityEditor
         bool m_ForceSceneViewFiltering;
         bool m_ForceSceneViewFilteringForLodGroupEditing;
         bool m_ForceSceneViewFilteringForStageHandling;
+        bool m_ForceSceneViewFilteringForSearch;
         double m_lastRenderedTime;
 
         internal void SetSceneViewFiltering(bool enable)
         {
             m_ForceSceneViewFiltering = enable;
+        }
+
+        internal void SetSceneViewFilteringForSearch(bool enable)
+        {
+            m_ForceSceneViewFilteringForSearch = enable;
         }
 
         internal void SetSceneViewFilteringForLODGroups(bool enable)
@@ -2082,7 +2088,9 @@ namespace UnityEditor
 
         bool UseSceneFiltering()
         {
-            return (!string.IsNullOrEmpty(m_SearchFilter) && s_PreferenceEnableFilteringWhileSearching) || forceSceneViewFilteringForLodGroupEditing || m_ForceSceneViewFilteringForStageHandling || m_ForceSceneViewFiltering;
+            return ((!string.IsNullOrEmpty(m_SearchFilter) || m_ForceSceneViewFilteringForSearch) &&
+                    s_PreferenceEnableFilteringWhileSearching) || forceSceneViewFilteringForLodGroupEditing ||
+                    m_ForceSceneViewFilteringForStageHandling || m_ForceSceneViewFiltering;
         }
 
         internal bool SceneViewIsRenderingHDR()

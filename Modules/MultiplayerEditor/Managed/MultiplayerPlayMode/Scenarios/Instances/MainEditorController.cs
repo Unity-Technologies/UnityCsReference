@@ -29,6 +29,9 @@ class MainEditorController : EditorController<MainEditorController.InstanceSetti
 
     protected internal override void SetupExecutionGraph(ExecutionGraphBuilder graphBuilder)
     {
+        var validateSettingsNode = graphBuilder.AddNode<ValidateMainEditorSettingsNode>(ExecutionStage.Validate);
+        graphBuilder.ConnectConstant(validateSettingsNode.Settings, Settings);
+
         if (EditorMultiplayerManager.enableMultiplayerRoles)
         {
             var roleNode = graphBuilder.AddNode<SetupEditorMultiplayerRoleNode>(ExecutionStage.Deploy);

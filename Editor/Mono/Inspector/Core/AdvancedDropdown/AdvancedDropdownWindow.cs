@@ -422,7 +422,7 @@ namespace UnityEditor.IMGUI.Controls
                 if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
                 {
                     var selected = m_State.GetSelectedChild(m_CurrentlyRenderedTree);
-                    if (selected != null)
+                    if (selected != null && selected.IsSelectable())
                     {
                         if (selected.hasChildren)
                         {
@@ -539,6 +539,10 @@ namespace UnityEditor.IMGUI.Controls
 
                 // Skip input handling for the tree used for animation
                 if (item != m_CurrentlyRenderedTree)
+                    continue;
+
+                // Decorative items (separators, help boxes) are not interactive.
+                if (!child.IsSelectable())
                     continue;
 
                 // Select the element the mouse cursor is over.
