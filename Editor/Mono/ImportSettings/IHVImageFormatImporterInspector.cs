@@ -44,6 +44,8 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_IsReadable    = serializedObject.FindProperty("m_IsReadable");
             m_sRGBTexture   = serializedObject.FindProperty("m_sRGBTexture");

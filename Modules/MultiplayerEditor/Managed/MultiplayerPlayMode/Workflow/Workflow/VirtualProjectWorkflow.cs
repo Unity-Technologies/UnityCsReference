@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -45,6 +46,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         public static readonly string k_MppmPackageJson = "Library/VP/MPPMVersion.json";
 
+        internal const string k_ReactivateAfterPackageChangeKey = "vp_ReactivatePlayersAfterPackageChange";
+
         private static string s_EditorVersion;
         private static string s_EditorChangeset;
         private static string s_PackageVersion;
@@ -62,13 +65,80 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
                 return;
 
+            // Deactivate clones while the registration changes, and bring them back after.
+            Events.registeringPackages += _ => DeactivateClonesForPackageChange();
+
             Events.registeredPackages += args =>
             {
                 // If users decide to upgrade the package with clones open this could cause unexpected behaviour
                 // We however are unable to warn them about this as when this event occurs MultiplayerPlaymode
                 // has not been initiated yet so we cannot see any open clones until after the deletion of the folder occurs
                 ValidateVersionsChange();
+                ReactivateClonesAfterPackageChange();
             };
+        }
+
+        internal static void DeactivateClonesForPackageChange()
+        {
+            if (VirtualProjectsEditor.IsClone || MultiplayerPlaymode.Players == null)
+                return;
+
+            var reactivate = new List<string>();
+            for (var i = 0; i < MultiplayerPlaymode.Players.Length; i++)
+            {
+                var player = MultiplayerPlaymode.Players[i];
+                if (player.Type != PlayerType.Clone)
+                    continue;
+
+                if (player.PlayerState != PlayerState.Launched && player.PlayerState != PlayerState.Launching)
+                    continue;
+
+                if (!player.Deactivate(out var deactivationError))
+                {
+                    MppmLog.Warning($"Could not close {player.Name} for a package change: {deactivationError}");
+                    continue;
+                }
+
+                reactivate.Add(i.ToString());
+                MppmLog.Debug($"Closing {player.Name} for a package change; it will be reopened afterwards");
+            }
+
+            SessionState.SetString(k_ReactivateAfterPackageChangeKey, string.Join(",", reactivate));
+        }
+
+        internal static void ReactivateClonesAfterPackageChange()
+        {
+            if (VirtualProjectsEditor.IsClone || MultiplayerPlaymode.Players == null)
+                return;
+
+            var reactivate = SessionState.GetString(k_ReactivateAfterPackageChangeKey, string.Empty);
+            if (string.IsNullOrEmpty(reactivate))
+                return;
+
+            SessionState.EraseString(k_ReactivateAfterPackageChangeKey);
+
+            // If MPPM package removed, then leave the clones closed then
+            if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
+            {
+                MppmLog.Debug("Not reopening virtual players: the package change disabled Multiplayer Play Mode");
+                return;
+            }
+
+            foreach (var index in reactivate.Split(','))
+            {
+                if (!int.TryParse(index, out var playerIndex) || playerIndex >= MultiplayerPlaymode.Players.Length)
+                    continue;
+
+                var player = MultiplayerPlaymode.Players[playerIndex];
+                if (player.Activate(out var activationError))
+                {
+                    MppmLog.Debug($"Reopened {player.Name} after a package change");
+                }
+                else
+                {
+                    MppmLog.Warning($"Could not reopen {player.Name} after a package change: {activationError}. Activate it again from the Play Mode Scenarios.");
+                }
+            }
         }
 
 

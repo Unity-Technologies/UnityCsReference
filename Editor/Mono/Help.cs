@@ -41,6 +41,7 @@ namespace UnityEditor
         internal static string k_AlphaReleaseNotesUrlBase = "https://unity3d.com/unity/alpha/";
         internal static string k_BetaReleaseNotesUrlBase = "https://unity3d.com/unity/beta/";
         internal static string k_ReleaseNotesUrlBase = "https://unity3d.com/unity/whats-new/";
+        internal static string k_ThirdPartyBookMark = "#third-party-notices";
 
         internal enum DocRedirectionServer
         {
@@ -379,6 +380,13 @@ namespace UnityEditor
         {
             var releaseNotesUrl = GetReleaseNotesUrl(InternalEditorUtility.GetUnityVersionDigits(), InternalEditorUtility.GetUnityDisplayVersion());
             Application.OpenURL(releaseNotesUrl);
+        }
+
+        [UnityEngine.Scripting.RequiredByNativeCode]
+        internal static void OpenThirdPartyNotices()
+        {
+            var thirdPartyNoticesUrl = GetReleaseNotesUrl(InternalEditorUtility.GetUnityVersionDigits(), InternalEditorUtility.GetUnityDisplayVersion()) + k_ThirdPartyBookMark;
+            Application.OpenURL(thirdPartyNoticesUrl);
         }
 
         internal static string GetReleaseNotesUrl(string digitsOnlyVersion, string displayVersion)

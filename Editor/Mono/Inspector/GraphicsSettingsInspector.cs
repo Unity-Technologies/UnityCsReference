@@ -122,8 +122,8 @@ namespace UnityEditor
             UpdateBuildProfileGraphicsSettingsOverrideWarning();
             OnActiveProfileGraphicsSettingsChanged += UpdateBuildProfileGraphicsSettingsOverrideWarning;
 
-            BindEnumFieldWithFadeGroup(m_CurrentRoot, "Lightmap", ShaderUtil.CalculateLightmapStrippingFromCurrentScene);
-            BindEnumFieldWithFadeGroup(m_CurrentRoot, "Fog", ShaderUtil.CalculateFogStrippingFromCurrentScene);
+            BindEnumFieldWithFadeGroup(m_CurrentRoot, "Lightmap", CalculateLightmapStrippingFromCurrentScene);
+            BindEnumFieldWithFadeGroup(m_CurrentRoot, "Fog", CalculateFogStrippingFromCurrentScene);
             BindEnumFieldToLightProbe(m_CurrentRoot);
 
             BindShaderPreload(m_CurrentRoot);
@@ -154,6 +154,18 @@ namespace UnityEditor
             m_ScrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(OnMainScrollViewGeometryChanged);
 
             m_CurrentRoot.Bind(serializedObject);
+        }
+
+        void CalculateLightmapStrippingFromCurrentScene()
+        {
+            Undo.RegisterCompleteObjectUndo(target, L10n.Tr("Calculate Lightmap Stripping From Current Scene"));
+            ShaderUtil.CalculateLightmapStrippingFromCurrentScene();
+        }
+
+        void CalculateFogStrippingFromCurrentScene()
+        {
+            Undo.RegisterCompleteObjectUndo(target, L10n.Tr("Calculate Fog Stripping From Current Scene"));
+            ShaderUtil.CalculateFogStrippingFromCurrentScene();
         }
 
         void BindShaderPreload(VisualElement root)

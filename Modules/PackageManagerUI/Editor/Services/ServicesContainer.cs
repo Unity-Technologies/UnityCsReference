@@ -165,6 +165,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var operationDispatcher = Register(new PackageOperationDispatcher(assetStorePackageInstaller, assetStoreDownloadManager, upmClient, ioProxy, selectionProxy, assetDatabaseProxy));
 
             Register(new EditorAnalyticsProxy());
+            Register(new AnalyticsScrubberProxy());
             Register(new LicenceProxy());
             Register(new ExtensionManager(packageManagerPrefs));
             Register(new PackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy, packageCreator, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, fetchStatusTracker, upmRegistryClient, ioProxy, applicationProxy));

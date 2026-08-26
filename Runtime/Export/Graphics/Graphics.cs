@@ -15,7 +15,7 @@ using uei = UnityEngine.Internal;
 namespace UnityEngine
 {
     [RequiredByNativeCode]
-    public struct Resolution
+    public struct Resolution : IEquatable<Resolution>
     {
         // Keep in sync with ScreenManager::Resolution
         private int m_Width;
@@ -29,6 +29,33 @@ namespace UnityEngine
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Resolution.refreshRate is obsolete. Use refreshRateRatio instead.", false)]
         public int refreshRate { get { return (int)Math.Round(m_RefreshRate.value); } set { m_RefreshRate.numerator = (uint)value; m_RefreshRate.denominator = 1; } }
+
+        public bool Equals(Resolution other)
+        {
+            return m_Width == other.m_Width &&
+                m_Height == other.m_Height &&
+                m_RefreshRate.Equals(other.m_RefreshRate);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Resolution other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(m_Width, m_Height, m_RefreshRate);
+        }
+
+        public static bool operator==(Resolution lhs, Resolution rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator!=(Resolution lhs, Resolution rhs)
+        {
+            return !lhs.Equals(rhs);
+        }
 
         public override string ToString()
         {

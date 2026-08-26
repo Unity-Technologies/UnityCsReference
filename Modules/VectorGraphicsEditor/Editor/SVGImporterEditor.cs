@@ -220,6 +220,8 @@ namespace Unity.VectorGraphics.Editor
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_SVGType = serializedObject.FindProperty("m_SvgType");
             m_TexturedSpriteMeshType = serializedObject.FindProperty("m_TexturedSpriteMeshType");

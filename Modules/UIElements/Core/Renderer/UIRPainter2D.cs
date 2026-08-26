@@ -388,9 +388,35 @@ namespace UnityEngine.UIElements
         /// <param name="pattern">The dash pattern values to set.</param>
         public void SetDashPattern(ReadOnlySpan<float> pattern)
         {
+            if (DashPatternIsInvalid(pattern))
+                pattern = ReadOnlySpan<float>.Empty; // negative or zero-sum => solid (SVG 'invalid'/'none')
             NoAllocHelpers.EnsureListElemCount(m_CachedDashPattern, pattern.Length);
             pattern.CopyTo(NoAllocHelpers.CreateSpan(m_CachedDashPattern));
             UIPainter2D.SetDashPattern(m_Handle, pattern);
+        }
+
+        // Mirrors the native UIPainter2D::k_Epsilon (UIPainter2D.bindings.cpp) so the managed and native
+        // layers agree on what counts as a zero-length dash entry.
+        const float k_DashPatternEpsilon = 0.001f;
+
+        // SVG2/CSS: a negative value makes the dasharray invalid and an all-zero (zero-sum) array is
+        // 'none' - both render solid. Individual zero-length dashes/gaps in an otherwise non-zero array
+        // are legal and rendered directly by the native stroker, so they pass through unchanged.
+        static bool DashPatternIsInvalid(ReadOnlySpan<float> pattern)
+        {
+            // A single-element pattern never dashes (the native stroker only dashes when size > 1),
+            // so there is nothing to validate.
+            if (pattern.Length < 2)
+                return false;
+
+            float sum = 0f;
+            for (int i = 0; i < pattern.Length; ++i)
+            {
+                if (pattern[i] < 0f)
+                    return true;
+                sum += pattern[i];
+            }
+            return sum < k_DashPatternEpsilon;
         }
 
         /// <summary>
@@ -426,11 +452,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void SetDashPattern(float dash, float gap)
         {
-            NoAllocHelpers.EnsureListElemCount(m_CachedDashPattern, 2);
-            var span = NoAllocHelpers.CreateSpan(m_CachedDashPattern);
-            span[0] = dash;
-            span[1] = gap;
-            UIPainter2D.SetDashGapPattern(m_Handle, dash, gap);
+            // Route through the span overload so the same spec validation applies (a negative value
+            // or an all-zero pattern renders solid instead of reaching the native negative assert).
+            ReadOnlySpan<float> pattern = stackalloc float[] { dash, gap };
+            SetDashPattern(pattern);
         }
 
         /// <summary>

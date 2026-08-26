@@ -48,6 +48,7 @@ namespace UnityEditor.VersionControl
             public bool enablesVersioningFolders;
             public bool enablesChangelists;
             public bool enablesLocking;
+            public bool enablesRevertUnchanged;
         }
 
         private static extern Traits activeTraits
@@ -74,6 +75,11 @@ namespace UnityEditor.VersionControl
         public static bool hasLockingSupport
         {
             get { return activeTraits.enablesLocking; }
+        }
+
+        public static bool hasRevertUnchangedSupport
+        {
+            get { return activeTraits.enablesRevertUnchanged; }
         }
 
         public static bool isVersioningFolders

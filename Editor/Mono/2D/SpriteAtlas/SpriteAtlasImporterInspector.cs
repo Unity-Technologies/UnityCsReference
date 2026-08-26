@@ -317,6 +317,8 @@ namespace UnityEditor.U2D
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_FilterMode = serializedObject.FindProperty("m_TextureSettings.filterMode");
             m_AnisoLevel = serializedObject.FindProperty("m_TextureSettings.anisoLevel");

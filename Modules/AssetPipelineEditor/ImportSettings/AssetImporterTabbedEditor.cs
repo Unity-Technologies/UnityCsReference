@@ -24,6 +24,8 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed; do not enable tabs on a dead target
+                return;
 
             foreach (var tab in m_Tabs)
             {

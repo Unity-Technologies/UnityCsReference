@@ -109,6 +109,8 @@ namespace UnityEditor.UIElements.StyleSheets
         public override void OnEnable()
         {
             base.OnEnable();
+            if (!AreImporterTargetsValid()) // asset gone: base already logged and bailed
+                return;
 
             m_DisableValidation = serializedObject.FindProperty("disableValidation");
             m_UnsupportedSelectorAction = serializedObject.FindProperty("unsupportedSelectorAction");

@@ -27,10 +27,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Data m_Data;
         private PackageManagerOperationErrorAnalytics(string operationType, UIError error)
         {
+            var analyticsScrubber = ServicesContainer.instance.Resolve<IAnalyticsScrubberProxy>();
             m_Data = new Data
             {
                 operation_type = operationType,
-                message = error.message,
+                message = analyticsScrubber.ScrubUserPaths(error.message),
                 error_type = error.errorCode.ToString(),
                 status_code = error.operationErrorCode,
                 attributes = error.attribute == UIError.Attribute.None ? Array.Empty<string>() : error.attribute.ToString().Split(','),

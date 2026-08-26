@@ -46,6 +46,12 @@ namespace UnityEditor.SpeedTree.Importer
 
         public override void OnEnable()
         {
+            if (!AreImporterTargetsValid())
+            {
+                base.OnEnable(); // lets the base mark the editor enabled/inert (OnDisable symmetry)
+                return;
+            }
+
             m_STImporter = target as SpeedTree9Importer;
 
             if (tabs == null)
@@ -67,9 +73,14 @@ namespace UnityEditor.SpeedTree.Importer
 
         public override void OnDisable()
         {
-            foreach (var tab in tabs)
+            // The tabs are only built by OnEnable when the importer targets are still valid. base.OnDisable
+            // must run either way: it is what unsubscribes this editor from the static header GUI events.
+            if (tabs != null)
             {
-                tab.OnDisable();
+                foreach (var tab in tabs)
+                {
+                    tab.OnDisable();
+                }
             }
             base.OnDisable();
         }
