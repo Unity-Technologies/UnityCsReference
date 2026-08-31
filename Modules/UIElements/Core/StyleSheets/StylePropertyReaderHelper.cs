@@ -532,13 +532,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     }
                 }
             }
-            else
+            else if (valueType == StyleValueType.Enum && getCursorIdFunc != null)
             {
-                // Default cursor
-                if (getCursorIdFunc != null)
-                {
-                    cursor.defaultCursorId = getCursorIdFunc(val1.sheet, val1.handle);
-                }
+                cursor.defaultCursorId = getCursorIdFunc(val1.sheet, val1.handle);
             }
 
             return cursor;

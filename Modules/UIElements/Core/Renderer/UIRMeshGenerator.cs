@@ -694,11 +694,10 @@ namespace UnityEngine.UIElements.UIR
             if (s_TextLib != null)
                 return;
 
+            // A missing ICU data asset is not fatal: the native side falls back
+            // to minimal text segmentation (basic line breaking rules only).
             var icu = GetICUAssetForMeshGeneration(ve);
-            if (icu == null)
-                return;
-
-            s_TextLib = new TextLib(icu.bytes);
+            s_TextLib = new TextLib(icu != null ? icu.bytes : Array.Empty<byte>());
         }
 
         void DrawTextAdvanced(string text, Vector2 pos, float fontSize, Color color, FontAsset font)
@@ -802,19 +801,21 @@ namespace UnityEngine.UIElements.UIR
 
                     m_MeshGenerationContext.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
+                    UIRUtility.ConvertSlicesToSpans(vertices, indices, out var vertexSpan, out var indexSpan);
+
                     for (int vDst = 0, vSrc = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
                     {
-                        vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 0], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
-                        vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 1], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
-                        vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 2], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
-                        vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 3], pos, inverseScale, isDynamicColor: false, isColorGlyph: false, isTextCore: true);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref meshInfo.vertexData[vDst + 0], pos, inverseScale, isTextCore: true);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref meshInfo.vertexData[vDst + 1], pos, inverseScale, isTextCore: true);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref meshInfo.vertexData[vDst + 2], pos, inverseScale, isTextCore: true);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref meshInfo.vertexData[vDst + 3], pos, inverseScale, isTextCore: true);
 
-                        indices[j + 0] = (ushort)(vDst + 0);
-                        indices[j + 1] = (ushort)(vDst + 1);
-                        indices[j + 2] = (ushort)(vDst + 2);
-                        indices[j + 3] = (ushort)(vDst + 2);
-                        indices[j + 4] = (ushort)(vDst + 3);
-                        indices[j + 5] = (ushort)(vDst + 0);
+                        indexSpan[j + 0] = (ushort)(vDst + 0);
+                        indexSpan[j + 1] = (ushort)(vDst + 1);
+                        indexSpan[j + 2] = (ushort)(vDst + 2);
+                        indexSpan[j + 3] = (ushort)(vDst + 2);
+                        indexSpan[j + 4] = (ushort)(vDst + 3);
+                        indexSpan[j + 5] = (ushort)(vDst + 0);
                     }
 
                     m_VerticesArray.Add(vertices);
@@ -855,6 +856,9 @@ namespace UnityEngine.UIElements.UIR
                     sa = textAsset as SpriteAsset;
                 }
 
+                bool isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
+                Span<NativeTextElementInfo> textElementInfosSpan = nativeMeshInfo.textElementInfos;
+
                 while (remainingVertexCount > 0)
                 {
                     int vertexCount = Mathf.Min(remainingVertexCount, verticesPerAlloc);
@@ -883,21 +887,22 @@ namespace UnityEngine.UIElements.UIR
 
                     m_MeshGenerationContext.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
+                    UIRUtility.ConvertSlicesToSpans(vertices, indices, out var vertexSpan, out var indexSpan);
+
                     for (int vDst = 0, vSrc = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
                     {
-                        Span<NativeTextElementInfo> textElementInfosSpan = nativeMeshInfo.textElementInfos;
-                        var isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
-                        vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].bottomLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
-                        vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].topLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
-                        vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].topRight, pos, inverseScale, isDynamicColor: false, isColorFont);
-                        vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref textElementInfosSpan[vSrc].bottomRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+                        ref var tei = ref textElementInfosSpan[vSrc];
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref tei.bottomLeft, pos, inverseScale, isColorGlyph: isColorFont);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref tei.topLeft, pos, inverseScale, isColorGlyph: isColorFont);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref tei.topRight, pos, inverseScale, isColorGlyph: isColorFont);
+                        ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref tei.bottomRight, pos, inverseScale, isColorGlyph: isColorFont);
 
-                        indices[j + 0] = (ushort)(vDst + 0);
-                        indices[j + 1] = (ushort)(vDst + 1);
-                        indices[j + 2] = (ushort)(vDst + 2);
-                        indices[j + 3] = (ushort)(vDst + 2);
-                        indices[j + 4] = (ushort)(vDst + 3);
-                        indices[j + 5] = (ushort)(vDst + 0);
+                        indexSpan[j + 0] = (ushort)(vDst + 0);
+                        indexSpan[j + 1] = (ushort)(vDst + 1);
+                        indexSpan[j + 2] = (ushort)(vDst + 2);
+                        indexSpan[j + 3] = (ushort)(vDst + 2);
+                        indexSpan[j + 4] = (ushort)(vDst + 3);
+                        indexSpan[j + 5] = (ushort)(vDst + 0);
                     }
 
                     m_VerticesArray.Add(vertices);
@@ -988,7 +993,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vertex ConvertTextVertexToUIRVertex(ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false, bool isTextCore = false)
+        internal static void ConvertTextVertexToUIRVertex(out Vertex dst, ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false, bool isTextCore = false)
         {
             float x = vertex.uv2.y;
 
@@ -996,11 +1001,12 @@ namespace UnityEngine.UIElements.UIR
             // -3 = -1, -1 = -0.33, 0 = 0, 1 = 1...
             // Shader extraDilate expects a normalized 0..1 value (see UnityUIE.cginc).
             float dilate;
-            if(isTextCore)
+            if (isTextCore)
                 dilate = x < 0.0f ? 1.0f : 0.0f;
             else
                 dilate = x < 0.0f ? x / 3.0f : x;
-            float normalizedDilate = Mathf.Clamp01((dilate + 1.0f) / 4.0f);
+
+            float normalizedDilate = MathUtils.Clamp01((dilate + 1.0f) * 0.25f);
 
             var tint = vertex.color;
             if (isColorGlyph)
@@ -1008,14 +1014,12 @@ namespace UnityEngine.UIElements.UIR
             if (isDynamicColor)
                 tint = new Color32(255, 255, 255, 255);
 
-            return new Vertex
-            {
-                position = new Vector3(vertex.position.x * inverseScale + posOffset.x, vertex.position.y * inverseScale + posOffset.y),
-                uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
-                tint = tint,
-                flags = isDynamicColor ? VertexFlags.DynamicColorEnabledText : VertexFlags.DynamicColorDisabled,
-                circle = new Vector4(normalizedDilate, 0, 0, 0)
-            };
+            dst = default;
+            dst.position = new Vector3(vertex.position.x * inverseScale + posOffset.x, vertex.position.y * inverseScale + posOffset.y);
+            dst.uv = new Vector2(vertex.uv0.x, vertex.uv0.y);
+            dst.tint = tint;
+            dst.flags = isDynamicColor ? VertexFlags.DynamicColorEnabledText : VertexFlags.DynamicColorDisabled;
+            dst.circle = new Vector4(normalizedDilate, 0, 0, 0);
         }
 
         void MakeText(Texture texture, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, bool isSdf, float sdfScale, float sharpness, bool multiChannel, bool usesPerGlyphTextCoreSettings = false)
@@ -1106,13 +1110,15 @@ namespace UnityEngine.UIElements.UIR
                 var matrix = Matrix4x4.TRS(offset, Quaternion.AngleAxis(rotationAngle.ToDegrees(), Vector3.forward), new Vector3(scale.x, scale.y, 1.0f));
                 bool flipWinding = (scale.x < 0.0f) ^ (scale.y < 0.0f);
 
+                UIRUtility.ConvertSlicesToSpans(vertices, indices, out var vertexSpan, out var indexSpan);
+
                 int vertexCount = vectorImage.vertices.Length;
                 for (int i = 0; i < vertexCount; ++i)
                 {
                     var v = vectorImage.vertices[i];
                     var p = matrix.MultiplyPoint3x4(v.position);
                     p.z = Vertex.nearZ;
-                    vertices[i] = new Vertex {
+                    vertexSpan[i] = new Vertex {
                         position = p, tint = v.tint, uv = v.uv,
                         svgGradientIndex = (ushort)(v.settingIndex & 0xFFFFu),
                         flags = v.vertexFlags,
@@ -1127,9 +1133,9 @@ namespace UnityEngine.UIElements.UIR
                     var srcIndices = vectorImage.indices;
                     for (int i = 0; i < srcIndices.Length; i += 3)
                     {
-                        indices[i + 0] = srcIndices[i + 0];
-                        indices[i + 1] = srcIndices[i + 2];
-                        indices[i + 2] = srcIndices[i + 1];
+                        indexSpan[i + 0] = srcIndices[i + 0];
+                        indexSpan[i + 1] = srcIndices[i + 2];
+                        indexSpan[i + 2] = srcIndices[i + 1];
                     }
                 }
 
@@ -1729,7 +1735,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        static void AdjustSpriteWinding(Vector2[] vertices, UInt16[] indices, NativeSlice<UInt16> newIndices)
+        static void AdjustSpriteWinding(Vector2[] vertices, UInt16[] indices, Span<UInt16> newIndices)
         {
             for (int i = 0; i < indices.Length; i += 3)
             {
@@ -1941,9 +1947,12 @@ namespace UnityEngine.UIElements.UIR
                         // Make sure we offset the indices to correctly draw the new mesh.
                         ushort offset = (ushort)start;
                         start = indices.Length - freeIndices;
-                        for (int j = 0; j < meshData.indexCount; ++j)
+                        UIRUtility.ConvertSlicesToSpans(vertices, indices, out _, out var indexSpan);
+                        unsafe
                         {
-                            indices[start + j] = (ushort)(nativeIndices[j] + offset);
+                            var srcIndexSpan = new ReadOnlySpan<ushort>(nativeIndices.GetUnsafePtr(), meshData.indexCount);
+                            for (int j = 0; j < meshData.indexCount; ++j)
+                                indexSpan[start + j] = (ushort)(srcIndexSpan[j] + offset);
                         }
 
                         freeVertices -= meshData.vertexCount;
@@ -2006,7 +2015,9 @@ namespace UnityEngine.UIElements.UIR
                 var vertexCount = spriteVertices.Length;
                 allocator.AllocateTempMesh(vertexCount, spriteIndices.Length, out NativeSlice<Vertex> vertices, out NativeSlice<UInt16> indices);
 
-                AdjustSpriteWinding(spriteVertices, spriteIndices, indices);
+                UIRUtility.ConvertSlicesToSpans(vertices, indices, out var vertexSpan, out var indexSpan);
+
+                AdjustSpriteWinding(spriteVertices, spriteIndices, indexSpan);
 
                 var colorId = rectParams.colorId;
 
@@ -2027,7 +2038,7 @@ namespace UnityEngine.UIElements.UIR
                     v *= rectParams.rect.size;
                     v += rectParams.rect.position;
 
-                    vertices[i] = new Vertex
+                    vertexSpan[i] = new Vertex
                     {
                         position = new Vector3(v.x, v.y, Vertex.nearZ),
                         tint = color,

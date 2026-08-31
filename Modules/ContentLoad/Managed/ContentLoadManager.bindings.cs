@@ -130,9 +130,18 @@ namespace Unity.Loading
         /// Match every call with a corresponding call to <see cref="UnregisterContentDirectory"/> once all loadables and scenes
         /// from the directory are released.
         ///
+        /// Any local file system path works, and Unity provides no mechanism or convention for discovering content directories
+        /// on disk. The exception is content that ships with the Player, which you build into a subfolder of the
+        /// <c>StreamingAssets</c> folder and locate at runtime through <see cref="Application.streamingAssetsPath"/>. Refer to
+        /// [Include additional files in a build](xref:um-streaming-assets) for details.
+        ///
         /// In the Editor, registration is only supported in Play mode, where it lets you load and test built content the same way
         /// the runtime does. Outside of Play mode the content is already available through <see cref="UnityEditor.AssetDatabase"/>,
         /// <see cref="UnityEditor.LoadableObjectIdEditorUtility"/> and <see cref="UnityEditor.LoadableSceneIdEditorUtility"/>, so registration is unnecessary and throws <see cref="InvalidOperationException"/>.
+        ///
+        /// To load built content in Play mode, build it with type trees. Content built with
+        /// <see cref="UnityEditor.BuildContentOptions.DisableWriteTypeTree"/> can only be loaded by a runtime that matches the
+        /// build environment exactly, so the Editor cannot read it.
         /// </remarks>
         /// <param name="contentDirectoryPath">
         /// A local path pointing to a directory that contains the output from a call to

@@ -134,6 +134,9 @@ namespace UnityEditor.Build.Analysis
             SetupInspectorToggle();
             SetupTabs();
 
+            // Ctrl+Tab / Ctrl+Shift+Tab cycles the content tabs, from anywhere in the window.
+            m_TabHost.RegisterShortcuts(rootVisualElement);
+
             var splitterPos = EditorPrefs.GetFloat(k_SplitterKey, 100);
             m_SplitView.fixedPaneInitialDimension = splitterPos;
 

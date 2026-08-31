@@ -233,20 +233,6 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        static PostProcessingMargins GetReadMargins(PostProcessingPass effect, FilterFunction func)
-        {
-            if (effect.computeRequiredReadMarginsCallback != null)
-                return effect.computeRequiredReadMarginsCallback(func);
-            return effect.readMargins;
-        }
-
-        static PostProcessingMargins GetWriteMargins(PostProcessingPass effect, FilterFunction func)
-        {
-            if (effect.computeRequiredWriteMarginsCallback != null)
-                return effect.computeRequiredWriteMarginsCallback(func);
-            return effect.writeMargins;
-        }
-
         void UpdateDrawBounds_PostOrder(DrawOperation op)
         {
             Rect? bounds = null;
@@ -311,8 +297,8 @@ namespace UnityEngine.UIElements.UIR
                 if (parentOp?.type == DrawOperationType.Effect)
                 {
                     // Inflate for the parent read and write margins
-                    readMargins = GetReadMargins(parentOp.FilterPass, parentOp.filter);
-                    writeMargins = GetWriteMargins(parentOp.FilterPass, parentOp.filter);
+                    readMargins = FilterHelper.GetReadMargins(parentOp.FilterPass, parentOp.filter);
+                    writeMargins = FilterHelper.GetWriteMargins(parentOp.FilterPass, parentOp.filter);
                     var inflated = UIRUtility.InflateByMargins(UIRUtility.InflateByMargins(r, readMargins), writeMargins);
                     rectInt = UIRUtility.CastToRectInt(inflated);
 
@@ -486,7 +472,9 @@ namespace UnityEngine.UIElements.UIR
                         }
 
                         // Set up additional properties for compositor (UV rects, etc)
-                        s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
+                        // unity_uie_UVRect must match the UV domain the quad's UV0 actually spans (uvRect,
+                        // margin-adjusted), not the raw atlas block (srcUVRect, margin-inflated)
+                        s_UVRects[0] = new Vector4(uvRect.x, uvRect.y, uvRect.width, uvRect.height);
                         perPassBlock.SetVectorArray(FilterHelper.s_UVRectId, s_UVRects);
 
                         // In force-gamma rendering, the last filter pass outputs linear because the parent render tree expects texture reads to output linear.
@@ -537,32 +525,6 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        // Reserved name for the texture that fed the first pass of the current filter.
-        const string k_SourceInputName = "Source";
-
-        struct InputBindingIds
-        {
-            public int texId;
-            public int scaleOffsetId;
-            public int uvRectId;
-        }
-
-        static readonly Dictionary<string, InputBindingIds> s_InputBindingIds = new();
-
-        static InputBindingIds GetInputBindingIds(string name)
-        {
-            if (!s_InputBindingIds.TryGetValue(name, out var ids))
-            {
-                ids = new InputBindingIds {
-                    texId         = Shader.PropertyToID($"_{name}Tex"),
-                    scaleOffsetId = Shader.PropertyToID($"_{name}Tex_ST"),
-                    uvRectId      = Shader.PropertyToID($"_{name}Tex_UVRect"),
-                };
-                s_InputBindingIds[name] = ids;
-            }
-            return ids;
-        }
-
         void BindRequiredInput(MaterialPropertyBlock block, DrawOperation currentOp, RectInt drawRect, Rect uvRect)
         {
             string name = currentOp.FilterPass.requiredInputTextureName;
@@ -579,7 +541,7 @@ namespace UnityEngine.UIElements.UIR
             if (sourceOp.bounds.width <= 0 || sourceOp.bounds.height <= 0)
                 return;
 
-            BindMappedTexture(block, sourceOp, drawRect, uvRect, GetInputBindingIds(name));
+            BindMappedTexture(block, sourceOp, drawRect, uvRect, FilterHelper.GetInputBindingIds(name));
         }
 
         static DrawOperation ResolveInputOp(DrawOperation currentOp, string name)
@@ -588,7 +550,7 @@ namespace UnityEngine.UIElements.UIR
             // keeps us inside the current filter's pass chain.
             int groupId = currentOp.filterGroupId;
 
-            if (name == k_SourceInputName)
+            if (name == FilterHelper.k_SourceInputName)
             {
                 var op = currentOp;
                 while (op.firstChild != null && op.firstChild.filterGroupId == groupId)
@@ -609,7 +571,7 @@ namespace UnityEngine.UIElements.UIR
             return null;
         }
 
-        static void BindMappedTexture(MaterialPropertyBlock block, DrawOperation sourceOp, RectInt drawRect, Rect uvRect, InputBindingIds ids)
+        static void BindMappedTexture(MaterialPropertyBlock block, DrawOperation sourceOp, RectInt drawRect, Rect uvRect, FilterHelper.InputBindingIds ids)
         {
             var srcUV = sourceOp.dstAtlasBlock.uvRect;
             var srcBounds = sourceOp.bounds;

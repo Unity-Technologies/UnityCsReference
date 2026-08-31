@@ -274,6 +274,16 @@ namespace UnityEngine
             return m_EntityId;
         }
 
+        // GetEntityId without the editor main-thread guard (which is itself a per-call icall).
+        // Serialization runs on the main thread, so the UnityObjectArray writer reads the
+        // wrapper's EntityId directly — in the editor that's just the managed m_EntityId field
+        // (no icall, no native pointer chase); in players it reads it off the native object.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe EntityId GetEntityIdForSerializationUnchecked()
+        {
+            return m_EntityId;
+        }
+
         [Obsolete("Calling MemberwiseClone on a UnityEngine.Object will result in a corrupt object, use Instantiate or InstantiateAsync instead.", true)]
         new protected object MemberwiseClone()
         {

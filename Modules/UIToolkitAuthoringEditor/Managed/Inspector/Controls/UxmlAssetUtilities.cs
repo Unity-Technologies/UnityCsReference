@@ -667,6 +667,49 @@ internal static class UxmlAssetUtilities
         return SyncUxmlObjectChanges(context, property.propertyPath);
     }
 
+    /// <summary>
+    /// Replaces null items of a UXML object array with new instances of the specified type.
+    /// </summary>
+    /// <remarks>
+    /// Resizing the array through the bound size field creates null items, which cannot be edited and
+    /// serialize as null UXML nodes. Only call this when the array accepts a single UXML object type.
+    /// </remarks>
+    /// <param name="context">The attributes editing context.</param>
+    /// <param name="property">The array property to fill.</param>
+    /// <param name="type">The <c>UxmlSerializedData</c> type to instantiate.</param>
+    /// <returns>Whether any item was replaced.</returns>
+    public static bool FillNullArrayItemsInSerializedData(UxmlAttributesEditingContext context,
+        SerializedProperty property, Type type)
+    {
+        if (context.isReadOnly || type == null || !property.isArray || !HasNullArrayItems(property))
+            return false;
+
+        Undo.RegisterCompleteObjectUndo(property.serializedObject.targetObject, GetUndoMessage(property));
+
+        for (var i = 0; i < property.arraySize; ++i)
+        {
+            var item = property.GetArrayElementAtIndex(i);
+
+            if (item.managedReferenceValue == null)
+                item.managedReferenceValue = UxmlSerializedDataCreator.CreateUxmlSerializedData(type.DeclaringType);
+        }
+
+        property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+        SyncUxmlObjectChanges(context, property.propertyPath);
+        return true;
+    }
+
+    static bool HasNullArrayItems(SerializedProperty property)
+    {
+        for (var i = 0; i < property.arraySize; ++i)
+        {
+            if (property.GetArrayElementAtIndex(i).managedReferenceValue == null)
+                return true;
+        }
+
+        return false;
+    }
+
     public static SynchronizePathResult RemoveArrayItemFromSerializedData(UxmlAttributesEditingContext context,
         SerializedProperty property, int index)
     {

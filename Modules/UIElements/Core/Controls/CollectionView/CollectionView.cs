@@ -57,6 +57,7 @@ namespace UnityEngine.UIElements.HierarchyV2
         float m_StickyHeight;
         int m_FirstVisibleItemIndex;
         int m_LastFocusedElementIndex = -1;
+        object m_LastSelectedElement;
         Vector3 m_TouchDownPosition;
 
         AlternatingRowBackground m_ShowAlternatingRowBackgrounds = AlternatingRowBackground.None;
@@ -1890,30 +1891,114 @@ namespace UnityEngine.UIElements.HierarchyV2
             {
                 case SelectionType.None:
                     return;
+                case SelectionType.Multiple when shiftKey:
+                {
+                    if (m_Selection.indexCount == 0)
+                    {
+                        SetSelection(clickedIndex);
+                        SetLastSelectedIndex(clickedIndex);
+                    }
+                    else
+                    {
+                        var pivot = GetLastSelectedIndex();
+
+                        // If the item is already selected, we start a new set of ranges
+                        // This is to be closer in behavior to hierarchy V1 as a patch before the editor wide multi selection redesign.
+                        if (m_Selection.ContainsIndex(clickedIndex))
+                        {
+                            m_Selection.Clear();
+                        }
+
+                        AppendRangeToSelection(pivot, clickedIndex);
+                    }
+
+                    break;
+                }
                 case SelectionType.Multiple when actionKey:
                 {
                     // Add/remove single clicked element
                     if (m_Selection.ContainsIndex(clickedIndex))
                         RemoveFromSelection(clickedIndex);
                     else
+                    {
                         AddToSelection(clickedIndex);
-                    break;
-                }
-                case SelectionType.Multiple when shiftKey:
-                {
-                    if (m_Selection.indexCount == 0)
-                        SetSelection(clickedIndex);
-                    else
-                        DoRangeSelection(clickedIndex);
-
+                        SetLastSelectedIndex(clickedIndex);
+                    }
                     break;
                 }
                 case SelectionType.Multiple when m_Selection.ContainsIndex(clickedIndex):
                 case SelectionType.Single when m_Selection.ContainsIndex(clickedIndex):
+                    SetLastSelectedIndex(clickedIndex);
                     break;
                 default:
                     SetSelection(clickedIndex);
+                    SetLastSelectedIndex(clickedIndex);
                     break;
+            }
+        }
+
+        void SetLastSelectedIndex(int index)
+        {
+            if (index < 0 || index >= m_ItemsSource.Count)
+            {
+                m_LastSelectedElement = null;
+                return;
+            }
+
+            m_LastSelectedElement = m_ItemsSource[index];
+        }
+
+        int GetLastSelectedIndex()
+        {
+            if (m_LastSelectedElement != null)
+            {
+                var index = m_ItemsSource.IndexOf(m_LastSelectedElement);
+                if (index >= 0 && m_Selection.ContainsIndex(index))
+                    return index;
+            }
+
+            if (m_Selection.selectedIndex >= 0)
+                return m_Selection.selectedIndex;
+
+            return -1;
+        }
+
+        void AppendRangeToSelection(int from, int to)
+        {
+            if ((from < 0 && to < 0) || to >= itemsSource.Count || from >= itemsSource.Count)
+                return;
+
+            // Handle the cases where one of the values is below 0 (invalid). Revert to single selection. Or if the range has a length of 1
+            if (from < 0 || from == to)
+            {
+                SetSelection(to);
+                SetLastSelectedIndex(to);
+                return;
+            }
+
+            if (to < 0)
+            {
+                SetSelection(from);
+                SetLastSelectedIndex(from);
+                return;
+            }
+
+            var min = Mathf.Min(from, to);
+            var max = Mathf.Max(from, to);
+            var count = max - min + 1;
+
+            var toAdd = ArrayPool<int>.Shared.Rent(count);
+            try
+            {
+                for (var i = 0; i < count; ++i)
+                    toAdd[i] = min + i;
+
+                AddToSelection(toAdd.AsSpan(0, count));
+            }
+            finally
+            {
+                ArrayPool<int>.Shared.Return(toAdd);
+                SetLastSelectedIndex(to);
             }
         }
 
@@ -1960,6 +2045,8 @@ namespace UnityEngine.UIElements.HierarchyV2
             {
                 ArrayPool<int>.Shared.Return(newSelection);
             }
+
+            SetLastSelectedIndex(rangeSelectionFinalIndex);
         }
 
         void AddToSelection(ReadOnlySpan<int> indices)
@@ -2089,6 +2176,7 @@ namespace UnityEngine.UIElements.HierarchyV2
             if (m_Selection.MatchesExistingSelection(indices))
                 return;
 
+            SetLastSelectedIndex(-1);
             m_Selection.Select(indices);
 
             // Update the visual state of visible items
@@ -2130,6 +2218,7 @@ namespace UnityEngine.UIElements.HierarchyV2
 
             m_StickyRow?.SetSelected(false);
             m_Selection.Clear();
+            SetLastSelectedIndex(-1);
         }
 
         internal virtual CollectionViewDragger CreateDragger()
@@ -2248,6 +2337,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                     m_Selection.selectedIndex = index;
                 }
 
+                SetLastSelectedIndex(index);
                 ScrollToItem(index);
             }
 
@@ -2302,6 +2392,7 @@ namespace UnityEngine.UIElements.HierarchyV2
                     else
                     {
                         m_RangeSelectionDirection = RangeSelectionDirection.None;
+                        SetLastSelectedIndex(lastIndex);
                         m_Selection.selectedIndex = lastIndex;
                     }
 

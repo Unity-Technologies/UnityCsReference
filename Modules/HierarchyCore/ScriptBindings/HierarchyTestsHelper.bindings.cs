@@ -127,13 +127,13 @@ namespace Unity.Hierarchy
         [NativeMethod(IsThreadSafe = true)]
         internal static extern int GetCapacity(Hierarchy hierarchy);
 
-        internal static int GetVersion(Hierarchy hierarchy) => GetHierarchyVersion(hierarchy);
+        internal static int GetVersion(Hierarchy hierarchy) => GetHierarchyGlobalVersion(hierarchy);
 
-        internal static int GetVersion(Hierarchy hierarchy, in HierarchyNode node) => GetHierarchyNodeVersion(hierarchy, in node);
+        internal static int GetVersion(Hierarchy hierarchy, in HierarchyNode node) => GetHierarchyNodeSubtreeVersion(hierarchy, in node);
 
-        internal static int GetVersion(HierarchyFlattened hierarchyFlattened) => GetHierarchyFlattenedVersion(hierarchyFlattened);
+        internal static int GetVersion(HierarchyFlattened hierarchyFlattened) => GetHierarchyFlattenedGlobalVersion(hierarchyFlattened);
 
-        internal static int GetVersion(HierarchyViewModel hierarchyViewModel) => GetHierarchyViewModelVersion(hierarchyViewModel);
+        internal static int GetVersion(HierarchyViewModel hierarchyViewModel) => GetHierarchyViewModelGlobalVersion(hierarchyViewModel);
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern int GetChildrenCapacity(Hierarchy hierarchy, in HierarchyNode node);
@@ -165,17 +165,17 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyTestsHelperBindings::GenerateNodesCountHandler", IsThreadSafe = true, ThrowsException = true)]
         static extern void GenerateNodesCountHandler(HierarchyNodeTypeHandlerBase handler, in HierarchyNode root, int count, int width, int depth);
 
-        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyVersion", IsThreadSafe = true)]
-        static extern int GetHierarchyVersion(Hierarchy hierarchy);
+        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyGlobalVersion", IsThreadSafe = true)]
+        static extern int GetHierarchyGlobalVersion(Hierarchy hierarchy);
 
-        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyNodeVersion", IsThreadSafe = true)]
-        static extern int GetHierarchyNodeVersion(Hierarchy hierarchy, in HierarchyNode node);
+        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyNodeSubtreeVersion", IsThreadSafe = true)]
+        static extern int GetHierarchyNodeSubtreeVersion(Hierarchy hierarchy, in HierarchyNode node);
 
-        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyFlattenedVersion", IsThreadSafe = true)]
-        static extern int GetHierarchyFlattenedVersion(HierarchyFlattened hierarchyFlattened);
+        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyFlattenedGlobalVersion", IsThreadSafe = true)]
+        static extern int GetHierarchyFlattenedGlobalVersion(HierarchyFlattened hierarchyFlattened);
 
-        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyViewModelVersion", IsThreadSafe = true)]
-        static extern int GetHierarchyViewModelVersion(HierarchyViewModel hierarchyViewModel);
+        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyViewModelGlobalVersion", IsThreadSafe = true)]
+        static extern int GetHierarchyViewModelGlobalVersion(HierarchyViewModel hierarchyViewModel);
 
         [FreeFunction("HierarchyTestsHelperBindings::FindNodeByNameRecursive", IsThreadSafe = true)]
         internal static extern HierarchyNode FindNodeByNameRecursive(Hierarchy hierarchy, in HierarchyNode parent, string name);

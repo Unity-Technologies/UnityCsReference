@@ -106,6 +106,11 @@ internal enum RttiDataType : byte
     // command-group shape as UnityObject.
     ManagedReference        = 34,
 
+    // Write-only: a T[] / List<T> whose element is exactly one UnityEngine.Object (PPtr).
+    // The build emits this instead of the generic Array/List + per-element UnityObject body.
+    // Array and List share it (the kind byte selects the backing resolution).
+    UnityObjectArray        = 35,
+
     Unknown                 = 0xFF,
 }
 
@@ -320,6 +325,19 @@ internal static class LinearCollectionKind
 {
     public const byte Array = 0;
     public const byte List  = 1;
+}
+
+// Mirrors ManagedCommandUnityObjectArray in SerializationCommands.h. Write-only command for
+// a T[] / List<T> of UnityEngine.Object (PPtr) elements — no nested body; the executor
+// resolves the backing collection from fieldOffset + kind. 12 bytes.
+internal struct UnityObjectArrayHeader
+{
+    public RttiDataType opCode;        // = RttiDataType.UnityObjectArray
+    public byte         kind;          // 0 = Array, 1 = List
+    public byte         reserved0;
+    public byte         reserved1;
+    public uint         fieldOffset;   // post-header offset of the collection reference on the parent
+    public uint         elementStride; // bytes between elements in the managed backing array
 }
 
 // Mirrors ManagedCommandFixedBuffer in SerializationCommands.h — see that
@@ -1207,6 +1225,22 @@ internal static unsafe class SerializationBackendManagedCommands
                 case RttiDataType.UnityObject:
                 {
                     var entry = ConsumeDirectCopyGroup<UnityObjectWriteEntry>(ref pos, out var end);
+                    // On the PackEntityIdInLSOI (verbatim, no remap) path, pack each field with
+                    // the shared inlined record writer — same code as the UnityObjectArray loop,
+                    // no icall. Object-reference fields are pointer-aligned, so reading the slot
+                    // as a managed reference is valid (the icall-marshalling hazard is icall-only).
+                    // Decision hoisted out of the loop. The remap arm keeps the icall.
+                    if ((ctx->flags & UnityObjectTransferFlags.PackEntityIdInLSOI) != 0)
+                    {
+                        do
+                        {
+                            object slot = Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref baseAddr, (nint)entry->fieldOffset));
+                            WriteUnityObjectRecordInline(slot, ctx->flags, output + entry->destOffset);
+                            entry++;
+                        }
+                        while (entry < end);
+                        break;
+                    }
                     do
                     {
                         // Read the field as a raw pointer rather than going through
@@ -1228,6 +1262,56 @@ internal static unsafe class SerializationBackendManagedCommands
                         entry++;
                     }
                     while (entry < end);
+                    break;
+                }
+
+                // Bulk write of a T[] / List<T> of UnityEngine.Object (PPtr) elements,
+                // emitted by the build (RttiDataType.UnityObjectArray) so the whole
+                // collection is packed in one loop instead of a per-element recursion.
+                // Array and List share this case — the kind byte selects the backing
+                // resolution; both feed ConsumeLinearCollectionUnityObjectArray.
+                case RttiDataType.UnityObjectArray:
+                {
+                    var hdr = (UnityObjectArrayHeader*)pos;
+                    pos += sizeof(UnityObjectArrayHeader);
+
+                    // Build flushed the prior fixed segment ahead of this command (FBP(0),
+                    // dstSize == 0), so commit any deferred bytes before the collection's
+                    // own writes land at writerPtr — same as the Array/List case.
+                    if (pendingAdvance > 0)
+                    {
+                        InvokeFlushBuffer(ctx, ctx->writerPtr, pendingAdvance);
+                        pendingAdvance = 0;
+                    }
+
+                    byte[] dataAsBytes;
+                    int    count;
+                    if (hdr->kind == LinearCollectionKind.Array)
+                    {
+                        Array arr = Unsafe.As<byte, Array>(
+                            ref Unsafe.AddByteOffset(ref baseAddr, (nint)hdr->fieldOffset));
+                        if (arr == null)
+                        {
+                            WriteFramedInt32(ctx, 0);
+                            break;
+                        }
+                        dataAsBytes = Unsafe.As<Array, byte[]>(ref arr);
+                        count       = arr.Length;
+                    }
+                    else
+                    {
+                        ListLayout list = Unsafe.As<byte, ListLayout>(
+                            ref Unsafe.AddByteOffset(ref baseAddr, (nint)hdr->fieldOffset));
+                        if (list == null || list._items == null)
+                        {
+                            WriteFramedInt32(ctx, 0);
+                            break;
+                        }
+                        dataAsBytes = list._items;
+                        count       = list._size;
+                    }
+
+                    ConsumeLinearCollectionUnityObjectArray(ctx, dataAsBytes, count, hdr->elementStride);
                     break;
                 }
 
@@ -2770,6 +2854,123 @@ internal static unsafe class SerializationBackendManagedCommands
         }
 
         pos = nestedStart + nestedBytes;
+    }
+
+    // UUM-143556 marker the read path stamps on a type-mismatched fake-null reference. This is the
+    // managed write path's own source of truth (TransferPPtrToMonoObject.cpp keeps a byte-identical
+    // copy for its own legacy write path; a native test cross-checks the two never diverge).
+    private const string kTypeMismatchReferenceError =
+        "The serialized reference's type does not match the field's type; it was removed when building the player (UUM-143556).";
+
+    // Packs one UnityObject (PPtr) record into a 12-byte LSOI slot: {int fileIndex @0,
+    // int64 localId @4}. Reads the wrapper's EntityId via the managed m_EntityId field
+    // (GC-safe; never crosses the icall boundary, so the Linux-Mono object-marshalling
+    // hazard doesn't apply). raw>>32 fits in 32 bits, so localId's upper word is always 0 —
+    // three aligned *(int*) stores (one `str w` each on Mono, vs Unsafe.WriteUnaligned's
+    // byte-by-byte copy); (int)raw truncates for free. Shared by the UnityObjectArray bulk
+    // loop and the scalar UnityObject write group — AggressiveInlining keeps both call sites
+    // free of a per-element call. dst must be 4-byte aligned (the writer guarantees it).
+    // This is the PackEntityIdInLSOI (verbatim, no remap) arm; the remap arm uses the icall.
+    // The native-test-resources compile provides a layout-matching UnityEngine.Object stub
+    // (ScriptWithManagedRefTestFixture.Resources_cs), so this same code path runs there too.
+    //
+    // Also applies the UUM-143556 game-release drop: a reference the read path has confirmed to
+    // be a type mismatch (a fake-null wrapper — m_CachedPtr == 0 — stamped with the marker) must
+    // never ship to the player, so it is written as {0,0,0} instead of its (dangling, wrong-typed)
+    // EntityId. Gated on SerializeForGameRelease so normal Editor saves and play-mode backups keep
+    // the id; the reference stays recoverable (e.g. by undoing the script change).
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void WriteUnityObjectRecordInline(object wrapper, int flags, byte* dst)
+    {
+        if (wrapper == null)
+        {
+            *(int*)dst       = 0;
+            *(int*)(dst + 4) = 0;
+            *(int*)(dst + 8) = 0;
+            return;
+        }
+
+        var o = Unsafe.As<object, UnityEngine.Object>(ref wrapper);
+        if ((flags & UnityObjectTransferFlags.SerializeForGameRelease) != 0
+            && o.GetCachedPtr() == IntPtr.Zero
+            && o.GetUnityRuntimeErrorString() == kTypeMismatchReferenceError)
+        {
+            *(int*)dst       = 0;
+            *(int*)(dst + 4) = 0;
+            *(int*)(dst + 8) = 0;
+            return;
+        }
+
+        ulong raw = EntityId.ToULong(o.GetEntityIdForSerializationUnchecked());
+        *(int*)dst       = (int)raw;
+        *(int*)(dst + 4) = (int)(raw >> 32);
+        *(int*)(dst + 8) = 0;
+    }
+
+    // Bulk UnityObject-array write: count prefix, then count 12-byte LSOI records produced
+    // in batches sized to the writable region — one tight loop, no per-element interpreter
+    // frame. Mirrors WriteUnityObjectToBuffer + PackEntityIdIntoLSOI per element: null ->
+    // {0,0}; otherwise read the wrapper's EntityId inline (PackEntityIdInLSOI + offset known)
+    // or fall back to the icall. Byte-identical to the per-element recursion path.
+    private static unsafe void ConsumeLinearCollectionUnityObjectArray(
+        NativeBufferContext* ctx, byte[] dataAsBytes, int count, long stride)
+    {
+        WriteFramedInt32(ctx, count);
+        if (count == 0)
+            return;
+
+        const int wire = 12;
+
+        fixed (byte* dataPtr = dataAsBytes)
+        {
+            byte* srcCur = dataPtr;
+            int   left   = count;
+            while (left > 0)
+            {
+                int batch = ctx->writerAvailable / wire;
+                if (batch > left)
+                    batch = left;
+
+                byte* dst = ctx->writerPtr;
+                // Inline path: when the EntityId is packed verbatim (no instanceID remap), read
+                // it straight from the wrapper's managed m_EntityId field and pack the 12-byte
+                // record — no icall. The remap path (resolver) still needs the icall arm below.
+                // The decision is loop-invariant (evaluated per batch, not per element), so the
+                // inner loop stays branch-free bar the null check.
+                if ((ctx->flags & UnityObjectTransferFlags.PackEntityIdInLSOI) != 0)
+                {
+                    // Read each slot as a managed UnityEngine.Object reference (GC-safe; never
+                    // crosses the icall boundary, so the Linux-Mono mangling hazard doesn't
+                    // apply) and pack it via the shared inlined record writer.
+                    for (int i = 0; i < batch; ++i)
+                    {
+                        object slot = Unsafe.As<byte, object>(ref Unsafe.AsRef<byte>(srcCur + (long)i * stride));
+                        WriteUnityObjectRecordInline(slot, ctx->flags, dst + i * wire);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < batch; ++i)
+                    {
+                        IntPtr wrapper = Unsafe.ReadUnaligned<IntPtr>(srcCur + (long)i * stride);
+                        byte* d = dst + i * wire;
+                        if (wrapper == IntPtr.Zero)
+                        {
+                            Unsafe.WriteUnaligned<int>(d, 0);
+                            Unsafe.WriteUnaligned<long>(d + 4, 0L);
+                        }
+                        else
+                        {
+                            WriteUnityObjectToBuffer(wrapper, ctx->resolverHandle, (IntPtr)d, ctx->flags);
+                        }
+                    }
+                }
+
+                InvokeFlushBuffer(ctx, ctx->writerPtr, batch * wire);
+                srcCur += (long)batch * stride;
+                left   -= batch;
+            }
+        }
     }
 
     // Consumes one ManagedCommandDictionary entry. Bridges the live

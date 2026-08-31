@@ -384,10 +384,41 @@ namespace UnityEditor
                 updateObjectSelection = e.m_CustomUpdateObjectSelection;
             }
 
-            if (updateObjectSelection) SetSelection(e.m_SelectedEids, e.m_CustomActiveContextEid, e.m_CustomDataMode);
+            if (updateObjectSelection) SetSelection(FilterLiveEids(e.m_SelectedEids), e.m_CustomActiveContextEid, e.m_CustomDataMode);
 
             // After first going back in history, see if 0th object is a deselect and remove it from history to avoid button clicks that lead to nothing
             if (index == 1 && !m_History[0].IsSelectionEntryValid()) RemoveEntry(0);
+        }
+
+        // A history entry can reference an EntityId whose object no longer exists - e.g. a child
+        // GameObject destroyed only because an ancestor was destroyed, which the
+        // DestroyGameObjectHierarchy change event we prune history with (see OnObjectChanged)
+        // never reports individually. IsSelectionEntryValid() only requires one referenced id to
+        // still be alive, so such an entry can still be restored; filter out the dead ids here so
+        // a stale EntityId never reaches the live selection (UUM-145779).
+        static EntityId[] FilterLiveEids(EntityId[] eids)
+        {
+            if (eids == null || eids.Length == 0)
+                return eids;
+
+            var liveCount = 0;
+            for (var i = 0; i < eids.Length; i++)
+            {
+                if (EditorUtility.IsEidValid(eids[i]))
+                    liveCount++;
+            }
+
+            if (liveCount == eids.Length)
+                return eids;
+
+            var live = new EntityId[liveCount];
+            var j = 0;
+            for (var i = 0; i < eids.Length; i++)
+            {
+                if (EditorUtility.IsEidValid(eids[i]))
+                    live[j++] = eids[i];
+            }
+            return live;
         }
 
         void RemoveSubsequentDuplicateEntries(SelectionEntry e, ref int index)

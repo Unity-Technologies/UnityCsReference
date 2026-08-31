@@ -119,6 +119,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_ColorPagePosID    = Shader.PropertyToID("_ColorPagePos");
         static readonly int s_TextCorePagePosID = Shader.PropertyToID("_TextCorePagePos");
         static readonly int s_ElementInfoPagePosID = Shader.PropertyToID("_ElementInfoPagePos");
+        static readonly int s_PageTablesID = Shader.PropertyToID("UIE_PageTables");
         static readonly int s_SkipGammaConversionID = Shader.PropertyToID("_SkipGammaConversion");
 
         static ProfilerMarker s_MarkerFree = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Free");
@@ -1078,12 +1079,22 @@ namespace UnityEngine.UIElements.UIR
                 if (shaderInfo != null)
                     constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
 
-                constantProps.SetVectorArray(s_XformPagePosID,    shaderInfoAllocator.transformPagePositions);
-                constantProps.SetVectorArray(s_ClipPagePosID,     shaderInfoAllocator.clipRectPagePositions);
-                constantProps.SetVectorArray(s_OpacityPagePosID,  shaderInfoAllocator.opacityPagePositions);
-                constantProps.SetVectorArray(s_ColorPagePosID,    shaderInfoAllocator.colorPagePositions);
-                constantProps.SetVectorArray(s_TextCorePagePosID, shaderInfoAllocator.textCorePagePositions);
-                constantProps.SetVectorArray(s_ElementInfoPagePosID, shaderInfoAllocator.elementInfoPagePositions);
+                if (shaderInfoAllocator.usePageTableConstantBuffer)
+                {
+                    GraphicsBuffer pageTables = shaderInfoAllocator.GetPageTableConstantBuffer();
+                    constantProps.SetConstantBuffer(s_PageTablesID, pageTables, 0, ShaderInfoAllocator.kPageTableSizeBytes);
+                }
+                else
+                {
+                    // Less efficient: the tables must be copied out of their native storage, and the arrays stored
+                    // in the property block can be uploaded many times (e.g. once per root PanelRenderer in world-space)
+                    constantProps.SetVectorArray(s_XformPagePosID,    shaderInfoAllocator.CopyTransformPagePositions());
+                    constantProps.SetVectorArray(s_ClipPagePosID,     shaderInfoAllocator.CopyClipRectPagePositions());
+                    constantProps.SetVectorArray(s_OpacityPagePosID,  shaderInfoAllocator.CopyOpacityPagePositions());
+                    constantProps.SetVectorArray(s_ColorPagePosID,    shaderInfoAllocator.CopyColorPagePositions());
+                    constantProps.SetVectorArray(s_TextCorePagePosID, shaderInfoAllocator.CopyTextCorePagePositions());
+                    constantProps.SetVectorArray(s_ElementInfoPagePosID, shaderInfoAllocator.CopyElementInfoPagePositions());
+                }
             }
         }
 

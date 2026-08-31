@@ -155,8 +155,11 @@ namespace UnityEditor.Build.Profile.Elements
                     return;
 
                 var lastCompiledDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(BuildProfileContext.instance.cachedEditorScriptingDefines);
-                m_Profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
-                if (ArrayUtility.ArrayEquals(m_Profile.scriptingDefines, lastCompiledDefines))
+                // Currently, the setter for scripting defines also applies the changes in SetAndApplyScriptingDefines(),
+                // But we want to compare sanitized defines before applying the changes,
+                // so we store the defines in local variables to avoid them being applied, and set them after the user chooses to in the dialog below.
+                var currentDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
+                if (ArrayUtility.ArrayEquals(currentDefines, lastCompiledDefines))
                 {
                     return;
                 }
@@ -165,7 +168,7 @@ namespace UnityEditor.Build.Profile.Elements
 
                 if (isAutomatedEnvironment || EditorUtility.DisplayDialog(TrText.scriptingDefinesModified, TrText.scriptingDefinesModifiedBody, TrText.apply, TrText.revert))
                 {
-                    m_Profile.SetAndApplyScriptingDefines(m_Profile.scriptingDefines);
+                    m_Profile.SetAndApplyScriptingDefines(currentDefines);
                 }
                 else
                 {

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Analysis
@@ -52,6 +53,23 @@ namespace UnityEditor.Build.Analysis
             });
         }
 
+        public void RegisterShortcuts(VisualElement root)
+        {
+            if (root == null)
+                return;
+
+            root.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Tab || !evt.ctrlKey)
+                    return;
+
+                SelectNextTab(evt.shiftKey);
+
+                // Consume it so the tab character isn't typed into a focused field.
+                evt.StopPropagation();
+            }, TrickleDown.TrickleDown);
+        }
+
         public void SetSelection(BuildEntry selection, BuildAnalysis analysis)
         {
             using (s_SetSelectionMarker.Auto())
@@ -79,6 +97,25 @@ namespace UnityEditor.Build.Analysis
                 var isVisible = ReferenceEquals(registration.Tab, newTab);
                 registration.TabView.OnTabVisibilityChanged(isVisible);
             }
+        }
+
+        private void SelectNextTab(bool reverse)
+        {
+            if (m_TabView == null || m_TabRegistrations.Count == 0)
+                return;
+
+            var count = m_TabRegistrations.Count;
+            var current = m_TabRegistrations.FindIndex(r => ReferenceEquals(r.Tab, m_TabView.activeTab));
+            if (current < 0)
+                current = 0;
+
+            var next = current + (reverse ? -1 : 1);
+            if (next < 0)
+                next = count - 1;
+            else if (next >= count)
+                next = 0;
+
+            m_TabView.activeTab = m_TabRegistrations[next].Tab;
         }
     }
 }

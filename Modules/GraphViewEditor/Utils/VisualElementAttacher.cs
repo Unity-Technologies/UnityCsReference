@@ -204,15 +204,19 @@ namespace UnityEditor.Experimental.GraphView
 
             currentRect.center = new Vector2(centerX, centerY) + offset;
 
-            //we don't want the layout to be overwritten before styling has been applied
+            element.style.position = Position.Absolute;
+            element.style.marginLeft = 0;
+            element.style.marginRight = 0;
+            element.style.marginTop = 0;
+            element.style.marginBottom = 0;
+            element.style.left = currentRect.xMin;
+            element.style.top = currentRect.yMin;
             if (currentRect.width > 0)
             {
-                element.layout = currentRect;
-            }
-            else
-            {
-                element.style.left = currentRect.xMin;
-                element.style.top = currentRect.yMin;
+                element.style.right = StyleKeyword.Auto;
+                element.style.bottom = StyleKeyword.Auto;
+                element.style.width = currentRect.width;
+                element.style.height = currentRect.height;
             }
         }
     }

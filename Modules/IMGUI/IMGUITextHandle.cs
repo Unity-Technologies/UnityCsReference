@@ -174,6 +174,7 @@ namespace UnityEngine
 
             if (textHandles.TryGetValue(hash, out IMGUITextHandle textHandleCached))
             {
+                textHandleCached.tuple.Value.lastTimeUsed = currentTime;
                 textHandlesTuple.Remove(textHandleCached.tuple);
                 textHandlesTuple.AddLast(textHandleCached.tuple);
 

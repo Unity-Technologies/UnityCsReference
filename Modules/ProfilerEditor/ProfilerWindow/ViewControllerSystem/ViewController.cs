@@ -22,6 +22,17 @@ namespace Unity.Profiling.Editor.UI
         {
             get
             {
+                // Without this guard a disposed view controller silently builds a second view that
+                // belongs to no panel. Callbacks registered on it never fire, and callers that
+                // re-parent it add an orphaned duplicate to the window. Both failures are invisible
+                // at the point of the mistake, so fail here instead: owners must clear their
+                // reference when they dispose a view controller.
+                if (IsDisposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name,
+                        "The view controller has been disposed and can no longer provide a view.");
+                }
+
                 if (m_View == null)
                 {
                     m_View = LoadView();

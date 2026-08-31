@@ -14,11 +14,6 @@ using Unity.Scripting.LifecycleManagement;
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
-// Under UNITY_NATIVE_TEST_RESOURCES there is no UnityEngine.Object; the native-test fixture
-// provides a layout-compatible stub (ScriptWithManagedRefTestFixture.Object, same GetCachedPtr)
-// in its own namespace. Aliasing it keeps the null-key detection below identical to production
-// instead of #if-ing the fake-null branch out. Trunk resolves this globally by moving the fixture
-// Object into UnityEngine; this is the local equivalent.
 using UnityEngineObject = UnityEngine.Object;
 
 namespace UnityEngine

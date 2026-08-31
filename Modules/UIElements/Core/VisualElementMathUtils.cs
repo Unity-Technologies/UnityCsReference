@@ -579,6 +579,11 @@ namespace UnityEngine.UIElements
 
     static class MathUtils
     {
+        // Unlike Mathf.Clamp01, whose AggressiveInlining is IL2CPP-only (a real call per use under Mono),
+        // this one inlines on all backends.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal static float Clamp01(float value) => value < 0f ? 0f : value > 1f ? 1f : value;
+
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         internal static Matrix4x4 PreApply2DOffset(ref Matrix4x4 m, Vector2 p)
         {

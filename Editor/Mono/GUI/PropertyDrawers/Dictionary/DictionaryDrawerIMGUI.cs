@@ -2033,9 +2033,7 @@ internal partial class DictionaryDrawer
                 SelectEntryOnKeyDrop(keyCellRect, arrayIndex);
                 DrawPropertyField(keyFieldRect, keyProp, m_Instance.keyType, m_Instance.keyHasCustomDrawer);
                 y += keyH + spacing;
-
-                if (!m_Instance.useValueFoldouts)
-                    y += Styles.k_StaticValueHeaderTopMargin;
+                y += Styles.k_StaticValueHeaderTopMargin;
 
                 float headerLine = EditorGUIUtility.singleLineHeight;
                 bool showValue = !m_Instance.useValueFoldouts || (valueProp != null && valueProp.isExpanded);
@@ -2045,17 +2043,15 @@ internal partial class DictionaryDrawer
                 if (m_Instance.useValueFoldouts)
                 {
                     bool expanded = valueProp != null && valueProp.isExpanded;
-                    const float foldoutArrowAdjustment = 4f; // Move foldout arrow out to align with the key warning icon in the gutter. Still clickable in entire label width
-                    Rect foldoutRect = new Rect(labelRect.x - foldoutArrowAdjustment, labelRect.y, labelRect.width + foldoutArrowAdjustment, labelRect.height);
-                    bool newExpanded = EditorGUI.Foldout(foldoutRect, expanded, GUIContent.none, true);
-
-                    var e = Event.current;
-                    if (e.type == EventType.MouseDown && e.button == 0 && foldoutRect.Contains(e.mousePosition))
-                    {
-                        newExpanded = !expanded;
-                        e.Use();
-                    }
-
+                    // Foldout picks where to put the arrow from the global EditorGUIUtility.hierarchyMode,
+                    // here we want full control of placement of the foldout, so pin the mode off and
+                    // position the rect ourselves. Foldout still owns the input handling: the row stays
+                    // expandable in a disabled Inspector, and a right-click keeps falling through to the
+                    // TreeView's row selection.
+                    Rect foldoutRect = Rect.MinMaxRect(rowRect.x + Styles.k_KeyWarningIconLeftMargin + 1, labelRect.y, labelRect.xMax, labelRect.yMax);
+                    bool newExpanded;
+                    using (new DrawerEditorGUI.HierarchyModeScope(false))
+                        newExpanded = EditorGUI.Foldout(foldoutRect, expanded, GUIContent.none, true);
                     if (newExpanded != expanded && valueProp != null)
                         valueProp.isExpanded = newExpanded;
                     showValue = newExpanded;
@@ -2086,9 +2082,7 @@ internal partial class DictionaryDrawer
                     // which is wasted work when the value is hidden behind a collapsed foldout — defer
                     // it until we know the value is shown (mirrors the deferral in DrawOneColumnRow).
                     float spacing = EditorGUIUtility.standardVerticalSpacing;
-                    float total = keyH + spacing + EditorGUIUtility.singleLineHeight;
-                    if (!m_Instance.useValueFoldouts)
-                        total += Styles.k_StaticValueHeaderTopMargin;
+                    float total = keyH + spacing + EditorGUIUtility.singleLineHeight + Styles.k_StaticValueHeaderTopMargin;
                     bool showValue = !m_Instance.useValueFoldouts || (valueProp != null && valueProp.isExpanded);
                     if (showValue)
                         total += spacing + GetPropertyFieldHeight(valueProp, m_Instance.valueType, m_Instance.valueHasCustomDrawer);
@@ -2376,6 +2370,24 @@ internal static class DrawerEditorGUI
             k_HelpBoxButtonHeight);
         return GUI.Button(buttonRect, buttonContent);
     }
+
+
+    // Hierarchy-mode scope helper
+    public readonly struct HierarchyModeScope : IDisposable
+    {
+        readonly bool m_PreviousHierarchyMode;
+
+        public HierarchyModeScope(bool hierarchyMode)
+        {
+            m_PreviousHierarchyMode = EditorGUIUtility.hierarchyMode;
+            EditorGUIUtility.hierarchyMode = hierarchyMode;
+        }
+
+        public void Dispose()
+        {
+            EditorGUIUtility.hierarchyMode = m_PreviousHierarchyMode;
+        }
+    }    
 }
 
 } // end of namespace

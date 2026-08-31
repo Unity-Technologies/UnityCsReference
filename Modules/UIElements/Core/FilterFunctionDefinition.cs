@@ -193,6 +193,11 @@ namespace UnityEngine.UIElements
         /// <summary>The optional callback to compute the required write margins for the effect.</summary>
         public ComputeRequiredMarginsDelegate computeRequiredWriteMarginsCallback { get; set; }
 
+        // Backdrop captures inflate by this pass's read margins only when set: translation passes
+        // (drop-shadow offsets) need real neighborhood content, while kernel passes must clamp at
+        // the element edge like browsers clamp the backdrop, or surrounding colors bleed in.
+        internal bool expandsBackdropCapture { get; set; }
+
         [SerializeField]
         private string m_OutputTextureName;
 
@@ -205,7 +210,8 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private string m_RequiredInputTextureName;
 
-        // Name of a texture this pass needs bound. Must match the outputTextureName of an earlier pass
+        // Name of a texture this pass needs bound: the outputTextureName of an earlier pass, or the
+        // reserved "Source" (FilterHelper.k_SourceInputName) for the texture that fed the filter's first pass.
         internal string requiredInputTextureName {
             get => m_RequiredInputTextureName;
             set => m_RequiredInputTextureName = value;

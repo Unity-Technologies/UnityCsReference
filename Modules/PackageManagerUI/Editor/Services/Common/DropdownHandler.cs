@@ -98,7 +98,7 @@ internal class DropdownHandler : BaseService<IDropdownHandler>, IDropdownHandler
 
     public void ShowAddPackageByNameDropdown(VisualElement anchorElement, string packageName = null, string packageVersion = null)
     {
-        var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_CustomDisplayDialog)
+        var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_CustomDisplayDialog, m_Application)
         {
             packageNameInitialValue = packageName,
             packageVersionInitialValue = packageVersion

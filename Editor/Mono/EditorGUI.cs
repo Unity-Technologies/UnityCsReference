@@ -598,6 +598,10 @@ namespace UnityEditor
                             break;
                     }
                 }
+
+                // The text setter skips the refresh when the text is unchanged, but the cached
+                // handle's native generation may have been evicted while unfocused (UUM-149393).
+                UpdateTextHandle();
             }
 
             public virtual void EndEditing()

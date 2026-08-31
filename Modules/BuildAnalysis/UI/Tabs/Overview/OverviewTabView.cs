@@ -49,6 +49,7 @@ namespace UnityEditor.Build.Analysis
             m_NoSelection = m_Root.Q<VisualElement>("no-selection");
             m_ScrollView = m_Root.Q<ScrollView>("overview-scroll");
             m_ScrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            KeyboardNavigation.ScrollFocusedIntoView(m_ScrollView);
 
             m_Header = new BuildHeaderController(m_Root.Q<VisualElement>("build-header"));
             m_TotalSizeStatValue = m_Root.Q<VisualElement>("stat-card-total-size").Q<Label>("value");

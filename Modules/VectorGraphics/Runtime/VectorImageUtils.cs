@@ -180,6 +180,8 @@ namespace Unity.VectorGraphics
 
             Texture2D copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
             copy.hideFlags = HideFlags.HideAndDontSave;
+            copy.wrapMode = TextureWrapMode.Clamp;
+            copy.anisoLevel = 0; // gradient LUT atlas: wrap or aniso taps would sample the wrong entry or ramp end
             copy.ReadPixels(new Rect(0, 0, width, height), 0, 0);
 
             // This encoding procedure is duplicated a few times, do something about it

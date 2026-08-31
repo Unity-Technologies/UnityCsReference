@@ -29,13 +29,18 @@ namespace UnityEditor.Build.Profile
             if (!m_ShaderBuildSettingsUI.HasUnsavedChanges)
                 return;
 
-            string profileName = null;
+            var parentProfile = FindProfileStillOwningTarget();
+            if (parentProfile == null)
+                return;
+
+            m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog(parentProfile.name);
+        }
+
+        BuildProfile FindProfileStillOwningTarget()
+        {
             var assetPath = AssetDatabase.GetAssetPath(target);
             var parentProfile = AssetDatabase.LoadMainAssetAtPath(assetPath) as BuildProfile;
-            if (parentProfile != null)
-                profileName = parentProfile.name;
-
-            m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog(profileName);
+            return parentProfile != null && parentProfile.graphicsSettings == target ? parentProfile : null;
         }
 
         public override VisualElement CreateInspectorGUI()

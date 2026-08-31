@@ -452,11 +452,21 @@ namespace UnityEditor.Experimental.GraphView
 
 
             if (m_IconElement != null)
-                m_IconElement.layout = iconRect;
+            {
+                m_IconElement.style.position = Position.Absolute;
+                m_IconElement.style.left = iconRect.x;
+                m_IconElement.style.top = iconRect.y;
+                m_IconElement.style.width = iconRect.width;
+                m_IconElement.style.height = iconRect.height;
+            }
 
             if (m_TipElement != null)
             {
-                m_TipElement.layout = tipRect;
+                m_TipElement.style.position = Position.Absolute;
+                m_TipElement.style.left = tipRect.x;
+                m_TipElement.style.top = tipRect.y;
+                m_TipElement.style.width = tipRect.width;
+                m_TipElement.style.height = tipRect.height;
 
                 if (m_TipElement.visible != tipVisible)
                 {

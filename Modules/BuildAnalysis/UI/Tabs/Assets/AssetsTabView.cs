@@ -52,6 +52,7 @@ namespace UnityEditor.Build.Analysis
 
             m_NoSelection = m_Root.Q<VisualElement>("no-selection");
             m_Body = m_Root.Q<VisualElement>("assets-body");
+            KeyboardNavigation.ScrollFocusedIntoView(m_Root.Q<ScrollView>("assets-content"));
             m_InspectorSplit = m_Root.Q<TwoPaneSplitView>("assets-inspector-split");
             m_InspectorHost = m_Root.Q<VisualElement>("asset-inspector-host");
             m_Header = new BuildHeaderController(m_Root.Q<VisualElement>("build-header"));

@@ -445,6 +445,8 @@ namespace UnityEngine.UIElements.UIR
                 m_Stats.elementsRemoved = removedThisFrame;
                 m_TotalVisualElements += (int)addedThisFrame - (int)removedThisFrame;
 
+                shaderInfoAllocator.storageCompareWrites = m_ShaderInfoUpdateGuard.compareWrites;
+
                 m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
                 m_Compositor.Update(m_RootRenderTree);
                 device.AdvanceFrame(); // Before making any changes to the buffers
@@ -461,7 +463,8 @@ namespace UnityEngine.UIElements.UIR
                 // Commit new requests for atlases if any
                 atlas?.InvokeUpdateDynamicTextures(panel); // TODO: For a shared atlas + drawInCameras, postpone after all updates have occurred.
                 vectorImageManager?.Commit();
-                shaderInfoAllocator.IssuePendingStorageChanges();
+                bool uploadedShaderInfo = shaderInfoAllocator.IssuePendingStorageChanges();
+                m_ShaderInfoUpdateGuard.IssuedPendingStorageChanges(uploadedShaderInfo);
 
                 device.OnFrameRenderingBegin();
 
@@ -482,6 +485,10 @@ namespace UnityEngine.UIElements.UIR
         void SerializeRootTreeCommands()
         {
             Debug.Assert(drawInCameras);
+
+            // The camera draws these commands, so the device does reach frame boundaries: this is the
+            // drawInCameras counterpart of RenderRootTree and must notify the guard just the same.
+            m_ShaderInfoUpdateGuard.OnRender();
 
             if (m_RootRenderTree?.firstCommand == null)
                 return;
@@ -516,9 +523,13 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        readonly ShaderInfoUpdateGuard m_ShaderInfoUpdateGuard = new();
+
         public void RenderRootTree()
         {
             Debug.Assert(!drawInCameras);
+
+            m_ShaderInfoUpdateGuard.OnRender();
 
             PanelClearSettings clearSettings = panel.clearSettings;
             if (clearSettings.clearColor || clearSettings.clearDepthStencil)

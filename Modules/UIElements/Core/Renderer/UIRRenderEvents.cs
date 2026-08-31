@@ -65,11 +65,10 @@ namespace UnityEngine.UIElements.UIR
             DepthFirstOnTransformOrSizeChanged(renderTreeManager, renderData, dirtyID, false, false, false, ref stats);
         }
 
-        static Matrix4x4 GetTransformIDTransformInfo(RenderData renderData)
+        static void GetTransformIDTransformInfo(RenderData renderData, out Matrix4x4 transform)
         {
             Debug.Assert(RenderData.AllocatesID(renderData.transformID) || renderData.isGroupTransform);
 
-            Matrix4x4 transform;
             var groupTransformAncestor = renderData.groupTransformAncestor;
             if (groupTransformAncestor != null)
                 VisualElement.MultiplyMatrix34(ref groupTransformAncestor.owner.worldTransformInverse, ref renderData.owner.worldTransformRef, out transform);
@@ -77,7 +76,6 @@ namespace UnityEngine.UIElements.UIR
                 UIRUtility.ComputeMatrixRelativeToRenderTree(renderData, out transform);
 
             transform.m22 = 1.0f; // Once world-space mode is introduced, this should become conditional
-            return transform;
         }
 
         static Vector4 GetClipRectIDClipInfo(RenderData renderData)
@@ -264,7 +262,10 @@ namespace UnityEngine.UIElements.UIR
                     renderData.transformID = ShaderInfoAllocator.identityTransform;
             }
             else
-                renderTreeManager.shaderInfoAllocator.SetTransformValue(renderData.transformID, GetTransformIDTransformInfo(renderData));
+            {
+                GetTransformIDTransformInfo(renderData, out var transformInfo);
+                renderTreeManager.shaderInfoAllocator.SetTransformValue(renderData.transformID, transformInfo);
+            }
 
             // Recurse on children
             int childrenCount = ve.hierarchy.childCount;
@@ -868,7 +869,8 @@ namespace UnityEngine.UIElements.UIR
             if (RenderData.AllocatesID(renderData.transformID))
             {
                 Debug.Assert(!renderData.isNestedRenderTreeRoot); // Because they are always an identity
-                renderTreeManager.shaderInfoAllocator.SetTransformValue(renderData.transformID, GetTransformIDTransformInfo(renderData));
+                GetTransformIDTransformInfo(renderData, out var transformInfo);
+                renderTreeManager.shaderInfoAllocator.SetTransformValue(renderData.transformID, transformInfo);
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
             }

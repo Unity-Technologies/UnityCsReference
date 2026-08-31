@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -17,13 +18,16 @@ namespace UnityEditor
         const string k_LoadableObjectIdPropertyName = "m_LoadableObjectId";
         static readonly Type[] k_LoadableObjectIdByRefCtorSignature = { typeof(LoadableObjectId).MakeByRefType() };
 
+        // m_LoadableObjectType is derived from the PropertyDrawer's fieldInfo, cached for performance.
+        Type m_LoadableObjectType;
+
         // Override CreatePropertyGUI and OnGUI to support both UI tech.
         // If only CreatePropertyGUI is overriden the property drawer wouldn't work in an IMGUI context (CBD-841).
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var loadableObjectIdProp = property.FindPropertyRelative(k_LoadableObjectIdPropertyName);
-            var loadableType = FindLoadableType(property);
-            var loadableObjectIdField = new LoadableObjectIdField(preferredLabel, loadableType);
+            m_LoadableObjectType ??= FindLoadableObjectType(fieldInfo);
+            var loadableObjectIdField = new LoadableObjectIdField(preferredLabel, m_LoadableObjectType);
 
             // loadableObjectIdProp is null when the managed reference value is null ([SerializeReference] field).
             // Binding is skipped in that case; PropertyField will re-invoke the drawer once a value is assigned.
@@ -41,7 +45,7 @@ namespace UnityEditor
                 {
                     try
                     {
-                        if (!TryAssignManagedReferenceLoadable(managedRefProp, loadableType, evt.newValue))
+                        if (!TryAssignManagedReferenceLoadable(managedRefProp, m_LoadableObjectType, evt.newValue))
                         {
                             loadableObjectIdField.SetValueWithoutNotify(evt.previousValue);
                         }
@@ -75,14 +79,14 @@ namespace UnityEditor
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             var loadableObjectIdProp = property.FindPropertyRelative(k_LoadableObjectIdPropertyName);
-            var loadableType = FindLoadableType(property);
+            m_LoadableObjectType ??= FindLoadableObjectType(fieldInfo);
 
             // loadableObjectIdProp is null when the managed reference value is null ([SerializeReference] field).
             if (loadableObjectIdProp != null)
             {
                 EditorGUI.BeginProperty(position, label, loadableObjectIdProp);
                 EditorGUI.BeginChangeCheck();
-                var newObj = LoadableObjectIdEditorUtility.DrawLoadableObjectIdField(position, loadableObjectIdProp, label, loadableType);
+                var newObj = LoadableObjectIdEditorUtility.DrawLoadableObjectIdField(position, loadableObjectIdProp, label, m_LoadableObjectType);
 
                 if (EditorGUI.EndChangeCheck())
                     LoadableObjectIdEditorUtility.ApplyLoadableObjectIdChange(loadableObjectIdProp, newObj);
@@ -95,13 +99,13 @@ namespace UnityEditor
                 // the Loadable<T>.
                 label = EditorGUI.BeginProperty(position, label, property);
                 EditorGUI.BeginChangeCheck();
-                var newObj = LoadableObjectIdEditorUtility.DrawLoadableObjectIdField(position, null, label, loadableType);
+                var newObj = LoadableObjectIdEditorUtility.DrawLoadableObjectIdField(position, null, label, m_LoadableObjectType);
                 if (EditorGUI.EndChangeCheck() && newObj != null)
                 {
                     try
                     {
                         var newRef = LoadableObjectIdEditorUtility.CreateLoadableObjectId(newObj);
-                        TryAssignManagedReferenceLoadable(property, loadableType, newRef);
+                        TryAssignManagedReferenceLoadable(property, m_LoadableObjectType, newRef);
                     }
                     catch (Exception e)
                     {
@@ -117,7 +121,7 @@ namespace UnityEditor
         /// writes it as the managed reference value, and applies modified properties.
         /// </summary>
         /// <returns>True if the assignment succeeded, false if the id was invalid.</returns>
-        private static bool TryAssignManagedReferenceLoadable(SerializedProperty property, Type loadableType, LoadableObjectId id)
+        private static bool TryAssignManagedReferenceLoadable(SerializedProperty property, Type loadableObjectType, LoadableObjectId id)
         {
             if (!id.IsValid)
             {
@@ -125,14 +129,14 @@ namespace UnityEditor
                 return false;
             }
 
-            SetManagedReferenceLoadable(property, loadableType, id);
+            SetManagedReferenceLoadable(property, loadableObjectType, id);
             property.serializedObject.ApplyModifiedProperties();
             return true;
         }
 
-        private static void SetManagedReferenceLoadable(SerializedProperty property, Type loadableType, LoadableObjectId id)
+        private static void SetManagedReferenceLoadable(SerializedProperty property, Type loadableObjectType, LoadableObjectId id)
         {
-            var concreteLoadableType = typeof(Loadable<>).MakeGenericType(loadableType);
+            var concreteLoadableType = typeof(Loadable<>).MakeGenericType(loadableObjectType);
             // Activator.CreateInstance cannot bind to constructors with in/ref/out
             // parameters. Loadable<T>'s constructor takes `in LoadableObjectId`, so
             // we must locate the constructor explicitly using MakeByRefType().
@@ -142,47 +146,37 @@ namespace UnityEditor
             property.managedReferenceValue = ctor.Invoke(new object[] { id });
         }
 
-        private static Type FindLoadableType(SerializedProperty property)
+        private static bool IsLoadableType(Type type)
         {
-            // Try to find the generic type of the loadable field by walking up the property path
-            FieldInfo field = null;
-            var t = property.serializedObject.targetObject.GetType();
-            var path = property.propertyPath.Split(".");
+            return type != null && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Loadable<>);
+        }
 
-            // Find matching field
-            var i = 0;
-            while (i < path.Length)
+        // We need to step into array and list types until the Loadable<T> is reached. 'fieldInfo' is the
+        // innermost _named_ field on the property path, so a dictionary entry is already the
+        // Loadable<T> (".value" is a named field), while an array or list element is not.
+        // Example table:
+        //   Declared field 'f'                 Property path                         fieldInfo.FieldType
+        //   --------------------------------   -----------------------------------   -------------------
+        //   Loadable<T>                        f                                     Loadable<T>
+        //   Loadable<T>[]                      f.Array.data[0]                       Loadable<T>[]
+        //   List<Loadable<T>>                  f.Array.data[0]                       List<Loadable<T>>
+        //   Dictionary<K, Loadable<T>>         f.Array.data[0].value                 Loadable<T>
+        //   Dictionary<K, List<Loadable<T>>>   f.Array.data[0].value.Array.data[1]   List<Loadable<T>>
+        private static Type FindLoadableObjectType(FieldInfo fieldInfo)
+        {
+            var type = fieldInfo?.FieldType;
+
+            while (type != null && !IsLoadableType(type))
             {
-                field = t.GetField(path[i], BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                t = field.FieldType;
-
-                if (path.Length - i >= 2)
-                {
-                    if (path[i + 1] == "Array" && path[i + 2].StartsWith("data["))
-                    {
-                        t = t.IsArray ? t.GetElementType() : t.GetGenericArguments()[0];
-                        i += 3;
-                        continue;
-                    }
-                }
-
-                ++i;
+                if (type.IsArray)
+                    type = type.GetElementType();
+                else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+                    type = type.GetGenericArguments()[0];
+                else
+                    break;
             }
 
-            t = field.FieldType;
-
-            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Loadable<>))
-                return t.GetGenericArguments()[0];
-
-            if (t.IsArray && t.GetElementType().GetGenericTypeDefinition() == typeof(Loadable<>))
-                return t.GetElementType().GetGenericArguments()[0];
-
-            // Assume this is a list
-            var genericType = t.GetGenericArguments()[0];
-            if (genericType.IsGenericType && genericType.GetGenericTypeDefinition() == typeof(Loadable<>))
-                return genericType.GetGenericArguments()[0];
-
-            return typeof(UnityEngine.Object);
+            return IsLoadableType(type) ? type.GetGenericArguments()[0] : typeof(UnityEngine.Object);
         }
     }
 }

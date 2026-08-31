@@ -29,12 +29,10 @@ namespace UnityEditor
     [CustomPreview(typeof(VideoClipImporter))]
     internal class VideoClipImporterSourcePreview : ObjectPreview
     {
-        class Styles
+        internal static class Styles
         {
-            public GUIStyle labelStyle = "VideoClipImporterLabel";
+            public static readonly GUIStyle labelStyle = "VideoClipImporterLabel";
         }
-
-        private Styles m_Styles = new Styles();
 
         private GUIContent m_Title;
 
@@ -126,8 +124,8 @@ namespace UnityEditor
 
         private void ShowProperty(ref Rect labelRect, ref Rect valueRect, string label, string value)
         {
-            GUI.Label(labelRect, label, m_Styles.labelStyle);
-            GUI.Label(valueRect, value, m_Styles.labelStyle);
+            GUI.Label(labelRect, label, Styles.labelStyle);
+            GUI.Label(valueRect, value, Styles.labelStyle);
             labelRect.y += EditorGUIUtility.singleLineHeight;
             valueRect.y += EditorGUIUtility.singleLineHeight;
         }
@@ -637,6 +635,13 @@ namespace UnityEditor
         }
 
         protected override bool useAssetDrawPreview { get { return false; } }
+
+        public override void DrawPreview(Rect previewArea)
+        {
+            if (null == assetTargets)
+                return;
+            base.DrawPreview(previewArea);
+        }
 
         public override GUIContent GetPreviewTitle()
         {

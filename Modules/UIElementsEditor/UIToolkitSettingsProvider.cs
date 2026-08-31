@@ -112,12 +112,14 @@ namespace UnityEditor.UIElements
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
-            rootElement.AddToClassList(InspectorElement.ussClassName);
+            var wrapper = new VisualElement();
+            wrapper.AddToClassList(InspectorElement.ussClassName);
+            rootElement.Add(wrapper);
 
-            uiToolkitTemplate.CloneTree(rootElement);
+            uiToolkitTemplate.CloneTree(wrapper);
 
             var styleSheet = EditorGUIUtility.Load("UIPackageResources/Settings/UIToolkitSettingsView.uss") as StyleSheet;
-            rootElement.styleSheets.Add(styleSheet);
+            wrapper.styleSheets.Add(styleSheet);
 
             var editorExtensionsModeToggle = rootElement.Q<Toggle>(k_EditorExtensionsModeToggleName);
             editorExtensionsModeToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableEditorExtensionModeByDefault);

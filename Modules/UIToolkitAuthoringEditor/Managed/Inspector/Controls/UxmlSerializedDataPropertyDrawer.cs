@@ -239,6 +239,13 @@ internal class UxmlSerializedDataPropertyDrawer : PropertyDrawer
                         return;
                     }
                     fieldDecorator.boundPropertyChanged += (_, _) => UpdateAddOrRemoveButtonState(property, addOrRemoveButton);
+
+                    // The object can also be created without a rebind, for example when a nested list's bound
+                    // size field creates it. Follow the flags so the icon does not stay on add.
+                    var flagProperty = property.serializedObject.FindProperty(GetAttributeFlagsPath(property));
+
+                    if (flagProperty != null)
+                        addOrRemoveButton.TrackPropertyValue(flagProperty, _ => UpdateAddOrRemoveButtonState(property, addOrRemoveButton));
                 });
 
                 var foldout = container.childCount > 0 ? container[0] as Foldout : null;
@@ -257,10 +264,14 @@ internal class UxmlSerializedDataPropertyDrawer : PropertyDrawer
         return container;
     }
 
+    static string GetAttributeFlagsPath(SerializedProperty property) => property.propertyPath + "_UxmlAttributeFlags";
+
     void UpdateAddOrRemoveButtonState(SerializedProperty property, Button addOrRemoveButton)
     {
-        var flagsPath = property.propertyPath + "_UxmlAttributeFlags";
-        var flagProperty = property.serializedObject.FindProperty(flagsPath);
+        if (property is not { isValid: true })
+            return;
+
+        var flagProperty = property.serializedObject.FindProperty(GetAttributeFlagsPath(property));
         var isInline = false;
 
         if (flagProperty != null)

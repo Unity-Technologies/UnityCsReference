@@ -8,21 +8,41 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
-    abstract partial class BaseShaderInfoStorage : IDisposable
+    class ShaderInfoStorage : IDisposable
     {
-        protected static int s_TextureCounter;
+        static int s_TextureCounter;
+
         internal static ProfilerMarker s_MarkerCopyTexture = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.ShaderInfoStorage.CopyTexture");
         internal static ProfilerMarker s_MarkerGetTextureData = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.ShaderInfoStorage.GetTextureData");
         internal static ProfilerMarker s_MarkerUpdateTexture = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.ShaderInfoStorage.UpdateTexture");
 
-        public abstract Texture2D texture { get; }
-        public abstract bool AllocateRect(int width, int height, out RectInt uvs);
-        public abstract void SetTexel(int x, int y, Color color);
-        public abstract void UpdateTexture();
+        readonly int m_InitialSize;
+        readonly int m_MaxSize;
+
+        UIRAtlasAllocator m_Allocator;
+
+        Texture2D m_Texture;
+        int m_CachedTextureWidth;
+        NativeArray<Vector4> m_Texels; // Owned by the texture. Usable between GetRawTextureData and Apply.
+
+        bool m_Dirty; // texel content changed since the last Apply
+        bool m_CompareWritesNow; // effective flag; cleared on the first change, restored on upload
+        bool m_CompareWritesRequested; // externally requested policy
+
+        public ShaderInfoStorage(int initialSize = 64, int maxSize = 4096)
+        {
+            Debug.Assert(maxSize <= SystemInfo.maxTextureSize);
+            Debug.Assert(initialSize <= maxSize);
+            Debug.Assert(Mathf.IsPowerOfTwo(initialSize));
+            Debug.Assert(Mathf.IsPowerOfTwo(maxSize));
+
+            m_InitialSize = initialSize;
+            m_MaxSize = maxSize;
+        }
 
         #region Dispose Pattern
 
-        protected bool disposed { get; private set; }
+        bool disposed { get; set; }
 
 
         public void Dispose()
@@ -31,67 +51,46 @@ namespace UnityEngine.UIElements.UIR
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (disposed)
                 return;
 
-            if (!disposing)
+            if (disposing)
+            {
+                UIRUtility.Destroy(m_Texture);
+                m_Texture = null;
+                m_Texels = new NativeArray<Vector4>();
+                m_Allocator?.Dispose();
+                m_Allocator = null;
+            }
+            else
                 UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
 
             disposed = true;
         }
 
         #endregion // Dispose Pattern
-    }
 
-    class ShaderInfoStorage<T> : BaseShaderInfoStorage where T : struct
-    {
-        readonly int m_InitialSize;
-        readonly int m_MaxSize;
-        readonly TextureFormat m_Format;
-        readonly Func<Color, T> m_Convert;
+        public Texture2D texture => m_Texture;
 
-        UIRAtlasAllocator m_Allocator;
+        // True when texels were written since the last UpdateTexture (an upload is pending).
+        public bool hasPendingChanges => m_Dirty;
 
-        Texture2D m_Texture;
-        NativeArray<T> m_Texels; // Owned by the texture. Usable between GetRawTextureData and Apply.
-
-        public ShaderInfoStorage(TextureFormat format, Func<Color, T> convert, int initialSize = 64, int maxSize = 4096)
+        // When true, SetTexel compares against the stored value and skips
+        // identical writes, so redundant record updates don't dirty the storage (and thus don't upload).
+        // Single-flag scheme so the SetTexel hot path tests one bool.
+        public bool compareWrites
         {
-            Debug.Assert(maxSize <= SystemInfo.maxTextureSize);
-            Debug.Assert(initialSize <= maxSize);
-            Debug.Assert(Mathf.IsPowerOfTwo(initialSize));
-            Debug.Assert(Mathf.IsPowerOfTwo(maxSize));
-            Debug.Assert(convert != null);
-
-            m_InitialSize = initialSize;
-            m_MaxSize = maxSize;
-            m_Format = format;
-            m_Convert = convert;
-        }
-
-        #region Dispose Pattern
-
-        protected override void Dispose(bool disposing)
-        {
-            if (!disposed && disposing)
+            get => m_CompareWritesRequested;
+            set
             {
-                UIRUtility.Destroy(m_Texture);
-                m_Texture = null;
-                m_Texels = new NativeArray<T>();
-                m_Allocator?.Dispose();
-                m_Allocator = null;
+                m_CompareWritesRequested = value;
+                m_CompareWritesNow = value && !m_Dirty;
             }
-
-            base.Dispose(disposing);
         }
 
-        #endregion // Dispose Pattern
-
-        public override Texture2D texture => m_Texture;
-
-        public override bool AllocateRect(int width, int height, out RectInt uvs)
+        public bool AllocateRect(int width, int height, out RectInt uvs)
         {
             if (disposed)
             {
@@ -118,7 +117,7 @@ namespace UnityEngine.UIElements.UIR
 
         // The caller must ensure that the texel has been allocated.
         // The coordinates are from the bottom-left corner.
-        public override void SetTexel(int x, int y, Color color)
+        public void SetTexel(int x, int y, in Vector4 value)
         {
             if (disposed)
             {
@@ -130,14 +129,27 @@ namespace UnityEngine.UIElements.UIR
             {
                 using (s_MarkerGetTextureData.Auto())
                 {
-                    m_Texels = m_Texture.GetRawTextureData<T>();
+                    m_Texels = m_Texture.GetRawTextureData<Vector4>();
                 }
             }
 
-            m_Texels[x + y * m_Texture.width] = m_Convert(color);
+            int index = x + y * m_CachedTextureWidth;
+
+            // While comparing, identical writes don't dirty the storage. On the
+            // first detected change the upload becomes inevitable, so comparing stops until the next
+            // UpdateTexture restores it (single-bool check on the hot path).
+            if (m_CompareWritesNow)
+            {
+                if (value.Equals(m_Texels[index])) // must be exact: texels hold arbitrary payloads (rects, indices, flags...), and Vector4 == is approximate
+                    return;
+                m_CompareWritesNow = false;
+            }
+
+            m_Texels[index] = value;
+            m_Dirty = true;
         }
 
-        public override void UpdateTexture()
+        public void UpdateTexture()
         {
             if (disposed)
             {
@@ -145,15 +157,17 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            if (m_Texture == null || !m_Texels.IsCreated)
+            if (m_Texture == null || !m_Dirty)
                 return;
 
             using (s_MarkerUpdateTexture.Auto())
             {
                 m_Texture.Apply(false, false);
+                m_Dirty = false;
+                m_CompareWritesNow = m_CompareWritesRequested; // re-arm comparing for the next batch
                 // The native array can't be used after Apply has been called. By reseting it, we implicitly set IsCreated
                 // to false, which we use as the early-exit condition to prevent unnecessary calls to Apply.
-                m_Texels = new NativeArray<T>();
+                m_Texels = new NativeArray<Vector4>();
             }
         }
 
@@ -170,7 +184,7 @@ namespace UnityEngine.UIElements.UIR
                 copy = true;
             }
 
-            var newTexture = new Texture2D(m_Allocator.physicalWidth, m_Allocator.physicalHeight, m_Format, false)
+            var newTexture = new Texture2D(m_Allocator.physicalWidth, m_Allocator.physicalHeight, TextureFormat.RGBAFloat, false)
             {
                 name = "UIR Shader Info " + s_TextureCounter++,
                 hideFlags = HideFlags.HideAndDontSave,
@@ -181,22 +195,27 @@ namespace UnityEngine.UIElements.UIR
             {
                 using (s_MarkerCopyTexture.Auto())
                 {
-                    var oldTexels = m_Texels.IsCreated ? m_Texels : m_Texture.GetRawTextureData<T>();
-                    var newTexels = newTexture.GetRawTextureData<T>();
+                    var oldTexels = m_Texels.IsCreated ? m_Texels : m_Texture.GetRawTextureData<Vector4>();
+                    var newTexels = newTexture.GetRawTextureData<Vector4>();
                     CpuBlit(oldTexels, m_Texture.width, m_Texture.height, newTexels, newTexture.width, newTexture.height);
                     m_Texels = newTexels;
                 }
             }
             else
-                m_Texels = new NativeArray<T>();
+                m_Texels = new NativeArray<Vector4>();
+
+            // Content is initially considered dirty
+            m_Dirty = true;
+            m_CompareWritesNow = false;
 
             UIRUtility.Destroy(m_Texture);
             m_Texture = newTexture;
+            m_CachedTextureWidth = m_Texture.width;
         }
 
         // The src and dst texels are laid out per row from the bottom-left.
         // We blit src into the bottom-left corner of dst.
-        static void CpuBlit(NativeArray<T> src, int srcWidth, int srcHeight, NativeArray<T> dst, int dstWidth, int dstHeight)
+        static void CpuBlit(NativeArray<Vector4> src, int srcWidth, int srcHeight, NativeArray<Vector4> dst, int dstWidth, int dstHeight)
         {
             Debug.Assert(dstWidth >= srcWidth && dstHeight >= srcHeight); // We only support expansion
 
@@ -218,26 +237,6 @@ namespace UnityEngine.UIElements.UIR
                 srcBreak += srcWidth;
                 dstIndex += widthDiff; // Skip the extra columns from the destination
             }
-        }
-    }
-
-    class ShaderInfoStorageRGBA32 : ShaderInfoStorage<Color32>
-    {
-        static readonly Func<Color, Color32> s_Convert = c => c;
-
-        public ShaderInfoStorageRGBA32(int initialSize = 64, int maxSize = 4096) :
-            base(TextureFormat.RGBA32, s_Convert, initialSize, maxSize)
-        {
-        }
-    }
-
-    class ShaderInfoStorageRGBAFloat : ShaderInfoStorage<Color>
-    {
-        static readonly Func<Color, Color> s_Convert = c => c;
-
-        public ShaderInfoStorageRGBAFloat(int initialSize = 64, int maxSize = 4096) :
-            base(TextureFormat.RGBAFloat, s_Convert, initialSize, maxSize)
-        {
         }
     }
 }

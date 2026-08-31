@@ -864,9 +864,14 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Restore this world to the state captured in <paramref name="snapshot"/>, in place.
         /// The world keeps the same handles, so any <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/> and <see cref="PhysicsJoint"/> you already hold remain valid.
+        /// Applying a snapshot taken from a different world means existing handles for this world may alias objects restored from the snapshot or report invalid.
+        /// The snapshot image is fully validated before the world is touched, so a rejected snapshot leaves the world unchanged.
         /// </summary>
+        /// <remarks>
+        /// Validating and applying a snapshot processes the whole image, so this is not intended to be called at high frequency.
+        /// </remarks>
         /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/> on a compatible world.</param>
-        /// <returns>Whether the world was restored. Returns false if the snapshot or world is invalid, or the image is rejected.</returns>
+        /// <returns>Whether the world was restored. Returns false if the snapshot or world is invalid, or the image is rejected, in which case the world is unchanged.</returns>
         public readonly bool ApplySnapshot(Snapshot snapshot)
         {
             if (!snapshot.IsCreated)
@@ -883,16 +888,24 @@ namespace Unity.U2D.Physics
         /// <see cref="PhysicsWorldDefinition.gravity"/>, <see cref="PhysicsWorldDefinition.bounceThreshold"/>, <see cref="PhysicsWorldDefinition.contactHitEventThreshold"/>, <see cref="PhysicsWorldDefinition.contactFrequency"/>, <see cref="PhysicsWorldDefinition.contactDamping"/>, <see cref="PhysicsWorldDefinition.contactSpeed"/>, <see cref="PhysicsWorldDefinition.contactRecycleDistance"/>, <see cref="PhysicsWorldDefinition.maximumLinearSpeed"/>, <see cref="PhysicsWorldDefinition.sleepingAllowed"/>, <see cref="PhysicsWorldDefinition.continuousAllowed"/> and <see cref="PhysicsWorldDefinition.capacity"/>.
         /// All other <paramref name="definition"/> properties are applied normally, for example <see cref="PhysicsWorldDefinition.simulationWorkers"/> and <see cref="PhysicsWorldDefinition.simulationSubSteps"/>.
         /// To use a value other than the snapshot's, set the matching property on the returned world after this call.
+        /// Creating and restoring a world processes the whole image, so this is not intended to be called at high frequency.
         /// </remarks>
         /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/>.</param>
         /// <param name="definition">The world definition supplying the settings the snapshot does not store.</param>
-        /// <returns>The created world, restored to the snapshot state.</returns>
+        /// <returns>The created world restored to the snapshot state, or an invalid world if the snapshot was rejected or no world could be created.</returns>
         public static PhysicsWorld Create(Snapshot snapshot, PhysicsWorldDefinition definition)
         {
             // Create returns an invalid world when no world slots remain (a finite resource, see allocatedWorldCapacity); skip the restore in that case.
             var world = Create(definition);
-            if (world.isValid)
-                world.ApplySnapshot(snapshot);
+            if (!world.isValid)
+                return default;
+
+            // A rejected snapshot leaves the fresh world empty rather than restored, so hand back an invalid world instead of a silently empty one.
+            if (!world.ApplySnapshot(snapshot))
+            {
+                world.Destroy();
+                return default;
+            }
 
             return world;
         }
@@ -1299,11 +1312,18 @@ namespace Unity.U2D.Physics
             public float falloff { readonly get => m_Falloff; set => m_Falloff = Mathf.Max(0f, value); }
 
             /// <summary>
+            /// The maximum magnitude allowed for <see cref="impulsePerLength"/>.
+            /// Larger magnitudes have no useful effect because body speeds are capped each simulation step, so values are clamped into this range.
+            /// </summary>
+            public const float MaxImpulse = 100000f;
+
+            /// <summary>
             /// Impulse per unit length. This applies an impulse according to the shape perimeter that is facing the explosion.
             /// Explosions only apply to circles, capsules, and polygons.
             /// This may be negative for implosions.
+            /// The magnitude is clamped to <see cref="MaxImpulse"/>.
             /// </summary>
-            public float impulsePerLength { readonly get => m_ImpulsePerLength; set => m_ImpulsePerLength = value; }
+            public float impulsePerLength { readonly get => m_ImpulsePerLength; set => m_ImpulsePerLength = Mathf.Clamp(value, -MaxImpulse, MaxImpulse); }
 
             #region Internal
 
@@ -2256,44 +2276,58 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Describes the expected world capacities used to presize internal allocations when a <see cref="PhysicsWorld"/> is created.
         /// All counts default to zero, in which case the engine uses its own minimum defaults.
-        /// See <see cref="PhysicsWorldDefinition.capacity"/> and <see cref="PhysicsWorld.capacity"/>.
+        /// Every count is in the range zero to <see cref="MaxCapacity"/> and any value outside that range is clamped into it.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorldDefinition.capacity"/> and <see cref="PhysicsWorld.capacity"/>.
+        /// </remarks>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
         public struct WorldCapacity
         {
             /// <summary>
-            /// The expected number of static shapes.
+            /// The maximum value allowed for each of the counts.
+            /// Each count presizes an internal allocation, so this ceiling keeps the memory a single world can reserve up-front to a sane amount.
             /// </summary>
-            public int staticShapeCount { readonly get => m_StaticShapeCount; set => m_StaticShapeCount = Mathf.Max(0, value); }
+            public const int MaxCapacity = ushort.MaxValue;
 
             /// <summary>
-            /// The expected number of dynamic and kinematic shapes.
+            /// The expected number of static shapes, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
             /// </summary>
-            public int dynamicShapeCount { readonly get => m_DynamicShapeCount; set => m_DynamicShapeCount = Mathf.Max(0, value); }
+            public int staticShapeCount { readonly get => m_StaticShapeCount; set => m_StaticShapeCount = Mathf.Clamp(value, 0, MaxCapacity); }
 
             /// <summary>
-            /// The expected number of static bodies.
+            /// The expected number of dynamic and kinematic shapes, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
             /// </summary>
-            public int staticBodyCount { readonly get => m_StaticBodyCount; set => m_StaticBodyCount = Mathf.Max(0, value); }
+            public int dynamicShapeCount { readonly get => m_DynamicShapeCount; set => m_DynamicShapeCount = Mathf.Clamp(value, 0, MaxCapacity); }
 
             /// <summary>
-            /// The expected number of dynamic and kinematic bodies.
+            /// The expected number of static bodies, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
             /// </summary>
-            public int dynamicBodyCount { readonly get => m_DynamicBodyCount; set => m_DynamicBodyCount = Mathf.Max(0, value); }
+            public int staticBodyCount { readonly get => m_StaticBodyCount; set => m_StaticBodyCount = Mathf.Clamp(value, 0, MaxCapacity); }
 
             /// <summary>
-            /// The expected number of contacts.
+            /// The expected number of dynamic and kinematic bodies, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
             /// </summary>
-            public int contactCount { readonly get => m_ContactCount; set => m_ContactCount = Mathf.Max(0, value); }
+            public int dynamicBodyCount { readonly get => m_DynamicBodyCount; set => m_DynamicBodyCount = Mathf.Clamp(value, 0, MaxCapacity); }
+
+            /// <summary>
+            /// The expected number of contacts, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
+            /// </summary>
+            public int contactCount { readonly get => m_ContactCount; set => m_ContactCount = Mathf.Clamp(value, 0, MaxCapacity); }
 
             #region Internal
 
-            [SerializeField] [Min(0)] int m_StaticShapeCount;
-            [SerializeField] [Min(0)] int m_DynamicShapeCount;
-            [SerializeField] [Min(0)] int m_StaticBodyCount;
-            [SerializeField] [Min(0)] int m_DynamicBodyCount;
-            [SerializeField] [Min(0)] int m_ContactCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_StaticShapeCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_DynamicShapeCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_StaticBodyCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_DynamicBodyCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_ContactCount;
 
             #endregion
         }
@@ -2563,8 +2597,11 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Get the current world capacities reached since the world was created.
         /// This reflects the peak object counts and can be used to presize a <see cref="PhysicsWorldDefinition.capacity"/> for similar worlds.
-        /// See <see cref="PhysicsWorldDefinition.capacity"/>.
+        /// Peaks are not capped, so a peak above <see cref="WorldCapacity.MaxCapacity"/> is clamped to it when used to presize another world.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorldDefinition.capacity"/>.
+        /// </remarks>
         public readonly WorldCapacity capacity => PhysicsWorld_GetMaxCapacity(this);
 
         #endregion

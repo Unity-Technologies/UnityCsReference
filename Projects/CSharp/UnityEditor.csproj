@@ -5123,6 +5123,9 @@
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\BuildHeaderController.cs">
       <Link>Modules\BuildAnalysis\UI\Common\BuildHeaderController.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\KeyboardNavigation.cs">
+      <Link>Modules\BuildAnalysis\UI\Common\KeyboardNavigation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildAnalysis\UI\Common\LoadingOverlay.cs">
       <Link>Modules\BuildAnalysis\UI\Common\LoadingOverlay.cs</Link>
     </Compile>
@@ -14048,8 +14051,17 @@
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\FontAssetEditor.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\FontAssetEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\FontAssetEditorSubsetting.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\FontAssetEditorSubsetting.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\FontAssetEditorUtilities.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\FontAssetEditorUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\FontAssetStaticMigrator.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\FontAssetStaticMigrator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\FontSubsetterManager.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\FontSubsetterManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\ICUDataAssetUtilities.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\ICUDataAssetUtilities.cs</Link>
@@ -14143,6 +14155,9 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\TextStyleSheetEditor.cs">
       <Link>Modules\TextCoreTextEngineEditor\Managed\TextStyleSheetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngineEditor\Managed\UnicodeRanges.cs">
+      <Link>Modules\TextCoreTextEngineEditor\Managed\UnicodeRanges.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextRenderingEditor\AssemblyInfo.cs">
       <Link>Modules\TextRenderingEditor\AssemblyInfo.cs</Link>
@@ -17131,7 +17146,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_p4i1n9i6/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_66z5jybg/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

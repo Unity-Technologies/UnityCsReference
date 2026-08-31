@@ -271,7 +271,8 @@ namespace UnityEngine.UIElements
                     material = blurMaterial,
                     passIndex = 0,
                     readMargins = new(),
-                    writeMargins = new()
+                    writeMargins = new(),
+                    expandsBackdropCapture = true
                 },
                 // Pass 1: vertical blur
                 new PostProcessingPass
@@ -279,7 +280,8 @@ namespace UnityEngine.UIElements
                     material = blurMaterial,
                     passIndex = 1,
                     readMargins = new(),
-                    writeMargins = new()
+                    writeMargins = new(),
+                    expandsBackdropCapture = true
                 },
                 // Pass 2: composite — reads V-blur output AND the texture that fed pass 0.
                 new PostProcessingPass
@@ -289,6 +291,7 @@ namespace UnityEngine.UIElements
                     readMargins = new(),
                     writeMargins = new(),
                     requiredInputTextureName = "Source",
+                    expandsBackdropCapture = true
                 },
             };
 

@@ -20,7 +20,9 @@ namespace UnityEditor.Android
         /// 
         /// <remarks>
         /// Use this function to modify the generated Gradle files before the build process begins.
-        /// 
+        ///
+        /// Common uses include modifying the Android manifest file and changing the Gradle build files of the generated project. The manifest file is located at `src/main/AndroidManifest.xml` in the folder that `path` points to. For more information on the methods available to modify Gradle project files, refer to [[wiki:android-modify-gradle-project-files-methods|Modify the Gradle project files for a Unity application]].
+        ///
         /// **Note**: To compile the script for this function as an Editor script and prevent any compilation errors related to the `UnityEditor.Android` namespace, use one of these methods:
         /// 
         ///* Place the script in the `Assets/Editor` folder of your project.

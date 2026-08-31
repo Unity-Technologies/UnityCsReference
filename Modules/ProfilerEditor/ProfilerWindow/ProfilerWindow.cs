@@ -758,7 +758,7 @@ namespace UnityEditor
         internal void UpdateVisualTreeModulesOrder()
         {
             foreach (var module in m_AllModules)
-                module.ChartViewController.View.BringToFront();
+                module.ChartViewController?.View.BringToFront();
         }
 
         internal void OnModulePinnedStateChanged(ProfilerModule module)
@@ -836,7 +836,7 @@ namespace UnityEditor
             foreach (var module in m_AllModules)
             {
                 if (module.pinned && module.active)
-                    module.ChartViewController.View.BringToFront();
+                    module.ChartViewController?.View.BringToFront();
             }
         }
 
@@ -1852,14 +1852,17 @@ namespace UnityEditor
                 {
                     DeleteProfilerModuleAtIndex(index);
                 }
-
-                module.ResetToDefaultPreferences();
+                else
+                {
+                    module.ResetToDefaultPreferences();
+                }
 
                 index--;
             }
 
             SortModuleCollectionInPlace(ref m_AllModules);
             UpdateVisualTreeModulesOrder();
+            UpdatePinnedModulesOrder();
 
             PersistDynamicModulesToEditorPrefs();
             UpdateModules();
@@ -1991,7 +1994,8 @@ namespace UnityEditor
             moduleToDelete.active = false;
             moduleToDelete.OnDisable();
             moduleToDelete.DeleteAllPreferences();
-            moduleToDelete.ChartViewController?.Dispose();
+            // Clears the reference as well as disposing, so nothing can reach the dead controller.
+            moduleToDelete.DisposeChartViewController();
             m_AllModules.RemoveAt(index);
         }
 

@@ -21,6 +21,7 @@ namespace UnityEditor.TextCore.Text
             FontAsset.SetAtlasTextureIsReadable += FontEngineEditorUtilities.SetAtlasTextureIsReadable;
             FontAsset.GetSourceFontRef += TextEditorResourceManager.GetSourceFontRef;
             FontAsset.SetSourceFontGUID += TextEditorResourceManager.SetSourceFontGUID;
+            FontAsset.ResolveDynamicSourceFont += FontSubsetterManager.ResolveDynamicSourceFont;
             FontAsset.EditorApplicationIsUpdating += () => EditorApplication.isUpdating;
 
             // Callback to handle clearing dynamic font asset data when closing the Editor
@@ -35,7 +36,7 @@ namespace UnityEditor.TextCore.Text
                     string fontAssetPath = AssetDatabase.GUIDToAssetPath(fontAssetGUIDs[i]);
                     FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(fontAssetPath);
 
-                    if (fontAsset != null && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS) && fontAsset.clearDynamicDataOnBuild && fontAsset.atlasTexture.width > 1)
+                    if (fontAsset != null && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS) && fontAsset.clearDynamicDataOnBuild && fontAsset.atlasTexture != null && fontAsset.atlasTexture.width > 1)
                     {
                         Debug.Log("Clearing [" + fontAsset.name + "] dynamic font asset data.");
                         fontAsset.ClearCharacterAndGlyphTablesInternal();
@@ -187,7 +188,8 @@ namespace UnityEditor.TextCore.Text
         internal static Font GetSourceFontRef(string guid)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            return AssetDatabase.LoadAssetAtPath<Font>(path);
+            // A font path can hold hidden subset Font sub-assets; the editor ref must be the main font.
+            return AssetDatabase.LoadMainAssetAtPath(path) as Font ?? AssetDatabase.LoadAssetAtPath<Font>(path);
         }
 
         internal static string SetSourceFontGUID(Font font)

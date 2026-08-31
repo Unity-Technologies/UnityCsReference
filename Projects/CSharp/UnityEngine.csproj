@@ -1898,6 +1898,9 @@
     <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs">
       <Link>Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\AssemblyInfo.cs">
+      <Link>Modules\PhysicsCore2D\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\APIUpdates\PhysicsCore2D.obsolete.cs">
       <Link>Modules\PhysicsCore2D\Scripting\APIUpdates\PhysicsCore2D.obsolete.cs</Link>
     </Compile>
@@ -4450,6 +4453,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShaderInfoStorage.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRShaderInfoStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShaderInfoUpdateGuard.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRShaderInfoUpdateGuard.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShaders.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRShaders.cs</Link>
@@ -7117,7 +7123,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_p4i1n9i6/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_66z5jybg/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

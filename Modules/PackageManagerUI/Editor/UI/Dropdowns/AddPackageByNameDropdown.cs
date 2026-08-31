@@ -11,10 +11,13 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class AddPackageByNameDropdown : DropdownContent
     {
         private static readonly string k_NonCompliantDialogTitle = L10n.Tr("Restricted Package");
+        private static readonly string k_PartOfNonCompatiblePackageErrorMessage = "compatible with this Unity version";
 
-        private static readonly Vector2 k_DefaultWindowSize = new(320, 72);
-        private static readonly Vector2 k_WindowSizeWithError = new(320, 114);
-        public override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
+        private const float k_Width = 320f;
+        private const float k_BaseHeight = 72f;
+        private const float k_ErrorBoxSpacing = 8f;
+        private Vector2 m_CurrentSize = new(k_Width, k_BaseHeight);
+        public override Vector2 windowSize => m_CurrentSize;
 
         // We save the initial values and only set the field values when `OnDropdownShown` is called because
         // if we set it too early before the VisualElement is visible, the placeholder text will not show up correctly.
@@ -26,13 +29,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPageManager m_PageManager;
         private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly ICustomDisplayDialog m_CustomDisplayDialog;
-        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom)
+        private readonly IApplicationProxy m_ApplicationProxy;
+        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom, IApplicationProxy applicationProxy)
         {
             m_UpmClient = upmClient;
             m_PackageDatabase = packageDatabase;
             m_PageManager = packageManager;
             m_OperationDispatcher = packageOperationDispatcher;
             m_CustomDisplayDialog = displayDialogCustom;
+            m_ApplicationProxy = applicationProxy;
 
             styleSheets.Add(resourceLoader.inputDropdownStyleSheet);
 
@@ -44,6 +49,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageVersionField.textEdition.placeholder = L10n.Tr("Version (optional)");
 
             submitButton.clickable.clicked += SubmitClicked;
+
+            errorInfoBox.RegisterCallback<GeometryChangedEvent>(OnErrorInfoBoxGeometryChanged);
+        }
+
+        private void OnErrorInfoBoxGeometryChanged(GeometryChangedEvent evt)
+        {
+            var errorHeight = string.IsNullOrEmpty(errorInfoBox.text)
+                ? 0f
+                : Mathf.Ceil(evt.newRect.height) + k_ErrorBoxSpacing;
+            var newSize = new Vector2(k_Width, k_BaseHeight + errorHeight);
+            if (newSize == m_CurrentSize)
+                return;
+
+            m_CurrentSize = newSize;
+            if (container != null)
+            {
+                container.minSize = newSize;
+                container.maxSize = newSize;
+            }
         }
 
         public override void OnDropdownShown()
@@ -77,7 +101,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageVersionField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
         }
 
-        private void SetError(bool isNameError = false, bool isVersionError = false)
+        private void SetError(bool isNameError = false, bool isVersionError = false, string customErrorMessage = null)
         {
             packageVersionField.RemoveFromClassList("error");
             packageNameField.RemoveFromClassList("error");
@@ -92,6 +116,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 errorInfoBox.text = L10n.Tr("Unable to find the package with the specified version.\nPlease check the version and try again.");
                 packageVersionField.AddToClassList("error");
+            }
+
+            if (!string.IsNullOrEmpty(customErrorMessage))
+            {
+                errorInfoBox.text = customErrorMessage;
+                packageNameField.AddToClassList("error");
             }
             ShowWithNewWindowSize();
         }
@@ -148,7 +178,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                     else
                         SetError(isNameError: true);
                 },
-                errorCallback: error => SetError(isNameError: true));
+                errorCallback: error =>
+                {
+                    if (error.message?.Contains(k_PartOfNonCompatiblePackageErrorMessage) == true)
+                    {
+                        var message = string.Format(
+                                L10n.Tr("Unable to find a version of package [{0}] compatible with this Unity version ({1})."),
+                                packageName, m_ApplicationProxy.unityVersion);
+                        SetError(customErrorMessage: message);
+                    }
+                    else
+                        SetError(isNameError: true);
+                });
 
             inputForm.SetEnabled(false);
         }

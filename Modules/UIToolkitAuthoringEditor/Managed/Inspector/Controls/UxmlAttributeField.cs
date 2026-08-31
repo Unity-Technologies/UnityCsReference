@@ -102,6 +102,8 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
     readonly List<string> s_BindingIgnoredAttributeNames = ["property"];
 
+    const string k_ArraySizeRelativePath = "Array.size";
+
     class ContentContainer : VisualElement
     {
         IBindable m_Bindable;
@@ -186,6 +188,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
     UxmlSerializedDataPropertyView m_PropertyView;
     SerializedProperty m_BoundProperty;
     SerializedProperty m_BoundPropertyFlags;
+    SerializedProperty m_BoundPropertyArraySize;
     UxmlSerializedAttributeDescription m_BoundAttributeDescription;
     UxmlAttributesEditingContext m_Context;
     OverrideRow m_OverrideRow;
@@ -250,6 +253,9 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
             m_BoundProperty = value;
             m_BoundPropertyFlags = m_BoundProperty?.GetUxmlAttributeFlags();
+            m_BoundPropertyArraySize = m_BoundProperty is { isArray: true }
+                ? m_BoundProperty.FindPropertyRelative(k_ArraySizeRelativePath)
+                : null;
             m_CachedFullBindingPath = null;
 
             TrackPropertyValueChange();
@@ -731,6 +737,8 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
         this.TrackPropertyValue(m_BoundProperty, OnPropertyChanged);
 
+        if (m_BoundPropertyArraySize is { isValid: true })
+            this.TrackPropertyValue(m_BoundPropertyArraySize, OnArraySizeChanged);
 
         if (m_BoundPropertyFlags is not { isValid: true })
             return;
@@ -752,6 +760,45 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             // Untrack the property even if it may be invalid
             this.UntrackPropertyValue(m_BoundPropertyFlags, OnPropertyChanged);
         }
+
+        if (m_BoundPropertyArraySize != null)
+        {
+            var _ = m_BoundPropertyArraySize.isValid;
+            this.UntrackPropertyValue(m_BoundPropertyArraySize, OnArraySizeChanged);
+        }
+    }
+
+    void OnArraySizeChanged(object obj, SerializedProperty property)
+    {
+        if (context == null
+            || boundProperty is not { isValid: true, isArray: true }
+            || boundAttributeDescription is not { isList: true, isUxmlObject: true })
+            return;
+
+        var acceptedTypes = boundAttributeDescription.uxmlObjectAcceptedTypes;
+
+        // With more than one accepted type there is no unambiguous choice, so leave the items null.
+        if (acceptedTypes.Count != 1 || !RejectsNullItems(acceptedTypes[0]))
+            return;
+
+        if (!UxmlAssetUtilities.FillNullArrayItemsInSerializedData(context, boundProperty, acceptedTypes[0]))
+            return;
+
+        FindUxmlObjectListView()?.Rebuild();
+    }
+
+    static bool RejectsNullItems(Type uxmlSerializedDataType)
+    {
+        var itemType = uxmlSerializedDataType?.DeclaringType;
+
+        return itemType == typeof(Column) || itemType == typeof(SortColumnDescription);
+    }
+
+    ListView FindUxmlObjectListView()
+    {
+        var propertyField = m_ContentContainer.bindable as PropertyField;
+
+        return propertyField?.Q<ListView>(classes: PropertyField.listViewUssClassName);
     }
 
     void OnPropertyFieldReset()
@@ -767,12 +814,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
     void HandleUxmlObjectListProperty()
     {
-        var propertyField = m_ContentContainer.bindable as PropertyField;
-
-        if (propertyField == null || propertyField.childCount == 0)
-            return;
-
-        var listView = propertyField.Q<ListView>(classes: PropertyField.listViewUssClassName);
+        var listView = FindUxmlObjectListView();
         if (listView == null)
             return;
 

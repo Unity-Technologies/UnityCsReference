@@ -74,6 +74,95 @@ namespace UnityEngine.UIElements
         internal Vector4 circle; // XY (outer) ZW (inner) | X (Text Extra Dilate)
 
         // Winding order of vertices matters. CCW is for clipped meshes.
+
+        /// <summary>
+        /// Interpolates between two vertices, writing into <paramref name="result"/> a new vertex a fraction
+        /// <paramref name="t"/> of the way from <paramref name="a"/> to <paramref name="b"/>.
+        /// </summary>
+        /// <remarks>
+        /// Use this when a mesh modifier adds vertices between existing ones — for example when subdividing,
+        /// tessellating, or clipping geometry. The continuous vertex data (position, tint, texture coordinate, and
+        /// the internal anti-aliasing data) is blended; the discrete per-vertex data that identifies the draw
+        /// (clipping, element, texture, and gradient identifiers, and flags) is taken from <paramref name="a"/>.
+        ///
+        /// Because that discrete data is copied rather than blended, <paramref name="a"/> and <paramref name="b"/>
+        /// must belong to the same fill (the same draw within one <see cref="VisualElement"/>) — which is always
+        /// the case when resampling the triangles of a single mesh. <paramref name="t"/> is not clamped: values
+        /// outside the 0..1 range extrapolate beyond the endpoints.
+        /// </remarks>
+        /// <param name="a">The vertex written to <paramref name="result"/> when <paramref name="t"/> is 0.</param>
+        /// <param name="b">The vertex written to <paramref name="result"/> when <paramref name="t"/> is 1.</param>
+        /// <param name="t">The interpolation factor. 0 selects <paramref name="a"/>, 1 selects <paramref name="b"/>.</param>
+        /// <param name="result">Receives the interpolated vertex.</param>
+        public static void Lerp(in Vertex a, in Vertex b, float t, out Vertex result)
+        {
+            result = a; // discrete data (ids/flags) rides along from a
+            result.position = Vector3.LerpUnclamped(a.position, b.position, t);
+            result.tint = Color32.LerpUnclamped(a.tint, b.tint, t);
+            result.uv = Vector2.LerpUnclamped(a.uv, b.uv, t);
+            result.layoutUV = Vector2.LerpUnclamped(a.layoutUV, b.layoutUV, t);
+            result.circle = Vector4.LerpUnclamped(a.circle, b.circle, t);
+        }
+
+        /// <summary>
+        /// Interpolates between two vertices, returning a new vertex a fraction <paramref name="t"/> of the way
+        /// from <paramref name="a"/> to <paramref name="b"/>. Convenience overload that returns the result instead
+        /// of writing to an out parameter — handy when the value is temporary.
+        /// </summary>
+        /// <param name="a">The vertex returned when <paramref name="t"/> is 0.</param>
+        /// <param name="b">The vertex returned when <paramref name="t"/> is 1.</param>
+        /// <param name="t">The interpolation factor. 0 returns <paramref name="a"/>, 1 returns <paramref name="b"/>.</param>
+        /// <returns>The interpolated vertex.</returns>
+        public static Vertex Lerp(in Vertex a, in Vertex b, float t)
+        {
+            Lerp(in a, in b, t, out Vertex result);
+            return result;
+        }
+
+        /// <summary>
+        /// Interpolates between three vertices using barycentric weights, writing into <paramref name="result"/>
+        /// a vertex at an arbitrary point inside (or outside) the triangle they form.
+        /// </summary>
+        /// <remarks>
+        /// Use this to place a vertex anywhere within a triangle — for example when re-meshing or clipping a fill.
+        /// As with <see cref="Lerp(in Vertex, in Vertex, float, out Vertex)"/>, the continuous vertex data is
+        /// blended and the discrete identifying data is taken from <paramref name="a"/>, so the three vertices must
+        /// belong to the same fill. The weights are expected to sum to 1 for a point inside the triangle, but are
+        /// not validated.
+        /// </remarks>
+        /// <param name="a">The first triangle vertex, weighted by <paramref name="u"/>.</param>
+        /// <param name="b">The second triangle vertex, weighted by <paramref name="v"/>.</param>
+        /// <param name="c">The third triangle vertex, weighted by <paramref name="w"/>.</param>
+        /// <param name="u">The barycentric weight of <paramref name="a"/>.</param>
+        /// <param name="v">The barycentric weight of <paramref name="b"/>.</param>
+        /// <param name="w">The barycentric weight of <paramref name="c"/>.</param>
+        /// <param name="result">Receives the interpolated vertex.</param>
+        public static void BarycentricInterpolate(in Vertex a, in Vertex b, in Vertex c, float u, float v, float w, out Vertex result)
+        {
+            result = a; // discrete data (ids/flags) rides along from a
+            result.position = a.position * u + b.position * v + c.position * w;
+            result.tint = (Color)a.tint * u + (Color)b.tint * v + (Color)c.tint * w;
+            result.uv = a.uv * u + b.uv * v + c.uv * w;
+            result.layoutUV = a.layoutUV * u + b.layoutUV * v + c.layoutUV * w;
+            result.circle = a.circle * u + b.circle * v + c.circle * w;
+        }
+
+        /// <summary>
+        /// Interpolates between three vertices using barycentric weights, returning the vertex at that point.
+        /// Convenience overload that returns the result instead of writing to an out parameter.
+        /// </summary>
+        /// <param name="a">The first triangle vertex, weighted by <paramref name="u"/>.</param>
+        /// <param name="b">The second triangle vertex, weighted by <paramref name="v"/>.</param>
+        /// <param name="c">The third triangle vertex, weighted by <paramref name="w"/>.</param>
+        /// <param name="u">The barycentric weight of <paramref name="a"/>.</param>
+        /// <param name="v">The barycentric weight of <paramref name="b"/>.</param>
+        /// <param name="w">The barycentric weight of <paramref name="c"/>.</param>
+        /// <returns>The interpolated vertex.</returns>
+        public static Vertex BarycentricInterpolate(in Vertex a, in Vertex b, in Vertex c, float u, float v, float w)
+        {
+            BarycentricInterpolate(in a, in b, in c, u, v, w, out Vertex result);
+            return result;
+        }
     }
 
     /// <summary>

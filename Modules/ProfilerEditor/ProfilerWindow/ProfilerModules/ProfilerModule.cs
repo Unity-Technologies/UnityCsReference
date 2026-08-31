@@ -360,6 +360,12 @@ namespace Unity.Profiling.Editor
             if (m_ChartViewController == null)
                 return;
 
+            if (m_ChartViewController.IsDisposed)
+            {
+                m_ChartViewController = null;
+                return;
+            }
+
             // Keep current parent and dispose
             var parent = m_ChartViewController.View.parent;
             m_ChartViewController.Dispose();
@@ -367,18 +373,27 @@ namespace Unity.Profiling.Editor
 
             m_ChartModelBuilder = null;
 
-            // Re-create and add
-            parent.Add(CreateChartView());
+            // Re-create, and restore the previous parent when there was one. A null parent means the
+            // chart was not in the hierarchy; still rebuild the controller so the module is never
+            // left without one, and leave placement to the window.
+            var chartView = CreateChartView();
+            parent?.Add(chartView);
             Update();
 
             ProfilerWindow.UpdateVisualTreeModulesOrder();
+        }
+
+        internal void DisposeChartViewController()
+        {
+            m_ChartViewController?.Dispose();
+            m_ChartViewController = null;
         }
 
         internal virtual void Clear()
         {
             m_LastUpdatedFrameIndex = k_NoFrameIndex;
             m_ChartModelBuilder?.ResetChartState();
-            m_ChartViewController.Clear();
+            m_ChartViewController?.Clear();
         }
 
         internal virtual void OnNativePlatformSupportModuleChanged() {}

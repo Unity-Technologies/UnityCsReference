@@ -224,13 +224,16 @@ namespace UnityEditor
 
             // Don't remove "Assets" prefix, we need to support Packages as well (https://fogbugz.unity3d.com/f/cases/1161019/)
             string path = AssetDatabase.GetAssetPath(instanceID);
-            if (path.IndexOf(' ') != -1)
-                path = '"' + path + '"';
 
             if (AssetDatabase.IsMainAsset(instanceID))
-                searchFilter = $"ref:{path}";
+                searchFilter = path;
             else
-                searchFilter = $"ref:{instanceID}:{path}";
+                searchFilter = $"{instanceID}:{path}";
+
+            if (searchFilter.IndexOf(' ') != -1)
+                searchFilter = '"' + searchFilter + '"';
+
+            searchFilter = $"ref:{searchFilter}";
 
             SetSearchText(searchFilter, HierarchyType.GameObjects);
         }

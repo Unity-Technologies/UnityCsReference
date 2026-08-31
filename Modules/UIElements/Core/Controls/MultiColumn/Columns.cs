@@ -205,6 +205,9 @@ namespace UnityEngine.UIElements
                 Clear();
                 foreach (var c in value)
                 {
+                    if (c == null)
+                        continue;
+
                     Add(c);
                 }
             }

@@ -25,6 +25,13 @@ namespace Unity.Loading
     /// <see cref="MonoBehaviour"/>. You can also use LoadableObjectId directly as a field type in a ScriptableObject or MonoBehaviour,
     /// and then create <see cref="Loadable{T}"/> objects on the fly as needed.
     ///
+    /// Using LoadableObjectId directly suits a root asset that acts as a library of assets shared by several components. Because
+    /// LoadableObjectId has no load or release methods of its own, it makes clear that each caller constructs its own
+    /// <see cref="Loadable{T}"/> and owns the lifetime of the object it loads.
+    ///
+    /// LoadableObjectId has no generic type parameter, so it can reference any <see cref="Object"/>. Add your own validation if a
+    /// field must only accept a specific type.
+    ///
     /// When those objects are built as part of a content directory, the assets referenced by the
     /// LoadableObjectId are recursively pulled into the build output. At runtime, the <see cref="ContentLoadManager"/> resolves
     /// LoadableObjectIds to the correct built content as long as it is part of the currently registered content directories.

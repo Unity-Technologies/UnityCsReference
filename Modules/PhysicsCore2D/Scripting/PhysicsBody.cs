@@ -490,10 +490,17 @@ namespace Unity.U2D.Physics
             }
 
             /// <summary>
+            /// The maximum magnitude allowed for each component of <see cref="force"/>.
+            /// Larger magnitudes have no useful effect because body speeds are capped each simulation step, so values are clamped into this range.
+            /// </summary>
+            public const float MaxForce = 100000f;
+
+            /// <summary>
             /// The wind velocity vector.
             /// Scaled by <see cref="drag"/> when computing the per-shape aerodynamic relative velocity.
+            /// Each component's magnitude is clamped to <see cref="MaxForce"/>.
             /// </summary>
-            public Vector2 force { readonly get => m_Force; set => m_Force = value; }
+            public Vector2 force { readonly get => m_Force; set => m_Force = new Vector2(Mathf.Clamp(value.x, -MaxForce, MaxForce), Mathf.Clamp(value.y, -MaxForce, MaxForce)); }
 
             /// <summary>
             /// Drag coefficient.

@@ -13,7 +13,6 @@ using UnityEngine.Assemblies;
 
 namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
 {
-    [MigratedToRulesPackage(2)]
     class BuiltinSettingsAnalyzer : SettingsModuleAnalyzer
     {
         readonly List<Assembly> m_Assemblies = new List<Assembly>();

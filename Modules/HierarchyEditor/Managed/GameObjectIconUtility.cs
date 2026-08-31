@@ -72,24 +72,24 @@ namespace Unity.Hierarchy.Editor
 
         public static void SetNodeIconForObject(HierarchyViewItem item, GameObject gameObject)
         {
-            item.Icon.style.backgroundImage = StyleKeyword.Null;
-
             var isPrefabRoot = PrefabUtility.IsAnyPrefabInstanceRoot(gameObject);
 
             // Skip SetNodePrefabGenericStyle and SetNodePrefabRootStyle for broken prefabs
             if (isPrefabRoot && (PrefabUtility.GetPrefabAssetType(gameObject) == PrefabAssetType.MissingAsset || PrefabUtility.GetPrefabInstanceStatus(gameObject) != PrefabInstanceStatus.Connected))
             {
                 HierarchyViewPrefabStyleUtility.SetBrokenPrefabStyle(item);
+                item.Icon.style.backgroundImage = StyleKeyword.Null;
                 return;
             }
 
+            StyleBackground icon = StyleKeyword.Null;
             HierarchyViewPrefabStyleUtility.SetNodePrefabGenericStyle(gameObject, item);
 
             // User Defined
             var gameObjectIcon = ShouldShowUserDefinedIcons ? EditorGUIUtility.GetIconForObject(gameObject) : null;
             if (gameObjectIcon != null)
             {
-                item.Icon.style.backgroundImage = GetHv2GizmoIcon(gameObjectIcon.name) ?? gameObjectIcon;
+                icon = GetHv2GizmoIcon(gameObjectIcon.name) ?? gameObjectIcon;
                 HierarchyViewPrefabStyleUtility.ClearPrefabRootStyle(item);
             }
 
@@ -109,11 +109,13 @@ namespace Unity.Hierarchy.Editor
                     gameObject.GetComponents(s_ComponentBuffer);
 
                     // Use topmost component, if none use transform
-                    var icon = AssetPreview.GetMiniThumbnail(s_ComponentBuffer.Count > 1 ? s_ComponentBuffer[1] : s_ComponentBuffer[0]);
-                    if (icon != null)
-                        item.Icon.style.backgroundImage = GetHv2GizmoIcon(icon.name) ?? icon;
+                    var thumbnail = AssetPreview.GetMiniThumbnail(s_ComponentBuffer.Count > 1 ? s_ComponentBuffer[1] : s_ComponentBuffer[0]);
+                    if (thumbnail != null)
+                        icon = GetHv2GizmoIcon(thumbnail.name) ?? thumbnail;
                 }
             }
+
+            item.Icon.style.backgroundImage = icon;
         }
     }
 }

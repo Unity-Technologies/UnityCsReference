@@ -144,7 +144,7 @@ namespace Unity.Burst.Editor
         internal SearchField _searchFieldAssembly;
         private bool saveSearchFieldFromEvent = false;
 
-        [SerializeField] private bool _searchBarVisible = true;
+        [SerializeField] internal bool _searchBarVisible = true;
 
         [SerializeField] private string _selectedItem;
 
@@ -589,6 +589,15 @@ namespace Unity.Burst.Editor
 
         private bool AssemblyFocused() => !((_treeView != null && _treeView.HasFocus()) || (_searchFieldAssembly != null && _searchFieldAssembly.HasFocus()));
 
+        private void EnsureSearchFieldAssembly()
+        {
+            if (_searchFieldAssembly == null)
+            {
+                _searchFieldAssembly = new SearchField();
+                _searchFieldAssembly.autoSetFocusOnFindCommand = false;
+            }
+        }
+
         private void HandleKeyboardEventAssemblyView(Rect workingArea, KeyboardOperation op, Event evt, bool showBranchMarkers)
         {
             switch (op)
@@ -656,7 +665,8 @@ namespace Unity.Burst.Editor
                     break;
                 case KeyboardOperation.Search:
                     _searchBarVisible = true;
-                    _searchFieldAssembly?.SetFocus();
+                    EnsureSearchFieldAssembly();
+                    _searchFieldAssembly.SetFocus();
                     evt.Use();
                     break;
             }
@@ -696,6 +706,15 @@ namespace Unity.Burst.Editor
                         {
                             _textArea.NextSearchHit(evt.shift, workingArea);
                             saveSearchFieldFromEvent = true;
+                            evt.Use();
+                        }
+                        break;
+                    case KeyboardOperation.Search:
+                        if (!_searchBarVisible)
+                        {
+                            _searchBarVisible = true;
+                            EnsureSearchFieldAssembly();
+                            _searchFieldAssembly.SetFocus();
                             evt.Use();
                         }
                         break;
@@ -1136,11 +1155,7 @@ namespace Unity.Burst.Editor
 
                     if (_searchBarVisible)
                     {
-                        if (_searchFieldAssembly == null)
-                        {
-                            _searchFieldAssembly = new SearchField();
-                            _searchFieldAssembly.autoSetFocusOnFindCommand = false;
-                        }
+                        EnsureSearchFieldAssembly();
 
                         int hitnumbers = _textArea.NrSearchHits > 0 ? _textArea.ActiveSearchNr + 1 : 0;
                         var hitNumberContent = new GUIContent("    " + hitnumbers + " of " + _textArea.NrSearchHits + " hits");
@@ -1269,11 +1284,12 @@ namespace Unity.Burst.Editor
         {
             _searchBarVisible = !_searchBarVisible;
 
-            if (_searchBarVisible && _searchFieldAssembly != null)
+            if (_searchBarVisible)
             {
+                EnsureSearchFieldAssembly();
                 _searchFieldAssembly.SetFocus();
             }
-            else if (!_searchBarVisible)
+            else
             {
                 _textArea.StopSearching();
             }

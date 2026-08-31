@@ -165,7 +165,7 @@ namespace Unity.Hierarchy
             /// <summary>
             /// Content to persist when saving layout.
             /// </summary>
-            Layout = Content.Columns,
+            Layout = Content.Columns | Content.ViewModelState,
 
             /// <summary>
             /// Content to persist when saving hierarchy preferences.

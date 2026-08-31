@@ -2755,28 +2755,26 @@ namespace Unity.UI.Builder
 
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            if (newValue.texture == null)
+            // Only a texture under Resources needs writing here; SetCursor covers every other shape.
+            if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue.texture, out var resolvedResourcePath))
             {
-                styleProperty.SetKeyword(styleSheet, StyleKeyword.Initial);
-            }
-            else if (newValue.hotspot == Vector2.zero)
-            {
-                if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue.texture, out var resolvedResourcePath))
+                if (newValue.hotspot == Vector2.zero)
+                {
                     styleProperty.SetResourcePath(styleSheet, resolvedResourcePath);
+                }
                 else
-                    styleProperty.SetAssetReference(styleSheet, newValue.texture);
+                {
+                    if (styleProperty.handleCount != 3)
+                        styleProperty.values = new StyleValueHandle[3];
+
+                    styleSheet.WriteResourcePath(ref styleProperty.values[0], resolvedResourcePath);
+                    styleSheet.WriteFloat(ref styleProperty.values[1], newValue.hotspot.x);
+                    styleSheet.WriteFloat(ref styleProperty.values[2], newValue.hotspot.y);
+                }
             }
             else
             {
-                if (styleProperty.handleCount != 3)
-                    styleProperty.values = new StyleValueHandle[3];
-                if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue.texture, out var resolvedResourcePath))
-                    styleSheet.WriteResourcePath(ref styleProperty.values[0], resolvedResourcePath);
-                else
-                    styleSheet.WriteAssetReference(ref styleProperty.values[0], newValue.texture);
-
-                styleSheet.WriteFloat(ref styleProperty.values[1], newValue.hotspot.x);
-                styleSheet.WriteFloat(ref styleProperty.values[2], newValue.hotspot.y);
+                styleProperty.SetCursor(styleSheet, newValue);
             }
 
             PostStyleFieldSteps(e.target as VisualElement, styleProperty, styleName, isNewValue);

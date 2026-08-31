@@ -463,8 +463,7 @@ namespace UnityEngine.UIElements
             }
             if (rootVisualElement != null)
             {
-                rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
-                rootVisualElement.ReleaseResources();
+                ReleaseRootVisualElement();
                 rootVisualElement = null;
             }
         }
@@ -519,17 +518,19 @@ namespace UnityEngine.UIElements
 
         void InitRootVisualElement(bool visualTreeAssetChanged = false)
         {
-            if (rootVisualElement != null && visualTreeAssetChanged)
+            // UUM-148452: a parent rebuild may have released this root out from under us; it can't be reused.
+            bool rootReleased = rootVisualElement is { resourcesReleased: true };
+
+            if (rootVisualElement != null && (visualTreeAssetChanged || rootReleased))
                 panelSettings?.DetachPanelComponent(this);
 
-            if (visualTreeAssetChanged || rootVisualElement == null)
+            if (visualTreeAssetChanged || rootVisualElement == null || rootReleased)
             {
                 if (rootVisualElement != null)
                 {
                     RemoveVisualTreeAssetTracker();
                     referenceProvider.UnloadReferences();
-                    rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
-                    rootVisualElement.ReleaseResources();
+                    ReleaseRootVisualElement();
                 }
 
                 if (visualTreeAsset == null)
@@ -575,10 +576,16 @@ namespace UnityEngine.UIElements
 
         internal void SetupFromHierarchy()
         {
-            if (parentUI != null)
-                parentUI.RemoveChild(this);
+            var previousParentUI = parentUI;
+
+            if (previousParentUI != null)
+                previousParentUI.RemoveChild(this);
 
             parentUI = FindParentPanelRenderer();
+
+            // Losing and gaining a parent both move our root, so only a renderer that stays unparented keeps its place.
+            if (previousParentUI != null || parentUI != null)
+                requiresReinsertion = true;
         }
 
         private PanelRenderer FindParentPanelRenderer()
@@ -661,6 +668,41 @@ namespace UnityEngine.UIElements
         void RemoveChild(PanelRenderer child)
         {
             m_ChildrenContent?.RemoveFromListAndFromVisualTree(child);
+        }
+
+        void ReleaseRootVisualElement()
+        {
+            if (rootVisualElement.resourcesReleased)
+                return;
+
+            DetachChildRootsAndMarkForReinsertion();
+            rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
+            rootVisualElement.ReleaseResources();
+        }
+
+        // UUM-148452: nested child PanelRenderers parent their roots into this tree, but those roots are
+        // owned by the child components. Detach them before the recursive release and flag them to
+        // re-insert into the new root, otherwise they'd be left holding released elements.
+        void DetachChildRootsAndMarkForReinsertion()
+        {
+            if (m_ChildrenContent == null)
+                return;
+
+            bool detachedAny = false;
+            foreach (var child in m_ChildrenContent.m_AttachedPanelComponents)
+            {
+                if (child is not PanelRenderer childRenderer || childRenderer == null)
+                    continue;
+
+                childRenderer.rootVisualElement?.RemoveFromHierarchy();
+                // Not the requiresReinsertion setter: it mutates s_DirtyPanelRenderers, which
+                // PreUpdatePanelRenderers may be enumerating when this runs.
+                childRenderer.m_RequiresReinsertion = true;
+                detachedAny = true;
+            }
+
+            if (detachedAny)
+                shouldCheckForRequiredReinsertions = true;
         }
 
         internal void SetupPosition()

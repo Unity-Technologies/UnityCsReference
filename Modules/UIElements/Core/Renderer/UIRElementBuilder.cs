@@ -38,17 +38,19 @@ namespace UnityEngine.UIElements.UIR
 
                 mgc.AllocateTempMesh(4, 6, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
 
-                vertices[0] = new Vertex { position = new Vector3(quad.xMin, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMin) }; // BL
-                vertices[1] = new Vertex { position = new Vector3(quad.xMin, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMax) }; // TL
-                vertices[2] = new Vertex { position = new Vector3(quad.xMax, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMax) }; // TR
-                vertices[3] = new Vertex { position = new Vector3(quad.xMax, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMin) }; // BR
+                UIRUtility.ConvertSlicesToSpans(vertices, indices, out var vertexSpan, out var indexSpan);
 
-                indices[0] = 0;
-                indices[1] = 1;
-                indices[2] = 2;
-                indices[3] = 2;
-                indices[4] = 3;
-                indices[5] = 0;
+                vertexSpan[0] = new Vertex { position = new Vector3(quad.xMin, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMin) }; // BL
+                vertexSpan[1] = new Vertex { position = new Vector3(quad.xMin, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMax) }; // TL
+                vertexSpan[2] = new Vertex { position = new Vector3(quad.xMax, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMax) }; // TR
+                vertexSpan[3] = new Vertex { position = new Vector3(quad.xMax, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMin) }; // BR
+
+                indexSpan[0] = 0;
+                indexSpan[1] = 1;
+                indexSpan[2] = 2;
+                indexSpan[3] = 2;
+                indexSpan[4] = 3;
+                indexSpan[5] = 0;
 
                 mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, nestedRenderTree.quadTextureId, true, nestedRenderTree.quadIsGammaEncoded);
             }

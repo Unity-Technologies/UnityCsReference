@@ -163,8 +163,28 @@ namespace Unity.Loading
         }
 
         /// <summary>
-        /// Releases the loaded object.
+        /// Releases the loaded object so that Unity can unload it.
         /// </summary>
+        /// <remarks>
+        /// Unity reference counts the loaded object, so loading the same asset through several <see cref="Loadable{T}"/>
+        /// instances works correctly, and the object unloads only when the last reference is released.
+        ///
+        /// Each <see cref="Loadable{T}"/> instance holds at most one reference. Repeated <see cref="Load"/> or
+        /// <see cref="LoadAsync"/> calls on the same instance return the same load operation without taking another
+        /// reference, so a single Release frees it and any further Release does nothing. Release every instance that you
+        /// loaded, otherwise the object stays loaded after your code stops using it.
+        ///
+        /// Release is not recursive. If this Loadable references a <see cref="ScriptableObject"/> that has loaded
+        /// <see cref="Loadable{T}"/> fields of its own, releasing this Loadable does not release those inner ones. Release
+        /// each <see cref="Loadable{T}"/> that was loaded.
+        ///
+        /// The <c>OnDestroy</c> message of a <see cref="MonoBehaviour"/> is a good place to release its
+        /// <see cref="Loadable{T}"/> fields, so that unloading a scene or destroying a prefab instance does not leave
+        /// content loaded that nothing can reach.
+        ///
+        /// Release has no effect on content that was loaded from the <see cref="UnityEditor.AssetDatabase"/> in Play mode,
+        /// because that content is not reference counted. Refer to the <see cref="Loadable{T}"/> remarks for details.
+        /// </remarks>
         public void Release()
         {
             if (m_loadOperation != null)

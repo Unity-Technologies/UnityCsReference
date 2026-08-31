@@ -1401,6 +1401,13 @@ namespace UnityEngine.UIElements
                 Debug.LogWarning("Runtime cursors other than the default cursor need to be defined using a texture.");
             }
 
+            // No texture: a null asset reference warns on resolve and serializes as url("").
+            if (value.texture == null)
+            {
+                SetKeyword(styleSheet, StyleValueKeyword.Initial);
+                return;
+            }
+
             if (value.hotspot != Vector2.zero)
             {
                 SetSize(ref m_Values, 3);
@@ -1413,6 +1420,8 @@ namespace UnityEngine.UIElements
                 SetSize(ref m_Values, 1);
                 styleSheet.WriteAssetReference(ref values[0], value.texture);
             }
+
+            requireVariableResolve = false;
         }
 
         /// <summary>

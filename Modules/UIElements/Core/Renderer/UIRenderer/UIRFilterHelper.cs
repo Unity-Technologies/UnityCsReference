@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.UIElements.UIR
@@ -21,6 +22,93 @@ namespace UnityEngine.UIElements.UIR
         // the full-texture rect. Kept here (the shared filter-rendering home) so a shader rename is
         // a single-point change.
         internal static readonly int s_UVRectId = Shader.PropertyToID("unity_uie_UVRect");
+
+        // Reserved name for the texture that fed the first pass of the current filter.
+        public const string k_SourceInputName = "Source";
+
+        public struct InputBindingIds
+        {
+            public int texId;
+            public int scaleOffsetId;
+            public int uvRectId;
+        }
+
+        [NoAutoStaticsCleanup] // shader property ID cache; no user type references
+        static readonly Dictionary<string, InputBindingIds> s_InputBindingIds = new();
+
+        public static InputBindingIds GetInputBindingIds(string name)
+        {
+            if (!s_InputBindingIds.TryGetValue(name, out var ids))
+            {
+                ids = new InputBindingIds {
+                    texId         = Shader.PropertyToID($"_{name}Tex"),
+                    scaleOffsetId = Shader.PropertyToID($"_{name}Tex_ST"),
+                    uvRectId      = Shader.PropertyToID($"_{name}Tex_UVRect"),
+                };
+                s_InputBindingIds[name] = ids;
+            }
+            return ids;
+        }
+
+        public static PostProcessingMargins GetReadMargins(PostProcessingPass pass, FilterFunction filterFunc)
+        {
+            return pass.computeRequiredReadMarginsCallback != null
+                ? pass.computeRequiredReadMarginsCallback(filterFunc)
+                : pass.readMargins;
+        }
+
+        public static PostProcessingMargins GetWriteMargins(PostProcessingPass pass, FilterFunction filterFunc)
+        {
+            return pass.computeRequiredWriteMarginsCallback != null
+                ? pass.computeRequiredWriteMarginsCallback(filterFunc)
+                : pass.writeMargins;
+        }
+
+        // Total input inflation (in points) needed so every pass of the chain can read valid data
+        // when producing the nominal output rect. Summing per-pass read margins is conservative.
+        // Deliberately uncapped: drop-shadow offsets are translations, so truncating them displaces
+        // the shadow visibly; memory stays bounded by the clip/source clamps at the capture site.
+        public static PostProcessingMargins ComputeChainReadMargins(ReadOnlySpan<UnmanagedFilterFunction> filters)
+        {
+            return SumChainReadMargins(filters, capturePassesOnly: false);
+        }
+
+        // Backdrop capture inflation: counts only expandsBackdropCapture passes. Kernel passes are
+        // excluded on purpose — browsers clamp the backdrop at the element edge, so a blur kernel
+        // must read clamped edges rather than pull surrounding content into the element rect.
+        public static PostProcessingMargins ComputeBackdropCaptureReadMargins(ReadOnlySpan<UnmanagedFilterFunction> filters)
+        {
+            return SumChainReadMargins(filters, capturePassesOnly: true);
+        }
+
+        static PostProcessingMargins SumChainReadMargins(ReadOnlySpan<UnmanagedFilterFunction> filters, bool capturePassesOnly)
+        {
+            var total = new PostProcessingMargins();
+            for (int i = 0; i < filters.Length; i++)
+            {
+                var filterFunc = (FilterFunction)filters[i];
+                var filterDef = filterFunc.GetDefinition();
+                if (filterDef == null || filterDef.passes == null)
+                    continue;
+
+                for (int j = 0; j < filterDef.passes.Length; j++)
+                {
+                    // Keep in sync with ApplyFilterChain: a pass that won't run must not inflate the capture.
+                    if (filterDef.passes[j].material == null)
+                        continue;
+
+                    if (capturePassesOnly && !filterDef.passes[j].expandsBackdropCapture)
+                        continue;
+
+                    var margins = GetReadMargins(filterDef.passes[j], filterFunc);
+                    total.left += Mathf.Max(0, margins.left);
+                    total.top += Mathf.Max(0, margins.top);
+                    total.right += Mathf.Max(0, margins.right);
+                    total.bottom += Mathf.Max(0, margins.bottom);
+                }
+            }
+            return total;
+        }
 
         // Renders one filter pass from source to target (material, property block, GL state, quad).
         // Optional rects default to the full source/target; usePixelMatrix=false lets the caller set projection.
@@ -88,7 +176,7 @@ namespace UnityEngine.UIElements.UIR
         // it with RenderTreeManager.SizeFilterCallbackBlocks before rendering.
         public static RenderTexture ApplyFilterChain(
             RenderTexture source,
-            System.ReadOnlySpan<UnmanagedFilterFunction> filters,
+            ReadOnlySpan<UnmanagedFilterFunction> filters,
             RenderTextureReadWrite colorSpace,
             List<MaterialPropertyBlock> perPassBlocks,
             bool usePixelMatrix = true)
@@ -106,6 +194,21 @@ namespace UnityEngine.UIElements.UIR
 
                 if (filterDef == null || filterDef.passes == null)
                     continue; // Occupies no block slots (see CountFilterChainPasses)
+
+                bool retainsInput = false;
+                for (int j = 0; j < filterDef.passes.Length; j++)
+                {
+                    if (!string.IsNullOrEmpty(filterDef.passes[j].requiredInputTextureName))
+                    {
+                        retainsInput = true;
+                        break;
+                    }
+                }
+
+                // Kept alive across this filter's passes when a composite-style pass re-reads it via
+                // requiredInputTextureName (e.g. drop-shadow reads the unblurred input as "Source");
+                // otherwise null so intermediate temps are released as soon as a pass consumes them.
+                RenderTexture filterInput = retainsInput ? current : null;
 
                 for (int j = 0; j < filterDef.passes.Length; j++)
                 {
@@ -125,6 +228,9 @@ namespace UnityEngine.UIElements.UIR
                     );
                     temp.filterMode = FilterMode.Bilinear;
 
+                    if (!string.IsNullOrEmpty(pass.requiredInputTextureName))
+                        BindChainInput(perPassBlocks[flatBlockIndex], pass.requiredInputTextureName, filterInput);
+
                     ApplyFilterPass(
                         source: current,
                         target: temp,
@@ -134,12 +240,15 @@ namespace UnityEngine.UIElements.UIR
                         usePixelMatrix: usePixelMatrix
                     );
 
-                    if (current != source)
+                    if (current != source && current != filterInput)
                         RenderTexture.ReleaseTemporary(current);
 
                     current = temp;
                     flatBlockIndex++;
                 }
+
+                if (filterInput != null && filterInput != source && filterInput != current)
+                    RenderTexture.ReleaseTemporary(filterInput);
             }
 
             return current;
@@ -326,6 +435,29 @@ namespace UnityEngine.UIElements.UIR
                     flatBlockIndex++;
                 }
             }
+        }
+
+        [NoAutoStaticsCleanup]
+        static bool s_UnsupportedChainInputWarned;
+
+        static void BindChainInput(MaterialPropertyBlock propertyBlock, string name, RenderTexture filterInput)
+        {
+            // Only "Source" is resolvable here: the chain doesn't retain named pass outputs.
+            if (name != k_SourceInputName)
+            {
+                if (!s_UnsupportedChainInputWarned)
+                {
+                    s_UnsupportedChainInputWarned = true;
+                    Debug.LogWarning($"backdrop-filter: pass input '{name}' is not supported; only '{k_SourceInputName}' is available.");
+                }
+                return;
+            }
+
+            // All chain textures share the source's size, so an identity mapping is exact.
+            var ids = GetInputBindingIds(name);
+            propertyBlock.SetTexture(ids.texId, filterInput);
+            propertyBlock.SetVector(ids.scaleOffsetId, new Vector4(1, 1, 0, 0));
+            propertyBlock.SetVector(ids.uvRectId, new Vector4(0, 0, 1, 1));
         }
     }
 }

@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
 using UnityEngine.Profiling;
@@ -36,6 +37,18 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(maskDepth == stencilRef || maskDepth == stencilRef + 1);
             return maskDepth == stencilRef;
+        }
+
+        // Mesh slices are generally tightly packed. Spans allow direct writes without indexer function call.
+        public static void ConvertSlicesToSpans(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, out Span<Vertex> vertexSpan, out Span<ushort> indexSpan)
+        {
+            Debug.Assert(vertices.Length == 0 || vertices.Stride == UnsafeUtility.SizeOf<Vertex>());
+            Debug.Assert(indices.Length == 0 || indices.Stride == sizeof(ushort));
+            unsafe
+            {
+                vertexSpan = vertices.Length > 0 ? new Span<Vertex>(NativeSliceUnsafeUtility.GetUnsafePtr(vertices), vertices.Length) : Span<Vertex>.Empty;
+                indexSpan = indices.Length > 0 ? new Span<ushort>(NativeSliceUnsafeUtility.GetUnsafePtr(indices), indices.Length) : Span<ushort>.Empty;
+            }
         }
 
         // Per-channel size of every extras attribute.
@@ -102,7 +115,7 @@ namespace UnityEngine.UIElements
                 ComputeMatrixRelativeToAncestor(renderData, treeRoot, out transform); // TODO: Cache the inverse in the RenderTree to speed this up
             else
                 // We are in the topmost render tree
-                transform = renderData.owner.worldTransform;
+                transform = renderData.owner.worldTransformRef;
         }
 
         // Returns the transform to be applied to vertices that are in their local space

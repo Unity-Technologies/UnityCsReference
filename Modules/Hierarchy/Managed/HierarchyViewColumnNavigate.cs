@@ -67,7 +67,7 @@ namespace Unity.Hierarchy
 
         VisualElement MakeHeader()
         {
-            m_KebabMenuButton = new VisualElement { tooltip = "Column visibility" };
+            m_KebabMenuButton = new VisualElement { tooltip = "Column Visibility" };
             m_KebabMenuButton.AddToClassList(k_HierarchyColumnContextMenuClassName);
             m_KebabMenuButton.RegisterCallback<PointerUpEvent>(evt => ShowColumnVisibilityMenu());
 

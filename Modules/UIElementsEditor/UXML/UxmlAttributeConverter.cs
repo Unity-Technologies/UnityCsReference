@@ -773,11 +773,14 @@ namespace UnityEditor.UIElements
             if (items.Length <= 0 || !UxmlAttributeConverter.TryGetConverter<T>(out var converter))
                 return null;
 
+            // An empty entry is a real value for strings; for any other type it is a stray separator.
+            var keepEmptyItems = typeof(T) == typeof(string) && items.Length > 1;
+
             var result = new List<T>();
             for (var i = 0; i < items.Length; i++)
             {
                 var s = items[i].Trim();
-                if (string.IsNullOrEmpty(s))
+                if (s.Length == 0 && !keepEmptyItems)
                     continue;
 
                 var decoded = UxmlUtility.DecodeListItem(s);

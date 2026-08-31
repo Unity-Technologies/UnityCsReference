@@ -196,6 +196,16 @@ namespace UnityEngine.UIElements.UIR
 
             Debug.Assert(!(isNestedRT && sourceIsAuxBackBuffer), "A nested render tree keeps RenderTexture.active non-null, so the aux back buffer is never its source.");
 
+            // Single source of truth for the capture's row order: every rect below (inflation sides,
+            // crop placement) must agree on it.
+            bool topOriginRows = sourceIsAuxBackBuffer && auxIsTopOrigin;
+
+            // Read margins (points, CSS sides): the capture is inflated only for passes that need real
+            // neighborhood content (drop-shadow), so offset shadows stay exact. Blur kernels instead read
+            // edge-clamped samples, matching how browsers clamp the backdrop at the element bounds.
+            // InflateCapture maps the CSS sides onto the capture's row order.
+            var chainMargins = FilterHelper.ComputeBackdropCaptureReadMargins(ve.computedStyle.backdropFilter);
+
             RectInt pixelRect;
             RectInt captureRect;
             if (!isNestedRT)
@@ -211,13 +221,14 @@ namespace UnityEngine.UIElements.UIR
 
                 // A top-origin aux RT needs the bottom-origin rects reflected about the full source
                 // height (not the viewport) into raw-row space; bottom-origin rows already match.
-                if (sourceIsAuxBackBuffer && auxIsTopOrigin)
+                if (topOriginRows)
                 {
                     pixelRect.y = source.height - pixelRect.y - pixelRect.height;
                     clipRectInt.y = source.height - clipRectInt.y - clipRectInt.height;
                 }
 
                 captureRect = pixelRect;
+                InflateCapture(ref captureRect, chainMargins, topOriginRows, pixelsPerPoint, pixelsPerPoint);
 
                 if (!ClampCapture(ref captureRect, clipRectInt))
                     return;
@@ -242,8 +253,8 @@ namespace UnityEngine.UIElements.UIR
                 if (!validRenderState)
                     return;
 
-                // The nested tree's projection scale differs from the panel's pixelsPerPoint (e.g. UIBuilder canvas
-                // zoom), so derive it from the active viewport / draw bounds; the rect mapping itself is shared.
+                // The nested tree's projection scale can deviate from the panel's pixelsPerPoint (atlas block
+                // rounding), so derive it from the active viewport / draw bounds; the rect mapping itself is shared.
                 float scaleX = activeViewport.width / drawBounds.width;
                 float scaleY = activeViewport.height / drawBounds.height;
                 pixelRect = RenderChainCommand.RectPointsToPixels(treeBound, drawBounds.min, scaleX, scaleY, activeViewport);
@@ -251,6 +262,7 @@ namespace UnityEngine.UIElements.UIR
                     return;
 
                 captureRect = pixelRect;
+                InflateCapture(ref captureRect, chainMargins, topOriginRows, scaleX, scaleY);
 
                 // Clamp to the ancestor scissor, mapped through the same nested projection as pixelRect. The scissor
                 // stack holds the correct tree-root-space clip here; owner.clippingRect would be the panel rect (UI-5094).
@@ -299,6 +311,21 @@ namespace UnityEngine.UIElements.UIR
             // empty capture -> transparent), so compositing premultiplied-over matches the runtime's backdrop opacity.
             RenderTexture filtered = ApplyBackdropFilters(backdrop, ve, owner, colorSpace);
 
+            void ReleaseCaptures()
+            {
+                if (filtered != backdrop)
+                    RenderTexture.ReleaseTemporary(filtered);
+                RenderTexture.ReleaseTemporary(backdrop);
+            }
+
+            // Crop the (margin-inflated) filtered capture back to the element rect.
+            RectInt innerRect = captureRect;
+            if (!ClampCapture(ref innerRect, pixelRect))
+            {
+                ReleaseCaptures();
+                return;
+            }
+
             // Output is the element's full pixel rect; the capture is blitted into its matching sub-rect.
             RenderTexture outputTexture = RenderTexture.GetTemporary(
                 pixelRect.width,
@@ -309,12 +336,13 @@ namespace UnityEngine.UIElements.UIR
             );
             outputTexture.filterMode = FilterMode.Bilinear;
 
-            int destX = captureRect.xMin - pixelRect.xMin;
-            // Top-origin aux rects place the sub-rect from the top; bottom-origin rects from the bottom.
-            int destY = sourceIsAuxBackBuffer && auxIsTopOrigin
-                ? pixelRect.yMax - captureRect.yMax
-                : captureRect.yMin - pixelRect.yMin;
-            BlitToTarget(filtered, outputTexture, new RectInt(destX, destY, captureRect.width, captureRect.height));
+            var srcOffset = new Vector2Int(innerRect.xMin - captureRect.xMin, innerRect.yMin - captureRect.yMin);
+            int destX = innerRect.xMin - pixelRect.xMin;
+            // Top-origin rects place the sub-rect from the top; bottom-origin rects from the bottom.
+            int destY = topOriginRows
+                ? pixelRect.yMax - innerRect.yMax
+                : innerRect.yMin - pixelRect.yMin;
+            BlitToTarget(filtered, outputTexture, new RectInt(destX, destY, innerRect.width, innerRect.height), srcOffset);
 
             textureRegistry.UpdateDynamic(owner.backdropFilterTextureId, outputTexture);
             owner.backdropFilterTemporaryTexture = outputTexture;
@@ -323,9 +351,7 @@ namespace UnityEngine.UIElements.UIR
             if (previousFrameRT != null)
                 RenderTexture.ReleaseTemporary(previousFrameRT);
 
-            if (filtered != backdrop)
-                RenderTexture.ReleaseTemporary(filtered);
-            RenderTexture.ReleaseTemporary(backdrop);
+            ReleaseCaptures();
         }
 
         // Intersects captureRect with bounds (true rectangular intersection); returns false when the result is
@@ -340,7 +366,19 @@ namespace UnityEngine.UIElements.UIR
             return captureRect.width > 0 && captureRect.height > 0;
         }
 
-        static void BlitToTarget(RenderTexture source, RenderTexture target, RectInt destRect)
+        // Margins are in CSS sides (points): CSS top is the yMax side of a bottom-origin rect;
+        // top-origin rows swap the vertical mapping.
+        static void InflateCapture(ref RectInt captureRect, in PostProcessingMargins margins, bool topOriginRows, float scaleX, float scaleY)
+        {
+            float yMinSide = topOriginRows ? margins.top : margins.bottom;
+            float yMaxSide = topOriginRows ? margins.bottom : margins.top;
+            captureRect.xMin -= Mathf.CeilToInt(margins.left * scaleX);
+            captureRect.xMax += Mathf.CeilToInt(margins.right * scaleX);
+            captureRect.yMin -= Mathf.CeilToInt(yMinSide * scaleY);
+            captureRect.yMax += Mathf.CeilToInt(yMaxSide * scaleY);
+        }
+
+        static void BlitToTarget(RenderTexture source, RenderTexture target, RectInt destRect, Vector2Int srcOffset)
         {
             // The GetTemporary above can hand back a buffer holding a previous frame's backdrop, and the
             // CopyTexture below only overwrites destRect (a clipped capture leaves a margin), so wipe stale
@@ -356,8 +394,9 @@ namespace UnityEngine.UIElements.UIR
             }
 
             // Verbatim copy, NOT an alpha-blend: `filtered` is already premultiplied, so alpha-blending it would
-            // re-multiply by alpha (double premultiply -> darkened backdrop). CopyTexture overwrites exactly (UI-5094).
-            Graphics.CopyTexture(source, 0, 0, 0, 0, destRect.width, destRect.height,
+            // re-multiply by alpha (double premultiply -> darkened backdrop). CopyTexture overwrites exactly.
+            // srcOffset selects the element sub-rect out of the margin-inflated capture.
+            Graphics.CopyTexture(source, 0, 0, srcOffset.x, srcOffset.y, destRect.width, destRect.height,
                                  target, 0, 0, destRect.x, destRect.y);
         }
 

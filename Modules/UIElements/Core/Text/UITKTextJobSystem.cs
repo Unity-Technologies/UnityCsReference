@@ -286,19 +286,21 @@ namespace UnityEngine.UIElements
 
                     alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
+                    UIRUtility.ConvertSlicesToSpans(vertices, indices, out var vertexSpan, out var indexSpan);
+
                     for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 4, j += 6)
                     {
-                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 0], pos, inverseScale, isDynamicColor, false, true);
-                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 1], pos, inverseScale, isDynamicColor, false, true);
-                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 2], pos, inverseScale, isDynamicColor, false, true);
-                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 3], pos, inverseScale, isDynamicColor, false, true);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref meshInfo.vertexData[vSrc + 0], pos, inverseScale, isDynamicColor, isTextCore: true);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref meshInfo.vertexData[vSrc + 1], pos, inverseScale, isDynamicColor, isTextCore: true);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref meshInfo.vertexData[vSrc + 2], pos, inverseScale, isDynamicColor, isTextCore: true);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref meshInfo.vertexData[vSrc + 3], pos, inverseScale, isDynamicColor, isTextCore: true);
 
-                        indices[j + 0] = (ushort)(vDst + 0);
-                        indices[j + 1] = (ushort)(vDst + 1);
-                        indices[j + 2] = (ushort)(vDst + 2);
-                        indices[j + 3] = (ushort)(vDst + 2);
-                        indices[j + 4] = (ushort)(vDst + 3);
-                        indices[j + 5] = (ushort)(vDst + 0);
+                        indexSpan[j + 0] = (ushort)(vDst + 0);
+                        indexSpan[j + 1] = (ushort)(vDst + 1);
+                        indexSpan[j + 2] = (ushort)(vDst + 2);
+                        indexSpan[j + 3] = (ushort)(vDst + 2);
+                        indexSpan[j + 4] = (ushort)(vDst + 3);
+                        indexSpan[j + 5] = (ushort)(vDst + 0);
                     }
 
                     verticesArray.Add(vertices);

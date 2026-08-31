@@ -59,7 +59,9 @@ namespace UnityEngine
         // Channel count is set to 8. 7.1 speaker setup. This includes front left, front right, center, rear left, rear right, side left, side right and a subwoofer.
         Mode7point1 = 6,
         // Channel count is set to 2. Stereo output, but data is encoded in a way that is picked up by a Prologic/Prologic2 decoder and split into a 5.1 speaker setup.
-        Prologic = 7
+        Prologic = 7,
+        // Channel count is set to 12. 7.1.4 speaker setup. This includes front left, front right, center, rear left, rear right, side left, side right, top front left, top front right, top rear left, top rear right and a subwoofer.This speaker mode is only available when the Enhanced Audio Foundation is active. 
+        Mode7point1point4 = 13
     }
 
     internal enum AudioFoundation
@@ -108,7 +110,7 @@ namespace UnityEngine
                 case AudioSpeakerMode.Mode5point1: return 6;
                 case AudioSpeakerMode.Mode7point1: return 8;
                 case AudioSpeakerMode.Prologic: return 2;
-                throw new ArgumentException($"{nameof(speakerMode)}");
+                case AudioSpeakerMode.Mode7point1point4: return 12;
             }
 
             throw new ArgumentException($"{nameof(speakerMode)}");
@@ -1064,6 +1066,14 @@ namespace UnityEngine
         internal extern bool isContainerPlaying
         {
             [NativeName("IsContainerPlaying")]
+            get;
+        }
+
+        // Whether the source is in the audio manager's per-frame update list. Test-only: lets tests
+        // assert that an idle source is cleaned up again after external playback ends.
+        internal extern bool isRegisteredWithAudioManager
+        {
+            [NativeName("IsRegisteredWithAudioManager")]
             get;
         }
 

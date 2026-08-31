@@ -235,6 +235,7 @@ namespace UnityEditor
             public static readonly GUIContent autoGraphicsAPIForLinux = EditorGUIUtility.TrTextContent("Auto Graphics API for Linux");
 
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
+            public static readonly GUIContent useGLES30Shaders = EditorGUIUtility.TrTextContent("Use OpenGL ES 3.0 shaders");
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Calculate mesh skinning and blend shapes on the GPU via shaders");
@@ -467,6 +468,8 @@ namespace UnityEditor
 
         SerializedProperty m_EnableLoadStoreDebugMode;
 
+        // DO NOT REMOVE: required by useGLES30Shaders during GLES30 deprecation
+        SerializedProperty m_RequireES31;
         // OpenGL ES 3.1+ - m_RequireES31 removed. Android minspec raised to 3.1 (GDRIV-4724)
         SerializedProperty m_RequireES31AEP;
         SerializedProperty m_RequireES32;
@@ -737,6 +740,9 @@ namespace UnityEditor
             m_HDRBitDepth = FindPropertyAssert("hdrBitDepth");
             m_EnableFrameTimingStats = FindPropertyAssert("enableFrameTimingStats");
             m_EnableOpenGLProfilerGPURecorders = FindPropertyAssert("enableOpenGLProfilerGPURecorders");
+
+            // DO NOT REMOVE: required by useGLES30Shaders during GLES30 deprecation
+            m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
 
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
             m_RequireES32                   = FindPropertyAssert("openGLRequireES32");
@@ -1812,6 +1818,14 @@ namespace UnityEditor
             var hasMinES3 = apis.Contains(GraphicsDeviceType.OpenGLES3);
             if (!hasMinES3)
                 return;
+
+            var rect = EditorGUILayout.GetControlRect();
+            var label = EditorGUI.BeginProperty(rect, SettingsContent.useGLES30Shaders, m_RequireES31);
+            EditorGUI.BeginChangeCheck();
+            bool useES30 = EditorGUI.Toggle(rect, label, !m_RequireES31.boolValue);
+            if (EditorGUI.EndChangeCheck())
+                m_RequireES31.boolValue = !useES30;
+            EditorGUI.EndProperty();
 
             EditorGUILayout.PropertyField(m_RequireES31AEP, SettingsContent.requireAEP);
             EditorGUILayout.PropertyField(m_RequireES32, SettingsContent.require32);

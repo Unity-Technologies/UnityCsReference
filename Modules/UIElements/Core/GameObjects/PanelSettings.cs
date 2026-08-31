@@ -891,6 +891,9 @@ namespace UnityEngine.UIElements
         {
             InitializeShaders();
             AssignICUData();
+
+            if (m_ICUDataAsset != null)
+                TextCore.Text.TextHandle.RegisterICUDataAsset(m_ICUDataAsset);
         }
 
         private void OnDisable()

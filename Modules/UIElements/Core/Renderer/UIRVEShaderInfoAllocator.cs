@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -64,7 +66,7 @@ namespace UnityEngine.UIElements.UIR
             m_Pages.Add(new Page() { x = firstPageX, y = firstPageY, freeSlots = kPageWidth * m_PageHeight - 1 });
         }
 
-        public BMPAlloc Allocate(BaseShaderInfoStorage storage)
+        public BMPAlloc Allocate(ShaderInfoStorage storage)
         {
             int pageCount = m_Pages.Count;
             for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
@@ -152,9 +154,9 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 
-    class ShaderInfoAllocator
+    unsafe class ShaderInfoAllocator
     {
-        BaseShaderInfoStorage m_Storage;
+        ShaderInfoStorage m_Storage;
         BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator, m_ColorAllocator, m_TextSettingsAllocator; // All allocators take pages from the same storage
         bool m_StorageReallyCreated;
         ColorSpace m_ColorSpace;
@@ -162,27 +164,32 @@ namespace UnityEngine.UIElements.UIR
         // Per-allocator-type page-position tables. Each entry is the atlas (x,y) of the page's
         // top-left corner. .zw are padding
         public const int kMaxPages = 32;
-        readonly Vector4[] m_XformPagePos = new Vector4[kMaxPages];
-        readonly Vector4[] m_ClipPagePos = new Vector4[kMaxPages];
-        readonly Vector4[] m_OpacityPagePos = new Vector4[kMaxPages];
-        readonly Vector4[] m_ColorPagePos = new Vector4[kMaxPages];
-        readonly Vector4[] m_TextCorePagePos = new Vector4[kMaxPages];
-        bool m_TransformPagesErrored, m_ClipRectPagesErrored, m_OpacityPagesErrored, m_ColorPagesErrored, m_TextCorePagesErrored;
 
         // ElementInfo is indexed per Id (no BitmapAllocator32).
         // 8 bits to get the page
         // 8 bits to index within the 32x8 page
         public const int kElementInfoPageCount = 256;
-        readonly Vector4[] m_ElementInfoPagePos = new Vector4[kElementInfoPageCount];
+
+        // Must match the UIE_PageTables layout in UnityUIE.cginc.
+        internal const int kPageTableFloat4Count = kMaxPages * 5 + kElementInfoPageCount;
+        internal const int kPageTableStride = 16; // sizeof(Vector4)
+        internal const int kPageTableSizeBytes = kPageTableFloat4Count * kPageTableStride;
+
+        NativeArray<Vector4> m_PageTable;
+        Vector4* m_XformPagePos;
+        Vector4* m_ClipPagePos;
+        Vector4* m_OpacityPagePos;
+        Vector4* m_ColorPagePos;
+        Vector4* m_TextCorePagePos;
+        Vector4* m_ElementInfoPagePos;
+
+        bool m_TransformPagesErrored, m_ClipRectPagesErrored, m_OpacityPagesErrored, m_ColorPagesErrored, m_TextCorePagesErrored;
         int m_ElementInfoPageCount;
         bool m_ElementInfoPagesErrored;
 
-        internal Vector4[] transformPagePositions { get { return m_XformPagePos; } }
-        internal Vector4[] clipRectPagePositions { get { return m_ClipPagePos; } }
-        internal Vector4[] opacityPagePositions { get { return m_OpacityPagePos; } }
-        internal Vector4[] colorPagePositions { get { return m_ColorPagePos; } }
-        internal Vector4[] textCorePagePositions { get { return m_TextCorePagePos; } }
-        internal Vector4[] elementInfoPagePositions { get { return m_ElementInfoPagePos; } }
+        GraphicsBuffer m_PageTableBuffer;
+        bool m_PageTableDirty = true;
+        bool? m_SupportsPageTableConstantBuffer;
 
         // Returns the underlying allocator by value. BitmapAllocator32 holds a List<Page>,
         // so the copy shares storage with the original — safe for read-only inspection.
@@ -292,6 +299,16 @@ namespace UnityEngine.UIElements.UIR
         {
             m_ColorSpace = colorSpace;
 
+            m_PageTable = new NativeArray<Vector4>(kPageTableFloat4Count, Allocator.Persistent);
+            Vector4* pageTable = (Vector4*)m_PageTable.GetUnsafePtr();
+            m_XformPagePos       = pageTable;
+            m_ClipPagePos        = m_XformPagePos + kMaxPages;
+            m_OpacityPagePos     = m_ClipPagePos + kMaxPages;
+            m_ColorPagePos       = m_OpacityPagePos + kMaxPages;
+            m_TextCorePagePos    = m_ColorPagePos + kMaxPages;
+            m_ElementInfoPagePos = m_TextCorePagePos + kMaxPages;
+            Debug.Assert(m_ElementInfoPagePos + kElementInfoPageCount == pageTable + kPageTableFloat4Count, "page table layout mismatch");
+
             // The default allocs refer to four startup pages to be allocated as below from the atlas
             // once the atlas is used for the first time. The page coordinates correspond to the atlas's
             // internal algorithm's results. If that algorithm changes, the new results must be put here to match
@@ -313,11 +330,12 @@ namespace UnityEngine.UIElements.UIR
             m_OpacityPagePos[0]  = new Vector4(fullOpacityTexel.x,              fullOpacityTexel.y,              0, 0);
             m_ColorPagePos[0]    = new Vector4(clearColorTexel.x,               clearColorTexel.y,               0, 0);
             m_TextCorePagePos[0] = new Vector4(defaultTextCoreSettingsTexel.x,  defaultTextCoreSettingsTexel.y,  0, 0);
+            m_PageTableDirty = true;
 
             AcquireDefaultShaderInfoTexture();
         }
 
-        BMPAlloc AllocateAndRecordPage(ref BitmapAllocator32 allocator, Vector4[] pageTable, ref bool errored, string allocName)
+        BMPAlloc AllocateAndRecordPage(ref BitmapAllocator32 allocator, Vector4* pageTable, ref bool errored, string allocName)
         {
             int prevPageCount = allocator.pageCount;
 
@@ -330,6 +348,7 @@ namespace UnityEngine.UIElements.UIR
                     Debug.Assert(allocator.pageCount <= kMaxPages, "page count exceeds kMaxPages cap");
                     allocator.GetAllocPageAtlasLocation(bmp.page, out ushort x, out ushort y);
                     pageTable[bmp.page] = new Vector4(x, y, 0, 0);
+                    m_PageTableDirty = true;
                 }
             }
             else if (!errored)
@@ -344,7 +363,8 @@ namespace UnityEngine.UIElements.UIR
         void ReallyCreateStorage()
         {
             // Because we want predictable placement of first pages, 64 will fit all default allocs
-            m_Storage = new ShaderInfoStorageRGBAFloat(64);
+            m_Storage = new ShaderInfoStorage(64);
+            m_Storage.compareWrites = m_CompareWrites;
 
             // The order of allocation from the atlas below is important. See the comment at the beginning of Construct().
             RectInt rcTransform, rcClipRect, rcOpacity, rcColor, rcTextCoreSettings;
@@ -388,12 +408,100 @@ namespace UnityEngine.UIElements.UIR
                 m_Storage.Dispose();
             m_Storage = null;
             m_StorageReallyCreated = false;
+
+            m_PageTableBuffer?.Dispose();
+            m_PageTableBuffer = null;
+            m_PageTableDirty = true;
+            if (m_PageTable.IsCreated)
+                m_PageTable.Dispose();
+
+            m_XformPagePos = m_ClipPagePos = m_OpacityPagePos = null;
+            m_ColorPagePos = m_TextCorePagePos = m_ElementInfoPagePos = null;
+
             ReleaseDefaultShaderInfoTexture();
         }
 
-        public void IssuePendingStorageChanges()
+        // False on OpenGL Core below 4.3 and when there is no GPU at all (null device, -nographics), where the
+        // caller must set the page tables as individual vector arrays instead. Binding is all-or-nothing per
+        // block: once a constant buffer is bound, per-property values for its members are ignored, so never
+        // mix the two paths.
+        public bool usePageTableConstantBuffer
         {
-            m_Storage?.UpdateTexture();
+            get
+            {
+                m_SupportsPageTableConstantBuffer ??= SystemInfo.supportsSetConstantBuffer;
+                return m_SupportsPageTableConstantBuffer.Value;
+            }
+        }
+
+        void IssuePendingPageTableUpload()
+        {
+            if (m_PageTableBuffer == null)
+            {
+                m_PageTableBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Constant, kPageTableFloat4Count, kPageTableStride);
+                m_PageTableDirty = true;
+            }
+
+            if (m_PageTableDirty)
+            {
+                m_PageTableBuffer.SetData(m_PageTable); // Not allowed during render passes.
+                m_PageTableDirty = false;
+            }
+        }
+
+        public GraphicsBuffer GetPageTableConstantBuffer()
+        {
+            Debug.Assert(usePageTableConstantBuffer, "platform can't bind a constant buffer directly");
+            Debug.Assert(m_PageTableBuffer != null, "page table was not uploaded before rendering");
+
+            return m_PageTableBuffer;
+        }
+
+        // Managed mirrors handed out by the Copy*PagePositions methods below. They stay null unless the
+        // vector-array fallback (or a test) asks for one.
+        Vector4[] m_XformPagePosCopy, m_ClipPagePosCopy, m_OpacityPagePosCopy, m_ColorPagePosCopy, m_TextCorePagePosCopy, m_ElementInfoPagePosCopy;
+
+        // Snapshots of the native page tables, for the platforms that can't bind UIE_PageTables as a constant
+        // buffer. Each method caches its own array and overwrites it on the next call.
+        internal Vector4[] CopyTransformPagePositions() => CopyPageTable(m_XformPagePos, kMaxPages, ref m_XformPagePosCopy);
+        internal Vector4[] CopyClipRectPagePositions() => CopyPageTable(m_ClipPagePos, kMaxPages, ref m_ClipPagePosCopy);
+        internal Vector4[] CopyOpacityPagePositions() => CopyPageTable(m_OpacityPagePos, kMaxPages, ref m_OpacityPagePosCopy);
+        internal Vector4[] CopyColorPagePositions() => CopyPageTable(m_ColorPagePos, kMaxPages, ref m_ColorPagePosCopy);
+        internal Vector4[] CopyTextCorePagePositions() => CopyPageTable(m_TextCorePagePos, kMaxPages, ref m_TextCorePagePosCopy);
+        internal Vector4[] CopyElementInfoPagePositions() => CopyPageTable(m_ElementInfoPagePos, kElementInfoPageCount, ref m_ElementInfoPagePosCopy);
+
+        static Vector4[] CopyPageTable(Vector4* pageTable, int count, ref Vector4[] copy)
+        {
+            copy ??= new Vector4[count];
+            fixed (Vector4* dst = copy)
+                UnsafeUtility.MemCpy(dst, pageTable, (long)count * kPageTableStride);
+            return copy;
+        }
+
+        // Returns true when changes were pending and got uploaded.
+        public bool IssuePendingStorageChanges()
+        {
+            if (usePageTableConstantBuffer)
+                IssuePendingPageTableUpload();
+
+            if (m_Storage == null || !m_Storage.hasPendingChanges)
+                return false;
+
+            m_Storage.UpdateTexture();
+            return true;
+        }
+
+        // Forwarded to the storage; survives lazy storage creation.
+        bool m_CompareWrites;
+        public bool storageCompareWrites
+        {
+            get => m_CompareWrites;
+            set
+            {
+                m_CompareWrites = value;
+                if (m_Storage != null)
+                    m_Storage.compareWrites = value;
+            }
         }
 
         public BMPAlloc AllocTransform()
@@ -436,16 +544,16 @@ namespace UnityEngine.UIElements.UIR
             return AllocateAndRecordPage(ref m_TextSettingsAllocator, m_TextCorePagePos, ref m_TextCorePagesErrored, "TextCore");
         }
 
-        public void SetTransformValue(BMPAlloc alloc, Matrix4x4 xform)
+        public void SetTransformValue(BMPAlloc alloc, in Matrix4x4 xform)
         {
             Debug.Assert(alloc.IsValid());
             var allocXY = AllocToTexelCoord(ref m_TransformAllocator, alloc);
-            m_Storage.SetTexel(allocXY.x, allocXY.y + 0, xform.GetRow(0));
-            m_Storage.SetTexel(allocXY.x, allocXY.y + 1, xform.GetRow(1));
-            m_Storage.SetTexel(allocXY.x, allocXY.y + 2, xform.GetRow(2));
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 0, new Vector4(xform.m00, xform.m01, xform.m02, xform.m03));
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 1, new Vector4(xform.m10, xform.m11, xform.m12, xform.m13));
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 2, new Vector4(xform.m20, xform.m21, xform.m22, xform.m23));
         }
 
-        public void SetClipRectValue(BMPAlloc alloc, Vector4 clipRect)
+        public void SetClipRectValue(BMPAlloc alloc, in Vector4 clipRect)
         {
             Debug.Assert(alloc.IsValid());
             var allocXY = AllocToTexelCoord(ref m_ClipRectAllocator, alloc);
@@ -456,7 +564,7 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(alloc.IsValid());
             var allocXY = AllocToTexelCoord(ref m_OpacityAllocator, alloc);
-            m_Storage.SetTexel(allocXY.x, allocXY.y, new Color(1, 1, 1, opacity));
+            m_Storage.SetTexel(allocXY.x, allocXY.y, new Vector4(1, 1, 1, opacity));
         }
 
         public void SetColorValue(BMPAlloc alloc, Color color)
@@ -512,6 +620,7 @@ namespace UnityEngine.UIElements.UIR
 
                 m_ElementInfoPagePos[m_ElementInfoPageCount] = new Vector4(rc.xMin, rc.yMin, 0, 0);
                 ++m_ElementInfoPageCount;
+                m_PageTableDirty = true;
             }
         }
 
@@ -527,7 +636,7 @@ namespace UnityEngine.UIElements.UIR
             int slot = elementId & 0xFF;
             int x = (int)origin.x + (slot & 31);
             int y = (int)origin.y + (slot >> 5);
-            m_Storage.SetTexel(x, y, new Color(transformId, opacityId, tx, ty));
+            m_Storage.SetTexel(x, y, new Vector4(transformId, opacityId, tx, ty));
         }
 
         // Record lanes: (transformId, opacityId, tx, ty). Ids are integer-exact in RGBAFloat, re-read as uint on the GPU.
