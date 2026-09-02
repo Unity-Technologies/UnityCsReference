@@ -21,8 +21,8 @@ namespace UnityEngine.UIElements.UIR
         void Expand(int newLength)
         {
             var newArray = new NativeArray<T>(newLength, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            var dst = newArray.Slice(0, m_Count);
-            dst.CopyFrom(m_NativeArray);
+            if (m_Count > 0)
+                NativeArray<T>.Copy(m_NativeArray, newArray, m_Count);
             m_NativeArray.Dispose();
             m_NativeArray = newArray;
         }

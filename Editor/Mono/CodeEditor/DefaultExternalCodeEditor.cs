@@ -97,11 +97,14 @@ namespace UnityEditor
 
         public void OnGUI()
         {
+            EditorGUILayout.BeginHorizontal();
             Arguments = EditorGUILayout.TextField("External Script Editor Args", Arguments);
             if (GUILayout.Button(k_ResetArguments, GUILayout.Width(120)))
             {
                 Arguments = k_DefaultArgument;
+                GUI.FocusControl(null);
             }
+            EditorGUILayout.EndHorizontal();
         }
 
         public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
