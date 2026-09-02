@@ -12,6 +12,15 @@ using UnityEngine.Bindings;
 
 namespace Unity.AI.Navigation.LowLevel;
 
+///<summary>A buffer that stores intermediate node data during NavMesh pathfinding operations in a NavWorld.</summary>
+///<remarks>A NavQueryBuffer is required to use the pathfinding methods of <see cref="NavWorld" />. To obtain a path between two locations on the NavMesh, create a NavQueryBuffer with a <c>maxNodesToVisit</c> value in the range from 1 to 65,535, then call the following <see cref="NavWorld" /> methods in this order: <c>BeginFindPath</c>, <c>ContinueFindPath</c> (can be repeated), <c>EndFindPath</c>, <c>GetResultFromFindPath</c>. These methods store their intermediate state in the NavQueryBuffer.
+///
+///NavWorld pathfinding operations that use a NavQueryBuffer can be executed inside jobs (<see cref="Unity.Jobs.IJob" />, <see cref="Unity.Jobs.IJobFor" />), as opposed to the operations in the <see cref="UnityEngine.AI.NavMesh" />-related structures.
+///
+///Copying this object produces only a new reference to the same underlying buffer. It doesn't duplicate the buffer in memory.
+///
+///All methods throw exceptions if any of their data isn't valid when executed in the Editor.</remarks>
+///<example><code><![CDATA[{code Modules/AI/Tests/UTFTests/Playmode/LowLevelQueries/LowLevel/CodeExamples/NavQueryBufferExample.cs}]]></code></example>
 [NativeContainer]
 [StructLayout(LayoutKind.Sequential)]
 [NativeHeader("Modules/AI/LowLevel/NavWorld.bindings.h")]
@@ -44,6 +53,14 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
     // Keep in sync with kMaxNavMeshNodePoolSize = USHRT_MAX from NavMeshNode.h
     const int k_MaxNavMeshNodePoolSize = ushort.MaxValue;
 
+    ///<summary>Creates a new buffer and allocates memory to store the intermediate NavMesh node data used by pathfinding operations.</summary>
+    ///<remarks>Use the <c>maxNodesToVisit</c> parameter to size the buffer for the pathfinding methods that use it, such as <c>NavWorld.BeginFindPath</c>, <c>NavWorld.ContinueFindPath</c>, <c>NavWorld.EndFindPath</c>, and <c>NavWorld.GetResultFromFindPath</c>. If the buffer is too small for the search, the pathfinding method returns a <see cref="NavQueryStatus.MaxNodesToVisitExceeded" /> status. Unity clamps <c>maxNodesToVisit</c> to the range from 1 to 65,535. A value outside that range doesn't prevent Unity from creating the buffer: Unity logs a warning in the Editor and allocates the nearest allowed size instead.
+    ///
+    ///For more information about the container type that this buffer follows, refer to <see href="https://docs.unity3d.com/Manual/job-system-native-container.html">Introduction to NativeContainer</see>.</remarks>
+    ///<param name="world">The <see cref="NavWorld" /> for which this buffer is used. The buffer can be passed only to methods of the same NavWorld it was created with.</param>
+    ///<param name="allocator">The label indicating the desired lifetime of the object. The <c>allocator</c> parameter has no effect; the buffer is always allocated as <see cref="Allocator.Persistent">Persistent</see>.</param>
+    ///<param name="maxNodesToVisit">The maximum number of nodes that can be stored in the buffer during a search operation. Unity clamps this value to the range from 1 to 65,535. The default value is 1024.</param>
+    ///<example><code><![CDATA[{code Modules/AI/Tests/UTFTests/Playmode/LowLevelQueries/LowLevel/CodeExamples/NavQueryBufferConstructorExample.cs}]]></code></example>
     public NavQueryBuffer(NavWorld world, Allocator allocator, int maxNodesToVisit = 1024)
     {
         if (!world.IsValid())
@@ -86,6 +103,9 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
             m_SafetyUniqueId = uint.MaxValue;
     }
 
+    ///<summary>Destroys the NavQueryBuffer and deallocates all memory used by it.</summary>
+    ///<remarks>Call this method when the buffer is no longer needed. After you dispose it, the NavQueryBuffer can't be reused, and any subsequent <see cref="NavWorld" /> pathfinding call that receives it throws an exception when executed in the Editor. Each NavQueryBuffer you create must be paired with exactly one call to <see cref="NavQueryBuffer.Dispose" />.</remarks>
+    ///<example><code><![CDATA[{code Modules/AI/Tests/UTFTests/Playmode/LowLevelQueries/LowLevel/CodeExamples/NavQueryBufferDisposeExample.cs}]]></code></example>
     [WriteAccessRequired]
     public void Dispose()
     {
@@ -120,18 +140,35 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
 
     static extern void Destroy(IntPtr navMeshQuery);
 
+    ///<summary>Checks whether two NavQueryBuffer values refer to the same underlying pathfinding buffer.</summary>
+    ///<remarks>This operator is a syntactic shortcut equivalent to calling <see cref="NavQueryBuffer.Equals(NavQueryBuffer)" />. Use it inside expressions where the <c>==</c> syntax is more concise than an explicit method call. The comparison only succeeds when both values point to the same allocation in memory.</remarks>
+    ///<param name="left">The first NavQueryBuffer to compare.</param>
+    ///<param name="right">The second NavQueryBuffer to compare.</param>
+    ///<returns><c>true</c> if the two NavQueryBuffer values point to the same allocation, <c>false</c> otherwise.</returns>
+    ///<example><code><![CDATA[{code Modules/AI/Tests/UTFTests/Playmode/LowLevelQueries/LowLevel/CodeExamples/NavQueryBufferEqualOperatorExample.cs}]]></code></example>
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public static bool operator ==(NavQueryBuffer left, NavQueryBuffer right)
     {
         return left.Equals(right);
     }
 
+    ///<summary>Checks whether two NavQueryBuffer values refer to different underlying pathfinding buffers.</summary>
+    ///<remarks>This operator is a syntactic shortcut equivalent to negating the result of <see cref="NavQueryBuffer.Equals(NavQueryBuffer)" />. Use it inside expressions where the <c>!=</c> syntax is more concise than an explicit method call. Two buffers created by separate <see cref="NavQueryBuffer.NavQueryBuffer(NavWorld, Allocator, int)">constructor</see> calls are always considered different.</remarks>
+    ///<param name="left">The first NavQueryBuffer to compare.</param>
+    ///<param name="right">The second NavQueryBuffer to compare.</param>
+    ///<returns><c>true</c> if the two NavQueryBuffer values point to different allocations, <c>false</c> otherwise.</returns>
+    ///<example><code><![CDATA[{code Modules/AI/Tests/UTFTests/Playmode/LowLevelQueries/LowLevel/CodeExamples/NavQueryBufferNotEqualOperatorExample.cs}]]></code></example>
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public static bool operator !=(NavQueryBuffer left, NavQueryBuffer right)
     {
         return !left.Equals(right);
     }
 
+    ///<summary>Checks whether two NavQueryBuffer values refer to the same underlying pathfinding buffer.</summary>
+    ///<remarks>The comparison checks whether both values point to the same allocation in memory. Two <see cref="NavQueryBuffer" /> instances that were created by separate calls to the <see cref="NavQueryBuffer.NavQueryBuffer(NavWorld, Allocator, int)">constructor</see> are never equal, even if their <c>maxNodesToVisit</c> values are identical.</remarks>
+    ///<param name="other">A NavQueryBuffer to compare this one with.</param>
+    ///<returns><c>true</c> if the two NavQueryBuffer values refer to the same underlying pathfinding buffer, and <c>false</c> otherwise.</returns>
+    ///<example><code><![CDATA[{code Modules/AI/Tests/UTFTests/Playmode/LowLevelQueries/LowLevel/CodeExamples/NavQueryBufferEqualsExample.cs}]]></code></example>
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly bool Equals(NavQueryBuffer other)
     {
@@ -141,12 +178,21 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
         return pointersEqual;
     }
 
+    ///<summary>Checks whether two NavQueryBuffer values refer to the same underlying pathfinding buffer.</summary>
+    ///<remarks>The comparison checks whether both values point to the same allocation in memory. Two <see cref="NavQueryBuffer" /> instances that were created by separate calls to the <see cref="NavQueryBuffer.NavQueryBuffer(NavWorld, Allocator, int)">constructor</see> are never equal, even if their <c>maxNodesToVisit</c> values are identical.</remarks>
+    ///<param name="obj">An object to interpret as a NavQueryBuffer and compare this one with.</param>
+    ///<returns><c>true</c> if the two NavQueryBuffer values refer to the same underlying pathfinding buffer, and <c>false</c> otherwise.</returns>
+    ///<example><code><![CDATA[{code Modules/AI/Tests/UTFTests/Playmode/LowLevelQueries/LowLevel/CodeExamples/NavQueryBufferEqualsExample.cs}]]></code></example>
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly override bool Equals(object obj)
     {
         return obj is NavQueryBuffer other && Equals(other);
     }
 
+    ///<summary>Computes a hash code for identifying this NavQueryBuffer in hash-based collections.</summary>
+    ///<remarks>The returned value is suitable for storing the NavQueryBuffer in hash-based collections such as Dictionary or HashSet. Two NavQueryBuffer values that compare equal through <see cref="NavQueryBuffer.Equals(NavQueryBuffer)" /> also produce the same hash code.</remarks>
+    ///<returns>A hash code derived from the buffer's internal allocation identifier.</returns>
+    ///<example><code><![CDATA[{code Modules/AI/Tests/UTFTests/Playmode/LowLevelQueries/LowLevel/CodeExamples/NavQueryBufferHashExample.cs}]]></code></example>
     [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
     public readonly override int GetHashCode()
     {

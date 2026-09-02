@@ -269,8 +269,11 @@ namespace Unity.U2D.Physics
         /// The expected world capacities used to presize internal allocations when the <see cref="PhysicsWorld"/> is created.
         /// All counts default to zero, in which case the engine uses its own minimum defaults.
         /// Presizing avoids reallocations during the first simulation steps for worlds with a known object count.
-        /// See <see cref="PhysicsWorld.capacity"/>.
+        /// Every count is in the range zero to 65535 and any value outside that range is clamped into it.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorld.capacity"/>.
+        /// </remarks>
         public PhysicsWorld.WorldCapacity capacity { readonly get => m_Capacity; set => m_Capacity = value; }
 
         #region Internal

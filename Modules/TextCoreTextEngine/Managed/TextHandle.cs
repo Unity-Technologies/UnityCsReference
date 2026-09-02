@@ -849,6 +849,18 @@ namespace UnityEngine.TextCore.Text
         internal virtual UnityEngine.TextAsset GetICUAsset() { return null; }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal static void RegisterICUDataAsset(UnityEngine.TextAsset icuDataAsset)
+        {
+            if (icuDataAsset == null)
+                return;
+
+            if (s_TextLib == null)
+                s_TextLib = new TextLib(icuDataAsset.bytes);
+            else
+                TextLib.TryLoadICUData(icuDataAsset.bytes);
+        }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         //This method uses the asset in the editor if available, or try to find any asset that would be included in the resource folder for builds
         internal static UnityEngine.TextAsset GetICUAssetStaticFalback()
         {
@@ -888,11 +900,10 @@ namespace UnityEngine.TextCore.Text
             if (s_TextLib != null)
                 return;
 
+            // A missing ICU data asset is not fatal: the native side falls back
+            // to minimal text segmentation (basic line breaking rules only).
             var icuAsset = GetICUAsset();
-            if (icuAsset == null)
-                return;
-
-            s_TextLib = new TextLib(icuAsset.bytes);
+            s_TextLib = new TextLib(icuAsset != null ? icuAsset.bytes : Array.Empty<byte>());
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]

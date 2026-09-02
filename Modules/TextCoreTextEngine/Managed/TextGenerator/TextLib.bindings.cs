@@ -26,6 +26,7 @@ namespace UnityEngine.TextCore.Text
         }
 
         private static extern IntPtr GetInstance(byte[] icuData);
+        internal static extern bool TryLoadICUData(byte[] icuData);
 
         public NativeTextInfo GenerateText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo, ref bool wasCached)
         {

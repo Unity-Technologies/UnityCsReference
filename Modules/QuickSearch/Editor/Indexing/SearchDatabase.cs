@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using UnityEditor.Profiling;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -59,6 +58,11 @@ namespace UnityEditor.Search
         private const string k_QuickSearchLibraryPath = "Library/Search";
         public const string defaultSearchDatabaseIndexPath = "UserSettings/Search.index";
         static readonly TimeSpan k_DefaultProductionTimeLimitPerFrame = TimeSpan.FromMilliseconds(16);
+
+        const string k_IndexingRequestName = "SearchImporter.IndexingRequest";
+
+        static readonly Unity.Profiling.ProfilerMarker k_IndexingRequestCounter
+            = new(Unity.Profiling.ProfilerCategory.Scripts, k_IndexingRequestName + " (ns)", Unity.Profiling.LowLevel.MarkerFlags.Counter);
 
         public enum IndexType
         {
@@ -204,7 +208,7 @@ namespace UnityEditor.Search
         // call back into the incremental update scheduler; we must not start new work during teardown.
         [NonSerialized] private bool m_DisposingTasks;
 
-        private int m_IndexingRequestTrackerId;
+        private double m_IndexingRequestStartTime = 0;
         private int m_IncrementalIndexingRequestTrackerId;
 
         public ObjectIndexer index { get; internal set; }
@@ -278,7 +282,7 @@ namespace UnityEditor.Search
             LoadingState = LoadState.Loading;
             loaded = false;
 
-            m_IndexingRequestTrackerId = EditorPerformanceTracker.StartTracker("SearchImporter.IndexingRequest");
+            m_IndexingRequestStartTime = EditorApplication.timeSinceStartup;
 
             this.settings = settings;
             DisposeIndex();
@@ -873,11 +877,12 @@ namespace UnityEditor.Search
                 return;
             }
 
-            if (m_IndexingRequestTrackerId != 0)
+            if (m_IndexingRequestStartTime > 0)
             {
-                EditorPerformanceTracker.StopTracker(m_IndexingRequestTrackerId);
+                var seconds = EditorApplication.timeSinceStartup - m_IndexingRequestStartTime;
+                SampleIndexingRequestCounter(seconds);
             }
-            m_IndexingRequestTrackerId = 0;
+            m_IndexingRequestStartTime = 0;
 
             // Is it considered loaded if there are any pending updates?
             loaded = true;
@@ -1104,6 +1109,26 @@ namespace UnityEditor.Search
 
             if (settings.type == "prefab" || settings.type == "scene")
                 settings.options.extended = true;
+        }
+
+        static unsafe void SampleIndexingRequestCounter(double seconds)
+        {
+            Unity.Profiling.LowLevel.Unsafe.ProfilerUnsafeUtility.SetMarkerMetadata(
+                k_IndexingRequestCounter.Handle, 
+                0, 
+                "Time (ns)",
+                (byte)Unity.Profiling.LowLevel.ProfilerMarkerDataType.Double,
+                (byte)Unity.Profiling.ProfilerMarkerDataUnit.TimeNanoseconds
+            );
+
+            double nanoseconds = seconds * 1_000_000_000d;
+            var data = new Unity.Profiling.LowLevel.Unsafe.ProfilerMarkerData
+            {
+                Type = (byte)Unity.Profiling.LowLevel.ProfilerMarkerDataType.Double,
+                Size = (uint)Unity.Collections.LowLevel.Unsafe.UnsafeUtility.SizeOf<double>(),
+                Ptr = Unity.Collections.LowLevel.Unsafe.UnsafeUtility.AddressOf(ref nanoseconds)
+            };
+            Unity.Profiling.LowLevel.Unsafe.ProfilerUnsafeUtility.SingleSampleWithMetadata(k_IndexingRequestCounter.Handle, 1, &data);
         }
     }
 }

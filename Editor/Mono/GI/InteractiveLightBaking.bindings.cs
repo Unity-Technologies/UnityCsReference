@@ -48,6 +48,13 @@ namespace UnityEditor
         [NativeName("GetInteractiveLightingSettings")]
         public static extern LightingSettings GetLightingSettings();
 
+        // False in processes without GI, such as the out of process profiler.
+        public static extern bool isAvailable
+        {
+            [FreeFunction("HasInteractiveLightBakingData")]
+            get;
+        }
+
         [StaticAccessor("InteractiveLightBakingDataManager::Get()", StaticAccessorType.Dot)]
         public static extern float lightmapResolutionScale { get; set; }
     }

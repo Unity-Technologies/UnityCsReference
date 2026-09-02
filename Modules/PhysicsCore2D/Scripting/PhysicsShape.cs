@@ -1397,7 +1397,7 @@ namespace Unity.U2D.Physics
         /// This only has an effect if the shape body is <see cref="UnityEngine.RigidbodyType2D.Dynamic"/>.
         /// This only has an effect of shapes of type Circle, Capsule or Polygon.
         /// </summary>
-        /// <param name="force">The wind velocity in world-space.</param>
+        /// <param name="force">The wind velocity in world-space. Each component's magnitude is clamped to 100000; larger magnitudes have no useful effect because body speeds are capped each simulation step.</param>
         /// <param name="drag">The drag coefficient which is a force that opposes the relative velocity.</param>
         /// <param name="lift">The lift coefficient which is a force that is perpendicular to the relative velocity.</param>
         /// <param name="wake">Whether the shape body should be woken or not.</param>

@@ -1314,10 +1314,19 @@ namespace UnityEditor
                 if (this is ISupportsOverlaysWithFilter filterRef)
                     filter = filterRef.IsOverlaySupported;
 
-                overlayCanvas.Initialize(this, mode, filter);
-                var ve = overlayCanvas.rootVisualElement;
-                baseRootVisualElement.Add(ve);
+                // Set before Initialize since Overlay content callbacks run inside it and may reenter this method
                 m_OverlaysInitialized = true;
+                try
+                {
+                    overlayCanvas.Initialize(this, mode, filter);
+                    var ve = overlayCanvas.rootVisualElement;
+                    baseRootVisualElement.Add(ve);
+                }
+                catch
+                {
+                    m_OverlaysInitialized = false;
+                    throw;
+                }
             }
         }
 

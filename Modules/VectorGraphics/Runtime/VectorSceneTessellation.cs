@@ -458,6 +458,7 @@ namespace Unity.VectorGraphics
             atlasTex.wrapModeU = TextureWrapMode.Clamp;
             atlasTex.wrapModeV = TextureWrapMode.Clamp;
             atlasTex.wrapModeW = TextureWrapMode.Clamp;
+            atlasTex.anisoLevel = 0; // gradient LUT atlas: aniso taps would sample neighboring entries
             atlasTex.SetPixels32(atlasColors);
             atlasTex.Apply(false, true);
 
