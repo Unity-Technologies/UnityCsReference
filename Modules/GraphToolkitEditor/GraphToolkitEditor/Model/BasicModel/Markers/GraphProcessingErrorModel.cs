@@ -38,7 +38,7 @@ namespace Unity.GraphToolkit.Editor
 
 
         /// <inheritdoc />
-        public override GraphLogAction Action { get; }
+        public override ILogAction Action { get; }
 
 
         /// <inheritdoc />

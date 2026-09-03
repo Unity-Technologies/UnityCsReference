@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphicsDeviceFeatures not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,13 +64,13 @@ namespace UnityEditor
             public static readonly GUIContent kTextureMipmapLimitGroupsAddButton = EditorGUIUtility.TrIconContent("Toolbar Plus", "Create a new mipmap limit group. Note that this adds a group to all quality levels, not only the active one!");
             public static readonly GUIContent kTextureMipmapLimitGroupsRemoveButton = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove mipmap limit group. Note that this removes the group from all quality levels, not only the active one!");
 
-            public static readonly string kTextureMipmapLimitGroupsDialogTitleOnUpdate = L10n.Tr("Mipmap Limit Groups: Update textures?");
-            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRemove = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to remove the group without modifying its associated textures. Relevant textures stay bound to the group and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to remove the group and reset the group property of associated textures to 'None'. This triggers a re-import and may take some time. An undo cannot revert the importer changes.");
-            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRename = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to rename the group without modifying its associated textures. Relevant textures stay bound to the group and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to rename the group and update the group property of associated textures to '{1}'. This triggers a re-import and may take some time. An undo cannot revert the importer changes.");
-            public static readonly string kTextureMipmapLimitGroupsDialogTitleOnFailure = L10n.Tr("Mipmap Limit Groups: Operation failed");
-            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRenameFail = L10n.Tr("The mipmap limit group '{0}' already exists.\n'{1}' was not renamed.");
-            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnUpdateAssetsError = L10n.Tr("An error occured while updating texture assets: {0}");
-            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnIdentifyFail = L10n.Tr("No textures are linked to the mipmap limit group '{0}'.");
+            public static readonly string kTextureMipmapLimitGroupsDialogTitleOnUpdate = L10n.Tr("Mipmap Limit Groups: Update textures?", null);
+            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRemove = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to remove the group without modifying its associated textures. Relevant textures stay bound to the group and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to remove the group and reset the group property of associated textures to 'None'. This triggers a re-import and may take some time. An undo cannot revert the importer changes.", null);
+            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRename = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to rename the group without modifying its associated textures. Relevant textures stay bound to the group and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to rename the group and update the group property of associated textures to '{1}'. This triggers a re-import and may take some time. An undo cannot revert the importer changes.", null);
+            public static readonly string kTextureMipmapLimitGroupsDialogTitleOnFailure = L10n.Tr("Mipmap Limit Groups: Operation failed", null);
+            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRenameFail = L10n.Tr("The mipmap limit group '{0}' already exists.\n'{1}' was not renamed.", null);
+            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnUpdateAssetsError = L10n.Tr("An error occured while updating texture assets: {0}", null);
+            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnIdentifyFail = L10n.Tr("No textures are linked to the mipmap limit group '{0}'.", null);
 
             public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Mipmap Streaming", "When enabled, Unity only streams texture mipmap levels relevant to the current Camera's position in a Scene. This reduces the total amount of memory Unity needs for textures. Individual textures must also have 'Stream Mipmap Levels' enabled in their Import Settings.");
             public static readonly GUIContent kStreamingMipmapsMemoryBudget = EditorGUIUtility.TrTextContent("Memory Budget", "The amount of memory (in megabytes) to allocate for all loaded textures.");
@@ -111,10 +112,10 @@ namespace UnityEditor
 
             public static readonly GUIContent kRenderPipelineObject = EditorGUIUtility.TrTextContent("Render Pipeline Asset", "Specifies the Render Pipeline Asset to use for this quality level. It overrides the value set in the Graphics Settings Window.");
 
-            public static readonly string buildProfileQualitySettingsOverrideWarning = L10n.Tr("The current active build profile has overridden Quality levels inclusion. To ensure that the correct levels are included in your build, see the Build Profiles...");
-            public static readonly string buildProfileQualitySettingsInformationSingular = L10n.Tr("Renaming and deleting Quality levels will impact one build profile. To edit Quality levels included in build profiles, go to Build Profiles...");
-            public static readonly string buildProfileQualitySettingsInformationPlural = L10n.Tr("Renaming and deleting Quality levels will impact {0} build profiles. To edit Quality levels included in build profiles, go to Build Profiles...");
-            public static readonly string adaptiveVSyncInfo = L10n.Tr("There are settings below that are only applicable to the current Build Target such as Adaptive Vsync. To change the Build Target, go to the Build Settings");
+            public static readonly string buildProfileQualitySettingsOverrideWarning = L10n.Tr("The current active build profile has overridden Quality levels inclusion. To ensure that the correct levels are included in your build, see the Build Profiles...", null);
+            public static readonly string buildProfileQualitySettingsInformationSingular = L10n.Tr("Renaming and deleting Quality levels will impact one build profile. To edit Quality levels included in build profiles, go to Build Profiles...", null);
+            public static readonly string buildProfileQualitySettingsInformationPlural = L10n.Tr("Renaming and deleting Quality levels will impact {0} build profiles. To edit Quality levels included in build profiles, go to Build Profiles...", null);
+            public static readonly string adaptiveVSyncInfo = L10n.Tr("There are settings below that are only applicable to the current Build Target such as Adaptive Vsync. To change the Build Target, go to the Build Settings", null);
         }
 
         internal class Styles
@@ -836,7 +837,7 @@ namespace UnityEditor
             row.AddToClassList("quality-table__row");
 
             // Add "Current" tag label after the name field
-            var currentTag = new Label(L10n.Tr("Current"));
+            var currentTag = new Label(L10n.Tr("Current", null));
             currentTag.name = "CurrentQualityLevelTag";
             currentTag.AddToClassList("quality-level-current-tag");
             currentTag.tooltip = "This is the current active quality level";
@@ -2182,8 +2183,8 @@ namespace UnityEditor
                     // If we are dealing with presets, we will be able to find the "Include Property" and/or "Exclude Property" menu items.
                     // Our texture mipmap limit group names and group settings arrays are always separate properties entirely, which means
                     // that those menu items will not always function as one would expect out-of-the-box, so we apply some custom logic here.
-                    GenericMenu.MenuItem includePropItem = menu.menuItems.Find(menu => menu.content.text == L10n.Tr("Include Property"));
-                    GenericMenu.MenuItem excludePropItem = menu.menuItems.Find(menu => menu.content.text == L10n.Tr("Exclude Property"));
+                    GenericMenu.MenuItem includePropItem = menu.menuItems.Find(menu => menu.content.text == L10n.Tr("Include Property", null));
+                    GenericMenu.MenuItem excludePropItem = menu.menuItems.Find(menu => menu.content.text == L10n.Tr("Exclude Property", null));
 
                     if (m_PresetEditor is null) // Can cache the PresetEditor/preset asset since they won't change.
                     {
@@ -2436,7 +2437,7 @@ namespace UnityEditor
             {
                 int selection = EditorUtility.DisplayDialogComplex(Content.kTextureMipmapLimitGroupsDialogTitleOnUpdate,
                 string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnRemove, GetShortTextureMipmapLimitGroupName(nameOfGroupToRemove)),
-                L10n.Tr("No"), L10n.Tr("Cancel"), L10n.Tr("Yes"));
+                L10n.Tr("No", null), L10n.Tr("Cancel", null), L10n.Tr("Yes", null));
 
                 switch (selection)
                 {
@@ -2551,7 +2552,7 @@ namespace UnityEditor
             {
                 EditorUtility.DisplayDialog(Content.kTextureMipmapLimitGroupsDialogTitleOnFailure,
                     string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnUpdateAssetsError, e.Message),
-                    L10n.Tr("OK"));
+                    L10n.Tr("OK", null));
             }
             finally
             {
@@ -2593,7 +2594,7 @@ namespace UnityEditor
             {
                 EditorUtility.DisplayDialog(Content.kTextureMipmapLimitGroupsDialogTitleOnFailure,
                     string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnIdentifyFail, GetShortTextureMipmapLimitGroupName(groupNameToIdentify)),
-                    L10n.Tr("OK"));
+                    L10n.Tr("OK", null));
             }
         }
 
@@ -2636,7 +2637,7 @@ namespace UnityEditor
                     {
                         EditorUtility.DisplayDialog(Content.kTextureMipmapLimitGroupsDialogTitleOnFailure,
                             string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnRenameFail, shortNewName, shortToRename),
-                            L10n.Tr("OK"));
+                            L10n.Tr("OK", null));
                         return;
                     }
                 }
@@ -2646,7 +2647,7 @@ namespace UnityEditor
                 {
                     int selection = EditorUtility.DisplayDialogComplex(Content.kTextureMipmapLimitGroupsDialogTitleOnUpdate,
                         string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnRename, shortToRename, shortNewName),
-                        L10n.Tr("No"), L10n.Tr("Cancel"), L10n.Tr("Yes"));
+                        L10n.Tr("No", null), L10n.Tr("Cancel", null), L10n.Tr("Yes", null));
 
                     switch (selection)
                     {
@@ -2677,13 +2678,13 @@ namespace UnityEditor
 
         string GetNewTextureMipmapLimitGroupName()
         {
-            string newName = L10n.Tr("New Group");
+            string newName = L10n.Tr("New Group", null);
             string[] existingNames = GetAllKnownTextureMipmapLimitGroupNames();
 
             int counter = 0;
             while (System.Array.Exists(existingNames, existingName => existingName == newName))
             {
-                newName = L10n.Tr("New Group") + string.Format(" ({0})", ++counter);
+                newName = L10n.Tr("New Group", null) + string.Format(" ({0})", ++counter);
             }
 
             return newName;
@@ -2770,3 +2771,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

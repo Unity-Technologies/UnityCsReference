@@ -14,7 +14,7 @@ internal class InProjectPage : SimplePageWithPackages
     public const string k_Id = "InProject";
 
     public override string id => k_Id;
-    public override string displayName => L10n.Tr("All Packages");
+    public override string displayName => L10n.Tr("All Packages", null);
     public override Icon icon => Icon.InProjectPage;
 
     public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo | RefreshOptions.ImportedSamples;
@@ -34,11 +34,11 @@ internal class InProjectPage : SimplePageWithPackages
     public override string GetGroupName(IPackage package)
     {
         if (package.product != null)
-            return L10n.Tr("Packages - Asset Store");
+            return L10n.Tr("Packages - Asset Store", null);
         var version = package.versions.primary;
         if (version.HasTag(PackageTag.Unity))
-            return version.HasTag(PackageTag.Feature) ? L10n.Tr("Features") : L10n.Tr("Packages - Unity");
-        return string.IsNullOrEmpty(version.author?.name) ? L10n.Tr("Packages - Other") : string.Format(L10n.Tr("Packages - {0}"), version.author.name);
+            return version.HasTag(PackageTag.Feature) ? L10n.Tr("Features", null) : L10n.Tr("Packages - Unity", null);
+        return string.IsNullOrEmpty(version.author?.name) ? L10n.Tr("Packages - Other", null) : string.Format(L10n.Tr("Packages - {0}", null), version.author.name);
     }
 
     protected override void RebuildVisualStateList()

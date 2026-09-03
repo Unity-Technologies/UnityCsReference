@@ -8,6 +8,8 @@ using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Rendering;
+using System.Collections.Generic;
 
 namespace Unity.ProjectAuditor.Editor.Core
 {
@@ -54,7 +56,7 @@ namespace Unity.ProjectAuditor.Editor.Core
         /// <returns>True if the descriptor is supported; otherwise, false.</returns>
         public static bool IsSupported(this Descriptor desc, AnalysisParams analysisParams)
         {
-            return desc.IsVersionCompatible() && desc.IsPlatformCompatible(analysisParams.Platform);
+            return desc.IsVersionCompatible() && desc.IsPlatformCompatible(analysisParams.Platform) && AreAreasSupported(desc.Areas);
         }
 
         /// <summary>
@@ -142,6 +144,70 @@ namespace Unity.ProjectAuditor.Editor.Core
                 return false;
 
             return true;
+        }
+
+        [NoAutoStaticsCleanup]
+        static bool? s_MigrationToURPSupported = null;
+
+        [InitializeOnLoadMethod]
+        static void InvalidateURPSettingsCache()
+        {
+            EditorApplication.projectChanged += () => s_MigrationToURPSupported = null;
+        }
+
+        static bool AreAreasSupported(Areas areas)
+        {
+            if ((areas & Areas.MigrationToURP) != 0)
+            {
+                if (s_MigrationToURPSupported == null)
+                {
+                    // With no Quality Levels, Unity uses the global Render Pipeline Asset.
+                    if (QualitySettings.names.Length == 0)
+                        return ShouldMigrateRenderPipelineAsset(GraphicsSettings.defaultRenderPipeline);
+
+                    var qualityLevelsToMigrate = FindQualitySettingsToMigrate();
+                    s_MigrationToURPSupported = qualityLevelsToMigrate.Count > 0;
+                }
+
+                return s_MigrationToURPSupported.Value;
+            }
+
+            return true;
+        }
+
+        static List<int> FindQualitySettingsToMigrate()
+        {
+            var defaultRenderPipeline = GraphicsSettings.defaultRenderPipeline;
+            int qualityLevelCount = QualitySettings.names.Length;
+
+            var qualityLevelsToMigrate = new List<int>();
+            QualitySettings.ForEach((index, name) =>
+            {
+                var effectiveRenderPipeline = QualitySettings.GetRenderPipelineAssetAt(index);
+                if (effectiveRenderPipeline == null)
+                    effectiveRenderPipeline = defaultRenderPipeline;
+
+                if (ShouldMigrateRenderPipelineAsset(effectiveRenderPipeline))
+                    qualityLevelsToMigrate.Add(index);
+            });
+
+            return qualityLevelsToMigrate;
+        }
+
+        static bool ShouldMigrateRenderPipelineAsset(RenderPipelineAsset asset)
+        {
+            // BiRP
+            if (asset == null)
+                return true;
+
+            // URP
+            for (var type = asset.GetType(); type != null; type = type.BaseType)
+            {
+                if (type.FullName == "UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset")
+                    return true;
+            }
+            // Other SRP
+            return false;
         }
     }
 }

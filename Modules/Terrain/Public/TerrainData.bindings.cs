@@ -858,7 +858,7 @@ namespace UnityEngine
                 throw new ArgumentException("Trying to access out-of-bounds terrain holes information.");
             }
 
-            bool[,] holes = new bool[width, height];
+            bool[,] holes = new bool[height, width];
             Internal_GetHoles(xBase, yBase, width, height, holes);
             return holes;
         }
@@ -1154,7 +1154,9 @@ namespace UnityEngine
         ///<summary>Returns a 2D array of the detail object density (i.e. the number of detail objects for this layer) in the specific location.</summary>
         ///<remarks>The Terrain system uses detail layer density maps. Each map is essentially a grayscale image, where each pixel value denotes the number of detail objects that will be procedurally placed Terrain area. That corresponds to the pixel. Since several different detail types may be used, the map is arranged
         /// into "layers" - the array indices of the layers are determined by the order of the detail types defined
-        /// in the Terrain inspector (i.e. when the Paint Details tool is selected).</remarks>
+        /// in the Terrain inspector (i.e. when the Paint Details tool is selected).
+        ///
+        ///The returned array has the dimensions [height,width] and is indexed as [y,x].</remarks>
         ///<param name="xBase">First x index of detail object density data to retrieve.</param>
         ///<param name="yBase">First y index of detail object density data to retrieve.</param>
         ///<param name="width">The amount of detail object density data to retrieve along the Terrain's x axis.</param>
@@ -1179,9 +1181,9 @@ namespace UnityEngine
         ///            {
         ///                // If the pixel value is below the threshold then
         ///                // set it to zero.
-        ///                if (map[x, y] < threshold)
+        ///                if (map[y, x] < threshold)
         ///                {
-        ///                    map[x, y] = 0;
+        ///                    map[y, x] = 0;
         ///                }
         ///            }
         ///        }
@@ -1194,7 +1196,7 @@ namespace UnityEngine
         ///</example>
         public int[,] GetDetailLayer(int xBase, int yBase, int width, int height, int layer)
         {
-            int[,] detailLayer = new int[width, height];
+            int[,] detailLayer = new int[height, width];
             GetDetailLayer(xBase, yBase, width, height, layer, detailLayer);
             return detailLayer;
         }
@@ -1224,7 +1226,9 @@ namespace UnityEngine
         ///<remarks>The Terrain system uses detail layer density maps. Each map is essentially a grayscale image
         /// where each pixel value specifies the number of detail objects to procedurally place in the terrain area that corresponds to the pixel. These values depend on which <see cref="DetailScatterMode" /> is set. Because several different detail types may be used, the map is arranged
         /// into "layers" - the array indices of the layers are determined by the order of the detail types defined
-        ///in the Terrain inspector (ie, when the Paint Details tool is selected).</remarks>
+        ///in the Terrain inspector (ie, when the Paint Details tool is selected).
+        ///
+        ///The <c>details</c> array must have the dimensions [height,width] and is indexed as [y,x].</remarks>
         ///<example>
         ///  <code><![CDATA[
         ///using UnityEngine;
@@ -1244,9 +1248,9 @@ namespace UnityEngine
         ///            {
         ///                // If the pixel value is below the threshold then
         ///                // set it to zero.
-        ///                if (map[x, y] < threshold)
+        ///                if (map[y, x] < threshold)
         ///                {
-        ///                    map[x, y] = 0;
+        ///                    map[y, x] = 0;
         ///                }
         ///            }
         ///        }

@@ -18,8 +18,8 @@ namespace Unity.GraphToolkit.Editor
     internal class ErrorCountLabel : Label, IAccessContainerWindow, IToolbarElement
     {
         public const string id = "GraphToolkit/Error/Count";
-        static readonly string k_ErrorStr = L10n.Tr("alert");
-        static readonly string k_ErrorStrMultiple = L10n.Tr($"{k_ErrorStr}s");
+        static readonly string k_ErrorStr = L10n.Tr("alert", null);
+        static readonly string k_ErrorStrMultiple = L10n.Tr($"{k_ErrorStr}s", null);
 
         ErrorToolbarUpdateObserver m_UpdateObserver;
 

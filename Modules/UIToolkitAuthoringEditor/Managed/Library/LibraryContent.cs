@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -11,17 +11,20 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace Unity.UIToolkit.Editor
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal static class LibraryContent
+    internal static partial class LibraryContent
     {
         const string k_ShowInternalControlsPrefKey = "UIToolkit.UILibrary.ShowInternalControls";
         const string k_ShowPackageControlsPrefKey = "UIToolkit.UILibrary.ShowPackageControls";
 
+        [NoAutoStaticsCleanup] // library-type cache, safe to persist
         static readonly Dictionary<LibraryTypeKey, LibraryItem> s_LibraryTypes = GenerateLibraryTypeFromSerializedDataTypes();
+        [AutoStaticsCleanupOnCodeReload] // caches user Assembly refs; cleared on reload so unloaded assemblies aren't pinned
         static readonly Dictionary<Assembly, bool> s_IsPackageAssembly = new();
 
         internal static bool ShowInternalControls
@@ -127,11 +130,21 @@ namespace Unity.UIToolkit.Editor
 
             if (uxmlAttr == null || uxmlAttr.visibility == LibraryVisibility.Default)
             {
-                if (IsInternalType(type) && !ShowInternalControls)
+                if (type.Namespace != null && type.Namespace.StartsWith("Unity.UI.Builder"))
                     return false;
 
-                if (IsPackageType(type) && !ShowPackageControls)
+                var assemblyVisibility = GetAssemblyVisibility(type);
+                if (assemblyVisibility == LibraryVisibility.Hidden)
                     return false;
+
+                if (assemblyVisibility != LibraryVisibility.Visible)
+                {
+                    if (IsInternalType(type) && !ShowInternalControls)
+                        return false;
+
+                    if (IsPackageType(type) && !ShowPackageControls)
+                        return false;
+                }
             }
 
             if (type.IsAbstract)
@@ -152,12 +165,14 @@ namespace Unity.UIToolkit.Editor
             return isPackage;
         }
 
+        static LibraryVisibility GetAssemblyVisibility(Type type)
+        {
+            var attribute = type.Assembly.GetCustomAttribute<UILibraryVisibilityAttribute>();
+            return attribute?.Visibility ?? LibraryVisibility.Default;
+        }
+
         static bool IsInternalType(Type type)
         {
-            var a = type.Assembly.GetCustomAttribute<UILibraryVisibilityAttribute>();
-            if (a != null && a.Visibility == LibraryVisibility.Hidden)
-                return true;
-
             if (IsUnityBuiltInEditorAssembly(type.Assembly))
                 return true;
 
@@ -181,4 +196,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

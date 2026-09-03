@@ -46,6 +46,7 @@ namespace UnityEngine.UIElements
         internal TempMeshAllocatorImpl allocator;
         internal ExtraVertexChannels panelExtras;
         internal JobMerger pendingHandles;
+        internal RenderData renderData;
 
         /// <summary>The element whose draws this invocation is processing.</summary>
         public VisualElement element { get; internal set; }
@@ -495,13 +496,18 @@ namespace UnityEngine.UIElements
         public readonly bool recursive;
         public readonly int priority;
         public readonly long id;
+        // Opt-in to ALSO run on a filtered element's composite quad (its subtree renders to a texture;
+        // the quad draws it). User modifiers already run on the nested content, so they stay excluded
+        // from the quad or they would apply twice.
+        public readonly bool appliesToSubTreeQuad;
 
-        public MeshModifierRegistration(MeshModificationCallback callback, bool recursive, int priority, long id)
+        public MeshModifierRegistration(MeshModificationCallback callback, bool recursive, int priority, long id, bool appliesToSubTreeQuad = false)
         {
             this.callback = callback;
             this.recursive = recursive;
             this.priority = priority;
             this.id = id;
+            this.appliesToSubTreeQuad = appliesToSubTreeQuad;
         }
 
         [NoAutoStaticsCleanup] // stateless sort comparator; no captured state

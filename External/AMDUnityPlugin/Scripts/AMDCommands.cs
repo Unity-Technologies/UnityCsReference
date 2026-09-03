@@ -33,16 +33,40 @@ namespace UnityEngine.AMD
         EnableTexture1DUsage                    = (1<<7)    // A bit indicating that the backend should use 1D textures.
     }
 
+    //Flags Verbatim from ffx_upscale.h (FidelityFX SDK)
+    ///<summary>Options that represent subfeatures of FSR3 or FSR4.</summary>
+    [Flags]
+    public enum FfxApiCreateContextUpscaleFlags
+    {
+        ///<summary>A bit indicating if the input color data provided is using a high-dynamic range.</summary>
+        EnableHighDynamicRange                  = (1 << 0),
+        ///<summary>A bit indicating if the motion vectors are rendered at display resolution.</summary>
+        EnableDisplayResolutionMotionVectors    = (1 << 1),
+        ///<summary>A bit indicating that the motion vectors have the jittering pattern applied to them.</summary>
+        EnableMotionVectorsJitterCancellation   = (1 << 2),
+        ///<summary>A bit indicating that the input depth buffer data provided is inverted [1..0].</summary>
+        DepthInverted                           = (1 << 3),
+        ///<summary>A bit indicating that the input depth buffer data provided is using an infinite far plane.</summary>
+        EnableDepthInfinite                     = (1 << 4),
+        ///<summary>A bit indicating if automatic exposure should be applied to input color data.</summary>
+        EnableAutoExposure                      = (1 << 5),
+        ///<summary>A bit indicating that the application uses dynamic resolution scaling.</summary>
+        EnableDynamicResolution                 = (1 << 6),
+        ///<summary>A bit indicating that the runtime should check some API values and report issues.</summary>
+        EnableDebugChecking                     = (1 << 7),
+        ///<summary>A bit indicating that the color resource contains perceptual (gamma corrected) colors.</summary>
+        EnableNonLinearColorSpace               = (1 << 8),
+        ///<summary>A bit indicating if debug visualization is allowed. (memory consumption could increase)</summary>
+        EnableDebugVisualization                = (1 << 9),
+    };
+
     //Quality mode verbatim from AMDCommands.h
-    ///<summary>Options for FSR2 performance modes.</summary>
-    ///<remarks>Each performance mode corresponds to a scaling ratio per dimension of the input texture:
+    ///<summary>Options for FSR2 quality modes.</summary>
+    ///<remarks>
+    ///Each quality mode corresponds to a scaling ratio per dimension of the input texture.
     ///
-    ///1. Quality: 1.5x
-    ///2. Balanced: 1.7x
-    ///3. Performance: 2.0x
-    ///4. Ultra Performance: 3.0x
-    ///
-    ///Refer to the &lt;a href="https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-temporal/#id8"&gt;Scaling modes section in FSR2 Documentation&lt;/a&gt; for more details.</remarks>
+    ///Refer to the <see href="https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-temporal/#id8">Scaling modes section in FSR2 Documentation</see> for more details.
+    ///</remarks>
     ///<example nocheck="true">
     ///  <code><![CDATA[
     ///using UnityEngine;
@@ -51,7 +75,7 @@ namespace UnityEngine.AMD
     ///using UnityEngine.Experimental.Rendering;
     ///using UnityEngine.AMD;
     ///
-    /// // Example HDRP custom pass 
+    /// // Example HDRP custom pass
     ///public class CustomFSRPass : CustomPass
     ///{
     ///    void InitializeAMDDevice()
@@ -122,17 +146,53 @@ namespace UnityEngine.AMD
     ///</example>
     public enum FSR2Quality
     {
-        ///<summary>Highest quality, lower performance.</summary>
+        ///<summary>Upscaling with scaling factor of 1.5x.</summary>
         Quality = 0,
-        ///<summary>Balances performance with quality.</summary>
+        ///<summary>Upscaling with scaling factor of 1.7x.</summary>
         Balanced,
-        ///<summary>Fast performance, lower quality.</summary>
+        ///<summary>Upscaling with scaling factor of 2.0x.</summary>
         Performance,
-        ///<summary>Fastest performance, lowest quality.</summary>
+        ///<summary>Upscaling with scaling factor of 3.0x.</summary>
         UltraPerformance
     }
 
-    ///<summary>Represents the initialization state of a <see cref="FSR2Context" />. You can only use and set this when calling <see cref="GraphicsDevice.CreateFeature" />.</summary>
+    ///<summary>Options that determine the scaling ratio between input resolution and output resolution.</summary>
+    ///<remarks>
+    ///Refer to the <see href="https://gpuopen.com/manuals/fsr_sdk/techniques/super-resolution-upscaler/#scaling-modes">Scaling modes section in FSR3 Documentation</see> for more details.
+    ///</remarks>
+    public enum FSR3Quality
+    {
+        ///<summary>Anti-aliasing at native resolution without upscaling.</summary>
+        NativeAA = 0,
+        ///<summary>Upscaling with scaling factor of 1.5x.</summary>
+        Quality,
+        ///<summary>Upscaling with scaling factor of 1.7x.</summary>
+        Balanced,
+        ///<summary>Upscaling with scaling factor of 2.0x.</summary>
+        Performance,
+        ///<summary>Upscaling with scaling factor of 3.0x.</summary>
+        UltraPerformance
+    }
+
+    ///<summary>Options that determine the scaling ratio between input resolution and output resolution.</summary>
+    ///<remarks>
+    ///Refer to the <see href="https://gpuopen.com/manuals/fsr_sdk/techniques/super-resolution-ml/#scaling-modes">Scaling modes section in FSR4 Documentation</see> for more details.
+    ///</remarks>
+    public enum FSR4Quality
+    {
+        ///<summary>Anti-aliasing at native resolution without upscaling.</summary>
+        NativeAA = 0,
+        ///<summary>Upscaling with scaling factor of 1.5x.</summary>
+        Quality,
+        ///<summary>Upscaling with scaling factor of 1.7x.</summary>
+        Balanced,
+        ///<summary>Upscaling with scaling factor of 2.0x.</summary>
+        Performance,
+        ///<summary>Upscaling with scaling factor of 3.0x.</summary>
+        UltraPerformance
+    }
+
+    ///<summary>Represents the initialization state of a <see cref="FSR2Context" />. You can only use and set this when calling <see cref="GraphicsDevice.CreateFSRUpscale2" />.</summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct FSR2CommandInitializationData
     {
@@ -176,12 +236,58 @@ namespace UnityEngine.AMD
         }
     }
 
-    ///<summary>The set of texture slots available for the <see cref="FSR2Context" />. SA <see cref="GraphicsDevice.ExecuteFSR2" />.</summary>
-    ///<remarks>Use this struct to specify input and output textures for the FSR2 implementation.
+    //// Struct layout must match with C++ definition of it.
+    ///<summary>
+    ///Represents the initialization state of a <see cref="FSRUpscalerContext" />.
+    ///You can only use and set this when calling <see cref="GraphicsDevice.CreateFSRUpscale3" /> or <see cref="GraphicsDevice.CreateFSRUpscale4" />.
+    ///</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FSRUpscalerCommandInitializationData
+    {
+        ///<summary>Max width of render resolution (pre-upscaling).</summary>
+        public uint maxRenderSizeWidth;
+        ///<summary>Max height of render resolution (pre-upscaling).</summary>
+        public uint maxRenderSizeHeight;
+        ///<summary>Width of display resolution (post-upscaling).</summary>
+        public uint displaySizeWidth;
+        ///<summary>Height of display resolution (post-upscaling).</summary>
+        public uint displaySizeHeight;
+        ///<summary>See <see cref="FfxApiCreateContextUpscaleFlags" />.</summary>
+        public FfxApiCreateContextUpscaleFlags ffxFsrFlags;
+        internal uint featureSlot;
+
+        // Reserved for future FSR SDK-specific parameters
+        internal uint reserved1;
+        internal uint reserved2;
+        internal uint reserved3;
+        internal uint reserved4;
+
+        ///<summary>Set a bitflag of <see cref="FSRUpscalerCommandInitializationData.ffxFsrFlags"/>.</summary>
+        public void SetFlag(FfxApiCreateContextUpscaleFlags flag, bool value)
+        {
+            if (value) { ffxFsrFlags |=  flag; }
+            else       { ffxFsrFlags &= ~flag; }
+        }
+        ///<summary>Get a bitflag of <see cref="FSRUpscalerCommandInitializationData.ffxFsrFlags"/>.</summary>
+        public bool GetFlag(FfxApiCreateContextUpscaleFlags flag) { return (ffxFsrFlags & flag) != 0; }
+    }
+
+    ///<summary>
+    ///The set of texture slots available for the <see cref="FSR2Context" /> and <see cref="FSRUpscalerContext" />.
+    ///</summary>
+    ///<remarks>
+    ///Use this struct to specify input and output textures for FSR2, FSR3, and FSR4 upscaling.
     ///
-    ///**Note:** You must create output color texture <c>colorOutput</c> with <c>enableRandomWrite</c> parameter set to <c>true</c> when initializing the <see cref="T:UnityEngine.Rendering.RTHandle" /> of the texture. This is due to FSR2 passes requiring access to the resources in a compute shader
+    ///**Note:** You must create output color texture <c>colorOutput</c> with <c>enableRandomWrite</c> parameter set to <c>true</c>
+    ///when initializing the RTHandle of the texture. This is due to FSR passes requiring access to the resources in a compute shader.
     ///
-    ///Refer to the &lt;a href="https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-temporal/#id12"&gt;Input resources section in FSR2 Documentation&lt;/a&gt; for more details.</remarks>
+    ///Refer to the Input resources section in AMD's documentation for more details:
+    ///
+    ///- <see href="https://gpuopen.com/manuals/fidelityfx_sdk/techniques/super-resolution-temporal/#input-resources">FSR2 - Input resources</see>
+    ///- <see href="https://gpuopen.com/manuals/fsr_sdk/techniques/super-resolution-upscaler/#input-resources">FSR3 - Input resources</see>
+    ///- <see href="https://gpuopen.com/manuals/fsr_sdk/techniques/super-resolution-ml/#input-resources">FSR4 - Input resources</see>
+    ///
+    ///</remarks>
     ///<example nocheck="true">
     ///  <code><![CDATA[
     ///using UnityEngine;
@@ -268,42 +374,49 @@ namespace UnityEngine.AMD
     ///    [SerializeField] public FSR2Quality m_Quality = FSR2Quality.Quality;
     ///    FSR2Quality m_QualityBefore = FSR2Quality.Quality;
     ///    Vector2Int m_InputTextureSize = new Vector2Int(0,0);
-    ///}]]></code>
+    ///}
+    ///]]></code>
     ///</example>
     ///<seealso cref="AMDUnityPlugin" />
     ///<seealso cref="GraphicsDevice" />
     ///<seealso cref="FSR2Context" />
+    ///<seealso cref="FSRUpscalerContext" />
     ///<seealso cref="FSR2CommandInitializationData" />
+    ///<seealso cref="FSRUpscalerCommandInitializationData" />
     ///<seealso cref="FSR2CommandExecutionData" />
     public struct FSR2TextureTable
     {
-        ///<summary>The input color buffer to upsample for <see cref="FSR2Context" />. This texture is mandatory and you must set it to a non-null value.</summary>
+        ///<summary>The input color texture to upsample for <see cref="FSR2Context" /> or <see cref="FSRUpscalerContext" />. This texture is mandatory and you must set it to a non-null value.</summary>
         public Texture colorInput       { set; get; }
-        ///<summary>The output color buffer. This texture is mandatory and you must set it to a non-null value.</summary>
+        ///<summary>The output color texture. This texture is mandatory and you must set it to a non-null value.</summary>
         public Texture colorOutput      { set; get; }
-        ///<summary>The input depth buffer. This must be the same size as the input color buffer. This texture is mandatory and you must set it to a non-null value.</summary>
+        ///<summary>The input depth texture. This must be the same size as the input color texture. This texture is mandatory and you must set it to a non-null value.</summary>
         public Texture depth            { set; get; }
-        ///<summary>The motion vectors requested by the <see cref="FSR2Context" />. Depending on the <see cref="FfxFsr2InitializationFlags" /> specified in <see cref="FSR2Context.initData" />, this buffer can be a smaller scale or the full output resolution. This texture is mandatory and you must set it to a non-null value.</summary>
+        ///<summary>The motion vectors texture. Depending on the <see cref="FfxFsr2InitializationFlags" /> specified in <see cref="FSR2Context.initData" /> or <see cref="FfxApiCreateContextUpscaleFlags" /> specified in <see cref="FSRUpscalerContext.initData" />, this texture can have the input resolution or output resolution. This texture is mandatory and you must set it to a non-null value.</summary>
         public Texture motionVectors    { set; get; }
-        ///<summary>A transparency bit mask. This must be the same size as the input texture. This texture helps the <see cref="FSR2Context" /> with ghosting issues. This texture is optional.</summary>
+        ///<summary>A texture of format R8_UNORM and same size as colorInput that adjusts the pixel history protection mechanisms. See <see href="https://gpuopen.com/manuals/fsr_sdk/techniques/super-resolution-upscaler/#transparency-and-composition-mask">AMD's documentation</see> for details. This texture is optional in FSR2, FSR3 and ignored in FSR4.</summary>
         public Texture transparencyMask { set; get; }
-        ///<summary>A 1x1 texture with pre-exposure values. If you do not use pre-exposure, do not set this texture. This texture is optional.</summary>
+        ///<summary>A 1x1 texture with pre-exposure values. See <see href="https://gpuopen.com/manuals/fsr_sdk/techniques/super-resolution-upscaler/#exposure">AMD's documentation</see> for details. If you do not use pre-exposure, do not set this texture. Also if there's no particular reason then it's recommended to enable auto exposure via FfxFsr2InitializationFlags or FfxApiCreateContextUpscaleFlags instead of using this texture. This texture is optional.</summary>
         public Texture exposureTexture  { set; get; }
-        ///<summary>Rendering mask specifying reliance on temporal information. &lt;a href="https://github.com/GPUOpen-Effects/FidelityFX-FSR2/tree/master#reactive-mask"&gt;Github documentation on reactive mask.&lt;/a&gt;</summary>
+        ///<summary>A texture of format R8_UNORM and same size as colorInput that adjusts the temporal accumulation balance. See <see href="https://gpuopen.com/manuals/fsr_sdk/techniques/super-resolution-upscaler/#reactive-mask">AMD's documentation</see> for details. This texture is optional in FSR2, FSR3 and ignored in FSR4.</summary>
         public Texture reactiveMask     { set; get; }
-        ///<summary>A mask, same size as colorInput, preferably of format R8_UNORM that informs FSR2 of possible moving pixels. If heavy ghosting is encountered, set pixels to this mask to fix the problem. This texture is optional.</summary>
+        ///<summary>This is obsolete. Use transparencyMask instead. If both are specified, then transparencyMask is used and this is ignored.</summary>
         public Texture biasColorMask    { set; get; }
     }
 
-    ///<summary>Represents the state of an FSR2Context. If you call Device.ExecuteFSR2, Unity sends the values in this struct to the runtime. After this, you can change the values in this struct without any side effects.</summary>
+    ///<summary>
+    ///Represents the data needed to execute FSR2, FSR3, or FSR4 upscaling. If you call <see cref="GraphicsDevice.ExecuteFSRUpscale2" />, <see cref="GraphicsDevice.ExecuteFSRUpscale3" />, or <see cref="GraphicsDevice.ExecuteFSRUpscale4" />,
+    ///Unity sends the values in this struct to the runtime. After that, you can change the values in this struct without any side effects.
+    ///</summary>
     ///<remarks>
-    ///  <see cref="FSR2CommandExecutionData" /> expects <c>frameTimeDelta</c> in milliseconds while Unity's <see cref="Time.deltaTime" /> is seconds, and <c>cameraFovAngleVertical</c> in radians while Unity provides field of view in degrees. 
+    ///<see cref="FSR2CommandExecutionData" /> expects <c>frameTimeDelta</c> in milliseconds while Unity's <see cref="Time.deltaTime" /> is seconds, and <c>cameraFovAngleVertical</c> in radians while Unity provides field of view in degrees. 
     ///
-    ///FSR2 expects the motion vectors to be in screen space and their values to describe motion from the current frame to the previous frame. 
+    ///All FSR implementations expect the motion vectors to be in screen space and their values to describe motion from the current frame to the previous frame. 
     ///Unity's motion vectors describe motion from the previous frame to the current frame and are in normalized device coordinates (NDC), in the [-1, +1] range.
     ///To conform to the FSR2 requirements, provide <c>MVScaleX</c> and <c>MVScaleY</c> values that scale the motion vector values with the motion vector render target size.
     ///
-    ///Refer to the &lt;a href="https://gpuopen.com/manuals/fidelityfx_sdk/fidelityfx_sdk-page_techniques_super-resolution-temporal/#providing-motion-vectors"&gt;Providing Motion Vectors section in FSR2 Documentation&lt;/a&gt; for more details.</remarks>
+    ///Refer to the <see href="https://gpuopen.com/manuals/fsr_sdk/techniques/super-resolution-ml/#providing-motion-vectors">Providing Motion Vectors section in FSR Documentation</see> for more details.
+    ///</remarks>
     ///<example nocheck="true">
     ///  <code><![CDATA[
     ///using UnityEngine;
@@ -381,7 +494,8 @@ namespace UnityEngine.AMD
     ///    [SerializeField] public FSR2Quality m_Quality = FSR2Quality.Quality;
     ///
     ///    Vector2Int m_InputTextureSize = new Vector2Int(0,0);
-    ///}]]></code>
+    ///}
+    ///]]></code>
     ///</example>
     ///<seealso cref="AMDUnityPlugin" />
     ///<seealso cref="GraphicsDevice" />
@@ -401,7 +515,7 @@ namespace UnityEngine.AMD
             TransparencyMask,
             ExposureTexture,
             ReactiveMask,
-            BiasColorMask,
+            BiasColorMask, // It exists for a historical reason, but is same as TransparencyMask. If both are provided then prioritize TransparencyMask.
         };
 
         ///<summary>The subpixel jitter offset applied to the camera (X axis).</summary>
@@ -422,7 +536,7 @@ namespace UnityEngine.AMD
         public float    sharpness;
         ///<summary>The time elapsed since the last frame (expressed in milliseconds).</summary>
         public float    frameTimeDelta;
-        ///<summary>The pre exposure value (must be &gt; 0.0f).</summary>
+        ///<summary>The pre exposure value (must be greater than 0.0f).</summary>
         public float    preExposure;
         ///<summary>A boolean value which when set to true, indicates the camera has moved discontinuously.</summary>
         public int      reset;
@@ -433,7 +547,7 @@ namespace UnityEngine.AMD
         ///<summary>The camera angle field of view in the vertical direction (expressed in radians).</summary>
         public float    cameraFovAngleVertical;
         ///<exclude />
-        internal uint  featureSlot;
+        internal uint   featureSlot;
         ////////////////////////////////////////////////////////////////////
     }
 
@@ -485,15 +599,19 @@ namespace UnityEngine.AMD
 
     #region DeviceCommands
 
+    #region FSR2
+
     ///<summary>Provides the persistent context for managing FSR2 initialization and per-frame execution state.</summary>
-    ///<remarks>This class encapsulates both immutable and mutable configuration data required to use AMD FidelityFX Super Resolution 2 (FSR2). 
-    ///It must persist across frames to maintain internal history and reconstruction buffers. 
+    ///<remarks>
+    ///This class encapsulates both immutable and mutable configuration data required to use AMD FidelityFX Super Resolution 2 (FSR2).
+    ///It must persist across frames to maintain internal history and reconstruction buffers.
     ///
-    ///Use <c>FSR2Context</c> to implement a custom version of FSR2 outside of the built-in integration with the &lt;a href="https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.2/manual/Dynamic-Resolution.html"&gt;HDRP Dynamic Resolution&lt;/a&gt;.
+    ///Use <c>FSR2Context</c> to implement a custom version of FSR2 outside of the built-in integration with the <see href="https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.2/manual/Dynamic-Resolution.html">HDRP Dynamic Resolution</see>.
     ///
-    ///Modify the <see cref="FSR2Context.executeData" /> property to adjust per-frame parameters before calling <see cref="GraphicsDevice.ExecuteFSR2" />. 
+    ///Modify the <see cref="FSR2Context.executeData" /> property to adjust per-frame parameters before calling <see cref="GraphicsDevice.ExecuteFSRUpscale2" />. 
     ///
-    ///You can initialize <c>FSR2Context</c> using <see cref="GraphicsDevice.CreateFeature" /> and clean it up using <see cref="GraphicsDevice.DestroyFeature" />.</remarks>
+    ///You can initialize <c>FSR2Context</c> using <see cref="GraphicsDevice.CreateFSRUpscale2" /> and clean it up using <see cref="GraphicsDevice.DestroyFeature" />.
+    ///</remarks>
     ///<example nocheck="true">
     ///  <code><![CDATA[
     ///using UnityEngine;
@@ -620,7 +738,8 @@ namespace UnityEngine.AMD
     ///    [SerializeField] public FSR2Quality m_Quality = FSR2Quality.Quality;
     ///
     ///    Vector2Int m_InputTextureSize = new Vector2Int(0,0);
-    ///}]]></code>
+    ///}
+    ///]]></code>
     ///</example>
     ///<seealso cref="AMDUnityPlugin" />
     ///<seealso cref="GraphicsDevice" />
@@ -630,7 +749,7 @@ namespace UnityEngine.AMD
         private NativeData<FSR2CommandExecutionData> m_ExecData = new NativeData<FSR2CommandExecutionData>();
 
         ///<summary>The immutable initialization parameters used to configure FSR2.</summary>
-        ///<remarks>Set once when creating the <see cref="FSR2Context" /> with <see cref="GraphicsDevice.CreateFeature" />. These values determine the internal resolution limits, display size, and operational flags.</remarks>
+        ///<remarks>Set once when creating the <see cref="FSR2Context" /> with <see cref="GraphicsDevice.CreateFSRUpscale2" />. These values determine the internal resolution limits, display size, and operational flags.</remarks>
         ///<example nocheck="true">
         ///  <code><![CDATA[
         ///using UnityEngine;
@@ -712,12 +831,14 @@ namespace UnityEngine.AMD
         ///    private FSR2Context fsr2Context = null;
         ///    [SerializeField] public FSR2Quality m_Quality = FSR2Quality.Quality;
         ///    // other fields
-        ///}]]></code>
+        ///}
+        ///]]></code>
         ///</example>
         ///<seealso cref="AMD.FSR2CommandInitializationData" />
         public ref readonly FSR2CommandInitializationData initData   { get { return ref m_InitData.Value; } }
+		
         ///<summary>The mutable execution parameters used by FSR2 for each frame.</summary>
-        ///<remarks>Modify this data before invoking <see cref="GraphicsDevice.ExecuteFSR2" /> to control frame-specific behavior such as jitter, motion vector scale, sharpness, and camera properties.</remarks>
+        ///<remarks>Modify this data before invoking <see cref="GraphicsDevice.ExecuteFSRUpscale2" /> to control frame-specific behavior such as jitter, motion vector scale, sharpness, and camera properties.</remarks>
         ///<example nocheck="true">
         ///  <code><![CDATA[
         ///using UnityEngine;
@@ -806,15 +927,15 @@ namespace UnityEngine.AMD
         ///    [SerializeField] public bool m_EnableSharpening = true;
         ///    
         ///    Vector2Int m_InputTextureSize = new Vector2Int(0,0);
-        ///}]]></code>
+        ///}
+        ///]]></code>
         ///</example>
         ///<seealso cref="FSR2CommandExecutionData" />
         public ref FSR2CommandExecutionData executeData { get { return ref m_ExecData.Value; } }
-        internal uint                   featureSlot { get { return initData.featureSlot; } }
+		
+        internal uint featureSlot { get { return initData.featureSlot; } }
 
-        internal FSR2Context()
-        {
-        }
+        internal FSR2Context() { }
 
         internal void Init(FSR2CommandInitializationData initSettings, uint featureSlot)
         {
@@ -828,10 +949,7 @@ namespace UnityEngine.AMD
             m_ExecData.Value = new FSR2CommandExecutionData();
         }
 
-        internal IntPtr GetInitCmdPtr()
-        {
-            return m_InitData.Ptr;
-        }
+        internal IntPtr GetInitCmdPtr() { return m_InitData.Ptr; }
 
         internal IntPtr GetExecuteCmdPtr()
         {
@@ -839,6 +957,63 @@ namespace UnityEngine.AMD
             return m_ExecData.Ptr;
         }
     }
+    #endregion
+
+    #region FSRUpscaler (Base class for FSR3/FSR4)
+    // Base class for all FSR SDK upscaler features (FSR3, FSR4, future versions)
+    // Shared implementation - all SDK upscalers use the same init/execute structures
+
+    ///<summary>Provides the persistent context for managing FSR3 or FSR4 initialization and per-frame execution state.</summary>
+    ///<remarks>This class encapsulates both immutable and mutable configuration data required to use FSR3 or FSR4.
+    ///It must persist across frames to maintain internal history and reconstruction buffers. 
+    ///
+    ///Use <c>FSRUpscalerContext</c> to implement a custom version of FSR3 or FSR4 outside of the Upscaler Framework.
+    ///
+    ///Modify the <see cref="FSRUpscalerContext.executeData" /> property to adjust per-frame parameters before calling <see cref="GraphicsDevice.ExecuteFSRUpscale3" /> or <see cref="GraphicsDevice.ExecuteFSRUpscale4" />. 
+    ///
+    ///You can initialize <c>FSRUpscalerContext</c> using <see cref="GraphicsDevice.CreateFSRUpscale3" /> or <see cref="GraphicsDevice.CreateFSRUpscale4" />, and clean it up using <see cref="GraphicsDevice.DestroyFeature" />.
+    ///</remarks>
+    public class FSRUpscalerContext
+    {
+        private NativeData<FSRUpscalerCommandInitializationData> m_InitData = new NativeData<FSRUpscalerCommandInitializationData>();
+        private NativeData<FSR2CommandExecutionData> m_ExecData = new NativeData<FSR2CommandExecutionData>();
+
+        ///<summary>The immutable initialization parameters used to configure FSR3 or FSR4 upscaling.</summary>
+        ///<remarks>
+        ///Set once when creating the <see cref="FSRUpscalerContext" /> with <see cref="GraphicsDevice.CreateFSRUpscale3" /> or <see cref="GraphicsDevice.CreateFSRUpscale4" />.
+        ///These values determine the internal resolution limits, display size, and operational flags.
+        ///</remarks>
+        public ref readonly FSRUpscalerCommandInitializationData initData { get { return ref m_InitData.Value; } }
+
+        ///<summary>The mutable execution parameters used by FSR3 or FSR4 for each frame.</summary>
+        ///<remarks>Modify this data before invoking <see cref="GraphicsDevice.ExecuteFSRUpscale3" /> or <see cref="GraphicsDevice.ExecuteFSRUpscale4" /> to control frame-specific behavior such as jitter, motion vector scale, sharpness, and camera properties.</remarks>
+        public ref FSR2CommandExecutionData executeData { get { return ref m_ExecData.Value; } }
+
+        internal uint featureSlot { get { return initData.featureSlot; } }
+
+        internal FSRUpscalerContext() { }
+
+        internal void Init(FSRUpscalerCommandInitializationData initSettings, uint featureSlot)
+        {
+            m_InitData.Value = initSettings;
+            m_InitData.Value.featureSlot = featureSlot;
+        }
+
+        internal void Reset()
+        {
+            m_InitData.Value = new FSRUpscalerCommandInitializationData();
+            m_ExecData.Value = new FSR2CommandExecutionData();
+        }
+
+        internal IntPtr GetInitCmdPtr() { return m_InitData.Ptr; }
+
+        internal IntPtr GetExecuteCmdPtr()
+        {
+            m_ExecData.Value.featureSlot = featureSlot;
+            return m_ExecData.Ptr;
+        }
+    }
+    #endregion
 
     #endregion
 } // namespace AMD

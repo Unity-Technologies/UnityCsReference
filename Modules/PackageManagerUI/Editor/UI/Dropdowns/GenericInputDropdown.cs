@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class GenericInputDropdown : DropdownContent
     {
-        public static readonly string k_DefaultSubmitButtonText = L10n.Tr("Submit");
+        public static readonly string k_DefaultSubmitButtonText = L10n.Tr("Submit", null);
         private static readonly Vector2 k_DefaultWindowSize = new Vector2(320, 50);
 
         private Vector2 m_WindowSize;

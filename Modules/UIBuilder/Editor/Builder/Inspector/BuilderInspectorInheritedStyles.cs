@@ -365,12 +365,12 @@ namespace Unity.UI.Builder
 
                     if (!disabledPills)
                     {
-                        m_TooltipBuilder.Append(L10n.Tr(BuilderConstants.InspectorClassPillDoubleClickToCreate));
+                        m_TooltipBuilder.Append(L10n.Tr(BuilderConstants.InspectorClassPillDoubleClickToCreate, null));
                     }
                 }
                 else if (!disabledPills)
                 {
-                    m_TooltipBuilder.Append(L10n.Tr(BuilderConstants.InspectorClassPillDoubleClickToSelect));
+                    m_TooltipBuilder.Append(L10n.Tr(BuilderConstants.InspectorClassPillDoubleClickToSelect, null));
                 }
 
                 pill.tooltip = m_TooltipBuilder.ToString();

@@ -131,7 +131,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             base.OnAfterDeserialize();
 
-            m_Node?.SetImplementation(this);
+            if (m_Node == null)
+                PlaceholderModelHelper.SetPlaceholderCapabilities(this);
+            else
+                m_Node.SetImplementation(this);
         }
 
         public void InitCustomNode(Node node)
@@ -200,7 +203,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             get
             {
-                var title = m_Node?.GetType().Name ?? "Missing Node";
+                var title = m_Node?.GetType().Name ?? "Missing Block";
 
                 if (!string.IsNullOrEmpty(m_CustomTitle))
                 {
@@ -266,7 +269,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             base.OnAfterDeserialize();
 
-            m_Node?.SetImplementation(this);
+            if (m_Node == null)
+                PlaceholderModelHelper.SetPlaceholderCapabilities(this);
+            else
+                m_Node.SetImplementation(this);
         }
 
         public void InitCustomNode(BlockNode node)
@@ -337,7 +343,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             get
             {
-                var title = m_Node?.GetType().Name ?? "Missing Node";
+                var title = m_Node?.GetType().Name ?? "Missing Context";
 
                 if (!string.IsNullOrEmpty(m_CustomTitle))
                 {
@@ -404,7 +410,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             base.OnAfterDeserialize();
 
-            m_Node?.SetImplementation(this);
+            if (m_Node == null)
+                PlaceholderModelHelper.SetPlaceholderCapabilities(this);
+            else
+                m_Node.SetImplementation(this);
         }
 
         public void InitCustomNode(ContextNode node)

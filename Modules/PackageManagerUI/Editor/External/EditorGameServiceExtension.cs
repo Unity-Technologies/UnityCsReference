@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -131,11 +132,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             pageManager.AddExtensionPage(new ExtensionPageArgs
             {
                 name = k_ServicesExtensionPageName,
-                displayName = L10n.Tr("Services"),
+                displayName = L10n.Tr("Services", null),
                 icon = Icon.ServicesPage,
                 priority = k_ServicesPriority,
+                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 filter = FilterServicesPackage,
                 getGroupName = GetServicesPackageGroupName,
+                #pragma warning restore UAL0018
                 compareGroup = CompareGroup,
                 supportedSortOptions = SimplePageWithPackages.k_DefaultSupportedSortOptions,
                 supportedStatusFilters = SimplePageWithPackages.k_DefaultSupportedStatusFilters,
@@ -143,7 +146,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 refreshOptions = RefreshOptions.UpmList | RefreshOptions.UpmSearch
             });
             m_ConfigureButton = args.window.AddPackageActionButton();
-            m_ConfigureButton.text = L10n.Tr("Configure");
+            m_ConfigureButton.text = L10n.Tr("Configure", null);
             m_ConfigureButton.action += OnConfigureClicked;
         }
 
@@ -328,3 +331,4 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

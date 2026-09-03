@@ -153,9 +153,16 @@ namespace Unity.GraphToolkit.Editor
 
             AbstractNodeModel nodeModel2 = null;
             nodeModel.GraphModel?.TryGetModelFromGuid(nodeModel.Guid, out nodeModel2);
+            if (nodeModel2 == null)
+            {
+                m_CachedNodeModel = null;
+                return previousValue = null;
+            }
+
             if (nodeModel2 != nodeModel)
             {
                 NodeModel = nodeModel2;
+                nodeModel = nodeModel2;
             }
 
             switch (nodeModel)

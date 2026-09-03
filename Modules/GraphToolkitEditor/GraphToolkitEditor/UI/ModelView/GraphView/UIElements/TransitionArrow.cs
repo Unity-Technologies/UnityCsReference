@@ -367,10 +367,35 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override bool ContainsPoint(Vector2 localPoint)
         {
-            // VisualElement.ContainsPoint is dependent on the border width which creates cases where there is vibration near the border.
-            localPoint = this.ChangeCoordinatesTo(parent, localPoint);
-            return resolvedStyle.left <= localPoint.x && localPoint.x <= resolvedStyle.left + resolvedStyle.width &&
-                resolvedStyle.top <= localPoint.y && localPoint.y <= resolvedStyle.top + resolvedStyle.height;
+            if (parent == null)
+                return false;
+            UpdateRenderPoints();
+            return IsPointInConvexPolygon(localPoint, m_RenderPoints, m_OuterLineWidth + m_ArrowBorderRadius);
+        }
+
+        static bool IsPointInConvexPolygon(Vector2 point, Vector2[] polygon, float padding)
+        {
+            // Determine winding from vertices alone (Shoelace formula) so the sign
+            // is not influenced by where the test point happens to fall.
+            float area = 0f;
+            var p0 = polygon[polygon.Length - 1];
+            foreach (var p1 in polygon)
+            {
+                area += p0.x * p1.y - p1.x * p0.y;
+                p0 = p1;
+            }
+            float sign = area >= 0f ? 1f : -1f;
+
+            var prev = polygon[polygon.Length - 1];
+            foreach (var curr in polygon)
+            {
+                var edge = curr - prev;
+                var cross = edge.x * (point.y - prev.y) - edge.y * (point.x - prev.x);
+                if (sign * cross < -padding * edge.magnitude)
+                    return false;
+                prev = curr;
+            }
+            return true;
         }
 
         void UpdateRenderPoints()

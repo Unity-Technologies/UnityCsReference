@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
@@ -28,8 +29,8 @@ namespace UnityEditor
     {
         const string k_DropdownButtonUSSClass = "unity-cameras-overlay-selector";
 
-        static readonly string k_NoCameraFound = L10n.Tr("No camera found");
-        static readonly string k_Tooltip = L10n.Tr("Select a camera in the Scene.");
+        static readonly string k_NoCameraFound = L10n.Tr("No camera found", null);
+        static readonly string k_Tooltip = L10n.Tr("Select a camera in the Scene.", null);
 
         [SerializeField]
         CamerasOverlay m_Overlay;
@@ -99,7 +100,7 @@ namespace UnityEditor
         public CameraInspectProperties(CamerasOverlay overlay) : base()
         {
             icon = EditorGUIUtility.FindTexture("UnityEditor.InspectorWindow");
-            tooltip = L10n.Tr("Open camera component properties.");
+            tooltip = L10n.Tr("Open camera component properties.", null);
 
             m_Overlay = overlay;
 
@@ -128,8 +129,8 @@ namespace UnityEditor
 
     sealed class CameraOverscanSettingsWindow : OverlayPopupWindow
     {
-        readonly string k_OverscanScaleTooltip = L10n.Tr("Configure size of overscan view guides.");
-        readonly string k_OverscanOpacityTooltip = L10n.Tr("Configure overscan opacity.");
+        readonly string k_OverscanScaleTooltip = L10n.Tr("Configure size of overscan view guides.", null);
+        readonly string k_OverscanOpacityTooltip = L10n.Tr("Configure overscan opacity.", null);
 
         internal static readonly Vector2 s_Size  = new Vector2(300, 46);
 
@@ -143,7 +144,7 @@ namespace UnityEditor
             var sceneView = SceneView.lastActiveSceneView;
             var settings = sceneView.viewpoint.cameraOverscanSettings;
 
-            var scale = new Slider(L10n.Tr("Overscan"), SceneViewViewpoint.ViewpointSettings.minScale, SceneViewViewpoint.ViewpointSettings.maxScale, SliderDirection.Horizontal, 1f);
+            var scale = new Slider(L10n.Tr("Overscan", null), SceneViewViewpoint.ViewpointSettings.minScale, SceneViewViewpoint.ViewpointSettings.maxScale, SliderDirection.Horizontal, 1f);
             scale.tooltip = k_OverscanScaleTooltip;
             scale.SetValueWithoutNotify(settings.scale);
             scale.showInputField = true;
@@ -154,7 +155,7 @@ namespace UnityEditor
             });
             rootVisualElement.Add(scale);
 
-            var opacity = new SliderInt(L10n.Tr("Overscan Opacity"), SceneViewViewpoint.ViewpointSettings.minOpacity, SceneViewViewpoint.ViewpointSettings.maxOpacity, SliderDirection.Horizontal, 1);
+            var opacity = new SliderInt(L10n.Tr("Overscan Opacity", null), SceneViewViewpoint.ViewpointSettings.minOpacity, SceneViewViewpoint.ViewpointSettings.maxOpacity, SliderDirection.Horizontal, 1);
             opacity.tooltip = k_OverscanOpacityTooltip;
             opacity.SetValueWithoutNotify(settings.opacity);
             opacity.showInputField = true;
@@ -173,8 +174,8 @@ namespace UnityEditor
         const string k_ShortcutIdPrefx = "Scene View/Camera View/";
         const string k_IconPathNormal = "Overlays/Fullscreen";
         const string k_IconPathActive = "Overlays/FullscreenOn";
-        readonly string k_TooltipNormal = L10n.Tr("Control the selected camera in first person.");
-        readonly string k_TooltipActive = L10n.Tr("Return to Scene Camera.");
+        readonly string k_TooltipNormal = L10n.Tr("Control the selected camera in first person.", null);
+        readonly string k_TooltipActive = L10n.Tr("Return to Scene Camera.", null);
 
         [Shortcut(k_ShortcutIdPrefx + "Toggle Between Scene Camera and Last Controlled Camera", typeof(SceneView))]
         static void ToggleViewWithLastViewpoint(ShortcutArguments args)
@@ -317,7 +318,7 @@ namespace UnityEditor
 
     sealed class CameraPreview : IMGUIContainer
     {
-        readonly string k_NoCameraDisplayLabel = L10n.Tr("No camera selected");
+        readonly string k_NoCameraDisplayLabel = L10n.Tr("No camera selected", null);
         const string k_ClipUIShaderKeyword = "CLIP_UV";
 
         [NoAutoStaticsCleanup] // Registered via RegisterResourceForCleanupOnDomainReload and destroyed on reload; the lazy '== null' getter rebuilds it on next access (a destroyed UnityEngine.Object compares == null).
@@ -524,7 +525,9 @@ namespace UnityEditor
 
         public CamerasOverlay()
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             minSize = defaultSize = k_DefaultOverlaySize;
+            #pragma warning restore UAL0015
             maxSize = k_DefaultMaxSize;
         }
 
@@ -705,3 +708,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

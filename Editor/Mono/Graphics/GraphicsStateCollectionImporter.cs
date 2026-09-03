@@ -13,7 +13,7 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.Rendering
 {
     [HelpURL("https://docs.unity3d.com/ScriptReference/Experimental.Rendering.GraphicsStateCollection.html")]
-    [ScriptedImporter(version: 1, ext: k_FileExtension)]
+    [ScriptedImporter(version: 1, ext: k_FileExtension, AllowCaching = true)]
     [ExcludeFromPreset]
     class GraphicsStateCollectionImporter : ScriptedImporter
     {
@@ -198,78 +198,85 @@ namespace UnityEditor.Rendering
             int subpassCount = gs.subPasses != null ? gs.subPasses.Length : 0;
             var grey = Styles.greyMiniLabel;
 
+            // Restore the original style values in a finally block so an exception cannot leak the
+            // mutated shared style to the rest of the editor.
             var originalColor = EditorStyles.label.normal.textColor;
             var originalSize = EditorStyles.label.fontSize;
+            var originalClipping = EditorStyles.label.clipping;
             EditorStyles.label.normal.textColor = Color.grey;
             EditorStyles.label.hover.textColor = Color.grey;
             EditorStyles.label.fontSize = 10;
             EditorStyles.label.clipping = TextClipping.Ellipsis;
             EditorGUIUtility.labelWidth = k_GraphicsStateDetailsLabelWidth;
-
-            EditorGUILayout.LabelField("Render Pass", grey);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.LabelField("Attachment Count", attachmentCount.ToString(), grey);
-            EditorGUILayout.LabelField("Subpass Count", subpassCount.ToString(), grey);
-            EditorGUILayout.LabelField("Depth Attachment Index", gs.depthAttachmentIndex.ToString(), grey);
-            EditorGUILayout.LabelField("Shading Rate Index", gs.shadingRateIndex.ToString(), grey);
-            EditorGUILayout.LabelField("Sample Count", gs.sampleCount.ToString(), grey);
-            EditorGUI.indentLevel--;
-
-            EditorGUILayout.LabelField("Subpass Index", gs.subPassIndex.ToString(), grey);
-            EditorGUILayout.LabelField("Topology", gs.topology.ToString(), grey);
-            EditorGUILayout.LabelField("Forced Cull Mode", gs.forceCullMode.ToString(), grey);
-            EditorGUILayout.LabelField("Primitive Shading Rate Combiner", gs.shadingRateCombinerPrimitive.ToString(), grey);
-            EditorGUILayout.LabelField("Fragment Shading Rate Combiner", gs.shadingRateCombinerFragment.ToString(), grey);
-            EditorGUILayout.LabelField("Base Shading Rate Fragment Size", gs.baseShadingRate.ToString(), grey);
-            EditorGUILayout.LabelField("Depth Bias", gs.depthBias.ToString(), grey);
-            EditorGUILayout.LabelField("Slope Depth Bias", gs.slopeDepthBias.ToString(), grey);
-            EditorGUILayout.LabelField("User Backface (Invert Culling)", gs.invertCulling.ToString(), grey);
-            EditorGUILayout.LabelField("App Backface (Negative Scale)", gs.negativeScale.ToString(), grey);
-            EditorGUILayout.LabelField("Wireframe", gs.wireframe.ToString(), grey);
-            EditorGUILayout.LabelField("Invert Projection Matrix", gs.invertProjection.ToString(), grey);
-
-            var (vertexAttrsExpanded, renderStateExpanded) = m_ExpandedPsoKeys[key];
-
-            EditorGUI.indentLevel++;
-            vertexAttrsExpanded = EditorGUILayout.Foldout(vertexAttrsExpanded, "Vertex Attributes:", true, Styles.greyFoldoutStyle);
-            m_ExpandedPsoKeys[key] = (vertexAttrsExpanded, renderStateExpanded);
-            if (vertexAttrsExpanded)
+            try
             {
+                EditorGUILayout.LabelField("Render Pass", grey);
                 EditorGUI.indentLevel++;
-                if (gs.vertexAttributes == null || gs.vertexAttributes.Length == 0)
-                    EditorGUILayout.LabelField("<none>", grey);
-                else
+                EditorGUILayout.LabelField("Attachment Count", attachmentCount.ToString(), grey);
+                EditorGUILayout.LabelField("Subpass Count", subpassCount.ToString(), grey);
+                EditorGUILayout.LabelField("Depth Attachment Index", gs.depthAttachmentIndex.ToString(), grey);
+                EditorGUILayout.LabelField("Shading Rate Index", gs.shadingRateIndex.ToString(), grey);
+                EditorGUILayout.LabelField("Sample Count", gs.sampleCount.ToString(), grey);
+                EditorGUI.indentLevel--;
+
+                EditorGUILayout.LabelField("Subpass Index", gs.subPassIndex.ToString(), grey);
+                EditorGUILayout.LabelField("Topology", gs.topology.ToString(), grey);
+                EditorGUILayout.LabelField("Forced Cull Mode", gs.forceCullMode.ToString(), grey);
+                EditorGUILayout.LabelField("Primitive Shading Rate Combiner", gs.shadingRateCombinerPrimitive.ToString(), grey);
+                EditorGUILayout.LabelField("Fragment Shading Rate Combiner", gs.shadingRateCombinerFragment.ToString(), grey);
+                EditorGUILayout.LabelField("Base Shading Rate Fragment Size", gs.baseShadingRate.ToString(), grey);
+                EditorGUILayout.LabelField("Depth Bias", gs.depthBias.ToString(), grey);
+                EditorGUILayout.LabelField("Slope Depth Bias", gs.slopeDepthBias.ToString(), grey);
+                EditorGUILayout.LabelField("User Backface (Invert Culling)", gs.invertCulling.ToString(), grey);
+                EditorGUILayout.LabelField("App Backface (Negative Scale)", gs.negativeScale.ToString(), grey);
+                EditorGUILayout.LabelField("Wireframe", gs.wireframe.ToString(), grey);
+                EditorGUILayout.LabelField("Invert Projection Matrix", gs.invertProjection.ToString(), grey);
+
+                var (vertexAttrsExpanded, renderStateExpanded) = m_ExpandedPsoKeys[key];
+
+                EditorGUI.indentLevel++;
+                vertexAttrsExpanded = EditorGUILayout.Foldout(vertexAttrsExpanded, "Vertex Attributes:", true, Styles.greyFoldoutStyle);
+                m_ExpandedPsoKeys[key] = (vertexAttrsExpanded, renderStateExpanded);
+                if (vertexAttrsExpanded)
                 {
-                    for (int i = 0; i < gs.vertexAttributes.Length; i++)
-                        EditorGUILayout.LabelField($"[{i}]", gs.vertexAttributes[i].ToString(), grey);
+                    EditorGUI.indentLevel++;
+                    if (gs.vertexAttributes == null || gs.vertexAttributes.Length == 0)
+                        EditorGUILayout.LabelField("<none>", grey);
+                    else
+                    {
+                        for (int i = 0; i < gs.vertexAttributes.Length; i++)
+                            EditorGUILayout.LabelField($"[{i}]", gs.vertexAttributes[i].ToString(), grey);
+                    }
+                    EditorGUI.indentLevel--;
+                }
+                EditorGUI.indentLevel--;
+
+                EditorGUI.indentLevel++;
+                renderStateExpanded = EditorGUILayout.Foldout(renderStateExpanded, "Render State:", true, Styles.greyFoldoutStyle);
+                m_ExpandedPsoKeys[key] = (vertexAttrsExpanded, renderStateExpanded);
+                if (renderStateExpanded)
+                {
+                    EditorGUI.indentLevel++;
+                    var rs = gs.renderState;
+                    EditorGUILayout.LabelField("Mask", rs.mask.ToString(), grey);
+                    EditorGUILayout.LabelField("Raster", $"{rs.rasterState.cullingMode}, depthClip={rs.rasterState.depthClip}, offsetUnits={rs.rasterState.offsetUnits}", grey);
+                    EditorGUILayout.LabelField("Depth", $"write={rs.depthState.writeEnabled}, compare={rs.depthState.compareFunction}", grey);
+                    EditorGUILayout.LabelField("Stencil", $"enabled={rs.stencilState.enabled}, readMask={rs.stencilState.readMask}, writeMask={rs.stencilState.writeMask}", grey);
+                    EditorGUILayout.LabelField("Stencil Reference", rs.stencilReference.ToString(), grey);
+                    var b0 = rs.blendState.blendState0;
+                    EditorGUILayout.LabelField("Blend (RT0)", $"{b0.writeMask} src={b0.sourceColorBlendMode}/{b0.destinationColorBlendMode} alpha={b0.sourceAlphaBlendMode}/{b0.destinationAlphaBlendMode}", grey);
+                    EditorGUI.indentLevel--;
                 }
                 EditorGUI.indentLevel--;
             }
-            EditorGUI.indentLevel--;
-
-            EditorGUI.indentLevel++;
-            renderStateExpanded = EditorGUILayout.Foldout(renderStateExpanded, "Render State:", true, Styles.greyFoldoutStyle);
-            m_ExpandedPsoKeys[key] = (vertexAttrsExpanded, renderStateExpanded);
-            if (renderStateExpanded)
+            finally
             {
-                EditorGUI.indentLevel++;
-                var rs = gs.renderState;
-                EditorGUILayout.LabelField("Mask", rs.mask.ToString(), grey);
-                EditorGUILayout.LabelField("Raster", $"{rs.rasterState.cullingMode}, depthClip={rs.rasterState.depthClip}, offsetUnits={rs.rasterState.offsetUnits}", grey);
-                EditorGUILayout.LabelField("Depth", $"write={rs.depthState.writeEnabled}, compare={rs.depthState.compareFunction}", grey);
-                EditorGUILayout.LabelField("Stencil", $"enabled={rs.stencilState.enabled}, readMask={rs.stencilState.readMask}, writeMask={rs.stencilState.writeMask}", grey);
-                EditorGUILayout.LabelField("Stencil Reference", rs.stencilReference.ToString(), grey);
-                var b0 = rs.blendState.blendState0;
-                EditorGUILayout.LabelField("Blend (RT0)", $"{b0.writeMask} src={b0.sourceColorBlendMode}/{b0.destinationColorBlendMode} alpha={b0.sourceAlphaBlendMode}/{b0.destinationAlphaBlendMode}", grey);
-                EditorGUI.indentLevel--;
+                EditorStyles.label.normal.textColor = originalColor;
+                EditorStyles.label.hover.textColor = originalColor;
+                EditorStyles.label.fontSize = originalSize;
+                EditorStyles.label.clipping = originalClipping;
+                EditorGUIUtility.labelWidth = 0; // Resets to default
             }
-            EditorGUI.indentLevel--;
-
-            EditorStyles.label.normal.textColor = originalColor;
-            EditorStyles.label.hover.textColor = originalColor;
-            EditorStyles.label.fontSize = originalSize;
-            EditorStyles.label.clipping = TextClipping.Clip;
-            EditorGUIUtility.labelWidth = 0; // Resets to default
         }
 
         void RefreshVariantData(GraphicsStateCollection collection)

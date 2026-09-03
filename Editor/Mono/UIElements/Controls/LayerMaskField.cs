@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
     /// A LayerMaskField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerMaskField|UXML element LayerMaskField]].
     /// </summary>
     [Icon("UIToolkit/Icons/LayerMaskField.png")]
-    [UxmlElement(visibility = LibraryVisibility.Visible)]
+    [UxmlElement]
     public partial class LayerMaskField : MaskField
     {
         [UxmlAttribute("choices"), UxmlAttributeBindingPath(nameof(choices)), HideInInspector]
@@ -40,7 +40,7 @@ namespace UnityEditor.UIElements
             {
                 if (value != null)
                 {
-                    Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the selected value."));
+                    Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the selected value.", null));
                 }
 
                 m_FormatSelectedValueCallback = null;
@@ -57,7 +57,7 @@ namespace UnityEditor.UIElements
             {
                 if (value != null)
                 {
-                    Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the list items."));
+                    Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the list items.", null));
                 }
 
                 m_FormatListItemCallback = null;

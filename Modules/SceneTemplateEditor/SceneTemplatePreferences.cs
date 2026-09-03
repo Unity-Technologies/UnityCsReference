@@ -31,12 +31,12 @@ namespace UnityEditor.SceneTemplate
         {
             return new SettingsProvider(k_PreferencesPath, SettingsScope.User)
             {
-                keywords = L10n.Tr(new[] { "unity", "editor", "scene", "clone", "template" }),
+                keywords = L10n.Tr(new[] { "unity", "editor", "scene", "clone", "template" }, null),
                 activateHandler = (text, rootElement) =>
                 {
 
                 },
-                label = L10n.Tr("Scene Template"),
+                label = L10n.Tr("Scene Template", null),
                 guiHandler = OnGUIHandler
             };
         }
@@ -47,7 +47,7 @@ namespace UnityEditor.SceneTemplate
             using (new SettingsWindow.GUIScope())
             {
                 EditorGUI.BeginChangeCheck();
-                prefs.newDefaultSceneOverride = (NewDefaultSceneOverride)EditorGUILayout.EnumPopup(L10n.TextContent("Default Scene", "Which scene to open when no other scenes were previously opened."), prefs.newDefaultSceneOverride);
+                prefs.newDefaultSceneOverride = (NewDefaultSceneOverride)EditorGUILayout.EnumPopup(L10n.TextContent("Default Scene", "Which scene to open when no other scenes were previously opened.", null, null), prefs.newDefaultSceneOverride);
                 if (EditorGUI.EndChangeCheck())
                 {
                     Save();

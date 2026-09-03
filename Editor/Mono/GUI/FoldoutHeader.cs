@@ -58,7 +58,7 @@ namespace UnityEditor
             s_FoldoutHeaderGroupActive++;
             if (s_FoldoutHeaderGroupActive > 1)
             {
-                EditorGUI.HelpBox(position, L10n.Tr("You can't nest Foldout Headers, end it with EndFoldoutHeaderGroup."), MessageType.Error);
+                EditorGUI.HelpBox(position, L10n.Tr("You can't nest Foldout Headers, end it with EndFoldoutHeaderGroup.", null), MessageType.Error);
                 return false;
             }
 

@@ -61,31 +61,11 @@ namespace Unity.GraphToolkit.Editor
                 undoStateUpdater.SaveStates(undoableStates);
             }
 
-            TransitionSupportModel existingTargetTransitionSupport = null;
-            foreach (var wire in command.State.GetInPort().GetConnectedWires())
-            {
-                if (wire is TransitionSupportModel transitionSupportModel && transitionSupportModel.TransitionSupportType == command.TransitionSupportType)
-                {
-                    existingTargetTransitionSupport = transitionSupportModel;
-                    break;
-                }
-            }
-
             GraphElementModel modelToSelect;
             using (var stateUpdater = graphModelState.UpdateScope)
             using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
-                if (existingTargetTransitionSupport != null)
-                {
-                    var newTransition = existingTargetTransitionSupport.CreateTransition();
-                    existingTargetTransitionSupport.AddTransition(newTransition);
-                    modelToSelect = existingTargetTransitionSupport;
-                }
-                else
-                {
-                    var newTransitionSupport = command.StateMachine.CreateSelfTransitionSupport(command.State, command.TransitionSupportType);
-                    modelToSelect = newTransitionSupport;
-                }
+                modelToSelect = command.StateMachine.CreateOrExtendSelfTransitionSupport(command.State, command.TransitionSupportType);
 
                 stateUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
@@ -311,11 +291,12 @@ namespace Unity.GraphToolkit.Editor
                     return;
 
                 var wireSide = WireSide.From;
+                WireModel transitionForPlacement;
 
                 if (command.DraggedTransitionModel is IGhostWireModel)
                 {
                     wireSide = WireSide.To;
-                    graphModelState.GraphModel.CreateTransitionSupport(newStateModel.GetInPort(), command.ToStateAnchorSide, command.ToStateAnchorOffset,
+                    transitionForPlacement = graphModelState.GraphModel.CreateTransitionSupport(newStateModel.GetInPort(), command.ToStateAnchorSide, command.ToStateAnchorOffset,
                         command.FromStateModel.GetOutPort(), command.FromStateAnchorSide, command.FromStateAnchorOffset, typeof(StateToStateTransitionModel));
                 }
                 else
@@ -332,9 +313,10 @@ namespace Unity.GraphToolkit.Editor
                         command.DraggedTransitionModel.FromPort = newStateModel.GetOutPort();
                         command.DraggedTransitionModel.SetFromAnchor(command.ToStateAnchorSide, command.ToStateAnchorOffset);
                     }
+                    transitionForPlacement = command.DraggedTransitionModel;
                 }
 
-                autoPlacementUpdater.MarkModelToRepositionAtCreation((newStateModel, command.DraggedTransitionModel, wireSide), AutoPlacementStateComponent.Changeset.RepositionType.FromWire);
+                autoPlacementUpdater.MarkModelToRepositionAtCreation((newStateModel, transitionForPlacement, wireSide), AutoPlacementStateComponent.Changeset.RepositionType.FromWire);
                 graphUpdater.MarkForRename(newStateModel);
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }

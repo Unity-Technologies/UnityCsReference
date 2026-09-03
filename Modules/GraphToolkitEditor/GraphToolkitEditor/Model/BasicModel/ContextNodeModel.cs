@@ -251,7 +251,7 @@ namespace Unity.GraphToolkit.Editor
                 blockNodeModel.ContextNodeModel = null;
             }
 
-            if (m_BlockPlaceholders.Count == 0)
+            if (!PlaceholderModelHelper.IsMissingTypeModel(this) && !HasMissingTypeBlock())
                 SetCapability(Editor.Capabilities.Copiable, true);
             GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.GraphTopology);
         }
@@ -269,8 +269,23 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            if (m_BlockPlaceholders.Count > 0)
+            // Copying a context would drop the serialized data the blocks with a missing type are holding onto.
+            if (HasMissingTypeBlock())
                 SetCapability(Editor.Capabilities.Copiable, false);
+        }
+
+        bool HasMissingTypeBlock()
+        {
+            if (m_BlockPlaceholders.Count > 0)
+                return true;
+
+            foreach (var block in m_Blocks)
+            {
+                if (block != null && PlaceholderModelHelper.IsMissingTypeModel(block))
+                    return true;
+            }
+
+            return false;
         }
 
         /// <inheritdoc />
@@ -300,17 +315,34 @@ namespace Unity.GraphToolkit.Editor
             return dirty;
         }
 
+        /// <summary>
+        /// Removes the null block slots that a removal left behind to preserve the topology of the missing types.
+        /// </summary>
+        /// <remarks>Only valid once every block guid resolves to a block rather than to a placeholder and the graph object holds no more managed reference with a missing type, as the guids are rebuilt from the remaining blocks and the data of a missing type is stored under the property path of its slot.</remarks>
+        public void RemoveNullBlocks()
+        {
+            if (m_Blocks.RemoveAll(t => t == null) == 0)
+                return;
+
+            m_BlockGuids.Clear();
+            for (var i = 0; i < m_Blocks.Count; ++i)
+            {
+                m_BlockGuids.Add(m_Blocks[i].Guid);
+            }
+        }
+
         bool RemoveBlock(BlockNodeModel blockNodeModel)
         {
             int indexToRemove;
 
             if (blockNodeModel is BlockNodePlaceholder blockNodePlaceholder)
             {
-                // When removing a placeholder block, we also remove the corresponding null block.
                 indexToRemove = m_BlockGuids.IndexOf(blockNodePlaceholder.Guid);
                 if (indexToRemove != -1)
                 {
-                    m_Blocks.RemoveAt(indexToRemove);
+                    // A placeholder owns a null slot in m_Blocks, but the two lists stop sharing an index space as soon as a removal leaves an extra null behind, so only drop a slot that a placeholder can own.
+                    if (indexToRemove < m_Blocks.Count && m_Blocks[indexToRemove] == null)
+                        m_Blocks.RemoveAt(indexToRemove);
                     m_BlockGuids.RemoveAt(indexToRemove);
                     SerializationUtility.ClearManagedReferenceWithMissingType(GraphModel.GraphObject, blockNodePlaceholder.ReferenceId);
                 }
@@ -322,7 +354,7 @@ namespace Unity.GraphToolkit.Editor
             if (indexToRemove != -1)
             {
                 m_Blocks.RemoveAt(indexToRemove);
-                m_BlockGuids.RemoveAt(indexToRemove);
+                m_BlockGuids.Remove(blockNodeModel.Guid);
                 InsertNullReferencesWhileHasMissingTypes(indexToRemove);
                 return true;
             }
@@ -346,8 +378,15 @@ namespace Unity.GraphToolkit.Editor
         {
             base.OnAfterDeserialize();
 
-            // For compatibility with old version or corruption
-            if (m_BlockGuids == null || m_BlockGuids.Count < m_Blocks.Count)
+            var realBlockCount = 0;
+            foreach (var block in m_Blocks)
+            {
+                if (block != null)
+                    realBlockCount++;
+            }
+
+            // For compatibility with old version or corruption.
+            if (m_BlockGuids == null || m_BlockGuids.Count < realBlockCount)
             {
                 if (m_BlockGuids == null)
                     m_BlockGuids = new List<Hash128>();

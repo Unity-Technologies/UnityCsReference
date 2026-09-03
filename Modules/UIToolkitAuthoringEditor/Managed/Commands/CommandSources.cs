@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using UnityEngine.Bindings;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -24,57 +24,68 @@ static class CommandSources
     /// <summary>
     /// Command source representing the Inspector window.
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource Inspector = new();
 
     /// <summary>
     /// Command source representing the Hierarchy window.
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource Hierarchy = new();
 
     /// <summary>
     /// Command source representing the StyleSheets window.
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource StyleSheets = new();
 
     /// <summary>
     /// Command source representing the Viewport window.
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource Viewport = new();
 
     /// <summary>
     /// Command source representing the Scene window.
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource Scene = new();
 
     /// <summary>
     /// Command source representing the Uxml Preview window.
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource UxmlPreview = new();
 
     /// <summary>
     /// Command source representing the Uss Preview window.
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource UssPreview = new();
 
     /// <summary>
     /// Command source representing any menu (context menu, top bar menu, etc.)
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource Menus = new();
 
     /// <summary>
     /// Command source representing a UI Stage instance.
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource Stage = new();
 
     /// <summary>
     /// Command source representing a UI Builder instance.
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource Builder = new();
 
     /// <summary>
     /// Command source representing the unified asset registry (e.g. a "Save All" driven centrally rather
     /// than by a specific window).
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable command-source singleton, safe to persist
     public static readonly CommandSource Registry = new();
 }
 
@@ -143,4 +154,3 @@ internal enum CommandCategory
     /// </summary>
     Save = 1 << 7,
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

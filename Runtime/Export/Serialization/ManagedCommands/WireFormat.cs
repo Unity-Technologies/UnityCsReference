@@ -114,6 +114,9 @@ internal enum RttiDataType : byte
     // EntityId counterpart of UnityObjectArray. Runs on every runtime — stores values, not managed references.
     EntityIdArray           = 36,
 
+    // LinearCollection counterpart of ManagedReference. Write-only.
+    ManagedReferenceArray   = 37,
+
     Unknown                 = 0xFF,
 }
 
@@ -363,6 +366,15 @@ internal struct EntityIdArrayHeader
     public byte         reserved1;
     public uint         fieldOffset;   // post-header offset of the collection reference on the parent
     public uint         elementStride; // bytes between elements in the managed backing array
+}
+
+internal struct ManagedReferenceArrayHeader
+{
+    public RttiDataType opCode;        // = RttiDataType.ManagedReferenceArray
+    public byte         kind;          // 0 = Array, 1 = List
+    public byte         reserved0;
+    public byte         reserved1;
+    public uint         fieldOffset;   // post-header offset of the collection reference on the parent
 }
 
 // No klass/field/fieldParent — EntityId decodes to a value, no fake-null context. 24 bytes on 64-bit.

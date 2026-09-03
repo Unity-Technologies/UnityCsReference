@@ -17,6 +17,7 @@ namespace UnityEditor.Utils
     internal static class Paths
     {
         internal static readonly char[] invalidFilenameChars;
+        internal static readonly char[] invalidPathChars;
         internal const int kMaxPathComponentLength = 255;
 
         static Paths()
@@ -24,8 +25,22 @@ namespace UnityEditor.Utils
             var uniqueChars = new HashSet<char>(Path.GetInvalidFileNameChars());
             uniqueChars.Add(Path.DirectorySeparatorChar);
             uniqueChars.Add(Path.AltDirectorySeparatorChar);
+
+            // .NET Framework and legacy Mono validated paths against Path.GetInvalidPathChars()
+            // inside Path APIs (Path.GetFileName et al threw ArgumentException); .NET Core 2.1+
+            // removed both the validation and, on Windows, the '"', '<', '>' members of that set.
+            // Reconstruct the legacy per-platform set so asset path validation is identical on
+            // every runtime: Unix stays { '\0' }, Windows regains '"', '<', '>'.
+            var uniquePathChars = new HashSet<char>(Path.GetInvalidPathChars());
+            if (Path.DirectorySeparatorChar == '\\')
+            {
+                uniquePathChars.Add('"');
+                uniquePathChars.Add('<');
+                uniquePathChars.Add('>');
+            }
 #pragma warning disable UAC2001 // Avoid Linq
             invalidFilenameChars = uniqueChars.ToArray();
+            invalidPathChars = uniquePathChars.ToArray();
 #pragma warning restore UAC2001
         }
 
@@ -211,7 +226,18 @@ namespace UnityEditor.Utils
                     return false;
                 }
 
-                fileName = Path.GetFileName(assetPath); // Will throw an ArgumentException if the path contains one or more of the invalid characters defined in GetInvalidPathChars
+                // Validate the whole path (including directory components) explicitly. On .NET Framework
+                // and legacy Mono, Path.GetFileName threw ArgumentException for invalid path characters;
+                // .NET Core 2.1+ removed that validation, so Path APIs silently accept e.g. an embedded
+                // NUL and this must be checked by hand. See invalidPathChars in the static constructor.
+                if (assetPath.IndexOfAny(invalidPathChars) >= 0)
+                {
+                    if (errorMsg != null)
+                        SetFullErrorMessage("Asset path contains invalid characters", assetPath, ref errorMsg);
+                    return false;
+                }
+
+                fileName = Path.GetFileName(assetPath);
 
                 if (fileName.Length > kMaxPathComponentLength)
                 {

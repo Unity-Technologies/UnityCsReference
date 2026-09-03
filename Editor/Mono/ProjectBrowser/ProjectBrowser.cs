@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ProjectBrowser not yet converted
 using System;
 using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
@@ -275,9 +276,9 @@ namespace UnityEditor
 
         internal static float searchUpdateDelaySeconds => SearchUtils.debounceThresholdMs / 1000f;
 
-        ProjectBrowser()
-        {
-        }
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        ProjectBrowser() { }
+        #pragma warning restore UAL0015
 
         /* Keep for debugging
         void TestProjectItemOverlayCallback (string guid, Rect selectionRect)
@@ -3468,3 +3469,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

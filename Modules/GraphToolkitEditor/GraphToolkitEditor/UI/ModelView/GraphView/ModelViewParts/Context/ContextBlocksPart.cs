@@ -83,7 +83,7 @@ namespace Unity.GraphToolkit.Editor
             m_ValidBlocksContainerPart = new ValidBlocksContainerPart(blocksContainerName, nodeModel, ownerElement, parentClassName);
             PartList.AppendPart(m_ValidBlocksContainerPart);
 
-            if (ContextNodeModel is ContextNodePlaceholder)
+            if (PlaceholderModelHelper.IsMissingTypeModel(ContextNodeModel))
                 return;
 
             PartList.AppendPart(AddBlockPart(nodeModel, ownerElement, parentClassName));

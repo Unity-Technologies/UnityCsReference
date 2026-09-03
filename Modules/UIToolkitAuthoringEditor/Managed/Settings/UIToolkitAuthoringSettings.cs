@@ -46,6 +46,7 @@ internal enum RectangleSelectionMode
 internal static class UIToolkitAuthoringSettings
 {
     private const string k_EnableInSceneUIAuthoring = "UIAuthoring.EnableHierarchyIntegration";
+    private const string k_EnableMainStageAuthoring = "UIAuthoring.EnableMainStageAuthoring";
     private const string k_DisplayOptions = "UIAuthoring.DisplayOptions";
     private const string k_NewVisualTreeAssetLocation = "UIAuthoring.NewVisualTreeAssetLocation";
     private const UIHierarchyDisplayOptions DefaultDisplayOptions = UIHierarchyDisplayOptions.Typename | UIHierarchyDisplayOptions.UssClasses;
@@ -55,14 +56,12 @@ internal static class UIToolkitAuthoringSettings
     private const AutoOpenMode DefaultAutoOpenMode = AutoOpenMode.FromMainStage;
     private const string k_RectangleSelectionMode = "UIAuthoring.RectangleSelectionMode";
     private const RectangleSelectionMode DefaultRectangleSelectionMode = RectangleSelectionMode.AnyOverlap;
-    private const string k_EnableZIndex = "UIAuthoring.EnableZIndex";
 
-    [NoAutoStaticsCleanup]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal static event Action EnableZIndexChanged;
-
-    [NoAutoStaticsCleanup]
+    [NoAutoStaticsCleanup] // every subscriber unsubscribes in its own teardown, safe to persist
     internal static event Action<bool> EnableInSceneAuthoringChanged;
+
+    [NoAutoStaticsCleanup]
+    internal static event Action<bool> MainStageAuthoringChanged;
 
     [NoAutoStaticsCleanup]
     internal static event Action<UIHierarchyDisplayOptions> DisplayOptionsChanged;
@@ -90,6 +89,26 @@ internal static class UIToolkitAuthoringSettings
                 return;
             EditorUserSettings.SetConfigValue(k_EnableInSceneUIAuthoring, value.ToString());
             EnableInSceneAuthoringChanged?.Invoke(value);
+        }
+    }
+
+    // Gates editing (drag/drop, cut/copy/paste, rename, …) of visual elements directly in the Main Stage
+    // Hierarchy. Distinct from EnableInSceneUIAuthoring, which drives the whole in-scene authoring workflow;
+    // main-stage editing only applies when in-scene authoring is also enabled.
+    public static bool EnableMainStageAuthoring
+    {
+        get
+        {
+            var value = EditorUserSettings.GetConfigValue(k_EnableMainStageAuthoring);
+            return !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
+        }
+        set
+        {
+            var currentValue = EnableMainStageAuthoring;
+            if (currentValue == value)
+                return;
+            EditorUserSettings.SetConfigValue(k_EnableMainStageAuthoring, value.ToString());
+            MainStageAuthoringChanged?.Invoke(value);
         }
     }
 
@@ -184,23 +203,6 @@ internal static class UIToolkitAuthoringSettings
                 return;
             EditorUserSettings.SetConfigValue(k_RectangleSelectionMode, value.ToString());
             RectangleSelectionModeChanged?.Invoke(value);
-        }
-    }
-
-    public static bool EnableZIndex
-    {
-        get
-        {
-            var value = EditorUserSettings.GetConfigValue(k_EnableZIndex);
-            return !string.IsNullOrEmpty(value) && Convert.ToBoolean(value);
-        }
-        set
-        {
-            var currentValue = EnableZIndex;
-            if (currentValue == value)
-                return;
-            EditorUserSettings.SetConfigValue(k_EnableZIndex, value.ToString());
-            EnableZIndexChanged?.Invoke();
         }
     }
 }

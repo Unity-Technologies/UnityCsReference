@@ -25,24 +25,39 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [Serializable]
     internal class Instance : ISerializationCallbackReceiver
     {
-        [SerializeReference] private IInstanceItem m_InstanceItem;
+        [SerializeReference] private IPlayModeControllerItem m_ControllerItem;
         [SerializeField] private ExecutionGraph m_ExecutionGraph;
 
         private CancellationTokenSource m_FreeRunCancelTokenSource;
         [SerializeField] private bool m_Drifted;
         [SerializeField] private InstanceStatusData m_StatusData;
-        [SerializeField] private InstanceController m_InstanceController;
-        [SerializeField] private List<InstanceControllerDecorator> m_DecoratorsControllers;
+        [SerializeField] private PlayModeController m_InstanceController;
+        [SerializeField] private List<PlayModeControllerDecorator> m_DecoratorsControllers;
         private Task m_FreeRunningTask;
 
         internal event Action<Instance, InstanceStatusData> StatusRefreshed;
 
-        internal string Name => m_InstanceItem.GetName();
-        internal GUID Id => m_InstanceItem.GetId();
-        internal InstanceController Controller => m_InstanceController;
-        internal IEnumerable<InstanceControllerDecorator> DecoratorsControllers => m_DecoratorsControllers;
+        internal string Name => m_ControllerItem.GetName();
+        internal GUID Id => m_ControllerItem.GetId();
+        internal PlayModeController Controller => m_InstanceController;
+        internal IEnumerable<PlayModeControllerDecorator> DecoratorsControllers => m_DecoratorsControllers;
         internal InstanceStatusData StatusData => m_StatusData;
         internal ExecutionGraph GetExecutionGraph() => m_ExecutionGraph;
+
+        internal T GetDecorator<T>() where T : PlayModeControllerDecorator
+        {
+            if (m_DecoratorsControllers == null)
+                return null;
+
+            foreach (var decorator in m_DecoratorsControllers)
+            {
+                if (decorator is T typedDecorator)
+                    return typedDecorator;
+            }
+
+            return null;
+        }
+
         internal bool HasReachedRunStage()
         {
             return StatusData.StageStatuses != null &&
@@ -59,45 +74,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        internal RunModeState RunModeState
-        {
-            get => m_InstanceItem.GetRunMode();
-            set
-            {
-                if (IsActive())
-                {
-                    Debug.LogWarning("Cannot set RunModeState while the instance is active.");
-                    return;
-                }
-
-                if (RunModeState == value)
-                    return;
-
-                m_InstanceItem = m_InstanceItem.WithRunMode(value);
-                var activeScenario = PlayModeScenarioManager.ActiveScenario as OrchestratedScenario;
-                if (activeScenario != null)
-                {
-                    activeScenario.Settings.SetInstanceRunningMode(Id, value);
-                    EditorUtility.SetDirty(activeScenario);
-                }
-
-                Reset();
-            }
-        }
-
         internal static Instance Create(
-            IInstanceItem instanceItem,
-            InstanceController playModeController,
-            List<InstanceControllerDecorator> decorators,
+            IPlayModeControllerItem controllerItem,
+            PlayModeController playModeController,
+            List<PlayModeControllerDecorator> decorators,
             ExecutionGraph executionGraph)
         {
-            Assert.IsNotNull(instanceItem, "InstanceItem cannot be null");
+            Assert.IsNotNull(controllerItem, "ControllerItem cannot be null");
             Assert.IsNotNull(playModeController, "PlayModeController cannot be null");
             Assert.IsNotNull(executionGraph, "ExecutionGraph cannot be null");
 
             // For each instance, wire up an Execution Graph
             var instance = new Instance();
-            instance.m_InstanceItem = instanceItem;
+            instance.m_ControllerItem = controllerItem;
             instance.m_InstanceController = playModeController;
             instance.m_ExecutionGraph = executionGraph;
             instance.m_DecoratorsControllers = decorators;
@@ -138,12 +127,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
             RefreshAndNotifyStatus();
         }
 
+        internal RunModeState RunMode
+        {
+            get
+            {
+                var runModeDecorator = GetDecorator<RunModeDecorator>();
+                return runModeDecorator != null ? runModeDecorator.RunMode : RunModeState.ScenarioControl;
+            }
+        }
+
         internal bool IsFreeRunMode()
         {
-            // TODO only local instances support free running currently, we should move this to a decorator
-            if (m_InstanceController is not LocalPlayerController)
-                return false;
-            return RunModeState == RunModeState.ManualControl;
+            return RunMode == RunModeState.ManualControl;
         }
 
         // Returns the array of analytics InstanceData from Instances

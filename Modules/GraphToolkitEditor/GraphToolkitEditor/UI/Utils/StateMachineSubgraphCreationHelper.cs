@@ -227,7 +227,7 @@ namespace Unity.GraphToolkit.Editor
                     continue;
 
                 // Replace the auto-created empty transition with copies of the original conditions.
-                newTransitionSupport.RemoveAllTransitions();
+                newTransitionSupport.RemoveAllTransitionRules();
                 newTransitionSupport.CopyTransitions(info.OriginalTransition);
             }
         }

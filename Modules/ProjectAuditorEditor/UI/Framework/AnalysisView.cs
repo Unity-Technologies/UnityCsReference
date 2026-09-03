@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1054,10 +1055,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             public static readonly GUIContent SearchJumpButton = EditorGUIUtility.TrIconContent("SearchJump Icon", "Open in Search");
 
-            public static readonly string DiscardTitle = L10n.Tr("Analyze Now");
-            public static readonly string DiscardQuestion = L10n.Tr("If you analyze this section, your currently ignored items will be discarded.");
-            public static readonly string DiscardIgnoredItems = L10n.Tr("Discard Ignored Items");
-            public static readonly string Cancel = L10n.Tr("Cancel");
+            public static readonly string DiscardTitle = L10n.Tr("Analyze Now", null);
+            public static readonly string DiscardQuestion = L10n.Tr("If you analyze this section, your currently ignored items will be discarded.", null);
+            public static readonly string DiscardIgnoredItems = L10n.Tr("Discard Ignored Items", null);
+            public static readonly string Cancel = L10n.Tr("Cancel", null);
         }
 
         protected void ApplyQuickFixes(IReadOnlyList<ReportItem> issues)
@@ -1104,3 +1105,4 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

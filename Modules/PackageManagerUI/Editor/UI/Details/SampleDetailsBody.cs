@@ -124,7 +124,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             m_DescriptionLabel.text = string.IsNullOrEmpty(sample.description)
-                ? L10n.Tr("There is no description for this sample.")
+                ? L10n.Tr("There is no description for this sample.", null)
                 : sample.description;
 
             CleanupTexture();

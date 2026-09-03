@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -14,6 +14,7 @@ using UnityEditor.UIElements;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using Object = UnityEngine.Object;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -21,7 +22,7 @@ namespace Unity.UIToolkit.Editor
     /// Field for image reference attributes that accepts Texture2D, Sprite, VectorImage, or RenderTexture.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class ImageField : BaseField<Object>
+    internal partial class ImageField : BaseField<Object>
     {
         /// <summary>
         /// USS class name of elements of this type.
@@ -46,24 +47,25 @@ namespace Unity.UIToolkit.Editor
 
         const string k_2DSpriteEditorPackageName = "com.unity.2d.sprite";
 
-        static readonly string k_2DSpriteEditorButtonText = L10n.Tr("Open in Sprite Editor");
-        static readonly string k_2DSpriteEditorButtonTooltip_Installed = L10n.Tr("Use the Sprite Editor to 9-slice the image or edit its 9-slicing values.");
-        static readonly string k_2DSpriteEditorButtonTooltip_NotInstalled = L10n.Tr("Use the Sprite Editor to 9-slice the image or edit its 9-slicing values. Unity will prompt you to install the com.unity.2d.sprite package first.");
-        static readonly string k_No2DSpriteEditorPackageInstalledTitle = L10n.Tr("Package required - 2D Sprite Editor");
+        static readonly string k_2DSpriteEditorButtonText = L10n.Tr("Open in Sprite Editor", null);
+        static readonly string k_2DSpriteEditorButtonTooltip_Installed = L10n.Tr("Use the Sprite Editor to 9-slice the image or edit its 9-slicing values.", null);
+        static readonly string k_2DSpriteEditorButtonTooltip_NotInstalled = L10n.Tr("Use the Sprite Editor to 9-slice the image or edit its 9-slicing values. Unity will prompt you to install the com.unity.2d.sprite package first.", null);
+        static readonly string k_No2DSpriteEditorPackageInstalledTitle = L10n.Tr("Package required - 2D Sprite Editor", null);
         static readonly string k_No2DSpriteEditorPackageInstalledMessage = L10n.Tr(
             "You must install the 2D Sprite Editor package to edit Sprites.\n" +
             "If you do not install the package, you can use existing Sprites, but you cannot create or modify them.\n" +
-            "Do you want to install the package now?");
-        static readonly string k_InstallButtonText = L10n.Tr("Install");
-        static readonly string k_CancelButtonText = L10n.Tr("Cancel");
-        static readonly string k_PackageInstallSuccessMessage = L10n.Tr("Successfully installed package \"{0}\".");
-        static readonly string k_PackageInstallErrorMessage = L10n.Tr("Could not install package \"{0}\". Error: {1}");
+            "Do you want to install the package now?", null);
+        static readonly string k_InstallButtonText = L10n.Tr("Install", null);
+        static readonly string k_CancelButtonText = L10n.Tr("Cancel", null);
+        static readonly string k_PackageInstallSuccessMessage = L10n.Tr("Successfully installed package \"{0}\".", null);
+        static readonly string k_PackageInstallErrorMessage = L10n.Tr("Could not install package \"{0}\". Error: {1}", null);
 
-        static readonly string k_TextureTypeDisplayName = L10n.Tr("Texture");
-        static readonly string k_RenderTextureTypeDisplayName = L10n.Tr("Render Texture");
-        static readonly string k_SpriteTypeDisplayName = L10n.Tr("Sprite");
-        static readonly string k_VectorTypeDisplayName = L10n.Tr("Vector");
+        static readonly string k_TextureTypeDisplayName = L10n.Tr("Texture", null);
+        static readonly string k_RenderTextureTypeDisplayName = L10n.Tr("Render Texture", null);
+        static readonly string k_SpriteTypeDisplayName = L10n.Tr("Sprite", null);
+        static readonly string k_VectorTypeDisplayName = L10n.Tr("Vector", null);
 
+        [NoAutoStaticsCleanup] // supported image-type list, safe to persist
         static readonly List<Type> s_SupportedImageTypes = new()
         {
             typeof(Texture2D),
@@ -72,7 +74,9 @@ namespace Unity.UIToolkit.Editor
             typeof(VectorImage)
         };
 
+        [AutoStaticsCleanupOnCodeReload]
         static bool? s_Is2DSpriteEditorInstalled;
+        [AutoStaticsCleanupOnCodeReload]
         static ListRequest s_PackageListRequest;
 
         readonly ObjectField m_ObjectField;
@@ -325,4 +329,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

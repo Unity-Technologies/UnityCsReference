@@ -105,6 +105,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId transitionTimingFunctionProperty = "style." + nameof(IStyle.transitionTimingFunction);
             internal static readonly BindingId translateProperty = "style." + nameof(IStyle.translate);
             internal static readonly BindingId unityBackgroundImageTintColorProperty = "style." + nameof(IStyle.unityBackgroundImageTintColor);
+            internal static readonly BindingId unityCurvatureProperty = "style." + nameof(IStyle.unityCurvature);
             internal static readonly BindingId unityEditorTextRenderingModeProperty = "style." + nameof(IStyle.unityEditorTextRenderingMode);
             internal static readonly BindingId unityFontProperty = "style." + nameof(IStyle.unityFont);
             internal static readonly BindingId unityFontDefinitionProperty = "style." + nameof(IStyle.unityFontDefinition);

@@ -20,6 +20,16 @@ internal class SDKPlatformFlags
 }
 
 [Serializable]
+internal struct SDKPreconfiguredSettingsVariantInfo
+{
+    public string displayName;
+    public string description;
+    public string tooltip;
+    public bool selectedInitially;
+    public string platformGuid;
+}
+
+[Serializable]
 internal class SDKPlatformInfo
 {
     public int version;
@@ -39,4 +49,5 @@ internal class SDKPlatformInfo
     public SDKPlatformFlags flags;
     public bool isDeprecated;
     public string deprecationMessage;
+    public SDKPreconfiguredSettingsVariantInfo[] preconfiguredSettingsVariants;
 }

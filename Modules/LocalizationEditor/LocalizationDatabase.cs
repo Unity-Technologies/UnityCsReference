@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: LocalizationEditor not yet converted
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Assertions;
@@ -10,16 +9,20 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using JetBrains.Annotations;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
     /// <summary>
     /// This provides Localization function.
     /// </summary>
-    public static class L10n
+    public static partial class L10n
     {
-        static object lockObject = new object();
-        static Dictionary<Assembly, string> s_GroupNames = new Dictionary<Assembly, string>(128);
+        [NoAutoStaticsCleanup] // plain lock object; holds no state
+        static readonly object lockObject = new object();
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
+        [IgnoreForUAL0015("This is a cache that is cleared on code reload and can be rebuilt on demand")]
+        static readonly Dictionary<Assembly, string> s_GroupNames = new Dictionary<Assembly, string>(128);
 
         private readonly struct LocKey : IEquatable<LocKey>
         {
@@ -51,7 +54,9 @@ namespace UnityEditor
             }
         }
 
-        static Dictionary<LocKey, string> s_LocalizedStringCache = new Dictionary<LocKey, string>(10 << 10);
+        [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
+        [IgnoreForUAL0015("This is a cache that is cleared on code reload and can be rebuilt on demand")]
+        static readonly Dictionary<LocKey, string> s_LocalizedStringCache = new Dictionary<LocKey, string>(10 << 10);
 
         internal static void ClearCache()
         {
@@ -93,15 +98,20 @@ namespace UnityEditor
         /// <param name="str">The original string to be translated.</param>
         public static string Tr(string str)
         {
-            return Tr(str, Assembly.GetCallingAssembly());
+            return TrForAssembly(str, Assembly.GetCallingAssembly());
         }
 
-        internal static string Tr(string str, object context)
+        internal static string TrForContext(string str, object context)
         {
-            return Tr(str, context?.GetType().Assembly);
+            return TrForAssembly(str, context?.GetType().Assembly);
         }
 
-        internal static string Tr(string str, Assembly groupAssembly)
+        internal static string TrForAssembly(string str, Assembly groupAssembly)
+        {
+            return TrWithGroup(str, GetGroupName(groupAssembly));
+        }
+
+        static string TrWithGroup(string str, string groupName)
         {
             if (!LocalizationDatabase.enableEditorLocalization)
                 return str;
@@ -111,7 +121,6 @@ namespace UnityEditor
 
             lock (lockObject)
             {
-                var groupName = GetGroupName(groupAssembly);
                 var key = new LocKey(str, groupName);
 
                 if (s_LocalizedStringCache.TryGetValue(key, out var localized))
@@ -132,9 +141,10 @@ namespace UnityEditor
         /// <param name="str_list">The original strings to be translated.</param>
         public static string[] Tr(string[] str_list)
         {
+            var groupAssembly = Assembly.GetCallingAssembly();
             var res = new string[str_list.Length];
             for (var i = 0; i < res.Length; ++i)
-                res[i] = Tr(str_list[i]);
+                res[i] = TrForAssembly(str_list[i], groupAssembly);
             return res;
         }
 
@@ -145,19 +155,42 @@ namespace UnityEditor
         /// <param name="groupName">The specified group name for the translation.</param>
         public static string Tr(string str, string groupName)
         {
-            var new_str = LocalizationDatabase.GetLocalizedStringWithGroupName(str, groupName);
-            return new_str;
+            return TrWithGroup(str, groupName);
+        }
+
+        /// <summary>
+        /// Get the translation array for the given argument array.
+        /// </summary>
+        /// <param name="str_list">The original strings to be translated.</param>
+        /// <param name="groupName">The specified group name for the translation.</param>
+        public static string[] Tr(string[] str_list, string groupName)
+        {
+            var res = new string[str_list.Length];
+            for (var i = 0; i < res.Length; ++i)
+                res[i] = TrWithGroup(str_list[i], groupName);
+            return res;
         }
 
         [ExcludeFromDocs]
         public static string TrPath(string path)
+        {
+            return TrPathCore(null, path);
+        }
+
+        [ExcludeFromDocs]
+        public static string TrPath(string path, string groupName)
+        {
+            return TrPathCore(groupName, path);
+        }
+
+        static string TrPathCore(string groupName, string path)
         {
             string[] separatingChars = { "/" };
             var result = new System.Text.StringBuilder(256);
             var items = path.Split(separatingChars, System.StringSplitOptions.RemoveEmptyEntries);
             for (var i = 0; i < items.Length; ++i)
             {
-                result.Append(Tr(items[i]));
+                result.Append(TrWithGroup(items[i], groupName));
                 if (i < items.Length - 1)
                     result.Append("/");
             }
@@ -167,303 +200,323 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static GUIContent TextContent(string text, string tooltip = null, Texture icon = null)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TextContentCore(GetGroupName(Assembly.GetCallingAssembly()), text, tooltip, icon);
+        }
+
+        static GUIContent TextContentCore(string groupName, string text, string tooltip, Texture icon)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrTextContent(text, tooltip, icon);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                var gc = new GUIContent(new_text);
-                gc.tooltip = new_tooltip;
-                gc.image = icon;
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrTextContent(text, tooltip, icon);
-            }
+            var gc = new GUIContent(TrWithGroup(text, groupName));
+            gc.tooltip = TrWithGroup(tooltip, groupName);
+            gc.image = icon;
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent TextContent(string text, string tooltip, string iconName)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TextContentWithIconNameCore(GetGroupName(Assembly.GetCallingAssembly()), text, tooltip, iconName);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent TextContent(string text, string tooltip, string iconName, string groupName)
+        {
+            return TextContentWithIconNameCore(groupName, text, tooltip, iconName);
+        }
+
+        static GUIContent TextContentWithIconNameCore(string groupName, string text, string tooltip, string iconName)
+        {
+            // No icon name means no icon. Without this, LoadIconRequired logs an error for the empty name,
+            // and this is the only shape a caller wanting a group, a tooltip and no icon can spell.
+            if (string.IsNullOrEmpty(iconName))
+                return TextContentCore(groupName, text, tooltip, null);
+
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrTextContent(text, tooltip, iconName);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                var gc = new GUIContent(new_text);
-                gc.tooltip = new_tooltip;
-                gc.image = EditorGUIUtility.LoadIconRequired(iconName);
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrTextContent(text, tooltip, iconName);
-            }
+            var gc = new GUIContent(TrWithGroup(text, groupName));
+            gc.tooltip = TrWithGroup(tooltip, groupName);
+            gc.image = EditorGUIUtility.LoadIconRequired(iconName);
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent TextContent(string text, Texture icon)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TextContentWithTextureCore(GetGroupName(Assembly.GetCallingAssembly()), text, icon);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent TextContent(string text, Texture icon, string groupName)
+        {
+            return TextContentWithTextureCore(groupName, text, icon);
+        }
+
+        static GUIContent TextContentWithTextureCore(string groupName, string text, Texture icon)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrTextContentWithIcon(text, icon);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                var gc = new GUIContent(new_text);
-                gc.image = icon;
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrTextContentWithIcon(text, icon);
-            }
+            var gc = new GUIContent(TrWithGroup(text, groupName));
+            gc.image = icon;
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, Texture icon)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TextContentWithIconTextureCore(GetGroupName(Assembly.GetCallingAssembly()), text, icon);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent TextContentWithIcon(string text, Texture icon, string groupName)
+        {
+            return TextContentWithIconTextureCore(groupName, text, icon);
+        }
+
+        static GUIContent TextContentWithIconTextureCore(string groupName, string text, Texture icon)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrTextContentWithIcon(text, icon);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                var gc = new GUIContent(new_text);
-                gc.image = icon;
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrTextContentWithIcon(text, icon);
-            }
+            var gc = new GUIContent(TrWithGroup(text, groupName));
+            gc.image = icon;
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, string iconName)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TextContentWithIconNamedCore(GetGroupName(Assembly.GetCallingAssembly()), text, iconName);
+        }
+
+
+        static GUIContent TextContentWithIconNamedCore(string groupName, string text, string iconName)
+        {
+            if (string.IsNullOrEmpty(iconName))
+                return TextContentWithIconTextureCore(groupName, text, null);
+
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TextContentWithIcon(text, iconName);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                var gc = new GUIContent(new_text);
-                gc.image = EditorGUIUtility.LoadIconRequired(iconName);
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TextContentWithIcon(text, iconName);
-            }
+            var gc = new GUIContent(TrWithGroup(text, groupName));
+            gc.image = EditorGUIUtility.LoadIconRequired(iconName);
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, string tooltip, string iconName)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TextContentWithIconTooltipNamedCore(GetGroupName(Assembly.GetCallingAssembly()), text, tooltip, iconName);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent TextContentWithIcon(string text, string tooltip, string iconName, string groupName)
+        {
+            return TextContentWithIconTooltipNamedCore(groupName, text, tooltip, iconName);
+        }
+
+        static GUIContent TextContentWithIconTooltipNamedCore(string groupName, string text, string tooltip, string iconName)
+        {
+            if (string.IsNullOrEmpty(iconName))
+                return TextContentWithIconTooltipTextureCore(groupName, text, tooltip, null);
+
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrTextContentWithIcon(text, tooltip, iconName);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                var gc = new GUIContent(new_text);
-                gc.tooltip = new_tooltip;
-                gc.image = EditorGUIUtility.LoadIconRequired(iconName);
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrTextContentWithIcon(text, tooltip, iconName);
-            }
+            var gc = new GUIContent(TrWithGroup(text, groupName));
+            gc.tooltip = TrWithGroup(tooltip, groupName);
+            gc.image = EditorGUIUtility.LoadIconRequired(iconName);
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, string tooltip, Texture icon)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TextContentWithIconTooltipTextureCore(GetGroupName(Assembly.GetCallingAssembly()), text, tooltip, icon);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent TextContentWithIcon(string text, string tooltip, Texture icon, string groupName)
+        {
+            return TextContentWithIconTooltipTextureCore(groupName, text, tooltip, icon);
+        }
+
+        static GUIContent TextContentWithIconTooltipTextureCore(string groupName, string text, string tooltip, Texture icon)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrTextContentWithIcon(text, tooltip, icon);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                var gc = new GUIContent(new_text);
-                gc.tooltip = new_tooltip;
-                gc.image = icon;
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrTextContentWithIcon(text, tooltip, icon);
-            }
+            var gc = new GUIContent(TrWithGroup(text, groupName));
+            gc.tooltip = TrWithGroup(tooltip, groupName);
+            gc.image = icon;
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, string tooltip, MessageType messageType)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TextContentWithIconTooltipMessageCore(GetGroupName(Assembly.GetCallingAssembly()), text, tooltip, messageType);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent TextContentWithIcon(string text, string tooltip, MessageType messageType, string groupName)
+        {
+            return TextContentWithIconTooltipMessageCore(groupName, text, tooltip, messageType);
+        }
+
+        static GUIContent TextContentWithIconTooltipMessageCore(string groupName, string text, string tooltip, MessageType messageType)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrTextContentWithIcon(text, tooltip, messageType);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                var gc = new GUIContent(new_text);
-                gc.tooltip = new_tooltip;
-                gc.image = EditorGUIUtility.GetHelpIcon(messageType);
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrTextContentWithIcon(text, tooltip, messageType);
-            }
+            var gc = new GUIContent(TrWithGroup(text, groupName));
+            gc.tooltip = TrWithGroup(tooltip, groupName);
+            gc.image = EditorGUIUtility.GetHelpIcon(messageType);
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent TextContentWithIcon(string text, MessageType messageType)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TextContentWithIconMessageCore(GetGroupName(Assembly.GetCallingAssembly()), text, messageType);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent TextContentWithIcon(string text, MessageType messageType, string groupName)
+        {
+            return TextContentWithIconMessageCore(groupName, text, messageType);
+        }
+
+        static GUIContent TextContentWithIconMessageCore(string groupName, string text, MessageType messageType)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrTextContentWithIcon(text, messageType);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_text = LocalizationDatabase.GetLocalizedStringWithGroupName(text, groupName);
-                var gc = new GUIContent(new_text);
-                gc.image = EditorGUIUtility.GetHelpIcon(messageType);
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrTextContentWithIcon(text, messageType);
-            }
+            var gc = new GUIContent(TrWithGroup(text, groupName));
+            gc.image = EditorGUIUtility.GetHelpIcon(messageType);
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent IconContent(string iconName, string tooltip = null)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return IconContentNamedCore(GetGroupName(Assembly.GetCallingAssembly()), iconName, tooltip);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent IconContent(string iconName, string tooltip, string groupName)
+        {
+            return IconContentNamedCore(groupName, iconName, tooltip);
+        }
+
+        static GUIContent IconContentNamedCore(string groupName, string iconName, string tooltip)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrIconContent(iconName, tooltip);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                var gc = new GUIContent();
-                gc.tooltip = new_tooltip;
-                gc.image = EditorGUIUtility.LoadIconRequired(iconName);
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrIconContent(iconName, tooltip);
-            }
+            var gc = new GUIContent();
+            gc.tooltip = TrWithGroup(tooltip, groupName);
+            gc.image = EditorGUIUtility.LoadIconRequired(iconName);
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent IconContent(Texture icon, string tooltip = null)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return IconContentTextureCore(GetGroupName(Assembly.GetCallingAssembly()), icon, tooltip);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent IconContent(Texture icon, string tooltip, string groupName)
+        {
+            return IconContentTextureCore(groupName, icon, tooltip);
+        }
+
+        static GUIContent IconContentTextureCore(string groupName, Texture icon, string tooltip)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TrIconContent(icon, tooltip);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltip, groupName);
-                var gc = new GUIContent();
-                gc.tooltip = new_tooltip;
-                gc.image = icon;
-                return gc;
-            }
-            else
-            {
-                return EditorGUIUtility.TrIconContent(icon, tooltip);
-            }
+            var gc = new GUIContent();
+            gc.tooltip = TrWithGroup(tooltip, groupName);
+            gc.image = icon;
+            return gc;
         }
 
         [ExcludeFromDocs]
         public static GUIContent TempContent(string t)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TempContentCore(GetGroupName(Assembly.GetCallingAssembly()), t);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent TempContent(string t, string groupName)
+        {
+            return TempContentCore(groupName, t);
+        }
+
+        static GUIContent TempContentCore(string groupName, string t)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TempContent(t);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                var new_t = LocalizationDatabase.GetLocalizedStringWithGroupName(t, groupName);
-                return EditorGUIUtility.TempContent(new_t);
-            }
-            else
-            {
-                return EditorGUIUtility.TempContent(t);
-            }
+            return EditorGUIUtility.TempContent(TrWithGroup(t, groupName));
         }
 
         [ExcludeFromDocs]
         public static GUIContent[] TempContent(string[] texts)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TempContentArrayCore(GetGroupName(Assembly.GetCallingAssembly()), texts);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent[] TempContent(string[] texts, string groupName)
+        {
+            return TempContentArrayCore(groupName, texts);
+        }
+
+        static GUIContent[] TempContentArrayCore(string groupName, string[] texts)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TempContent(texts);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                GUIContent[] retval = new GUIContent[texts.Length];
-                for (int i = 0; i < texts.Length; i++)
-                {
-                    var new_t = LocalizationDatabase.GetLocalizedStringWithGroupName(texts[i], groupName);
-                    retval[i] = new GUIContent(new_t);
-                }
-                return retval;
-            }
-            else
-            {
-                return EditorGUIUtility.TempContent(texts);
-            }
+            var retval = new GUIContent[texts.Length];
+            for (var i = 0; i < texts.Length; i++)
+                retval[i] = new GUIContent(TrWithGroup(texts[i], groupName));
+            return retval;
         }
 
         [ExcludeFromDocs]
         public static GUIContent[] TempContent(string[] texts, string[] tooltips)
         {
-            if (!LocalizationDatabase.enableEditorLocalization)
+            return TempContentTooltipArrayCore(GetGroupName(Assembly.GetCallingAssembly()), texts, tooltips);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent[] TempContent(string[] texts, string[] tooltips, string groupName)
+        {
+            return TempContentTooltipArrayCore(groupName, texts, tooltips);
+        }
+
+        static GUIContent[] TempContentTooltipArrayCore(string groupName, string[] texts, string[] tooltips)
+        {
+            if (!LocalizationDatabase.enableEditorLocalization || groupName == null)
                 return EditorGUIUtility.TempContent(texts, tooltips);
 
-            var groupName = GetGroupName(Assembly.GetCallingAssembly());
-            if (groupName != null)
-            {
-                GUIContent[] retval = new GUIContent[texts.Length];
-                for (int i = 0; i < texts.Length; i++)
-                {
-                    var new_t = LocalizationDatabase.GetLocalizedStringWithGroupName(texts[i], groupName);
-                    var new_tooltip = LocalizationDatabase.GetLocalizedStringWithGroupName(tooltips[i], groupName);
-                    retval[i] = new GUIContent(new_t, new_tooltip);
-                }
-                return retval;
-            }
-            else
-            {
-                return EditorGUIUtility.TempContent(texts);
-            }
+            var retval = new GUIContent[texts.Length];
+            for (var i = 0; i < texts.Length; i++)
+                retval[i] = new GUIContent(TrWithGroup(texts[i], groupName), TrWithGroup(tooltips[i], groupName));
+            return retval;
         }
+
     }
 
     internal static class LocalizationGroupStack
     {
+        [NoAutoStaticsCleanup] // stack of group-name strings, balanced by Push/Pop within a LocalizationGroup scope; lazily recreated
         static Stack<string> s_GroupNameStack;
         public static void Push(string groupName)
         {
@@ -677,4 +730,3 @@ namespace UnityEditor.Localization.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

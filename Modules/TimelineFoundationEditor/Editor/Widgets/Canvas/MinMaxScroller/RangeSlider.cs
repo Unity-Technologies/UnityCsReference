@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -19,6 +19,7 @@ namespace Unity.Timeline.Foundation.Widgets.Internals
         const string k_RangeHandle = "rangeHandle";
         const string k_ClassName = "timeRangeSlider";
 
+        [NoAutoStaticsCleanup] // Immutable USS stylesheet-path descriptor; holds only fixed path strings, safe to persist across reload.
         static readonly StylesheetResource k_Stylesheet = UIResources.StylesheetFactory.Get(
             $"{nameof(TimeRangeScroller)}/{nameof(RangeSlider)}");
 
@@ -66,6 +67,7 @@ namespace Unity.Timeline.Foundation.Widgets.Internals
             maxValue = highLimit = 100;
         }
 
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<float> k_RangeHandleWidth = new("--range-handle-min-width");
         void ThumbCustomStyleResolved(CustomStyleResolvedEvent evt)
         {
@@ -104,4 +106,3 @@ namespace Unity.Timeline.Foundation.Widgets.Internals
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

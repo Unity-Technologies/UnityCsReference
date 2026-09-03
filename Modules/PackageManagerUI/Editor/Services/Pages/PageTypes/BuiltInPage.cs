@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public static readonly PageSortOption[] k_SupportedSortOptions = { PageSortOption.NameAsc, PageSortOption.NameDesc };
 
         public override string id => k_Id;
-        public override string displayName => L10n.Tr("Built-in");
+        public override string displayName => L10n.Tr("Built-in", null);
         public override Icon icon =>  Icon.BuiltInPage;
 
         // We use UpmSearch instead of UpmSearchOffline, as search offline never returns packages from scoped registry right now.

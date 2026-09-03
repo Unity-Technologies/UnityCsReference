@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AudioAuthoring not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,10 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Audio Mixer", icon = "Audio Mixer")]
     internal partial class AudioMixerWindow : EditorWindow, IHasCustomMenu
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        public AudioMixerWindow() { }
+        #pragma warning restore UAL0015
+
         [AutoStaticsCleanupOnCodeReload]
         static AudioMixerWindow s_Instance;
 
@@ -114,7 +119,9 @@ namespace UnityEditor
 
             public GUIContents()
             {
+                #pragma warning disable UAL0015 // lazily-loaded icon re-fetched on next access; a stale reference is harmlessly replaced
                 editSnapShots = EditorGUIUtility.TrTextContent("Edit in Play Mode", "Edit in playmode and your changes are automatically saved. Note when editing is disabled, live values are shown.", EditorGUIUtility.TrIconContent("Animation.Record", "Are scene and inspector changes recorded into the animation curves?").image);
+                #pragma warning restore UAL0015
             }
         }
         [NoAutoStaticsCleanup] // Lazy GUIContent holder, re-created on demand via the null-check below; GUIContent survives reload so safe to persist
@@ -785,3 +792,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

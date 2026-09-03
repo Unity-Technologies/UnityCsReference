@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using JetBrains.Annotations;
 using UnityEngine;
 using System.IO;
@@ -23,9 +24,9 @@ namespace UnityEditor.Profiling
             public static readonly GUIContent k_TargetFps = EditorGUIUtility.TrTextContent("Target Frames Per Second (Highlights Module)", "The target frames per second used by the Highlights module.");
             public static readonly GUIContent k_ShouldOverrideScreenshotIntervalText = EditorGUIUtility.TrTextContent("Override default screenshot frame interval", "Enable to set a non-default interval on the Editor/connected player. See Profiler.SetScreenshotCaptureFrameInterval docs for more info.");
             public static readonly GUIContent k_ScreenshotFrameInterval = EditorGUIUtility.TrTextContent("Rate at which Profiler captures screenshots", "Can also be controlled via script. See Profiler.SetScreenshotCaptureFrameInterval docs.");
-            public static readonly string OnlyRelativePaths = L10n.Tr("Only relative paths are allowed");
-            public static readonly string OKButton = L10n.Tr("OK");
-            public static readonly string InvalidPathWindow = L10n.Tr("Invalid Path");
+            public static readonly string OnlyRelativePaths = L10n.Tr("Only relative paths are allowed", null);
+            public static readonly string OKButton = L10n.Tr("OK", null);
+            public static readonly string InvalidPathWindow = L10n.Tr("Invalid Path", null);
 
             public static readonly GUIContent[] k_RecordStates =
             {
@@ -192,3 +193,4 @@ namespace UnityEditor.Profiling
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

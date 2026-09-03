@@ -109,7 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (packageInfo != null && SemVersionParser.TryParse(packageInfo.version, out var parsedVersion) &&
                     parsedVersion?.GetExpOrPreOrReleaseTag() == PackageTag.PreRelease)
                 {
-                    Debug.Log(string.Format(L10n.Tr("You must check \"Show Pre-release Package Versions\" in Project Settings > Package Manager in order to see package {0}."), packageName));
+                    Debug.Log(string.Format(L10n.Tr("You must check \"Show Pre-release Package Versions\" in Project Settings > Package Manager in order to see package {0}.", null), packageName));
                     return;
                 }
             }
@@ -125,7 +125,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                Debug.Log(string.Format(L10n.Tr("Unable to find the package {0} in the Package Manager Window."), packageToSelect));
+                Debug.Log(string.Format(L10n.Tr("Unable to find the package {0} in the Package Manager Window.", null), packageToSelect));
             }
         }
 

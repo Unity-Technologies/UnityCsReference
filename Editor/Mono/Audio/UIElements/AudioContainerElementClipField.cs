@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AudioAuthoring not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.UIElements;
@@ -38,9 +39,11 @@ partial class AudioContainerElementClipField : ObjectField
 
     public AudioContainerElementClipField()
     {
+        #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
         generateVisualContent += GenerateVisualContent;
         RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         RegisterCallback<CustomStyleResolvedEvent>(CustomStylesResolved);
+        #pragma warning restore UAL0015
     }
 
     static void CustomStylesResolved(CustomStyleResolvedEvent evt)
@@ -112,3 +115,4 @@ partial class AudioContainerElementClipField : ObjectField
 
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

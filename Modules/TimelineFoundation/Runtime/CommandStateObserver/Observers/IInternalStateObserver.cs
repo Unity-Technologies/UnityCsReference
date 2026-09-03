@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Timeline.Foundation.CSO.Internals
 {
@@ -26,7 +26,7 @@ namespace Unity.Timeline.Foundation.CSO.Internals
 
     static class StateObserverHelper
     {
+        [NoAutoStaticsCleanup] // ambient "currently observing" pointer; set and restored to null within a single observer-notification pass (try/finally), never persists between passes
         internal static IStateObserver CurrentObserver { get; set; }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

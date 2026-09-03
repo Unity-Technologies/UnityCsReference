@@ -20,7 +20,12 @@ namespace UnityEngine.Rendering
                     s_Active = new SupportedRenderingFeatures();
                 return s_Active;
             }
-            set { s_Active = value; }
+            set
+            {
+                s_Active = value;
+                // Assigning null resets to the defaults; the getter recreates a default instance on the next read.
+                SphericalHarmonicsL2.Internal_SetSHOutputDividedByPI(s_Active?.divideBakedOutputByPI ?? true);
+            }
         }
 
         [Flags]
@@ -79,6 +84,17 @@ namespace UnityEngine.Rendering
         public bool autoDefaultReflectionProbeBaking { get { return defaultReflectionProbeBaking; } set { defaultReflectionProbeBaking = value; } }
         public bool ambientProbeBaking { get; set; } = true;
         public bool defaultReflectionProbeBaking { get; set; } = true;
+        private bool m_DivideBakedOutputByPI = true;
+        public bool divideBakedOutputByPI
+        {
+            get => m_DivideBakedOutputByPI;
+            set
+            {
+                m_DivideBakedOutputByPI = value;
+                if (ReferenceEquals(this, s_Active))
+                    SphericalHarmonicsL2.Internal_SetSHOutputDividedByPI(value);
+            }
+        }
         public bool overridesShadowmask { get; set; } = false;
         public bool overridesLightProbeSystem { get; set; } = false;
         public bool supportsHDR { get; set; } = false;
@@ -248,6 +264,13 @@ namespace UnityEngine.Rendering
             var isSupported = (bool*)isSupportedPtr;
             *isSupported = active.defaultReflectionProbeBaking;
         }
+        [RequiredByNativeCode]
+        internal static unsafe void IsBakedLightingOutputDividedByPI(IntPtr dividePtr)
+        {
+            var divide = (bool*)dividePtr;
+            *divide = active.divideBakedOutputByPI;
+        }
+
         [RequiredByNativeCode]
         internal static unsafe void OverridesLightProbeSystem(IntPtr overridesPtr)
         {

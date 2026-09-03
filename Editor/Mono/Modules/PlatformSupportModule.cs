@@ -195,9 +195,8 @@ namespace UnityEditor.Modules
         {
             return new[]
             {
-                ScriptingImplementation.Mono2x,
+                ScriptingImplementation.CoreCLR,
                 ScriptingImplementation.IL2CPP,
-                ScriptingImplementation.CoreCLR
             };
         }
 

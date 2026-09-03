@@ -2,12 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Pool;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -19,6 +19,10 @@ namespace UnityEditor
     [EditorWindowTitle(title = k_InspectorWindowTitle, useTypeNameAsIconName = true)]
     internal partial class InspectorWindow : PropertyEditor, IPropertyView, IHasCustomMenu
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal InspectorWindow() { }
+        #pragma warning restore UAL0015
+
         const string k_InspectorWindowTitle = "Inspector";
         const string k_InspectorWindowTitleDebug = "Inspector (Debug)";
         const string k_InspectorWindowTitleDebugInternal = "Inspector (Debug Internal)";
@@ -254,6 +258,9 @@ namespace UnityEditor
             }
         }
 
+        [NoAutoStaticsCleanup]
+        static List<EditorWindow> s_WindowsSnapshot = new List<EditorWindow>(32);
+
         [UsedByNativeCode]
         internal static void RedrawFromNative()
         {
@@ -263,15 +270,28 @@ namespace UnityEditor
 
             // Acquire a snapshot instead of directly iterating over activeEditorWindows as calling
             // RebuildContentsContainers can mutate activeEditorWindows.
-            var activeWindowCount = activeEditorWindows.Count;
-            using var windowsSnapshot = new RentSpan<EditorWindow>(activeWindowCount);
-            for (int i = 0; i < activeWindowCount; ++i)
-                windowsSnapshot.Span[i] = activeEditorWindows[i];
+            var snapshot = s_WindowsSnapshot;
 
-            foreach (var editorWindow in windowsSnapshot)
+            // Guard against re-entry by setting s_WindowsSnapshot to null for the current entry (the finally statement will restore it).
+            if (snapshot != null)
+                s_WindowsSnapshot = null;
+            else  // If snapshot is null, we're re-entering. We shouldn't overwrite s_WindowsSnapshot therefore fallback to allocating new.
+                snapshot = new List<EditorWindow>(32);
+
+            try
             {
-                if (editorWindow != null && editorWindow is PropertyEditor propertyEditor)
-                    propertyEditor.RebuildContentsContainers();
+                snapshot.AddRange(activeEditorWindows);
+
+                for (int i = 0; i < snapshot.Count; ++i)
+                {
+                    if (snapshot[i] is PropertyEditor propertyEditor && propertyEditor != null)
+                        propertyEditor.RebuildContentsContainers();
+                }
+            }
+            finally
+            {
+                snapshot.Clear();
+                s_WindowsSnapshot = snapshot;
             }
         }
 
@@ -674,3 +694,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -12,7 +12,7 @@ internal class ReimportSampleFoldoutGroup : SampleMultiSelectFoldoutGroup
 
     public override void Refresh()
     {
-        mainFoldout.headerTextTemplate = L10n.Tr("Reimport {0}");
+        mainFoldout.headerTextTemplate = L10n.Tr("Reimport {0}", null);
         base.Refresh();
     }
 

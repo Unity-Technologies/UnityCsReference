@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
@@ -19,7 +20,9 @@ namespace UnityEditor.Overlays
         public OverlayPresetDropdown(EditorWindow targetWindow)
         {
             m_TargetWindow = targetWindow;
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             createMenuCallback = () => targetWindow.rootVisualElement.panel.CreateMenu();
+            #pragma warning restore UAL0015
             RefreshPresetDisplayValue();
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -160,7 +163,9 @@ namespace UnityEditor.Overlays
                 m_TransientToolbar.style.flexDirection = horizontal ? FlexDirection.Row : FlexDirection.Column;
 
                 m_Overlays = new List<(Overlay, int)>();
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 RebuildContent();
+                #pragma warning restore UAL0015
             }
 
             static EditorToolbarToggle CreateToggle(Overlay overlay)
@@ -235,7 +240,7 @@ namespace UnityEditor.Overlays
         Toggle m_DynamicPanelBehaviorToggle;
         OverlayPresetDropdown m_Dropdown;
         Toolbar m_Toolbar;
-        static readonly string k_CustomGroup = L10n.Tr("Custom");
+        static readonly string k_CustomGroup = L10n.Tr("Custom", null);
         public const string k_ShowOverlayMenuShortcutPath = "Overlays/Show Overlay Menu";
 
         [InitializeOnLoadMethod]
@@ -378,7 +383,7 @@ namespace UnityEditor.Overlays
 
             if (isPopup)
             {
-                content.Add(m_EnableOverlaysToggle = new Toggle(L10n.Tr("Enable Overlays")) { name = "overlay-toggle" });
+                content.Add(m_EnableOverlaysToggle = new Toggle(L10n.Tr("Enable Overlays", null)) { name = "overlay-toggle" });
                 m_EnableOverlaysToggle.RegisterCallback<ChangeEvent<bool>>((evt) =>
                 {
                     canvas.overlaysEnabled = evt.newValue;
@@ -387,7 +392,7 @@ namespace UnityEditor.Overlays
 
                 if (OverlayPrefs.IsDynamicPanelBehaviorChangesAllowed(containerWindow.GetType()))
                 {
-                    content.Add(m_DynamicPanelBehaviorToggle = new Toggle(L10n.Tr("Displace Window")) { name = "overlay-toggle" });
+                    content.Add(m_DynamicPanelBehaviorToggle = new Toggle(L10n.Tr("Displace Window", null)) { name = "overlay-toggle" });
                     m_DynamicPanelBehaviorToggle.tooltip = "This toggle determines whether panels docked as full-height dynamic panels " +
                         "will be drawn on top of the window or displace the window content.";
                     m_DynamicPanelBehaviorToggle.RegisterCallback<ChangeEvent<bool>>((evt) =>
@@ -516,3 +521,4 @@ namespace UnityEditor.Overlays
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

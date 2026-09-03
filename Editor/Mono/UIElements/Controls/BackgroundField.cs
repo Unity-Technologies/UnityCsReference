@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,8 @@ namespace UnityEditor.UIElements
 
         // Non-Type popup entry — swaps the sub-control to the gradient editor.
         internal const string k_GradientTypeName = "Gradient";
+        // Popup entry the field falls back to when the value holds neither an asset nor a gradient.
+        internal const string k_TextureTypeName = "Texture";
 
         readonly ObjectField m_ObjectField;
         readonly Dictionary<string, Type> m_TypeOptions;
@@ -74,7 +77,7 @@ namespace UnityEditor.UIElements
             topRow.Add(popupContainer);
             visualInput.Add(topRow);
 
-            AddType(typeof(Texture2D), "Texture");
+            AddType(typeof(Texture2D), k_TextureTypeName);
             AddType(typeof(RenderTexture), "Render Texture");
             AddType(typeof(Sprite), "Sprite");
             AddType(typeof(VectorImage), "Vector");
@@ -114,7 +117,15 @@ namespace UnityEditor.UIElements
             if (!m_TypePopup.choices.Contains(k_GradientTypeName))
                 m_TypePopup.choices.Add(k_GradientTypeName);
 
-            m_TypePopup.RegisterValueChangedCallback(_ => UpdateGradientVisibility());
+            m_TypePopup.RegisterValueChangedCallback(evt =>
+            {
+                UpdateGradientVisibility();
+                // On mode swap, emit through the destination writer so the style property updates.
+                if (evt.newValue == k_GradientTypeName && evt.previousValue != k_GradientTypeName)
+                    OnGradientControlChanged();
+                else if (evt.previousValue == k_GradientTypeName && evt.newValue != k_GradientTypeName)
+                    value = Background.FromObject(m_ObjectField.value);
+            });
             UpdateGradientVisibility();
         }
 
@@ -146,6 +157,15 @@ namespace UnityEditor.UIElements
             value = Background.FromGradient(gradient);
         }
 
+        // Sensible starting gradient (CSS "to bottom", white → white) shown when nothing is set.
+        internal static BackgroundGradient defaultAuthoringGradient
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => BackgroundGradient.Linear(Mathf.PI,
+                BackgroundGradientStop.Percent(Color.white, 0f),
+                BackgroundGradientStop.Percent(Color.white, 1f));
+        }
+
         void PushGradientToControls(in BackgroundGradient g)
         {
             m_SuppressGradientChange = true;
@@ -156,8 +176,6 @@ namespace UnityEditor.UIElements
                 m_GradientSizeField.SetValueWithoutNotify(g.size);
                 m_GradientPositionField.SetValueWithoutNotify(g.position);
                 m_GradientColorsField.SetValueWithoutNotify(BackgroundGradientToUnityGradient(g));
-                m_TypePopup.SetValueWithoutNotify(k_GradientTypeName);
-                UpdateGradientVisibility();
             }
             finally
             {
@@ -273,6 +291,7 @@ namespace UnityEditor.UIElements
             {
                 m_ObjectField.SetValueWithoutNotify(null);
                 PushGradientToControls(newValue.gradient);
+                m_TypePopup.SetValueWithoutNotify(k_GradientTypeName);
             }
             else
             {
@@ -290,11 +309,21 @@ namespace UnityEditor.UIElements
                         }
                     }
                 }
-                UpdateGradientVisibility();
+                else if (m_TypePopup.value == k_GradientTypeName)
+                {
+                    m_TypePopup.SetValueWithoutNotify(k_TextureTypeName);
+                }
+
+                // The field outlives the selection, so drop the previous gradient rather than
+                // offering it as the starting point for whatever is selected next.
+                PushGradientToControls(defaultAuthoringGradient);
             }
+
+            UpdateGradientVisibility();
 
             base.SetValueWithoutNotify(newValue);
         }
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -10,10 +10,32 @@ using UnityEngine.UIElements;
 namespace Unity.GraphToolkit.Editor
 {
     /// <summary>
+    /// The generated view for a <see cref="State"/>.
+    /// </summary>
+    /// <remarks>
+    /// Passed to <see cref="StateView{T}"/> as its <see cref="StateView{T}.View"/>. Add custom UI to
+    /// <see cref="Root"/>. Its contents are cleared each time the state returns from being culled;
+    /// cache any custom UI you allocated in <see cref="StateView{T}.OnViewBuilt"/> and re-add it from
+    /// <see cref="StateView{T}.OnCullingChanged"/> when <c>cullingEnabled</c> is <c>false</c>.
+    /// </remarks>
+    public interface IStateView
+    {
+        /// <summary>
+        /// The root <see cref="VisualElement"/> of the state, to which custom UI can be added.
+        /// </summary>
+        /// <remarks>
+        /// The contents of <c>Root</c> are cleared each time the state returns from being culled. Cache
+        /// any custom UI you allocated in <see cref="StateView{T}.OnViewBuilt"/> and re-add it from
+        /// <see cref="StateView{T}.OnCullingChanged"/> when <c>cullingEnabled</c> is false.
+        /// </remarks>
+        public VisualElement Root { get; }
+    }
+
+    /// <summary>
     /// Class for a state node UI.
     /// </summary>
     [UnityRestricted]
-    internal class StateView : NodeView, INodeWithConnector
+    internal class StateView : NodeView, INodeWithConnector, IStateView
     {
         /// <summary>
         /// The name of the <see cref="ModelViewPart"/> for the progress bar.
@@ -31,6 +53,15 @@ namespace Unity.GraphToolkit.Editor
         /// The state model.
         /// </summary>
         public StateModel StateModel => Model as StateModel;
+
+        /// <inheritdoc />
+        protected override IUserModelView BuildUserView()
+        {
+            if (NodeModel is Implementation.UserStateModelImp userStateModel)
+                return GraphView.StateBuilderLookup.Build(userStateModel.Node, this);
+
+            return null;
+        }
 
         /// <summary>
         /// The transition connector manipulator.

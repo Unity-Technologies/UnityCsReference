@@ -81,24 +81,24 @@ namespace Unity.UI.Builder
 
                     if (elementAttribute == null || elementAttribute.visibility == LibraryVisibility.Default)
                     {
-                        if (!Unsupported.IsDeveloperMode())
-                        {
-                            var hidden = IsUnityBuiltInEditorAssembly(elementType.Assembly);
-                            if (!hidden)
-                            {
-                                var a = elementType.Assembly.GetCustomAttribute<UILibraryVisibilityAttribute>();
-                                if (a != null && a.Visibility == LibraryVisibility.Hidden)
-                                    hidden = true;
-                            }
-                            if (hidden)
-                                continue;
-                        }
+                        var assemblyVisibility = elementType.Assembly.GetCustomAttribute<UILibraryVisibilityAttribute>()?.Visibility ?? LibraryVisibility.Default;
+                        if (assemblyVisibility == LibraryVisibility.Hidden)
+                            continue;
 
-                        // Avoid adding our own internal factories (like Package Manager templates).
-                        if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Exists(elementType.Namespace.StartsWith))
+                        if (assemblyVisibility != LibraryVisibility.Visible)
                         {
-                            if (!AllowPackageType(type))
-                                continue;
+                            if (!Unsupported.IsDeveloperMode())
+                            {
+                                if (IsUnityBuiltInEditorAssembly(elementType.Assembly))
+                                    continue;
+                            }
+
+                            // Avoid adding our own internal factories (like Package Manager templates).
+                            if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Exists(elementType.Namespace.StartsWith))
+                            {
+                                if (!AllowPackageType(type))
+                                    continue;
+                            }
                         }
 
                         // Avoid adding UI Builder's own types, even in internal mode.

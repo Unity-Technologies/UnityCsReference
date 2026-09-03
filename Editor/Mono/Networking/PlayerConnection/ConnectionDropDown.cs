@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Kernel not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,13 +22,13 @@ namespace UnityEditor.Networking.PlayerConnection
         private static readonly string portPattern = @":\d{4,}";
         private static readonly string ipPattern = @"@\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}";
         private static readonly string localHostPattern = @" (Localhost prohibited)";
-        public static readonly string kDevices = L10n.Tr("Devices");
+        public static readonly string kDevices = L10n.Tr("Devices", null);
 
         internal static class Content
         {
-            public static readonly string PlayerLogging = L10n.Tr("Player Logging");
-            public static readonly string FullLog = L10n.Tr("Full Log [Developer Mode Only]");
-            public static readonly string Logging = L10n.Tr("Logging");
+            public static readonly string PlayerLogging = L10n.Tr("Player Logging", null);
+            public static readonly string FullLog = L10n.Tr("Full Log [Developer Mode Only]", null);
+            public static readonly string Logging = L10n.Tr("Logging", null);
         }
 
         public static string GetToolbarContent(string connectionName, GUIStyle style, int maxWidth)
@@ -208,7 +209,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
         static class Content
         {
-            public static readonly string DirectConnection = L10n.Tr("Direct Connection");
+            public static readonly string DirectConnection = L10n.Tr("Direct Connection", null);
         }
 
         internal enum ConnectionMajorGroup
@@ -280,7 +281,9 @@ namespace UnityEditor.Networking.PlayerConnection
             IsDevice = isDevice;
             if (isDevice)
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 IconContent = ConnectionUIHelper.GetIcon(iconString);
+                #pragma warning restore UAL0015
             }
         }
 
@@ -626,16 +629,22 @@ namespace UnityEditor.Networking.PlayerConnection
             state.AddItemsToTree(this, rect);
             if (multiColumnHeaderState == null)
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 treeViewState = new TreeViewState();
                 multiColumnHeaderState = CreateDefaultMultiColumnHeaderState(100);
+                #pragma warning restore UAL0015
+                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 multiColumnHeader = new ConnectionDropDownMultiColumnHeader(multiColumnHeaderState);
                 m_connectionTreeView = new ConnectionTreeView(treeViewState, multiColumnHeader, ClosePopUp) { dropDownItems = connectionItems };
+                #pragma warning restore UAL0018
                 SetMinColumnWidths();
                 return;
             }
 
+            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             multiColumnHeader = new ConnectionDropDownMultiColumnHeader(multiColumnHeaderState);
             m_connectionTreeView = new ConnectionTreeView(treeViewState, multiColumnHeader, ClosePopUp) { dropDownItems = connectionItems };
+            #pragma warning restore UAL0018
         }
 
         static class Content
@@ -929,3 +938,4 @@ namespace UnityEditor.Networking.PlayerConnection
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

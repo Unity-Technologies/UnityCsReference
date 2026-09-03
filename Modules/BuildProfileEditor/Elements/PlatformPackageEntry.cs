@@ -63,6 +63,13 @@ namespace UnityEditor.Build.Profile
         public string deprecationTooltip { get; private set; }
 
         /// <summary>
+        /// True when Package Manager reports access to this package as granted by an entitlement.
+        /// The catalog carries no entitlement data, so this stays false when PM has no
+        /// <see cref="PackageManager.PackageInfo"/> for this package.
+        /// </summary>
+        public bool entitled { get; private set; }
+
+        /// <summary>
         /// Set when <see cref="qualifiedName"/> is installed.
         /// </summary>
         public bool isInstalled { get; set; }
@@ -84,6 +91,7 @@ namespace UnityEditor.Build.Profile
             required = false;
             deprecated = false;
             deprecationTooltip = string.Empty;
+            entitled = false;
             isInstalled = false;
         }
 
@@ -112,6 +120,7 @@ namespace UnityEditor.Build.Profile
             {
                 deprecated = packageInfo.isDeprecated || packageInfo.IsPackageLifeCycleDeprecated();
                 deprecationTooltip = deprecated ? packageInfo.GetDeprecationMessageForBuildProfile() : string.Empty;
+                entitled = serviceInfoProvider.IsEnterprisePackage(qualifiedName);
             }
             else
             {

@@ -10,7 +10,7 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement]
 internal partial class NotEditableAssetHelpBox : HelpBox
 {
-    public static readonly string AssetNotEditableMessageWhenUIStagesEnabled = L10n.Tr("UI elements are not yet editable in this view. To edit, open in context with UI Staging Mode or open the asset in the UI Builder.");
+    public static readonly string AssetNotEditableMessageWhenUIStagesEnabled = L10n.Tr("UI elements are not yet editable in this view. To edit, open in context with UI Staging Mode or open the asset in the UI Builder.", null);
 
     public NotEditableAssetHelpBox()
     {

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AdaptivePerformance not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -144,8 +145,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 bool prompted = false;
                 try
                 {
-                    Ok = EditorUtility.DisplayDialog(L10n.Tr("Enable Frame Timing Stats "), L10n.Tr("Adaptive Performance requires Frame Timing Stats to be enabled. \"Ok\" to enable"),
-                        L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                    Ok = EditorUtility.DisplayDialog(L10n.Tr("Enable Frame Timing Stats ", null), L10n.Tr("Adaptive Performance requires Frame Timing Stats to be enabled. \"Ok\" to enable", null),
+                        L10n.Tr("Ok", null), L10n.Tr("Cancel", null));
                     prompted = true;
                 }
                 finally
@@ -192,8 +193,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 bool prompted = false;
                 try
                 {
-                    Ok = EditorUtility.DisplayDialog(L10n.Tr("Disable adjust IOS FPS Using Thermal State"), L10n.Tr("\"Adjust iOS FPS based on thermal state\" should be disabled in the Player Settings to ensure thermal mitigation works properly in the Adaptive Performance Apple Provider. Ok to disable"),
-                        L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                    Ok = EditorUtility.DisplayDialog(L10n.Tr("Disable adjust IOS FPS Using Thermal State", null), L10n.Tr("\"Adjust iOS FPS based on thermal state\" should be disabled in the Player Settings to ensure thermal mitigation works properly in the Adaptive Performance Apple Provider. Ok to disable", null),
+                        L10n.Tr("Ok", null), L10n.Tr("Cancel", null));
                     prompted = true;
                 }
                 finally
@@ -463,7 +464,7 @@ namespace UnityEditor.AdaptivePerformance.Editor
             if (state != PlayModeStateChange.ExitingEditMode || !IsPackageOperationInProgress)
                 return;
 
-            Debug.LogWarning(L10n.Tr(k_WarningPlaymodeDuringPackageOperation));
+            Debug.LogWarning(L10n.Tr(k_WarningPlaymodeDuringPackageOperation, null));
             EditorApplication.isPlaying = false;
         }
 
@@ -520,3 +521,4 @@ namespace UnityEditor.AdaptivePerformance.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

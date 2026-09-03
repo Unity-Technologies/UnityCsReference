@@ -15,7 +15,7 @@ namespace UnityEngine
 {
     // Representation of 3D vectors and points.
     [NativeHeader("Runtime/Math/Vector3.h")]
-    [NativeClass("Vector3f")]
+    [NativeClass("Vector3f", PersistentTypeId = 100005)]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
     [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]

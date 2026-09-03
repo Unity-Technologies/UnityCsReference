@@ -484,15 +484,19 @@ namespace UnityEditor
             return provider;
         }
 
-        class EnterTagNamePopup : PopupWindowContent
+        internal class EnterTagNamePopup : PopupWindowContent
         {
+            const string k_Template = "UXML/ProjectSettings/TagManagerInspector-NewTag.uxml";
+            const string k_NewTagName = "New tag";
+
             public delegate void EnterDelegate(string str);
 
             readonly EnterDelegate m_EnterCallback;
-            string m_NewTagName = "New tag";
-            bool m_NeedsFocus = true;
             readonly List<string> m_ExistingTagNames = new List<string>(InternalEditorUtility.tags);
-            bool m_IsExistingTag;
+
+            TextField m_TextField;
+            HelpBox m_HelpBox;
+            Button m_SaveButton;
 
             public EnterTagNamePopup(SerializedProperty tags, EnterDelegate callback)
             {
@@ -504,58 +508,58 @@ namespace UnityEditor
                     if (!string.IsNullOrEmpty(tagName))
                         m_ExistingTagNames.Add(tagName);
                 }
-
-                m_NewTagName = ObjectNames.GetUniqueName(m_ExistingTagNames.ToArray(), m_NewTagName);
             }
 
-            // One line for text field, one for the button, and two for HelpBox
-            public override Vector2 GetWindowSize()
-                => new(400, EditorGUI.kSingleLineHeight * (m_IsExistingTag? 4 : 2) + EditorGUI.kControlVerticalSpacing + 14);
-
-            public override void OnGUI(Rect windowRect)
+            public override VisualElement CreateGUI()
             {
-                GUILayout.Space(5);
-                var evt = Event.current;
-                var hitEnter = evt.type == EventType.KeyDown && evt.keyCode is KeyCode.Return or KeyCode.KeypadEnter;
-                bool previousExistingTagState = m_IsExistingTag;
-                GUI.SetNextControlName("TagName");
+                var tagName = ObjectNames.GetUniqueName(m_ExistingTagNames.ToArray(), k_NewTagName);
 
-                // If on previous OnGUI there was attempt saving existing name, show error until name is changed
-                EditorGUI.BeginChangeCheck();
-                m_NewTagName = EditorGUILayout.TextField("New Tag Name", m_NewTagName);
-                if (EditorGUI.EndChangeCheck())
+                var visualTreeAsset = EditorGUIUtility.Load(k_Template) as VisualTreeAsset;
+                var content = visualTreeAsset.Instantiate();
+
+                m_TextField = content.Q<TextField>("NewTagName");
+                m_SaveButton = content.Q<Button>("SaveButton");
+                m_HelpBox = content.Q<HelpBox>("ErrorMessage");
+
+                m_TextField.value = tagName;
+                m_TextField.RegisterValueChangedCallback(evt =>
                 {
-                    m_IsExistingTag = false;
-                }
+                    m_HelpBox.style.display = DisplayStyle.None;
+                    m_SaveButton.enabledSelf = IsValidTagName(evt.newValue);
+                });
 
-                if (m_IsExistingTag)
+                m_TextField.RegisterCallback<KeyDownEvent>(evt =>
                 {
-                    EditorGUILayout.HelpBox(string.Format(StylesNonSearchable.existingTagMessage.text, m_NewTagName.Length < 42 ? m_NewTagName : m_NewTagName[..39] + "..."), MessageType.Error);
-                }
+                    if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+                    {
+                        Submit();
+                        evt.StopPropagation();
+                    }
+                }, CallbackOptions.TrickleDown);
 
-                if (m_NeedsFocus)
-                {
-                    m_NeedsFocus = false;
-                    EditorGUI.FocusTextInControl("TagName");
-                }
+                m_SaveButton.clicked += Submit;
 
-                GUI.enabled = m_NewTagName.Length != 0;
-                var savePressed = GUILayout.Button("Save");
-                if (string.IsNullOrWhiteSpace(m_NewTagName) || (!savePressed && !hitEnter))
+                m_TextField.schedule.Execute(() => m_TextField.Focus());
+                return content;
+            }
+
+            bool IsValidTagName(string tagName) => !string.IsNullOrWhiteSpace(tagName);
+
+            void Submit()
+            {
+                var newTag = m_TextField.value;
+
+                if (!IsValidTagName(newTag))
                     return;
 
-                if (m_ExistingTagNames.Contains(m_NewTagName))
+                if (m_ExistingTagNames.Contains(newTag))
                 {
-                    m_IsExistingTag = true;
-
-                    // Hitting enter won't repaint the window, we need to do it manually
-                    if(hitEnter && previousExistingTagState != m_IsExistingTag)
-                        editorWindow.RepaintImmediately();
-
+                    m_HelpBox.style.display = DisplayStyle.Flex;
+                    m_HelpBox.text = string.Format(StylesNonSearchable.existingTagMessage.text, newTag.Length < 42 ? newTag : newTag[..39] + "...");
                     return;
                 }
 
-                m_EnterCallback(m_NewTagName);
+                m_EnterCallback(newTag);
                 editorWindow.Close();
             }
         }

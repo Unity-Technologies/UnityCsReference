@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneView not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -1771,10 +1772,12 @@ namespace UnityEditor
 
         public SceneView()
         {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             m_HierarchyType = HierarchyType.GameObjects;
 
             // Note: Rendering for Scene view picking depends on the depth buffer of the window
             depthBufferBits = 32;
+        #pragma warning restore UAL0015
         }
 
         internal void Awake()
@@ -1821,7 +1824,9 @@ namespace UnityEditor
                     Tools.current = Tool.Rect;
             }
 
+            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_PreviousScene = lastActiveSceneView;
+            #pragma warning restore UAL0018
         }
 
         internal static void AlignCameraWithView(Camera camera)
@@ -2251,11 +2256,17 @@ namespace UnityEditor
         bool m_ForceSceneViewFiltering;
         bool m_ForceSceneViewFilteringForLodGroupEditing;
         bool m_ForceSceneViewFilteringForStageHandling;
+        bool m_ForceSceneViewFilteringForSearch;
         double m_lastRenderedTime;
 
         internal void SetSceneViewFiltering(bool enable)
         {
             m_ForceSceneViewFiltering = enable;
+        }
+
+        internal void SetSceneViewFilteringForSearch(bool enable)
+        {
+            m_ForceSceneViewFilteringForSearch = enable;
         }
 
         internal void SetSceneViewFilteringForLODGroups(bool enable)
@@ -2272,7 +2283,9 @@ namespace UnityEditor
 
         bool UseSceneFiltering()
         {
-            return (!string.IsNullOrEmpty(m_SearchFilter) && s_PreferenceEnableFilteringWhileSearching) || forceSceneViewFilteringForLodGroupEditing || m_ForceSceneViewFilteringForStageHandling || m_ForceSceneViewFiltering;
+            return ((!string.IsNullOrEmpty(m_SearchFilter) || m_ForceSceneViewFilteringForSearch) &&
+                    s_PreferenceEnableFilteringWhileSearching) || forceSceneViewFilteringForLodGroupEditing ||
+                    m_ForceSceneViewFilteringForStageHandling || m_ForceSceneViewFiltering;
         }
 
         internal bool SceneViewIsRenderingHDR()
@@ -4717,3 +4730,4 @@ namespace UnityEditor
         }
     }
 } // namespace
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

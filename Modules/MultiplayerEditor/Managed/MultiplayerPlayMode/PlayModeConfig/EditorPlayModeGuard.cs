@@ -101,12 +101,14 @@ class EditorPlayModeGuard : ScriptableObject, IDisposable
 
         switch (m_ResolutionStrategy)
         {
+            case ResolutionStrategy.RevertToDefaultScenario when PlayModeScenarioManager.CanChangeActiveScenario:
+                PlayModeScenarioManager.ActiveScenario = null;
+                return true;
+
+            case ResolutionStrategy.RevertToDefaultScenario:
             case ResolutionStrategy.LogError:
                 Debug.LogError(k_ErrorMessage);
                 return false;
-            case ResolutionStrategy.RevertToDefaultScenario:
-                PlayModeScenarioManager.ActiveScenario = null;
-                return true;
             default:
                 Debug.LogError($"Unknown resolution strategy {m_ResolutionStrategy} in {nameof(EditorPlayModeGuard)}.");
                 return false;

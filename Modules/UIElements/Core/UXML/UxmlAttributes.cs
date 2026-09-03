@@ -170,7 +170,10 @@ namespace UnityEngine.UIElements
     /// Declares a method to create instances in place of the default constructor.
     /// </summary>
     /// <remarks>
-    /// Use this to provide custom instance creation logic, such as object pooling or dependency injection.
+    /// Use this to provide custom instance creation logic, such as object pooling, dependency
+    /// injection, or default values for a component. Three callers use the method: UXML
+    /// instantiation (element and component defaults), <c>GetOrAddComponent</c> when it creates a
+    /// missing component, and a <see cref="RequiresComponentOfTypeAttribute"/> auto-add.
     /// The method must meet the following requirements:
     ///
     ///- Be a static method defined on the element type.
@@ -502,5 +505,240 @@ namespace UnityEngine.UIElements
             name = uxmlName;
             types = acceptedTypes;
         }
+    }
+
+    /// <summary>
+    /// Declares a struct as a UI Toolkit component: a reusable piece of data and behavior that you
+    /// can attach to any <see cref="VisualElement"/>.
+    /// </summary>
+    /// <remarks>
+    /// Components extend elements through composition instead of inheritance. Rather than writing a
+    /// custom element subclass, declare a <c>partial struct</c> with this attribute and attach an
+    /// instance to any element with <see cref="VisualElement.AddComponent{T}"/>. The same component
+    /// type works on any element, whatever its type.
+    ///
+    /// This attribute targets structs. The struct must be declared <c>partial</c>: Unity's source
+    /// generator completes it, implementing <see cref="IVisualElementComponent"/> and generating
+    /// the registration code for you.
+    ///
+    /// An element holds at most one component of each type. Read or modify an attached component
+    /// with <see cref="VisualElement.GetComponent{T}"/>; remove it with
+    /// <see cref="VisualElement.RemoveComponent{T}"/>.
+    /// </remarks>
+    /// <example nocheck="true">
+    /// The following example attaches a click counter to a button without subclassing it.
+    /// <code lang="cs"><![CDATA[
+    /// using UnityEngine;
+    /// using UnityEngine.UIElements;
+    ///
+    /// [VisualElementComponent]
+    /// public partial struct ClickCounter
+    /// {
+    ///     public int count;
+    /// }
+    ///
+    /// public static class ClickCounterExample
+    /// {
+    ///     public static void Attach(Button button)
+    ///     {
+    ///         // Attach the component with its starting value.
+    ///         button.AddComponent(new ClickCounter { count = 0 });
+    ///
+    ///         button.RegisterCallback<ClickEvent>(evt =>
+    ///         {
+    ///             // GetComponent returns a reference: the increment is stored on the element.
+    ///             ref var counter = ref button.GetComponent<ClickCounter>();
+    ///             counter.count++;
+    ///             Debug.Log($"Clicked {counter.count} times.");
+    ///         });
+    ///     }
+    /// }
+    /// ]]></code>
+    /// </example>
+    [AttributeUsage(AttributeTargets.Struct, Inherited = false)]
+    public class VisualElementComponentAttribute : Attribute
+    {
+        /// <summary>
+        /// The name that identifies this component in UXML. If not set, the struct's name is used.
+        /// </summary>
+        public string name;
+
+        /// <summary>
+        /// The number of storage slots Unity reserves up front for this component type. Set it to
+        /// roughly how many elements you expect to carry this component at the same time.
+        /// </summary>
+        /// <remarks>
+        /// You can leave this at its default value for most components; the storage grows on demand.
+        /// Reserving a larger capacity avoids resizes when you know a component is used by many
+        /// elements at once, for example one per row in a large list, at the cost of reserved memory
+        /// if the estimate is too high. This setting only applies to components whose fields are all
+        /// unmanaged value types; components with managed fields, such as strings or object
+        /// references, are stored individually and ignore it.
+        /// </remarks>
+        public int initialCapacity;
+
+        /// <summary>
+        /// Whether the component can be authored in UXML. The fields marked
+        /// <see cref="UxmlAttributeAttribute"/> define the component's authorable surface either way;
+        /// this flag only decides whether UXML sees it. Pass <see langword="false"/> for a component
+        /// that is attached from code only.
+        /// </summary>
+        public bool exposeToUxml { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VisualElementComponentAttribute"/> class.
+        /// </summary>
+        /// <param name="exposeToUxml">Whether the component can be authored in UXML. Defaults to <see langword="true"/>.</param>
+        public VisualElementComponentAttribute(bool exposeToUxml = true)
+        {
+            this.exposeToUxml = exposeToUxml;
+        }
+    }
+
+    /// <summary>
+    /// Declares a static method of a component struct as an event handler for the element the
+    /// component is attached to.
+    /// </summary>
+    /// <remarks>
+    /// Apply this attribute to a static method of a struct that has the
+    /// <see cref="VisualElementComponentAttribute"/>. When the component is added to an element, the method
+    /// is registered as a callback for <see cref="eventType"/> on that element; when the component
+    /// is removed, the callback is unregistered.
+    ///
+    /// Apply the attribute several times to handle several event types with the same method.
+    /// Unity's source generator validates the method signature and generates the registration code.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
+    public class RegisterCallbackAttribute : Attribute
+    {
+        /// <summary>
+        /// The type of event to handle, for example <c>typeof(PointerDownEvent)</c>.
+        /// </summary>
+        public Type eventType { get; }
+
+        /// <summary>
+        /// Options that control how the callback is registered, such as
+        /// <see cref="CallbackOptions.TrickleDown"/>.
+        /// </summary>
+        public CallbackOptions callbackOptions { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RegisterCallbackAttribute"/> class.
+        /// </summary>
+        /// <param name="eventType">Type of event to handle, for example <c>typeof(PointerDownEvent)</c>.</param>
+        /// <param name="callbackOptions">Options that control how the callback is registered.</param>
+        public RegisterCallbackAttribute(Type eventType, CallbackOptions callbackOptions = default)
+        {
+            this.eventType = eventType;
+            this.callbackOptions = callbackOptions;
+        }
+    }
+
+    /// <summary>
+    /// Declares a static method of a <see cref="VisualElementComponentAttribute"/> struct as a painter that
+    /// contributes to the owner element's <see cref="VisualElement.generateVisualContent"/>.
+    /// </summary>
+    /// <remarks>
+    /// The method must be <c>static void M(ref T self, <see cref="MeshGenerationContext"/> mgc)</c>. The
+    /// source generator hooks it into the owner's <c>generateVisualContent</c> when the component is added
+    /// and unhooks it when the component is removed, and requests an initial repaint. Geometry changes
+    /// re-run the painter through the engine, and <see cref="StylePropertyAttribute">[StyleProperty]</see>
+    /// changes repaint via the generated style handler, so no extra callbacks are needed.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class GenerateVisualContentAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Declares a static method of a <see cref="VisualElementComponentAttribute"/> struct as the handler that
+    /// runs when one of the component's fields changes on an element.
+    /// </summary>
+    /// <remarks>
+    /// The method must be <c>static void M(ref T self, <see cref="VisualElement"/> owner)</c>, and a
+    /// component may declare at most one. The source
+    /// generator emits notifying <c>SetXxx(ref T, VisualElement, value)</c> setters for the component's
+    /// fields; each one flags the owner so this handler runs once in the next update, no matter how many
+    /// fields changed. Use it to invalidate the owner — for example <c>owner.MarkDirtyRepaint()</c>, a
+    /// layout request, or recomputing a cached value. The handler never runs from inside the setter, so a
+    /// burst of writes in one frame coalesces into a single call.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class OnComponentChangedAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Declares a static method of a <see cref="VisualElementComponentAttribute"/> struct that runs once,
+    /// right after the component is added to an element.
+    /// </summary>
+    /// <remarks>
+    /// The method must be <c>static void M(ref T self, <see cref="VisualElement"/> owner)</c>, and a
+    /// component may declare at most one. It runs on every add path: <c>AddComponent</c>,
+    /// <c>GetOrAddComponent</c>, a component authored in UXML, and a
+    /// <see cref="RequiresComponentOfTypeAttribute">[RequiresComponentOfType]</see> auto-add. It runs
+    /// after the component is stored and its <c>[RegisterCallback]</c> handlers are registered, so the
+    /// method sees a fully wired component and may configure the owner element (for example set
+    /// <c>owner.focusable</c>). On the UXML path it runs when the component is created, before the
+    /// authored attribute values are applied, so authored values always win over values this method
+    /// writes to the component.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class OnComponentAddedAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Declares a static method of a <see cref="VisualElementComponentAttribute"/> struct that runs when
+    /// <see cref="VisualElement.RemoveComponent{T}"/> removes the component from an element.
+    /// </summary>
+    /// <remarks>
+    /// The method must be <c>static void M(ref T self, <see cref="VisualElement"/> owner)</c>, and a
+    /// component may declare at most one. It runs before the component storage is freed and before
+    /// its <c>[RegisterCallback]</c> handlers are unregistered, so the method can still read its own
+    /// live data and clean up any owner state the component configured. It runs only on an explicit
+    /// <c>RemoveComponent</c> call; it does not run when the element detaches from a panel or when
+    /// the element itself is torn down.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class OnComponentRemovedAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Binds a field or property of a component struct to a custom USS property.
+    /// </summary>
+    /// <remarks>
+    /// Apply this attribute to a field or property of a struct that has the
+    /// <see cref="VisualElementComponentAttribute"/>. The member receives the value of the custom USS
+    /// property resolved on the element the component is attached to, so a style sheet can drive
+    /// component data.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
+    public class StylePropertyAttribute : Attribute
+    {
+        /// <summary>
+        /// The custom USS property name, for example <c>"--my-color"</c>.
+        /// </summary>
+        public string name;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StylePropertyAttribute"/> class.
+        /// </summary>
+        /// <param name="name">Custom USS property name, for example <c>"--my-color"</c>.</param>
+        public StylePropertyAttribute(string name)
+        {
+            this.name = name;
+        }
+    }
+
+    /// <summary>
+    /// Engine-internal marker: a <see cref="VisualElementComponentAttribute"/> whose blittable layout is
+    /// mirrored into a generated C++ header so native subsystems can read the component data.
+    /// Not part of the user-facing API.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Struct, Inherited = false)]
+    internal class NativeComponentAttribute : Attribute
+    {
     }
 }

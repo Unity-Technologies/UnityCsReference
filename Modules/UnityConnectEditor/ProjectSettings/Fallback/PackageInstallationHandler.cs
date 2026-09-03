@@ -98,21 +98,21 @@ namespace UnityEditor.Connect.Fallback
             return !m_InstallingNewPackage && EditorDialog.DisplayDecisionDialog(
                 titleText: GetInstallDialogTitle(),
                 messageText: GetInstallDialogMessage(),
-                yesButtonText: L10n.Tr(PackageInstallationText.Yes),
-                noButtonText: L10n.Tr(PackageInstallationText.No));
+                yesButtonText: L10n.Tr(PackageInstallationText.Yes, null),
+                noButtonText: L10n.Tr(PackageInstallationText.No, null));
         }
 
         string GetInstallDialogTitle()
         {
-            var translatedPackageInstallationText = L10n.Tr(PackageInstallationText.Title);
-            var translatedServiceTitle = L10n.Tr(m_ServiceInstance.title);
+            var translatedPackageInstallationText = L10n.Tr(PackageInstallationText.Title, null);
+            var translatedServiceTitle = L10n.Tr(m_ServiceInstance.title, null);
             return string.Format(translatedPackageInstallationText, translatedServiceTitle);
         }
 
         string GetInstallDialogMessage()
         {
-            var translatedPackageInstallationText = L10n.Tr(PackageInstallationText.Message);
-            var translatedServiceTitle = L10n.Tr(m_ServiceInstance.title);
+            var translatedPackageInstallationText = L10n.Tr(PackageInstallationText.Message, null);
+            var translatedServiceTitle = L10n.Tr(m_ServiceInstance.title, null);
             return string.Format(translatedPackageInstallationText, translatedServiceTitle);
         }
 

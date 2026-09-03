@@ -329,7 +329,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var mainPackageInfo = addAndRemoveOperation.FindMainPackageInfoFromResult();
             if (updatedInfos.Count == 0 && mainPackageInfo?.source == PackageSource.Git)
-                Debug.Log(string.Format(L10n.Tr("{0} is already up-to-date."), mainPackageInfo.displayName));
+                Debug.Log(string.Format(L10n.Tr("{0} is already up-to-date.", null), mainPackageInfo.displayName));
             else if (updatedInfos.Count > 0)
             {
                 PackageManagerExtensions.ExtensionCallback(() =>

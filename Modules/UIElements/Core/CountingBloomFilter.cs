@@ -7,6 +7,8 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    // Layout and hash constants must remain in sync with the read-only C++ mirror in
+    // Modules/UIElements/Core/Native/StyleSheets/CountingBloomFilter.h
     unsafe struct CountingBloomFilter
     {
         private const int KEY_SIZE = 14;
@@ -39,11 +41,6 @@ namespace UnityEngine.UIElements
             return (hash >> KEY_SIZE) & KEY_MASK;
         }
 
-        private bool IsSlotEmpty(uint index)
-        {
-            return m_Counters[index] == 0;
-        }
-
         public void InsertHash(uint hash)
         {
             AdjustSlot(Hash1(hash), true);
@@ -55,16 +52,15 @@ namespace UnityEngine.UIElements
             AdjustSlot(Hash1(hash), false);
             AdjustSlot(Hash2(hash), false);
         }
-
-        public bool ContainsHash(uint hash)
-        {
-            return !IsSlotEmpty(Hash1(hash)) && !IsSlotEmpty(Hash2(hash));
-        }
     }
 
     class AncestorFilter
     {
         CountingBloomFilter m_CountingBloomFilter;
+
+        // The native matcher reads the filter in place (ContainsHash only); exposed by ref so
+        // the caller can pin it for the duration of the call. Push/pop maintenance stays managed.
+        internal ref CountingBloomFilter filter => ref m_CountingBloomFilter;
 
         Stack<int> m_HashStack = new Stack<int>(100);
 
@@ -74,41 +70,6 @@ namespace UnityEngine.UIElements
         {
             m_HashStack.Push(hash);
             m_CountingBloomFilter.InsertHash((uint)hash);
-        }
-
-        unsafe public bool IsCandidate(StyleComplexSelector complexSel)
-        {
-            // We traverse the hash values for the complex selector parts to detect if any part isn't found
-            // in the Bloom filter, in which case the selector is not a candidate for the exhaustive search.
-            // Also, if a value of 0 is found during the search, then all parts have been visited without a
-            // Bloom filter rejection, in which case we must proceed with the exhaustive search.
-            for (int i = 0; i < Hashes.kSize; i++)
-            {
-                // A default part hash value means that all parts have been visited without a Bloom filter rejection.
-                if (complexSel.ancestorHashes.hashes[i] == 0)
-                    return true;
-
-                // A negative search in the Bloom filter means that the exhaustive search can be skipped for this selector.
-                if (!m_CountingBloomFilter.ContainsHash((uint)complexSel.ancestorHashes.hashes[i]))
-                    return false;
-            }
-
-            return true;
-        }
-
-        // Overload for flattened data path (takes ancestor hashes directly)
-        unsafe public bool IsCandidate(int* ancestorHashes)
-        {
-            for (int i = 0; i < Hashes.kSize; i++)
-            {
-                if (ancestorHashes[i] == 0)
-                    return true;
-
-                if (!m_CountingBloomFilter.ContainsHash((uint)ancestorHashes[i]))
-                    return false;
-            }
-
-            return true;
         }
 
         public void PushElement(VisualElement element)

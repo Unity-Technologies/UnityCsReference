@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>../../../artifacts/PlayerBuildProgramLibrary.Data.dll</BaseIntermediateOutputPath>
+  </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
-    <IntermediateOutputPath>../../../artifacts/PlayerBuildProgramLibrary.Data.dll/Debug</IntermediateOutputPath>
     <AssemblyName>PlayerBuildProgramLibrary.Data</AssemblyName>
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -30,6 +32,6 @@
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_1la1q1fv/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_w2d3uxnn/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
 </Project>

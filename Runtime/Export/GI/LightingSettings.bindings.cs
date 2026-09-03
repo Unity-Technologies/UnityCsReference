@@ -33,9 +33,11 @@ namespace UnityEngine
         public extern bool bakedGI { get; set; }
 
         [NativeName("EnableRealtimeLightmaps")]
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public extern bool realtimeGI { get; set; }
 
         [NativeName("RealtimeEnvironmentLighting")]
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public extern bool realtimeEnvironmentLighting { get; set; }
 
         internal extern bool usingShadowmask { get; set; }
@@ -204,7 +206,8 @@ namespace UnityEngine
         [Obsolete("Training data export for baked lighting is deprecated.", false)]
         public extern string trainingDataDestination { get; set; }
 
-        // Realtime lightmap resolution in texels per world unit. Also used for indirect resolution when using baked GI.
+        // Realtime lightmap resolution in texels per world unit.
+        // Not obsolete like the other realtime GI settings: the Progressive lightmapper derives terrain heightmap sampling density from this.
         [NativeName("RealtimeResolution")]
         public extern float indirectResolution { get; set; }
 

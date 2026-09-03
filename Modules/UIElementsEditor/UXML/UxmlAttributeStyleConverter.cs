@@ -121,6 +121,8 @@ internal class StyleListAttributeConverter<T> : IUxmlAttributeConverter
     }
 }
 
+internal class StyleCurvatureAttributeConverter : UxmlAttributeStyleConverter<StyleCurvature, Curvature, CurvatureAttributeConverter> {};
+
 internal class StyleRotateAttributeConverter : UxmlAttributeStyleConverter<StyleRotate, Rotate, RotateAttributeConverter> {};
 
 internal class StyleScaleAttributeConverter : UxmlAttributeStyleConverter<StyleScale, Scale, ScaleAttributeConverter> {};

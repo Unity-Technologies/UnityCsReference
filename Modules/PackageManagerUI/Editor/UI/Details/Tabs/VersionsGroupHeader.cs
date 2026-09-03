@@ -14,28 +14,28 @@ namespace UnityEditor.PackageManager.UI.Internal
             var icon = Icon.None;
 
             if (version.HasTag(PackageTag.Git))
-                text = L10n.Tr("Git");
+                text = L10n.Tr("Git", null);
             else if (version.HasTag(PackageTag.InstalledFromPath))
-                text = L10n.Tr("Local");
+                text = L10n.Tr("Local", null);
             else
             {
                 switch (version.availableRegistry)
                 {
                     case RegistryType.UnityRegistry:
-                        text = L10n.Tr("Unity Registry");
+                        text = L10n.Tr("Unity Registry", null);
                         icon = Icon.UnityRegistryPage;
                         break;
                     case RegistryType.AssetStore:
-                        text = L10n.Tr("Asset Store");
+                        text = L10n.Tr("Asset Store", null);
                         icon = Icon.MyAssetsPage;
                         break;
                     case RegistryType.MyRegistries:
                         var packageInfo = upmCache.GetBestMatchPackageInfo(version.name, version.isInstalled);
-                        text = packageInfo?.registry?.name ?? L10n.Tr("My Registries");
+                        text = packageInfo?.registry?.name ?? L10n.Tr("My Registries", null);
                         icon = Icon.MyRegistriesPage;
                         break;
                     default:
-                        text = L10n.Tr("Unknown");
+                        text = L10n.Tr("Unknown", null);
                         break;
                 }
             }

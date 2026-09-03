@@ -531,7 +531,7 @@ namespace UnityEditor
             string nextName = "";
             for (int i = 2; i < 50; ++i)
             {
-                nextName = L10n.Tr("Particle System ") + i;
+                nextName = L10n.Tr("Particle System ", null) + i;
                 bool found = false;
                 foreach (ParticleSystemUI e in m_Emitters)
                 {
@@ -546,7 +546,7 @@ namespace UnityEditor
                 if (!found)
                     return nextName;
             }
-            return L10n.Tr("Particle System");
+            return L10n.Tr("Particle System", null);
         }
 
         public bool IsParticleSystemUIVisible(ParticleSystemUI psUI)

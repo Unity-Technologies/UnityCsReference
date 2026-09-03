@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
@@ -11,47 +12,56 @@ internal sealed class RemoveElementsCommand : Command<RemoveElementsCommand>
 {
     const string CommandUndoName = "Delete elements";
 
-    public static RemoveElementsCommand GetPooled(object source, VisualElementAsset[] toRemoveAssets)
-    {
-        var cmd = GetPooled();
-        cmd.Source = source;
-        cmd.ToRemoveAssets = toRemoveAssets;
-        return cmd;
-    }
-
-    public static void Execute(object source, VisualElementAsset[] toRemoveAssets)
-    {
-        using var command = GetPooled(source, toRemoveAssets);
-        UICommandQueue.Execute(command);
-    }
-
-    public VisualElementAsset[] ToRemoveAssets { get; private set; }
+    public VisualElementAsset[] ElementsToRemove { get; private set; }
 
     public override string UndoName => CommandUndoName;
     public override CommandCategory Category => CommandCategory.Hierarchy;
 
-    protected override void Init()
+    public static RemoveElementsCommand GetPooled(object source, VisualElementAsset[] elements)
     {
-        base.Init();
-        ToRemoveAssets = null;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.ElementsToRemove = elements;
+        return cmd;
     }
 
-    public override bool Validate()
+    public static bool Validate(object source, VisualElementAsset[] elements)
     {
-        if (ToRemoveAssets == null)
+        using var cmd = GetPooled(source, elements);
+        return cmd.Validate();
+    }
+
+    public static bool Validate(ReadOnlySpan<VisualElementAsset> elements)
+    {
+        if (elements.IsEmpty)
             return false;
-        foreach (var asset in ToRemoveAssets)
+        foreach (var element in elements)
         {
-            if (asset == null || asset.visualTreeAsset == null)
+            if (element == null || element.visualTreeAsset == null)
                 return false;
         }
         return true;
     }
 
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] elements)
+    {
+        using var command = GetPooled(source, elements);
+        return UICommandQueue.Execute(command).Status;
+    }
+
+    protected override void Init()
+    {
+        base.Init();
+        ElementsToRemove = null;
+    }
+
+    public override bool Validate()
+        => Validate(ElementsToRemove.AsSpan());
+
     public override void Prepare(in PrepareContext context)
     {
         using var _ = HashSetPool<VisualTreeAsset>.Get(out var set);
-        foreach (var asset in ToRemoveAssets)
+        foreach (var asset in ElementsToRemove)
         {
             var vta = asset.visualTreeAsset;
             if (vta && set.Add(vta))
@@ -61,7 +71,7 @@ internal sealed class RemoveElementsCommand : Command<RemoveElementsCommand>
 
     public override CommandExecutionStatus Execute()
     {
-        foreach (var asset in ToRemoveAssets)
+        foreach (var asset in ElementsToRemove)
             asset.RemoveFromHierarchy();
         return CommandExecutionStatus.Success;
     }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -89,7 +90,9 @@ namespace UnityEditor
             PackageImportWizard.instance.StartImport(packagePath, items, packageIconPath, origin, packageExtractedPath, assetPackageInfo);
         }
 
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         public PackageImport()
+        #pragma warning restore UAL0015
         {
             minSize = new Vector2(350, 350);
         }
@@ -229,30 +232,30 @@ namespace UnityEditor
             var attestation = PackageImportWizard.instance.assetPackageInfo?.signature?.attestation;
             var signerName = string.IsNullOrEmpty(attestation?.publisherName) ? attestation?.ownerOrgName : attestation.publisherName;
             if (string.IsNullOrEmpty(signerName))
-                signerName = L10n.Tr("Unknown Publisher");
+                signerName = L10n.Tr("Unknown Publisher", null);
             GUIContent icon;
             string label;
             switch (trustAndSignature)
             {
                 case TrustAndSignature.FullTrustUnitySignature:
                     icon  = ms_Constants.verifiedIcon;
-                    label = L10n.Tr("Signed for Unity Technologies");
+                    label = L10n.Tr("Signed for Unity Technologies", null);
                     break;
                 case TrustAndSignature.FullTrustValidSignature:
                     icon  = ms_Constants.verifiedIcon;
-                    label = string.Format(L10n.Tr("Signed for {0}"), signerName);
+                    label = string.Format(L10n.Tr("Signed for {0}", null), signerName);
                     break;
                 case TrustAndSignature.UntrustedInvalidSignature:
                     icon  = ms_Constants.errorIcon;
-                    label = L10n.Tr("Invalid Signature");
+                    label = L10n.Tr("Invalid Signature", null);
                     break;
                 case TrustAndSignature.LimitedTrust:
                     icon  = ms_Constants.infoIcon;
-                    label = string.Format(L10n.Tr("Signed for {0}"), signerName);
+                    label = string.Format(L10n.Tr("Signed for {0}", null), signerName);
                     break;
                 case TrustAndSignature.UntrustedNoSignature:
                     icon  = ms_Constants.warnIcon;
-                    label = L10n.Tr("Missing Signature");
+                    label = L10n.Tr("Missing Signature", null);
                     break;
                 case TrustAndSignature.FullTrustBuiltInPackage:
                 case TrustAndSignature.FullTrustNoSignature:
@@ -275,15 +278,15 @@ namespace UnityEditor
             {
                 case TrustAndSignature.UntrustedInvalidSignature:
                     icon    = ms_Constants.errorIcon;
-                    message = L10n.Tr("This package has an invalid signature which can indicate unsafe or malicious content. Remove this package to reduce risk to your project.");
+                    message = L10n.Tr("This package has an invalid signature which can indicate unsafe or malicious content. Remove this package to reduce risk to your project.", null);
                     break;
                 case TrustAndSignature.LimitedTrust:
                     icon    = ms_Constants.infoIcon;
-                    message = L10n.Tr("This package is signed and distributed outside of Unity trusted sources. Please ensure you understand where this package originated from.");
+                    message = L10n.Tr("This package is signed and distributed outside of Unity trusted sources. Please ensure you understand where this package originated from.", null);
                     break;
                 case TrustAndSignature.UntrustedNoSignature:
                     icon    = ms_Constants.warnIcon;
-                    message = L10n.Tr("Unity can't verify this package because it doesn't have a signature. Use signed packages to reduce risk to your project.");
+                    message = L10n.Tr("Unity can't verify this package because it doesn't have a signature. Use signed packages to reduce risk to your project.", null);
                     break;
                 default:
                     return;
@@ -744,3 +747,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

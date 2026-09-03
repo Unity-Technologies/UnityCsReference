@@ -106,7 +106,7 @@ namespace UnityEditor
             public static readonly GUIContent spatialRightLabel = EditorGUIUtility.TrTextContent("3D");
             public static readonly GUIContent panLeftLabel = EditorGUIUtility.TrTextContent("Left");
             public static readonly GUIContent panRightLabel = EditorGUIUtility.TrTextContent("Right");
-            public static readonly string xAxisLabel = L10n.Tr("Distance");
+            public static readonly string xAxisLabel = L10n.Tr("Distance", null);
         }
 
         Vector3 GetSourcePos(Object target)

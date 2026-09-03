@@ -90,7 +90,7 @@ namespace Unity.GraphToolkit.Editor
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Style))
             {
-                SetColor(nodeModel.ElementColor.HasUserColor ? nodeModel.ElementColor.Color : nodeModel.DefaultColor);
+                SetColor(nodeModel.ElementColor.Color);
                 SetFillAmount(nodeModel.FillAmount);
                 onUpdateCallback?.Invoke();
             }

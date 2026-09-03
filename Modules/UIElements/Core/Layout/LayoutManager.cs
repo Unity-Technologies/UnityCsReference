@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
@@ -273,7 +274,7 @@ internal partial class LayoutManager : IDisposable
             (byte*)&panelTransformData,
         };
         m_Configs = new UnmanagedDataStore(configComponentTypes, configComponentLabels, configComponentData,
-            k_InitialConfigCapacity, allocator);
+            k_InitialConfigCapacity, allocator, "Layout");
 
         m_DefaultConfig = CreateConfig().Handle;
         LayoutNodeData.Default.Config = m_DefaultConfig;
@@ -317,7 +318,7 @@ internal partial class LayoutManager : IDisposable
         };
 
         m_Nodes = new UnmanagedDataStore(nodeComponentTypes, nodeComponentLabels, nodeComponentData,
-            initialNodeCapacity, allocator);
+            initialNodeCapacity, allocator, "Layout");
     }
 
     public void Dispose()
@@ -484,3 +485,4 @@ internal partial class LayoutManager : IDisposable
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

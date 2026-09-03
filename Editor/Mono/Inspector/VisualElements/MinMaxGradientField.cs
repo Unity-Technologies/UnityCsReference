@@ -22,11 +22,11 @@ namespace UnityEditor.UIElements
 
         public readonly string[] stringModes = new[]
         {
-            L10n.Tr("Color"),
-            L10n.Tr("Gradient"),
-            L10n.Tr("Random Between Two Colors"),
-            L10n.Tr("Random Between Two Gradients"),
-            L10n.Tr("Random Color")
+            L10n.Tr("Color", null),
+            L10n.Tr("Gradient", null),
+            L10n.Tr("Random Between Two Colors", null),
+            L10n.Tr("Random Between Two Gradients", null),
+            L10n.Tr("Random Color", null)
         };
 
         PropertyField m_ColorMin;

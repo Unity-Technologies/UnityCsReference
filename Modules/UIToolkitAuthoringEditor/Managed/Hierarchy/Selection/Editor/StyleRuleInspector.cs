@@ -191,7 +191,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
                     m_StyleInspectorDefaultContent.contentWasGenerated -= OnContentGeneratedForAnimation;
                     m_StyleInspectorDefaultContent.contentWasGenerated -= OnContentGeneratedForZIndex;
                 }
-                UIToolkitAuthoringSettings.EnableZIndexChanged -= OnEnableZIndexChangedForStyleRule;
+                UIToolkitProjectSettings.onEnableZIndexChanged -= OnEnableZIndexChangedForStyleRule;
                 m_StyleInspectorDefaultContent?.RemoveFromHierarchy();
                 StyleInspectorDefaultContent.Release(m_StyleInspectorDefaultContent);
                 m_StyleInspectorDefaultContent = null;
@@ -289,7 +289,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
         if (m_StyleInspectorDefaultContent.Q<ZIndexStyleIntField>() != null)
         {
             UpdateZIndexFieldVisibility(m_StyleInspectorDefaultContent);
-            UIToolkitAuthoringSettings.EnableZIndexChanged += OnEnableZIndexChangedForStyleRule;
+            UIToolkitProjectSettings.onEnableZIndexChanged += OnEnableZIndexChangedForStyleRule;
             return;
         }
 
@@ -300,7 +300,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
     {
         content.contentWasGenerated -= OnContentGeneratedForZIndex;
         UpdateZIndexFieldVisibility(content);
-        UIToolkitAuthoringSettings.EnableZIndexChanged += OnEnableZIndexChangedForStyleRule;
+        UIToolkitProjectSettings.onEnableZIndexChanged += OnEnableZIndexChangedForStyleRule;
     }
 
     void OnEnableZIndexChangedForStyleRule()
@@ -316,7 +316,7 @@ internal sealed partial class StyleRuleInspector : UIInspector
             return;
         var row = zIndexField.GetFirstAncestorOfType<OverrideRow>();
         if (row != null)
-            row.style.display = UIToolkitAuthoringSettings.EnableZIndex ? StyleKeyword.Null : DisplayStyle.None;
+            row.style.display = UIToolkitProjectSettings.enableZIndex ? StyleKeyword.Null : DisplayStyle.None;
     }
 
     void SetSelectorElementInlineStyles()

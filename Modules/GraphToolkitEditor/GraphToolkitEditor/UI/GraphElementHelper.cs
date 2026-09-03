@@ -13,7 +13,7 @@ using UnityEngine.UIElements;
 namespace Unity.GraphToolkit.Editor
 {
     [UnityRestricted]
-    internal static class GraphElementHelper
+    internal static partial class GraphElementHelper
     {
         // ** USS modifier names ** //
 
@@ -201,8 +201,8 @@ namespace Unity.GraphToolkit.Editor
             AddStylesheet(ve, stylesheetName, null);
         }
 
-        internal const string k_StyleSheetFolder = "StyleSheets/GraphToolkit/";
-        internal const string k_IconFolder = "Icons/GraphToolkit/";
+        internal const string k_StyleSheetFolder = "GraphToolkit/StyleSheets/";
+        internal const string k_IconFolder = "GraphToolkit/Icons/";
 
         internal static void AddStylesheet(this VisualElement ve, string stylesheetName, string path)
         {
@@ -218,11 +218,15 @@ namespace Unity.GraphToolkit.Editor
             if (ve == null)
                 return;
 
-            var sheetAsset = EditorGUIUtility.Load(stylesheetPath) as StyleSheet;
+            var load = EditorGUIUtility.Load(stylesheetPath);
+            var sheetAsset = load as StyleSheet;
 
             if (sheetAsset == null)
             {
-                Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Style sheet not found for path \"{0}\"", stylesheetPath));
+                if (load == null)
+                    Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, $"Style sheet not found for path {stylesheetPath}"));
+                else
+                    Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, $"Style sheet not found for path {stylesheetPath} - found object of type {load.GetType().Name}"));
                 return;
             }
 

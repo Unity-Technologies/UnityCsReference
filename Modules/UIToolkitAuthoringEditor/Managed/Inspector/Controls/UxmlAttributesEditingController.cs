@@ -16,6 +16,9 @@ namespace Unity.UIToolkit.Editor;
 /// </summary>
 class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcessor
 {
+    const string k_ToggleButtonGroupValueFieldName = "valueUXML";
+    const string k_ToggleButtonGroupStateLengthFieldName = "m_Length";
+
     List<UxmlAttributeFieldDecorator> m_RegisteredDecorators = new();
 
     UxmlAttributesEditingContext m_Context;
@@ -58,6 +61,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     public UxmlAttributesEditingController()
     {
         UICommandQueue.RegisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
+        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Hierarchy, OnHierarchyCommandExecuted);
     }
 
     /// <summary>
@@ -83,6 +87,8 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
                 // There are times when we may need to resync, such as when an undo/redo was performed.
                 context.uxmlSerializedDataDescription.SyncDefaultValues(context.uxmlSerializedData, false);
 
+                SyncToggleButtonGroupLength();
+
                 // Deserialize the element to ensure it has the latest data
                 DeserializeElement();
 
@@ -102,6 +108,35 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         }
     }
 
+    void SyncToggleButtonGroupLength()
+    {
+        if (context.element is not ToggleButtonGroup group || context.rootSerializedObject == null)
+            return;
+
+        // SyncDefaultValues writes the managed serialized data directly, so the serialized object still holds the
+        // snapshot it was created with in Init. Without this the length read below is stale and the write is discarded.
+        context.rootSerializedObject.Update();
+
+        var stateProperty = context.rootSerializedObject.FindProperty($"{context.serializedBasePath}.{k_ToggleButtonGroupValueFieldName}");
+        var lengthProperty = stateProperty?.FindPropertyRelative(k_ToggleButtonGroupStateLengthFieldName);
+        if (lengthProperty == null)
+            return;
+
+        var buttonCount = 0;
+        var container = group.contentContainer;
+        for (var i = 0; i < container.childCount; ++i)
+        {
+            if (container[i] is Button)
+                buttonCount++;
+        }
+
+        if (buttonCount == lengthProperty.intValue || buttonCount > ToggleButtonGroupState.maxLength)
+            return;
+
+        lengthProperty.intValue = buttonCount;
+        context.rootSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+    }
+
     public void Dispose()
     {
         if (m_HasPendingSync)
@@ -109,6 +144,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         liveAttributePropertyController.RemoveLiveProperties();
         attributeChangeHandler.StopTrackingChanges();
         UICommandQueue.UnregisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
+        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Hierarchy, OnHierarchyCommandExecuted);
     }
 
     // Called when a property has changed
@@ -145,6 +181,9 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         // We need to clear bindings before calling Init to avoid corrupting the data source.
         ClearUxmlBindings();
         context.uxmlSerializedData.Deserialize(context.element, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
+
+        // The deserialize above resets values driven by ancestor AttributeOverrides; restore them.
+        UxmlAssetUtilities.ReapplyAncestorSerializedDataOverrides(context.element);
     }
 
     void ClearUxmlBindings()
@@ -195,6 +234,12 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         {
             UpdateDecoratorsForBoundProperties();
         }
+
+        if (!context.isReadOnly && context.element is ToggleButtonGroup &&
+            (changes.addedOrMovedElements.Count > 0 || changes.removedFromPanel.Count > 0))
+        {
+            SyncToggleButtonGroupLength();
+        }
     }
 
     public void EndProcessing(BaseVisualElementPanel panel)
@@ -243,5 +288,18 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
                 decorator.ScheduleRefresh();
             }
         }
+    }
+
+    void OnHierarchyCommandExecuted(in CommandContext commandContext)
+    {
+        if (commandContext.Status != CommandExecutionStatus.Success)
+            return;
+
+        // Clear the context if the element asset of the context was removed from its visual tree asset
+        if (m_Context?.elementAsset == null || m_Context.visualTreeAsset == null)
+            return;
+        if (m_Context.elementAsset.visualTreeAsset == m_Context.visualTreeAsset)
+            return;
+        m_Context.Clear();
     }
 }

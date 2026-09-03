@@ -32,8 +32,8 @@ namespace Unity.GraphToolkit.Editor
         public abstract object UserData { get; }
 
         /// <summary>
-        /// The <see cref="GraphLogAction"/> for the error.
+        /// The log action for the error.
         /// </summary>
-        public abstract GraphLogAction Action { get; }
+        public abstract ILogAction Action { get; }
     }
 }

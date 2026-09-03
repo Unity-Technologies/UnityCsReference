@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -9,7 +10,7 @@ namespace UnityEditor.Search
 {
     class SearchIndexingWarningWindow : SearchElement
     {
-        public static readonly string k_IndexingInProgressLabel = L10n.Tr("Indexing is still in progress. Some results may not be available until indexing is complete.");
+        public static readonly string k_IndexingInProgressLabel = L10n.Tr("Indexing is still in progress. Some results may not be available until indexing is complete.", null);
 
         private SearchProgressBinding m_SpinnerAnimation;
         private Button m_Spinner;
@@ -61,3 +62,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -167,6 +167,7 @@ namespace UnityEditor.UIElements.Bindings
         }
 
         public int minArraySize => ArrayProperty.minArraySize;
+        public int maxArraySize => ArrayProperty.maxArraySize;
         public int arraySize
         {
             get => ArrayProperty.arraySize;
@@ -705,7 +706,8 @@ namespace UnityEditor.UIElements.Bindings
             // arraySize reports 0 once a multi-selected array passes maxArraySizeForMultiEditing, which would make
             // every size look like a huge increase. minArraySize reports the real size. (UUM-148151)
             var currentSize = m_DataList?.minArraySize ?? 0;
-            return EditorGUI.TryConfirmArraySizeChange(currentSize, entered, out var newSize)
+            var maxSize = m_DataList?.maxArraySize ?? int.MaxValue;
+            return EditorGUI.TryConfirmArraySizeChange(currentSize, entered, out var newSize, maxSize)
                 ? newSize.ToString()
                 : currentSize.ToString();
         }

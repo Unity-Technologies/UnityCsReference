@@ -645,6 +645,9 @@ namespace UnityEngine
         public extern string[] fontNames { [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)] get; [param: UnityMarshalAs(NativeType.ScriptingObjectPtr)] set; }
         ///<summary>Is the font a dynamic font.</summary>
         public extern bool dynamic { get; }
+        // The subset recipe key when this font is a subset produced by the importer; empty otherwise.
+        [VisibleToOtherModules("UnityEditor.TextCoreTextEngineModule")]
+        internal extern string subsetKey { get; }
         internal extern bool includeFontData { [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")] get; }
         ///<summary>The ascent of the font.</summary>
         ///<remarks>The ascent of the font is the distance from the baseline to the top line of the font, as defined in the font's original data file.</remarks>

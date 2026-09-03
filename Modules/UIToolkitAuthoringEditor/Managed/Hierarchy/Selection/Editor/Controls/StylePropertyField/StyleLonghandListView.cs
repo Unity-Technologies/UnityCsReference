@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -189,12 +190,21 @@ internal abstract class StyleLonghandListView<TData> : BindableElement, IPropert
     }
 
     // Replaces a backing list's contents without rebuilding rows; the caller batches several of these and calls
-    // Refresh once (see the animation subclass's bulk push).
+    // RefreshFromExternalPush once (see the animation subclass's bulk push).
     protected static void ReplaceBackingList<T>(List<T> backing, List<T> value)
     {
         backing.Clear();
         if (value != null)
             backing.AddRange(value);
+    }
+
+    // Rebuilds after values arrive from outside the control (a data-source update or a host bulk push) and
+    // clears the lock that removing the last row set, unless the incoming rows are that fallback row itself.
+    protected void RefreshFromExternalPush()
+    {
+        Refresh();
+        if (m_Data.Count != 1 || !EqualityComparer<TData>.Default.Equals(m_Data[0], MakeDefaultData()))
+            m_ListView.allowRemove = true;
     }
 
     int AllMask
@@ -466,7 +476,7 @@ internal abstract class StyleLonghandListView<TData> : BindableElement, IPropert
         backing.Clear();
         if (value != null)
             backing.AddRange(value);
-        Refresh();
+        RefreshFromExternalPush();
     }
 
     // Per-index read with CSS longhand-repetition semantics: a shorter list wraps to match the longest.
@@ -572,3 +582,4 @@ internal abstract class StyleLonghandListView<TData> : BindableElement, IPropert
         m_ListView.RefreshItems();
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

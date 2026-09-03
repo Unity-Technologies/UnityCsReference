@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,15 @@ namespace UnityEditor.UIElements.Debugger
         public string[] longhands; // For shorthands property only
 
         public bool isShorthand => longhands != null;
+    }
+
+    internal static class SpecificityLabels
+    {
+        public static readonly string UnityStyleSheet = L10n.Tr("Unity stylesheet", null);
+        public static readonly string Inherited = L10n.Tr("inherited", null);
+        public static readonly string Inline = L10n.Tr("inline", null);
+        public static readonly string Default = L10n.Tr("default", null);
+        public static readonly string Selector = L10n.Tr("selector", null);
     }
 
     internal partial class StylePropertyDebugger : VisualElement
@@ -79,7 +89,9 @@ namespace UnityEditor.UIElements.Debugger
             searchField.RegisterValueChangedCallback(e =>
             {
                 m_SearchFilter = e.newValue;
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 BuildFields();
+                #pragma warning restore UAL0015
             });
             m_Toolbar.Add(searchField);
 
@@ -263,7 +275,9 @@ namespace UnityEditor.UIElements.Debugger
             m_SpecificityLabel.AddToClassList("unity-style-field__specificity-label");
             m_SpecificityLabel.style.minWidth = 130;
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             RefreshPropertyValue(value, specificity);
+            #pragma warning restore UAL0015
 
             this.AddManipulator(new ContextualMenuManipulator((evt) =>
             {
@@ -451,6 +465,10 @@ namespace UnityEditor.UIElements.Debugger
             else if (val is Rotate)
             {
                 UpdateORCreateField<RotateField, Rotate >(val);
+            }
+            else if (val is Curvature)
+            {
+                UpdateORCreateField<CurvatureField, Curvature>(val);
             }
             else if (val is Scale scale)
             {
@@ -672,15 +690,15 @@ namespace UnityEditor.UIElements.Debugger
             switch (specificity)
             {
                 case StyleDebug.UnitySpecificity:
-                    specificityString = "unity stylesheet";
+                    specificityString = SpecificityLabels.UnityStyleSheet;
                     tooltip = "The value is coming from a Unity style sheet or a theme style sheet.";
                     break;
                 case StyleDebug.InheritedSpecificity:
-                    specificityString = "inherited";
+                    specificityString = SpecificityLabels.Inherited;
                     tooltip = "The value is inherited since there are no matching selector.";
                     break;
                 case StyleDebug.InlineSpecificity:
-                    specificityString = "inline";
+                    specificityString = SpecificityLabels.Inline;
                     tooltip = "The value has been inlined and will ignore the matching selector.";
                     break;
                 case StyleDebug.UndefinedSpecificity:
@@ -769,6 +787,10 @@ namespace UnityEditor.UIElements.Debugger
                 {
                     val = new StyleRotate(rotate);
                 }
+                else if (newValue is Curvature curvature)
+                {
+                    val = new StyleCurvature(curvature);
+                }
                 else if (val is BackgroundPosition backgroundPosition)
                 {
                     if (childIndex == 0)
@@ -853,3 +875,4 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

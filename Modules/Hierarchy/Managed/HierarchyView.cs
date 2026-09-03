@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -93,7 +94,8 @@ namespace Unity.Hierarchy
         // UX update state
         VisualElement m_StyleContainer;
         IVisualElementScheduledItem m_ScheduledItem;
-        int m_LastMouseUpSelectionIndex;
+        int m_RenameCandidateIndex;
+        bool m_SuppressNextRenameCandidate;
 
         // Tracks the in-flight animation so same-node clicks can reverse instead of restarting.
         // m_AnimatingExpanding is the target direction — needed because deferred collapse leaves
@@ -394,7 +396,7 @@ namespace Unity.Hierarchy
             m_StyleContainer.Add(m_CollectionView);
             this.Add(m_StyleContainer);
 
-            m_LastMouseUpSelectionIndex = -1;
+            m_RenameCandidateIndex = -1;
             SetRenamingItem(null);
             m_RenameDelayMs = k_RenamingDelayMs;
         }
@@ -445,7 +447,8 @@ namespace Unity.Hierarchy
 
             // Reset UX update state
             SetRenamingItem(null);
-            m_LastMouseUpSelectionIndex = -1;
+            m_RenameCandidateIndex = -1;
+            m_SuppressNextRenameCandidate = false;
             m_ScheduledItem = null;
 
             // Reset UX elements
@@ -1293,7 +1296,7 @@ namespace Unity.Hierarchy
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal void OnLostFocus()
         {
-            m_LastMouseUpSelectionIndex = -1;
+            m_SuppressNextRenameCandidate = true;
         }
 
         internal int GetIndexFromLocalPosition(Vector2 pos)
@@ -1538,13 +1541,15 @@ namespace Unity.Hierarchy
 
         internal void SetRenamingItem(HierarchyViewItem item, bool canceled = false)
         {
-            // Reset the "same row clicked twice" tracker when rename ends via a click (Blur)
-            // so the click that dismissed the TextField doesn't immediately re-schedule a new
-            // rename. When rename is canceled (Esc, context menu) the item stays selected and
-            // the next click on it should still be able to re-enter rename mode.
+            // Clear the rename candidate when rename ends via a click (Blur): the click's
+            // pointer-down snapshot captured the still-selected row before the blur fired, so
+            // without this reset the click that dismissed the TextField would immediately
+            // schedule a new rename. When rename is canceled (Esc, context menu) the item
+            // stays selected and the next click on it should still be able to re-enter
+            // rename mode.
             if (item == null && m_RenamingItem != null && !canceled)
             {
-                m_LastMouseUpSelectionIndex = -1;
+                m_RenameCandidateIndex = -1;
             }
 
             m_RenamingItem = item;
@@ -1585,7 +1590,7 @@ namespace Unity.Hierarchy
                 return;
 
             // Rename works for whole cell
-            if (itemIndex == m_LastMouseUpSelectionIndex && evt.clickCount == 1 && item.GetRenameRect().Contains(evt.position))
+            if (!HasHolddownKeyModifiers(evt) && itemIndex == m_RenameCandidateIndex && evt.clickCount == 1 && item.GetRenameRect().Contains(evt.position))
             {
                 if (m_RenameDelayMs == 0)
                 {
@@ -1614,8 +1619,6 @@ namespace Unity.Hierarchy
                         editorHandler.OnDoubleClick(this, in node);
                 }
             }
-
-            m_LastMouseUpSelectionIndex = itemIndex;
         }
 
         void OnKeyDown(KeyDownEvent evt)
@@ -1767,6 +1770,11 @@ namespace Unity.Hierarchy
             // Cancel any pending rename on pointer down, before selection changes
             CancelScheduledRename();
 
+            m_RenameCandidateIndex = !m_SuppressNextRenameCandidate && m_Selection.indexCount == 1
+                ? m_Selection.minIndex
+                : -1;
+            m_SuppressNextRenameCandidate = false;
+
             var target = evt.target as VisualElement;
             if (target != m_CollectionView.scrollView.contentContainer)
                 return;
@@ -1774,7 +1782,6 @@ namespace Unity.Hierarchy
             m_HierarchyViewModel.ClearFlags(HierarchyNodeFlags.Selected);
             Update();
 
-            m_LastMouseUpSelectionIndex = -1;
             evt.StopImmediatePropagation();
         }
 
@@ -1788,6 +1795,11 @@ namespace Unity.Hierarchy
             return button == MouseButton.LeftMouse
                    && modifiers == EventModifiers.Control
                    && (platform == RuntimePlatform.OSXEditor || platform == RuntimePlatform.OSXPlayer);
+        }
+
+        static bool HasHolddownKeyModifiers(IPointerEvent evt)
+        {
+            return evt.shiftKey || evt.ctrlKey || evt.altKey || evt.commandKey;
         }
 
         void OnBindItem(HierarchyViewItem item)
@@ -2287,3 +2299,4 @@ namespace Unity.Hierarchy
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

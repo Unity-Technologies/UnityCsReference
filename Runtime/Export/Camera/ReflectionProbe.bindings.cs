@@ -36,6 +36,9 @@ namespace UnityEngine
         [NativeName("IntensityMultiplier")]
         public extern float intensity { get; set; }
 
+        [NativeName("ExposureValue")]
+        public extern float exposureValue { get; set; }
+
         [NativeName("GlobalAABB")]
         public extern Bounds bounds { get; }
 

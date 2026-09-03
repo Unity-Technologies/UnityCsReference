@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using Unity.Properties;
 using Unity.UIToolkit.Editor.Utilities;
@@ -38,6 +39,7 @@ internal sealed partial class VisualElementInspector : UIInspector
     private readonly VisualElement m_AssetNotEditableHelpBox;
     private readonly VisualElementBindingsInspectorElement m_BindingsInspector;
     private readonly VisualElementAttributesInspectorElement m_AttributesInspector;
+    private readonly VisualElementComponentsInspectorElement m_ComponentsInspector;
     private readonly ClassListElement m_ClassListElement;
     private readonly MatchingSelectorsElement m_MatchingSelectorsElement;
     private readonly StyleInspectorElement m_StyleInspector;
@@ -48,17 +50,15 @@ internal sealed partial class VisualElementInspector : UIInspector
     internal VisualElementAttributesInspectorElement AttributesInspector => m_AttributesInspector;
 
     bool m_IsRecording;
+    bool m_IsElementRecordable;
 
-    bool IsRecording
+    void SetRecordingState(bool isRecording, bool isElementRecordable)
     {
-        get => m_IsRecording;
-        set
-        {
-            if (m_IsRecording == value)
-                return;
-            m_IsRecording = value;
-            UpdateControlsState();
-        }
+        if (m_IsRecording == isRecording && m_IsElementRecordable == isElementRecordable)
+            return;
+        m_IsRecording = isRecording;
+        m_IsElementRecordable = isElementRecordable;
+        UpdateControlsState();
     }
 
     [CreateProperty]
@@ -77,6 +77,7 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_MatchingSelectorsElement.Target = null;
                 m_StyleInspector.Target = new StyleInspectorTarget(null);
                 m_AttributesInspector.Target = null;
+                m_ComponentsInspector.Target = null;
                 m_VariablesSection?.Refresh(null);
             }
             else
@@ -85,6 +86,9 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_MatchingSelectorsElement.Target = m_Element;
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element);
                 m_AttributesInspector.Target = m_Element;
+                var showComponentsInspector = UIToolkitProjectSettings.enableUIComponents;
+                m_ComponentsInspector.style.display = showComponentsInspector ? DisplayStyle.Flex : DisplayStyle.None;
+                m_ComponentsInspector.Target = showComponentsInspector ? m_Element : null;
                 m_VariablesSection?.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule,
                     m_Element.visualTreeAssetSource);
             }
@@ -123,6 +127,10 @@ internal sealed partial class VisualElementInspector : UIInspector
         // Attributes
         m_AttributesInspector = this.Q<VisualElementAttributesInspectorElement>();
 
+        // Components
+        m_ComponentsInspector = this.Q<VisualElementComponentsInspectorElement>();
+        m_ComponentsInspector.style.display = UIToolkitProjectSettings.enableUIComponents ? DisplayStyle.Flex : DisplayStyle.None;
+
         // Bindings
         m_BindingsInspector = this.Q<VisualElementBindingsInspectorElement>();
 
@@ -160,6 +168,7 @@ internal sealed partial class VisualElementInspector : UIInspector
             case VisualElementEditFlags.None:
                 m_AttributesInspector.IsReadOnly = true;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
+                m_ComponentsInspector.IsReadOnly = true;
                 m_ClassListElement.IsReadOnly = true;
                 m_StyleInspector.IsReadOnly = true;
                 if (m_VariablesSection != null)
@@ -169,6 +178,7 @@ internal sealed partial class VisualElementInspector : UIInspector
             case VisualElementEditFlags.Attributes:
                 m_AttributesInspector.IsReadOnly = false;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
+                m_ComponentsInspector.IsReadOnly = false;
                 m_ClassListElement.IsReadOnly = true;
                 m_StyleInspector.IsReadOnly = true;
                 if (m_VariablesSection != null)
@@ -178,6 +188,7 @@ internal sealed partial class VisualElementInspector : UIInspector
             case VisualElementEditFlags.Styles:
                 m_AttributesInspector.IsReadOnly = true;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, true);
+                m_ComponentsInspector.IsReadOnly = true;
                 m_ClassListElement.IsReadOnly = false;
                 m_StyleInspector.IsReadOnly = false;
                 if (m_VariablesSection != null)
@@ -187,6 +198,7 @@ internal sealed partial class VisualElementInspector : UIInspector
             case VisualElementEditFlags.FullyEditable:
                 m_AttributesInspector.IsReadOnly = false;
                 m_AttributesInspector.EnableInClassList(ReadonlyAttributesInspectorClass, false);
+                m_ComponentsInspector.IsReadOnly = false;
                 m_ClassListElement.IsReadOnly = false;
                 m_StyleInspector.IsReadOnly = false;
                 if (m_VariablesSection != null)
@@ -220,7 +232,10 @@ internal sealed partial class VisualElementInspector : UIInspector
         if (m_RecordingBanner != null && m_Element != null)
         {
             var message = m_IsRecording ? VisualElementRecordability.ProbeElement(m_Element).GetBlockedMessage() : null;
-            if (message != null && m_EditFlags != VisualElementEditFlags.Styles && m_EditFlags != VisualElementEditFlags.FullyEditable)
+            // The recording context, not the edit flags, decides whether recording actually works here:
+            // in staging an element of the edited document stays FullyEditable while recording, and the
+            // context can still reach a per-element binder the panel-wide probe cannot.
+            if (message != null && !m_IsElementRecordable)
             {
                 m_RecordingBanner.text = message;
                 m_RecordingBanner.style.display = DisplayStyle.Flex;
@@ -247,7 +262,7 @@ internal sealed partial class VisualElementInspector : UIInspector
     /// </summary>
     internal override void RefreshRecordingState(StyleInspectorAnimationRecordingContext controller)
     {
-        IsRecording = controller != null;
+        SetRecordingState(controller != null, controller is { HasRecordableProperties: true });
         m_StyleInspector.SetAnimationController(controller);
         m_StyleInspector.Refresh();
     }
@@ -277,7 +292,7 @@ internal sealed partial class VisualElementInspector : UIInspector
                     m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGeneratedForAnimation;
                     m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGeneratedForZIndex;
                 }
-                UIToolkitAuthoringSettings.EnableZIndexChanged -= OnEnableZIndexChanged;
+                UIToolkitProjectSettings.onEnableZIndexChanged -= OnEnableZIndexChanged;
                 UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
                 m_StyleInspectorDefaultContent?.RemoveFromHierarchy();
                 StyleInspectorDefaultContent.Release(m_StyleInspectorDefaultContent);
@@ -373,7 +388,7 @@ internal sealed partial class VisualElementInspector : UIInspector
         if (m_StyleInspectorDefaultContent.Q<ZIndexStyleIntField>() != null)
         {
             UpdateZIndexFieldVisibility(m_StyleInspectorDefaultContent);
-            UIToolkitAuthoringSettings.EnableZIndexChanged += OnEnableZIndexChanged;
+            UIToolkitProjectSettings.onEnableZIndexChanged += OnEnableZIndexChanged;
             return;
         }
 
@@ -384,7 +399,7 @@ internal sealed partial class VisualElementInspector : UIInspector
     {
         content.contentWasGenerated -= OnDefaultContentGeneratedForZIndex;
         UpdateZIndexFieldVisibility(content);
-        UIToolkitAuthoringSettings.EnableZIndexChanged += OnEnableZIndexChanged;
+        UIToolkitProjectSettings.onEnableZIndexChanged += OnEnableZIndexChanged;
     }
 
     void OnEnableZIndexChanged()
@@ -398,7 +413,7 @@ internal sealed partial class VisualElementInspector : UIInspector
         var zIndexField = content.Q<ZIndexStyleIntField>();
         var row = zIndexField?.GetFirstAncestorOfType<OverrideRow>();
         if (row != null)
-            row.style.display = UIToolkitAuthoringSettings.EnableZIndex ? StyleKeyword.Null : DisplayStyle.None;
+            row.style.display = UIToolkitProjectSettings.enableZIndex ? StyleKeyword.Null : DisplayStyle.None;
     }
 
     StyleRule GetInlineStyleRule()
@@ -431,6 +446,8 @@ internal sealed partial class VisualElementInspector : UIInspector
     {
         base.Dispose();
         m_AttributesInspector.AttributesView.Context.Dispose();
+        m_ComponentsInspector.Target = null; // disposes each per-component editing context
         m_MatchingSelectorsElement.Target = null;
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTemplate not yet converted
 //#define ENABLE_SCENE_PREVIEW_OVERLAY
 using System;
 using System.Collections.Generic;
@@ -20,21 +21,21 @@ namespace UnityEditor.Search
         internal static void OpenScenePicker()
         {
             var searchContext = SearchService.CreateContext(CreateOpenSceneProviders(), string.Empty);
-            var state = SearchViewState.CreatePickerState(L10n.Tr("Scenes"), searchContext, OnSceneSelected);
+            var state = SearchViewState.CreatePickerState(L10n.Tr("Scenes", null), searchContext, OnSceneSelected);
             state.excludeClearItem = true;
             SearchService.ShowPicker(state);
         }
 
         internal static IEnumerable<SearchProvider> CreateOpenSceneProviders()
         {
-            yield return new SearchProvider("stemplates", L10n.Tr("Templates"), FetchTemplates)
+            yield return new SearchProvider("stemplates", L10n.Tr("Templates", null), FetchTemplates)
             {
                 priority = 2998,
                 fetchPreview = FetchTemplatePreview,
                 fetchThumbnail = FetchTemplateThumbnail
             };
 
-            yield return new SearchProvider("sassets", L10n.Tr("Scenes"), FetchScenes)
+            yield return new SearchProvider("sassets", L10n.Tr("Scenes", null), FetchScenes)
             {
                 priority = 2999,
                 fetchLabel = FetchSceneLabel,
@@ -192,7 +193,7 @@ namespace UnityEditor.Search
             {
                 name = "ScenePreviewScreenshot";
                 icon = EditorGUIUtility.LoadIcon("CameraPreview");
-                tooltip = L10n.Tr("Take scene preview screenshot");
+                tooltip = L10n.Tr("Take scene preview screenshot", null);
             }
 
             static string GetScenePreviewImagePath()
@@ -233,3 +234,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

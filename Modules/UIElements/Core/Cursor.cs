@@ -44,7 +44,7 @@ namespace UnityEngine.UIElements
         }
 
         // Used to support default cursor in the editor (map to MouseCursor enum)
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal int defaultCursorId { get => m_DefaultCursorId; set => m_DefaultCursorId = value; }
 
         // Direct EntityId access to the cursor texture for the animation binder, which moves

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Unity.Properties;
@@ -382,6 +381,49 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
+            public bool TryGetValue(CustomStyleProperty<Length> property, out Length value)
+            {
+                if (property.nameId >= 0 && m_CustomProperties.TryGetValue(new UniqueStyleString(property.nameId), out var customProp))
+                {
+                    var handle = customProp.handle;
+                    // A dimension keeps its unit (12px / 50%); a plain number resolves as pixels.
+                    if (handle.valueType == StyleValueType.Dimension && customProp.sheet.TryReadDimension(handle, out var dimension))
+                    {
+                        value = dimension.ToLength();
+                        return true;
+                    }
+                    if (handle.valueType == StyleValueType.Float && customProp.sheet.TryReadFloat(handle, out var number))
+                    {
+                        value = new Length(number);
+                        return true;
+                    }
+                    LogCustomPropertyWarning(property.name, StyleValueType.Dimension, customProp);
+                }
+
+                value = new Length();
+                return false;
+            }
+
+            public bool TryGetValue<TEnum>(CustomStyleProperty<StyleEnum<TEnum>> property, out StyleEnum<TEnum> value)
+                where TEnum : struct, System.Enum
+            {
+                if (property.nameId >= 0 && m_CustomProperties.TryGetValue(new UniqueStyleString(property.nameId), out var customProp))
+                {
+                    var handle = customProp.handle;
+                    // An enum is stored as an identifier token (e.g. row-dense); TryReadEnum does the
+                    // dash-to-member conversion (row-dense -> RowDense) and the parse.
+                    if (handle.valueType == StyleValueType.Enum && customProp.sheet.TryReadEnum<TEnum>(handle, out var enumValue))
+                    {
+                        value = new StyleEnum<TEnum>(enumValue);
+                        return true;
+                    }
+                    LogCustomPropertyWarning(property.name, StyleValueType.Enum, customProp);
+                }
+
+                value = default;
+                return false;
+            }
+
             public bool TryGetValue(CustomStyleProperty<Texture2D> property, out Texture2D value)
             {
                 if (property.nameId >= 0 && m_CustomProperties.TryGetValue(new UniqueStyleString(property.nameId), out var customProp))
@@ -490,6 +532,10 @@ namespace UnityEngine.UIElements
             customStyleAccess.TryGetValue(property, out value);
         bool ICustomStyle.TryGetValue(CustomStyleProperty<Color> property, out Color value) =>
             customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue(CustomStyleProperty<Length> property, out Length value) =>
+            customStyleAccess.TryGetValue(property, out value);
+        bool ICustomStyle.TryGetValue<TEnum>(CustomStyleProperty<StyleEnum<TEnum>> property, out StyleEnum<TEnum> value) =>
+            customStyleAccess.TryGetValue(property, out value);
         bool ICustomStyle.TryGetValue(CustomStyleProperty<Texture2D> property, out Texture2D value) =>
             customStyleAccess.TryGetValue(property, out value);
         bool ICustomStyle.TryGetValue(CustomStyleProperty<Sprite> property, out Sprite value) =>
@@ -502,4 +548,3 @@ namespace UnityEngine.UIElements
             customStyleAccess.TryGetValue(property, out value);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

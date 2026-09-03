@@ -32,7 +32,7 @@ namespace UnityEditor.AssetPackage
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogError(L10n.Tr($"Package signature failed: {ex.Message}"));
+                        Debug.LogError(L10n.Tr($"Package signature failed: {ex.Message}", null));
                     }
                 }).Wait();
             }

@@ -966,7 +966,7 @@ namespace UnityEditor.Search
 
         static void DrawSearchServiceSettings()
         {
-            EditorGUILayout.LabelField(L10n.Tr("Search Engines"), EditorStyles.largeLabel);
+            EditorGUILayout.LabelField(L10n.Tr("Search Engines", null), EditorStyles.largeLabel);
             var orderedApis = GetOrderedApis();
             foreach (var api in orderedApis)
             {
@@ -1266,7 +1266,7 @@ namespace UnityEditor.Search
                         }
                     }
 
-                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
+                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)", null), EditorStyles.largeLabel);
                     ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.Height(200));
 
                     if (Unsupported.IsSourceBuild(checkHumanControllingUs: false))
@@ -1327,7 +1327,7 @@ namespace UnityEditor.Search
 
         private static void DrawProviderSettings()
         {
-            EditorGUILayout.LabelField(L10n.Tr("Provider Settings"), EditorStyles.largeLabel);
+            EditorGUILayout.LabelField(L10n.Tr("Provider Settings", null), EditorStyles.largeLabel);
             foreach (var p in SearchService.OrderedProviders)
             {
                 GUILayout.BeginHorizontal();

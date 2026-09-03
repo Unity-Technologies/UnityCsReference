@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -22,6 +23,7 @@ namespace UnityEditor.UIElements.Debugger
         private StylePropertyDebugger m_StylePropertyDebugger;
         private IMGUIContainer m_MatchingRulesContainer;
         private AttributesSection m_attributeSection;
+        private ComponentsDebugger m_componentsDebugger;
 
         private IPanelDebug m_PanelDebug;
         private VisualElement selectedElement
@@ -63,12 +65,14 @@ namespace UnityEditor.UIElements.Debugger
         {
             m_DebuggerSelection = debuggerSelection;
             m_DebuggerSelection.onPanelDebugChanged += pdbg => m_PanelDebug = pdbg;
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_DebuggerSelection.onSelectedElementChanged += element => selectedElement = element;
+            #pragma warning restore UAL0015
 
             m_PanelDebug = m_DebuggerSelection.panelDebug;
             selectedElement = m_DebuggerSelection.element;
 
-            Foldout layoutInfo = new() { text = L10n.Tr("Layout"), viewDataKey = "layoutInfo"};
+            Foldout layoutInfo = new() { text = L10n.Tr("Layout", null), viewDataKey = "layoutInfo"};
             layoutInfo.contentContainer.style.flexDirection = FlexDirection.Row;
             layoutInfo.contentContainer.style.flexWrap = Wrap.Wrap;
             layoutInfo.contentContainer.style.alignItems = Align.Center;
@@ -81,18 +85,21 @@ namespace UnityEditor.UIElements.Debugger
             Add(layoutInfo);
 
 
-            Foldout stylesheets = new() { text = L10n.Tr("Stylesheets"), viewDataKey = "StylesheetsFoldout", value = false };
+            Foldout stylesheets = new() { text = L10n.Tr("Stylesheets", null), viewDataKey = "StylesheetsFoldout", value = false };
             stylesheets.Add(new IMGUIContainer(DrawStylesheet));
             Add(stylesheets);
 
-            Foldout matchingRules = new() { text = L10n.Tr( "Matching Selectors"), viewDataKey = "MatchingRulesFoldout" , value = false};
+            Foldout matchingRules = new() { text = L10n.Tr( "Matching Selectors", null), viewDataKey = "MatchingRulesFoldout" , value = false};
             matchingRules.Add(m_MatchingRulesContainer = new IMGUIContainer(DrawMatchingRules));
             Add(matchingRules);
 
 
             Add(m_attributeSection = new AttributesSection(debuggerSelection));
 
-            Foldout StylesInfo = new() { text = L10n.Tr("Styles"), viewDataKey = "StylesInfo" };
+            // The element's components sit between its attributes and its styles.
+            Add(m_componentsDebugger = new ComponentsDebugger(debuggerSelection));
+
+            Foldout StylesInfo = new() { text = L10n.Tr("Styles", null), viewDataKey = "StylesInfo" };
             m_StylePropertyDebugger = new StylePropertyDebugger(selectedElement);
             StylesInfo.Add(m_StylePropertyDebugger);
             Add(StylesInfo);
@@ -108,7 +115,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             m_StylePropertyDebugger.Refresh();
             m_attributeSection.RefreshIfNeeded();
-
+            m_componentsDebugger.RefreshValuesIfNeeded();
         }
 
         public void RefreshBoxModelView(MeshGenerationContext mgc)
@@ -144,7 +151,7 @@ namespace UnityEditor.UIElements.Debugger
                 Add(m_WorldBound = new TextField("World Bound") { isReadOnly = true });
                 Add(m_WorldClip = new TextField("World Clip") { isReadOnly = true });
                 Add(m_ContentRect = new TextField("Content Rect") { isReadOnly = true });
-                Add(m_PickingBoundingBox = new TextField(L10n.Tr("Picking Bounding Box")) { isReadOnly = true });
+                Add(m_PickingBoundingBox = new TextField(L10n.Tr("Picking Bounding Box", null)) { isReadOnly = true });
                 Add(m_Layout = new TextField("Layout") { isReadOnly = true });
                 Add(m_ZIndex = new TextField("Z-Index") { isReadOnly = true });
             }
@@ -179,47 +186,36 @@ namespace UnityEditor.UIElements.Debugger
         {
             private const string k_NewClassName = "newStyle";
 
-            readonly TextField m_name;
+            // The element's [UxmlAttribute] set, rendered generically (name, tooltip, picking-mode, …) and
+            // rebuilt per selection since the attribute set depends on the element type.
+            readonly VisualElement m_ElementAttributes;
             readonly IntegerField m_IdField;
             readonly ObjectField m_VisualTreeAsset;
-            readonly TextField m_tooltip;
-            readonly TextAttributesSection m_text;
-            readonly TextField m_viewDataKey;
             readonly TextField m_dataSource;
-            readonly EnumField m_pickingMode;
             readonly EnumFlagsField m_pseudoStyles;
             readonly Toggle m_enabled;
             const string k_enabledLabelName = "EnabledInHierarchy";
-            readonly TextField m_foccusable;
-            readonly EnumFlagsField m_usageHints;
-            readonly IntegerField m_tabIndex;
-            readonly TextField m_bindingPath;
             private ListView m_ClassList;
             private readonly List<string> m_ClassesCopy = new();
+
+            // Attributes the section renders specially elsewhere (class list, the styles section, the
+            // data-source display), so the generic element view skips them to avoid duplicates.
+            readonly HashSet<string> m_ExcludedElementAttributes = new(new[]
+                { "class", "style", "data-source", "data-source-path", "data-source-type" });
 
             public AttributesSection(DebuggerSelection debuggerSelection):base("Attributes", debuggerSelection, false)
             {
                 value = true; //This foldout is expanded by default
 
-                Add(m_name = new TextField("Name"));
-                m_name.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.name = v.newValue; } });
+                // The [UxmlAttribute] fields (name, tooltip, picking-mode, tab-index, …) render here, rebuilt
+                // per selection in Refresh. The fields below are element state that is not a UxmlAttribute.
+                Add(m_ElementAttributes = new VisualElement());
 
                 Add(m_IdField = new IntegerField("Authoring Id") { isReadOnly = true });
 
                 Add(m_VisualTreeAsset = new("Visual Tree Asset") { enabledSelf = false });
 
-                Add(m_tooltip = new TextField("Tooltip"));
-                m_tooltip.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.tooltip = v.newValue; } });
-
-                Add(m_text = new TextAttributesSection(debuggerSelection));
-
-                Add(m_viewDataKey = new TextField("ViewDataKey"));
-                m_viewDataKey.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.viewDataKey = v.newValue; } });
-
                 Add(m_dataSource = new TextField("Data Source") { isReadOnly = true });
-
-                Add(m_pickingMode = new EnumField("Picking Mode", PickingMode.Ignore));
-                m_pickingMode.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.pickingMode = (PickingMode)v.newValue; } });
 
                 Add(m_pseudoStyles = new EnumFlagsField("Pseudo States", PseudoStates.None) { tooltip = "This pseudo style only represent the visual state of the element." });
                 m_pseudoStyles.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.pseudoStates = (PseudoStates)v.newValue; } });
@@ -227,16 +223,6 @@ namespace UnityEditor.UIElements.Debugger
                 Add(m_enabled = new("Enabled"));
                 m_enabled.Add(new Label() { name = k_enabledLabelName });
                 m_enabled.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.SetEnabled(v.newValue); } });
-
-                Add(m_foccusable = new TextField("Focusable") { isReadOnly = true });
-
-                Add(m_tabIndex = new IntegerField("Tab Index"));
-                m_tabIndex.RegisterCallback<ChangeEvent<int>>((v) => { if (m_SelectedElement != null) { m_SelectedElement.tabIndex = v.newValue; } });
-
-                Add(m_usageHints = new EnumFlagsField("Usage Hints", UsageHints.None));
-                m_usageHints.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.usageHints = (UsageHints)v.newValue; } });
-
-                Add(m_bindingPath = new TextField("Binding Path") { isReadOnly = true });
 
                 Add(m_ClassList = new ListView() {
                     showFoldoutHeader = true,
@@ -302,7 +288,7 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_SelectedElement == null)
                     return;
 
-                m_name.text = selectedElement.name;
+                RebuildElementAttributes();
 
                 if (selectedElement.visualElementAsset?.hasAuthoringId == true)
                     m_IdField.value = selectedElement.visualElementAsset.id;
@@ -310,30 +296,44 @@ namespace UnityEditor.UIElements.Debugger
                     m_IdField.value = 0;
 
                 m_VisualTreeAsset.value = selectedElement.visualTreeAssetSource;
-                m_tooltip.text = selectedElement.tooltip;
-                m_text.RefreshIfNeeded();
-
-                m_viewDataKey.text = m_SelectedElement.viewDataKey;
 
                 m_dataSource.text = null == m_SelectedElement.dataSource ? "<none>" : TypeUtility.GetTypeDisplayName(m_SelectedElement.dataSource.GetType()) + " : " + m_SelectedElement.dataSourcePath.ToString();
-                m_pickingMode.value = m_SelectedElement.pickingMode;
                 m_pseudoStyles.value = m_SelectedElement.pseudoStates;
                 m_enabled.value = m_SelectedElement.enabledSelf;
-                m_enabled.Q<Label>(k_enabledLabelName).text = m_SelectedElement.enabledInHierarchy ? L10n.Tr("Enabled in hierarchy") : L10n.Tr("Disabled in hierarchy");
-                m_foccusable.text = m_SelectedElement.focusable.ToString();
-                m_usageHints.value = m_SelectedElement.usageHints;
-                m_tabIndex.value = m_SelectedElement.tabIndex;
-
-                if (m_SelectedElement is IBindable bindableElement)
-                {
-                    m_bindingPath.text = bindableElement.bindingPath;
-                    m_bindingPath.style.display = DisplayStyle.Flex;
-                }
-                else
-                    m_bindingPath.style.display = DisplayStyle.None;
+                m_enabled.Q<Label>(k_enabledLabelName).text = m_SelectedElement.enabledInHierarchy ? L10n.Tr("Enabled in hierarchy", null) : L10n.Tr("Disabled in hierarchy", null);
 
                 SyncClassList();
                 m_ClassList.RefreshItems();
+            }
+
+            // Rebuilds the generic [UxmlAttribute] editor for the selected element. Rebuilt rather than
+            // value-updated because the attribute set depends on the element type, which changes per selection.
+            void RebuildElementAttributes()
+            {
+                m_ElementAttributes.Clear();
+                var description = GetDescriptionForType(m_SelectedElement.GetType());
+                if (description == null)
+                    return;
+
+                m_ElementAttributes.Add(new UxmlAttributesDebugView(
+                    description,
+                    () => m_SelectedElement,
+                    (attribute, value) => attribute.SetValueToObject(m_SelectedElement, value),
+                    readOnly: false,
+                    excludedAttributeNames: m_ExcludedElementAttributes));
+            }
+
+            // The exact type may not be UXML-registered (a code-only custom element); fall back to the nearest
+            // registered base so its inherited attributes (name, tooltip, …) still show.
+            static UxmlSerializedDataDescription GetDescriptionForType(System.Type type)
+            {
+                for (var t = type; t != null; t = t.BaseType)
+                {
+                    var description = UxmlSerializedDataRegistry.GetDescription(t.FullName);
+                    if (description != null)
+                        return description;
+                }
+                return null;
             }
 
             private void SyncClassList()
@@ -368,89 +368,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private class TextAttributesSection : DebuggerFoldout
-        {
-            readonly TextField m_text;
-            readonly Toggle m_EnableRichText;
-            readonly Toggle m_EmojiFallbackSupport;
-            readonly Toggle m_ParseEscapeSequences;
-            readonly Toggle m_IsSelectable;
-            readonly Toggle m_DoubleClickSelectsWord;
-            readonly Toggle m_TripleClickSelectsLine;
-            readonly Toggle m_DisplayTooltipWhenElided;
-            readonly EnumField m_LanguageDirection;
-
-            private TextElement textElement => m_SelectedElement as TextElement;
-
-
-            public TextAttributesSection(DebuggerSelection debuggerSelection) : base("Text", debuggerSelection, false)
-            {
-                toggle.visualInput.style.minWidth = 135;
-                toggle.visualInput.style.flexGrow = 0;
-                toggle.style.flexGrow = 0;
-                toggle.Add(m_text = new TextField() { style = { flexGrow = 1 } });
-                m_text.textInputBase.textElement.style.marginLeft = 0; // We are probably triggering a selector of the toggle as nobody planned to nest textFields in toggle
-
-                m_text.RegisterValueChangedCallback((v) => { if (textElement != null) { textElement.text = v.newValue; } });
-
-                Add(m_EnableRichText = new("EnableRichText"));
-                m_EnableRichText.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { textElement.enableRichText = v.newValue; } });
-
-                Add(m_EmojiFallbackSupport = new("Emoji Fallback Support"));
-                m_EmojiFallbackSupport.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { textElement.emojiFallbackSupport = v.newValue; } });
-
-                Add(m_ParseEscapeSequences = new("Parse EscapeSequences"));
-                m_ParseEscapeSequences.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { textElement.parseEscapeSequences = v.newValue; } });
-
-                Add(m_IsSelectable = new("Is Selectable"));
-                m_IsSelectable.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { textElement.isSelectable = v.newValue; } });
-
-                Add(m_DoubleClickSelectsWord = new("Double Click Selects Word"));
-                m_DoubleClickSelectsWord.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { textElement.doubleClickSelectsWord = v.newValue; } });
-
-                Add(m_TripleClickSelectsLine = new("Triple Click Selects Line"));
-                m_TripleClickSelectsLine.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { textElement.tripleClickSelectsLine = v.newValue; } });
-
-                Add(m_DisplayTooltipWhenElided = new("Display Tooltip When Elided"));
-                m_DisplayTooltipWhenElided.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) {textElement.displayTooltipWhenElided = v.newValue; } });
-
-                Add(m_LanguageDirection = new("Language Direction", LanguageDirection.LTR));
-                m_LanguageDirection.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.languageDirection = (LanguageDirection)v.newValue; } });
-
-                foreach (VisualElement child in contentContainer.Children())
-                {
-                    var field = child as IPrefixLabel;
-                    field.labelElement.style.minWidth = 180;
-                }
-            }
-
-            protected override void Refresh()
-            {
-                //m_text is always updated in UpdateVisiblity
-                m_EnableRichText.value = textElement.enableRichText;
-                m_EmojiFallbackSupport.value = textElement.emojiFallbackSupport;
-                m_ParseEscapeSequences.value = textElement.parseEscapeSequences;
-                m_IsSelectable.value = textElement.isSelectable;
-                m_DoubleClickSelectsWord.value = textElement.doubleClickSelectsWord;
-                m_TripleClickSelectsLine.value = textElement.tripleClickSelectsLine;
-                m_DisplayTooltipWhenElided.value = textElement.displayTooltipWhenElided;
-                m_LanguageDirection.value = m_SelectedElement.languageDirection;
-            }
-
-            protected override void UpdateVisiblity()
-            {
-                if (textElement != null)
-                {
-                    style.display = DisplayStyle.Flex;
-                    m_text.text = textElement.text; // Always update the text here as it is shown when collapsed.
-                }
-                else
-                    style.display = DisplayStyle.None;
-
-            }
-        }
-
-        static readonly string k_noAssetText = L10n.Tr("No source available for already imported asset");
+        static readonly string k_noAssetText = L10n.Tr("No source available for already imported asset", null);
 
         private void DrawStylesheet()
         {
@@ -576,3 +494,4 @@ namespace UnityEditor.UIElements.Debugger
 
 
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

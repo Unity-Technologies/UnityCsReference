@@ -188,7 +188,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 },
                 error =>
                 {
-                    var msg = string.Format(L10n.Tr("[Package Manager Window] Error while getting product update details: {0}"), error.message);
+                    var msg = string.Format(L10n.Tr("[Package Manager Window] Error while getting product update details: {0}", null), error.message);
                     Debug.Log(msg);
                     onUpdateChecked?.Invoke(productIds);
                     doneCallback?.Invoke();

@@ -24,14 +24,14 @@ internal class ReDownloadAction : DownloadActionBase
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
         if (isInProgress)
-            return L10n.Tr("The re-download request has been sent. Please wait for the re-download to start.");
-        return string.Format(L10n.Tr("Click to re-download this {0} to get the current editor's version."), version.GetDescriptor());
+            return L10n.Tr("The re-download request has been sent. Please wait for the re-download to start.", null);
+        return string.Format(L10n.Tr("Click to re-download this {0} to get the current editor's version.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
         var importAvailableVersionString = version.package.versions.importAvailable?.versionString;
-        return !string.IsNullOrEmpty(importAvailableVersionString) ? string.Format(L10n.Tr("Re-download {0}"), importAvailableVersionString) : L10n.Tr("Re-download");
+        return !string.IsNullOrEmpty(importAvailableVersionString) ? string.Format(L10n.Tr("Re-download {0}", null), importAvailableVersionString) : L10n.Tr("Re-download", null);
     }
 
     public override bool IsInProgress(IPackageVersion version)

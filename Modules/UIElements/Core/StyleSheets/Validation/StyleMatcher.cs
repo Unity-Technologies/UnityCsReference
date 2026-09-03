@@ -475,7 +475,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public MatchResult Match(Expression exp, string propertyValue)
         {
             var result = new MatchResult() {errorCode = MatchResultErrorCode.None};
-            if (string.IsNullOrEmpty(propertyValue))
+            if (string.IsNullOrWhiteSpace(propertyValue))
             {
                 result.errorCode = MatchResultErrorCode.EmptyValue;
                 return result;

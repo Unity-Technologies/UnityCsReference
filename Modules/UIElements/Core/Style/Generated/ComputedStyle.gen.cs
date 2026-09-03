@@ -72,7 +72,7 @@ namespace UnityEngine.UIElements
         public float flexGrow => layoutData.Read().flexGrow;
         public float flexShrink => layoutData.Read().flexShrink;
         public Wrap flexWrap => layoutData.Read().flexWrap;
-        public Length fontSize => inheritedData.Read().fontSize;
+        public float fontSize => inheritedData.Read().fontSize;
         public ReadOnlySpan<GridTrackSize> gridAutoColumns => gridData.Read().gridAutoColumns;
         public GridAutoFlow gridAutoFlow => gridData.Read().gridAutoFlow;
         public ReadOnlySpan<GridTrackSize> gridAutoRows => gridData.Read().gridAutoRows;
@@ -117,6 +117,7 @@ namespace UnityEngine.UIElements
         public ReadOnlySpan<EasingFunction> transitionTimingFunction => transitionData.Read().transitionTimingFunction;
         public Translate translate => transformData.Read().translate;
         public Color unityBackgroundImageTintColor => rareData.Read().unityBackgroundImageTintColor;
+        public Curvature unityCurvature => rareData.Read().unityCurvature;
         public EditorTextRenderingMode unityEditorTextRenderingMode => inheritedData.Read().unityEditorTextRenderingMode;
         public EntityId unityFont => inheritedData.Read().unityFont;
         public EntityId unityFontDefinition => inheritedData.Read().unityFontDefinition;
@@ -385,7 +386,7 @@ namespace UnityEngine.UIElements
                         layoutData.Write().flexWrap = (Wrap)reader.ReadEnum(StyleEnumType.Wrap, 0);
                         break;
                     case StylePropertyId.FontSize:
-                        inheritedData.Write().fontSize = reader.ReadLength(0);
+                        inheritedData.Write().fontSize = ComputedStyleUtility.ResolveFontSize(reader.ReadLength(0), ref parentStyle);
                         break;
                     case StylePropertyId.Gap:
                         ShorthandApplicator.ApplyGap(reader, ref this);
@@ -542,6 +543,9 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.UnityBackgroundScaleMode:
                         ShorthandApplicator.ApplyUnityBackgroundScaleMode(reader, ref this);
+                        break;
+                    case StylePropertyId.UnityCurvature:
+                        rareData.Write().unityCurvature = reader.ReadCurvature(0);
                         break;
                     case StylePropertyId.UnityEditorTextRenderingMode:
                         inheritedData.Write().unityEditorTextRenderingMode = (EditorTextRenderingMode)reader.ReadEnum(StyleEnumType.EditorTextRenderingMode, 0);
@@ -732,7 +736,7 @@ namespace UnityEngine.UIElements
                     layoutData.Write().flexWrap = (Wrap)sv.number;
                     break;
                 case StylePropertyId.FontSize:
-                    inheritedData.Write().fontSize = sv.length;
+                    inheritedData.Write().fontSize = ComputedStyleUtility.ResolveFontSize(sv.length, ref parentStyle);
                     break;
                 case StylePropertyId.GridAutoFlow:
                     gridData.Write().gridAutoFlow = (GridAutoFlow)sv.number;
@@ -1293,6 +1297,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     rareData.Write().unityBackgroundImageTintColor = other.rareData.Read().unityBackgroundImageTintColor;
                     break;
+                case StylePropertyId.UnityCurvature:
+                    rareData.Write().unityCurvature = other.rareData.Read().unityCurvature;
+                    break;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     inheritedData.Write().unityEditorTextRenderingMode = other.inheritedData.Read().unityEditorTextRenderingMode;
                     break;
@@ -1407,7 +1414,7 @@ namespace UnityEngine.UIElements
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FontSize:
-                    inheritedData.Write().fontSize = newValue;
+                    inheritedData.Write().fontSize = ComputedStyleUtility.ResolveFontSize(newValue, ve);
                     ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     break;
                 case StylePropertyId.Height:
@@ -2625,7 +2632,7 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.FontSize:
                 {
-                    return element.styleAnimation.Start(StylePropertyId.FontSize, oldStyle.inheritedData.Read().fontSize, newStyle.inheritedData.Read().fontSize, durationMs, delayMs, easingCurve);
+                    return element.styleAnimation.Start(StylePropertyId.FontSize, new Length(oldStyle.inheritedData.Read().fontSize), new Length(newStyle.inheritedData.Read().fontSize), durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.Gap:
@@ -3056,7 +3063,7 @@ namespace UnityEngine.UIElements
                 if (hasRunningAnimation ||
                     oldData.fontSize != newData.fontSize)
                 {
-                    result |= element.styleAnimation.Start(StylePropertyId.FontSize, oldData.fontSize, newData.fontSize, durationMs, delayMs, easingCurve);
+                    result |= element.styleAnimation.Start(StylePropertyId.FontSize, new Length(oldData.fontSize), new Length(newData.fontSize), durationMs, delayMs, easingCurve);
                 }
 
                 if (hasRunningAnimation ||
@@ -3868,8 +3875,8 @@ namespace UnityEngine.UIElements
 
                 case StylePropertyId.FontSize:
                 {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.Get().inheritedData.Read().fontSize : sv.length;
-                    return element.styleAnimation.Start(StylePropertyId.FontSize, computedStyle.inheritedData.Read().fontSize, to, durationMs, delayMs, easingCurve);
+                    var to = sv.keyword == StyleKeyword.Initial ? new Length(InitialStyle.Get().inheritedData.Read().fontSize) : new Length(ComputedStyleUtility.ResolveFontSize(sv.length, element));
+                    return element.styleAnimation.Start(StylePropertyId.FontSize, new Length(computedStyle.inheritedData.Read().fontSize), to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.GridColumnEnd:
@@ -4596,6 +4603,9 @@ namespace UnityEngine.UIElements
                     visualData.Write().backgroundRepeat = InitialStyle.Get().visualData.Read().backgroundRepeat;
                     visualData.Write().backgroundSize = InitialStyle.Get().visualData.Read().backgroundSize;
                     break;
+                case StylePropertyId.UnityCurvature:
+                    rareData.Write().unityCurvature = InitialStyle.Get().rareData.Read().unityCurvature;
+                    break;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     inheritedData.Write().unityEditorTextRenderingMode = InitialStyle.Get().inheritedData.Read().unityEditorTextRenderingMode;
                     break;
@@ -4953,6 +4963,11 @@ namespace UnityEngine.UIElements
                 if (x.unityBackgroundImageTintColor != y.unityBackgroundImageTintColor)
                 {
                     changes |= VersionChangeType.Color;
+                }
+
+                if (x.unityCurvature != y.unityCurvature)
+                {
+                    changes |= VersionChangeType.Repaint | VersionChangeType.Transform;
                 }
             }
 

@@ -21,10 +21,14 @@ internal sealed class ReparentElementsCommand : Command<ReparentElementsCommand>
         return cmd;
     }
 
-    public static void Execute(object source, VisualElementAsset parentAsset, int index, VisualElementAsset[] childrenAssets)
+    /// <returns>
+    /// The status of the execution, so a caller that has to stay in sync with the assets — a drop reporting
+    /// whether it moved anything — can tell a refused command from an applied one.
+    /// </returns>
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset parentAsset, int index, VisualElementAsset[] childrenAssets)
     {
         using var command = GetPooled(source, parentAsset, index, childrenAssets);
-        UICommandQueue.Execute(command);
+        return UICommandQueue.Execute(command).Status;
     }
 
     public VisualElementAsset ParentAsset { get; private set; }
@@ -63,15 +67,16 @@ internal sealed class ReparentElementsCommand : Command<ReparentElementsCommand>
         var visualTreeAsset = ParentAsset.visualTreeAsset;
         context.RecordUndo(visualTreeAsset);
 
-        using var _ = HashSetPool<VisualTreeAsset>.Get(out var set);
         foreach (var asset in ChildrenAssets)
         {
             var vta = asset.visualTreeAsset;
-            if (vta && vta != visualTreeAsset && set.Add(vta))
+            {
                 context.RecordUndo(vta);
+                context.RecordUndo(vta.inlineSheet);
+            }
         }
 
-        context.RecordUndo(visualTreeAsset.GetOrCreateInlineStyleSheet());
+        context.RecordUndo(visualTreeAsset.inlineSheet);
     }
 
     public override CommandExecutionStatus Execute()

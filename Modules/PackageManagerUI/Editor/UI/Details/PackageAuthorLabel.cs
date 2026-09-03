@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version.isFromAssetStore)
                 SetAuthorLabel(null, m_PackageLinkFactory.CreateAssetStoreAuthorLink(version));
             else if (version.isFromUnity)
-                SetAuthorLabel(L10n.Tr("Unity Technologies"), null);
+                SetAuthorLabel(L10n.Tr("Unity Technologies", null), null);
             else
                 SetAuthorLabel(version.author?.name ?? string.Empty, null);
         }
@@ -52,11 +52,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (authorElement == null)
             {
-                Add(new Label(L10n.Tr("Author unknown")) { name = "authorLabel" });
+                Add(new Label(L10n.Tr("Author unknown", null)) { name = "authorLabel" });
                 return;
             }
 
-            Add(new Label(L10n.Tr("By")));
+            Add(new Label(L10n.Tr("By", null)));
             Add(authorElement);
         }
     }

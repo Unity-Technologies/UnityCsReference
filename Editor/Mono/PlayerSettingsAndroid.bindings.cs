@@ -54,77 +54,216 @@ namespace UnityEditor
         // Set target API level to latest installed
         AndroidApiLevelAuto = 0,
 
-        // Android 4.1, "Jelly Bean", API level 16
+        // Android 4.1, API level 16
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel16 = 16,
 
-        // Android 4.2, "Jelly Bean", API level 17
+        // Android 4.2, API level 17
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel17 = 17,
 
-        // Android 4.3, "Jelly Bean", API level 18
+        // Android 4.3, API level 18
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel18 = 18,
 
-        // Android 4.4, "KitKat", API level 19
+        // Android 4.4, API level 19
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel19 = 19,
 
-        // Android 5.0, "Lollipop", API level 21
+        // Android 5.0, API level 21
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel21 = 21,
 
-        // Android 5.1, "Lollipop", API level 22
+        // Android 5.1, API level 22
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel22 = 22,
 
-        // Android 6.0, "Marshmallow", API level 23
+        // Android 6.0, API level 23
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarningGracePeriod, false)]
         AndroidApiLevel23 = 23,
 
-        // Android 7.0, "Nougat", API level 24
+        // Android 7.0, API level 24
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarningGracePeriod, false)]
         AndroidApiLevel24 = 24,
 
-        // Android 7.1, "Nougat", API level 25
+        // Android 7.1, API level 25
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarningGracePeriod, false)]
         AndroidApiLevel25 = 25,
 
-        // Android 8.0, "Oreo", API level 26
+        // Android 8.0, API level 26
         AndroidApiLevel26 = 26,
 
-        // Android 8.1, "Oreo", API level 27
+        // Android 8.1, API level 27
         AndroidApiLevel27 = 27,
 
-        // Android 9.0, "Pie", API level 28
+        // Android 9, API level 28
         AndroidApiLevel28 = 28,
 
-        // Android 10.0, API level 29
+        // Android 10, API level 29
         AndroidApiLevel29 = 29,
 
-        // Android 11.0, API level 30
+        // Android 11, API level 30
         AndroidApiLevel30 = 30,
 
-        // Android 12.0, API level 31
+        // Android 12, API level 31
         AndroidApiLevel31 = 31,
 
         // Android 12L, API level 32
         AndroidApiLevel32 = 32,
 
-        // Android 13.0, API level 33
+        // Android 13, API level 33
         AndroidApiLevel33 = 33,
 
-        // Android 14.0, API level 34
+        // Android 14, API level 34
         AndroidApiLevel34 = 34,
 
-        // Android 15.0, API level 35
+        // Android 15, API level 35
         AndroidApiLevel35 = 35,
 
-        // Android 16.0, API level 36
+        // Android 16, API level 36
         AndroidApiLevel36 = 36,
 
-        // Android 17.0, API level 37.0
+        // Android 17, API level 37
         AndroidApiLevel37 = 37,
+    }
+
+    // Sub-integer Major.minor Android SDK version
+    [NativeHeader("Editor/Src/EditorOnlyPlayerSettings.h")]
+    [StaticAccessor("EditorOnlyPlayerSettings", StaticAccessorType.DoubleColon)]
+    public class AndroidSdkVersionFull : IEquatable<AndroidSdkVersionFull>, IComparable<AndroidSdkVersionFull>
+    {
+        // Encodes as (major*1000+minor)*1000+build.
+        internal const int k_MajorScale = 1000;
+        internal const int k_SubVersionScale = 1000;
+
+        [NoAutoStaticsCleanup]
+        public static readonly AndroidSdkVersionFull AndroidApiLevelAuto = new AndroidSdkVersionFull(0, 0);
+
+        public int Major { get; }
+        public int Minor { get; }
+
+        internal int Build { get; } // Reserved for the future, not used currently
+
+        public AndroidSdkVersionFull(int major, int minor = 0)
+        {
+            if (major < 0 || major >= k_MajorScale)
+                throw new ArgumentOutOfRangeException(nameof(major), major, $"Major version must be in range [0, {k_MajorScale}).");
+            if (minor < 0 || minor >= k_SubVersionScale)
+                throw new ArgumentOutOfRangeException(nameof(minor), minor, $"Minor version must be in range [0, {k_SubVersionScale}).");
+            if (major == 0 && minor != 0)
+                throw new ArgumentOutOfRangeException(nameof(minor), minor, $"Minor version must be 0 when {nameof(major)} is 0.");
+
+            Major = major;
+            Minor = minor;
+        }
+
+        public static implicit operator AndroidSdkVersionFull(int major) => new AndroidSdkVersionFull(major);
+
+        public static implicit operator AndroidSdkVersionFull(AndroidSdkVersions version) => (int)version;
+
+        internal static AndroidSdkVersionFull FromEncodedInt(int encoded)
+        {
+            if (encoded == 0)
+                return AndroidApiLevelAuto;
+            DecodeAndroidCompileSdkVersion(encoded, out var major, out var minor, out _);
+            return new AndroidSdkVersionFull(major, minor);
+        }
+
+        internal int ToEncodedInt()
+        {
+            return Major == 0 ? 0 : EncodeAndroidCompileSdkVersion(Major, Minor, Build);
+        }
+
+        static extern int EncodeAndroidCompileSdkVersion(int major, int minor, int build);
+
+        static extern void DecodeAndroidCompileSdkVersion(int encoded, out int major, out int minor, out int build);
+
+        // Accepts "36" and "36.1", rejects previews and extension SDKs such as "36-ext18", "37.2-beta1" and "CANARY"
+        public static bool TryParse(string version, out AndroidSdkVersionFull parsed)
+        {
+            parsed = null;
+            if (string.IsNullOrEmpty(version))
+                return false;
+
+            var parts = version.Split('.');
+            if (parts.Length > 2)
+                return false;
+            if (!int.TryParse(parts[0], out var major) || major <= 0 || major >= k_MajorScale)
+                return false;
+            var minor = 0;
+            if (parts.Length == 2 && (!int.TryParse(parts[1], out minor) || minor < 0 || minor >= k_SubVersionScale))
+                return false;
+
+            parsed = new AndroidSdkVersionFull(major, minor);
+            return true;
+        }
+
+        public override string ToString()
+        {
+            if (this == AndroidApiLevelAuto)
+                return nameof(AndroidApiLevelAuto);
+            return Minor > 0 ? $"{Major}.{Minor}" : Major.ToString();
+        }
+
+        public bool Equals(AndroidSdkVersionFull other)
+        {
+            if (other is null)
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
+            return Major == other.Major && Minor == other.Minor && Build == other.Build;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as AndroidSdkVersionFull);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Major, Minor, Build);
+        }
+
+        public int CompareTo(AndroidSdkVersionFull other)
+        {
+            if (other is null)
+                return 1;
+            var majorComparison = Major.CompareTo(other.Major);
+            if (majorComparison != 0)
+                return majorComparison;
+            var minorComparison = Minor.CompareTo(other.Minor);
+            return minorComparison != 0 ? minorComparison : Build.CompareTo(other.Build);
+        }
+
+        public static bool operator ==(AndroidSdkVersionFull left, AndroidSdkVersionFull right)
+        {
+            return left is null ? right is null : left.Equals(right);
+        }
+
+        public static bool operator !=(AndroidSdkVersionFull left, AndroidSdkVersionFull right)
+        {
+            return !(left == right);
+        }
+
+        public static bool operator <(AndroidSdkVersionFull left, AndroidSdkVersionFull right)
+        {
+            return left is null ? right is not null : left.CompareTo(right) < 0;
+        }
+
+        public static bool operator >(AndroidSdkVersionFull left, AndroidSdkVersionFull right)
+        {
+            return right < left;
+        }
+
+        public static bool operator <=(AndroidSdkVersionFull left, AndroidSdkVersionFull right)
+        {
+            return !(left > right);
+        }
+
+        public static bool operator >=(AndroidSdkVersionFull left, AndroidSdkVersionFull right)
+        {
+            return !(left < right);
+        }
     }
 
     // Preferred application install location
@@ -210,6 +349,16 @@ namespace UnityEditor
         RequiresGamepad = 2,
     }
 
+    // Source type for Android adaptive icon layers.
+    public enum AndroidIconSourceType
+    {
+        // Per-DPI image textures
+        Image = 0,
+
+        // Vector drawable assets
+        VectorDrawable = 1,
+    }
+
     // Android splash screen scale modes
     public enum AndroidSplashScreenScale
     {
@@ -286,17 +435,42 @@ namespace UnityEditor
         //DisplayCutout = 1 << 7
     }
 
+    /// <summary>
+    /// Controls the foreground appearance of system bar icons and text.
+    /// </summary>
+    public enum AndroidWindowInsetsAppearance : uint
+    {
+        /// <summary>Light icons, suitable for dark backgrounds behind the system bars.</summary>
+        Light = 0,
+        /// <summary>Dark icons, suitable for light backgrounds behind the system bars.</summary>
+        Dark = 1
+    }
+
+    /// <summary>
+    /// Controls how hidden system bars are revealed by user gestures.
+    /// </summary>
     public enum AndroidSystemBarsBehavior : uint
     {
         /// <summary>
-        /// https://developer.android.com/reference/android/view/WindowInsetsController#BEHAVIOR_DEFAULT
+        /// System bars are revealed by system gestures and remain visible until explicitly hidden.
         /// </summary>
         Default = 1,
 
         /// <summary>
-        /// https://developer.android.com/reference/android/view/WindowInsetsController#BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        /// System bars are revealed temporarily by system gestures and automatically hide after a short timeout.
         /// </summary>
         ShowTransientBarsBySwipe = 2
+    }
+
+    /// <summary>Controls whether system bars have an opaque or transparent background.</summary>
+    /// <remarks>Set to Transparent when insets are overlapping with the game view to allow game content to show through the system bars.</remarks>
+    public enum AndroidSystemBarsBackground : uint
+    {
+        /// <summary>System bars have an opaque background. This is the default.</summary>
+        Opaque = 0,
+
+        /// <summary>System bars have a transparent background, allowing game content to show through when insets overlap with the game view.</summary>
+        Transparent
     }
 
     [Obsolete("AndroidDeviceFilterData is obsolete. Use UnityEngine.VulkanDeviceFilterData instead.")]
@@ -319,7 +493,7 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         public partial class Android
         {
-            internal const string MinSupportedAPILevelWarning = "Minimum supported Android API level is 26 (Android 8.0 Oreo). Please use AndroidApiLevel26 or higher.";
+            internal const string MinSupportedAPILevelWarning = "Minimum supported Android API level is 26 (Android 8.0). Please use AndroidApiLevel26 or higher.";
             internal const string MinSupportedAPILevelWarningGracePeriod = MinSupportedAPILevelWarning + " This warning will become an error on a next release.";
 
             // Disable Depth and Stencil Buffers
@@ -331,7 +505,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    // Minimum supported Android API level is 26 (Android 8.0 Oreo).
+                    // Minimum supported Android API level is 26 (Android 8.0).
                     return AndroidSdkVersions.AndroidApiLevel26;
                 }
             }
@@ -485,6 +659,28 @@ namespace UnityEditor
                 set;
             }
 
+            // Compile Android SDK version, independent of minSdkVersion/targetSdkVersion
+            public static AndroidSdkVersionFull compileSdkVersion
+            {
+                get
+                {
+                    return AndroidSdkVersionFull.FromEncodedInt(internalCompileSdkVersion);
+                }
+                set
+                {
+                    internalCompileSdkVersion = value?.ToEncodedInt() ?? 0;
+                }
+            }
+
+            // Internal compile Android SDK version
+            private static extern int internalCompileSdkVersion
+            {
+                [NativeMethod("GetAndroidCompileSdkVersion")]
+                get;
+                [NativeMethod("SetAndroidCompileSdkVersion")]
+                set;
+            }
+
             // Preferred application install location
             public static extern AndroidPreferredInstallLocation preferredInstallLocation
             {
@@ -580,11 +776,11 @@ namespace UnityEditor
                 }
             }
 
-            // Google Tango mixed reality support
-            public static extern bool ARCoreEnabled { get; set; }
+            [Obsolete("ARCoreEnabled has been deprecated. Use the com.unity.xr.arcore package for ARCore functionality.", false)]
+            public static bool ARCoreEnabled { get => false; set { } }
 
             // Whether Android banner is added to the APK
-            internal static extern bool androidBannerEnabled { get; set; }
+            public static extern bool androidBannerEnabled { get; set; }
 
             public static extern AndroidGamepadSupportLevel gamepadSupportLevel
             {
@@ -660,6 +856,115 @@ namespace UnityEditor
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
             [NativeProperty("androidSplashScreen", TargetType.Field)]
             internal static extern Texture2D splashScreen { get; }
+
+            // Source type for adaptive icon layers (Image or Vector Drawable)
+            [NativeProperty("androidIconSourceType", TargetType.Field)]
+            public static extern AndroidIconSourceType iconSourceType
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
+            internal static bool IsValidVectorDrawableXml(string xml, out string error)
+            {
+                error = null;
+                if (string.IsNullOrEmpty(xml))
+                {
+                    error = "The file is empty.";
+                    return false;
+                }
+
+                System.Xml.Linq.XDocument doc;
+                try
+                {
+                    doc = System.Xml.Linq.XDocument.Parse(xml);
+                }
+                catch (System.Xml.XmlException e)
+                {
+                    error = $"The file contains malformed XML: {e.Message}";
+                    return false;
+                }
+
+                var rootName = doc.Root?.Name.LocalName;
+                if (rootName == "vector" || rootName == "shape" || rootName == "gradient")
+                    return true;
+
+                error = $"The root element must be <vector>, <shape>, or <gradient>, but found <{rootName ?? "none"}>.";
+                return false;
+            }
+
+            private static void WarnIfInvalidVectorDrawable(TextAsset value, string propertyName)
+            {
+                if (value != null && !IsValidVectorDrawableXml(value.text, out string error))
+                    Debug.LogWarning($"Vector drawable '{value.name}' assigned to {propertyName} may not work correctly: {error}");
+            }
+
+            // Vector drawable for adaptive icon background layer
+            public static TextAsset adaptiveIconVectorDrawableBackground
+            {
+                get { return GetAdaptiveIconVectorDrawableBackground(); }
+                set { WarnIfInvalidVectorDrawable(value, nameof(adaptiveIconVectorDrawableBackground)); SetAdaptiveIconVectorDrawableBackground(value); }
+            }
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetAndroidAdaptiveIconVectorDrawableBackground")]
+            private static extern TextAsset GetAdaptiveIconVectorDrawableBackground();
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            [NativeMethod("SetAndroidAdaptiveIconVectorDrawableBackground")]
+            private static extern void SetAdaptiveIconVectorDrawableBackground(TextAsset value);
+
+            // Vector drawable for adaptive icon foreground layer
+            public static TextAsset adaptiveIconVectorDrawableForeground
+            {
+                get { return GetAdaptiveIconVectorDrawableForeground(); }
+                set { WarnIfInvalidVectorDrawable(value, nameof(adaptiveIconVectorDrawableForeground)); SetAdaptiveIconVectorDrawableForeground(value); }
+            }
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetAndroidAdaptiveIconVectorDrawableForeground")]
+            private static extern TextAsset GetAdaptiveIconVectorDrawableForeground();
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            [NativeMethod("SetAndroidAdaptiveIconVectorDrawableForeground")]
+            private static extern void SetAdaptiveIconVectorDrawableForeground(TextAsset value);
+
+            // Vector drawable for adaptive icon monochrome layer
+            public static TextAsset adaptiveIconVectorDrawableMonochrome
+            {
+                get { return GetAdaptiveIconVectorDrawableMonochrome(); }
+                set { WarnIfInvalidVectorDrawable(value, nameof(adaptiveIconVectorDrawableMonochrome)); SetAdaptiveIconVectorDrawableMonochrome(value); }
+            }
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetAndroidAdaptiveIconVectorDrawableMonochrome")]
+            private static extern TextAsset GetAdaptiveIconVectorDrawableMonochrome();
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            [NativeMethod("SetAndroidAdaptiveIconVectorDrawableMonochrome")]
+            private static extern void SetAdaptiveIconVectorDrawableMonochrome(TextAsset value);
+
+            // Vector drawable for adaptive banner background layer
+            public static TextAsset adaptiveBannerVectorDrawableBackground
+            {
+                get { return GetAdaptiveBannerVectorDrawableBackground(); }
+                set { WarnIfInvalidVectorDrawable(value, nameof(adaptiveBannerVectorDrawableBackground)); SetAdaptiveBannerVectorDrawableBackground(value); }
+            }
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetAndroidAdaptiveBannerVectorDrawableBackground")]
+            private static extern TextAsset GetAdaptiveBannerVectorDrawableBackground();
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            [NativeMethod("SetAndroidAdaptiveBannerVectorDrawableBackground")]
+            private static extern void SetAdaptiveBannerVectorDrawableBackground(TextAsset value);
+
+            // Vector drawable for adaptive banner foreground layer
+            public static TextAsset adaptiveBannerVectorDrawableForeground
+            {
+                get { return GetAdaptiveBannerVectorDrawableForeground(); }
+                set { WarnIfInvalidVectorDrawable(value, nameof(adaptiveBannerVectorDrawableForeground)); SetAdaptiveBannerVectorDrawableForeground(value); }
+            }
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetAndroidAdaptiveBannerVectorDrawableForeground")]
+            private static extern TextAsset GetAdaptiveBannerVectorDrawableForeground();
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            [NativeMethod("SetAndroidAdaptiveBannerVectorDrawableForeground")]
+            private static extern void SetAdaptiveBannerVectorDrawableForeground(TextAsset value);
 
             // Android splash screen scale mode
             public static extern AndroidSplashScreenScale splashScreenScale
@@ -933,11 +1238,33 @@ namespace UnityEditor
                 set;
             }
 
+            public static extern AndroidWindowInsetsType requestedOverlappingInsets
+            {
+                [NativeMethod("GetAndroidRequestedOverlappingInsets")]
+                get;
+                [NativeMethod("SetAndroidRequestedOverlappingInsets")]
+                set;
+            }
+
+            [NativeMethod("GetAndroidInsetsAppearance", ThrowsException = true)]
+            public static extern AndroidWindowInsetsAppearance GetInsetsAppearance(AndroidWindowInsetsType type);
+
+            [NativeMethod("SetAndroidInsetsAppearance")]
+            public static extern void SetInsetsAppearance(AndroidWindowInsetsType types, AndroidWindowInsetsAppearance appearance);
+
             public static extern AndroidSystemBarsBehavior systemBarsBehavior
             {
                 [NativeMethod("GetAndroidSystemBarsBehavior")]
                 get;
                 [NativeMethod("SetAndroidSystemBarsBehavior")]
+                set;
+            }
+
+            public static extern AndroidSystemBarsBackground systemBarsBackground
+            {
+                [NativeMethod("GetAndroidSystemBarsBackground")]
+                get;
+                [NativeMethod("SetAndroidSystemBarsBackground")]
                 set;
             }
 

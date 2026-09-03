@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.IO;
 using UnityEditor;
@@ -12,27 +13,37 @@ namespace Unity.UI.Builder
 {
     internal class BuilderPaneWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal BuilderPaneWindow() {}
+        #pragma warning restore UAL0015
+
+        // Serialized so each window reconnects to its own document across domain reloads.
+        [SerializeField]
         BuilderDocument m_Document;
+
         BuilderCommandHandler m_CommandHandler;
 
         public BuilderDocument document
         {
             get
             {
-                // Find or create document.
                 if (m_Document == null)
-                {
-                    var allDocuments = Resources.FindObjectsOfTypeAll(typeof(BuilderDocument));
-                    if (allDocuments.Length > 1)
-                        Debug.LogError("UIBuilder: More than one BuilderDocument was somehow created!");
-                    if (allDocuments.Length == 0)
-                        m_Document = BuilderDocument.CreateInstance();
-                    else
-                        m_Document = allDocuments[0] as BuilderDocument;
-                }
+                    m_Document = FindOrCreateDocument();
 
                 return m_Document;
             }
+        }
+
+        protected virtual BuilderDocument FindOrCreateDocument()
+        {
+            return BuilderDocument.FindOrCreateDefaultInstance();
+        }
+
+        protected virtual void OnDestroy()
+        {
+            // The default document survives its window (so reopening restores it); a secondary one dies with it.
+            if (m_Document != null)
+                m_Document.DestroyForClosedWindow();
         }
 
         public BuilderCommandHandler commandHandler
@@ -221,3 +232,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

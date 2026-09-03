@@ -8,8 +8,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class SignInDetails : VisualElement
     {
-        private static readonly string k_Message = L10n.Tr("You must sign in before Unity can display all information about this package.");
-        private static readonly string k_ButtonText = L10n.Tr("Sign in");
+        private static readonly string k_Message = L10n.Tr("You must sign in before Unity can display all information about this package.", null);
+        private static readonly string k_ButtonText = L10n.Tr("Sign in", null);
 
         private IUnityConnectProxy m_UnityConnect;
 

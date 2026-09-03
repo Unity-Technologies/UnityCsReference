@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using Unity.GraphToolkit.Editor.Implementation;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -79,6 +80,15 @@ namespace Unity.GraphToolkit.Editor
             model.SetCapability(Capabilities.Deletable, true);
             model.SetCapability(Capabilities.Selectable, true);
         }
+
+        /// <summary>
+        /// Determines whether a model has no valid type definition, either because it is an <see cref="IPlaceholder"/>
+        /// or because it is a user model whose backing user-defined type is missing.
+        /// </summary>
+        /// <param name="model">The model.</param>
+        /// <returns>True if the model's type definition is missing, false otherwise.</returns>
+        public static bool IsMissingTypeModel(GraphElementModel model)
+            => model is IPlaceholder or IUserModelImp { IsMissingDefinition: true };
 
         /// <summary>
         /// Tries to create a placeholder for a model.

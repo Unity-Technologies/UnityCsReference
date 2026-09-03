@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,9 +80,9 @@ namespace UnityEditor.Search
             }
         }
 
-        public static readonly string pressToFilterTooltip = L10n.Tr("Press Tab \u21B9 to filter");
-        static readonly string k_SingleResult = L10n.Tr("1 result");
-        static readonly string k_MultipleResults = L10n.Tr("{0} results");
+        public static readonly string pressToFilterTooltip = L10n.Tr("Press Tab \u21B9 to filter", null);
+        static readonly string k_SingleResult = L10n.Tr("1 result", null);
+        static readonly string k_MultipleResults = L10n.Tr("{0} results", null);
 
         protected INotifyValueChanged<string> m_SearchTextInput;
         private readonly UndoManager m_UndoManager;
@@ -756,3 +757,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

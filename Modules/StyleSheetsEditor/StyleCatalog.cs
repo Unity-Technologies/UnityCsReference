@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: StyleSheetsEditor not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -748,7 +748,8 @@ namespace UnityEditor.StyleSheets
 
         static class TexturesByDPIScale
         {
-            private static Dictionary<int, Dictionary<string, Texture2D>> s_TexturesByDPIScale = new Dictionary<int, Dictionary<string, Texture2D>>();
+            [NoAutoStaticsCleanup] // cache of DPI-scaled editor style textures loaded by fixed names; rebuilt on demand, no user code references
+            private static readonly Dictionary<int, Dictionary<string, Texture2D>> s_TexturesByDPIScale = new Dictionary<int, Dictionary<string, Texture2D>>();
 
             static TexturesByDPIScale()
             {
@@ -1083,6 +1084,7 @@ namespace UnityEditor.StyleSheets
         private static readonly StyleValue[] k_NoValue = Array.Empty<StyleValue>();
         private static readonly StyleState[] k_NoState = Array.Empty<StyleState>();
         private static readonly StyleState[] k_RegularBlockStates = { StyleState.normal };
+        [NoAutoStaticsCleanup] // immutable not-found sentinel built from empty arrays
         private static readonly StyleBlock k_ElementNotFound = new StyleBlock(-1, k_NoState, k_NoValue, null);
 
         private StyleBlock[] m_Blocks;
@@ -2229,4 +2231,3 @@ namespace UnityEditor.StyleSheets
         #endregion
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

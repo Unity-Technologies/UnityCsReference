@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: EditorWindowManagement not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -14,6 +15,10 @@ namespace UnityEditor
 {
     internal partial class AboutWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        public AboutWindow() { }
+        #pragma warning restore UAL0015
+
         // s_Instance is nulled when the window is closed (OnDestroy)
         [AutoStaticsCleanupOnCodeReload]
         static AboutWindow s_Instance;
@@ -262,7 +267,7 @@ namespace UnityEditor
         {
             bool enabled = !EditorPrefs.GetBool("DeveloperMode", false);
             EditorPrefs.SetBool("DeveloperMode", enabled);
-            ShowNotification(new GUIContent(string.Format(L10n.Tr("Developer Mode {0}"), (enabled ? L10n.Tr("On") : L10n.Tr("Off")))));
+            ShowNotification(new GUIContent(string.Format(L10n.Tr("Developer Mode {0}", null), (enabled ? L10n.Tr("On", null) : L10n.Tr("Off", null)))));
             EditorUtility.RequestScriptReload();
 
             // Repaint all views to show/hide debug repaint indicator
@@ -281,3 +286,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

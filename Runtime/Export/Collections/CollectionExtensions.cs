@@ -89,7 +89,7 @@ namespace Unity.Collections
         /// </summary>
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="list">The list.</param>
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
         internal static T Min<T>([DisallowNull] this IReadOnlyList<T> list, IComparer<T> comparer = null)
         {
             if (list.Count == 0)
@@ -111,7 +111,7 @@ namespace Unity.Collections
         /// </summary>
         /// <typeparam name="T">The item type.</typeparam>
         /// <param name="list">The list.</param>
-        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule", "UnityEditor.ProjectAuditorModule")]
+        [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule", "UnityEditor.ProjectAuditorModule")]
         internal static T Max<T>([DisallowNull] this IReadOnlyList<T> list, IComparer<T> comparer = null)
         {
             if (list.Count == 0)
@@ -231,6 +231,7 @@ namespace Unity.Collections
         /// <typeparam name="T">Collection type</typeparam>
         /// <returns>Serialized collection</returns>
         /// <exception cref="ArgumentNullException">Can produce exception if collection or serialize method is null</exception>
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static string SerializedView<T>([DisallowNull] this IEnumerable<T> collection, [DisallowNull] Func<T, string> serializeElement)
         {
             if (collection == null)
@@ -266,6 +267,7 @@ namespace Unity.Collections
         /// <typeparam name="T">Collection type</typeparam>
         /// <returns>True if element found and False if not</returns>
         /// <exception cref="ArgumentNullException">Can produce exception if collection is null</exception>
+        [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal static bool ContainsByEquals<T>([DisallowNull] this IEnumerable<T> collection, T element)
         {
             if (collection == null)

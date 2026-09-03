@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: DiagnosticsEditor not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: DiagnosticsEditor not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,15 +15,9 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static Texture2D smallWarningIcon;
-            public static GUIContent restartNeededWarning = EditorGUIUtility.TrTextContent("Some settings will not take effect until you restart Unity.");
-            public static GUIStyle boldFoldout;
-
-            static Styles()
-            {
-                smallWarningIcon = EditorGUIUtility.LoadIconRequired("console.warnicon.sml");
-                boldFoldout = new GUIStyle(EditorStyles.foldout) {fontStyle = FontStyle.Bold};
-            }
+            public static readonly Texture2D smallWarningIcon = EditorGUIUtility.LoadIconRequired("console.warnicon.sml");
+            public static readonly GUIContent restartNeededWarning = EditorGUIUtility.TrTextContent("Some settings will not take effect until you restart Unity.");
+            public static readonly GUIStyle boldFoldout = new GUIStyle(EditorStyles.foldout) {fontStyle = FontStyle.Bold};
         }
 
         class SwitchGroup
@@ -282,4 +276,4 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

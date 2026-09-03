@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,11 +11,12 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
     [InitializeOnLoad]
-    internal class CloudBuildPoller
+    internal partial class CloudBuildPoller
     {
         const string k_JsonNodeNameBuild = "build";
         const string k_JsonNodeNameBuildTargetId = "buildtargetid";
@@ -44,17 +44,13 @@ namespace UnityEditor.Connect
         string m_PollingUrl;
         List<string> m_BuildsToReportOn = new List<string>();
 
-        static readonly CloudBuildPoller k_Instance;
+        [AutoStaticsCleanupOnCodeReload]
+        static CloudBuildPoller k_Instance = new();
 
         public static CloudBuildPoller instance => k_Instance;
 
         internal bool enabled => m_Enabled;
         internal bool enabledOnce => m_EnabledOnce;
-
-        static CloudBuildPoller()
-        {
-            k_Instance = new CloudBuildPoller();
-        }
 
         internal void Enable(string pollingUrl)
         {
@@ -138,24 +134,24 @@ namespace UnityEditor.Connect
                                             {
                                                 case k_BuildStatusCanceled:
                                                     severity = Notification.Severity.Warning;
-                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusCanceled);
+                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg, null), buildNumber, buildTargetName, k_BuildStatusCanceled);
                                                     Debug.LogWarning(message);
                                                     break;
                                                 case k_BuildStatusFailure:
                                                     severity = Notification.Severity.Error;
-                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusFailure);
+                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg, null), buildNumber, buildTargetName, k_BuildStatusFailure);
                                                     Debug.LogError(message);
                                                     break;
                                                 case k_BuildStatusStarted:
-                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusStartedMessage);
+                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg, null), buildNumber, buildTargetName, k_BuildStatusStartedMessage);
                                                     Debug.Log(message);
                                                     break;
                                                 case k_BuildStatusSuccess:
-                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusSuccess);
+                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg, null), buildNumber, buildTargetName, k_BuildStatusSuccess);
                                                     Debug.Log(message);
                                                     break;
                                                 case k_BuildStatusUnknown:
-                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusUnknown);
+                                                    message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg, null), buildNumber, buildTargetName, k_BuildStatusUnknown);
                                                     Debug.LogWarning(message);
                                                     break;
                                             }
@@ -173,7 +169,7 @@ namespace UnityEditor.Connect
                                             if (k_BuildStatusSentRestarted.Equals(buildStatus))
                                             {
                                                 var buildTargetName = build[k_JsonNodeNameBuildTargetName].AsString();
-                                                var message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg), buildNumber, buildTargetName, k_BuildStatusSentRestarted);
+                                                var message = string.Format(L10n.Tr(k_BuildFinishedWithStatusMsg, null), buildNumber, buildTargetName, k_BuildStatusSentRestarted);
                                                 Debug.Log(message);
                                                 NotificationManager.instance.Publish(Notification.Topic.BuildService, Notification.Severity.Info, message);
                                             }
@@ -194,7 +190,7 @@ namespace UnityEditor.Connect
                                 NotificationManager.instance.Publish(
                                     Notification.Topic.BuildService,
                                     Notification.Severity.Error,
-                                    L10n.Tr(k_MessageErrorForApiStatusData));
+                                    L10n.Tr(k_MessageErrorForApiStatusData, null));
                                 Debug.LogException(ex);
                             }
                         }
@@ -208,4 +204,3 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

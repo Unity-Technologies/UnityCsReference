@@ -43,16 +43,20 @@ namespace Unity.Scripting.LifecycleManagement
 
         internal void OnEnter(ScopeTransitionHelper scopeTransitionHelper)
         {
-            DebugLifecycle.Log($"Lifecycle : Entering scope '{Name}'");
+            if (DebugLifecycle.LoggingEnabled)
+                DebugLifecycle.Log($"Lifecycle : Entering scope '{Name}'");
             Enter(scopeTransitionHelper);
-            DebugLifecycle.Log($"Lifecycle : Entered scope '{Name}'");
+            if (DebugLifecycle.LoggingEnabled)
+                DebugLifecycle.Log($"Lifecycle : Entered scope '{Name}'");
         }
 
         internal void OnExit(ScopeTransitionHelper scopeTransitionHelper)
         {
-            DebugLifecycle.Log($"Lifecycle : Exiting scope '{Name}'");
+            if (DebugLifecycle.LoggingEnabled)
+                DebugLifecycle.Log($"Lifecycle : Exiting scope '{Name}'");
             Exit(scopeTransitionHelper);
-            DebugLifecycle.Log($"Lifecycle : Exited scope '{Name}'");
+            if (DebugLifecycle.LoggingEnabled)
+                DebugLifecycle.Log($"Lifecycle : Exited scope '{Name}'");
         }
     }
 }

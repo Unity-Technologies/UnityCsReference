@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using UnityEngine.Bindings;
 
@@ -20,7 +20,8 @@ namespace Unity.Timeline.Foundation.ViewModel
         /// <summary>
         /// Empty Selection. Use this instead of allocating multiple empty selections
         /// </summary>
-        public static SelectionContainer Empty = new(new List<UniqueID>(), new List<UniqueID>(), new List<UniqueID>(), new List<UniqueID>());
+        [NoAutoStaticsCleanup] // immutable empty-selection sentinel; wraps read-only collections of value-type IDs only
+        public static readonly SelectionContainer Empty = new(new List<UniqueID>(), new List<UniqueID>(), new List<UniqueID>(), new List<UniqueID>());
 
         public readonly ReadOnlyCollection<UniqueID> tracks;
         public readonly ReadOnlyCollection<UniqueID> clips;
@@ -63,4 +64,3 @@ namespace Unity.Timeline.Foundation.ViewModel
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

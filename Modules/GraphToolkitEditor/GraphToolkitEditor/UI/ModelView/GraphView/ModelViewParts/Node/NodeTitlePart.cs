@@ -269,7 +269,7 @@ namespace Unity.GraphToolkit.Editor
         protected virtual bool IsNodeDefinitionValid()
         {
             return m_Model is AbstractNodeModel nodeModel &&
-                (nodeModel is IPlaceholder || nodeModel is IHasDeclarationModel { DeclarationModel: IPlaceholder });
+                (PlaceholderModelHelper.IsMissingTypeModel(nodeModel) || nodeModel is IHasDeclarationModel { DeclarationModel: IPlaceholder });
         }
 
         /// <inheritdoc />

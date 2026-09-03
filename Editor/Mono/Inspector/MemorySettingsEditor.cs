@@ -93,10 +93,10 @@ namespace UnityEditor
             public static readonly GUIStyle titleGroupHeader = new GUIStyle(EditorStyles.toolbar) { margin = new RectOffset() };
             public static readonly GUIStyle settingsFramebox = new GUIStyle(EditorStyles.frameBox) { padding = new RectOffset(1, 1, 1, 0) };
 
-            public static readonly string warningDialogTitle = L10n.Tr("Edit memory settings");
-            public static readonly string warningDialogText = L10n.Tr("Changing default memory setting can have severe negative impact on performance. Are you sure you want to continue?");
-            public static readonly string okDialogButton = L10n.Tr("OK");
-            public static readonly string cancelDialogButton = L10n.Tr("Cancel");
+            public static readonly string warningDialogTitle = L10n.Tr("Edit memory settings", null);
+            public static readonly string warningDialogText = L10n.Tr("Changing default memory setting can have severe negative impact on performance. Are you sure you want to continue?", null);
+            public static readonly string okDialogButton = L10n.Tr("OK", null);
+            public static readonly string cancelDialogButton = L10n.Tr("Cancel", null);
         }
 
         const string kWarningDialogSessionKey = "MemorySettingsWarning";
@@ -482,7 +482,7 @@ namespace UnityEditor
             {
                 GUILayout.Label("Settings for Players");
                 m_SelectedPlatform = EditorGUILayout.BeginPlatformGrouping(m_ValidPlatforms, null, Styles.settingsFramebox);
-                GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), m_ValidPlatforms[m_SelectedPlatform].title.text));
+                GUILayout.Label(string.Format(L10n.Tr("Settings for {0}", null), m_ValidPlatforms[m_SelectedPlatform].title.text));
                 if (!m_MemorySettingsDictionary.TryGetValue(m_ValidPlatforms[m_SelectedPlatform].defaultTarget, out currentSettings))
                 {
                     MemorySettingsUtils.SetPlatformDefaultValues((int)m_ValidPlatforms[m_SelectedPlatform].defaultTarget);

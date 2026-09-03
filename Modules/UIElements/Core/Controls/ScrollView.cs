@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
@@ -251,10 +252,9 @@ namespace UnityEngine.UIElements
         // Case 1297053: ScrollableWidth/Height may contain some numerical imprecisions.
         const float k_SizeThreshold = 0.001f;
 
-        VisualElement m_AttachedRootVisualContainer;
         float m_SingleLineHeight = UIElementsUtility.singleLineHeight;
         bool m_SingleLineHeightDirtyFlag;
-        static readonly UniqueStyleString k_SingleLineHeightPropertyName = new("--unity-metrics-single_line-height");
+        static readonly UniqueStyleString k_SingleLineHeightPropertyName = new("--unity-scroll-view-line-height");
 
         const float k_ScrollPageOverlapFactor = 0.1f;
         internal const float k_UnsetPageSizeValue = -1.0f;
@@ -1142,10 +1142,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            // There is a chance the root visual container has not had its pseudo style resolved yet.
-            m_AttachedRootVisualContainer = GetRootVisualContainer() ?? evt.destinationPanel.visualTree;
-            m_AttachedRootVisualContainer.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
-            Callbacks.OnRootCustomStyleResolved.Register(this);
+            Callbacks.OnCustomStyleResolved.Register(this);
             MarkSingleLineHeightDirty();
 
             Callbacks.OnContentAndVerticalScrollPointerMove.Register(m_ContentAndVerticalScrollContainer);
@@ -1164,12 +1161,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (m_AttachedRootVisualContainer != null)
-            {
-                m_AttachedRootVisualContainer.UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
-                m_AttachedRootVisualContainer = null;
-            }
-            Callbacks.OnRootCustomStyleResolved.Unregister(this);
+            Callbacks.OnCustomStyleResolved.Unregister(this);
 
             Callbacks.OnContentAndVerticalScrollPointerMove.Unregister(m_ContentAndVerticalScrollContainer);
             Callbacks.OnContentContainerPointer.Unregister(contentContainer);
@@ -1914,9 +1906,8 @@ namespace UnityEngine.UIElements
 
             if ((canUseHorizontalScroll || canUseVerticalScroll) && !m_MouseWheelScrollSizeIsInline)
             {
-                if (m_SingleLineHeightDirtyFlag || (parent is { isRootVisualContainer: true } && parent != m_AttachedRootVisualContainer))
+                if (m_SingleLineHeightDirtyFlag)
                 {
-                    // Potential special case: single line height is not dirty, but the parent is a different root visual container.
                     ReadSingleLineHeight();
                 }
             }
@@ -2048,9 +2039,8 @@ namespace UnityEngine.UIElements
             RemoveFromClassList(scrollingUssClassNameUnique);
         }
 
-        void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)
+        void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
         {
-            // Do not read single line height yet: SV or one of its ancestors might have custom variable values that affect it.
             MarkSingleLineHeightDirty();
         }
 
@@ -2066,38 +2056,16 @@ namespace UnityEngine.UIElements
 
         void ReadSingleLineHeight()
         {
-            if (computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
+            if (computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp) &&
+                customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
             {
-                m_SingleLineHeightDirtyFlag = false;
-                if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
-                {
-                    m_SingleLineHeight = dimension.value;
-                    return;
-                }
+                m_SingleLineHeight = dimension.value;
+            }
+            else
+            {
+                m_SingleLineHeight = UIElementsUtility.singleLineHeight;
             }
 
-            var updatedRoot = GetFirstAncestorWhere((x) => x.isRootVisualContainer);
-            // If, in between the time the line height has been marked dirty and a scroll view update, the root visual container has changed,
-            // then update the root.
-            if (updatedRoot != m_AttachedRootVisualContainer)
-            {
-                m_AttachedRootVisualContainer.UnregisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
-                m_AttachedRootVisualContainer = updatedRoot;
-                m_AttachedRootVisualContainer.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
-            }
-            // Check if the property is set on the root visual element.
-            if (m_AttachedRootVisualContainer != null &&
-                m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customRootProp))
-            {
-
-                m_SingleLineHeightDirtyFlag = false;
-                if (customRootProp.sheet.TryReadDimension(customRootProp.handle, out var dimension))
-                {
-                    m_SingleLineHeight = dimension.value;
-                    return;
-                }
-            }
-            m_SingleLineHeight = UIElementsUtility.singleLineHeight;
             m_SingleLineHeightDirtyFlag = false;
         }
 
@@ -2164,9 +2132,9 @@ namespace UnityEngine.UIElements
                 EventCallback.Create<FocusOutEvent, ScrollView>(static (e, self) => self.OnFocusOut(e));
 
             [NoAutoStaticsCleanup]
-            public static readonly EventCallbackDefinition<ScrollView> OnRootCustomStyleResolved =
+            public static readonly EventCallbackDefinition<ScrollView> OnCustomStyleResolved =
                 EventCallback.Create<CustomStyleResolvedEvent, ScrollView>(static (e, self) =>
-                    self.OnRootCustomStyleResolved(e));
+                    self.OnCustomStyleResolved(e));
 
             [NoAutoStaticsCleanup]
             public static readonly EventCallbackDefinition<VisualElement> OnContentGeometryChanged =
@@ -2219,3 +2187,4 @@ namespace UnityEngine.UIElements
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

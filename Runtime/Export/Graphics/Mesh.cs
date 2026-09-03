@@ -1937,6 +1937,7 @@ namespace UnityEngine
         public int subMeshIndex { get { return m_SubMeshIndex; } set { m_SubMeshIndex = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
         public Vector4 lightmapScaleOffset { get { return m_LightmapScaleOffset; } set { m_LightmapScaleOffset = value; } }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public Vector4 realtimeLightmapScaleOffset { get { return m_RealtimeLightmapScaleOffset; } set { m_RealtimeLightmapScaleOffset = value; } }
     }
 

@@ -106,14 +106,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (visualState.isLocked)
                 {
                     iconClass = "locked";
-                    iconTooltip = string.Format(L10n.Tr("This {0} is installed by a feature."), version.GetDescriptor());
+                    iconTooltip = string.Format(L10n.Tr("This {0} is installed by a feature.", null), version.GetDescriptor());
                     return true;
                 }
 
                 if (visualState.userUnlocked)
                 {
                     iconClass = "unlockedbyuser";
-                    iconTooltip = string.Format(L10n.Tr("This {0} is unlocked. You can now change its version."), version.GetDescriptor());
+                    iconTooltip = string.Format(L10n.Tr("This {0} is unlocked. You can now change its version.", null), version.GetDescriptor());
                     return true;
                 }
 
@@ -122,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (overrideByCustomizedIcon)
                 {
                     iconClass = "customized";
-                    iconTooltip = string.Format(L10n.Tr("This {0} has been manually customized."), version.GetDescriptor());
+                    iconTooltip = string.Format(L10n.Tr("This {0} has been manually customized.", null), version.GetDescriptor());
                     return true;
                 }
             }
@@ -161,7 +161,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!showEnterpriseLabel)
                 return;
             m_EnterpriseLabel.text = "E";
-            m_EnterpriseLabel.tooltip = L10n.Tr("This is an entitled package.");
+            m_EnterpriseLabel.tooltip = L10n.Tr("This is an entitled package.", null);
         }
 
         private readonly Label m_NameLabel;
@@ -179,14 +179,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string[] k_TooltipsByState =
         {
             "",
-            L10n.Tr("This {0} is installed."),
-            L10n.Tr("This {0} is installed as a dependency."),
-            L10n.Tr("There are assets in your project that are imported from this {0}."),
-            L10n.Tr("This {0} is in development."),
-            L10n.Tr("A newer version of this {0} is available."),
-            L10n.Tr("There are errors with this {0}. Read the {0} details for further guidance."),
-            L10n.Tr("There are warnings with this {0}. Read the {0} details for further guidance."),
-            L10n.Tr("This {0} is restricted. Read the {0} details for further guidance."),
+            L10n.Tr("This {0} is installed.", null),
+            L10n.Tr("This {0} is installed as a dependency.", null),
+            L10n.Tr("There are assets in your project that are imported from this {0}.", null),
+            L10n.Tr("This {0} is in development.", null),
+            L10n.Tr("A newer version of this {0} is available.", null),
+            L10n.Tr("There are errors with this {0}. Read the {0} details for further guidance.", null),
+            L10n.Tr("There are warnings with this {0}. Read the {0} details for further guidance.", null),
+            L10n.Tr("This {0} is restricted. Read the {0} details for further guidance.", null),
         };
 
         public string GetTooltipByState(IPackageVersion version, PackageState state)
@@ -197,14 +197,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string[] k_TooltipsByProgress =
         {
             "",
-            L10n.Tr("{0} refreshing in progress."),
-            L10n.Tr("{0} downloading in progress."),
-            L10n.Tr("{0} pausing in progress."),
-            L10n.Tr("{0} resuming in progress."),
-            L10n.Tr("{0} installing in progress."),
-            L10n.Tr("{0} resetting in progress."),
-            L10n.Tr("{0} removing in progress."),
-            L10n.Tr("{0} exporting in progress."),
+            L10n.Tr("{0} refreshing in progress.", null),
+            L10n.Tr("{0} downloading in progress.", null),
+            L10n.Tr("{0} pausing in progress.", null),
+            L10n.Tr("{0} resuming in progress.", null),
+            L10n.Tr("{0} installing in progress.", null),
+            L10n.Tr("{0} resetting in progress.", null),
+            L10n.Tr("{0} removing in progress.", null),
+            L10n.Tr("{0} exporting in progress.", null),
         };
 
         public string GetTooltipByProgress(IPackageVersion version, PackageProgress progress)

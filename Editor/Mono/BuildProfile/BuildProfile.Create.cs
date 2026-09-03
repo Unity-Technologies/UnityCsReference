@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: BuildSettingsWindow not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -167,20 +166,16 @@ namespace UnityEditor.Build.Profile
             buildProfile.buildTarget = buildTarget;
             buildProfile.subtarget = subtarget;
             buildProfile.platformGuid = platformId;
+            if (!selectedPlatformGuid.Empty())
+                buildProfile.selectedPlatformGuid = selectedPlatformGuid;
             AssetDatabase.CreateAsset(
                 buildProfile,
                 BuildProfileModuleUtil.GetUniqueBuildProfilePath(assetPath));
             BuildProfileContext.instance.RegisterProfileAwaitingInitialization(
                 buildProfile, packagesToAdd, preconfiguredSettingsVariant, onProfileReady);
 
-            if (!selectedPlatformGuid.Empty())
-                buildProfile.selectedPlatformGuid = selectedPlatformGuid;
-
             // OnEnable must be called after CreateAsset so that serialized fields are properly initialized.
             buildProfile.OnEnable();
-
-            if (BuildTargetDiscovery.TryGetSDKPlatformExtension(platformId, out var sdkExtension))
-                sdkExtension.OnMultiTargetBuildProfileCreated(buildProfile, preconfiguredSettingsVariant);
 
             // Notify the UI of creation so that the new build profile can be selected
             onBuildProfileCreated?.Invoke(buildProfile);
@@ -218,10 +213,17 @@ namespace UnityEditor.Build.Profile
 
         internal void NotifyBuildProfileExtensionOfCreation(int preconfiguredSettingsVariant)
         {
+            // OnBuildProfileCreated is only for single-target platforms. Multi-target platforms have their own callback.
             var buildProfileExtension = BuildProfileModuleUtil.GetBuildProfileExtension(platformGuid);
             if (buildProfileExtension != null)
             {
                 buildProfileExtension.OnBuildProfileCreated(this, preconfiguredSettingsVariant);
+                AssetDatabase.SaveAssetIfDirty(this);
+            }
+
+            if (isMultiTarget && BuildTargetDiscovery.TryGetSDKPlatformExtension(platformGuid, out var sdkExtension))
+            {
+                sdkExtension.OnMultiTargetBuildProfileCreated(this, preconfiguredSettingsVariant);
                 AssetDatabase.SaveAssetIfDirty(this);
             }
         }
@@ -244,4 +246,3 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

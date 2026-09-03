@@ -41,12 +41,20 @@ namespace Unity.GraphToolkit
     /// Methods for creating type handles.
     /// </summary>
     [UnityRestricted]
-    internal static class TypeHandleHelpers
+    static partial class TypeHandleHelpers
     {
         [NoAutoStaticsCleanup] // type lookup registry; clearing would orphan init-only TypeHandle properties in BuiltInTypeHandles
         static Dictionary<string, TypeHandleDescriptor> s_CustomIdToTypeHandleInternal = new();
         [NoAutoStaticsCleanup] // type lookup registry; clearing would orphan init-only TypeHandle properties in BuiltInTypeHandles
         static Dictionary<string, Type> s_CustomIdToType = new();
+        // Derived set of Types registered as custom TypeHandles, for O(1) reverse lookup in IsCustomTypeHandle.
+        [NoAutoStaticsCleanup]
+        static HashSet<Type> s_CustomTypes = new();
+        // Cache of ResolveType results keyed by Identification. TypeHandle.Resolve() is called from many
+        // hot paths; Type.GetType(AQN) does string manipulation and a lookup on every call, so caching the
+        // resolved Type by Identification string collapses repeat calls to a single dictionary probe.
+        [AutoStaticsCleanupOnCodeReload]
+        static Dictionary<string, Type> s_ResolveCache = new();
 
         // For tests only
         internal static (Dictionary<string, TypeHandleDescriptor>, Dictionary<string, Type>) GetState()
@@ -59,16 +67,36 @@ namespace Unity.GraphToolkit
         {
             s_CustomIdToTypeHandleInternal = state.Item1;
             s_CustomIdToType = state.Item2;
+            RebuildCustomTypesSet();
+            s_ResolveCache.Clear();
+        }
+
+        static void RebuildCustomTypesSet()
+        {
+            s_CustomTypes.Clear();
+            foreach (var t in s_CustomIdToType.Values)
+            {
+                if (t != null)
+                    s_CustomTypes.Add(t);
+            }
         }
 
         internal static Type ResolveType(TypeHandle th)
         {
-            if (th.Identification != null && s_CustomIdToTypeHandleInternal.ContainsKey(th.Identification))
-            {
-                return s_CustomIdToType.TryGetValue(th.Identification, out var type) ? type : typeof(Unknown);
-            }
+            if (th.Identification == null)
+                return typeof(Unknown);
 
-            return InternalTypeHelpers.GetTypeFromTypeName(th.Identification) ?? typeof(Unknown);
+            if (s_ResolveCache.TryGetValue(th.Identification, out var cached))
+                return cached;
+
+            Type result;
+            if (s_CustomIdToTypeHandleInternal.ContainsKey(th.Identification))
+                result = s_CustomIdToType.TryGetValue(th.Identification, out var type) ? type : typeof(Unknown);
+            else
+                result = InternalTypeHelpers.GetTypeFromTypeName(th.Identification) ?? typeof(Unknown);
+
+            s_ResolveCache[th.Identification] = result;
+            return result;
         }
 
         internal static string ResolveMovedFromType(string identification)
@@ -83,8 +111,11 @@ namespace Unity.GraphToolkit
 
         internal static bool IsCustomTypeHandle(this TypeHandle typeHandle)
         {
-            return typeHandle.Identification != null
-                && (s_CustomIdToTypeHandleInternal.ContainsKey(typeHandle.Identification) || s_CustomIdToType.ContainsValue(typeHandle.Resolve()));
+            if (typeHandle.Identification == null)
+                return false;
+            if (s_CustomIdToTypeHandleInternal.ContainsKey(typeHandle.Identification))
+                return true;
+            return s_CustomTypes.Contains(typeHandle.Resolve());
         }
 
         internal static string GetFriendlyName_Internal(this TypeHandle typeHandle)
@@ -100,6 +131,9 @@ namespace Unity.GraphToolkit
             {
                 var th = TypeHandle.Create(uniqueId);
                 s_CustomIdToTypeHandleInternal[uniqueId] = new TypeHandleDescriptor(th, friendlyName);
+                // Registering a descriptor changes what ResolveType returns for this identification, so any
+                // previously cached result must be invalidated.
+                s_ResolveCache.Remove(uniqueId);
                 return (th, true);
             }
 
@@ -143,6 +177,8 @@ namespace Unity.GraphToolkit
             if (isNew)
             {
                 s_CustomIdToType[uniqueId] = t;
+                if (t != null)
+                    s_CustomTypes.Add(t);
             }
             else
             {
@@ -167,6 +203,9 @@ namespace Unity.GraphToolkit
             if (typeHandle.Identification != null && s_CustomIdToTypeHandleInternal.ContainsKey(typeHandle.Identification))
             {
                 s_CustomIdToType[typeHandle.Identification] = t;
+                // Rebuild the derived set: the old type may still be reachable via another id, and the new type must be added.
+                RebuildCustomTypesSet();
+                s_ResolveCache.Remove(typeHandle.Identification);
             }
             else
             {
@@ -206,6 +245,9 @@ namespace Unity.GraphToolkit
             if (!string.IsNullOrEmpty(friendlyName))
             {
                 s_CustomIdToTypeHandleInternal[identification] = new TypeHandleDescriptor(th, friendlyName);
+                // Registering a descriptor changes what ResolveType returns for this identification, so any
+                // previously cached result must be invalidated.
+                s_ResolveCache.Remove(identification);
             }
 
             return th;

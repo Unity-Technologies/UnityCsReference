@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -35,6 +34,9 @@ namespace UnityEditor.UIElements
 
         public Type serializedDataType => m_SerializedDataType;
         public bool isUxmlObject => m_UxmlObjectAttribute != null;
+
+        // True for [VisualElementComponent] types (the generated nested data derives from UxmlComponentSerializedData).
+        public bool isComponent => m_SerializedDataType != null && typeof(UxmlComponentSerializedData).IsAssignableFrom(m_SerializedDataType);
 
         public string uxmlName
         {
@@ -333,4 +335,3 @@ namespace UnityEditor.UIElements
         public override string ToString() => uxmlFullName;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

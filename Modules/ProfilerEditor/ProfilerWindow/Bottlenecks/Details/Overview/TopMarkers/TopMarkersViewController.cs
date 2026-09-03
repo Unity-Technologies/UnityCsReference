@@ -15,7 +15,7 @@ namespace Unity.Profiling.Editor.UI
     {
         static class Content
         {
-            public static readonly string k_FrameHeaderLabel = L10n.Tr("Frame");
+            public static readonly string k_FrameHeaderLabel = L10n.Tr("Frame", null);
         }
 
         // Model.

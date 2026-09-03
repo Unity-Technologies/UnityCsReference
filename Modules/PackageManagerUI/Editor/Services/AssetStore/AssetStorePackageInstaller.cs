@@ -110,15 +110,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (pathsFailedToRemove.Count == 0)
                 return;
 
-            var errorMessage = L10n.Tr("[Package Manager Window] Failed to remove the following asset(s) and/or folder(s):");
+            var errorMessage = L10n.Tr("[Package Manager Window] Failed to remove the following asset(s) and/or folder(s):", null);
             foreach (var path in pathsFailedToRemove)
                 errorMessage += "\n" + path;
             Debug.LogError(errorMessage);
 
             m_Application.DisplayDialog("cannotRemoveAsset",
-                L10n.Tr("Cannot Remove"),
-                L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example."),
-                L10n.Tr("OK"));
+                L10n.Tr("Cannot Remove", null),
+                L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example.", null),
+                L10n.Tr("OK", null));
         }
 
         public void Uninstall(long productId, bool interactiveUninstall = false)

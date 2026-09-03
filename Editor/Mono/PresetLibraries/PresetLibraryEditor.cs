@@ -82,6 +82,9 @@ namespace UnityEditor
             public GUIContent header = EditorGUIUtility.TrTextContent("Presets");
             public GUIContent newPreset = EditorGUIUtility.TrTextContent("New");
 
+            // We need a fixed id as the generated one can change when we are in the middle of renaming a gradient (UUM-148458)
+            public static readonly int settingsControlId = GUIUtility.GetPermanentControlID();
+
             public Styles()
             {
                 newPresetStyle.alignment = TextAnchor.MiddleCenter;
@@ -322,7 +325,7 @@ namespace UnityEditor
                 buttonRect.y = 0f;
                 buttonRect.height = rect.height;
                 buttonRect.width = 24f;
-                if (GUI.Button(buttonRect, GUIContent.none, GUIStyle.none))
+                if (GUI.Button(buttonRect, Styles.settingsControlId, GUIContent.none, GUIStyle.none))
                     SettingsMenu.Show(buttonRect, this);
 
                 if (wantsToCreateLibrary)

@@ -603,6 +603,15 @@ namespace UnityEngine.Rendering
             if (config.aabbCount == 0)
                 throw new ArgumentException("config.aabbCount cannot be 0.");
 
+            if (config.aabbCount < -1)
+                throw new ArgumentException("config.aabbCount cannot be less than -1.");
+
+            // config.aabbCount being -1 is considered "use all AABBs in the aabbBuffer starting at aabbOffset", so the buffer only has to hold one AABB there.
+            long aabbCount = config.aabbCount == -1 ? 1 : config.aabbCount;
+
+            if (config.aabbOffset + aabbCount > config.aabbBuffer.count)
+                throw new ArgumentException("config.aabbBuffer doesn't hold config.aabbCount AABBs starting at config.aabbOffset.");
+
             return AddAABBsInstance(config, matrix, id);
         }
 

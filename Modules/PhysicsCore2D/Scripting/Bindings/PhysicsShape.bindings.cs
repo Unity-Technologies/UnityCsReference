@@ -53,9 +53,18 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::GetCustomColor", IsThreadSafe = true)] extern internal static Color32 PhysicsShape_GetCustomColor(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetWorldDrawing", IsThreadSafe = true)] extern internal static void PhysicsShape_SetWorldDrawing(PhysicsShape shape, bool flag);
         [NativeMethod(Name = "PhysicsShape::GetWorldDrawing", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetWorldDrawing(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetSelectedDrawing", IsThreadSafe = true)] extern internal static void PhysicsShape_SetSelectedDrawing(ReadOnlySpan<PhysicsShape> shapes, bool selected);
+        [NativeMethod(Name = "PhysicsShape::GetSelectedDrawing", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetSelectedDrawing(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetDrawTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetDrawTarget(PhysicsShape shape, PhysicsWorld.DrawTarget drawTarget);
+        [NativeMethod(Name = "PhysicsShape::GetDrawTarget", IsThreadSafe = true)] extern internal static PhysicsWorld.DrawTarget PhysicsShape_GetDrawTarget(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::Draw", IsThreadSafe = true)] extern internal static void PhysicsShape_Draw(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetSurfaceMaterial", IsThreadSafe = true)] extern internal static void PhysicsShape_SetSurfaceMaterial(PhysicsShape shape, PhysicsShape.SurfaceMaterial surfaceMateria);
+        [NativeMethod(Name = "PhysicsShape::SetSurfaceMaterialSpan", IsThreadSafe = true)] extern internal static void PhysicsShape_SetSurfaceMaterialSpan(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsShape.SurfaceMaterial> surfaceMaterials);
+        [NativeMethod(Name = "PhysicsShape::SetSurfaceMaterialSpanAll", IsThreadSafe = true)] extern internal static void PhysicsShape_SetSurfaceMaterialSpanAll(ReadOnlySpan<PhysicsShape> shapes, PhysicsShape.SurfaceMaterial surfaceMaterial);
         [NativeMethod(Name = "PhysicsShape::GetSurfaceMaterial", IsThreadSafe = true)] extern internal static PhysicsShape.SurfaceMaterial PhysicsShape_GetSurfaceMaterial(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetContactFilter", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactFilter(PhysicsShape shape, PhysicsShape.ContactFilter filter);
+        [NativeMethod(Name = "PhysicsShape::SetContactFilterSpan", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactFilterSpan(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsShape.ContactFilter> filters);
+        [NativeMethod(Name = "PhysicsShape::SetContactFilterSpanAll", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactFilterSpanAll(ReadOnlySpan<PhysicsShape> shapes, PhysicsShape.ContactFilter filter);
         [NativeMethod(Name = "PhysicsShape::GetContactFilter", IsThreadSafe = true)] extern internal static PhysicsShape.ContactFilter PhysicsShape_GetContactFilter(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetMoverData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetMoverData(PhysicsShape shape, PhysicsShape.MoverData moverData);
         [NativeMethod(Name = "PhysicsShape::GetMoverData", IsThreadSafe = true)] extern internal static PhysicsShape.MoverData PhysicsShape_GetMoverData(PhysicsShape shape);
@@ -99,7 +108,6 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::GetLocalCenter", IsThreadSafe = true)] extern internal static Vector2 PhysicsShape_GetLocalCenter(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::GetPerimeter", IsThreadSafe = true)] extern internal static float PhysicsShape_GetPerimeter(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::GetPerimeterProjected", IsThreadSafe = true)] extern internal static float PhysicsShape_GetPerimeterProjected(PhysicsShape shape, Vector2 axis);
-        [NativeMethod(Name = "PhysicsShape::Draw", IsThreadSafe = true)] extern internal static void PhysicsShape_Draw(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetOwner", IsThreadSafe = true)] extern internal static void PhysicsShape_SetOwner(ReadOnlySpan<PhysicsShape> shapes, UnityEngine.Object ownerObject, int ownerKey);
         [NativeMethod(Name = "PhysicsShape::GetOwner", IsThreadSafe = true)] extern internal static UnityEngine.Object PhysicsShape_GetOwner(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::IsOwned", IsThreadSafe = true)] extern internal static bool PhysicsShape_IsOwned(PhysicsShape shape);
@@ -108,9 +116,12 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::SetCallbackTarget", IsThreadSafe = true)] extern internal static void PhysicsShape_SetCallbackTarget(PhysicsShape shape, System.Object callbackTarget);
         [NativeMethod(Name = "PhysicsShape::GetCallbackTarget", IsThreadSafe = true)] extern internal static System.Object PhysicsShape_GetCallbackTarget(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetUserData(PhysicsShape shape, PhysicsUserData physicsUserData);
+        [NativeMethod(Name = "PhysicsShape::SetUserDataSpan", IsThreadSafe = true)] extern internal static void PhysicsShape_SetUserDataSpan(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsUserData> userDatas);
+        [NativeMethod(Name = "PhysicsShape::SetUserDataSpanAll", IsThreadSafe = true)] extern internal static void PhysicsShape_SetUserDataSpanAll(ReadOnlySpan<PhysicsShape> shapes, PhysicsUserData physicsUserData);
         [NativeMethod(Name = "PhysicsShape::GetUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetUserData(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsShape_SetOwnerUserData(PhysicsShape shape, PhysicsUserData physicsUserData, int ownerKey);
         [NativeMethod(Name = "PhysicsShape::SetOwnerUserDataSpan", IsThreadSafe = true)] extern internal static void PhysicsShape_SetOwnerUserDataSpan(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsUserData> userDatas, int ownerKey);
+        [NativeMethod(Name = "PhysicsShape::SetOwnerUserDataSpanAll", IsThreadSafe = true)] extern internal static void PhysicsShape_SetOwnerUserDataSpanAll(ReadOnlySpan<PhysicsShape> shapes, PhysicsUserData physicsUserData, int ownerKey);
         [NativeMethod(Name = "PhysicsShape::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsShape_GetOwnerUserData(PhysicsShape shape);
 
         [NativeMethod(Name = "PhysicsCore2D::ContactFilter::CanContact", IsThreadSafe = true)] extern internal static bool PhysicsShape_ContactFilter_CanContact(PhysicsShape.ContactFilter filterA, PhysicsShape.ContactFilter filterB);

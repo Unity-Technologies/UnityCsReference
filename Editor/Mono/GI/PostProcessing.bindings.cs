@@ -237,6 +237,11 @@ namespace UnityEngine.LightTransport
 
             public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
             {
+                return ConvertToUnityFormat(context, irradianceIn, irradianceOut, probeCount, true);
+            }
+
+            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount, bool divideByPI)
+            {
                 Debug.Assert(context is ReferenceContext, "Expected ReferenceContext but got something else.");
                 if (context is not ReferenceContext refContext)
                     return false;
@@ -251,6 +256,8 @@ namespace UnityEngine.LightTransport
                 float shY21Normalization = shY2_2Normalization;
                 float shY22Normalization = Mathf.Sqrt(15.0f / Mathf.PI) / 4.0f;
 
+                float conventionDivisor = divideByPI ? Mathf.PI : 1.0f;
+
                 NativeArray<byte> irradianceInNativeArray = refContext.GetNativeArray(irradianceIn.Id);
                 NativeArray<byte> irradianceOutNativeArray = refContext.GetNativeArray(irradianceOut.Id);
                 NativeArray<SphericalHarmonicsL2> IrradianceIn = irradianceInNativeArray.Reinterpret<SphericalHarmonicsL2>(1);
@@ -264,41 +271,41 @@ namespace UnityEngine.LightTransport
                         // L0
                         output[rgb, SH.L00] = irradiance[rgb, SH.L00];
                         output[rgb, SH.L00] *= shY0Normalization; // 1)
-                        output[rgb, SH.L00] /= Mathf.PI; // 2)
+                        output[rgb, SH.L00] /= conventionDivisor; // 2)
 
                         // L1
                         output[rgb, SH.L1_1] = irradiance[rgb, SH.L10]; // 3)
                         output[rgb, SH.L1_1] *= shY1Normalization; // 1)
-                        output[rgb, SH.L1_1] /= Mathf.PI; // 3 )
+                        output[rgb, SH.L1_1] /= conventionDivisor; // 2)
 
                         output[rgb, SH.L10] = irradiance[rgb, SH.L11]; // 3)
                         output[rgb, SH.L10] *= shY1Normalization; // 1)
-                        output[rgb, SH.L10] /= Mathf.PI; // 2)
+                        output[rgb, SH.L10] /= conventionDivisor; // 2)
 
                         output[rgb, SH.L11] = irradiance[rgb, SH.L1_1]; // 3)
                         output[rgb, SH.L11] *= shY1Normalization; // 1)
-                        output[rgb, SH.L11] /= Mathf.PI; // 2)
+                        output[rgb, SH.L11] /= conventionDivisor; // 2)
 
                         // L2
                         output[rgb, SH.L2_2] = irradiance[rgb, SH.L2_2];
                         output[rgb, SH.L2_2] *= shY2_2Normalization; // 1)
-                        output[rgb, SH.L2_2] /= Mathf.PI; // 2)
+                        output[rgb, SH.L2_2] /= conventionDivisor; // 2)
 
                         output[rgb, SH.L2_1] = irradiance[rgb, SH.L2_1];
                         output[rgb, SH.L2_1] *= shY2_1Normalization; // 1)
-                        output[rgb, SH.L2_1] /= Mathf.PI; // 2)
+                        output[rgb, SH.L2_1] /= conventionDivisor; // 2)
 
                         output[rgb, SH.L20] = irradiance[rgb, SH.L20];
                         output[rgb, SH.L20] *= shY20Normalization; // 1)
-                        output[rgb, SH.L20] /= Mathf.PI; // 2)
+                        output[rgb, SH.L20] /= conventionDivisor; // 2)
 
                         output[rgb, SH.L21] = irradiance[rgb, SH.L21];
                         output[rgb, SH.L21] *= shY21Normalization; // 1)
-                        output[rgb, SH.L21] /= Mathf.PI; // 2)
+                        output[rgb, SH.L21] /= conventionDivisor; // 2)
 
                         output[rgb, SH.L22] = irradiance[rgb, SH.L22];
                         output[rgb, SH.L22] *= shY22Normalization; // 1)
-                        output[rgb, SH.L22] /= Mathf.PI; // 2)
+                        output[rgb, SH.L22] /= conventionDivisor; // 2)
                     }
                     IrradianceOut[probeIdx] = output;
                 }
@@ -431,11 +438,16 @@ namespace UnityEngine.LightTransport
 
             public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount)
             {
+                return ConvertToUnityFormat(context, irradianceIn, irradianceOut, probeCount, true);
+            }
+
+            public bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount, bool divideByPI)
+            {
                 Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
                 if (context is not RadeonRaysContext rrContext)
                     return false;
 
-                return RadeonRaysContext.ConvertToUnityFormatInternal(rrContext, irradianceIn.Id, irradianceOut.Id, probeCount);
+                return RadeonRaysContext.ConvertToUnityFormatInternal(rrContext, irradianceIn.Id, irradianceOut.Id, probeCount, divideByPI);
             }
 
             public bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> a, BufferSlice<SphericalHarmonicsL2> b, BufferSlice<SphericalHarmonicsL2> sum, int probeCount)

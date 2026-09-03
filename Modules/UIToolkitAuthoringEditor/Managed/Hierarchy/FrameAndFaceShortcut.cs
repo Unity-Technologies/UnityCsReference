@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using JetBrains.Annotations;
 using Unity.Hierarchy.Editor;
 using Unity.Scripting.LifecycleManagement;
@@ -18,6 +17,7 @@ namespace Unity.UIToolkit.Editor;
 // binding stays reserved for stock Frame Selected.
 static partial class FrameAndFaceShortcut
 {
+    [AutoStaticsCleanupOnCodeReload]
     static ShortcutContext s_Context;
 
     [OnCodeLoaded, UsedImplicitly]
@@ -40,4 +40,3 @@ static partial class FrameAndFaceShortcut
     static void OnShortcut(ShortcutArguments args)
         => RequestFramingCommand.Execute(CommandSources.Hierarchy, element: null, orientToFace: true);
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

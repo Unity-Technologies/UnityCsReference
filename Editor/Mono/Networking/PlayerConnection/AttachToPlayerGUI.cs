@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Kernel not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Hardware;
@@ -104,8 +105,8 @@ namespace UnityEditor.Networking.PlayerConnection
             public static readonly GUIContent AutoconnectedPlayer = UnityEditor.EditorGUIUtility.TrTextContent("(Autoconnected Player)");
             public static readonly GUIContent ConnectingToPlayerMessage = UnityEditor.EditorGUIUtility.TrTextContent("Connecting to player... (this can take a while)");
 
-            public static readonly string LocalHostProhibited = L10n.Tr(" (Localhost prohibited)");
-            public static readonly string VersionMismatch = L10n.Tr(" (Version mismatch)");
+            public static readonly string LocalHostProhibited = L10n.Tr(" (Localhost prohibited)", null);
+            public static readonly string VersionMismatch = L10n.Tr(" (Version mismatch)", null);
 
             public static readonly string Editor = "Editor";
             public static readonly string DirectConnection = "Direct Connection";
@@ -425,7 +426,7 @@ namespace UnityEditor.Networking.PlayerConnection
         static class Content
         {
             public static readonly GUIContent ConnectButtonContent = UnityEditor.EditorGUIUtility.TrTextContent("Connect");
-            public static readonly string EnterPlayerIPWindowName = L10n.Tr("Enter Player IP");
+            public static readonly string EnterPlayerIPWindowName = L10n.Tr("Enter Player IP", null);
         }
         private const string k_TextFieldControlId = "IPWindow";
         private const string k_LastIPEditorPrefKey = "ProfilerLastIP";
@@ -484,3 +485,4 @@ namespace UnityEditor.Networking.PlayerConnection
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

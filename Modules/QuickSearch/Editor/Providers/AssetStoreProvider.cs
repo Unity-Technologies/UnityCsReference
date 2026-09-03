@@ -59,10 +59,10 @@ namespace UnityEditor.Search.Providers
                 [NoAutoStaticsCleanup]
                 public static GUIStyle button = new GUIStyle(GUI.skin.button);
 
-                public static readonly GUIContent viewMyAsset = new GUIContent(L10n.Tr("View in My Assets"));
-                public static readonly GUIContent addToMyAsset = new GUIContent(L10n.Tr("Add to My Assets"));
-                public static readonly GUIContent viewOnWeb = new GUIContent(L10n.Tr("View on Web"));
-                public static readonly GUIContent eula = new GUIContent(L10n.Tr("Standard Unity Asset Store EULA"));
+                public static readonly GUIContent viewMyAsset = new GUIContent(L10n.Tr("View in My Assets", null));
+                public static readonly GUIContent addToMyAsset = new GUIContent(L10n.Tr("Add to My Assets", null));
+                public static readonly GUIContent viewOnWeb = new GUIContent(L10n.Tr("View on Web", null));
+                public static readonly GUIContent eula = new GUIContent(L10n.Tr("Standard Unity Asset Store EULA", null));
 
                 static void SetupMargin(GUIStyle style)
                 {

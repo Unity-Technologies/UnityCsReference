@@ -85,7 +85,7 @@ namespace UnityEditor.AddComponent
                 return;
             }
 
-            GUILayout.Label(L10n.Tr("Name"), EditorStyles.label);
+            GUILayout.Label(L10n.Tr("Name", null), EditorStyles.label);
 
             EditorGUI.FocusTextInControl("NewScriptName");
             GUI.SetNextControlName("NewScriptName");
@@ -102,7 +102,7 @@ namespace UnityEditor.AddComponent
 
             using (new EditorGUI.DisabledScope(!canCreate))
             {
-                if (GUILayout.Button(L10n.Tr("Create and Add")))
+                if (GUILayout.Button(L10n.Tr("Create and Add", null)))
                 {
                     m_OnCreateNewScript(newScriptItem);
                 }

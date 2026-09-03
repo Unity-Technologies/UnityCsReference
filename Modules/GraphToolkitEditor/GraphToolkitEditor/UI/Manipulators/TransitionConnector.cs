@@ -109,7 +109,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="evt">The mouse down event.</param>
         protected bool HandleMouseDown(MouseDownEvent evt)
         {
-            if (OwnerModel is IPlaceholder)
+            if (PlaceholderModelHelper.IsMissingTypeModel(OwnerModel))
                 return false;
 
             var border = OwnerElement?.Border;

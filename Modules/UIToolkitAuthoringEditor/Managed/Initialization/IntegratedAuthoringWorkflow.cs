@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using JetBrains.Annotations;
+using Unity.Hierarchy.Editor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 
@@ -10,17 +12,34 @@ namespace Unity.UIToolkit.Editor;
 
 static class IntegratedAuthoringWorkflow
 {
-    internal static void OnStageChanged(Stage previous, Stage current)
+    [InitializeOnLoadMethod, UsedImplicitly]
+    private static void RegisterStageHandlers()
     {
-        switch (current)
+        StageNavigationManager.instance.stageChanging += OnStageWillChange;
+    }
+
+    [/*BeforeManagedObjectsDisabled,*/ UsedImplicitly]
+    private static void UnregisterStageHandlers()
+    {
+        StageNavigationManager.instance.stageChanging -= OnStageWillChange;
+    }
+
+    private static void OnStageWillChange(Stage previousStage, Stage nextStage)
+    {
+        switch (nextStage)
         {
             case VisualElementEditingStage:
-                var fromMainStage = previous is MainStage;
+                var fromMainStage = previousStage is MainStage;
                 MaybeOpenWindow<StyleSheetsWindow>(UIToolkitAuthoringSettings.AutoOpenStyleSheetsWindow, fromMainStage);
                 MaybeOpenWindow<UIViewportWindow>(UIToolkitAuthoringSettings.AutoOpenUIViewportWindow, fromMainStage, typeof(SceneView));
+                HierarchyWindow.RegisterNodeTypeHandler<VisualElementNodeHandler>();
                 break;
             case MainStage:
                 FocusWindow<SceneView>();
+                HierarchyWindow.RegisterNodeTypeHandler<VisualElementNodeHandler>();
+                break;
+            default:
+                HierarchyWindow.UnregisterNodeTypeHandler<VisualElementNodeHandler>();
                 break;
         }
     }

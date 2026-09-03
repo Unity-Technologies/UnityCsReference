@@ -2,11 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
@@ -15,6 +15,7 @@ namespace UnityEditor.Connect
         const string k_DefaultGenesisUrl = "https://core.cloud.unity3d.com/api";
         const string k_DefaultServicesGatewayUrl = "https://services.unity.com/api";
 
+        [NoAutoStaticsCleanup] // immutable URI routing table; populated once at startup
         static readonly Dictionary<ServicesGatewayUriId, string> k_ServicesGatewayUriPathParameters = new()
         {
             {ServicesGatewayUriId.GetOrganizationDetails, "/api/unity/legacy/v1/organizations/{0}"},
@@ -24,6 +25,7 @@ namespace UnityEditor.Connect
             {ServicesGatewayUriId.GetUserForProject, "/api/unity/legacy/v1/projects/{0}/users/me"}
         };
 
+        [NoAutoStaticsCleanup] // immutable URI routing table; populated once at startup
         static readonly Dictionary<GenesisUriId, string> k_GenesisUriPathParameters = new()
         {
             { GenesisUriId.LegacyGetOrganizationDetails, "/orgs/{0}" }
@@ -71,4 +73,3 @@ namespace UnityEditor.Connect
     }
 }
 
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

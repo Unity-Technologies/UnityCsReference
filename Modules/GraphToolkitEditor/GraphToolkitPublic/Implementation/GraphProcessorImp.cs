@@ -14,23 +14,41 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         static Model GetModel(object context)
         {
-            AbstractNodeModel nodeModel;
-            if (context is Node userNode)
-                nodeModel = userNode.m_Implementation;
-            else
+            switch (context)
             {
-                if (context is INode node)
-                    nodeModel = node as AbstractNodeModel;
-                else
-                {
-                    nodeModel = null;
-                }
+                case Node userNode:
+                    return userNode.m_Implementation;
+                case State userState:
+                    return userState.m_Implementation;
+                case SelfTransition userTransition:
+                    return userTransition.m_Implementation;
+                case Condition userCondition:
+                    return GetTransitionSupport(userCondition.m_Implementation);
+                case TransitionSupportModel transitionSupport:
+                    return transitionSupport;
+                case TransitionModel rule:
+                    return rule.TransitionSupportModel;
+                case ConditionModel condition:
+                    return GetTransitionSupport(condition);
+                case PortModel port:
+                    return port;
+                case INode node:
+                    return node as AbstractNodeModel;
+                case IState state:
+                    return state as StateModel;
+                default:
+                    return null;
+            }
+        }
+
+        internal static Model GetTransitionSupport(ConditionModel conditionModel)
+        {
+            for (var condition = conditionModel; condition != null; condition = condition.Parent)
+            {
+                if (condition.Transition?.TransitionSupportModel != null)
+                    return condition.Transition.TransitionSupportModel;
             }
 
-            if (nodeModel != null)
-                return nodeModel;
-            if (context is PortModel port)
-                return port;
             return null;
         }
 
@@ -47,17 +65,17 @@ namespace Unity.GraphToolkit.Editor.Implementation
             AddMessage(message.ToString(), GetModel(context) ?? m_DefaultModel, userData: context);
         }
 
-        public void LogError(object message, object context, GraphLogAction graphLogAction)
+        public void LogError(object message, object context, ILogAction logAction)
         {
-            AddError(message.ToString(), GetModel(context) ?? m_DefaultModel, graphLogAction, userData: context);
+            AddError(message.ToString(), GetModel(context) ?? m_DefaultModel, logAction, userData: context);
         }
-        public void LogWarning(object message, object context, GraphLogAction graphLogAction)
+        public void LogWarning(object message, object context, ILogAction logAction)
         {
-            AddWarning(message.ToString(), GetModel(context) ?? m_DefaultModel, graphLogAction, userData: context);
+            AddWarning(message.ToString(), GetModel(context) ?? m_DefaultModel, logAction, userData: context);
         }
-        public void Log(object message, object context, GraphLogAction graphLogAction)
+        public void Log(object message, object context, ILogAction logAction)
         {
-            AddMessage(message.ToString(), GetModel(context) ?? m_DefaultModel, graphLogAction, userData: context);
+            AddMessage(message.ToString(), GetModel(context) ?? m_DefaultModel, logAction, userData: context);
         }
     }
 

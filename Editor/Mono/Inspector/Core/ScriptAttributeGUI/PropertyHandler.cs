@@ -52,6 +52,10 @@ namespace UnityEditor
         [NoAutoStaticsCleanup] // transient inspector state counters, safe to persist
         static int s_LastInspectorNumComponents;
 
+        // A clip, a group or GUI.matrix can put visible content left of or above the GUI origin, so a caller with no
+        // clipping information needs a visible area that also covers negative coordinates.
+        static readonly Rect k_UnboundedVisibleArea = Rect.MinMaxRect(float.MinValue / 2, float.MinValue / 2, float.MaxValue / 2, float.MaxValue / 2);
+
         [OnCodeLoaded]
         static void Initialize()
         {
@@ -209,8 +213,7 @@ namespace UnityEditor
         // returns true if children needs to be drawn separately
         public bool OnGUI(Rect position, SerializedProperty property, GUIContent label, bool includeChildren)
         {
-            Rect visibleArea = new Rect(0, 0, float.MaxValue, float.MaxValue);
-            return OnGUI(position, property, label, includeChildren, visibleArea);
+            return OnGUI(position, property, label, includeChildren, k_UnboundedVisibleArea);
         }
 
         internal bool OnGUI(Rect position, SerializedProperty property, GUIContent label, bool includeChildren, Rect visibleArea)

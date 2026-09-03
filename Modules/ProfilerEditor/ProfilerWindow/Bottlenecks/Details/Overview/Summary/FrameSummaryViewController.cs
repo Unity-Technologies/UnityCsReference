@@ -13,9 +13,9 @@ namespace Unity.Profiling.Editor.UI
     {
         static class Content
         {
-            public static readonly string k_NoDataText = L10n.Tr("Select a frame from the charts above to see its details here.");
-            public static readonly string k_MainThreadUtilizationTitle = L10n.Tr("Main thread utilization");
-            public static readonly string k_SystemsImpactTitle = L10n.Tr("Systems impact in frame");
+            public static readonly string k_NoDataText = L10n.Tr("Select a frame from the charts above to see its details here.", null);
+            public static readonly string k_MainThreadUtilizationTitle = L10n.Tr("Main thread utilization", null);
+            public static readonly string k_SystemsImpactTitle = L10n.Tr("Systems impact in frame", null);
         }
 
         // Model.

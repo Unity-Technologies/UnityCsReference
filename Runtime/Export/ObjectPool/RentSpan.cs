@@ -18,7 +18,7 @@ namespace UnityEngine.Pool
     /// which pools more efficiently by renting byte arrays and casting them to the desired type.
     /// </remarks>
     /// <typeparam name="T">The managed element type (must be a class).</typeparam>
-    [VisibleToOtherModules]
+    [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.HierarchyModule", "UnityEditor.HierarchyModule", "UnityEditor.QuickSearchModule", "UnityEngine.UIElementsModule")]
     readonly ref struct RentSpan<T> where T : class
     {
         readonly T[] m_Array;

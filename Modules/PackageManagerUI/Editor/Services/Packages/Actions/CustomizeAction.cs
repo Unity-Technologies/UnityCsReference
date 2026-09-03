@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal;
@@ -34,30 +33,28 @@ internal class CustomizeAction : PackageAction
                && !version.HasTag(PackageTag.Custom | PackageTag.LegacyFormat | PackageTag.BuiltIn | PackageTag.Feature);
     }
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
+        new DisableIfCompiling(m_Application)
+    );
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
         if (isInProgress)
             return k_InProgressGenericTooltip;
-        return L10n.Tr("Embed the package in your project so you can modify it.");
+        return L10n.Tr("Embed the package in your project so you can modify it.", null);
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Customize");
+        return L10n.Tr("Customize", null);
     }
 
     public override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.isEmbedInProgress;
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfPackageIsInInvalidLocation(version);
-        yield return new DisableIfEntitlementsError(version);
-        yield return new DisableIfPackageIsNotLoaded(version);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfPackageIsInInvalidLocation(),
+        new DisableIfEntitlementsError(),
+        new DisableIfPackageIsNotLoaded()
+    );
 }

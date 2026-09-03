@@ -184,7 +184,7 @@ namespace UnityEditor.Shaders
                     }
                 }
 
-                msg = "";
+                msg = string.Empty;
                 return true;
             }
 
@@ -324,7 +324,7 @@ namespace UnityEditor.Shaders
                 }
             }
 
-            msg = "";
+            msg = string.Empty;
             return true;
         }
 
@@ -391,9 +391,16 @@ namespace UnityEditor.Shaders
 
         internal static bool SplitAndValidateDefine(string define, out string identifier, out string value, out string msg)
         {
-            var sections = define.Split((char[])null, StringSplitOptions.RemoveEmptyEntries); // null catches all whitespace variants
             identifier = "";
             value = "";
+
+            if (string.IsNullOrWhiteSpace(define))
+            {
+                msg = "Invalid empty define. Use identifier and numeric value pair separated with a whitespace.";
+                return false;
+            }
+
+            var sections = define.Split((char[])null, StringSplitOptions.RemoveEmptyEntries); // null catches all whitespace variants
 
             if (sections.Length != 2)
             {
@@ -451,7 +458,7 @@ namespace UnityEditor.Shaders
 
             identifier = sections[0];
             value = sections[1];
-            msg = "";
+            msg = string.Empty;
             return true;
         }
 
@@ -484,7 +491,7 @@ namespace UnityEditor.Shaders
                 }
             }
 
-            msg = "";
+            msg = string.Empty;
             return true;
         }
 
@@ -532,7 +539,7 @@ namespace UnityEditor.Shaders
                     + api + "' at index " + index + ".";
                 return false;
             }
-            msg = "";
+            msg = string.Empty;
             return true;
         }
 
@@ -543,11 +550,11 @@ namespace UnityEditor.Shaders
                 msg = "Invalid graphics API '" + api + "' at index " + index + ".";
                 return false;
             }
-            msg = "";
+            msg = string.Empty;
             return true;
         }
 
-        static bool IsValidCompilerSettingsEntry(ShaderCompilerSettings entry, int index, out string msg)
+        static bool IsWellFormedCompilerSettingsEntry(ShaderCompilerSettings entry, int index, out string msg)
         {
             if (!IsValidGraphicsAPI(entry.graphicsAPI, index, out msg))
                 return false;
@@ -559,11 +566,20 @@ namespace UnityEditor.Shaders
                 return false;
             }
 
+            msg = string.Empty;
+            return true;
+        }
+
+        static bool IsValidCompilerSettingsEntry(ShaderCompilerSettings entry, int index, out string msg)
+        {
+            if (!IsWellFormedCompilerSettingsEntry(entry, index, out msg))
+                return false;
+
             if (entry.compilerToolchainOverride != ShaderCompilerToolchain.Default
                 && !IsToolchainSupportedForAPI(entry.graphicsAPI, entry.compilerToolchainOverride, index, out msg))
                 return false;
 
-            msg = "";
+            msg = string.Empty;
             return true;
         }
 
@@ -589,7 +605,7 @@ namespace UnityEditor.Shaders
                 }
             }
 
-            msg = "";
+            msg = string.Empty;
             return true;
         }
 
@@ -615,7 +631,12 @@ namespace UnityEditor.Shaders
             for (int i = 0, n = settings.Length; i < n; ++i)
             {
                 ShaderCompilerSettings entry = settings[i];
-                if (!IsValidCompilerSettingsEntry(entry, i, out _))
+
+                bool keep = SupportsCompilerSettings(entry.graphicsAPI)
+                    ? IsValidCompilerSettingsEntry(entry, i, out _)
+                    : IsWellFormedCompilerSettingsEntry(entry, i, out _);
+
+                if (!keep)
                 {
                     changed = true;
                 }
@@ -711,10 +732,20 @@ namespace UnityEditor.Shaders
 
         internal static extern ShaderCompilerToolchain[] GetSupportedCompilerToolchainsForAPI(GraphicsDeviceType api);
 
+        internal static extern bool SupportsCompilerSettings(GraphicsDeviceType api);
+
         internal static extern bool SupportsCompilerToolchainOverride(GraphicsDeviceType api);
 
         internal static extern bool SupportsOptimizationLevel(GraphicsDeviceType api);
 
         internal static extern bool SupportsDebugSymbols(GraphicsDeviceType api);
+
+        internal static extern string GetCompilerDisplayNameForAPI(GraphicsDeviceType api, ShaderCompilerToolchain compiler);
+
+        internal static extern string GetCompilerTooltipForAPI(GraphicsDeviceType api, ShaderCompilerToolchain compiler);
+
+        internal static extern string GetDisplayNameForAPI(GraphicsDeviceType api);
+
+        internal static extern string GetDebugSymbolsTooltipForAPI(GraphicsDeviceType api);
     }
 }

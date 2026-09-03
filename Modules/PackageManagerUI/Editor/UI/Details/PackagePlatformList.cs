@@ -40,7 +40,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             UIUtils.SetElementDisplay(this, true);
 
-            var listLabel = platformNames.Length > 1 ? L10n.Tr("Supported Platforms:") : L10n.Tr("Supported Platform:");
+            var listLabel = platformNames.Length > 1 ? L10n.Tr("Supported Platforms:", null) : L10n.Tr("Supported Platform:", null);
             m_TagLabelList.Refresh(listLabel, platformNames);
         }
 

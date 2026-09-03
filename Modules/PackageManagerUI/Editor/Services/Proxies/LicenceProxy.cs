@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var updated = LicensingUtility.UpdateLicense();
             if (!updated)
-                Debug.LogError(L10n.Tr("[Package Manager Window] Failed to update licenses."));
+                Debug.LogError(L10n.Tr("[Package Manager Window] Failed to update licenses.", null));
 
             return updated;
         }

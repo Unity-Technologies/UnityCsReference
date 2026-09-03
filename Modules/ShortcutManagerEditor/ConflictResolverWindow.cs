@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ShortcutManagement not yet converted
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -26,6 +27,10 @@ namespace UnityEditor.ShortcutManagement
 
     class ConflictResolverWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal ConflictResolverWindow() { }
+        #pragma warning restore UAL0015
+
         internal const string performButtonControlName = "PerformButton";
         internal const string cancelButtonControlName = "CancelButton";
         internal const string rebindToggleCommandName = "rebindToggle";
@@ -204,7 +209,7 @@ namespace UnityEditor.ShortcutManagement
             m_ConflictListView = new ConflictListView(m_TreeViewState, multiColumnHeader, m_Entries);
 
 
-            m_Header = string.Format(L10n.Tr("The binding \"{0}\" conflicts with multiple commands."), KeyCombination.SequenceToString(keyCombinationSequence));
+            m_Header = string.Format(L10n.Tr("The binding \"{0}\" conflicts with multiple commands.", null), KeyCombination.SequenceToString(keyCombinationSequence));
         }
 
         private void OnEnable()
@@ -360,3 +365,4 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

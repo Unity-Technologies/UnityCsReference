@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>../../artifacts/UnityEngine.dll</BaseIntermediateOutputPath>
+  </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
-    <IntermediateOutputPath>../../artifacts/UnityEngine.dll/Debug</IntermediateOutputPath>
     <AssemblyName>UnityEngine</AssemblyName>
     <TargetFramework>netstandard2.1</TargetFramework>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;NET_BCL_ATTRS_VISIBLE_TO_MODULES;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_ASSERTIONS;UNITY_CURL_BUILT_IN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_WEBGL_API;USE_PROPERTIES_MODULE</DefineConstants>
+    <DefineConstants>$(DefineConstants);ALLOW_IMPLICIT_INTERNAL_VISIBILITY;ALLOW_IMPLICIT_INTERNAL_VISIBILITY;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;EDITOR_ONLY_NAVMESH_BUILDER_DEPRECATED;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AMD;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_AUDIO_SCRIPTABLE_PIPELINE;ENABLE_BURST;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_ENGINE_DIAGNOSTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_LOCALIZATION_RUNTIME;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_OFFMESHLINK_TO_NAVMESHLINK;ENABLE_NETWORK;ENABLE_NINTENDO_CORE_SCRIPT_BINDINGS;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_SMARTSTRINGS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_CLOUD_IDENTIFIERS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_CONSENT;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_UNIFIED_RAYTRACING_COMPUTE_BACKEND;INCLUDE_UNIFIED_RAYTRACING_HARDWARE_BACKEND;NET_BCL_ATTRS_VISIBLE_TO_MODULES;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_ASSERTIONS;UNITY_CURL_BUILT_IN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_WEBGL_API;USE_PROPERTIES_MODULE</DefineConstants>
     <LangVersion>14.0</LangVersion>
     <NoWarn>1701;626;8632</NoWarn>
     <Nullable>disable</Nullable>
@@ -152,6 +154,9 @@
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\DebugLifecycle.cs">
       <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\DebugLifecycle.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\DelegateAutoCleanup.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\DelegateAutoCleanup.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\DependencyOrderedNativeCallbackProvider.cs">
       <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\DependencyOrderedNativeCallbackProvider.cs</Link>
     </Compile>
@@ -184,6 +189,9 @@
     </Compile>
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\OnceInScope.cs">
       <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\OnceInScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\PlayModeScope.cs">
+      <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\PlayModeScope.cs</Link>
     </Compile>
     <Compile Include="..\..\External\ScriptingCore\Unity.Scripting\LifecycleManagement\ReadOnlyAssemblyList.cs">
       <Link>External\ScriptingCore\Unity.Scripting\LifecycleManagement\ReadOnlyAssemblyList.cs</Link>
@@ -325,9 +333,6 @@
     </Compile>
     <Compile Include="..\..\Modules\AMD\ScriptBindings\Plugin.bindings.cs">
       <Link>Modules\AMD\ScriptBindings\Plugin.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs">
-      <Link>Modules\AR\ARCore\ScriptBindings\ARCore.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Accessibility\AssemblyInfo.cs">
       <Link>Modules\Accessibility\AssemblyInfo.cs</Link>
@@ -1373,17 +1378,8 @@
     <Compile Include="..\..\Modules\IMGUI\DrawStates.cs">
       <Link>Modules\IMGUI\DrawStates.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\IMGUI\Event.bindings.cs">
-      <Link>Modules\IMGUI\Event.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\IMGUI\Event.cs">
-      <Link>Modules\IMGUI\Event.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\IMGUI\EventCommandNames.cs">
-      <Link>Modules\IMGUI\EventCommandNames.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\IMGUI\EventEnums.cs">
-      <Link>Modules\IMGUI\EventEnums.cs</Link>
+    <Compile Include="..\..\Modules\IMGUI\EventIMGUIBindings.cs">
+      <Link>Modules\IMGUI\EventIMGUIBindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\IMGUI\EventInterests.cs">
       <Link>Modules\IMGUI\EventInterests.cs</Link>
@@ -1568,8 +1564,233 @@
     <Compile Include="..\..\Modules\JSONSerialize\Public\JsonUtility.bindings.cs">
       <Link>Modules\JSONSerialize\Public\JsonUtility.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\AssemblyInfo.cs">
+      <Link>Modules\LocalizationRuntime\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\AwaitableUtility.cs">
+      <Link>Modules\LocalizationRuntime\Managed\AwaitableUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Components\LocalizeAssetEvent.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Components\LocalizeAssetEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Components\LocalizeStringEvent.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Components\LocalizeStringEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Components\LocalizeTextureEvent.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Components\LocalizeTextureEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\ILocaleDiscovery.cs">
+      <Link>Modules\LocalizationRuntime\Managed\ILocaleDiscovery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\IPostProcessValueLocale.cs">
+      <Link>Modules\LocalizationRuntime\Managed\IPostProcessValueLocale.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Locale.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Locale.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\LocaleAssetCache.cs">
+      <Link>Modules\LocalizationRuntime\Managed\LocaleAssetCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\LocaleIdentifier.cs">
+      <Link>Modules\LocalizationRuntime\Managed\LocaleIdentifier.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Metadata\Comment.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Metadata\Comment.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Metadata\ExcludeEntryFromEditorExport.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Metadata\ExcludeEntryFromEditorExport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Metadata\ExcludeEntryFromPlayerExport.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Metadata\ExcludeEntryFromPlayerExport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Metadata\Metadata.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Metadata\Metadata.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Metadata\MetadataType.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Metadata\MetadataType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\AssetKey.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\AssetKey.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\AssetProvider.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\AssetProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\FileTables\FileTableProvider.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\FileTables\FileTableProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\FileTables\ITableFileReader.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\FileTables\ITableFileReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\FileTables\JsonResourceProvider.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\FileTables\JsonResourceProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\FileTables\JsonTableReader.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\FileTables\JsonTableReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\FileTables\ResourceTableData.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\FileTables\ResourceTableData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\FileTables\TableDataConverter.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\FileTables\TableDataConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\IAssetProvider.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\IAssetProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\IAsyncAssetProvider.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\IAsyncAssetProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\ISynchronousAssetProvider.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\ISynchronousAssetProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\ReferencedAssetProvider.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\ReferencedAssetProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Providers\ResourceFolderProvider.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Providers\ResourceFolderProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalVariablesGroup.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalVariablesGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalizedAsset.binding.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalizedAsset.binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalizedAsset.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalizedAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalizedEntry.binding.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalizedEntry.binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalizedEntry.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalizedEntry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalizedReference.binding.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalizedReference.binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalizedReference.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalizedReference.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalizedString.binding.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalizedString.binding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalizedString.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalizedString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Reference\LocalizedTable.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Reference\LocalizedTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\ResourceRelease.cs">
+      <Link>Modules\LocalizationRuntime\Managed\ResourceRelease.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\IStartupLocaleSelector.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Settings\IStartupLocaleSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\LoadingPreference.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Settings\LoadingPreference.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\LocalizationSettings.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Settings\LocalizationSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\ResourceDatabase.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Settings\ResourceDatabase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Settings\StartupLocaleSelectors.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Settings\StartupLocaleSelectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\AssetEntries.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\AssetEntries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\DistributedUIDGenerator.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\DistributedUIDGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\Entries.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\Entries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\IKeyGenerator.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\IKeyGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\IResourceEntry.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\IResourceEntry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\ResourceTable.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\ResourceTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\Selectors.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\Selectors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\SharedTableData.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\SharedTableData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\TableReference.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\TableReference.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\Tables\Variants.cs">
+      <Link>Modules\LocalizationRuntime\Managed\Tables\Variants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\UI\LanguageDropdown.cs">
+      <Link>Modules\LocalizationRuntime\Managed\UI\LanguageDropdown.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\UI\LanguageRadioButtonGroup.cs">
+      <Link>Modules\LocalizationRuntime\Managed\UI\LanguageRadioButtonGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\LocalizationRuntime\Managed\UI\LocaleSelectionBridge.cs">
+      <Link>Modules\LocalizationRuntime\Managed\UI\LocaleSelectionBridge.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Localization\Public\LocalizationAsset.bindings.cs">
       <Link>Modules\Localization\Public\LocalizationAsset.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Collections\MemoryLabel.cs">
+      <Link>Modules\ManagedKernel\Managed\Collections\MemoryLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Collections\MemoryLabelBindings.cs">
+      <Link>Modules\ManagedKernel\Managed\Collections\MemoryLabelBindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Collections\NativeCollectionEnums.bindings.cs">
+      <Link>Modules\ManagedKernel\Managed\Collections\NativeCollectionEnums.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Export\Profiling\KernelMemoryProfiler.bindings.cs">
+      <Link>Modules\ManagedKernel\Managed\Export\Profiling\KernelMemoryProfiler.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Export\Profiling\KernelProfiler.bindings.cs">
+      <Link>Modules\ManagedKernel\Managed\Export\Profiling\KernelProfiler.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Jobs\AtomicSafetyHandle.bindings.cs">
+      <Link>Modules\ManagedKernel\Managed\Jobs\AtomicSafetyHandle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Jobs\BatchQueries.cs">
+      <Link>Modules\ManagedKernel\Managed\Jobs\BatchQueries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Jobs\IJob.cs">
+      <Link>Modules\ManagedKernel\Managed\Jobs\IJob.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Jobs\IJobFor.cs">
+      <Link>Modules\ManagedKernel\Managed\Jobs\IJobFor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Jobs\IJobParallelFor.cs">
+      <Link>Modules\ManagedKernel\Managed\Jobs\IJobParallelFor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Jobs\JobHandle.bindings.cs">
+      <Link>Modules\ManagedKernel\Managed\Jobs\JobHandle.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Jobs\Jobs.bindings.cs">
+      <Link>Modules\ManagedKernel\Managed\Jobs\Jobs.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\NativeArray\DisposeSentinel.cs">
+      <Link>Modules\ManagedKernel\Managed\NativeArray\DisposeSentinel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\NativeArray\NativeArray.cs">
+      <Link>Modules\ManagedKernel\Managed\NativeArray\NativeArray.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\NativeArray\NativeSlice.cs">
+      <Link>Modules\ManagedKernel\Managed\NativeArray\NativeSlice.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Unsafe\UnsafeUtility.bindings.cs">
+      <Link>Modules\ManagedKernel\Managed\Unsafe\UnsafeUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Unsafe\UnsafeUtility.cs">
+      <Link>Modules\ManagedKernel\Managed\Unsafe\UnsafeUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ManagedKernel\Managed\Unsafe\UnsafeUtilityPatchedForwarder.cs">
+      <Link>Modules\ManagedKernel\Managed\Unsafe\UnsafeUtilityPatchedForwarder.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Marshalling\InvokeTests.cs">
       <Link>Modules\Marshalling\InvokeTests.cs</Link>
@@ -1579,6 +1800,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Marshalling\MarshallingTests2.bindings.cs">
       <Link>Modules\Marshalling\MarshallingTests2.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Marshalling\StaticFieldTestUtility.cs">
+      <Link>Modules\Marshalling\StaticFieldTestUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Mathematics\Managed\Geometry\MinMaxAABB.cs">
       <Link>Modules\Mathematics\Managed\Geometry\MinMaxAABB.cs</Link>
@@ -1913,6 +2137,9 @@
     <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs">
       <Link>Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\AssemblyInfo.cs">
+      <Link>Modules\PhysicsCore2D\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\APIUpdates\PhysicsCore2D.obsolete.cs">
       <Link>Modules\PhysicsCore2D\Scripting\APIUpdates\PhysicsCore2D.obsolete.cs</Link>
     </Compile>
@@ -2080,6 +2307,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsEvents.cs">
       <Link>Modules\PhysicsCore2D\Scripting\PhysicsEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsHandleExtensions.cs">
+      <Link>Modules\PhysicsCore2D\Scripting\PhysicsHandleExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsCore2D\Scripting\PhysicsMath.cs">
       <Link>Modules\PhysicsCore2D\Scripting\PhysicsMath.cs</Link>
@@ -2414,6 +2644,9 @@
     <Compile Include="..\..\Modules\Scripting\Burst\BurstDiscardAttribute.cs">
       <Link>Modules\Scripting\Burst\BurstDiscardAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Scripting\Internal\ExcludeFromDocs.cs">
+      <Link>Modules\Scripting\Internal\ExcludeFromDocs.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\Debug\LowLevelDebug.bindings.cs">
       <Link>Modules\Scripting\Scripting\Debug\LowLevelDebug.bindings.cs</Link>
     </Compile>
@@ -2473,6 +2706,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\MonoPInvokeAttribute.cs">
       <Link>Modules\Scripting\Scripting\MonoPInvokeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Scripting\Scripting\NativeCollectionAccessPolicies.cs">
+      <Link>Modules\Scripting\Scripting\NativeCollectionAccessPolicies.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Scripting\Scripting\NativeDisableUnsafePtrRestrictionAttribute.cs">
       <Link>Modules\Scripting\Scripting\NativeDisableUnsafePtrRestrictionAttribute.cs</Link>
@@ -2635,6 +2871,9 @@
     </Compile>
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariablesSource.cs">
       <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariablesSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.binding.cs">
+      <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.binding.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs">
       <Link>Modules\SmartStrings\SmartFormat\Extensions\PersistentVariables\PersistentVariables.cs</Link>
@@ -3575,8 +3814,41 @@
     <Compile Include="..\..\Modules\U2DRuntime\Managed\UTess2D\UTess.cs">
       <Link>Modules\U2DRuntime\Managed\UTess2D\UTess.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UICommon\AssemblyInfo.cs">
+      <Link>Modules\UICommon\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UICommon\Event.bindings.cs">
+      <Link>Modules\UICommon\Event.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UICommon\Event.cs">
+      <Link>Modules\UICommon\Event.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UICommon\EventCommandNames.cs">
+      <Link>Modules\UICommon\EventCommandNames.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UICommon\EventEnums.cs">
+      <Link>Modules\UICommon\EventEnums.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\AssemblyInfo.cs">
       <Link>Modules\UIElements\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Accessibility\AccessibilityFrameProjection.cs">
+      <Link>Modules\UIElements\Core\Accessibility\AccessibilityFrameProjection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Accessibility\AccessibilityNodeMap.cs">
+      <Link>Modules\UIElements\Core\Accessibility\AccessibilityNodeMap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Accessibility\AccessibilityRoleRegistry.cs">
+      <Link>Modules\UIElements\Core\Accessibility\AccessibilityRoleRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Accessibility\AccessibilityTreeGenerator.cs">
+      <Link>Modules\UIElements\Core\Accessibility\AccessibilityTreeGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Accessibility\UITKAccessibilityBridge.cs">
+      <Link>Modules\UIElements\Core\Accessibility\UITKAccessibilityBridge.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Accessibility\VisualTreeAccessibilityUpdater.cs">
+      <Link>Modules\UIElements\Core\Accessibility\VisualTreeAccessibilityUpdater.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\AlignmentUtils.cs">
       <Link>Modules\UIElements\Core\AlignmentUtils.cs</Link>
@@ -3634,6 +3906,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\BindingUpdater.cs">
       <Link>Modules\UIElements\Core\Bindings\BindingUpdater.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Bindings\ComponentBinding.cs">
+      <Link>Modules\UIElements\Core\Bindings\ComponentBinding.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Bindings\ConverterGroup.cs">
       <Link>Modules\UIElements\Core\Bindings\ConverterGroup.cs</Link>
@@ -3754,6 +4029,18 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Collections\Virtualization\VerticalVirtualizationController.cs">
       <Link>Modules\UIElements\Core\Collections\Virtualization\VerticalVirtualizationController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Components\ComponentManager.cs">
+      <Link>Modules\UIElements\Core\Components\ComponentManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Components\IVisualElementComponent.cs">
+      <Link>Modules\UIElements\Core\Components\IVisualElementComponent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Components\RequiresComponentOfTypeAttribute.cs">
+      <Link>Modules\UIElements\Core\Components\RequiresComponentOfTypeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Components\RequiresElementOfTypeAttribute.cs">
+      <Link>Modules\UIElements\Core\Components\RequiresElementOfTypeAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Components\VisualElementSelectorData.cs">
       <Link>Modules\UIElements\Core\Components\VisualElementSelectorData.cs</Link>
@@ -4346,6 +4633,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\ImmediateModeElement.cs">
       <Link>Modules\UIElements\Core\ImmediateModeElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Insights\Insights.cs">
+      <Link>Modules\UIElements\Core\Insights\Insights.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\InteractionEnums.cs">
       <Link>Modules\UIElements\Core\InteractionEnums.cs</Link>
     </Compile>
@@ -4586,6 +4876,12 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRCommandManipulator.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRCommandManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRCurvatureGeometry.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRCurvatureGeometry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRCurvatureMeshModifier.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRCurvatureMeshModifier.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRDetachedAllocator.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRDetachedAllocator.cs</Link>
     </Compile>
@@ -4699,6 +4995,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShaderInfoStorage.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRShaderInfoStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShaderInfoUpdateGuard.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRShaderInfoUpdateGuard.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRShaders.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRShaders.cs</Link>
@@ -4958,6 +5257,12 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\ComputedTransitions.cs">
       <Link>Modules\UIElements\Core\Style\ComputedTransitions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Curvature.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\Curvature.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Curvature.cs">
+      <Link>Modules\UIElements\Core\Style\Curvature.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\CustomPropertyList.cs">
       <Link>Modules\UIElements\Core\Style\CustomPropertyList.cs</Link>
     </Compile>
@@ -5128,6 +5433,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleCursor.cs">
       <Link>Modules\UIElements\Core\Style\StyleCursor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleCurvature.cs">
+      <Link>Modules\UIElements\Core\Style\StyleCurvature.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDataAllocator.bindings.cs">
       <Link>Modules\UIElements\Core\Style\StyleDataAllocator.bindings.cs</Link>
@@ -5318,6 +5626,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\UIAnimationClip.cs">
       <Link>Modules\UIElements\Core\UIAnimationClip.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\UIAnimationPath.cs">
+      <Link>Modules\UIElements\Core\UIAnimationPath.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\UIElementsBridge.cs">
       <Link>Modules\UIElements\Core\UIElementsBridge.cs</Link>
     </Compile>
@@ -5405,6 +5716,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\VectorImage.cs">
       <Link>Modules\UIElements\Core\VectorImage.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualElement.Components.cs">
+      <Link>Modules\UIElements\Core\VisualElement.Components.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualElement.cs">
       <Link>Modules\UIElements\Core\VisualElement.cs</Link>
     </Compile>
@@ -5462,6 +5776,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\VisualTreeAnimationUpdater.cs">
       <Link>Modules\UIElements\Core\VisualTreeAnimationUpdater.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\VisualTreeComponentUpdater.cs">
+      <Link>Modules\UIElements\Core\VisualTreeComponentUpdater.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\VisualTreeHierarchyFlagsUpdater.cs">
       <Link>Modules\UIElements\Core\VisualTreeHierarchyFlagsUpdater.cs</Link>
     </Compile>
@@ -5482,6 +5799,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\WorldSpaceData.cs">
       <Link>Modules\UIElements\Core\WorldSpaceData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UI\AssemblyInfo.cs">
+      <Link>Modules\UI\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UI\Insights\UIInsights.bindings.cs">
+      <Link>Modules\UI\Insights\UIInsights.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UI\Managed\UGUIHelpURL.cs">
       <Link>Modules\UI\Managed\UGUIHelpURL.cs</Link>
@@ -5897,9 +6220,6 @@
     <Compile Include="..\..\Runtime\Export\Bootstrap\BootConfig.bindings.cs">
       <Link>Runtime\Export\Bootstrap\BootConfig.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\BurstLike\BurstLike.bindings.cs">
-      <Link>Runtime\Export\BurstLike\BurstLike.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Caching\Cache.bindings.cs">
       <Link>Runtime\Export\Caching\Cache.bindings.cs</Link>
     </Compile>
@@ -5944,15 +6264,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Collections\CollectionExtensions.cs">
       <Link>Runtime\Export\Collections\CollectionExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Collections\MemoryLabel.cs">
-      <Link>Runtime\Export\Collections\MemoryLabel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Collections\NativeCollectionAccessPolicies.cs">
-      <Link>Runtime\Export\Collections\NativeCollectionAccessPolicies.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Collections\NativeCollectionEnums.bindings.cs">
-      <Link>Runtime\Export\Collections\NativeCollectionEnums.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\ContentNamespace\ContentNamespace.bindings.cs">
       <Link>Runtime\Export\ContentNamespace\ContentNamespace.bindings.cs</Link>
@@ -6392,14 +6703,14 @@
     <Compile Include="..\..\Runtime\Export\Internal\DefaultValueAttribute.cs">
       <Link>Runtime\Export\Internal\DefaultValueAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Internal\ExcludeFromDocs.cs">
-      <Link>Runtime\Export\Internal\ExcludeFromDocs.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Internal\InternalInterfaces.cs">
       <Link>Runtime\Export\Internal\InternalInterfaces.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs">
-      <Link>Runtime\Export\Jobs\AtomicSafetyHandle.bindings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Loadable\LoadableBlobId.bindings.cs">
+      <Link>Runtime\Export\Loadable\LoadableBlobId.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Loadable\LoadableBlobIdUtility.cs">
+      <Link>Runtime\Export\Loadable\LoadableBlobIdUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Loadable\LoadableObjectId.bindings.cs">
       <Link>Runtime\Export\Loadable\LoadableObjectId.bindings.cs</Link>
@@ -6478,15 +6789,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Misc\ObjectDispatcher.bindings.cs">
       <Link>Runtime\Export\Misc\ObjectDispatcher.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\NativeArray\DisposeSentinel.cs">
-      <Link>Runtime\Export\NativeArray\DisposeSentinel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\NativeArray\NativeArray.cs">
-      <Link>Runtime\Export\NativeArray\NativeArray.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\NativeArray\NativeSlice.cs">
-      <Link>Runtime\Export\NativeArray\NativeSlice.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Networking\Ping.bindings.cs">
       <Link>Runtime\Export\Networking\Ping.bindings.cs</Link>
@@ -6718,6 +7020,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Rendering\GPUDrivenRendering.bindings.cs">
       <Link>Runtime\Export\Rendering\GPUDrivenRendering.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Rendering\RendererUpdateManager.bindings.cs">
+      <Link>Runtime\Export\Rendering\RendererUpdateManager.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Resources\IconAttribute.cs">
       <Link>Runtime\Export\Resources\IconAttribute.cs</Link>
@@ -7199,15 +7504,6 @@
     <Compile Include="..\..\Runtime\Export\Unsafe\UTF8StringView.bindings.cs">
       <Link>Runtime\Export\Unsafe\UTF8StringView.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.bindings.cs">
-      <Link>Runtime\Export\Unsafe\UnsafeUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.cs">
-      <Link>Runtime\Export\Unsafe\UnsafeUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtilityPatchedForwarder.cs">
-      <Link>Runtime\Export\Unsafe\UnsafeUtilityPatchedForwarder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\WSA\WSAApplication.bindings.cs">
       <Link>Runtime\Export\WSA\WSAApplication.bindings.cs</Link>
     </Compile>
@@ -7304,26 +7600,8 @@
     <Compile Include="..\..\Runtime\Input\MouseEvents.cs">
       <Link>Runtime\Input\MouseEvents.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Jobs\Managed\BatchQueries.cs">
-      <Link>Runtime\Jobs\Managed\BatchQueries.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Jobs\Managed\IJob.cs">
-      <Link>Runtime\Jobs\Managed\IJob.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Jobs\Managed\IJobFor.cs">
-      <Link>Runtime\Jobs\Managed\IJobFor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Jobs\Managed\IJobParallelFor.cs">
-      <Link>Runtime\Jobs\Managed\IJobParallelFor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Jobs\Managed\IJobParallelForTransform.cs">
       <Link>Runtime\Jobs\Managed\IJobParallelForTransform.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Jobs\ScriptBindings\JobHandle.bindings.cs">
-      <Link>Runtime\Jobs\ScriptBindings\JobHandle.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Jobs\ScriptBindings\Jobs.bindings.cs">
-      <Link>Runtime\Jobs\ScriptBindings\Jobs.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Misc\EntitiesMemorySetup.bindings.cs">
       <Link>Runtime\Misc\EntitiesMemorySetup.bindings.cs</Link>
@@ -7373,14 +7651,8 @@
     <Compile Include="..\..\Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs">
       <Link>Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\DelegateAutoCleanup.cs">
-      <Link>Runtime\Scripting\LifecycleManagement\DelegateAutoCleanup.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\DomainReloadLifecycleController.cs">
       <Link>Runtime\Scripting\LifecycleManagement\DomainReloadLifecycleController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\PlayModeScope.cs">
-      <Link>Runtime\Scripting\LifecycleManagement\PlayModeScope.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\LifecycleManagement\UnityLifecycleInternal.cs">
       <Link>Runtime\Scripting\LifecycleManagement\UnityLifecycleInternal.cs</Link>
@@ -7456,7 +7728,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_1la1q1fv/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_w2d3uxnn/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
@@ -7467,5 +7739,6 @@
     <PackageReference Include="System.IO.Hashing" Version="10.0.8" />
     <PackageReference Include="System.Reflection.Metadata" Version="10.0.8" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.8" />
   </ItemGroup>
 </Project>

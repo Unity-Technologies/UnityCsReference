@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -18,6 +17,7 @@ namespace Unity.UIToolkit.Editor;
 
 internal sealed partial class VisualElementSelectionRegistry : IVisualElementChangeProcessor
 {
+    [AutoStaticsCleanupOnCodeReload]
     static VisualElementSelectionRegistry s_Instance;
 
     public static VisualElementSelectionRegistry Instance => s_Instance;
@@ -76,6 +76,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
     // Per-panel remap list (old instance -> new instance) computed while processing a change batch,
     // consumed by the node handlers to keep their node maps stable across re-clones.
     readonly Dictionary<Panel, List<VisualElementRemap>> m_FrameRemaps = new();
+    [NoAutoStaticsCleanup] // shared empty sentinel, safe to persist
     static readonly List<VisualElementRemap> s_EmptyRemaps = new();
 
     readonly List<Panel> m_TrackedScenePanels = new();
@@ -104,6 +105,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         UIElementsRuntimeUtility.onCreatePanel += OnCreatePanel;
         UIElementsRuntimeUtility.onWillDestroyPanel += OnWillDestroyPanel;
         UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnEnableInSceneAuthoringChanged;
+        UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnMainStageAuthoringChanged;
 
         if (UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
             AdoptExistingScenePanels(pingRoot: false);
@@ -118,6 +120,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         UIElementsRuntimeUtility.onCreatePanel -= OnCreatePanel;
         UIElementsRuntimeUtility.onWillDestroyPanel -= OnWillDestroyPanel;
         UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnEnableInSceneAuthoringChanged;
+        UIToolkitAuthoringSettings.MainStageAuthoringChanged -= OnMainStageAuthoringChanged;
 
         UntrackAllScenePanels();
         UntrackAllEditablePanels();
@@ -143,6 +146,19 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
             AdoptExistingScenePanels(pingRoot: true);
         else
             UntrackAllScenePanels();
+    }
+
+    // Scene (Main Stage) element editability is governed by EnableMainStageAuthoring, so re-evaluate every
+    // live scene selection when it toggles. Re-assigning the edit flags is what notifies the inspector, so a
+    // selected element's inspector locks and unlocks without a re-selection.
+    void OnMainStageAuthoringChanged(bool enabled)
+    {
+        foreach (var pair in m_ElementToEntry)
+        {
+            var entry = pair.Value;
+            if (ReferenceEquals(entry.Instance, pair.Key) && m_TrackedScenePanels.Contains(entry.Panel))
+                RefreshSelectionObject(entry, pair.Key, entry.Panel);
+        }
     }
 
     void AdoptExistingScenePanels(bool pingRoot)
@@ -564,6 +580,10 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
                 return kvp.Context.GetElementEditFlags(element);
             }
         }
+
+        if (m_TrackedScenePanels.Contains(panel))
+            return UIToolkitStageUtility.GetMainStageEditFlags(element);
+
         return VisualElementEditFlags.None;
     }
 
@@ -617,4 +637,3 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         Object.DestroyImmediate(selectionObject);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -15,6 +15,7 @@ using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.UIElements;
+using UnityEngine.Bindings;
 using UnityEditor.ShortcutManagement;
 
 using JSONObject = System.Collections.IDictionary;
@@ -27,6 +28,7 @@ namespace UnityEditor
     {
     }
 
+    [VisibleToOtherModules("UnityEditor.HierarchyModule")]
     internal enum ModeCapability
     {
         Layers,
@@ -42,6 +44,7 @@ namespace UnityEditor
         AllowAssetCreation,
         StaticTabs,
         SearchPopupButton,
+        AssetAuthoring,
 
         // When set (e.g. MPPM virtual players), the host view's generic (tab) menu shows items only from
         // windows that opt in via EditorWindow.ShowGenericMenuWhenRestricted(); other windows contribute
@@ -212,6 +215,7 @@ namespace UnityEditor
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
         internal static bool HasCapability(ModeCapability capability, bool defaultValue = false)
         {
             return HasCapability(currentIndex, capability, defaultValue);

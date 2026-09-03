@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using Unity.GraphToolsAuthoringFramework.InternalEditorBridge;
 using UnityEditor;
 using UnityEditor.Toolbars;
@@ -35,7 +36,7 @@ namespace Unity.GraphToolkit.Editor
         {
             this.AddPackageStylesheet(k_StylesheetName);
             AddToClassList(ussClassName);
-            tooltip = L10n.Tr("Save");
+            tooltip = L10n.Tr("Save", null);
 
             m_ButtonDropdown = new EditorToolbarDropdownToggle();
             m_ButtonDropdown.AddToClassList(buttonUssClassName);
@@ -72,3 +73,4 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

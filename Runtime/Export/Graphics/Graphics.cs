@@ -1381,6 +1381,7 @@ namespace UnityEngine
 {
     public static partial class RendererExtensions
     {
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         static public void UpdateGIMaterials(this Renderer renderer) { UpdateGIMaterialsForRenderer(renderer); }
     }
 }

@@ -14,7 +14,7 @@ namespace UnityEditor.Presets
 {
     class AddPresetTypeDataSource : AdvancedDropdownDataSource
     {
-        private static readonly string kSearchHeader = L10n.Tr("Search");
+        private static readonly string kSearchHeader = L10n.Tr("Search", null);
 
         protected override AdvancedDropdownItem FetchData()
         {
@@ -24,7 +24,7 @@ namespace UnityEditor.Presets
         protected AdvancedDropdownItem RebuildTree()
         {
             m_SearchableElements = new List<AdvancedDropdownItem>();
-            AdvancedDropdownItem root = new PresetTypeDropdownItem(L10n.Tr("Add Default Type"));
+            AdvancedDropdownItem root = new PresetTypeDropdownItem(L10n.Tr("Add Default Type", null));
 
             var type = UnityType.FindTypeByName("AssetImporter");
             #pragma warning disable UAC2001 // Avoid Linq
@@ -43,7 +43,7 @@ namespace UnityEditor.Presets
                 .Where(pt => pt.IsValidDefault());
 
             // Add Importers
-            var importersRoot = new PresetTypeDropdownItem(L10n.Tr("Importer"));
+            var importersRoot = new PresetTypeDropdownItem(L10n.Tr("Importer", null));
             root.AddChild(importersRoot);
             foreach (var presetType in presetTypes)
             {
@@ -92,7 +92,7 @@ namespace UnityEditor.Presets
             }
 
             // Add ScriptableObjects
-            var scriptableObjectRoot = new PresetTypeDropdownItem(L10n.Tr("ScriptableObject"));
+            var scriptableObjectRoot = new PresetTypeDropdownItem(L10n.Tr("ScriptableObject", null));
             root.AddChild(scriptableObjectRoot);
             foreach (var entry in GetScriptableObjectMenuItem())
             {

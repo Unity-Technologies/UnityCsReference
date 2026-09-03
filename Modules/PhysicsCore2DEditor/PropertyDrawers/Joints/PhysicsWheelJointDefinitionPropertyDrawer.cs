@@ -19,6 +19,7 @@ namespace Unity.U2D.Physics.Editor
                 if (m_Groups == null)
                 {
                     m_Groups = Order(
+                        new Group(null, null, k_AutoAxis),
                         new Group(null, null, k_CollideConnected),
                         Group.Anchors(k_LocalAnchorA, k_LocalAnchorB),
                         new Group(k_SpringTitle, k_EnableSpring, k_SpringFrequency, k_SpringDamping),
@@ -38,6 +39,13 @@ namespace Unity.U2D.Physics.Editor
             get { return (k_LocalAnchorA, k_AutoAnchorA, k_LocalAnchorB, k_AutoAnchorB); }
         }
 
+        // The wheel bakes the auto axis into frame A alone, and the solver never reads anchor B's rotation at all, so that row never shows.
+        protected override (string autoAxisField, bool usesRotationB)? axisFields
+        {
+            get { return (k_AutoAxis, false); }
+        }
+
+        const string k_AutoAxis = nameof(PhysicsWheelJointDefinition.m_AutoAxis);
         const string k_CollideConnected = nameof(PhysicsWheelJointDefinition.m_CollideConnected);
         const string k_LocalAnchorA = nameof(PhysicsWheelJointDefinition.m_LocalAnchorA);
         const string k_LocalAnchorB = nameof(PhysicsWheelJointDefinition.m_LocalAnchorB);

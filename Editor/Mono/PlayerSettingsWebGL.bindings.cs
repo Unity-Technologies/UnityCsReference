@@ -18,9 +18,9 @@ namespace UnityEditor
 
     public enum WebGLCompressionFormat
     {
-        Brotli,
-        Gzip,
-        Disabled
+        Brotli = 0,
+        Gzip = 1,
+        Disabled = 2
     }
 
     public enum WebGLLinkerTarget

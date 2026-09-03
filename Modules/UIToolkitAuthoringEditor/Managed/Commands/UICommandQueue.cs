@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using UnityEngine.Bindings;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -15,6 +15,7 @@ namespace Unity.UIToolkit.Editor;
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 static class UICommandQueue
 {
+    [NoAutoStaticsCleanup] // command-system singleton, safe to persist
     static readonly CommandSystem s_CommandSystem = new();
 
     /// <summary>
@@ -116,4 +117,3 @@ static class UICommandQueue
     internal static void ClearPool<TCommand>() where TCommand : Command<TCommand>, new()
         => Command<TCommand>.ClearPooledCommands();
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

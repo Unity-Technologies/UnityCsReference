@@ -21,8 +21,8 @@ class PropertyPathInfoDetailsView : VisualElement
     const string k_ValueLabelUssName = UssClassName + "__data-label";
     const string k_UnresolvedValueLabelUssClassName = k_ValueLabelUssName + "--unresolved";
 
-    static readonly string k_UnresolvedValueText = L10n.Tr("Unresolved Value");
-    static readonly string k_NoneText = L10n.Tr("None");
+    static readonly string k_UnresolvedValueText = L10n.Tr("Unresolved Value", null);
+    static readonly string k_NoneText = L10n.Tr("None", null);
 
     const string k_VisualTreeAssetPath = "UIToolkitAuthoring/Inspector/Binding/PropertyPathInfoDetailsView.uxml";
 

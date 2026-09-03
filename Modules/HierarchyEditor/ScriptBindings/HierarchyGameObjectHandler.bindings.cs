@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -169,8 +170,21 @@ namespace Unity.Hierarchy.Editor
             HierarchyViewPrefabStyleUtility.ClearNavigationButton(item);
         }
 
+        // A stage with no scene, such as the UI Toolkit authoring stage, has nowhere to put a GameObject.
+        static bool StageHasGameObjects
+        {
+            get
+            {
+                var stage = StageNavigationManager.instance.currentStage;
+                return stage is MainStage || (stage is PreviewSceneStage previewStage && previewStage.scene.IsValid());
+            }
+        }
+
         void IHierarchyExtendCreateMenu.PopulateCreateMenu(DropdownMenu menu)
         {
+            if (!StageHasGameObjects)
+                return;
+
             PopulateCreateMenu(menu, null, null);
         }
 
@@ -199,7 +213,9 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.CanPaste(HierarchyView view)
         {
-            return CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard();
+            // HierarchyView.OnPaste asks every handler, so without this a paste in a scene-less stage would
+            // create the pasteboard's GameObjects in the main stage's active scene.
+            return StageHasGameObjects && (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard());
         }
 
         bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view)
@@ -210,7 +226,7 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.CanPasteAsChild(HierarchyView view)
         {
-            return ClipboardUtility.CanPasteAsChild();
+            return StageHasGameObjects && ClipboardUtility.CanPasteAsChild();
         }
 
         bool IHierarchyEditorNodeTypeHandler.OnPasteAsChild(HierarchyView view, bool keepWorldPos)
@@ -305,6 +321,9 @@ namespace Unity.Hierarchy.Editor
 
         void IHierarchyEditorNodeTypeHandler.PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
         {
+            if (!StageHasGameObjects)
+                return;
+
             HierarchyWindowContextMenuUtility.PopulateCommonContextMenuItems(view, item?.Node ?? HierarchyNode.Null, this, menu);
             BuildGameObjectContextMenu(view, item?.Node ?? HierarchyNode.Null, GetGameObject(item?.Node ?? HierarchyNode.Null), menu);
         }
@@ -445,15 +464,15 @@ namespace Unity.Hierarchy.Editor
             // Set as Default Parent
             if (!view.ViewModel.HasFlags(HierarchyNodeFlags.Selected) && gameObject == null || gameObject && (gameObject.name == PrefabUtility.kDummyPrefabStageRootObjectName || PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(gameObject)))
             {
-                menu.AppendAction(L10n.Tr("Set as Default Parent"), _ => SetAsDefaultParent(view), DropdownMenuAction.Status.Disabled);
+                menu.AppendAction(L10n.Tr("Set as Default Parent", null), _ => SetAsDefaultParent(view), DropdownMenuAction.Status.Disabled);
             }
             else if (gameObject != null && (gameObject.GetEntityId() != gameObject.scene.defaultParent || EditorSceneManager.GetActiveScene().handle != gameObject.scene.handle))
             {
-                menu.AppendAction(L10n.Tr("Set as Default Parent"), _ => SetAsDefaultParent(view));
+                menu.AppendAction(L10n.Tr("Set as Default Parent", null), _ => SetAsDefaultParent(view));
             }
             else
             {
-                menu.AppendAction(L10n.Tr("Clear Default Parent"), _ => ClearDefaultParent(view));
+                menu.AppendAction(L10n.Tr("Clear Default Parent", null), _ => ClearDefaultParent(view));
             }
 
             BuildPrefabContextMenu(view, menu, gameObject);
@@ -474,7 +493,7 @@ namespace Unity.Hierarchy.Editor
             if (selectedGameObjects.Count > 0)
             {
                 menu.AppendSeparator();
-                menu.AppendAction(L10n.Tr("Properties..."), _ => PropertyEditor.OpenPropertyEditorOnSelection());
+                menu.AppendAction(L10n.Tr("Properties...", null), _ => PropertyEditor.OpenPropertyEditorOnSelection());
             }
         }
 
@@ -574,7 +593,8 @@ namespace Unity.Hierarchy.Editor
 
         void BuildPrefabContextMenu(HierarchyView view, DropdownMenu menu, GameObject gameObject)
         {
-            if (gameObject == null)
+            // No prefab authoring in a read-only editor (e.g. a virtual-project clone)
+            if (gameObject == null || !ModeService.HasCapability(ModeCapability.AssetAuthoring, true))
                 return;
 
             string assetPath = null;
@@ -594,25 +614,25 @@ namespace Unity.Hierarchy.Editor
             {
                 if (PrefabUtility.IsPartOfModelPrefab(prefabAsset))
                 {
-                    menu.AppendAction(L10n.Tr("Prefab/Open Model"), _ =>
+                    menu.AppendAction(L10n.Tr("Prefab/Open Model", null), _ =>
                     {
                         AssetDatabase.OpenAsset(prefabAsset);
                     });
                 }
                 else
                 {
-                    menu.AppendAction(L10n.Tr("Prefab/Open Asset in Context"), _ =>
+                    menu.AppendAction(L10n.Tr("Prefab/Open Asset in Context", null), _ =>
                     {
                         PrefabStageUtility.OpenPrefab(assetPath, gameObject, PrefabStage.Mode.InContext, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
                     });
-                    menu.AppendAction(L10n.Tr("Prefab/Open Asset in Isolation"), _ =>
+                    menu.AppendAction(L10n.Tr("Prefab/Open Asset in Isolation", null), _ =>
                     {
                         PrefabStageUtility.OpenPrefab(assetPath, gameObject, PrefabStage.Mode.InIsolation, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
                     });
                 }
 
                 menu.AppendSeparator("Prefab/");
-                menu.AppendAction(L10n.Tr("Prefab/Select Asset"), _ =>
+                menu.AppendAction(L10n.Tr("Prefab/Select Asset", null), _ =>
                 {
                     Selection.activeObject = prefabAsset;
                     EditorGUIUtility.PingObject(prefabAsset.GetEntityId());
@@ -621,14 +641,14 @@ namespace Unity.Hierarchy.Editor
 
             if (IsSelectPrefabRootAvailable(view))
             {
-                menu.AppendAction(L10n.Tr("Prefab/Select Root"), _ => SelectPrefabRoot(view));
+                menu.AppendAction(L10n.Tr("Prefab/Select Root", null), _ => SelectPrefabRoot(view));
             }
 
             GameObject sourceRoot = PrefabUtility.GetSourceRootWhereGameObjectIsAddedAsOverride(gameObject);
             if (sourceRoot != null)
             {
                 var s = PrefabUtility.GetOriginalSourceRootWhereGameObjectIsAdded(gameObject);
-                menu.AppendAction(L10n.Tr("Prefab/Go to Added GameObject in '" + sourceRoot.name + "'"), _ =>
+                menu.AppendAction(L10n.Tr("Prefab/Go to Added GameObject in '" + sourceRoot.name + "'", null), _ =>
                 {
                     PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(sourceRoot), PrefabUtility.GetNearestPrefabInstanceRoot(gameObject), PrefabStage.Mode.InIsolation);
                 });
@@ -657,10 +677,10 @@ namespace Unity.Hierarchy.Editor
             if (PrefabUtility.AnyOutermostPrefabRoots(selectedGOs))
             {
                 menu.AppendSeparator("Prefab/");
-                menu.AppendAction(L10n.Tr("Prefab/Unpack"), _ => UnpackPrefab(view, selectedGOs));
-                menu.AppendAction(L10n.Tr("Prefab/Unpack Completely"), _ => UnpackPrefabCompletely(view, selectedGOs));
+                menu.AppendAction(L10n.Tr("Prefab/Unpack", null), _ => UnpackPrefab(view, selectedGOs));
+                menu.AppendAction(L10n.Tr("Prefab/Unpack Completely", null), _ => UnpackPrefabCompletely(view, selectedGOs));
                 menu.AppendSeparator("Prefab/");
-                menu.AppendAction(L10n.Tr("Prefab/Remove Unused Overrides..."), _ => PrefabUtility.RemoveSelectedPrefabInstanceUnusedOverrides(selectedGOs));
+                menu.AppendAction(L10n.Tr("Prefab/Remove Unused Overrides...", null), _ => PrefabUtility.RemoveSelectedPrefabInstanceUnusedOverrides(selectedGOs));
             }
         }
 
@@ -1087,3 +1107,4 @@ namespace Unity.Hierarchy.Editor
         #endregion
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

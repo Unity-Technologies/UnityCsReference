@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -19,10 +20,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return foldoutType switch
             {
-                PageFiltersWindow.FoldoutType.Status => L10n.Tr("Status"),
-                PageFiltersWindow.FoldoutType.Category => L10n.Tr("Categories"),
-                PageFiltersWindow.FoldoutType.Label => L10n.Tr("Labels"),
-                PageFiltersWindow.FoldoutType.Package => L10n.Tr("Installed Packages with Samples"),
+                PageFiltersWindow.FoldoutType.Status => L10n.Tr("Status", null),
+                PageFiltersWindow.FoldoutType.Category => L10n.Tr("Categories", null),
+                PageFiltersWindow.FoldoutType.Label => L10n.Tr("Labels", null),
+                PageFiltersWindow.FoldoutType.Package => L10n.Tr("Installed Packages with Samples", null),
                 _ => string.Empty
             };
         }
@@ -30,6 +31,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal partial class PageFiltersWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal PageFiltersWindow() {}
+        #pragma warning restore UAL0015
+
         internal enum FoldoutType
         {
             Status = 0,
@@ -81,7 +86,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 styleSheets.Add(resourceLoader.filtersDropdownStyleSheet);
 
+                #pragma warning disable UAL0015 // EditorApplication.update is unsubscribed before every resubscription and cleared on OnDisable; never left dangling
                 CreateOrUpdateStatusFoldout();
+                #pragma warning restore UAL0015
                 CreateOrUpdateFoldoutByType(FoldoutType.Category);
                 CreateOrUpdateFoldoutByType(FoldoutType.Label);
                 CreateOrUpdateFoldoutByType(FoldoutType.Package);
@@ -115,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         if (status != PageFilterStatus.None)
                             augmentedSupportedStatuses.Add(status);
                     m_StatusGroupBox ??= new GroupBox();
-                    foldout = m_Foldouts[(int)FoldoutType.Status] ?? new Foldout { text = L10n.Tr("Status"), name = "statusFoldout"};
+                    foldout = m_Foldouts[(int)FoldoutType.Status] ?? new Foldout { text = L10n.Tr("Status", null), name = "statusFoldout"};
                     foldout.Add(m_StatusGroupBox);
                     m_StatusGroupBox.Clear();
                     foreach (var status in augmentedSupportedStatuses)
@@ -144,7 +151,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 switch (foldoutType)
                 {
                     case FoldoutType.Category:
-                        CreateOrUpdateFoldoutHelper(foldoutType, m_Filters.supportedCategories, m_CategoryToggles, m_Filters.IsCategorySelected, m_Filters.UpdateCategories, L10n.Tr);
+                        CreateOrUpdateFoldoutHelper(foldoutType, m_Filters.supportedCategories, m_CategoryToggles, m_Filters.IsCategorySelected, m_Filters.UpdateCategories, text => L10n.Tr(text, null));
                         return;
                     case FoldoutType.Label:
                         CreateOrUpdateFoldoutHelper(foldoutType, m_Filters.supportedLabels, m_LabelToggles, m_Filters.IsLabelSelected, m_Filters.UpdateLabels);
@@ -338,3 +345,4 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

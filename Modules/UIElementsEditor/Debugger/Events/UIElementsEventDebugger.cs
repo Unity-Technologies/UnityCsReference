@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,18 +13,25 @@ using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
 using UnityEditor.UIElements.Debugger;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements.Experimental.Debugger
 {
-    [InitializeOnLoad]
-    class UIElementsEventsDebugger : EditorWindow
+    partial class UIElementsEventsDebugger : EditorWindow
     {
         [SerializeField]
         UIElementsEventsDebuggerImpl m_DebuggerImpl;
 
-        static UIElementsEventsDebugger()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             Menu.menuChanged += AddMenuItem;
+        }
+
+        [OnCodeUnloading]
+        static void Teardown()
+        {
+            Menu.menuChanged -= AddMenuItem;
         }
 
         private static void AddMenuItem()
@@ -440,7 +448,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
 
             var toolbar = rootVisualElement.MandatoryQ<Toolbar>("searchToolbar");
             m_Toolbar = toolbar;
-            var experimentalElement = new Label(L10n.Tr("Experimental"));
+            var experimentalElement = new Label(L10n.Tr("Experimental", null));
             VisualElement experimentalContainer = new VisualElement();
             VisualElement spacerElement = new VisualElement();
             spacerElement.style.flexGrow = 1.0f;
@@ -1407,3 +1415,4 @@ namespace UnityEditor.UIElements.Experimental.Debugger
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

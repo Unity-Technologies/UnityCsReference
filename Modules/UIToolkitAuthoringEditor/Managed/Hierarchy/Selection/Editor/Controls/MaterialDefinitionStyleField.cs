@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
@@ -64,7 +65,7 @@ namespace Unity.UIToolkit.Editor
             m_MaterialPropertiesListView = this.Q<ListView>(k_MaterialPropertiesListViewName);
             m_MaterialPropertiesListView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
             m_MaterialPropertiesListView.selectionType = SelectionType.Multiple;
-            m_MaterialPropertiesListView.makeNoneElement = () => new Label(L10n.Tr(k_EmptyListText)).WithClassList(k_EmptyListClassName);
+            m_MaterialPropertiesListView.makeNoneElement = () => new Label(L10n.Tr(k_EmptyListText, null)).WithClassList(k_EmptyListClassName);
             m_MaterialPropertiesListView.makeItem = () =>
             {
                 return new MaterialPropertyValueListViewItem(this);
@@ -142,7 +143,7 @@ namespace Unity.UIToolkit.Editor
             var props = ExtractMaterialProperties(mat);
             if (props.Count == 0)
             {
-                m_MaterialPropertiesListView.makeNoneElement = () => new Label(L10n.Tr(k_NoPropertiesText)).WithClassList(k_EmptyListClassName);
+                m_MaterialPropertiesListView.makeNoneElement = () => new Label(L10n.Tr(k_NoPropertiesText, null)).WithClassList(k_EmptyListClassName);
                 m_MaterialPropertiesListView.showAddRemoveFooter = false;
 
                 // Add this "with footer" class to keep the same scrollview style
@@ -167,7 +168,7 @@ namespace Unity.UIToolkit.Editor
                 availableCount++;
             }
 
-            m_MaterialPropertiesListView.makeNoneElement = () => new Label(L10n.Tr(k_EmptyListText)).WithClassList(k_EmptyListClassName);
+            m_MaterialPropertiesListView.makeNoneElement = () => new Label(L10n.Tr(k_EmptyListText, null)).WithClassList(k_EmptyListClassName);
             m_MaterialPropertiesListView.showAddRemoveFooter = true;
             m_MaterialPropertiesListView.overridingAddButtonBehavior = (_, btn) =>
             {
@@ -296,3 +297,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

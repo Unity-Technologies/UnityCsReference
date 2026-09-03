@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using UnityEditor.EditorTools;
 using UnityEngine;
@@ -39,7 +40,9 @@ namespace UnityEditor.Toolbars
 
         private Type m_ToolOwnerType;
         
+        #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
         public ToolButton(IReadOnlyList<EditorTool> variants, Type toolOwnerType) : this(Tool.Custom, variants, toolOwnerType) {}
+        #pragma warning restore UAL0015
 
         public ToolButton(Tool targetTool, IReadOnlyList<EditorTool> variants, Type toolOwnerType)
         {
@@ -48,7 +51,9 @@ namespace UnityEditor.Toolbars
             m_Variants = new List<EditorTool>(variants);
             m_Variants.Sort((a, b) =>
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 var aa = EditorToolUtility.GetMetaData(a.GetType(), m_ToolOwnerType).variantPriority;
+                #pragma warning restore UAL0015
                 var bb = EditorToolUtility.GetMetaData(b.GetType(), m_ToolOwnerType).variantPriority;
                 if (aa == ToolAttribute.defaultPriority && bb == ToolAttribute.defaultPriority)
                     return a.GetType().GetHashCode().CompareTo(b.GetType().GetHashCode());
@@ -63,7 +68,9 @@ namespace UnityEditor.Toolbars
             this.RegisterValueChangedCallback((e) =>
             {
                 if (e.newValue)
+                    #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                     ToolManager.SetActiveTool(currentVariant, m_ToolOwnerType);
+                    #pragma warning restore UAL0015
 
                 // Keep the toggle checked if target is still the current tool
                 if (ToolManager.IsActiveTool(currentVariant, m_ToolOwnerType))
@@ -193,7 +200,7 @@ namespace UnityEditor.Toolbars
             icon.style.backgroundImage = content.image as Texture2D;
             root.Add(icon);
 
-            var label = new Label(L10n.Tr(content.tooltip));
+            var label = new Label(L10n.Tr(content.tooltip, null));
             root.Add(label);
 
             root.RegisterCallback<MouseOutEvent>((evt) =>
@@ -315,37 +322,37 @@ namespace UnityEditor.Toolbars
             switch (m_TargetTool)
             {
                 case Tool.View:
-                    tooltip = L10n.Tr("View Tool");
+                    tooltip = L10n.Tr("View Tool", null);
                     UpdateViewToolContent();
                     break;
                 case Tool.Move:
-                    tooltip = L10n.Tr("Move Tool");
+                    tooltip = L10n.Tr("Move Tool", null);
                     ClearButtonClassList();
                     AddToClassList(s_UssClassName_MoveTool);
                     break;
                 case Tool.Rotate:
-                    tooltip = L10n.Tr("Rotate Tool");
+                    tooltip = L10n.Tr("Rotate Tool", null);
                     ClearButtonClassList();
                     AddToClassList(s_UssClassName_RotateTool);
                     break;
                 case Tool.Scale:
-                    tooltip = L10n.Tr("Scale Tool");
+                    tooltip = L10n.Tr("Scale Tool", null);
                     ClearButtonClassList();
                     AddToClassList(s_UssClassName_ScaleTool);
                     break;
                 case Tool.Transform:
-                    tooltip = L10n.Tr("Transform Tool");
+                    tooltip = L10n.Tr("Transform Tool", null);
                     ClearButtonClassList();
                     AddToClassList(s_UssClassName_TransformTool);
                     break;
                 case Tool.Rect:
-                    tooltip = L10n.Tr("Rect Tool");
+                    tooltip = L10n.Tr("Rect Tool", null);
                     ClearButtonClassList();
                     AddToClassList(s_UssClassName_RectTool);
                     break;
                 case Tool.Custom:
                     var content = EditorToolUtility.GetToolbarIcon(currentVariant);
-                    tooltip = L10n.Tr(content.tooltip);
+                    tooltip = L10n.Tr(content.tooltip, null);
                     if (content.image == null && !string.IsNullOrEmpty(content.text))
                     {
                         if (IsParentVerticalToolbar())
@@ -447,3 +454,4 @@ namespace UnityEditor.Toolbars
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

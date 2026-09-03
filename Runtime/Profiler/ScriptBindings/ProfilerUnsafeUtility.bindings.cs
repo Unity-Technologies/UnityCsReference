@@ -5,7 +5,10 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using CallConvCdecl = System.Runtime.CompilerServices.CallConvCdecl;
 using System.Text;
+using Unity.Collections;
+using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -70,6 +73,7 @@ namespace Unity.Profiling.LowLevel.Unsafe
         public const ushort CategoryPhysics2D = 33;
         public const ushort CategoryU2D = 39;
         public const ushort CategoryUIToolkit = 40;
+        public const ushort CategoryPhysicsCore2D = 42;
         internal const ushort CategoryAny = 0xFFFF;
 
         [NativeMethod(IsThreadSafe = true)]

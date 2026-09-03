@@ -558,8 +558,8 @@ namespace UnityEditor.UIElements
 
         static void CreateSerializedDataOverride(TemplateAsset rootTemplate, VisualTreeAsset vta, TemplateAsset templateAsset, CreationContext cc, List<string> namesPath, List<int> idsList)
         {
-            // If there's no attribute override no need to create additional serialized data.
-            if (!templateAsset.hasAttributeOverride && cc.attributeOverrides == null)
+            // If there's no attribute override (element or component) no need to create additional serialized data.
+            if (!templateAsset.hasAttributeOverride && !templateAsset.hasComponentAttributeOverride && cc.attributeOverrides == null)
                 return;
 
             var bagOverrides = templateAsset.attributeOverrides;
@@ -690,13 +690,29 @@ namespace UnityEditor.UIElements
                 DictionaryPool<string, (int pathLength, string attributeValue)>.Release(foundOverrides);
                 HashSetPool<string>.Release(handledAttributes);
 
-                if (serializedDataOverride != null)
+                // Component overrides authored on this instance that target this element (matched by the
+                // same names-path mechanism as attribute overrides), folded into the override entry.
+                List<UxmlComponentSerializedData> componentOverrides = null;
+                if (templateAsset.hasComponentAttributeOverride)
+                {
+                    foreach (var co in templateAsset.componentAttributeOverrides)
+                    {
+                        if (co.NamesPathMatchesElementNamesPath(namesCopy))
+                        {
+                            componentOverrides ??= new List<UxmlComponentSerializedData>();
+                            componentOverrides.Add(co.m_ComponentData);
+                        }
+                    }
+                }
+
+                if (serializedDataOverride != null || componentOverrides != null)
                 {
                     rootTemplate.serializedDataOverrides.Add(new TemplateAsset.UxmlSerializedDataOverride()
                     {
                         m_ElementId = vea.id,
                         m_ElementIdsPath = idsCopy,
-                        m_SerializedData = serializedDataOverride
+                        m_SerializedData = serializedDataOverride,
+                        m_ComponentOverrides = componentOverrides
                     });
                 }
             }

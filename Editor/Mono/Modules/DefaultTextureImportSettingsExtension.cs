@@ -21,7 +21,7 @@ namespace UnityEditor.Modules
         static readonly string[] kMaxTextureSizeStrings = { "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
         static readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
         static readonly GUIContent maxSize = EditorGUIUtility.TrTextContent("Max Size", "Textures larger than this will be scaled down.");
-        static readonly string kMaxSizeOverrideString = L10n.Tr("Max texture size is overriden to {0} in Build Settings window.");
+        static readonly string kMaxSizeOverrideString = L10n.Tr("Max texture size is overriden to {0} in Build Settings window.", null);
 
         static readonly string[] kResizeAlgorithmStrings = { "Mitchell", "Bilinear" };
         static readonly int[] kResizeAlgorithmValues = { (int)TextureResizeAlgorithm.Mitchell, (int)TextureResizeAlgorithm.Bilinear };
@@ -183,7 +183,7 @@ namespace UnityEditor.Modules
 
                 if (!mixedValues && !Array.Exists(formatValuesForAll, i => i == formatForAll))
                 {
-                    EditorGUILayout.HelpBox(string.Format(L10n.Tr("The selected format value {0} is not compatible on this platform for the selected texture type, please change it to a valid one from the dropdown."), (TextureImporterFormat)formatForAll), MessageType.Error);
+                    EditorGUILayout.HelpBox(string.Format(L10n.Tr("The selected format value {0} is not compatible on this platform for the selected texture type, please change it to a valid one from the dropdown.", null), (TextureImporterFormat)formatForAll), MessageType.Error);
                 }
             }
 

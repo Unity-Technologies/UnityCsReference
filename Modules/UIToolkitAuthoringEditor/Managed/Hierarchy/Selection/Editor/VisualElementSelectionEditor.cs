@@ -15,6 +15,8 @@ class VisualElementSelectionEditor : UISelectionEditor
 {
     VisualElementInspector m_Inspector;
     VisualElementHeader m_Header;
+    VisualElement m_NameTrackedElement;
+    bool m_StateRefreshScheduled;
 
     private VisualElementSelection Target => (VisualElementSelection)target;
 
@@ -27,6 +29,7 @@ class VisualElementSelectionEditor : UISelectionEditor
     {
         base.OnDisable();
         Target.propertyChanged -= OnTargetPropertyChanged;
+        TrackNameChanges(null);
     }
 
     void OnTargetPropertyChanged(object sender, BindablePropertyChangedEventArgs e)
@@ -37,8 +40,30 @@ class VisualElementSelectionEditor : UISelectionEditor
         {
             m_Header.Element = Target.Element;
             m_Inspector.Element = Target.Element;
+            TrackNameChanges(Target.Element);
         }
         ApplyState();
+    }
+
+    void TrackNameChanges(VisualElement element)
+    {
+        if (m_NameTrackedElement == element)
+            return;
+        m_NameTrackedElement?.UnregisterCallback<PropertyChangedEvent>(OnElementPropertyChanged);
+        m_NameTrackedElement = element;
+        m_NameTrackedElement?.RegisterCallback<PropertyChangedEvent>(OnElementPropertyChanged);
+    }
+
+    // Naming an element makes the animation binder able to address it, which flips the recording banner
+    // and the edit flags. Deferred a tick: the name lands mid-deserialization of the attribute field the
+    // user just edited, and ApplyState reconfigures that same attributes view through the edit flags.
+    void OnElementPropertyChanged(PropertyChangedEvent evt)
+    {
+        if (evt.property != VisualElement.nameProperty || m_StateRefreshScheduled || m_Inspector == null)
+            return;
+
+        m_StateRefreshScheduled = true;
+        m_Inspector.schedule.Execute(ApplyState);
     }
 
     /// <summary>
@@ -49,6 +74,8 @@ class VisualElementSelectionEditor : UISelectionEditor
     /// </summary>
     protected override void ApplyState()
     {
+        m_StateRefreshScheduled = false;
+
         if (m_Inspector == null)
             return;
 
@@ -88,6 +115,7 @@ class VisualElementSelectionEditor : UISelectionEditor
         m_Inspector.InitializeSearchField(m_Header.SearchField);
         m_Header.AttributesView.ShareContext(m_Inspector.AttributesInspector.AttributesView);
         m_Inspector.Element = Target.Element;
+        TrackNameChanges(Target.Element);
         ApplyState();
         Target.propertyChanged += OnTargetPropertyChanged;
         return m_Inspector;

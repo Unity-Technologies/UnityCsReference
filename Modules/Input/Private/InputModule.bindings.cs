@@ -38,8 +38,21 @@ namespace UnityEngineInternal.Input
 
         public static extern long IOCTL(int deviceId, int code, IntPtr data, int sizeInBytes);
 
+        /// <summary>
+        /// Sets the frequency at which platforms that poll input devices in the background do so.
+        /// </summary>
+        /// <param name="hertz">
+        /// Frequency in hertz. Must be zero or positive. Both ends of that range carry meaning:
+        /// zero disables polling, and <see cref="float.PositiveInfinity"/> polls continuously,
+        /// which leaves the polling thread nothing to wait on and so occupies a core. A negative
+        /// or NaN frequency is rejected and leaves the current frequency in place.
+        /// </param>
         public static extern void SetPollingFrequency(float hertz);
 
+        /// <summary>
+        /// Returns the frequency at which platforms that poll input devices in the background do so.
+        /// </summary>
+        /// <returns>Frequency in hertz. Defaults to the frequency suggested by the platform.</returns>
         public static extern float GetPollingFrequency();
 
         public static extern void Update(NativeInputUpdateType updateType);

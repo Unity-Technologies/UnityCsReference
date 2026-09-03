@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using UnityEditor.Overlays;
 using UnityEngine;
@@ -33,7 +34,7 @@ namespace UnityEditor.Snap
             
             SceneViewToolbarStyles.AddStyleSheets(rootVisualElement);
             
-            rootVisualElement.Q<TextElement>("PaneTitle").text = L10n.Tr("Grid Visual");
+            rootVisualElement.Q<TextElement>("PaneTitle").text = L10n.Tr("Grid Visual", null);
             rootVisualElement.Q<Button>("PaneOption").clicked += PaneOptionMenu;
 
             m_GridPlane = rootVisualElement.Q<ButtonStripField>("GridPlane");
@@ -41,7 +42,7 @@ namespace UnityEditor.Snap
             foreach (var axis in m_Axes)
                 m_GridPlane.AddButton(axis.ToString());
 
-            m_GridPlane.label = L10n.Tr("Grid Plane");
+            m_GridPlane.label = L10n.Tr("Grid Plane", null);
             m_GridPlane.RegisterValueChangedCallback((evt) =>
             {
                 m_SceneView.sceneViewGrids.gridAxis = m_Axes[evt.newValue];
@@ -49,7 +50,7 @@ namespace UnityEditor.Snap
             });
 
             m_GridOpacity = rootVisualElement.Q<Slider>("Opacity");
-            m_GridOpacity.label = L10n.Tr("Opacity");
+            m_GridOpacity.label = L10n.Tr("Opacity", null);
             
             m_GridOpacity.RegisterValueChangedCallback(evt =>
             {
@@ -84,3 +85,4 @@ namespace UnityEditor.Snap
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

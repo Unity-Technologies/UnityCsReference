@@ -150,6 +150,7 @@ namespace UnityEditor
         private static void UndoRedoPerformed(in UndoRedoInfo info)
         {
             SceneVisibilityState.ForceDataUpdate();
+            currentStageIsIsolated?.Invoke(SceneVisibilityState.isolation);
         }
 
         public void HideAll()

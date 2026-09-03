@@ -92,7 +92,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 menuItem.element[0].style.width = Length.Percent(100);
 
             tooltip = string.Empty;
-            text = L10n.Tr("Manage");
+            text = L10n.Tr("Manage", null);
             SetEnabled(true);
 
             alwaysShowDropdown = true;

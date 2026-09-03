@@ -26,14 +26,14 @@ class FilteredInstancesListProperty : Foldout
     internal const string k_DuplicatedNameUssClass = "unity-instance-field__duplicated-name";
     internal const string k_DuplicatedServerUssClass = "unity-instance-field__multiple-servers";
 
-    // Test seam mirroring the InstanceController teardown contract.
-    internal delegate bool NeedsTearDownDelegate(IInstanceItem instanceItem, out string reason);
+    // Test seam mirroring the PlayModeController teardown contract.
+    internal delegate bool NeedsTearDownDelegate(IPlayModeControllerItem instanceItem, out string reason);
 
     internal virtual void RefreshItems() { }
 }
 
 class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesListProperty
-    where TController : InstanceController<TSettings>
+    where TController : PlayModeController<TSettings>
     where TSettings : struct
 {
     readonly List<Item> m_FilteredInstances = new();
@@ -45,9 +45,9 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
     int m_ServersCount = 0;
 
     internal NeedsTearDownDelegate NeedsTearDownOverride;
-    internal Action<IInstanceItem> TearDownOverride;
+    internal Action<IPlayModeControllerItem> TearDownOverride;
     internal Func<string, string, string, string, bool> DisplayConfirmOverride;
-    internal Func<IInstanceItem, bool> IsInstanceActiveOverride;
+    internal Func<IPlayModeControllerItem, bool> IsInstanceActiveOverride;
 
     public FilteredInstancesListProperty(OrchestratedScenario scenario, int countLimit)
     {
@@ -176,9 +176,9 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
     IEnumerable<Item> GetAllInstancesOfType()
     {
         var index = 0;
-        foreach (var item in m_Scenario.Settings.GetAllInstanceItems())
+        foreach (var item in m_Scenario.Settings.GetAllControllerItems())
         {
-            if (item is InstanceItem<TController, TSettings>
+            if (item is PlayModeControllerItem<TController, TSettings>
                 && m_Scenario.IsInstanceEnabled(item))
             {
                 yield return new Item { ScenarioIndex = index, InstanceId = item.GetId() };
@@ -233,9 +233,9 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
     static SerializedProperty AddSerializedInstance(SerializedObject serializedScenario, string name)
     {
         var serializedItemsList = serializedScenario.FindProperty(ScenarioConfigEditor.k_InstancesListPropertyPath);
-        var instanceItem = new InstanceItem<TController, TSettings>(
+        var instanceItem = new PlayModeControllerItem<TController, TSettings>(
             name,
-            InstanceController<TSettings>.GetDefaultSettings());
+            PlayModeController<TSettings>.GetDefaultSettings());
 
         serializedItemsList.arraySize++;
         var property = serializedItemsList.GetArrayElementAtIndex(serializedItemsList.arraySize - 1);
@@ -275,9 +275,9 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
 
     // The removed item (if active) plus, when its removal renumbers later siblings, every later sibling
     // that is still active — all of which would otherwise be stranded by the slot re-sequencing.
-    List<(IInstanceItem Item, string Reason)> CollectInstancesToTearDown(int filteredIndex)
+    List<(IPlayModeControllerItem Item, string Reason)> CollectInstancesToTearDown(int filteredIndex)
     {
-        var result = new List<(IInstanceItem, string)>();
+        var result = new List<(IPlayModeControllerItem, string)>();
 
         var removedItem = GetInstanceItemAtFilteredIndex(filteredIndex);
         if (NeedsTearDown(removedItem, out var removedReason))
@@ -300,7 +300,7 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
         return result;
     }
 
-    static string BuildRemoveActiveInstanceMessage(List<(IInstanceItem Item, string Reason)> toTearDown)
+    static string BuildRemoveActiveInstanceMessage(List<(IPlayModeControllerItem Item, string Reason)> toTearDown)
     {
         var message = new StringBuilder();
         message.Append(k_RemoveActiveInstanceDialogHeader).Append("\n\n");
@@ -310,7 +310,7 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
     }
 
     // False when the scenario isn't live (no instance to resolve), as before the fix.
-    bool NeedsTearDown(IInstanceItem instanceItem, out string reason)
+    bool NeedsTearDown(IPlayModeControllerItem instanceItem, out string reason)
     {
         if (NeedsTearDownOverride != null)
         {
@@ -328,7 +328,7 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
     }
 
     // Executing (scenario run / free-run) — unlike an activated clone, which NeedsTearDown but stays editable.
-    bool IsInstanceActive(IInstanceItem instanceItem)
+    bool IsInstanceActive(IPlayModeControllerItem instanceItem)
     {
         if (IsInstanceActiveOverride != null)
         {
@@ -339,7 +339,7 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
         return instance != null && instance.IsActive();
     }
 
-    void TearDown(IInstanceItem instanceItem)
+    void TearDown(IPlayModeControllerItem instanceItem)
     {
         if (TearDownOverride != null)
         {
@@ -391,14 +391,14 @@ class FilteredInstancesListProperty<TController, TSettings> : FilteredInstancesL
         return m_FilteredInstances[filteredIndex].ScenarioIndex;
     }
 
-    internal InstanceItem<TController, TSettings> GetInstanceItemAtFilteredIndex(int filteredIndex)
+    internal PlayModeControllerItem<TController, TSettings> GetInstanceItemAtFilteredIndex(int filteredIndex)
     {
         return GetInstanceItemAtScenarioIndex(MapToIndexInScenario(filteredIndex));
     }
 
-    internal InstanceItem<TController, TSettings> GetInstanceItemAtScenarioIndex(int scenarioIndex)
+    internal PlayModeControllerItem<TController, TSettings> GetInstanceItemAtScenarioIndex(int scenarioIndex)
     {
-        return (InstanceItem<TController, TSettings>)m_Scenario.Settings[scenarioIndex];
+        return (PlayModeControllerItem<TController, TSettings>)m_Scenario.Settings[scenarioIndex];
     }
 
     struct Item

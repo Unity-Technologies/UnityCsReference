@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageDetailsReleasesTab(IUnityConnectProxy unityConnect) : base(unityConnect)
         {
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Releases");
+            m_DisplayName = L10n.Tr("Releases", null);
 
             m_ReleasesContainer = new VisualElement { name = "releasesContainer" };
             m_ContentContainer.Add(m_ReleasesContainer);
@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ReleasesContainer.Add(new PackageReleaseDetailsItem(latest.versionString, latest.publishedDate, latest == version, latest.package.product.latestReleaseNotes));
                 if (latest != version)
                     m_ReleasesContainer.Add(new PackageReleaseDetailsItem(version.versionString, version.publishedDate, true, version.localReleaseNotes));
-                m_ReleasesContainer.Add(new PackageReleaseDetailsItem(L10n.Tr("Original"), version.package.product.firstPublishedDate));
+                m_ReleasesContainer.Add(new PackageReleaseDetailsItem(L10n.Tr("Original", null), version.package.product.firstPublishedDate));
             }
         }
     }

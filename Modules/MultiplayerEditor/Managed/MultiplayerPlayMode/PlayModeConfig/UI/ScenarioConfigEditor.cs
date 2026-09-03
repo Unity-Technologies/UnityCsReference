@@ -17,7 +17,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [CustomEditor(typeof(OrchestratedScenario))]
     class ScenarioConfigEditor : Editor
     {
-        internal const string k_InstancesListPropertyPath = $"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_InstanceItemsPropertyName}";
+        internal const string k_InstancesListPropertyPath = $"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_ControllerItemsPropertyName}";
         internal const string k_StylePath = "Multiplayer/UI/ScenarioConfigEditor.uss";
         internal const string k_LocalInstanceListName = "local-instance-list";
         internal const string k_EditorInstancesContainerName = "editor-instances-container";
@@ -53,13 +53,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         bool TryGetMainEditorProperty(out SerializedProperty mainEditorProperty)
         {
-            var instancesProperty = serializedObject.FindProperty($"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_InstanceItemsPropertyName}");
+            var instancesProperty = serializedObject.FindProperty($"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_ControllerItemsPropertyName}");
             mainEditorProperty = default(SerializedProperty);
 
             for (int i = 0; i < instancesProperty.arraySize; i++)
             {
                 var instanceProperty = instancesProperty.GetArrayElementAtIndex(i);
-                if (instanceProperty.boxedValue is not IInstanceItem instanceItem)
+                if (instanceProperty.boxedValue is not IPlayModeControllerItem instanceItem)
                     continue;
 
                 if (instanceItem.IsInstanceType(typeof(MainEditorController)))

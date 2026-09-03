@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
@@ -12,6 +11,11 @@ using UnityEngine.Pool;
 
 [assembly:GeneratePropertyBagsForTypesQualifiedWith(typeof(UnityEngine.UIElements.IDataSourceViewHashProvider))]
 [assembly:GeneratePropertyBagsForTypesQualifiedWith(typeof(UnityEngine.UIElements.INotifyBindablePropertyChanged))]
+// Components are bound through their data. A bindable [VisualElementComponent] declares : IVisualElementComponent
+// in its own source (the struct parallel to a control's : VisualElement base) so the Properties generator
+// emits a property bag for it. Source generators can't see each other's output, so the interface our
+// generator adds is invisible here; it must be in the author's source for the bag to be generated.
+[assembly:GeneratePropertyBagsForTypesQualifiedWith(typeof(UnityEngine.UIElements.IVisualElementComponent))]
 
 namespace UnityEngine.UIElements
 {
@@ -524,4 +528,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

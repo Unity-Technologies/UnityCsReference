@@ -125,6 +125,7 @@ namespace UnityEditor.Build.Reporting
         ///
         ///Note: To examine all errors, warnings and other messages recorded during a build you can enumerating through the build <see cref="steps" /> and check <see cref="Build.Reporting.BuildStep.messages" />.
         ///And to retrieve the count of errors call <see cref="Build.Reporting.BuildSummary.totalErrors" />.</remarks>
+        ///<returns>A single line of text that summarizes the errors that occurred during the build, or an empty string if no error was logged.</returns>
         [FreeFunction("BuildReporting::SummarizeErrors", HasExplicitThis = true)]
         public extern string SummarizeErrors();
 

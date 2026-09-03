@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 label = new Label();
                 Add(label);
 
-                var button = new Button { text = L10n.Tr("View") };
+                var button = new Button { text = L10n.Tr("View", null) };
                 button.clickable.clicked += buttonAction;
                 Add(button);
             }
@@ -79,11 +79,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_Height = 0;
-            if (AddInProgressContainer(installingContainer, numRegularPackagesInstalling, L10n.Tr("Installing {0}")))
+            if (AddInProgressContainer(installingContainer, numRegularPackagesInstalling, L10n.Tr("Installing {0}", null)))
                 m_Height += k_LineHeight;
-            if (AddInProgressContainer(enablingContainer, numBuiltInPackagesInstalling, L10n.Tr("Enabling {0}")))
+            if (AddInProgressContainer(enablingContainer, numBuiltInPackagesInstalling, L10n.Tr("Enabling {0}", null)))
                 m_Height += k_LineHeight;
-            if (AddInProgressContainer(downloadingContainer, numDownloading, L10n.Tr("Downloading {0}")))
+            if (AddInProgressContainer(downloadingContainer, numDownloading, L10n.Tr("Downloading {0}", null)))
                 m_Height += k_LineHeight;
 
             return m_Height != 0;
@@ -94,7 +94,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (numItemsInProgress <= 0)
                 return false;
 
-            var numItemsText = string.Format(numItemsInProgress > 1 ? L10n.Tr("{0} items") : L10n.Tr("{0} item"), numItemsInProgress);
+            var numItemsText = string.Format(numItemsInProgress > 1 ? L10n.Tr("{0} items", null) : L10n.Tr("{0} item", null), numItemsInProgress);
             element.label.text = string.Format(textFormat, numItemsText);
             Add(element);
             return true;

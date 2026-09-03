@@ -14,3 +14,22 @@ internal enum VisualElementEditFlags
     Styles = 2,
     FullyEditable = Attributes | Styles
 }
+
+static class VisualElementEditFlagsExtensions
+{
+    public static bool CanSetAttribute(this in VisualElementEditFlags flag)
+    {
+        return (flag & VisualElementEditFlags.Attributes) == VisualElementEditFlags.Attributes;
+    }
+
+    public static bool CanSetStyles(this in VisualElementEditFlags flag)
+    {
+        return (flag & VisualElementEditFlags.Styles) == VisualElementEditFlags.Styles;
+    }
+
+    public static bool IsFullyEditable(this in VisualElementEditFlags flag)
+    {
+        return (flag & VisualElementEditFlags.FullyEditable) == VisualElementEditFlags.FullyEditable;
+
+    }
+}

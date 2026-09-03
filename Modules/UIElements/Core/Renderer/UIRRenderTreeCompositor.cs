@@ -473,7 +473,9 @@ namespace UnityEngine.UIElements.UIR
                         }
 
                         // Set up additional properties for compositor (UV rects, etc)
-                        s_UVRects[0] = new Vector4(srcUVRect.x, srcUVRect.y, srcUVRect.width, srcUVRect.height);
+                        // unity_uie_UVRect must match the UV domain the quad's UV0 actually spans (uvRect,
+                        // margin-adjusted), not the raw atlas block (srcUVRect, margin-inflated)
+                        s_UVRects[0] = new Vector4(uvRect.x, uvRect.y, uvRect.width, uvRect.height);
                         perPassBlock.SetVectorArray(FilterHelper.s_UVRectId, s_UVRects);
 
                         // In force-gamma rendering, the last filter pass outputs linear because the parent render tree expects texture reads to output linear.

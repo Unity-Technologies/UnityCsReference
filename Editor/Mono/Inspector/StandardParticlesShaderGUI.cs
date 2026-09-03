@@ -89,7 +89,7 @@ namespace UnityEditor
 
             public static readonly GUIContent streamApplyToAllSystemsText = EditorGUIUtility.TrTextContent("Apply to Systems", "Apply the vertex stream layout to all Particle Systems using this material");
 
-            public static readonly string undoApplyCustomVertexStreams = L10n.Tr("Apply custom vertex streams from material");
+            public static readonly string undoApplyCustomVertexStreams = L10n.Tr("Apply custom vertex streams from material", null);
         }
 
         MaterialProperty blendMode = null;

@@ -13,7 +13,7 @@ namespace UnityEditor.AdaptivePerformance.Basic.Editor
     {
         protected override BuildTargetGroup CurrentTargetGroup => BuildTargetGroup.Unknown;
         public override bool ShowTargetGroupSelection => false;
-        public override string UnsupportedInfo => L10n.Tr("Adaptive Performance Basic provider is not supported on this platform");
+        public override string UnsupportedInfo => L10n.Tr("Adaptive Performance Basic provider is not supported on this platform", null);
 
         protected override bool IsAutoPerformanceModeAvailable => false;
         protected override bool IsBoostAvailable => false;

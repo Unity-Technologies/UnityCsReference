@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TreeEditor not yet converted
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace TreeEditor
@@ -27,8 +27,9 @@ namespace TreeEditor
 
         private int vertOffset;
 
-        private static Perlin perlin = new Perlin();
-        private static int noiseSeed = -1;
+        [NoAutoStaticsCleanup] // pure math noise generator; reseeded explicitly via SetNoiseSeed, no user code references
+        private static readonly Perlin perlin = new Perlin();
+        private static readonly int noiseSeed = -1;
 
         public static void SetNoiseSeed(int seed)
         {
@@ -435,4 +436,3 @@ namespace TreeEditor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

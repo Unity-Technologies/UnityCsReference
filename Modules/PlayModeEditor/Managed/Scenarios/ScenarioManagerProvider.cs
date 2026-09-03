@@ -62,6 +62,9 @@ namespace Unity.PlayMode.Editor
             }
         }
 
+        internal bool CanChangeActiveConfig =>
+            CurrentState is not (PlayModeScenarioState.Starting or PlayModeScenarioState.Running or PlayModeScenarioState.Stopping);
+
         /// <summary>
         /// The active play mode config asset.
         /// </summary>
@@ -76,7 +79,7 @@ namespace Unity.PlayMode.Editor
             }
             set
             {
-                if (CurrentState is PlayModeScenarioState.Starting or PlayModeScenarioState.Running or PlayModeScenarioState.Stopping)
+                if (!CanChangeActiveConfig)
                     throw new InvalidOperationException($"Cannot set config while in a running state ({CurrentState})");
 
                 if (m_Config == value)

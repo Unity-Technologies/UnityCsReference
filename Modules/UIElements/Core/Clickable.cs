@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
@@ -189,6 +188,7 @@ namespace UnityEngine.UIElements
             {
                 var callbackOptions =
                     acceptClicksIfDisabled ? CallbackOptions.IncludeDisabled : CallbackOptions.Default;
+#pragma warning disable UAL0015 // registers delegate chains only; the chain reads live statics (e.g. UITKAccessibilityBridge.s_IsLive) at click time, not a value snapshotted here
                 OnPointer = new(
                     EventCallback.Create<PointerDownEvent, Clickable>(static (e, self) => self.OnPointerDown(e), arg, callbackOptions),
                     EventCallback.Create<PointerMoveEvent, Clickable>(static (e, self) => self.OnPointerMove(e), arg, callbackOptions),
@@ -196,14 +196,17 @@ namespace UnityEngine.UIElements
                     EventCallback.Create<PointerCancelEvent, Clickable>(static (e, self) => self.OnPointerCancel(e), arg, CallbackOptions.IncludeDisabled),
                     EventCallback.Create<PointerCaptureOutEvent, Clickable>(static (e, self) => self.OnPointerCaptureOut(e), arg, CallbackOptions.IncludeDisabled)
                 );
+#pragma warning restore UAL0015
             }
         }
 
 
         [NoAutoStaticsCleanup]
+#pragma warning disable UAL0015 // factory lambdas only build delegate chains; the chain reads live statics (e.g. UITKAccessibilityBridge.s_IsLive) at click time, not a value snapshotted here
         private static readonly EventCallbackGroupFactory<Clickable> k_DefaultCallbackFactory = new(arg => new Callbacks(arg, false).OnPointer);
         [NoAutoStaticsCleanup]
         private static readonly EventCallbackGroupFactory<Clickable> k_IncludeDisabledCallbackFactory = new(arg => new Callbacks(arg, true).OnPointer);
+#pragma warning restore UAL0015
         private EventCallbackGroupFactory<Clickable>.Group m_RegisteredCallbacks;
 
         /// <summary>
@@ -438,4 +441,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

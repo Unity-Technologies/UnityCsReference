@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.Model.Internals;
 using Unity.Timeline.Foundation.Time;
@@ -47,6 +47,7 @@ namespace Unity.Timeline.Foundation.Model
          */
         public readonly struct Item : IEquatable<Item>
         {
+            [NoAutoStaticsCleanup] // immutable invalid-sentinel; holds only invalid ItemData and an empty CutListData, no live state
             public static readonly Item Invalid = new Item(int.MinValue);
 
             readonly int m_Index;
@@ -196,4 +197,3 @@ namespace Unity.Timeline.Foundation.Model
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

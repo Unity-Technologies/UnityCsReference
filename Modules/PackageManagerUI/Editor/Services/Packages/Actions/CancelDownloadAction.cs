@@ -45,30 +45,34 @@ internal class CancelDownloadAction : PackageAction
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
-        return string.Format(L10n.Tr("Click to cancel the download of this {0}."), version.GetDescriptor());
+        return string.Format(L10n.Tr("Click to cancel the download of this {0}.", null), version.GetDescriptor());
     }
 
-    public override string GetText(IPackageVersion version, bool isInProgress) => L10n.Tr("Cancel");
+    public override string GetText(IPackageVersion version, bool isInProgress) => L10n.Tr("Cancel", null);
 
     public override bool IsInProgress(IPackageVersion version) => false;
 
-    internal class DisableIfResumeRequestSent : DisableCondition
+    internal class DisableIfResumeRequestSent : IDisableCondition<IPackageVersion>
     {
-        private static readonly string k_Tooltip = L10n.Tr("A resume request has been sent. You cannot cancel this download until it is resumed.");
-        public DisableIfResumeRequestSent(IAssetStoreDownloadManager downloadManager, IPackageVersion version)
+        private static readonly string k_Tooltip = L10n.Tr("A resume request has been sent. You cannot cancel this download until it is resumed.", null);
+        private readonly IAssetStoreDownloadManager m_DownloadManager;
+        public DisableIfResumeRequestSent(IAssetStoreDownloadManager downloadManager)
         {
-            active = downloadManager.GetDownloadOperation(version?.package.product?.id).state == DownloadState.ResumeRequested;
+            m_DownloadManager = downloadManager;
+        }
+
+        public bool IsActive(IPackageVersion version, out string tooltip)
+        {
             tooltip = k_Tooltip;
+            return m_DownloadManager.GetDownloadOperation(version?.package.product?.id).state == DownloadState.ResumeRequested;
         }
     }
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfCompiling(m_Application)
+    );
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfResumeRequestSent(m_AssetStoreDownloadManager, version);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfResumeRequestSent(m_AssetStoreDownloadManager)
+    );
 }

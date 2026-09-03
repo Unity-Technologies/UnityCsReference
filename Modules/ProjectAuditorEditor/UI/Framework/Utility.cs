@@ -263,31 +263,31 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Critical";
                     if (s_CriticalIcon == null)
-                        s_CriticalIcon = LoadIcon(k_CriticalIconName);
+                        s_CriticalIcon = LoadIcon(k_CriticalIconName, "d_");
                     return EditorGUIUtility.TrIconContent(s_CriticalIcon, tooltip);
                 case IconType.Major:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Major";
                     if (s_MajorIcon == null)
-                        s_MajorIcon = LoadIcon(k_MajorIconName);
+                        s_MajorIcon = LoadIcon(k_MajorIconName, "d_");
                     return EditorGUIUtility.TrIconContent(s_MajorIcon, tooltip);
                 case IconType.Moderate:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Moderate";
                     if (s_ModerateIcon == null)
-                        s_ModerateIcon = LoadIcon(k_ModerateIconName);
+                        s_ModerateIcon = LoadIcon(k_ModerateIconName, "d_");
                     return EditorGUIUtility.TrIconContent(s_ModerateIcon, tooltip);
                 case IconType.Minor:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Minor";
                     if (s_MinorIcon == null)
-                        s_MinorIcon = LoadIcon(k_MinorIconName);
+                        s_MinorIcon = LoadIcon(k_MinorIconName, "d_");
                     return EditorGUIUtility.TrIconContent(s_MinorIcon, tooltip);
                 case IconType.Ignored:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Ignored";
                     if (s_IgnoredIcon == null)
-                        s_IgnoredIcon = LoadIcon(k_IgnoredIconName);
+                        s_IgnoredIcon = LoadIcon(k_IgnoredIconName, "d_");
                     return EditorGUIUtility.TrIconContent(s_IgnoredIcon, tooltip);
 
                 case IconType.AdditionalAnalysis:
@@ -405,36 +405,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     return EditorGUIUtility.TrTextContentWithIcon("Critical", s_CriticalIcon);
                 case Severity.Error:
                     return EditorGUIUtility.TrTextContentWithIcon("Error", k_ErrorIconName);
-                default:
-                    return EditorGUIUtility.TrTextContentWithIcon("Unknown", MessageType.None);
-            }
-        }
-
-        public static GUIContent GetSeverityIconWithCustomText(Severity severity, string text)
-        {
-            switch (severity)
-            {
-                case Severity.Minor:
-                    if (s_MinorIcon == null)
-                        s_MinorIcon = LoadIcon(k_MinorIconName);
-                    return EditorGUIUtility.TrTextContentWithIcon(text, s_MinorIcon);
-                case Severity.Moderate:
-                case Severity.Default:
-                    if (s_ModerateIcon == null)
-                        s_ModerateIcon = LoadIcon(k_ModerateIconName);
-                    return EditorGUIUtility.TrTextContentWithIcon(text, s_ModerateIcon);
-                case Severity.Major:
-                    if (s_MajorIcon == null)
-                        s_MajorIcon = LoadIcon(k_MajorIconName);
-                    return EditorGUIUtility.TrTextContentWithIcon(text, s_MajorIcon);
-                case Severity.Critical:
-                    if (s_CriticalIcon == null)
-                        s_CriticalIcon = LoadIcon(k_CriticalIconName);
-                    return EditorGUIUtility.TrTextContentWithIcon(text, s_CriticalIcon);
-                case Severity.Error:
-                    return EditorGUIUtility.TrTextContentWithIcon(text, k_ErrorIconName);
-                case Severity.None:
-                    return EditorGUIUtility.TrTextContentWithIcon(text, MessageType.None);
                 default:
                     return EditorGUIUtility.TrTextContentWithIcon("Unknown", MessageType.None);
             }
@@ -564,6 +534,105 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             var parts = version.Split('.');
             return int.Parse(parts[0]) * 100 + int.Parse(parts[1]); // Just any integer that can be used for comparison
+        }
+
+        // Compares two package version strings using Semantic Versioning precedence rules
+        // (https://semver.org, §11). Crucially, a pre-release version (e.g. "1.0.3-pre.1") has LOWER
+        // precedence than its associated release ("1.0.3").
+        // Returns -1 if lhs has lower precedence than rhs, 1 if higher, 0 if they are equal.
+        public static int CompareVersions(string lhs, string rhs)
+        {
+            SplitVersion(lhs, out var leftCore, out var leftPreRelease);
+            SplitVersion(rhs, out var rightCore, out var rightPreRelease);
+
+            var coreComparison = CompareCoreVersions(leftCore, rightCore);
+            if (coreComparison != 0)
+                return Math.Sign(coreComparison);
+
+            // Equal core versions: a release outranks a pre-release of the same version.
+            var leftHasPreRelease = leftPreRelease.Length > 0;
+            var rightHasPreRelease = rightPreRelease.Length > 0;
+            if (!leftHasPreRelease && !rightHasPreRelease)
+                return 0;
+            if (!leftHasPreRelease)
+                return 1;
+            if (!rightHasPreRelease)
+                return -1;
+
+            return Math.Sign(ComparePreRelease(leftPreRelease, rightPreRelease));
+        }
+
+        static void SplitVersion(string version, out string core, out string preRelease)
+        {
+            version = (version ?? string.Empty).Trim();
+
+            // Build metadata ("+...") does not affect precedence, so discard it.
+            var plusIndex = version.IndexOf('+');
+            if (plusIndex >= 0)
+                version = version.Substring(0, plusIndex);
+
+            var dashIndex = version.IndexOf('-');
+            if (dashIndex >= 0)
+            {
+                core = version.Substring(0, dashIndex);
+                preRelease = version.Substring(dashIndex + 1);
+            }
+            else
+            {
+                core = version;
+                preRelease = string.Empty;
+            }
+        }
+
+        static int CompareCoreVersions(string leftCore, string rightCore)
+        {
+            var left = leftCore.Split('.');
+            var right = rightCore.Split('.');
+            var count = Math.Max(left.Length, right.Length);
+            for (var i = 0; i < count; i++)
+            {
+                var leftValue = i < left.Length ? ParseNumericIdentifier(left[i]) : 0;
+                var rightValue = i < right.Length ? ParseNumericIdentifier(right[i]) : 0;
+                if (leftValue != rightValue)
+                    return leftValue < rightValue ? -1 : 1;
+            }
+            return 0;
+        }
+
+        static int ParseNumericIdentifier(string identifier)
+        {
+            return int.TryParse(identifier, out var value) ? value : 0;
+        }
+
+        // Compares dot-separated pre-release identifiers per SemVer §11: numeric identifiers compare
+        // numerically and rank below alphanumeric ones, which compare by ASCII order. When all shared
+        // identifiers are equal, the version with more identifiers has higher precedence.
+        static int ComparePreRelease(string leftPreRelease, string rightPreRelease)
+        {
+            var left = leftPreRelease.Split('.');
+            var right = rightPreRelease.Split('.');
+            var count = Math.Min(left.Length, right.Length);
+            for (var i = 0; i < count; i++)
+            {
+                var comparison = ComparePreReleaseIdentifier(left[i], right[i]);
+                if (comparison != 0)
+                    return comparison;
+            }
+            return left.Length.CompareTo(right.Length);
+        }
+
+        static int ComparePreReleaseIdentifier(string left, string right)
+        {
+            var leftIsNumeric = int.TryParse(left, out var leftValue);
+            var rightIsNumeric = int.TryParse(right, out var rightValue);
+
+            if (leftIsNumeric && rightIsNumeric)
+                return leftValue.CompareTo(rightValue);
+            if (leftIsNumeric)
+                return -1; // numeric identifiers have lower precedence than alphanumeric ones
+            if (rightIsNumeric)
+                return 1;
+            return string.CompareOrdinal(left, right);
         }
 
         public static void DrawUpgradePopup(ViewStates viewStates)

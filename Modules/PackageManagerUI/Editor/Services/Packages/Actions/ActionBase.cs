@@ -54,19 +54,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 tooltip = GetTooltip(item, true);
                 return ActionState.Visible | ActionState.DisabledForItem | ActionState.InProgress;
             }
-            var disableCondition = GetActiveDisableCondition(item);
+            var disableCondition = GetActiveDisableCondition(item, out tooltip);
             if (disableCondition != null)
-            {
-                tooltip = disableCondition.tooltip;
                 return ActionState.Visible | ActionState.DisabledForItem;
-            }
 
-            var temporaryDisableCondition = GetActiveTemporaryDisableCondition();
+            var temporaryDisableCondition = GetActiveTemporaryDisableCondition(item, out tooltip);
             if (temporaryDisableCondition != null)
-            {
-                tooltip = temporaryDisableCondition.tooltip;
                 return ActionState.Visible | ActionState.DisabledTemporarily;
-            }
 
             tooltip = GetTooltip(item, false);
             return ActionState.Visible;
@@ -85,17 +79,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         // Temporary disable conditions refer to conditions that are temporary and not related to the state of a package
         // For example, when the network is lost or when there are scripting compiling
-        protected virtual IEnumerable<DisableCondition> GetAllTemporaryDisableConditions() => Array.Empty<DisableCondition>();
-        public virtual DisableCondition GetActiveTemporaryDisableCondition()
+        private DisableConditionList<SingleType> m_TemporaryDisableConditions;
+        protected virtual DisableConditionList<SingleType> CreateTemporaryDisableConditions() => new ();
+        public IDisableCondition<SingleType> GetActiveTemporaryDisableCondition(SingleType item, out string tooltip)
         {
-            return GetAllTemporaryDisableConditions().FirstMatch(condition => condition.active);
+            m_TemporaryDisableConditions ??= CreateTemporaryDisableConditions();
+            return m_TemporaryDisableConditions.GetActiveCondition(item, out tooltip);
         }
 
-        protected virtual IEnumerable<DisableCondition> GetAllDisableConditions(SingleType item) => Array.Empty<DisableCondition>();
-
-        public virtual DisableCondition GetActiveDisableCondition(SingleType item)
+        private DisableConditionList<SingleType> m_DisableConditions;
+        protected virtual DisableConditionList<SingleType> CreateDisableConditions() => new ();
+        public IDisableCondition<SingleType> GetActiveDisableCondition(SingleType item, out string tooltip)
         {
-            return GetAllDisableConditions(item).FirstMatch(condition => condition.active);
+            m_DisableConditions ??= CreateDisableConditions();
+            return m_DisableConditions.GetActiveCondition(item, out tooltip);
         }
     }
 

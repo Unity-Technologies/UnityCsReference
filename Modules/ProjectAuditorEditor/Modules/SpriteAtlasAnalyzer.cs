@@ -22,7 +22,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             "Consider reorganizing your Sprite Atlas Texture in order to reduce the amount of empty space."
         )
         {
-            IsEnabledByDefault = true,
             MessageFormat = "Sprite Atlas '{0}' has too much empty space ({1}, {2})",
             FixerLabel = "Open Sprite Atlas Analyzer",
             Fixer = (issue, analysisParams) =>

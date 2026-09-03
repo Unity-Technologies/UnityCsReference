@@ -51,6 +51,9 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
     // Asset paths we are writing ourselves, so our own reimport does not look like an external change.
     [NonSerialized] readonly HashSet<string> m_SuppressedReimportPaths = new();
 
+    // Reimports that a move (rename) triggered, which reconcile as a silent "keep" rather than as a conflict.
+    [NonSerialized] readonly HashSet<EntityId> m_MovedReimports = new();
+
     // The exact paths suppressed for each in-flight save/discard, so the release uses the same set the suppress
     // added. Recomputing them from the asset at release time can yield a different (or empty) set when the
     // operation's own reimport replaced the managed instance, which would strand the suppression and make us
@@ -70,6 +73,11 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
     // Reimports a tool has claimed (see ClaimExternalChange): the tool drives its own reload and pulls the
     // resolution via ResolveExternalChange, so the registry's own deferred handling defers to it for these.
     [NonSerialized] readonly HashSet<EntityId> m_ClaimedReimports = new();
+
+    // One decision per external change: several holders of the same asset can each pull the resolution while
+    // reloading (e.g. two Builder windows sharing a document). The first ask resolves and the decision sticks
+    // until the asset's next reimport voids it.
+    [NonSerialized] readonly Dictionary<EntityId, UIAssetConflictChoice> m_ResolvedConflicts = new();
 
     [NoAutoStaticsCleanup]
     static UIAssetRegistry s_Live;
@@ -447,6 +455,38 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         return false;
     }
 
+    internal void CollectDirtyAssetsHeldOnlyBy(Func<object, bool> isReleasingOwner, List<UnityEngine.Object> results)
+    {
+        if (m_Entries == null || results == null || isReleasingOwner == null)
+            return;
+
+        EnsureBaselinesRestored();
+
+        var documentCount = 0;
+        foreach (var entry in m_Entries.Values)
+        {
+            if (entry.ReadWriteCount == 0 || !m_Dirty.IsModified(entry.Id, entry.Asset))
+                continue;
+
+            var heldOnlyByReleasingOwners = true;
+            foreach (var reference in entry.ReferencesByOwner)
+            {
+                if (reference.Value != UIAssetAccess.ReadWrite || isReleasingOwner(reference.Key))
+                    continue;
+                heldOnlyByReleasingOwners = false;
+                break;
+            }
+
+            if (!heldOnlyByReleasingOwners)
+                continue;
+
+            if (entry.Kind == UIAssetKind.VisualTreeAsset)
+                results.Insert(documentCount++, entry.Asset);
+            else
+                results.Add(entry.Asset);
+        }
+    }
+
     /// <summary>Whether the tracked asset has unsaved changes (its exported content differs from disk).</summary>
     public bool IsDirty(UnityEngine.Object asset)
     {
@@ -519,17 +559,20 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         using var group = UICommandQueue.BeginGroup("Save All UI Assets");
         using var saved = HashSetPool<UnityEngine.Object>.Get(out var savedSet);
 
-        foreach (var vta in vtas)
+        using (new AssetDatabase.AssetEditingScope())
         {
-            succeeded &= SaveDocument(vta, source, savedSet);
-        }
+            foreach (var vta in vtas)
+            {
+                succeeded &= SaveDocument(vta, source, savedSet);
+            }
 
-        // Standalone stylesheets not already written as part of a document save above.
-        foreach (var styleSheet in sheets)
-        {
-            if (savedSet.Contains(styleSheet))
-                continue;
-            succeeded &= SaveStyleSheet(styleSheet, source);
+            // Standalone stylesheets not already written as part of a document save above.
+            foreach (var styleSheet in sheets)
+            {
+                if (savedSet.Contains(styleSheet))
+                    continue;
+                succeeded &= SaveStyleSheet(styleSheet, source);
+            }
         }
 
         return succeeded;
@@ -1209,7 +1252,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         }
     }
 
-    void OnAssetsPostprocessed(string[] imported, string[] deleted)
+    void OnAssetsPostprocessed(string[] imported, string[] deleted, string[] moved)
     {
         if (m_Entries == null || m_Entries.Count == 0)
             return;
@@ -1249,6 +1292,10 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
 
             // Record under the entry's CURRENT id: rebinding can have re-keyed (or replaced) it.
             m_PendingReimports[entry.Id] = wasDirty;
+            if (Array.IndexOf(moved, path) >= 0)
+                m_MovedReimports.Add(entry.Id);
+            // A fresh external change voids any conflict decision made for the previous one.
+            m_ResolvedConflicts.Remove(entry.Id);
             addedPending = true;
         }
 
@@ -1288,6 +1335,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         // Claims are only added synchronously during the import batch (never during this flush), so clearing
         // them here cannot drop a claim for a reimport still to be processed.
         m_ClaimedReimports.Clear();
+        m_MovedReimports.Clear();
     }
 
     /// <summary>
@@ -1331,7 +1379,39 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
     /// </summary>
     public UIAssetConflictChoice ResolveExternalChange(UnityEngine.Object asset)
     {
-        return ResolveConflict(asset);
+        if (ReferenceEquals(asset, null))
+            return UIAssetConflictChoice.Keep;
+
+        // Same instance-replacement hazard as ClaimExternalChange: the reimport may have re-keyed the entry
+        // before the tool got here, and a decision cached under a dead id would never be found again.
+        var id = asset.GetEntityId();
+        if (!m_Entries.ContainsKey(id))
+        {
+            var path = AssetDatabase.GetAssetPath(asset);
+            if (!string.IsNullOrEmpty(path) && TryGetEntryByPath(path, out var entry))
+                id = entry.Id;
+        }
+
+        // An untracked asset has no reimport hook to void a cached decision, so never cache one for it.
+        if (!m_Entries.ContainsKey(id))
+            return ResolveConflict(asset);
+
+        return ResolveConflictOnce(id, asset);
+    }
+
+    // A single external change yields a single decision, no matter how many holders of the asset ask (two
+    // Builder windows sharing a document each drive their own reload). The one-shot backup choice is stored
+    // downgraded so only the first resolver writes the backup file; followers just adopt the imported version.
+    UIAssetConflictChoice ResolveConflictOnce(EntityId id, UnityEngine.Object asset)
+    {
+        if (m_ResolvedConflicts.TryGetValue(id, out var resolved))
+            return resolved;
+
+        var choice = ResolveConflict(asset);
+        m_ResolvedConflicts[id] = choice == UIAssetConflictChoice.SaveBackupAndUseImported
+            ? UIAssetConflictChoice.UseImported
+            : choice;
+        return choice;
     }
 
     /// <summary>
@@ -1382,7 +1462,12 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         // The asset had unsaved edits and was changed on disk. The registry is the single resolver: it decides
         // keep-vs-use-imported here and reconciles the content, then reports the decision so each tool that
         // holds the asset can react (rebind its live views; preserve its work on the backup choice).
-        var choice = ResolveConflict(entry.Asset);
+        //
+        // A move is the exception: the reimport it triggers rewrites the instance from disk like any other, but
+        // the file's content never changed, so there is no conflict to put to the user — only edits to restore.
+        var choice = m_MovedReimports.Remove(entry.Id)
+            ? UIAssetConflictChoice.Keep
+            : ResolveConflictOnce(entry.Id, entry.Asset);
 
         // Baseline against the now-on-disk (external) content either way.
         m_Dirty.Capture(entry.Asset);
@@ -1456,6 +1541,10 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
             // this reimport as well, prompting the user a second time.
             if (m_ClaimedReimports.Remove(entry.Id))
                 m_ClaimedReimports.Add(newId);
+
+            // Same for an already-made conflict decision, or a later holder would be prompted anew.
+            if (m_ResolvedConflicts.Remove(entry.Id, out var resolvedChoice))
+                m_ResolvedConflicts[newId] = resolvedChoice;
 
             // Another entry can already own the fresh id — a second holder opened the reimported instance
             // before we rebound. Fold our owners into it rather than replacing it, so their references are not
@@ -1643,7 +1732,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
     {
         static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
         {
-            s_Live?.OnAssetsPostprocessed(imported, deleted);
+            s_Live?.OnAssetsPostprocessed(imported, deleted, moved);
         }
     }
 }

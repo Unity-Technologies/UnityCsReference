@@ -120,6 +120,14 @@ internal class PlatformPackageServiceInfoProvider
         return packageServiceInfo?.thumbnail;
     }
 
+    /// <summary>
+    /// True when the package uses the Enterprise licensing model, meaning access is granted by an entitlement.
+    /// </summary>
+    public bool IsEnterprisePackage(string packageName)
+    {
+        return GetPackageInfo(packageName)?.entitlements?.licensingModel == EntitlementLicensingModel.Enterprise;
+    }
+
     async void FetchPackageServiceInfo()
     {
         var packageInfoSearchTasks = new List<Task<bool>>();

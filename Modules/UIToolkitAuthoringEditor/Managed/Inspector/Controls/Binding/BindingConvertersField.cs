@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
@@ -12,6 +11,7 @@ using UnityEditor.UIElements;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -39,12 +39,13 @@ namespace Unity.UIToolkit.Editor
         public class ConvertersCompleter : FieldSearchCompleter<ConverterGroup>
         {
             public static readonly string CurrentEntryItemId = "__unity-ui-completer-current-entry-item";
-            public static readonly string IncompatibleMessage = L10n.Tr("Not currently compatible with type");
-            public static readonly string CompatibleMessage = L10n.Tr("Compatible with type");
-            public static readonly string UnknownCompatibilityMessage = L10n.Tr("Unknown");
-            public static readonly string SelectEditedText = L10n.Tr("Select to use a custom converter ID");
-            public static readonly string UseCurrentEntryMessage = L10n.Tr("Use \"{0}\" as converter ID");
+            public static readonly string IncompatibleMessage = L10n.Tr("Not currently compatible with type", null);
+            public static readonly string CompatibleMessage = L10n.Tr("Compatible with type", null);
+            public static readonly string UnknownCompatibilityMessage = L10n.Tr("Unknown", null);
+            public static readonly string SelectEditedText = L10n.Tr("Select to use a custom converter ID", null);
+            public static readonly string UseCurrentEntryMessage = L10n.Tr("Use \"{0}\" as converter ID", null);
 
+            [NoAutoStaticsCleanup] // current-text converter group, safe to persist
             private static readonly ConverterGroup s_CurrentTextGroup = new(CurrentEntryItemId);
             private BindingConvertersField m_Field;
             private List<ConverterGroup> m_MatchingConverterGroups = new ();
@@ -189,7 +190,7 @@ namespace Unity.UIToolkit.Editor
         private static readonly string s_ListViewUssClassName = s_UssClassName + "__list-view";
         private static readonly string s_SearchFieldContainerName = "converter-search-field-container";
         private static readonly string s_SearchFieldName = "converter-search-field";
-        public static readonly string BindingWindowLocalConverterPlaceholderText = L10n.Tr("Enter a converter ID");
+        public static readonly string BindingWindowLocalConverterPlaceholderText = L10n.Tr("Enter a converter ID", null);
 
         private const string k_StyleSheet = "UIToolkitAuthoring/Inspector/Binding/BindingConvertersField.uss";
         private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/Binding/BindingConvertersFieldDark.uss";
@@ -543,7 +544,7 @@ namespace Unity.UIToolkit.Editor
         static readonly string k_DataSourceType = nameof(DataBinding.dataSourceType);
         static readonly string k_DataSourcePathString = nameof(DataBinding.dataSourcePathString);
         static readonly string k_UiToSourceConvertersString = nameof(DataBinding.uiToSourceConvertersString);
-        public static readonly string BindingWindowLocalConverterNotApplicableMessage = L10n.Tr("It is not applicable for the specified binding mode");
+        public static readonly string BindingWindowLocalConverterNotApplicableMessage = L10n.Tr("It is not applicable for the specified binding mode", null);
 
         bool m_Configured;
 
@@ -793,4 +794,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

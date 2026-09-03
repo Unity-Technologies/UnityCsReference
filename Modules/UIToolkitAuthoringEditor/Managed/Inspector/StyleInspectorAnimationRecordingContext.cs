@@ -2,12 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -69,13 +69,7 @@ internal sealed class StyleInspectorAnimationRecordingContext
     {
         context = null;
 
-        var clipOwner = VisualElementAnimationClipUtility.FindClipOwner(element);
-        if (clipOwner == null)
-            return false;
-
-        var concretePanel = clipOwner.panel as Panel;
-        var binder = concretePanel?.GetOrCreateElementBinder(clipOwner);
-        if (binder == null)
+        if (!VisualElementRecordability.TryFindClipOwnerBinder(element, out var binder))
             return false;
 
         binder.UpdateElementNamesIfNeeded();
@@ -86,6 +80,7 @@ internal sealed class StyleInspectorAnimationRecordingContext
         return true;
     }
 
+    [NoAutoStaticsCleanup] // recordable-property set, safe to persist
     static HashSet<StylePropertyId> s_PerElementRecordableSet;
 
     static HashSet<StylePropertyId> GetPerElementRecordableSet()
@@ -115,6 +110,7 @@ internal sealed class StyleInspectorAnimationRecordingContext
         return new StyleInspectorAnimationRecordingContext(recordableLonghandIds ?? new HashSet<StylePropertyId>());
     }
 
+    [NoAutoStaticsCleanup] // empty set sentinel, safe to persist
     static readonly HashSet<StylePropertyId> s_EmptyRecordableSet = new();
 
     internal bool HasRecordableProperties => m_RecordableLonghandIds.Count > 0;
@@ -135,4 +131,3 @@ internal sealed class StyleInspectorAnimationRecordingContext
         return false;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

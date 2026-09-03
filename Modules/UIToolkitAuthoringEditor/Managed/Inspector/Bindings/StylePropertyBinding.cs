@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using Unity.Properties;
 using UnityEditor;
@@ -16,6 +16,7 @@ using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using Debug = UnityEngine.Debug;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -183,7 +184,7 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         }
     }
 
-    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+    [NoAutoStaticsCleanup] // visitor pool, safe to persist
     static readonly UnityEngine.Pool.ObjectPool<GenericValueAtPath> s_VisitorPool = new (CreateVisitor, null, OnReleaseVisitor);
 
     static GenericValueAtPath CreateVisitor()
@@ -196,23 +197,23 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         visitor.Reset();
     }
 
-    public static readonly string k_AddBindingText = L10n.Tr("Add Binding");
-    public static readonly string k_RemoveBindingText = L10n.Tr("Remove Binding");
-    public static readonly string k_EditBindingText = L10n.Tr("Edit Binding");
-    public static readonly string k_ViewBindingText = L10n.Tr("View Binding");
-    public static readonly string k_ViewVariableText = L10n.Tr("View variable");
-    public static readonly string k_SetVariableText = L10n.Tr("Set variable");
-    public static readonly string k_EditVariableText = L10n.Tr("Edit variable");
-    public static readonly string k_RemoveVariableText = L10n.Tr("Remove variable");
-    public static readonly string k_GoToSelectorText = L10n.Tr("Go to selector");
-    public static readonly string k_OpenSelectorInIDEText = L10n.Tr("Open selector in IDE");
-    public static readonly string k_SetAsInlineValueText = L10n.Tr("Set as inline value");
-    public static readonly string k_SetAsValueText = L10n.Tr("Set as value");
-    public static readonly string k_UnsetText = L10n.Tr("Unset");
-    public static readonly string k_UnsetAllText = L10n.Tr("Unset All");
-    public static readonly string k_ExtractInlineStyleText = L10n.Tr("Extract Inlined Style to Selector");
-    public static readonly string k_ExtractAllInlineStylesText = L10n.Tr("Extract All Inlined Styles to Selector");
-    public static readonly string k_NewClassText = L10n.Tr("New Class...");
+    public static readonly string k_AddBindingText = L10n.Tr("Add Binding", null);
+    public static readonly string k_RemoveBindingText = L10n.Tr("Remove Binding", null);
+    public static readonly string k_EditBindingText = L10n.Tr("Edit Binding", null);
+    public static readonly string k_ViewBindingText = L10n.Tr("View Binding", null);
+    public static readonly string k_ViewVariableText = L10n.Tr("View variable", null);
+    public static readonly string k_SetVariableText = L10n.Tr("Set variable", null);
+    public static readonly string k_EditVariableText = L10n.Tr("Edit variable", null);
+    public static readonly string k_RemoveVariableText = L10n.Tr("Remove variable", null);
+    public static readonly string k_GoToSelectorText = L10n.Tr("Go to selector", null);
+    public static readonly string k_OpenSelectorInIDEText = L10n.Tr("Open selector in IDE", null);
+    public static readonly string k_SetAsInlineValueText = L10n.Tr("Set as inline value", null);
+    public static readonly string k_SetAsValueText = L10n.Tr("Set as value", null);
+    public static readonly string k_UnsetText = L10n.Tr("Unset", null);
+    public static readonly string k_UnsetAllText = L10n.Tr("Unset All", null);
+    public static readonly string k_ExtractInlineStyleText = L10n.Tr("Extract Inlined Style to Selector", null);
+    public static readonly string k_ExtractAllInlineStylesText = L10n.Tr("Extract All Inlined Styles to Selector", null);
+    public static readonly string k_NewClassText = L10n.Tr("New Class...", null);
 
     public static readonly UniqueStyleString k_InlineFieldUssClassName = new("style-property-field__inline-value");
     public static readonly UniqueStyleString k_VariableFieldUssClassName = new("style-property-field__variable");
@@ -1012,6 +1013,29 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         targetEnabled &= !authoringContext.IsReadOnly;
         targetElement.enabledSelf = targetEnabled;
 
+        // A resolveToFloat property (font-size) stores a resolved px float in computed storage, dropping the
+        // authoring unit (% -> px). Show the authored StyleLength so the field edits and records in the authoring
+        // unit; the resolved px is surfaced separately as a read-only hint.
+        StyleLength authoredFontSize = default;
+        var showAuthoredFontSize = false;
+        if (StyleDebug.IsResolveToFloatProperty(stylePropertyId))
+        {
+            // set via element.style (runtime inline).
+            if (inlineValue is StyleLength sl && sl.keyword != StyleKeyword.Null)
+            {
+                showAuthoredFontSize = true;
+                authoredFontSize = sl;
+            }
+            // set via the UXML/USS inline stylesheet
+            else if (value.uxmlValue.isInlined
+                     && authoringContext.StyleDiff.currentStyleSheet is { } authoredSheet
+                     && value.uxmlValue.inlineProperty.TryGetDimension(authoredSheet, out var authoredDim))
+            {
+                showAuthoredFontSize = true;
+                authoredFontSize = new StyleLength(authoredDim.ToLength());
+            }
+        }
+
         using var _ = new IgnoreChangeScope(this);
         switch (targetElement)
         {
@@ -1020,7 +1044,11 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
                 break;
             case BaseField<TInline> inlineField when id == BaseField<TInline>.valueProperty:
             {
-                if (TypeConversion.TryConvert<TComputed, TInline>(ref computedValue, out var convertedValue))
+                if (showAuthoredFontSize)
+                    inlineField.value = (TInline)(object)authoredFontSize;
+                else if (StyleDebug.IsResolveToFloatProperty(stylePropertyId) && computedValue is float resolvedPx)
+                    inlineField.value = (TInline)(object)new StyleLength(new Length(resolvedPx));
+                else if (TypeConversion.TryConvert<TComputed, TInline>(ref computedValue, out var convertedValue))
                     inlineField.value = convertedValue;
                 else
                     Debug.LogWarning($"Invalid Cast from: `{typeof(TComputed).Name}` to `{typeof(TInline).Name}`");
@@ -1045,6 +1073,21 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         }
 
         UpdateSetAlphaIfTransparentWhenPicked(targetElement, !value.uxmlValue.isInlined || value.uxmlValue.requireVariableResolve);
+
+        // A resolveToFloat property (font-size) resolves % to px; show the resolved px as a read-only hint alongside
+        // the authored value, but only for a real element instance (a selector has no context) and only when the field
+        // isn't already showing that px verbatim (authored plain px, or the computed value shown directly).
+        if (StyleDebug.IsResolveToFloatProperty(stylePropertyId) && targetElement is StyleLengthField lengthField)
+        {
+            var showsResolvedAlready = !showAuthoredFontSize
+                || (authoredFontSize.keyword == StyleKeyword.Undefined && authoredFontSize.value.unit == LengthUnit.Pixel);
+            lengthField.SetResolvedValueHint(
+                !showsResolvedAlready
+                && authoringContext.StyleDiff.currentContextType == StyleDiff.ContextType.VisualElement
+                && computedValue is float px
+                    ? $"{px.ToString("0.##", CultureInfo.InvariantCulture)}px"
+                    : null);
+        }
 
         return default;
     }
@@ -1269,4 +1312,3 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
     object IDataSourceProvider.dataSource => null;
     PropertyPath IDataSourceProvider.dataSourcePath => PropertyPath.FromName(m_StylePropertyCSharpName);
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

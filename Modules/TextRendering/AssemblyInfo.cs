@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.TextCoreTextEngineModule")]
 
 [assembly: InternalsVisibleTo("UnityEditor.TextRenderingModule")]
+[assembly: InternalsVisibleTo("UnityEditor.TextCoreTextEngineModule")]
 [assembly: InternalsVisibleTo("UnityEditor.CoreModule")] 
 
 

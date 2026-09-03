@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AdaptivePerformance not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.AdaptivePerformance.Editor;
@@ -24,9 +25,9 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
     {
         private Toggle m_EnableAdaptivePerformanceToggle;
         public BuildProfileAdaptivePerformanceProviderUI m_AdaptivePerformanceProviderUI;
-        public static readonly string adaptivePerformanceLabelText = L10n.Tr("Adaptive Performance Settings");
+        public static readonly string adaptivePerformanceLabelText = L10n.Tr("Adaptive Performance Settings", null);
 
-        readonly string k_LabelText = L10n.Tr("Enable Adaptive Performance");
+        readonly string k_LabelText = L10n.Tr("Enable Adaptive Performance", null);
         const string k_BuildProfileAdaptivePerformanceUIUSS = "AdaptivePerformance/StyleSheets/BuildProfileAdaptivePerformanceUI/BuildProfileAdaptivePerformanceUI.uss";
         const string k_BuildProfileAdaptivePerformanceUIUXML = "AdaptivePerformance/UXML/BuildProfileAdaptivePerformanceUI/BuildProfileAdaptivePerformanceUI.uxml";
         BuildProfile m_BuildProfile;
@@ -34,7 +35,9 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
 
         public BuildProfileAdaptivePerformanceToggle(BuildProfile profile)
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             AdaptivePerformancePackageMetadataStore.InitKnownPluginPackages();
+            #pragma warning restore UAL0015
             m_BuildProfile = profile;
             m_AdaptivePerformanceProviderUI = new BuildProfileAdaptivePerformanceProviderUI(m_BuildProfile);
             var buildProfileUI = EditorGUIUtility.LoadRequired(k_BuildProfileAdaptivePerformanceUIUXML) as VisualTreeAsset;
@@ -404,3 +407,4 @@ namespace UnityEditor.AdaptivePerformance.UI.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

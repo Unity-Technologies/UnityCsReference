@@ -10,7 +10,7 @@ using UnityEngine.TextCore;
 namespace UnityEngine.UIElements
 {
     // NativeTextBuffer wraps a NativeArray<char> allocated with Allocator.Persistent. Disposing such an
-    // allocation must happen on the main thread, so a TextElement collected by the GC cannot free its buffer directly from the finalizer thread.
+    // allocation must happen on the main thread, so an object collected by the GC cannot free its buffer directly from the finalizer thread.
     static class NativeTextBufferReclaimer
     {
         [NoAutoStaticsCleanup] // holds pending Persistent allocations; clearing on reload would leak them before Collect() can dispose them

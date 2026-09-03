@@ -382,6 +382,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleColor unityBackgroundImageTintColor { get => default; set => _ = value ; }
         /// <summary>
+        /// Bends the element's generated mesh into a curved surface around its X and/or Y axis. Accepts one or two angles: the first bends around the X axis (curving the vertical extent), the second around the Y axis (curving the horizontal extent); the sign of each selects concave or convex. Only visually meaningful on world-space panels.
+        /// </summary>
+        StyleCurvature unityCurvature { get => default; set => _ = value ; }
+        /// <summary>
         /// TextElement editor rendering mode.
         /// </summary>
         StyleEnum<EditorTextRenderingMode> unityEditorTextRenderingMode { get => default; set => _ = value ; }

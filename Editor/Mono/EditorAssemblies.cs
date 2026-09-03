@@ -117,40 +117,27 @@ namespace UnityEditor
 
         static readonly ProfilerMarkerWithStringData _profilerMarkerProcessInitializeOnLoadAttributes = ProfilerMarkerWithStringData.Create("ProcessInitializeOnLoadAttribute", "Type");
         static readonly ProfilerMarkerWithStringData _profilerMarkerProcessInitializeOnLoadMethodAttributes = ProfilerMarkerWithStringData.Create("ProcessInitializeOnLoadMethodAttribute", "MethodInfo");
-        private static readonly ProfilerMarker _profilerMarkerSortTypes = new ProfilerMarker("SortTypesTopologically");
 
+        // Native (InitializeOnLoadOrdering::OrderTypesByAssembly) hands the handles over already ordered by assembly.
         [RequiredByNativeCode]
         private static void ProcessInitializeOnLoadAttributes(ReadOnlySpan<IntPtr> typeHandles)
         {
             if (typeHandles.Length == 0)
                 return;
 
-            var types = SystemReflectionMarshalling.UnmarshalSystemTypes(typeHandles);
-
             bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
-
-            IEnumerable<Type> sortedTypes;
-            using (_profilerMarkerSortTypes.Auto())
-            {
-                // Sort types according to the list of loaded assemblies (which are topologically-sorted), such that we guarantee that
-                // [InitializeOnLoad] classes in assemblies referenced by a given assembly will have been
-                // initialized prior to that assembly's own [InitializeOnLoad] classes.
-#pragma warning disable UAC2001 // Avoid Linq
-                sortedTypes = types.OrderBy(x => Array.IndexOf(loadedAssemblies, x.Assembly));
-#pragma warning restore UAC2001
-            }
 
             using var scope = new ProgressScope("Running managed callbacks", "Initializing InitializeOnLoad Types", forceUpdate: true);
 
-            foreach (Type type in sortedTypes)
+            foreach (var typeHandlePtr in typeHandles)
             {
+                var typeHandle = SystemReflectionMarshalling.UnmarshalRuntimeTypeHandle(typeHandlePtr);
                 using (_profilerMarkerProcessInitializeOnLoadAttributes.Auto(reportTimes,
-                           () => type.AssemblyQualifiedName))
+                           () => Type.GetTypeFromHandle(typeHandle).AssemblyQualifiedName))
                 {
-                    var typeFullName = type?.FullName;
                     try
                     {
-                        RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                        RuntimeHelpers.RunClassConstructor(typeHandle);
                     }
                     catch (TypeLoadException x)
                     {

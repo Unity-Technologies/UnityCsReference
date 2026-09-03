@@ -15,6 +15,7 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
     private const string k_SettingsPath = "Project/UI Toolkit";
 
     private const string k_EnableUIInSceneAuthoring = "Enable in Scene UI Authoring";
+    private const string k_EnableMainStageAuthoring = "Enable Main Stage Authoring";
     private const string k_HierarchyDisplayOptionsText = "Hierarchy Display Options";
     private const string k_DisplayTypenameOptionsText = "Always Display Typename";
     private const string k_DisplayUssClassOptionsText = "Display USS classes";
@@ -25,7 +26,6 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
     private const string k_AutoOpenUIViewportWindowText = "UI Viewport";
     private const string k_AutoOpenStyleSheetsWindowText = "Style Sheets";
     private const string k_RectangleSelectionModeText = "Rectangle Selection Mode";
-    private const string k_EnableZIndexText = "Enable Z-Index";
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Settings/UIToolkitAuthoringSettings.uxml";
 
@@ -41,6 +41,8 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
     bool IUIToolkitSettingsProviderExtension.HasSearchInterestHandler(string searchContext)
     {
         if (k_EnableUIInSceneAuthoring.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
+            return true;
+        if (k_EnableMainStageAuthoring.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
         if (k_HierarchyDisplayOptionsText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
@@ -61,8 +63,6 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
         if (k_AutoOpenUIViewportWindowText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
         if (k_AutoOpenStyleSheetsWindowText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
-            return true;
-        if (k_EnableZIndexText.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
             return true;
         return false;
     }
@@ -97,6 +97,13 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
 
         UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += CheckUIAuthoringOptions;
         CheckUIAuthoringOptions(UIToolkitAuthoringSettings.EnableInSceneUIAuthoring);
+
+        var enableMainStageAuthoring = rootElement.Q<Toggle>("uitoolkit-authoring-settings__enable-main-stage-authoring");
+        enableMainStageAuthoring.value = UIToolkitAuthoringSettings.EnableMainStageAuthoring;
+        enableMainStageAuthoring.RegisterValueChangedCallback(evt =>
+        {
+            UIToolkitAuthoringSettings.EnableMainStageAuthoring = evt.newValue;
+        });
 
         var displayTypenameOptions = rootElement.Q<Toggle>("uitoolkit-authoring-settings__always-display-typename");
         displayTypenameOptions.value = UIToolkitAuthoringSettings.DisplayOptions.HasFlag(UIHierarchyDisplayOptions.Typename);
@@ -144,13 +151,6 @@ internal class UIToolkitAuthoringSettingsProvider : IUIToolkitSettingsProviderEx
         rectangleSelectionMode.RegisterValueChangedCallback(evt =>
         {
             UIToolkitAuthoringSettings.RectangleSelectionMode = (RectangleSelectionMode)evt.newValue;
-        });
-
-        var enableZIndex = rootElement.Q<Toggle>("uitoolkit-authoring-settings__enable-z-index");
-        enableZIndex.value = UIToolkitAuthoringSettings.EnableZIndex;
-        enableZIndex.RegisterValueChangedCallback(evt =>
-        {
-            UIToolkitAuthoringSettings.EnableZIndex = evt.newValue;
         });
 
         void UpdateNewHierarchyHelpBox()

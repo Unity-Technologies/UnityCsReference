@@ -72,12 +72,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                     switch (action)
                     {
                         case PackageLink.ContextMenuAction.OpenInBrowser:
-                            yield return new DropdownMenuAction(L10n.Tr("Open in Browser"),
+                            yield return new DropdownMenuAction(L10n.Tr("Open in Browser", null),
                                 a => OpenInBrowser(),
                                 a => string.IsNullOrEmpty(m_Link.url) ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
                             break;
                         case PackageLink.ContextMenuAction.OpenLocally:
-                            yield return new DropdownMenuAction(L10n.Tr("Open Locally"),
+                            yield return new DropdownMenuAction(L10n.Tr("Open Locally", null),
                                 a => OpenLocally(),
                                 a => string.IsNullOrEmpty(m_Link.offlinePath) ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
                             break;
@@ -118,7 +118,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!string.IsNullOrEmpty(m_Link.analyticsEventName))
                     PackageManagerWindowAnalytics.SendEvent($"{m_Link.analyticsEventName}NotFound", m_Link.version?.uniqueId);
 
-                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unable to find valid {0} for this {1}."), m_Link.displayName.ToLower(), m_Link.version.GetDescriptor()));
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unable to find valid {0} for this {1}.", null), m_Link.displayName.ToLower(), m_Link.version.GetDescriptor()));
             }
         }
     }

@@ -65,7 +65,7 @@ namespace Unity.ProjectAuditor.Editor
             // ID must be exactly 7 characters, beginning with exactly 3 uppercase letters, followed by exactly 4 digits
             if (!IsValidIdFormat(id))
             {
-                Debug.LogError("Invalid ID string supplied to DescriptorId");
+                Debug.LogError("Invalid ID string supplied to DescriptorId: " + id);
                 m_AsInt = -1;
                 return;
             }

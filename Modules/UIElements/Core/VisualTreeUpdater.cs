@@ -34,10 +34,12 @@ namespace UnityEngine.UIElements
         ViewData,
         Bindings,
         DataBinding,
+        Component,
         Animation,
         Styles,
         Layout,
         TransformClip,
+        Accessibility,
         Repaint,
         Authoring,
         Count
@@ -67,13 +69,14 @@ namespace UnityEngine.UIElements
                 get { return m_VisualTreeUpdaters[index]; }
             }
 
-            // For UI Test Framework.
+            // For UI Test Framework. An unregistered phase reports -1 so frame comparisons can
+            // tell "never runs on this panel" apart from "has not ticked yet".
             public long[] GetUpdatersFrameCount()
             {
                 long[] state = new long[m_VisualTreeUpdaters.Length];
                 for (int i = 0; i < m_VisualTreeUpdaters.Length; i++)
                 {
-                    state[i] = m_VisualTreeUpdaters[i].FrameCount;
+                    state[i] = m_VisualTreeUpdaters[i]?.FrameCount ?? -1;
                 }
                 return state;
             }
@@ -103,7 +106,7 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < (int)VisualTreeUpdatePhase.Count; i++)
             {
                 var updater = m_UpdaterArray[i];
-                updater.Dispose();
+                updater?.Dispose();
             }
         }
 
@@ -116,6 +119,8 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < (int)VisualTreeUpdatePhase.Count; i++)
             {
                 var updater = m_UpdaterArray[i];
+                if (updater == null)
+                    continue;
 
                 using (updater.profilerMarker.Auto(m_Panel.ownerObject))
                 {
@@ -132,6 +137,8 @@ namespace UnityEngine.UIElements
         public void UpdateVisualTreePhase(VisualTreeUpdatePhase phase)
         {
             var updater = m_UpdaterArray[phase];
+            if (updater == null)
+                return;
 
             using (updater.profilerMarker.Auto(m_Panel.ownerObject))
             {
@@ -147,7 +154,7 @@ namespace UnityEngine.UIElements
             for (int i = 0; i < (int)VisualTreeUpdatePhase.Count; i++)
             {
                 var updater = m_UpdaterArray[i];
-                updater.OnVersionChanged(ve, versionChangeType);
+                updater?.OnVersionChanged(ve, versionChangeType);
             }
         }
 
@@ -161,7 +168,12 @@ namespace UnityEngine.UIElements
         public void SetUpdater(IVisualTreeUpdater updater, VisualTreeUpdatePhase phase)
         {
             m_UpdaterArray[phase]?.Dispose();
-            updater.panel = m_Panel;
+
+            // A null updater vacates the phase: the update and version-change loops skip it, and
+            // GetUpdatersFrameCount reports it as never able to tick.
+            if (updater != null)
+                updater.panel = m_Panel;
+
             m_UpdaterArray[phase] = updater;
         }
 
@@ -182,10 +194,16 @@ namespace UnityEngine.UIElements
             SetUpdater<VisualTreeViewDataUpdater>(VisualTreeUpdatePhase.ViewData);
             SetUpdater<VisualTreeBindingsUpdater>(VisualTreeUpdatePhase.Bindings);
             SetUpdater<VisualTreeDataBindingsUpdater>(VisualTreeUpdatePhase.DataBinding);
+            SetUpdater<VisualTreeComponentUpdater>(VisualTreeUpdatePhase.Component);
             SetUpdater<VisualElementAnimationSystem>(VisualTreeUpdatePhase.Animation);
             SetUpdater<VisualTreeStyleUpdater>(VisualTreeUpdatePhase.Styles);
             SetUpdater<VisualTreeLayoutUpdater>(VisualTreeUpdatePhase.Layout);
             SetUpdater<VisualTreeHierarchyFlagsUpdater>(VisualTreeUpdatePhase.TransformClip);
+
+            // The Accessibility phase starts empty: updaters are called for every version change
+            // on every element, so UITKAccessibilityBridge installs its updater only on the panels
+            // it tracks and vacates the phase when tracking stops.
+
             SetUpdater<UIRRepaintUpdater>(VisualTreeUpdatePhase.Repaint);
             SetUpdater<VisualTreeAuthoringUpdater>(VisualTreeUpdatePhase.Authoring);
         }

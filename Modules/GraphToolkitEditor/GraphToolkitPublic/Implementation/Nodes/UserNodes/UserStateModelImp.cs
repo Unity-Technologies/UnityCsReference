@@ -18,6 +18,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public State Node => m_Node;
 
+        bool IUserModelImp.IsMissingDefinition => m_Node == null;
+
         [NonSerialized]
         bool m_OnEnableCalled;
         [NonSerialized]
@@ -26,8 +28,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
         string m_CustomTitle;
         [NonSerialized]
         string m_CustomSubtitle;
+
         [NonSerialized]
-        Color m_CustomDefaultColor;
+        Color m_CustomDefaultColor = k_DefaultColor;
 
         [NonSerialized]
         StateAttribute m_StateAttribute;
@@ -74,7 +77,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             get
             {
-                var title = m_Node != null ? m_Node.GetType().Name.Nicify() : "Missing State";
+                if (m_Node == null)
+                    return "Missing State";
+
+                var title = m_Node.GetType().Name.Nicify();
 
                 // Prioritize editable title label
                 if (!string.IsNullOrEmpty(m_Title))
@@ -129,7 +135,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         public override Color DefaultColor
         {
-            get => m_CustomDefaultColor;
+            get => m_CustomDefaultColor == k_DefaultColor ? base.DefaultColor : m_CustomDefaultColor;
             set
             {
                 if (m_CustomDefaultColor == value)
@@ -152,7 +158,10 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             base.OnAfterDeserialize();
 
-            m_Node?.SetImplementation(this);
+            if (m_Node == null)
+                PlaceholderModelHelper.SetPlaceholderCapabilities(this);
+            else
+                m_Node.SetImplementation(this);
         }
 
         public override void OnCreateNode()

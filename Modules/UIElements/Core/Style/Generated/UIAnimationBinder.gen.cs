@@ -119,6 +119,7 @@ namespace UnityEngine.UIElements
             0, // UnityAnimationClip
             4, // UnityBackgroundImageTintColor
             0, // UnityBackgroundScaleMode
+            0, // UnityCurvature
             0, // UnityEditorTextRenderingMode
             1, // UnityFont
             1, // UnityFontDefinition
@@ -249,6 +250,7 @@ namespace UnityEngine.UIElements
             PropertyType.Shorthand,
             PropertyType.Color,
             PropertyType.Shorthand,
+            PropertyType.Curvature,
             PropertyType.Enum,
             PropertyType.Font,
             PropertyType.FontDefinition,
@@ -299,6 +301,7 @@ namespace UnityEngine.UIElements
             Shorthand,
             Rotate,
             Scale,
+            Curvature,
             UIAnimationClip,
             MaterialDefinition,
             Ratio,
@@ -523,6 +526,7 @@ namespace UnityEngine.UIElements
                 ".y",
                 ".z"
             }, // Scale
+            System.Array.Empty<string>(), // Curvature
             System.Array.Empty<string>(), // UIAnimationClip
             new string[]
             {
@@ -747,6 +751,7 @@ namespace UnityEngine.UIElements
                 AnimationChannelKind.Float,
                 AnimationChannelKind.Float
             }, // Scale
+            System.Array.Empty<AnimationChannelKind>(), // Curvature
             System.Array.Empty<AnimationChannelKind>(), // UIAnimationClip
             new AnimationChannelKind[]
             {

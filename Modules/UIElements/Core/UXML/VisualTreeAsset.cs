@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -243,6 +242,7 @@ namespace UnityEngine.UIElements
         [SerializeReference] private VisualElementAsset m_VisualTree;
 
         [NonSerialized] Dictionary<int, UxmlAsset> m_UsedIds;
+
         Dictionary<int, UxmlAsset> UsedIds
         {
             get
@@ -365,6 +365,8 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void SetupReferences()
         {
+            m_UsedIds = null;
+
             foreach (var asset in DepthFirstTraversal())
             {
                 asset.SetVisualTreeAssetWithOutNotify(this);
@@ -1314,6 +1316,7 @@ namespace UnityEngine.UIElements
                 vta.m_UsedIds.Clear();
 
             var root = vta.visualTree;
+
             root.hasAuthoringId = true;
             root.SetAttribute(UxmlAsset.AuthoringIdAttribute, root.id.ToString());
             vta.RegisterId(root);
@@ -1332,6 +1335,11 @@ namespace UnityEngine.UIElements
                 uxmlAsset.id = 0; // This will regerenate the id.
             for(var i = 0; i < uxmlAsset.childCount; ++i)
                 HarmonizeIds(uxmlAsset[i], i);
+        }
+
+        void OnApplyUndoRedoINTERNAL()
+        {
+            SetupReferences();
         }
     }
 
@@ -1490,4 +1498,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

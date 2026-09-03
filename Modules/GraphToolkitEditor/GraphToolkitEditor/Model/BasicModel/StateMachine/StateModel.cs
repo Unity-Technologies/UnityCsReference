@@ -23,12 +23,15 @@ namespace Unity.GraphToolkit.Editor
         const string k_OutgoingPortId = "Outgoing";
         const string k_IncomingPortId = "Incoming";
 
+        // Fallback color used when no user color is set.
+        protected static readonly Color k_DefaultColor = new(75 / 255f, 136 / 255f, 172 / 255f, 1f);
+
         // Don't serialize these ports when entering play mode, they are created on demand.
         [NonSerialized]
         StatePortModel m_OutPort;
         [NonSerialized]
         StatePortModel m_InPort;
-        [SerializeField]
+        [SerializeField, HideInInspector]
         ElementColor m_ElementColor;
 
         /// <inheritdoc />
@@ -44,7 +47,7 @@ namespace Unity.GraphToolkit.Editor
         public override void SetColor(Color color) => m_ElementColor.Color = color;
 
         /// <inheritdoc />
-        public override Color DefaultColor => default;
+        public override Color DefaultColor => k_DefaultColor;
 
         /// <inheritdoc />
         public override bool UseColorAlpha => true;
@@ -90,7 +93,8 @@ namespace Unity.GraphToolkit.Editor
                 Unity.GraphToolkit.Editor.Capabilities.Deletable,
                 Unity.GraphToolkit.Editor.Capabilities.Copiable,
                 Unity.GraphToolkit.Editor.Capabilities.Renamable,
-                Unity.GraphToolkit.Editor.Capabilities.Movable
+                Unity.GraphToolkit.Editor.Capabilities.Movable,
+                Unity.GraphToolkit.Editor.Capabilities.Colorable
             };
             m_ElementColor = new ElementColor(this);
         }

@@ -19,8 +19,8 @@ namespace UnityEditorInternal.Profiling
     [Serializable]
     internal class ProfilerDetailedObjectsView : ProfilerDetailedView
     {
-        static readonly string kInstancesCountFormatText = L10n.Tr("{0} instances of {1} sample:");
-        static readonly string kInstancesCountTooltipText = L10n.Tr("Total count of samples which represent the selected item in the Hierarchy View.");
+        static readonly string kInstancesCountFormatText = L10n.Tr("{0} instances of {1} sample:", null);
+        static readonly string kInstancesCountTooltipText = L10n.Tr("Total count of samples which represent the selected item in the Hierarchy View.", null);
         static readonly string kMetadataText = LocalizationDatabase.GetLocalizedString("Metadata:");
         static readonly string kCallstackText = LocalizationDatabase.GetLocalizedString("Call Stack:\n");
         static readonly string kNoMetadataOrCallstackText = LocalizationDatabase.GetLocalizedString("No metadata or call stack is available for the selected sample.");

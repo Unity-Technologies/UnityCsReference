@@ -16,7 +16,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public struct PhysicsIgnoreJointDefinition
+    public record struct PhysicsIgnoreJointDefinition
     {
         /// <summary>
         /// Create a default <see cref="PhysicsIgnoreJoint"/> definition.

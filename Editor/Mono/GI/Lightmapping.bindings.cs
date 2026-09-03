@@ -124,7 +124,7 @@ namespace UnityEditor
             set { }
         }
 
-//        [Obsolete("Lightmapping.realtimeGI is obsolete, use LightingSettings.realtimeGI instead. ", false)]
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public static bool realtimeGI
         {
             get { return GetLightingSettingsOrDefaultsFallback().realtimeGI; }

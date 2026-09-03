@@ -7,7 +7,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Unity.Collections;
+using Unity.ProjectAuditor.Editor.CodeAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -271,7 +273,9 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
 
             // Turn on the AutoStaticsCleanup analyzer
             string globalConfigPath = Path.Combine(m_OutputFolder, "Default.globalconfig");
-            File.WriteAllText(globalConfigPath,
+
+            var globalConfig = new StringBuilder();
+            globalConfig.Append(
                 "is_global = true\n" +
                 "build_property.UnityEnableAutoStaticsCleanupAnalysis = true\n" +
                 // Report the statics-cleanup diagnostics as warnings rather than the analyzer's
@@ -281,7 +285,22 @@ namespace Unity.ProjectAuditor.Editor.AssemblyUtils
                 "dotnet_diagnostic.UAL0011.severity = warning\n" +
                 "dotnet_diagnostic.UAL0012.severity = warning\n" +
                 "dotnet_diagnostic.UAL0013.severity = warning\n" +
-                "dotnet_diagnostic.UAL0014.severity = warning");
+                "dotnet_diagnostic.UAL0014.severity = warning\n");
+				
+			// Enable all known code diagnostics, except those we have suppressed
+            var diagnostics = RoslynDiagnosticsLibrary.Diagnostics;
+            if (diagnostics != null)
+            {
+                var suppressedDiagnostics = UserPreferences.BuildSuppressedDiagnosticsSet();
+
+                foreach (var diagnostic in diagnostics)
+                {
+                    if (!suppressedDiagnostics.Contains(diagnostic.Id))
+                        globalConfig.Append($"dotnet_diagnostic.{diagnostic.Id}.severity = warning\n");
+                }
+            }
+
+            File.WriteAllText(globalConfigPath, globalConfig.ToString());
 
             // first pass: create all compilation tasks
             foreach (var assembly in assemblies)

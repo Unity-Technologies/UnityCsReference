@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
@@ -161,9 +162,13 @@ namespace UnityEditor
 
         VisualElement CreateInteractiveBakingContent()
         {
-            var useInteractiveLightBakingDataChanged = SceneView.lastActiveSceneView?.debugDrawModesUseInteractiveLightBakingData ?? false;
-
             var root = new VisualElement();
+
+            // Interactive baking data only exists in processes with GI, so there is nothing to preview elsewhere.
+            if (!InteractiveLightBaking.isAvailable)
+                return root;
+
+            var useInteractiveLightBakingDataChanged = SceneView.lastActiveSceneView?.debugDrawModesUseInteractiveLightBakingData ?? false;
 
             var dropdown = new EnumField("Lighting Data", LightingDataSource.Baked);
             dropdown.tooltip = "Select which lighting data is shown in Debug Draw Modes.\n\nBaked displays the most recent lighting data generated from the Lighting Window.\n\nPreview displays an interactive preview which updates in relation to Scene changes.";
@@ -922,3 +927,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

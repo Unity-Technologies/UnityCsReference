@@ -92,6 +92,10 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool GetComponentEnabled();
 
+        internal void SetAccessibilityEnabled(bool enabled);
+
+        internal bool GetAccessibilityEnabled();
+
         internal int softPointerCaptures { get; set; }
 
         internal VisualElementFocusRing focusRing { get; set; }

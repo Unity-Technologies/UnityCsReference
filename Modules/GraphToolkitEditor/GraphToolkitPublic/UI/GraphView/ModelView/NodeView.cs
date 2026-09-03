@@ -20,7 +20,7 @@ namespace Unity.GraphToolkit.Editor;
 /// Access the generated visual element through <see cref="View"/> and add custom UI to
 /// <see cref="INodeView.Root"/>.
 ///
-/// <b>Important:</b> allocate custom UI in <see cref="OnViewBuilt"/> and re-add it in
+/// Allocate custom UI in <see cref="OnViewBuilt"/> and re-add it in
 /// <see cref="OnCullingChanged"/> (when <c>cullingEnabled</c> is <c>false</c>). Do not allocate UI in
 /// <see cref="OnViewAttached"/>: that callback can fire multiple times during a node's lifetime — for
 /// example when the user tabs away from and back to the graph view, or when a block node is dragged and
@@ -65,6 +65,8 @@ namespace Unity.GraphToolkit.Editor;
 /// ]]>
 /// </code>
 /// </example>
+/// <seealso cref="Node"/>
+/// <seealso cref="INodeView"/>
 public class NodeView<T> : IUserNodeView
     where T : Node
 {
@@ -153,8 +155,9 @@ public class NodeView<T> : IUserNodeView
     /// </param>
     /// <remarks>
     /// Fires whenever the graph view's zoom changes, and also once for the initial zoom when the view is
-    /// first built. Override this to swap custom UI for a level-of-detail-appropriate representation —
-    /// for example, hiding fine details or replacing text with icons when the graph is zoomed out.
+    /// first built. Override this to swap custom UI for a representation appropriate to the current
+    /// level of detail (LOD), such as hiding fine details or replacing text with icons when the
+    /// graph is zoomed out.
     /// </remarks>
     /// <example>
     /// <code lang="cs">

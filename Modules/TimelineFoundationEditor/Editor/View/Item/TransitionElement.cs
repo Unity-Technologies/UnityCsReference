@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Widgets;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -24,9 +24,13 @@ namespace Unity.Timeline.Foundation.View
 
         public Action<MeshGenerationContext> generateBackGround;
 
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<float> k_BlendLineWidth = new CustomStyleProperty<float>("--transition-line-width");
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<Color> k_BlendLineColor = new CustomStyleProperty<Color>("--transition-line-color");
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<Color> k_BlendColorUpper = new CustomStyleProperty<Color>("--transition-color-upper");
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<Color> k_BlendColorLower = new CustomStyleProperty<Color>("--transition-color-lower");
 
         public TransitionElement(Type type) : this()
@@ -86,4 +90,3 @@ namespace Unity.Timeline.Foundation.View
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

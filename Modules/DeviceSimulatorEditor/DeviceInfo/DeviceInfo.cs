@@ -138,6 +138,7 @@ namespace UnityEditor.DeviceSimulation
         public int supportsMultisampledTextures;
         public bool supportsMultisampleAutoResolve;
         public bool supportsMultisampledShaderResolve;
+        public bool supportsSwapChainPreTransform;
         public int supportsTextureWrapMirrorOnce;
         public bool usesReversedZBuffer;
         public NPOTSupport npotSupport;

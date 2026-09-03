@@ -2,15 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
+using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.Connect
 {
     /// <summary>
     /// Class to contain config stuff for the Analytics service, URLs and such.
     /// </summary>
-    internal class AnalyticsConfiguration
+    internal partial class AnalyticsConfiguration
     {
-        static readonly AnalyticsConfiguration k_Instance;
+        [AutoStaticsCleanupOnCodeReload]
+        static AnalyticsConfiguration k_Instance;
 
         readonly string m_LearnMoreUrl;
         readonly string m_ApiUrl;
@@ -20,11 +21,6 @@ namespace UnityEditor.Connect
         readonly string m_ValidatorUrl;
         readonly string m_ClearUrl;
         readonly string m_CoreProjectsUrl;
-
-        static AnalyticsConfiguration()
-        {
-            k_Instance = new AnalyticsConfiguration();
-        }
 
         AnalyticsConfiguration()
         {
@@ -38,7 +34,17 @@ namespace UnityEditor.Connect
             k_MonetizationLearnUrl = "https://docs.unity3d.com/Manual/UnityAnalyticsMonetization.html";
         }
 
-        public static AnalyticsConfiguration instance => k_Instance;
+        public static AnalyticsConfiguration instance
+        {
+            get
+            {
+                if (k_Instance == null)
+                {
+                    k_Instance = new AnalyticsConfiguration();
+                }
+                return k_Instance;
+            }
+        }
 
         public string learnMoreUrl
         {
@@ -76,4 +82,3 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

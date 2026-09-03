@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
@@ -129,6 +130,11 @@ namespace UnityEngine.UIElements
         /// The element's <see cref="VisualElement.name"/> changed.
         /// </summary>
         Name = 1 << 22,
+        /// <summary>
+        /// A field of an attached component changed; the component-change updater flushes its
+        /// <c>[OnComponentChanged]</c> handler. Managed-only — not consumed by the native renderer.
+        /// </summary>
+        Component = 1 << 23,
     }
 
     /// <summary>
@@ -486,6 +492,10 @@ namespace UnityEngine.UIElements
 
         public abstract IMGUIContainer rootIMGUIContainer { get; set; }
 
+        // Sticky curvature gate: set when any element with -unity-curvature is seen in this panel (never
+        // cleared), so no-curvature hierarchies skip the per-element CountChain ancestor walk in picking/bounds.
+        internal bool mayHaveCurvedElements;
+
         internal event Action<BaseVisualElementPanel> panelDisposed;
 
         // Allows native code to call back into panel methods.
@@ -776,6 +786,10 @@ namespace UnityEngine.UIElements
             get;
             set;
         }
+
+        // Authoring panels rely on this default; only the PanelSettings-owned game view panel overrides it.
+        internal virtual bool animationPlaybackSuspended => false;
+
         public abstract ContextType contextType { get; }
 
         private TimeFunction m_TimeSinceStartupFunc;
@@ -1206,6 +1220,12 @@ namespace UnityEngine.UIElements
                     // If the context is Editor and the panel is currently not dirty, only check a subset of the updater frames.
                     for (int i = 0; i < updaterSubsetForEditor.Length; i++)
                     {
+                        // -1 marks a phase with no updater on this panel; it can never tick.
+                        if (this.updatersFrameCount[updaterSubsetForEditor[i]] < 0)
+                        {
+                            continue;
+                        }
+
                         if (this.updatersFrameCount[updaterSubsetForEditor[i]] <= reference.updatersFrameCount[updaterSubsetForEditor[i]])
                         {
                             return false;
@@ -1216,6 +1236,12 @@ namespace UnityEngine.UIElements
                 {
                     for (int i = 0; i < this.updatersFrameCount.Length; i++)
                     {
+                        // -1 marks a phase with no updater on this panel; it can never tick.
+                        if (this.updatersFrameCount[i] < 0)
+                        {
+                            continue;
+                        }
+
                         if (this.updatersFrameCount[i] <= reference.updatersFrameCount[i])
                         {
                             return false;
@@ -1689,6 +1715,9 @@ namespace UnityEngine.UIElements
             ValidateFocus();
             UpdateBindings();
             UpdateDataBinding();
+            // Flush component [OnComponentChanged] handlers after binding writes and before the repaint
+            // pass, so a handler's MarkDirtyRepaint / layout request is serviced in the same frame.
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Component);
             UpdateAnimations();
             if (ProfilerUIToolkit.ShouldCapturePanel(contextType == ContextType.Editor))
                 m_PendingHierarchyVersionChanges += m_HierarchyVersion - m_LastTickedHierarchyVersion;
@@ -1726,6 +1755,7 @@ namespace UnityEngine.UIElements
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Accessibility);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Repaint);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Authoring);
         }
@@ -2140,3 +2170,4 @@ namespace UnityEngine.UIElements
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

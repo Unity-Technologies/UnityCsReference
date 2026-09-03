@@ -271,8 +271,27 @@ namespace Unity.U2D.Physics
         public readonly bool worldDrawing { get => m_JointHandle.worldDrawing; set => m_JointHandle.worldDrawing = value; }
 
         /// <summary>
-        /// Draw a PhysicsJoint that visually represents its current state in the world.
+        /// Controls whether this joint is drawn individually when the world is drawn.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsJoint.selectedDrawing"/> for when the joint is drawn and how the state is cleared.
+        /// </remarks>
+        public readonly bool selectedDrawing { get => m_JointHandle.selectedDrawing; set => m_JointHandle.selectedDrawing = value; }
+
+        /// <summary>
+        /// Controls which Unity editor views this joint is drawn into.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsJoint.drawTarget"/> for how this combines with the world's own draw target.
+        /// </remarks>
+        public readonly PhysicsWorld.DrawTarget drawTarget { get => m_JointHandle.drawTarget; set => m_JointHandle.drawTarget = value; }
+
+        /// <summary>
+        /// Draw this joint's current state once, as custom drawing.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="selectedDrawing"/>, this does not persist: it draws once and is gone once every Scene/Game view has painted.
+        /// </remarks>
         public readonly void Draw() => m_JointHandle.Draw();
 
         #endregion

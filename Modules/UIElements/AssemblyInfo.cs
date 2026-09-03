@@ -40,6 +40,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorResources.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Test.UILibraryVisibility")]
+[assembly: InternalsVisibleTo("Test.UILibraryVisibleNamespace")]
+[assembly: InternalsVisibleTo("Test.UILibraryVisibleAssembly")]
 [assembly: InternalsVisibleTo("Unity.UXMLReferenceGenerator.Bridge")]
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor.InternalAccessTests")] // for UI Test Framework tests that need internal access
@@ -60,9 +62,11 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.HierarchyModule")] // Unity.Hierarchy module, for HierarchyView control
 [assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")] // Hierarchy performance tests
 [assembly: InternalsVisibleTo("UnityEngine.VectorGraphicsModule")] // VectorImage
+[assembly: InternalsVisibleTo("UnityEngine.LocalizationRuntimeModule")] // LocalizedReference overrides the CustomBinding hooks
 [assembly: InternalsVisibleTo("Unity.Modules.VectorGraphics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Runtime")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor")]
 
 // XR integration
 [assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit")]

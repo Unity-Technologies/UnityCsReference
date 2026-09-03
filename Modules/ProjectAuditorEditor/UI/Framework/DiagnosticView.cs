@@ -321,13 +321,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent OnlyPerformanceCritical = EditorGUIUtility.TrTextContent("Only Performance Critical", "Only show issues occurring in frequently executed code, such as per-frame Update loops");
             public static readonly GUIContent UpgradeTargetVersion = EditorGUIUtility.TrTextContent("Upgrade Target Version:");
 
-            public static readonly string SuppressTitle = L10n.Tr("Suppress Issue Type");
-            public static readonly string SuppressAllTitle = L10n.Tr("Suppress Issue Types");
-            public static readonly string SuppressBody = L10n.Tr("Suppressing this issue type will ignore it in the current report, and exclude it from all future reports.");
-            public static readonly string SuppressAllBody = L10n.Tr("Suppressing these {0} issue types will ignore them in the current report, and exclude them from all future reports.");
-            public static readonly string SuppressReview = L10n.Tr("You can review and manage suppressed issue types by navigating to " + ProjectAuditor.k_PreferencesPath + " > Suppressed Issues.");
-            public static readonly string SuppressConfirm = L10n.Tr("Suppress");
-            public static readonly string SuppressCancel = L10n.Tr("Cancel");
+            public static readonly string SuppressTitle = L10n.Tr("Suppress Issue Type", null);
+            public static readonly string SuppressAllTitle = L10n.Tr("Suppress Issue Types", null);
+            public static readonly string SuppressBody = L10n.Tr("Suppressing this issue type will ignore it in the current report, and exclude it from all future reports.", null);
+            public static readonly string SuppressAllBody = L10n.Tr("Suppressing these {0} issue types will ignore them in the current report, and exclude them from all future reports.", null);
+            public static readonly string SuppressReview = L10n.Tr("You can review and manage suppressed issue types by navigating to " + ProjectAuditor.k_PreferencesPath + " > Suppressed Issues.", null);
+            public static readonly string SuppressConfirm = L10n.Tr("Suppress", null);
+            public static readonly string SuppressCancel = L10n.Tr("Cancel", null);
         }
     }
 }

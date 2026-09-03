@@ -165,13 +165,22 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Category for the summary of issues relating to upgrading the project
         /// </summary>
-        UpgradeSummary
+        UpgradeSummary,
+
+        /// <summary>
+        /// Category for the summary of issues relating to migrating the project to URP
+        /// </summary>
+        MigrateToURPSummary,
+
+        /// <summary>
+        /// Category for the summary of issues relating to migrating the project to CoreCLR
+        /// </summary>
+        MigrateToCoreCLRSummary
     }
 
     internal static class IssueCategoryExtensions
     {
-        public static bool IsSummary(this IssueCategory category) => category == IssueCategory.OptimizationSummary || category == IssueCategory.UpgradeSummary;
-
+        public static bool IsSummary(this IssueCategory category) => category == IssueCategory.OptimizationSummary || category == IssueCategory.UpgradeSummary || category == IssueCategory.MigrateToURPSummary || category == IssueCategory.MigrateToCoreCLRSummary;
         public static bool IsPopulatedByPlayerBuild(this IssueCategory category) => category == IssueCategory.ShaderVariant || category == IssueCategory.ComputeShaderVariant;
         public static readonly IssueCategory FirstCustomCategory = ((IReadOnlyList<IssueCategory>)System.Enum.GetValues(typeof(IssueCategory))).Max() + 1;
     }

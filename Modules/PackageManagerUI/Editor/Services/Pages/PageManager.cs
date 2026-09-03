@@ -169,13 +169,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (string.IsNullOrEmpty(args.name))
             {
-                Debug.LogWarning(L10n.Tr("An extension page needs to have a non-empty unique name."));
+                Debug.LogWarning(L10n.Tr("An extension page needs to have a non-empty unique name.", null));
                 return;
             }
 
             if (m_OrderedExtensionPageArgs.Exists(a => a.name == args.name))
             {
-                Debug.LogWarning(string.Format(L10n.Tr("An extension page with name {0} already exists. Please use a different name."), args.name));
+                Debug.LogWarning(string.Format(L10n.Tr("An extension page with name {0} already exists. Please use a different name.", null), args.name));
                 return;
             }
 

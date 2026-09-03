@@ -179,7 +179,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         void CreateTimeFormatSubMenuActions()
         {
             AddAction(
-                L10n.Tr("Frames"),
+                L10n.Tr("Frames", null),
                 k_TimeFormatGroupName,
                 _ => m_SetTimeFormatFunc?.Invoke(TimeFormat.Frames),
                 _ =>
@@ -189,7 +189,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                 });
 
             AddAction(
-                L10n.Tr("Time Code"),
+                L10n.Tr("Time Code", null),
                 k_TimeFormatGroupName,
                 _ => m_SetTimeFormatFunc?.Invoke(TimeFormat.Timecode),
                 _ =>
@@ -200,7 +200,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
             );
 
             AddAction(
-                L10n.Tr("Seconds"),
+                L10n.Tr("Seconds", null),
                 k_TimeFormatGroupName,
                 _ => m_SetTimeFormatFunc?.Invoke(TimeFormat.Seconds),
                 _ =>
@@ -214,7 +214,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         void CreateFrameRateSubMenuActions()
         {
             AddAction(
-                L10n.Tr("Show Sample Rate"),
+                L10n.Tr("Show Sample Rate", null),
                 k_FrameRateGroupName,
                 _ => state.showFrameRate = !state.showFrameRate,
                 _ =>
@@ -228,7 +228,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                 var (name, value) = k_AvailableFrameRates[i];
 
                 AddAction(
-                    L10n.Tr(name),
+                    L10n.Tr(name, null),
                     k_FrameRateGroupName,
                     _ => m_AnimEditor.SetFrameRate(value),
                     _ =>
@@ -242,7 +242,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         void CreateGeneralOptionsSubMenuActions()
         {
             AddAction(
-                L10n.Tr("Show Read-only Properties"),
+                L10n.Tr("Show Read-only Properties", null),
                 k_GeneralOptionsGroupName,
                 _ =>  state.showReadOnly = ! state.showReadOnly,
                 _ =>
@@ -252,7 +252,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                 });
 
             AddAction(
-                L10n.Tr("Enable Query Builder"),
+                L10n.Tr("Enable Query Builder", null),
                 k_GeneralOptionsGroupName,
                 _ => state.enableQueryBuilder = !state.enableQueryBuilder,
                 _ =>

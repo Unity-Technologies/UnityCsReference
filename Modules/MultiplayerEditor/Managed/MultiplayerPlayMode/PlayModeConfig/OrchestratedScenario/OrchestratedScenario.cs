@@ -28,7 +28,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_ValidationDialogScenarioMessage = "The scenario cannot be started because validation failed with the following message:";
         const string k_ValidationDialogInstanceMessage = "The scenario instance cannot be started because validation failed with the following message:";
         const string k_ValidationDialogOKLabel = "OK";
-        const int k_CurrentSerializedVersion = 1;
+        const int k_CurrentSerializedVersion = 2;
         const string k_MainEditorName = "Main Editor";
         internal const string k_SettingsPropertyName = nameof(m_Settings);
         internal const int k_MaxCloneEditorInstances = 3;
@@ -93,7 +93,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             MakeSettingsConsistent();
         }
 
-        internal IEnumerable<IInstanceItem> GetAllInstances()
+        internal IEnumerable<IPlayModeControllerItem> GetAllInstances()
         {
             for (var i = 0; i < m_Settings.InstanceCount; i++)
             {
@@ -105,7 +105,23 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        internal bool IsInstanceEnabled(IInstanceItem instance)
+        internal SerializedProperty GetControllerItemProperty(GUID instanceId)
+        {
+            for (var i = 0; i < m_Settings.InstanceCount; i++)
+            {
+                if (m_Settings[i].GetId() != instanceId)
+                    continue;
+
+                return new SerializedObject(this)
+                    .FindProperty(k_SettingsPropertyName)
+                    .FindPropertyRelative(OrchestratedScenarioSettings.k_ControllerItemsPropertyName)
+                    .GetArrayElementAtIndex(i);
+            }
+
+            return null;
+        }
+
+        internal bool IsInstanceEnabled(IPlayModeControllerItem instance)
         {
             return m_EnableEditors || !instance.IsInstanceType(typeof(EditorController<>));
         }
@@ -187,7 +203,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (m_EditorPlayModeGuard == null)
             {
                 m_EditorPlayModeGuard = CreateInstance<EditorPlayModeGuard>();
-                m_EditorPlayModeGuard.SetResolutionStrategy(EditorPlayModeGuard.ResolutionStrategy.RevertToDefaultScenario);
+                m_EditorPlayModeGuard.SetResolutionStrategy(GetResolutionStrategyFor(GetState()));
             }
         }
 
@@ -289,21 +305,28 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal void OnScenarioStatusRefreshed(ScenarioStatusData status)
         {
             if (status.IsExecuting())
-            {
-                SetState(status.CurrentStage is ExecutionStage.Cleanup ? PlayModeScenarioState.Stopping : PlayModeScenarioState.Running);
-                if (m_EditorPlayModeGuard != null)
-                {
-                    m_EditorPlayModeGuard.SetResolutionStrategy(EditorPlayModeGuard.ResolutionStrategy.LogError);
-                }
-            }
+                SetStateAndGuard(status.CurrentStage is ExecutionStage.Cleanup ? PlayModeScenarioState.Stopping : PlayModeScenarioState.Running);
             else
-            {
-                SetState(PlayModeScenarioState.Idle);
-                if (m_EditorPlayModeGuard != null)
-                {
-                    m_EditorPlayModeGuard.SetResolutionStrategy(EditorPlayModeGuard.ResolutionStrategy.RevertToDefaultScenario);
-                }
-            }
+                SetStateAndGuard(PlayModeScenarioState.Idle);
+        }
+
+        // The state and the guard strategy must always move together as the state is what determines
+        // the appropriate resolution strategy, so never call SetState directly for this scenario type.
+        void SetStateAndGuard(PlayModeScenarioState state)
+        {
+            SetState(state);
+
+            if (m_EditorPlayModeGuard == null)
+                return;
+
+            m_EditorPlayModeGuard.SetResolutionStrategy(GetResolutionStrategyFor(state));
+        }
+
+        static EditorPlayModeGuard.ResolutionStrategy GetResolutionStrategyFor(PlayModeScenarioState state)
+        {
+            return state is PlayModeScenarioState.Idle
+                ? EditorPlayModeGuard.ResolutionStrategy.RevertToDefaultScenario
+                : EditorPlayModeGuard.ResolutionStrategy.LogError;
         }
 
         Scenario CreateScenario()
@@ -345,6 +368,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
             for (var i = 0; i < m_Settings.InstanceCount; i++)
             {
                 var instanceItem = m_Settings[i];
+
+                if (instanceItem == null)
+                {
+                    m_Settings.RemoveInstanceAt(i);
+                    i--;
+                    continue;
+                }
+
                 var isEditorInstance = instanceItem.IsInstanceType(typeof(EditorController<>));
 
                 if (instanceItem.IsInstanceType(typeof(MainEditorController)))
@@ -398,6 +429,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 return;
 
+            SetStateAndGuard(PlayModeScenarioState.Starting);
             StartScenarioAsync();
         }
 
@@ -455,8 +487,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Iterate through all local instances.
             // - Check if local mobile device instances have a device selected that is unique.
             // - Track any Local Sim instances that we have for verification later.
-            List<IInstanceItem> localMobileInstances = new List<IInstanceItem>();
-            List<IInstanceItem> localInstances = new List<IInstanceItem>();
+            List<IPlayModeControllerItem> localMobileInstances = new List<IPlayModeControllerItem>();
+            List<IPlayModeControllerItem> localInstances = new List<IPlayModeControllerItem>();
             var instanceNames = new HashSet<string>();
             var duplicateNamesFound = false;
             var instancesCount = 0;

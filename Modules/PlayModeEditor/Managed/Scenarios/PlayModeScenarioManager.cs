@@ -81,9 +81,12 @@ namespace Unity.PlayMode.Editor
                 TogglePlaying();
         }
 
+        internal static bool IsScenarioRunningOrStarting =>
+            State is PlayModeScenarioState.Running or PlayModeScenarioState.Starting;
+
         static void TogglePlaying()
         {
-            if (State == PlayModeScenarioState.Running)
+            if (IsScenarioRunningOrStarting)
                 Stop();
             else
                 Start();
@@ -101,6 +104,8 @@ namespace Unity.PlayMode.Editor
             get => ScenarioManagerProvider.instance.ActivePlayModeConfig;
             set => ScenarioManagerProvider.instance.ActivePlayModeConfig = value;
         }
+
+        internal static bool CanChangeActiveScenario => ScenarioManagerProvider.instance.CanChangeActiveConfig;
 
         /// <summary>
         /// Returns the current state of the active play mode scenario.

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -629,6 +630,14 @@ namespace UnityEngine.UIElements
             if (count == 0 && value == viewController.GetItemsMinCount())
                 return;
 
+            // Backing sources can have a maximum size (e.g. serialized arrays); revert when the
+            // requested count is not accepted (the controller notifies the user).
+            if (value > count && !viewController.ValidateItemCountChange(value))
+            {
+                m_ArraySizeField.SetValueWithoutNotify(evt.previousValue);
+                return;
+            }
+
             if (value > count)
             {
                 viewController.AddItems(value - count);
@@ -1249,3 +1258,4 @@ namespace UnityEngine.UIElements
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

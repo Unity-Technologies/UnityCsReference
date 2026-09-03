@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIFramework not yet converted
 using System;
 
 namespace UnityEngine
@@ -4755,10 +4756,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public HorizontalScope(params GUILayoutOption[] options)
             {
                 BeginHorizontal(options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new HorizontalScope and begin the corresponding horizontal group.</summary>
             ///<param name="style">The style to use for background image and padding values. If left out, the background is transparent.</param>
@@ -4769,10 +4772,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public HorizontalScope(GUIStyle style, params GUILayoutOption[] options)
             {
                 BeginHorizontal(style, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new HorizontalScope and begin the corresponding horizontal group.</summary>
             ///<param name="text">Text to display on group.</param>
@@ -4784,10 +4789,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public HorizontalScope(string text, GUIStyle style, params GUILayoutOption[] options)
             {
                 BeginHorizontal(text, style, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new HorizontalScope and begin the corresponding horizontal group.</summary>
             ///<param name="image">
@@ -4800,10 +4807,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public HorizontalScope(Texture image, GUIStyle style, params GUILayoutOption[] options)
             {
                 BeginHorizontal(image, style, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new HorizontalScope and begin the corresponding horizontal group.</summary>
             ///<param name="content">Text, image, and tooltip for this group.</param>
@@ -4815,10 +4824,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public HorizontalScope(GUIContent content, GUIStyle style, params GUILayoutOption[] options)
             {
                 BeginHorizontal(content, style, options);
             }
+            #pragma warning restore UAL0015
 
             protected override void CloseScope()
             {
@@ -4861,10 +4872,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public VerticalScope(params GUILayoutOption[] options)
             {
                 BeginVertical(options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new VerticalScope and begin the corresponding vertical group.</summary>
             ///<param name="style">The style to use for background image and padding values. If left out, the background is transparent.</param>
@@ -4875,10 +4888,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public VerticalScope(GUIStyle style, params GUILayoutOption[] options)
             {
                 BeginVertical(style, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new VerticalScope and begin the corresponding vertical group.</summary>
             ///<param name="text">Text to display on group.</param>
@@ -4890,10 +4905,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public VerticalScope(string text, GUIStyle style, params GUILayoutOption[] options)
             {
                 BeginVertical(text, style, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new VerticalScope and begin the corresponding vertical group.</summary>
             ///<param name="image">
@@ -4906,10 +4923,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public VerticalScope(Texture image, GUIStyle style, params GUILayoutOption[] options)
             {
                 BeginVertical(image, style, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new VerticalScope and begin the corresponding vertical group.</summary>
             ///<param name="content">Text, image, and tooltip for this group.</param>
@@ -4921,10 +4940,12 @@ namespace UnityEngine
             ///<seealso cref="GUILayout.MinWidth" />
             ///<seealso cref="GUILayout.MaxWidth" />
             ///<seealso cref="GUILayout.MinHeight" />
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public VerticalScope(GUIContent content, GUIStyle style, params GUILayoutOption[] options)
             {
                 BeginVertical(content, style, options);
             }
+            #pragma warning restore UAL0015
 
             protected override void CloseScope()
             {
@@ -4962,55 +4983,69 @@ namespace UnityEngine
         public class AreaScope : GUI.Scope
         {
             ///<summary>Create a new AreaScope and begin the corresponding Area.</summary>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public AreaScope(Rect screenRect)
             {
                 BeginArea(screenRect);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new AreaScope and begin the corresponding Area.</summary>
             ///<param name="text">Optional text to display in the area.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public AreaScope(Rect screenRect, string text)
             {
                 BeginArea(screenRect, text);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new AreaScope and begin the corresponding Area.</summary>
             ///<param name="image">Optional texture to display in the area.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public AreaScope(Rect screenRect, Texture image)
             {
                 BeginArea(screenRect, image);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new AreaScope and begin the corresponding Area.</summary>
             ///<param name="content">Optional text, image and tooltip top display for this area.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public AreaScope(Rect screenRect, GUIContent content)
             {
                 BeginArea(screenRect, content);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new AreaScope and begin the corresponding Area.</summary>
             ///<param name="text">Optional text to display in the area.</param>
             ///<param name="style">The style to use. If left out, the empty <see cref="GUIStyle" /> (<see cref="GUIStyle.none" />) is used, giving a transparent background.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public AreaScope(Rect screenRect, string text, GUIStyle style)
             {
                 BeginArea(screenRect, text, style);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new AreaScope and begin the corresponding Area.</summary>
             ///<param name="image">Optional texture to display in the area.</param>
             ///<param name="style">The style to use. If left out, the empty <see cref="GUIStyle" /> (<see cref="GUIStyle.none" />) is used, giving a transparent background.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public AreaScope(Rect screenRect, Texture image, GUIStyle style)
             {
                 BeginArea(screenRect, image, style);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new AreaScope and begin the corresponding Area.</summary>
             ///<param name="content">Optional text, image and tooltip top display for this area.</param>
             ///<param name="style">The style to use. If left out, the empty <see cref="GUIStyle" /> (<see cref="GUIStyle.none" />) is used, giving a transparent background.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public AreaScope(Rect screenRect, GUIContent content, GUIStyle style)
             {
                 BeginArea(screenRect, content, style);
             }
+            #pragma warning restore UAL0015
 
             protected override void CloseScope()
             {
@@ -5073,39 +5108,47 @@ namespace UnityEngine
 
             ///<summary>Create a new ScrollViewScope and begin the corresponding ScrollView.</summary>
             ///<param name="scrollPosition">The position to use display.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public ScrollViewScope(Vector2 scrollPosition, params GUILayoutOption[] options)
             {
                 handleScrollWheel = true;
                 this.scrollPosition = BeginScrollView(scrollPosition, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new ScrollViewScope and begin the corresponding ScrollView.</summary>
             ///<param name="scrollPosition">The position to use display.</param>
             ///<param name="alwaysShowHorizontal">Optional parameter to always show the horizontal scrollbar. If false or left out, it is only shown when the content inside the ScrollView is wider than the scrollview itself.</param>
             ///<param name="alwaysShowVertical">Optional parameter to always show the vertical scrollbar. If false or left out, it is only shown when content inside the ScrollView is taller than the scrollview itself.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public ScrollViewScope(Vector2 scrollPosition, bool alwaysShowHorizontal, bool alwaysShowVertical, params GUILayoutOption[] options)
             {
                 handleScrollWheel = true;
                 this.scrollPosition = BeginScrollView(scrollPosition, alwaysShowHorizontal, alwaysShowVertical, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new ScrollViewScope and begin the corresponding ScrollView.</summary>
             ///<param name="scrollPosition">The position to use display.</param>
             ///<param name="horizontalScrollbar">Optional <see cref="GUIStyle" /> to use for the horizontal scrollbar. If left out, the <c>horizontalScrollbar</c> style from the current <see cref="GUISkin" /> is used.</param>
             ///<param name="verticalScrollbar">Optional <see cref="GUIStyle" /> to use for the vertical scrollbar. If left out, the <c>verticalScrollbar</c> style from the current <see cref="GUISkin" /> is used.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public ScrollViewScope(Vector2 scrollPosition, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, params GUILayoutOption[] options)
             {
                 handleScrollWheel = true;
                 this.scrollPosition = BeginScrollView(scrollPosition, horizontalScrollbar, verticalScrollbar, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new ScrollViewScope and begin the corresponding ScrollView.</summary>
             ///<param name="scrollPosition">The position to use display.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public ScrollViewScope(Vector2 scrollPosition, GUIStyle style, params GUILayoutOption[] options)
             {
                 handleScrollWheel = true;
                 this.scrollPosition = BeginScrollView(scrollPosition, style, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new ScrollViewScope and begin the corresponding ScrollView.</summary>
             ///<param name="scrollPosition">The position to use display.</param>
@@ -5113,11 +5156,13 @@ namespace UnityEngine
             ///<param name="alwaysShowVertical">Optional parameter to always show the vertical scrollbar. If false or left out, it is only shown when content inside the ScrollView is taller than the scrollview itself.</param>
             ///<param name="horizontalScrollbar">Optional <see cref="GUIStyle" /> to use for the horizontal scrollbar. If left out, the <c>horizontalScrollbar</c> style from the current <see cref="GUISkin" /> is used.</param>
             ///<param name="verticalScrollbar">Optional <see cref="GUIStyle" /> to use for the vertical scrollbar. If left out, the <c>verticalScrollbar</c> style from the current <see cref="GUISkin" /> is used.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public ScrollViewScope(Vector2 scrollPosition, bool alwaysShowHorizontal, bool alwaysShowVertical, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, params GUILayoutOption[] options)
             {
                 handleScrollWheel = true;
                 this.scrollPosition = BeginScrollView(scrollPosition, alwaysShowHorizontal, alwaysShowVertical, horizontalScrollbar, verticalScrollbar, options);
             }
+            #pragma warning restore UAL0015
 
             ///<summary>Create a new ScrollViewScope and begin the corresponding ScrollView.</summary>
             ///<param name="scrollPosition">The position to use display.</param>
@@ -5125,11 +5170,13 @@ namespace UnityEngine
             ///<param name="alwaysShowVertical">Optional parameter to always show the vertical scrollbar. If false or left out, it is only shown when content inside the ScrollView is taller than the scrollview itself.</param>
             ///<param name="horizontalScrollbar">Optional <see cref="GUIStyle" /> to use for the horizontal scrollbar. If left out, the <c>horizontalScrollbar</c> style from the current <see cref="GUISkin" /> is used.</param>
             ///<param name="verticalScrollbar">Optional <see cref="GUIStyle" /> to use for the vertical scrollbar. If left out, the <c>verticalScrollbar</c> style from the current <see cref="GUISkin" /> is used.</param>
+            #pragma warning disable UAL0015 // GUI.Scope subclasses below are used()-scoped within a single OnGUI call and never outlive it; the Begin* calls' transitive side effects on guiIsExiting/s_StateCache are benign
             public ScrollViewScope(Vector2 scrollPosition, bool alwaysShowHorizontal, bool alwaysShowVertical, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, GUIStyle background, params GUILayoutOption[] options)
             {
                 handleScrollWheel = true;
                 this.scrollPosition = BeginScrollView(scrollPosition, alwaysShowHorizontal, alwaysShowVertical, horizontalScrollbar, verticalScrollbar, background, options);
             }
+            #pragma warning restore UAL0015
 
             protected override void CloseScope()
             {
@@ -5138,3 +5185,4 @@ namespace UnityEngine
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

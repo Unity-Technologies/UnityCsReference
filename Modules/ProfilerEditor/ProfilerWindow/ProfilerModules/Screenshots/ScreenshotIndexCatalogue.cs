@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -73,8 +74,26 @@ namespace UnityEditorInternal.Profiling
         // whether to take its lightweight append-only layout path. timeSinceStartup is
         // paused-aware, so a debugger break or modal dialogue can't strand the flag true.
         double m_LastFrameRecordedTime;
+        // DisplayedFrameCount as of the last Changed we raised. Lets Refresh notice that the visible
+        // set moved even when m_Frames itself did not.
+        // -1 means "never reported", so the first Refresh always notifies.
+        int m_LastNotifiedDisplayedFrameCount = -1;
 
         public IReadOnlyList<ScreenshotFrame> Frames => m_Frames;
+
+        // How many entries in Frames the user can actually see. Both thumbnail strips hide entries
+        // whose depicted (logical) frame sits below FirstSelectableFrameIndex: frames evicted from
+        // memory, frames trimmed by the frame-count setting, and entries whose LogicalFrame resolved
+        // negative because the frame they depict predates the capture. Anything reporting a
+        // screenshot count to the user wants this rather than Frames.Count, or it claims more
+        // screenshots than are on screen.
+        public int DisplayedFrameCount
+        {
+            // m_Frames is kept sorted by LogicalFrame, so the lower bound is the split between the
+            // hidden entries and the shown ones.
+            get => m_Frames.Count - LowerBoundByLogicalFrame(m_Frames, FirstSelectableFrameIndex());
+        }
+
         public event Action Changed;
         // Fires the moment OnNewFrameRecorded arrives and IsRecordingBurst was false beforehand —
         // i.e. the transition from "not recording" to "actively recording". Consumers that need
@@ -134,7 +153,7 @@ namespace UnityEditorInternal.Profiling
                     m_Frames.Clear();
                     m_LastScannedFrameIndex = -1;
                     SaveToCache();
-                    Changed?.Invoke();
+                    RaiseChanged();
                 }
                 return;
             }
@@ -173,10 +192,13 @@ namespace UnityEditorInternal.Profiling
                 }
             }
 
+            if (!changed && m_LastNotifiedDisplayedFrameCount != DisplayedFrameCount)
+                changed = true;
+
             if (changed)
             {
                 SaveToCache();
-                Changed?.Invoke();
+                RaiseChanged();
             }
         }
 
@@ -323,7 +345,7 @@ namespace UnityEditorInternal.Profiling
         // Performs a binary search against the LogicalFrame-sorted m_Frames.
         public bool TryGetEmissionFrame(int logicalFrame, out int emissionFrame)
         {
-            var index = LowerBoundByLogicalFrame(logicalFrame);
+            var index = LowerBoundByLogicalFrame(m_Frames, logicalFrame);
             if (index < m_Frames.Count && m_Frames[index].LogicalFrame == logicalFrame)
             {
                 emissionFrame = m_Frames[index].EmissionFrame;
@@ -339,7 +361,7 @@ namespace UnityEditorInternal.Profiling
         // already holds the full LogicalFrame list in memory.
         public bool TryGetNearestPriorLogicalFrame(int logicalFrame, out ScreenshotFrame match)
         {
-            var index = LowerBoundByLogicalFrame(logicalFrame);
+            var index = LowerBoundByLogicalFrame(m_Frames, logicalFrame);
             // Exact hit at index, or the element just before (lower_bound returns the first ≥).
             if (index < m_Frames.Count && m_Frames[index].LogicalFrame == logicalFrame)
             {
@@ -355,13 +377,54 @@ namespace UnityEditorInternal.Profiling
             return false;
         }
 
-        int LowerBoundByLogicalFrame(int logicalFrame)
+        // Resolves which screenshot to display for a requested logical frame: the screenshot captured
+        // on that exact frame if one exists, otherwise the most recent prior screenshot still inside
+        // the display window. firstDisplayedFrame bounds the fallback so a screenshot that has been
+        // trimmed out of the window is never surfaced. Shared by the large preview
+        // (ScreenshotDetailsViewController) and the info panel (ScreenshotInfoPanelViewController) so
+        // the two never disagree about which screenshot is on screen.
+        public bool TryResolveDisplayedScreenshot(int requestedLogicalFrame, int firstDisplayedFrame, out ScreenshotFrame source)
         {
-            int lo = 0, hi = m_Frames.Count;
+            return TryResolveDisplayedScreenshot(m_Frames, requestedLogicalFrame, firstDisplayedFrame, out source);
+        }
+
+        // Pure resolution over a LogicalFrame-sorted list. Static so the behaviour can be unit tested
+        // without a live catalogue (which is populated from the native profiler stream).
+        internal static bool TryResolveDisplayedScreenshot(IReadOnlyList<ScreenshotFrame> frames, int requestedLogicalFrame, int firstDisplayedFrame, out ScreenshotFrame source)
+        {
+            source = default;
+
+            if (frames == null || requestedLogicalFrame < 0)
+                return false;
+
+            var index = LowerBoundByLogicalFrame(frames, requestedLogicalFrame);
+
+            // Exact hit on the requested frame.
+            if (index < frames.Count && frames[index].LogicalFrame == requestedLogicalFrame)
+            {
+                source = frames[index];
+                return true;
+            }
+
+            // Otherwise the most recent prior screenshot, if it's still inside the display window.
+            if (index == 0)
+                return false;
+
+            var nearest = frames[index - 1];
+            if (nearest.LogicalFrame < firstDisplayedFrame)
+                return false;
+
+            source = nearest;
+            return true;
+        }
+
+        static int LowerBoundByLogicalFrame(IReadOnlyList<ScreenshotFrame> frames, int logicalFrame)
+        {
+            int lo = 0, hi = frames.Count;
             while (lo < hi)
             {
                 var mid = (lo + hi) >> 1;
-                if (m_Frames[mid].LogicalFrame < logicalFrame)
+                if (frames[mid].LogicalFrame < logicalFrame)
                     lo = mid + 1;
                 else
                     hi = mid;
@@ -383,8 +446,14 @@ namespace UnityEditorInternal.Profiling
             {
                 m_Frames.Clear();
                 SaveToCache();
-                Changed?.Invoke();
+                RaiseChanged();
             }
+        }
+
+        void RaiseChanged()
+        {
+            m_LastNotifiedDisplayedFrameCount = DisplayedFrameCount;
+            Changed?.Invoke();
         }
 
         void OnNewFrameRecorded(int connectionId, int newFrameIndex)
@@ -624,6 +693,16 @@ namespace UnityEditorInternal.Profiling
             return Mathf.Max(firstInMemory, firstDisplayed);
         }
 
+        // FirstDisplayedFrameIndex as a lower bound for deciding whether a screenshot is shown:
+        // clamped so it is never negative, which also excludes entries whose LogicalFrame resolved
+        // below zero (the frame they depict predates the capture) when no data is loaded and
+        // FirstDisplayedFrameIndex is itself -1. Every site that decides whether a screenshot is
+        // visible shares this, so the strips and the reported count cannot drift apart.
+        public static int FirstSelectableFrameIndex()
+        {
+            return Mathf.Max(0, FirstDisplayedFrameIndex());
+        }
+
         // Cancels and disposes an existing CTS, then either reallocates it (recreate: true — for sites
         // that keep the field non-null at all times) or sets it to null (recreate: false — for sites
         // that allocate lazily when work appears).
@@ -651,3 +730,4 @@ namespace UnityEditorInternal.Profiling
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

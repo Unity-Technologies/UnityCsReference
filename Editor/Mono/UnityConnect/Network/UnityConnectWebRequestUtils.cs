@@ -13,7 +13,7 @@ namespace UnityEditor.Connect
     {
         internal static UnityConnectWebRequestException CreateUnityWebRequestException(UnityWebRequest request,
             string message)
-            => new(L10n.Tr(message))
+            => new(L10n.Tr(message, null))
             {
                 error = request.error,
                 method = request.method,

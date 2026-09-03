@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
+#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: HeadlessRuntime not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
@@ -35,7 +37,7 @@ partial class OrchestratedScenarioUserSettings : ScriptableSingleton<Orchestrate
 
     [SerializeField] CustomAssetsData m_UsersSettingsData = new();
 
-    public static void SetSettings<T>(OrchestratedScenario scenario, IInstanceItem instanceItem, T settings)
+    public static void SetSettings<T>(OrchestratedScenario scenario, IPlayModeControllerItem instanceItem, T settings)
         where T : struct
     {
         if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(scenario, out var assetGuid, out _))
@@ -47,7 +49,7 @@ partial class OrchestratedScenarioUserSettings : ScriptableSingleton<Orchestrate
         EditorUtility.SetDirty(instance);
     }
 
-    public static T GetSettings<T>(OrchestratedScenario scenario, IInstanceItem instanceItem, T defaultValue = default)
+    public static T GetSettings<T>(OrchestratedScenario scenario, IPlayModeControllerItem instanceItem, T defaultValue = default)
         where T : struct
     {
         if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(scenario, out var assetGuid, out _))
@@ -62,7 +64,7 @@ partial class OrchestratedScenarioUserSettings : ScriptableSingleton<Orchestrate
         return defaultValue;
     }
 
-    public static SerializedProperty GetSerializedSettingsProperty<T>(OrchestratedScenario scenario, IInstanceItem instanceItem, T defaultValue = default)
+    public static SerializedProperty GetSerializedSettingsProperty<T>(OrchestratedScenario scenario, IPlayModeControllerItem instanceItem, T defaultValue = default)
         where T : struct
     {
         if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(scenario, out var assetGuid, out _))
@@ -88,7 +90,7 @@ partial class OrchestratedScenarioUserSettings : ScriptableSingleton<Orchestrate
         return property;
     }
 
-    static string GetSettingsKey<T>(IInstanceItem instanceItem)
+    static string GetSettingsKey<T>(IPlayModeControllerItem instanceItem)
         where T : struct
         => $"{instanceItem.GetId()}-{typeof(T).FullName}";
 
@@ -101,3 +103,5 @@ partial class OrchestratedScenarioUserSettings : ScriptableSingleton<Orchestrate
         }   
     }
 }
+#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -25,6 +25,10 @@ namespace Unity.UI.Builder
         IntegerField m_DraggerIntegerField;
         protected IntegerField draggerIntegerField => m_DraggerIntegerField;
 
+        Label m_ResolvedValueLabel;
+        internal static readonly string resolvedValueLabelUssClassName = "unity-style-field__resolved-label";
+        static readonly string k_ShowResolvedHintUssClassName = "unity-style-field--show-resolved";
+
         bool m_IsFieldDraggerInitialized;
 
         float m_Min = float.MinValue;
@@ -137,6 +141,24 @@ namespace Unity.UI.Builder
             option = defaultUnit;
 
             RefreshChildFields();
+
+            m_ResolvedValueLabel = new Label { pickingMode = PickingMode.Ignore, tabIndex = -1 };
+            m_ResolvedValueLabel.AddToClassList(resolvedValueLabelUssClassName);
+            m_ResolvedValueLabel.style.display = DisplayStyle.None;
+            var textInput = textField.Q("unity-text-input");
+            (textInput ?? visualInput).Add(m_ResolvedValueLabel);
+        }
+
+        // Read-only companion to the editable authored value: shows the resolved value for properties
+        // whose computed form drops the authoring unit (e.g. font-size resolves % to an absolute px).
+        internal void SetResolvedValueHint(string text)
+        {
+            var hasText = !string.IsNullOrEmpty(text);
+            // SetValueWithoutNotify: a plain text assignment fires a ChangeEvent<string> that bubbles into
+            // the field's own value-changed callback (OnDimensionStyleFieldValueChange), corrupting edits.
+            ((INotifyValueChanged<string>)m_ResolvedValueLabel).SetValueWithoutNotify(hasText ? text : string.Empty);
+            m_ResolvedValueLabel.style.display = hasText ? DisplayStyle.Flex : DisplayStyle.None;
+            EnableInClassList(k_ShowResolvedHintUssClassName, hasText);
         }
 
         void OnDraggerPointerUp(PointerUpEvent evt)

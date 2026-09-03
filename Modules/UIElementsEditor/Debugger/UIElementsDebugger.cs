@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -196,8 +197,12 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class UIElementsDebugger : EditorWindow, IHasCustomMenu
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal UIElementsDebugger() { }
+        #pragma warning restore UAL0015
+
         public const string k_WindowPath = "Window/UI Toolkit/Debugger";
-        public static readonly string WindowName = L10n.Tr("UI Toolkit Debugger");
+        public static readonly string WindowName = L10n.Tr("UI Toolkit Debugger", null);
         public static readonly string OpenWindowCommand = nameof(OpenUIElementsDebugger);
 
         [SerializeField]
@@ -704,7 +709,9 @@ namespace UnityEditor.UIElements.Debugger
             public PanelTab(DebuggerSelection debuggerSelection, Func<UIRRepaintUpdater> getRepaintUpdater ) : base("Panel", debuggerSelection, true )
             {
                 Add(nameField = new TextField("Owner Name") { isReadOnly = true });
+                #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
                 Add(panelSettings = new ObjectField("Owner/Panel Settings") { allowSceneObjects = false});
+                #pragma warning restore UAL0015
                 Add(scale = new TextField("Scale") { isReadOnly = true });
                 Add(m_totalVisualElements = new TextField("Total Visual Elements") { isReadOnly = true });
                 Add(cacheSummary = new TextField("Cache Summary") { isReadOnly = true, multiline = true });
@@ -861,7 +868,9 @@ namespace UnityEditor.UIElements.Debugger
 
                 Add(m_GenerationSettings = new TextField("Generation Settings") { isReadOnly = true, multiline = true });
 
+                #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
                 Add(m_fontAsset = new ObjectField("Font Asset") { allowSceneObjects = false });
+                #pragma warning restore UAL0015
 
                 Add(m_textSettings = new ObjectField("Text Settings") { allowSceneObjects = false, pseudoStates = PseudoStates.Disabled });
                 Add(m_CacheInfo = new TextField("Measurement Info") { isReadOnly = true, multiline = true });
@@ -1662,3 +1671,4 @@ namespace UnityEditor.UIElements.Debugger
 
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

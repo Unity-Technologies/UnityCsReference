@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class SampleParentPackageDisplayNameCard: SampleInformationCard
     {
-        protected override string titleText => L10n.Tr("Part of");
+        protected override string titleText => L10n.Tr("Part of", null);
         protected override InformationCardSize cardSize => InformationCardSize.Medium;
 
         public override void Refresh(Sample sample)

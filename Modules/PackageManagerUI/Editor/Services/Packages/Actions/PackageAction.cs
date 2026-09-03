@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal abstract class PackageAction: ActionBase<IPackageVersion, IPackage>
 {
-    protected static readonly string k_InProgressGenericTooltip = L10n.Tr("This action is currently in progress.");
+    protected static readonly string k_InProgressGenericTooltip = L10n.Tr("This action is currently in progress.", null);
 
     // For now, this is only used for LegacyFormat dropdown button.
     public virtual bool isRecommended => false;

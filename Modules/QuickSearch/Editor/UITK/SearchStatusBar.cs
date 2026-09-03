@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +20,7 @@ namespace UnityEditor.Search
         private readonly Button m_SpinnerButton;
         private VisualElement m_ButtonContainer;
 
-        public static readonly string prefButtonTooltip = L10n.Tr("Open search preferences...");
+        public static readonly string prefButtonTooltip = L10n.Tr("Open search preferences...", null);
 
         public static readonly string ussClassName = "search-statusbar";
         public static readonly string modeButtonClassName = ussClassName + "-mode-button";
@@ -308,3 +309,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

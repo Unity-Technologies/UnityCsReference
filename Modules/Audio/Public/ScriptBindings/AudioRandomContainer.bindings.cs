@@ -105,7 +105,7 @@ sealed class AudioRandomContainer : AudioResource, IAudioGenerator
     bool GeneratorInstance.ICapabilities.isRealtime => throw new NotImplementedException();
     DiscreteTime? GeneratorInstance.ICapabilities.length => throw new NotImplementedException();
 
-    GeneratorInstance IAudioGenerator.CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters creationParameters)
+    GeneratorInstance IAudioGenerator.CreateInstance(ControlContext context, AudioFormat? nestedFormat, GeneratorInstance.CreationParameters creationParameters)
     {
         throw new NotImplementedException();
     }

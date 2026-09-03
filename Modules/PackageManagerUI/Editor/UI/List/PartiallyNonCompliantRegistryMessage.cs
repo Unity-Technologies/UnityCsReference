@@ -58,7 +58,7 @@ internal partial class PartiallyNonCompliantRegistryMessage : VisualElement
             return;
 
         var violation = page.scopedRegistry.compliance.violations[0];
-        m_HelpBox.text = string.Format(L10n.Tr("Certain restricted packages may not be visible in the registry. {0}"), violation?.message ?? string.Empty);
+        m_HelpBox.text = string.Format(L10n.Tr("Certain restricted packages may not be visible in the registry. {0}", null), violation?.message ?? string.Empty);
         m_HelpBox.readMoreUrl = violation?.readMoreLink;
         UIUtils.SetElementDisplay(this, true);
     }

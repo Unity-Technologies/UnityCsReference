@@ -24,8 +24,8 @@ namespace Unity.Profiling.Editor.UI
         internal static class Content
         {
             // Assistant prompts
-            public static readonly string k_SingleFrameAssistantPrompt = L10n.Tr("Why is the selected frame slow?");
-            public static readonly string k_RangeAssistantPrompt = L10n.Tr("Why do I have spikes in the profiler capture?");
+            public static readonly string k_SingleFrameAssistantPrompt = L10n.Tr("Why is the selected frame slow?", null);
+            public static readonly string k_RangeAssistantPrompt = L10n.Tr("Why do I have spikes in the profiler capture?", null);
         }
 
         protected readonly ProfilerWindow m_ProfilerWindow;
@@ -76,34 +76,34 @@ namespace Unity.Profiling.Editor.UI
         protected static class Content
         {
             // Title formats
-            public static readonly string k_SingleFrameTitleFormat = L10n.Tr("Frame {0} Performance Analysis");
-            public static readonly string k_RangeFrameTitleFormat = L10n.Tr("Frames {0}-{1} Performance Analysis");
+            public static readonly string k_SingleFrameTitleFormat = L10n.Tr("Frame {0} Performance Analysis", null);
+            public static readonly string k_RangeFrameTitleFormat = L10n.Tr("Frames {0}-{1} Performance Analysis", null);
 
             // Bottleneck status strings
-            public static readonly string k_NoDataStatus = L10n.Tr("No Data");
-            public static readonly string k_BoundStatusFormat = L10n.Tr("{0} Bound");
-            public static readonly string k_WithinTargetStatus = L10n.Tr("Within Target");
+            public static readonly string k_NoDataStatus = L10n.Tr("No Data", null);
+            public static readonly string k_BoundStatusFormat = L10n.Tr("{0} Bound", null);
+            public static readonly string k_WithinTargetStatus = L10n.Tr("Within Target", null);
 
             // Bottleneck descriptions (no target set)
-            public static readonly string k_NoDataDescription = L10n.Tr("No CPU or GPU timing data available for this frame range.");
-            public static readonly string k_OnlyTimingDataDescription = L10n.Tr("Only {0} timing data is available.");
-            public static readonly string k_CpuHigherDescription = L10n.Tr("CPU Active Time is higher than GPU Time. Set a target frame rate in the Highlights chart to get detailed optimization suggestions.");
-            public static readonly string k_GpuHigherDescription = L10n.Tr("GPU Time is higher than CPU Active Time. Set a target frame rate in the Highlights chart to get detailed optimization suggestions.");
+            public static readonly string k_NoDataDescription = L10n.Tr("No CPU or GPU timing data available for this frame range.", null);
+            public static readonly string k_OnlyTimingDataDescription = L10n.Tr("Only {0} timing data is available.", null);
+            public static readonly string k_CpuHigherDescription = L10n.Tr("CPU Active Time is higher than GPU Time. Set a target frame rate in the Highlights chart to get detailed optimization suggestions.", null);
+            public static readonly string k_GpuHigherDescription = L10n.Tr("GPU Time is higher than CPU Active Time. Set a target frame rate in the Highlights chart to get detailed optimization suggestions.", null);
 
             // Processor and thread name fragments (used as format arguments)
-            public static readonly string k_CpuName = L10n.Tr("CPU");
-            public static readonly string k_GpuName = L10n.Tr("GPU");
-            public static readonly string k_BothCpuGpuName = L10n.Tr("CPU and GPU");
-            public static readonly string k_MainThreadName = L10n.Tr("Main");
-            public static readonly string k_RenderThreadName = L10n.Tr("Render");
+            public static readonly string k_CpuName = L10n.Tr("CPU", null);
+            public static readonly string k_GpuName = L10n.Tr("GPU", null);
+            public static readonly string k_BothCpuGpuName = L10n.Tr("CPU and GPU", null);
+            public static readonly string k_MainThreadName = L10n.Tr("Main", null);
+            public static readonly string k_RenderThreadName = L10n.Tr("Render", null);
 
             // Bottleneck description templates (with target set)
-            public static readonly string k_BoundTitleFormat = L10n.Tr("<b>{0} Bound: the {0} exceeded your target frame time in this frame.</b>");
-            public static readonly string k_NotBoundTitle = L10n.Tr("<b>The CPU and the GPU are within your target frame time in this frame.</b>");
-            public static readonly string k_CpuBoundExplanationFormat = L10n.Tr("In this frame the CPU spent the majority of its time executing on the <b>{0} thread</b>. Therefore, you should initially focus on this to begin your investigation.");
-            public static readonly string k_SuggestionTitle = L10n.Tr("<b>How to inspect further:</b>");
-            public static readonly string k_CpuBoundSuggestion = L10n.Tr($"To optimize your game's CPU utilization, begin by using the <link={SummaryDetailsProvider.k_DescriptionLinkId_CpuTimeline}><color=#4C7EFF><u>CPU module's Timeline view</u></color></link> to see which systems contributed the most to this time spent executing on the CPU.\n\nYou might also consider using the <link={SummaryDetailsProvider.k_DescriptionLinkId_ProfileAnalyzer}><color=#4C7EFF><u>Profile Analyzer</u></color></link> to perform a deeper statistical analysis and/or to compare Profiler captures after you have made some optimizations.");
-            public static readonly string k_GpuBoundSuggestion = L10n.Tr($"To optimize your game's GPU utilization, use the <link={SummaryDetailsProvider.k_DescriptionLinkId_FrameDebugger}><color=#4C7EFF><u>Frame Debugger</u></color></link> to step through individual draw calls and see in detail how the scene is constructed from its graphical elements.\n\nYou might also consider using a native GPU profiler for the platform you are targeting. Please see the <link={SummaryDetailsProvider.k_DescriptionLinkId_GpuProfilerDocumentation}><color=#4C7EFF><u>Unity documentation</u></color></link> for more information.");
+            public static readonly string k_BoundTitleFormat = L10n.Tr("<b>{0} Bound: the {0} exceeded your target frame time in this frame.</b>", null);
+            public static readonly string k_NotBoundTitle = L10n.Tr("<b>The CPU and the GPU are within your target frame time in this frame.</b>", null);
+            public static readonly string k_CpuBoundExplanationFormat = L10n.Tr("In this frame the CPU spent the majority of its time executing on the <b>{0} thread</b>. Therefore, you should initially focus on this to begin your investigation.", null);
+            public static readonly string k_SuggestionTitle = L10n.Tr("<b>How to inspect further:</b>", null);
+            public static readonly string k_CpuBoundSuggestion = L10n.Tr($"To optimize your game's CPU utilization, begin by using the <link={SummaryDetailsProvider.k_DescriptionLinkId_CpuTimeline}><color=#4C7EFF><u>CPU module's Timeline view</u></color></link> to see which systems contributed the most to this time spent executing on the CPU.\n\nYou might also consider using the <link={SummaryDetailsProvider.k_DescriptionLinkId_ProfileAnalyzer}><color=#4C7EFF><u>Profile Analyzer</u></color></link> to perform a deeper statistical analysis and/or to compare Profiler captures after you have made some optimizations.", null);
+            public static readonly string k_GpuBoundSuggestion = L10n.Tr($"To optimize your game's GPU utilization, use the <link={SummaryDetailsProvider.k_DescriptionLinkId_FrameDebugger}><color=#4C7EFF><u>Frame Debugger</u></color></link> to step through individual draw calls and see in detail how the scene is constructed from its graphical elements.\n\nYou might also consider using a native GPU profiler for the platform you are targeting. Please see the <link={SummaryDetailsProvider.k_DescriptionLinkId_GpuProfilerDocumentation}><color=#4C7EFF><u>Unity documentation</u></color></link> for more information.", null);
         }
 
         protected readonly ProfilerWindow m_ProfilerWindow;

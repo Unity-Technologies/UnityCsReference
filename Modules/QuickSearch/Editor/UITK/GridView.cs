@@ -100,7 +100,7 @@ namespace UnityEditor.Search
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(fixedItemHeight), L10n.Tr("Value needs to be positive for virtualization."));
+                    throw new ArgumentOutOfRangeException(nameof(fixedItemHeight), L10n.Tr("Value needs to be positive for virtualization.", null));
 
                 var tempVal = value == 0 ? defaultItemSize : value;
 
@@ -119,7 +119,7 @@ namespace UnityEditor.Search
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(fixedItemWidth), L10n.Tr("Value needs to be positive for virtualization."));
+                    throw new ArgumentOutOfRangeException(nameof(fixedItemWidth), L10n.Tr("Value needs to be positive for virtualization.", null));
 
                 var tempVal = value == 0 ? defaultItemSize : value;
 
@@ -194,10 +194,10 @@ namespace UnityEditor.Search
             Func<VisualElement> makeItem = null, Action<VisualElement, int> bindItem = null)
         {
             if (itemFixedWidth < 0)
-                throw new ArgumentOutOfRangeException(nameof(fixedItemWidth), L10n.Tr("Value needs to be positive for virtualization."));
+                throw new ArgumentOutOfRangeException(nameof(fixedItemWidth), L10n.Tr("Value needs to be positive for virtualization.", null));
 
             if (itemFixedHeight < 0)
-                throw new ArgumentOutOfRangeException(nameof(itemFixedHeight), L10n.Tr("Value needs to be positive for virtualization."));
+                throw new ArgumentOutOfRangeException(nameof(itemFixedHeight), L10n.Tr("Value needs to be positive for virtualization.", null));
 
             if (itemFixedWidth == 0)
                 itemFixedWidth = defaultItemSize;

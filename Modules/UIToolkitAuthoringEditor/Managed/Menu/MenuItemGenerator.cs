@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System.Collections.Generic;
 using System;
 using UnityEditor;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Menu = UnityEditor.Menu;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -32,9 +32,11 @@ readonly struct ControlTypeInfo
         : $"{k_ContextMenuPrefix}/{libraryPath}/{libraryType.name}";
 }
 
-internal static class MenuItemGenerator
+internal static partial class MenuItemGenerator
 {
+    [AutoStaticsCleanupOnCodeReload]
     static List<ControlTypeInfo> s_AvailableControlTypes;
+    [AutoStaticsCleanupOnCodeReload]
     static int s_HighestItemPriority;
 
     // The current value represents the first item of the "GameObject/UI Toolkit" menu item. Update this value to change the position within the menu item.
@@ -51,6 +53,7 @@ internal static class MenuItemGenerator
     /// Unity core controls to display in "Standard Elements".
     /// Only these controls will appear (unless they have subcategories defined in s_Categories).
     /// </summary>
+    [NoAutoStaticsCleanup] // immutable standard-control set, safe to persist
     static readonly HashSet<string> s_StandardElementControls = new(new[]
     {
         nameof(VisualElement),
@@ -74,6 +77,7 @@ internal static class MenuItemGenerator
         k_ProjectElementsPath
     };
 
+    [NoAutoStaticsCleanup] // immutable category map, safe to persist
     static readonly Dictionary<string, HashSet<string>> s_CategoriesByType = new()
     {
         ["Numeric Fields"] = [
@@ -344,4 +348,3 @@ internal static class MenuItemGenerator
         return typeName == nameof(VisualElement) || typeName == nameof(ScrollView);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

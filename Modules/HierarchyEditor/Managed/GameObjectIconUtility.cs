@@ -52,7 +52,7 @@ namespace Unity.Hierarchy.Editor
         [AutoStaticsCleanupOnCodeReload] // Texture references could become stale, let's not hold on to them forever
         static readonly Dictionary<EntityId, Texture2D> s_Hv2IconByIconId = new(s_Hv2GizmoIconPaths.Count);
 
-        static void ApplyIcon(HierarchyViewItem item, Texture2D icon)
+        static Texture2D GetHierarchyIcon(HierarchyViewItem item, Texture2D icon)
         {
             var iconId = icon.GetEntityId();
             if (!s_Hv2IconByIconId.TryGetValue(iconId, out var hv2Icon))
@@ -61,7 +61,7 @@ namespace Unity.Hierarchy.Editor
                 s_Hv2IconByIconId[iconId] = hv2Icon;
             }
 
-            item.Icon.style.backgroundImage = hv2Icon != null ? hv2Icon : icon;
+            return hv2Icon != null ? hv2Icon : icon;
         }
 
         static HierarchyPreferences.IconMode CurrentIconMode => (HierarchyPreferences.IconMode)HierarchyPreferences.GameObjectIconMode.value;
@@ -72,24 +72,24 @@ namespace Unity.Hierarchy.Editor
 
         public static void SetNodeIconForObject(HierarchyViewItem item, GameObject gameObject)
         {
-            item.Icon.style.backgroundImage = StyleKeyword.Null;
-
             var isPrefabRoot = PrefabUtility.IsAnyPrefabInstanceRoot(gameObject);
 
             // Skip SetNodePrefabGenericStyle and SetNodePrefabRootStyle for broken prefabs
             if (isPrefabRoot && (PrefabUtility.GetPrefabAssetType(gameObject) == PrefabAssetType.MissingAsset || PrefabUtility.GetPrefabInstanceStatus(gameObject) != PrefabInstanceStatus.Connected))
             {
                 HierarchyViewPrefabStyleUtility.SetBrokenPrefabStyle(item);
+                item.Icon.style.backgroundImage = StyleKeyword.Null;
                 return;
             }
 
+            StyleBackground icon = StyleKeyword.Null;
             HierarchyViewPrefabStyleUtility.SetNodePrefabGenericStyle(gameObject, item);
 
             // User Defined
             var gameObjectIcon = ShouldShowUserDefinedIcons ? EditorGUIUtility.GetIconForObject(gameObject) : null;
             if (gameObjectIcon != null)
             {
-                ApplyIcon(item, gameObjectIcon);
+                icon = GetHierarchyIcon(item, gameObjectIcon);
                 HierarchyViewPrefabStyleUtility.ClearPrefabRootStyle(item);
             }
 
@@ -109,11 +109,13 @@ namespace Unity.Hierarchy.Editor
                     gameObject.GetComponents(s_ComponentBuffer);
 
                     // Use topmost component, if none use transform
-                    var icon = AssetPreview.GetMiniThumbnail(s_ComponentBuffer.Count > 1 ? s_ComponentBuffer[1] : s_ComponentBuffer[0]);
-                    if (icon != null)
-                        ApplyIcon(item, icon);
+                    var thumbnail = AssetPreview.GetMiniThumbnail(s_ComponentBuffer.Count > 1 ? s_ComponentBuffer[1] : s_ComponentBuffer[0]);
+                    if (thumbnail != null)
+                        icon = GetHierarchyIcon(item, thumbnail);
                 }
             }
+
+            item.Icon.style.backgroundImage = icon;
         }
     }
 }

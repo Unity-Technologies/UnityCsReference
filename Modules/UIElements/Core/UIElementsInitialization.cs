@@ -96,6 +96,8 @@ namespace UnityEngine.UIElements
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(List<AnimationPlayState>), () => new ListPropertyBag<AnimationPlayState>());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleRotate), () => new StyleValuePropertyBag<StyleRotate, Rotate>());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(Rotate), () => new Rotate.PropertyBag());
+            PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleCurvature), () => new StyleValuePropertyBag<StyleCurvature, Curvature>());
+            PropertyBagLazyInitialization.AddLazyRegistration(typeof(Curvature), () => new Curvature.PropertyBag());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleRatio), () => new StyleValuePropertyBag<StyleRatio, Ratio>());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(Ratio), () => new Ratio.PropertyBag());
             PropertyBagLazyInitialization.AddLazyRegistration(typeof(StyleGridLine), () => new StyleValuePropertyBag<StyleGridLine, GridLine>());

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -123,10 +124,10 @@ namespace UnityEditor.Connect
 
         void RefreshCoppaChoices(CoppaCompliance coppaValue)
         {
-            var coppaChoicesList = new List<String>() { L10n.Tr(k_No), L10n.Tr(k_Yes) };
+            var coppaChoicesList = new List<String>() { L10n.Tr(k_No, null), L10n.Tr(k_Yes, null) };
             if (coppaValue == COPPACompliance.COPPAUndefined.ToCoppaCompliance())
             {
-                coppaChoicesList.Insert(0, L10n.Tr(k_Undefined));
+                coppaChoicesList.Insert(0, L10n.Tr(k_Undefined, null));
             }
 
             if (m_CoppaField.choices == null
@@ -208,7 +209,7 @@ namespace UnityEditor.Connect
                         originalCoppaValue = newCompliancyValue.ToCoppaCompliance();
                         SetCoppaFieldValue(originalCoppaValue, coppaField);
                         NotificationManager.instance.Publish(Notification.Topic.CoppaCompliance, Notification.Severity.Info,
-                            L10n.Tr(CoppaComplianceChangedMessage));
+                            L10n.Tr(CoppaComplianceChangedMessage, null));
                         changeCallback?.Invoke(originalCoppaValue);
                     }
                 }
@@ -221,7 +222,7 @@ namespace UnityEditor.Connect
             else
             {
                 SetCoppaFieldValue(originalCoppaValue, coppaField);
-                exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceWebConfigurationException(L10n.Tr(k_CoppaUnexpectedSaveRequestBehaviorMessage))
+                exceptionCallback?.Invoke(originalCoppaValue, new CoppaComplianceWebConfigurationException(L10n.Tr(k_CoppaUnexpectedSaveRequestBehaviorMessage, null))
                 {
                     error = request.error,
                     method = request.method,
@@ -261,21 +262,21 @@ namespace UnityEditor.Connect
             switch (coppaCompliance)
             {
                 case COPPACompliance.COPPACompliant:
-                    return L10n.Tr(k_Yes);
+                    return L10n.Tr(k_Yes, null);
                 case COPPACompliance.COPPANotCompliant:
-                    return L10n.Tr(k_No);
+                    return L10n.Tr(k_No, null);
                 default:
-                    return L10n.Tr(k_Undefined);
+                    return L10n.Tr(k_Undefined, null);
             }
         }
 
         static COPPACompliance GetCompliancyForFieldValue(PopupField<string> coppaField)
         {
-            if (coppaField.value == L10n.Tr(k_Yes))
+            if (coppaField.value == L10n.Tr(k_Yes, null))
             {
                 return COPPACompliance.COPPACompliant;
             }
-            if (coppaField.value == L10n.Tr(k_No))
+            if (coppaField.value == L10n.Tr(k_No, null))
             {
                 return COPPACompliance.COPPANotCompliant;
             }
@@ -284,7 +285,7 @@ namespace UnityEditor.Connect
 
         static string GetCompliancyJsonValueFromFieldValue(PopupField<string> coppaField)
         {
-            return coppaField.value == L10n.Tr(k_Yes) ? k_CoppaCompliantJsonValue : k_CoppaNotCompliantJsonValue;
+            return coppaField.value == L10n.Tr(k_Yes, null) ? k_CoppaCompliantJsonValue : k_CoppaNotCompliantJsonValue;
         }
 
         public delegate void ChangeCallback(CoppaCompliance coppaCompliance);
@@ -319,3 +320,4 @@ namespace UnityEditor.Connect
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

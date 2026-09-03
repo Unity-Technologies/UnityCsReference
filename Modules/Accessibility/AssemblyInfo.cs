@@ -13,3 +13,4 @@ using System.Runtime.CompilerServices;
 // Reducing this list means to improve the API design of this module.
 
 [assembly: InternalsVisibleTo("UnityEditor.CoreModule")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]

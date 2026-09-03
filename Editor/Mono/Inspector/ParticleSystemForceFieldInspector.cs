@@ -42,7 +42,7 @@ namespace UnityEditor
         [NoAutoStaticsCleanup] // reflection cache for immutable type metadata
         private static readonly PropertyInfo s_LengthProperty = typeof(ParticleSystemForceField).GetProperty("length");
 
-        private static readonly string s_UndoString = L10n.Tr("Modify {0}");
+        private static readonly string s_UndoString = L10n.Tr("Modify {0}", null);
 
         private SerializedProperty m_Shape;
         private SerializedProperty m_StartRange;

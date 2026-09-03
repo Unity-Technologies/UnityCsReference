@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ISampleImporter sampleImporter) : base(unityConnect)
         {
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Samples");
+            m_DisplayName = L10n.Tr("Samples", null);
             m_PackageDatabase = packageDatabase;
             m_Application = application;
             m_IOProxy = iOProxy;
@@ -78,14 +78,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (dependencies == null || dependencies.Length == 0)
                 return matches;
 
-            var baseAuthor = version.isFromUnity ? L10n.Tr("Unity Technologies") : version.author?.name;
+            var baseAuthor = version.isFromUnity ? L10n.Tr("Unity Technologies", null) : version.author?.name;
             if (string.IsNullOrEmpty(baseAuthor))
                 return matches;
 
             foreach (var dependency in dependencies)
             {
                 m_PackageDatabase.GetPackageAndVersion(dependency, out var package, out var v);
-                var dependencyAuthor = v?.isFromUnity == true ? L10n.Tr("Unity Technologies") : v?.author?.name;
+                var dependencyAuthor = v?.isFromUnity == true ? L10n.Tr("Unity Technologies", null) : v?.author?.name;
                 if (package != null && dependencyAuthor == baseAuthor)
                     matches.Add(package);
             }
@@ -112,22 +112,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (string.IsNullOrEmpty(sample.displayName))
                     {
-                        var message = string.Format(L10n.Tr("Missing required property 'displayName' for sample at {0}. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>."),
+                        var message = string.Format(L10n.Tr("Missing required property 'displayName' for sample at {0}. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>.", null),
                             sample.resolvedPath);
                         CreateAndAddErrorBox(message);
                     }
                     if (string.IsNullOrEmpty(sample.resolvedPath))
                     {
-                        var message = string.Format(L10n.Tr("Missing required property 'path' for sample '{0}'. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>."),
+                        var message = string.Format(L10n.Tr("Missing required property 'path' for sample '{0}'. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>.", null),
                             sample.displayName);
                         CreateAndAddErrorBox(message);
                     }
                     else if (!m_IOProxy.DirectoryExists(sample.resolvedPath))
                     {
                         var message = string.IsNullOrEmpty(sample.displayName)
-                            ? string.Format(L10n.Tr("The folder specified as the 'path' for the sample at '{0}' doesn't exist. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>."),
+                            ? string.Format(L10n.Tr("The folder specified as the 'path' for the sample at '{0}' doesn't exist. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>.", null),
                                 sample.resolvedPath)
-                            : string.Format(L10n.Tr("The folder specified as the 'path' for the sample '{0}' doesn't exist. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>."),
+                            : string.Format(L10n.Tr("The folder specified as the 'path' for the sample '{0}' doesn't exist. Update the manifest by opening Package Manager's <b>Manage</b> menu and selecting <b>Edit Manifest Externally</b>.", null),
                             sample.displayName);
                         CreateAndAddErrorBox(message);
                     }
@@ -151,9 +151,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             samplesContainer.Clear();
 
-            viewMoreSamplesTitleLabel.text = L10n.Tr("Discover Samples Faster");
-            viewMoreSamplesDescriptionLabel.text = L10n.Tr("Samples are now available in one convenient location. Browse, discover, and import the assets you need to kickstart your project from a single, unified view.");
-            viewMoreSamplesButton.text = L10n.Tr("View More Samples");
+            viewMoreSamplesTitleLabel.text = L10n.Tr("Discover Samples Faster", null);
+            viewMoreSamplesDescriptionLabel.text = L10n.Tr("Samples are now available in one convenient location. Browse, discover, and import the assets you need to kickstart your project from a single, unified view.", null);
+            viewMoreSamplesButton.text = L10n.Tr("View More Samples", null);
             UIUtils.SetElementDisplay(viewMoreSamplesContainer, m_Samples?.Count > 0 || CheckDependenciesForSamples(m_Version));
 
             if (m_Samples == null)

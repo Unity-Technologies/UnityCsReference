@@ -30,16 +30,26 @@ namespace UnityEditorInternal
         // Returns true if the field was handled (default rendering is skipped).
         // newValue must be set to the (possibly unchanged) current value when returning true.
         // handlerData is opaque per-node storage that the handler may read/write freely.
-        bool TryDoValueField(Rect valueFieldRect, Rect valueFieldDragRect, int controlId,
+        bool TryDoValueField(AnimationWindowState state,
+            Rect valueFieldRect, Rect valueFieldDragRect, int controlId,
             EditorCurveBinding curveBinding, Type curveValueType, Type animatableObjectType,
             object currentValue, out object newValue, ref object handlerData);
+
+        // --- Property group display ---
+        // Draws into the value column of a property group row, which has no value field of its own and so
+        // shows nothing about its children while collapsed. Non-interactive: the row is still the window's.
+        // curveBinding is the group's first curve, the rest differing only by channel.
+        // Returns true if the handler drew something; declines the row by default.
+        bool TryDisplayPropertyGroup(AnimationWindowState state, Rect valueFieldRect,
+            EditorCurveBinding curveBinding, Type curveValueType, Type animatableObjectType,
+            ref object handlerData) => false;
 
         // --- Context menu population ---
         // Appends handler-specific items to the hierarchy row context menu.
         // handlerData is the current per-node state; setHandlerData persists
         // a new value back to the node (safe to capture in deferred menu callbacks).
         // Returns true if any items were added.
-        bool TryPopulateContextMenu(GenericMenu menu,
+        bool TryPopulateContextMenu(AnimationWindowState state, GenericMenu menu,
             EditorCurveBinding curveBinding, Type curveValueType, Type animatableObjectType,
             object handlerData, Action<object> setHandlerData);
 

@@ -41,9 +41,9 @@ namespace UnityEditor
             public static readonly GUIContent kPlatformSettings = EditorGUIUtility.TrTextContent("Platform settings");
             public static readonly GUIContent kInformation = EditorGUIUtility.TrTextContent("Information");
 
-            static readonly string kCompatibleTextIndividual = L10n.Tr("Define constraint is compatible.");
-            static readonly string kIncompatibleTextIndividual = L10n.Tr("Define constraint is incompatible.");
-            static readonly string kInvalidTextIndividual = L10n.Tr("Define constraint is invalid.");
+            static readonly string kCompatibleTextIndividual = L10n.Tr("Define constraint is compatible.", null);
+            static readonly string kIncompatibleTextIndividual = L10n.Tr("Define constraint is incompatible.", null);
+            static readonly string kInvalidTextIndividual = L10n.Tr("Define constraint is invalid.", null);
 
             // This is used to make everything in reorderable list elements centered vertically.
             public const int kCenterHeightOffset = 1;
@@ -58,8 +58,8 @@ namespace UnityEditor
             public static Texture2D validDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kValidDefineConstraintHighDpi : kValidDefineConstraint;
             public static Texture2D invalidDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kInvalidDefineConstraintHighDpi : kInvalidDefineConstraint;
 
-            static readonly string kCompatibleTextTitle = L10n.Tr("Define constraints are compatible.");
-            static readonly string kIncompatibleTextTitle = L10n.Tr("One or more define constraints are invalid or incompatible.");
+            static readonly string kCompatibleTextTitle = L10n.Tr("Define constraints are compatible.", null);
+            static readonly string kIncompatibleTextTitle = L10n.Tr("One or more define constraints are invalid or incompatible.", null);
 
             public static string GetTitleTooltipFromDefineConstraintCompatibility(bool compatible)
             {
@@ -566,12 +566,12 @@ namespace UnityEditor
 
             var textFieldRect = new Rect(rect.x, rect.y + Styles.kCenterHeightOffset, rect.width - ReorderableList.Defaults.dragHandleWidth, rect.height);
 
-            string noValue = L10n.Tr("(Missing)");
+            string noValue = L10n.Tr("(Missing)", null);
 
             var label = string.IsNullOrEmpty(defineConstraint.name) ? noValue : defineConstraint.name;
             bool mixed = defineConstraint.displayValue == Compatibility.Mixed;
             EditorGUI.showMixedValue = mixed;
-            var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)") : label);
+            var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)", null) : label);
             EditorGUI.showMixedValue = false;
 
             string[] defines = InternalEditorUtility.GetCompilationDefines(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.GetActiveSubtargetFor(EditorUserBuildSettings.activeBuildTarget));

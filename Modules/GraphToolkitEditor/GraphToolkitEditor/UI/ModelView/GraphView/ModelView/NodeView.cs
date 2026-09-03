@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 // ReSharper disable InconsistentNaming
@@ -17,7 +19,7 @@ namespace Unity.GraphToolkit.Editor
     /// Allocate custom UI in <see cref="NodeView{T}.OnViewBuilt"/> and add it to <see cref="Root"/>. The
     /// contents of <see cref="Root"/> are cleared whenever the node returns from being culled, so cache
     /// your custom elements in fields and re-add them from <see cref="NodeView{T}.OnCullingChanged"/>
-    /// (when <c>cullingEnabled</c> is false).
+    /// (when `cullingEnabled` is false).
     /// </remarks>
     /// <example>
     /// <code lang="cs">
@@ -41,15 +43,17 @@ namespace Unity.GraphToolkit.Editor
     /// ]]>
     /// </code>
     /// </example>
+    /// <seealso cref="NodeView{T}"/>
+    /// <seealso cref="NodeView{T}.OnViewBuilt"/>
     public interface INodeView
     {
         /// <summary>
         /// The root <see cref="VisualElement"/> of the node, to which custom UI can be added.
         /// </summary>
         /// <remarks>
-        /// The contents of <c>Root</c> are cleared each time the node returns from being culled. Cache
+        /// The contents of `Root` are cleared each time the node returns from being culled. Cache
         /// any custom UI you allocated in <see cref="NodeView{T}.OnViewBuilt"/> and re-add it from
-        /// <see cref="NodeView{T}.OnCullingChanged"/> when <c>cullingEnabled</c> is false.
+        /// <see cref="NodeView{T}.OnCullingChanged"/> when `cullingEnabled` is false.
         /// </remarks>
         public VisualElement Root { get; }
     }
@@ -60,6 +64,8 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     class NodeView : GraphElement, INodeView
     {
+        public const string k_NodeViewTOverrideExceptionText = "Exception thrown during";
+
         /// <summary>
         /// The USS class name added to a <see cref="NodeView"/>.
         /// </summary>
@@ -121,7 +127,7 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string portContainerPartName = "port-container";
 
         /// <summary>
-        /// The name of the <see cref="ModelViewPart"/> for the LOD cache.
+        /// The name of the <see cref="ModelViewPart"/> for the level of detail (LOD) cache.
         /// </summary>
         public static readonly string cachePartName = "cache";
 
@@ -133,7 +139,7 @@ namespace Unity.GraphToolkit.Editor
         bool m_ShowToolbarButtons;
 
         List<NodeToolbarButton> m_NodeToolbarButtons = new List<NodeToolbarButton>();
-        IUserNodeView m_UserBuilder;
+        IUserModelView m_UserBuilder;
         internal IReadOnlyList<NodeToolbarButton> NodeToolbarButtons => m_NodeToolbarButtons;
         public VisualElement Root => this;
 
@@ -155,12 +161,17 @@ namespace Unity.GraphToolkit.Editor
 
         public override void BuildUITree()
         {
-            if (NodeModel is Implementation.IUserNodeModelImp userNodeModel)
-            {
-                m_UserBuilder = GraphView.BuilderLookup.Build(userNodeModel.Node, this);
-            }
+            m_UserBuilder = BuildUserView();
 
             base.BuildUITree();
+        }
+
+        protected virtual IUserModelView BuildUserView()
+        {
+            if (NodeModel is Implementation.IUserNodeModelImp userNodeModel)
+                return GraphView.BuilderLookup.Build(userNodeModel.Node, this);
+
+            return null;
         }
 
         /// <inheritdoc />
@@ -179,13 +190,27 @@ namespace Unity.GraphToolkit.Editor
         protected override void EnableCulling()
         {
             base.EnableCulling();
-            m_UserBuilder?.OnCullingChanged(true);
+            if (m_UserBuilder != null)
+            {
+                try { m_UserBuilder.OnCullingChanged(true); }
+                catch (Exception e) { LogUserCallbackException(nameof(IUserModelView.OnCullingChanged), e); }
+            }
         }
 
         protected override void DisableCulling()
         {
             base.DisableCulling();
-            m_UserBuilder?.OnCullingChanged(false);
+            if (m_UserBuilder != null)
+            {
+                try { m_UserBuilder.OnCullingChanged(false); }
+                catch (Exception e) { LogUserCallbackException(nameof(IUserModelView.OnCullingChanged), e); }
+            }
+        }
+
+        void LogUserCallbackException(string callbackName, Exception exception)
+        {
+            Debug.LogError($"{k_NodeViewTOverrideExceptionText} {m_UserBuilder.GetType().Name}.{callbackName}");
+            Debug.LogException(exception, NodeModel?.GraphModel?.GraphObject);
         }
 
         /// <inheritdoc />
@@ -207,22 +232,34 @@ namespace Unity.GraphToolkit.Editor
                     nodeTitlePart.AddNodeToolbarButton(b);
             }
 
-            m_UserBuilder?.OnViewBuilt();
+            if (m_UserBuilder != null)
+            {
+                try { m_UserBuilder.OnViewBuilt(); }
+                catch (Exception e) { LogUserCallbackException(nameof(IUserModelView.OnViewBuilt), e); }
+            }
         }
 
         void AttachToPanel(AttachToPanelEvent evt)
         {
-            m_UserBuilder?.OnViewAttached();
+            if (m_UserBuilder != null)
+            {
+                try { m_UserBuilder.OnViewAttached(); }
+                catch (Exception e) { LogUserCallbackException(nameof(IUserModelView.OnViewAttached), e); }
+            }
         }
 
         protected override void OnDetachedFromPanel(DetachFromPanelEvent evt)
         {
             base.OnDetachedFromPanel(evt);
-            m_UserBuilder?.OnViewDetached();
+            if (m_UserBuilder != null)
+            {
+                try { m_UserBuilder.OnViewDetached(); }
+                catch (Exception e) { LogUserCallbackException(nameof(IUserModelView.OnViewDetached), e); }
+            }
         }
 
         /// <summary>
-        /// Builds the list of <see cref="NodeToolbarButton"/>'s. Overrides this function to add more buttons to the node.
+        /// Builds the list of <see cref="NodeToolbarButton"/> instances. Overrides this function to add more buttons to the node.
         /// </summary>
         /// <remarks>Created buttons need to be added using <see cref="AddNodeToolbarButton"/>.</remarks>
         protected virtual void BuildNodeToolbarButtons()
@@ -366,9 +403,9 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Shows the <see cref="NodeToolbarButton"/>'s on the node. These buttons only appear when hovering on the node.
+        /// Shows the <see cref="NodeToolbarButton"/> instances on the node. These buttons only appear when hovering on the node.
         /// </summary>
-        /// <param name="show">Whether the <see cref="NodeToolbarButtons"/>s are shown on the node.</param>
+        /// <param name="show">Whether the <see cref="NodeToolbarButtons"/> are shown on the node.</param>
         public void ShowNodeToolbarButtons(bool show)
         {
             m_ShowToolbarButtons = show;
@@ -413,7 +450,11 @@ namespace Unity.GraphToolkit.Editor
 
         internal override void PostSetElementLevelOfDetail(float zoom, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
         {
-            m_UserBuilder?.OnViewLODChanged(zoom);
+            if (m_UserBuilder != null)
+            {
+                try { m_UserBuilder.OnViewLODChanged(zoom); }
+                catch (Exception e) { LogUserCallbackException(nameof(IUserModelView.OnViewLODChanged), e); }
+            }
         }
 
         void UpdateButtonsLOD()

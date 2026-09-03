@@ -19,9 +19,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             get
             {
                 if (isEnabled)
-                    return L10n.Tr("Right click to see viewing options: in browser or local.");
+                    return L10n.Tr("Right click to see viewing options: in browser or local.", null);
                 else
-                    return L10n.Tr("Documentation unavailable");
+                    return L10n.Tr("Documentation unavailable", null);
             }
         }
     }

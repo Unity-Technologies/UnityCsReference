@@ -1076,6 +1076,14 @@ namespace UnityEngine.Rendering
             SetGlobalMatrixArrayListImpl(nameID, NoAllocHelpers.CreateReadOnlySpan(values));
         }
 
+        // ReadOnlySpan<T> version, for callers that already hold the matrices contiguously and want to avoid the copy
+        // into an array.
+        public void SetGlobalMatrixArray(int nameID, ReadOnlySpan<Matrix4x4> values)
+        {
+            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
+            SetGlobalMatrixArrayListImpl(nameID, values);
+        }
+
         // T[] version
         public void SetGlobalMatrixArray(string propertyName, Matrix4x4[] values)
         {

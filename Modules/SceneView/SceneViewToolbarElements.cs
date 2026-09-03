@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using UnityEditor.Overlays;
 using UnityEditorInternal;
 using UnityEditor.Snap;
@@ -33,7 +34,9 @@ namespace UnityEditor.Toolbars
         {
             name = "CommonCameraModes";
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
 
             Add(m_UIElementsRoot = new VisualElement());
             m_UIElementsRoot.AddToClassList("toolbar-contents");
@@ -156,16 +159,20 @@ namespace UnityEditor.Toolbars
         public CameraModeElement()
         {
             name = "CameraModeDropDown";
-            tooltip = L10n.Tr("Debug Draw Mode");
+            tooltip = L10n.Tr("Debug Draw Mode", null);
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             dropdownClicked += () => PopupWindow.Show(worldBound, new SceneRenderModeWindow(sceneView));
+            #pragma warning restore UAL0015
 
             this.RegisterValueChangedCallback((evt) => sceneView.ToggleLastDebugDrawMode());
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
             AddToClassList(s_UssClassName_Debug);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -207,11 +214,15 @@ namespace UnityEditor.Toolbars
         public In2DModeElement()
         {
             name = "SceneView2D";
-            tooltip = L10n.Tr("When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
+            tooltip = L10n.Tr("When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.", null);
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             this.RegisterValueChangedCallback(evt => sceneView.in2DMode = evt.newValue);
+            #pragma warning restore UAL0015
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -244,8 +255,10 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed / this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             this.RegisterValueChangedCallback(evt => sceneView.audioPlay = evt.newValue);
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -281,9 +294,11 @@ namespace UnityEditor.Toolbars
         public SceneFxElement()
         {
             name = "SceneviewFx";
-            tooltip = L10n.Tr("Toggle skybox, fog, and various other effects.");
+            tooltip = L10n.Tr("Toggle skybox, fog, and various other effects.", null);
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             dropdownClicked += () => PopupWindow.Show(worldBound, new SceneFXWindow(sceneView));
+            #pragma warning restore UAL0015
 
             this.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
             {
@@ -292,7 +307,9 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -331,7 +348,9 @@ namespace UnityEditor.Toolbars
             this.RegisterValueChangedCallback(evt => sceneView.sceneVisActive = evt.newValue);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -388,7 +407,9 @@ namespace UnityEditor.Toolbars
         public GridSettingsSeparator()
         {
             name = "GridSettingsSeparator";
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
     }
 
@@ -408,7 +429,7 @@ namespace UnityEditor.Toolbars
 
             m_GridVisToggle = new EditorToolbarToggle();
             m_GridVisToggle.name = "GridVisibility";
-            m_GridVisToggle.tooltip = L10n.Tr("Toggle the visibility of the grid");
+            m_GridVisToggle.tooltip = L10n.Tr("Toggle the visibility of the grid", null);
             m_GridVisToggle.RegisterValueChangedCallback((evt) =>
             {
                 sceneView.sceneViewGrids.showGrid = evt.newValue;
@@ -416,8 +437,10 @@ namespace UnityEditor.Toolbars
             Add(m_GridVisToggle);
 
             var gridSettings = GridSettings.instance;
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             m_GridSizeField = new SnapSizeField("GridSnapSize", gridSettings.gridSize.x, gridSettings.linked);
-            m_GridSizeField.tooltip = L10n.Tr("Grid size");
+            #pragma warning restore UAL0015
+            m_GridSizeField.tooltip = L10n.Tr("Grid size", null);
             m_GridSizeField.valueChanged += ((value) =>
             {
                 var newSize = Vector3.one * value;
@@ -429,7 +452,7 @@ namespace UnityEditor.Toolbars
             Add(m_GridSizeField);
 
             m_GridSettingsDropdown = new GridSettingsElement(sceneView);
-            m_GridSettingsDropdown.tooltip = L10n.Tr("Open Grid and Snap Settings");
+            m_GridSettingsDropdown.tooltip = L10n.Tr("Open Grid and Snap Settings", null);
             Add(m_GridSettingsDropdown);
 
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
@@ -480,13 +503,15 @@ namespace UnityEditor.Toolbars
         public RenderDocElement()
         {
             name = "FrameCapture";
-            tooltip = L10n.Tr(RenderDocUtil.openInRenderDocTooltip);
+            tooltip = L10n.Tr(RenderDocUtil.openInRenderDocTooltip, null);
             icon = EditorGUIUtility.FindTexture("FrameCapture");
             UpdateState();
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         void UpdateState()
@@ -526,13 +551,15 @@ namespace UnityEditor.Toolbars
         public MetalCaptureElement()
         {
             name = "MetalCapture";
-            tooltip = L10n.Tr("Capture the current view and open in Xcode frame debugger");
+            tooltip = L10n.Tr("Capture the current view and open in Xcode frame debugger", null);
             icon = EditorGUIUtility.FindTexture("FrameCapture");
             UpdateState();
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         void UpdateState()
@@ -577,7 +604,9 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -609,9 +638,11 @@ namespace UnityEditor.Toolbars
         public GizmosElement()
         {
             name = "Gizmos";
-            tooltip = L10n.Tr("Toggle visibility of all Gizmos in the Scene view");
+            tooltip = L10n.Tr("Toggle visibility of all Gizmos in the Scene view", null);
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             dropdownClicked += () => AnnotationWindow.ShowAtPosition(worldBound, false);
+            #pragma warning restore UAL0015
 
             this.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
             {
@@ -619,7 +650,9 @@ namespace UnityEditor.Toolbars
             });
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -648,7 +681,9 @@ namespace UnityEditor.Toolbars
         {
             name = "Search";
             tooltip = "Search the Hierarchy / Scene View";
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
             Add(new IMGUIContainer { onGUIHandler = OnGUI });
         }
 
@@ -661,3 +696,4 @@ namespace UnityEditor.Toolbars
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

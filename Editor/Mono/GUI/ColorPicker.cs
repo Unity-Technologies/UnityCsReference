@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
@@ -14,6 +15,10 @@ namespace UnityEditor
     [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal class ColorPicker : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal ColorPicker() {}
+        #pragma warning restore UAL0015
+
         private const string k_HeightPrefKey = "CPickerHeight";
         private const string k_ShowDefaultsPrefKey = "CPDefaultsShow";
         private const string k_ShowPresetsPrefKey = "CPPresetsShow";
@@ -494,7 +499,9 @@ namespace UnityEditor
             public static readonly GUIStyle exposureSwatch = "ColorPickerExposureSwatch";
             public static readonly GUIStyle selectedExposureSwatchStroke = "ColorPickerCurrentExposureSwatchBorder";
 
+            #pragma warning disable UAL0015 // only populates EditorGUIUtility's icon-name-per-skin cache, which repopulates on demand from a fixed icon name
             public static readonly GUIContent eyeDropper = EditorGUIUtility.TrIconContent("EyeDropper.Large", "Pick a color from the screen.");
+            #pragma warning restore UAL0015
             public static readonly GUIContent exposureValue = EditorGUIUtility.TrTextContent("Intensity", "Number of stops to over- or under-expose the color. The intensity calculates each time based on the predefined max color component of 191 (0.749) when Color Picker opens.");
             public static readonly GUIContent hexLabel = EditorGUIUtility.TrTextContent("Hexadecimal");
             public static readonly GUIContent presetsToggle = EditorGUIUtility.TrTextContent("Swatches");
@@ -1437,7 +1444,9 @@ namespace UnityEditor
 
         EyeDropper()
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             s_Instance = this;
+            #pragma warning restore UAL0015
         }
 
         public static Color GetPickedColor()
@@ -1626,3 +1635,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

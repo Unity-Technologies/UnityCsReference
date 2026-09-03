@@ -53,12 +53,13 @@ unsafe struct UnmanagedDataStore : IDisposable
 
     public int Capacity => m_Data->Capacity;
 
-    public UnmanagedDataStore(UnmanagedComponentType[] components, ReadOnlySpan<MemoryLabel> labels, byte** initialData, int initialCapacity, Allocator allocator)
+    public UnmanagedDataStore(UnmanagedComponentType[] components, ReadOnlySpan<MemoryLabel> labels, byte** initialData, int initialCapacity, Allocator allocator, string ownerName)
     {
         Assert.IsTrue(components.Length > 0, $"{nameof(UnmanagedDataStore)} requires at least one component size.");
         Assert.IsTrue(components[0].Size >= sizeof(int), $"{nameof(UnmanagedDataStore)} requires a minimum element size of {sizeof(int)} to alias");
         Assert.AreEqual(components.Length, labels.Length, "Expected a matching number of component names and components.");
-        m_MemoryLabel = new (nameof(UIElements), $"Layout.{nameof(UnmanagedDataStore)}", allocator);
+        // Names this store's own bookkeeping (Data, Versions, FreeIndices); labels[] name the payload chunks.
+        m_MemoryLabel = new (nameof(UIElements), $"{ownerName}.{nameof(UnmanagedDataStore)}", allocator);
         m_Data = (Data*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<Data>(), UnsafeUtility.AlignOf<Data>(), m_MemoryLabel);
         UnsafeUtility.MemClear(m_Data, UnsafeUtility.SizeOf<Data>());
 

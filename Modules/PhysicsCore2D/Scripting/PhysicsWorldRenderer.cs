@@ -24,16 +24,11 @@ namespace Unity.U2D.Physics
         // Engine-internal renderer state. This class lives in an engine module (not reloadable user code) and holds no references to user code:
         // the render callbacks point at its own methods and the resources are engine objects, all of which remain valid across a user-code reload.
         // ShutdownRendering() (invoked by native code) is what disposes these, so they are safe to persist.
-        [NoAutoStaticsCleanup] // engine-internal init flag, no user-code reference — safe to persist across a code reload
-        static bool s_IsInitialized = false;
-        [NoAutoStaticsCleanup] // engine-internal render-pipeline flag, no user-code reference — safe to persist across a code reload
-        static bool s_UsingBIRP = false;
-        [NoAutoStaticsCleanup] // engine CommandBuffer disposed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
-        static CommandBuffer s_RendererCommandBuffer = null;
-        [NoAutoStaticsCleanup] // engine drawer groups disposed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
-        static DrawerGroup[] s_DrawerGroups = null;
-        [NoAutoStaticsCleanup] // engine Mesh destroyed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
-        static Mesh s_RenderMesh = null;
+        [NoAutoStaticsCleanup] static bool s_IsInitialized = false; // engine-internal init flag, no user-code reference — safe to persist across a code reload
+        [NoAutoStaticsCleanup] static bool s_UsingBIRP = false; // engine-internal render-pipeline flag, no user-code reference — safe to persist across a code reload
+        [NoAutoStaticsCleanup] static CommandBuffer s_RendererCommandBuffer = null; // engine CommandBuffer disposed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
+        [NoAutoStaticsCleanup] static DrawerGroup[] s_DrawerGroups = null; // engine drawer groups disposed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
+        [NoAutoStaticsCleanup] static Mesh s_RenderMesh = null; // engine Mesh destroyed by ShutdownRendering (native), no user-code reference — safe to persist across a code reload
 
         // Shader property IDs resolved once from fixed names and never reassigned; readonly unmanaged value types are auto-exempt.
         static readonly int s_ElementBufferShaderProperty = Shader.PropertyToID("element_buffer");
@@ -129,12 +124,13 @@ namespace Unity.U2D.Physics
             // Create the mesh.
             return s_RenderMesh = new()
             {
+                // A unit quad; the SDF shaders take the corner sign only and grow the quad themselves to fit the stroke.
                 vertices = new Vector3[]
                 {
-                            new(-1.1f, -1.1f, 0f),
-                            new(-1.1f, 1.1f, 0f),
-                            new(1.1f, 1.1f, 0f),
-                            new(1.1f, -1.1f, 0f)
+                            new(-1f, -1f, 0f),
+                            new(-1f, 1f, 0f),
+                            new(1f, 1f, 0f),
+                            new(1f, -1f, 0f)
                 },
                 normals = new[] { -Vector3.forward, -Vector3.forward, -Vector3.forward, -Vector3.forward },
                 uv = new[] { Vector2.zero, new Vector2(0f, 1f), Vector2.one, new Vector2(1f, 0f) },

@@ -205,7 +205,7 @@ namespace UnityEditorInternal.Profiling
     {
         static class Content
         {
-            public static readonly string totalSelectedPropertyTimeTooltip = L10n.Tr("Total time of all calls of the selected function in the frame.");
+            public static readonly string totalSelectedPropertyTimeTooltip = L10n.Tr("Total time of all calls of the selected function in the frame.", null);
         }
 
         [NonSerialized]

@@ -20,6 +20,7 @@ namespace UnityEditor.UIElements.Debugger
         internal static readonly UniqueStyleString itemNameLabelUssClassName = new("unity-debugger-tree-item-name-label");
         internal const string itemClassListUssClassName = "unity-debugger-tree-item-classlist";
         internal const string itemClassListLabelUssClassName = "unity-debugger-tree-item-classlist-label";
+        internal const string itemComponentBadgeUssClassName = "unity-debugger-tree-item-component-badge";
         internal const string debuggerHighlightUssClassName = "unity-debugger-highlight";
 
         public bool hierarchyHasChanged { get; set; }
@@ -136,6 +137,48 @@ namespace UnityEditor.UIElements.Debugger
                 classLabel.AddToClassList(itemClassListLabelUssClassName);
                 classLabelCont.Add(classLabel);
             }
+
+            // Badge elements that carry UI Toolkit components, with the component type names as a tooltip.
+            var badge = CreateComponentBadge(target);
+            if (badge != null)
+                element.Add(badge);
+        }
+
+        // Builds the "has components" badge container for a row, or null when the element has no
+        // components. The glyph carries the count; the tooltip lists the component type names.
+        internal static VisualElement CreateComponentBadge(VisualElement target)
+        {
+            if (!UIToolkitProjectSettings.enableUIComponents)
+                return null;
+
+            // Count through the debugger's filtered view: code-only components are hidden, so an
+            // element carrying only those shows no badge.
+            var count = 0;
+            foreach (var _ in ComponentsDebugger.EnumerateShownComponentTypes(target))
+                count++;
+            if (count == 0)
+                return null;
+
+            var badgeCont = new VisualElement();
+            badgeCont.AddToClassList(labelContainerUssClassName);
+
+            // A small pill carrying the component count. Plain text (not a glyph) so it renders in the tree's
+            // monospace font, which lacks symbol glyphs.
+            var badge = new Label(count.ToString());
+            badge.AddToClassList(itemLabelUssClassName);
+            badge.AddToClassList(itemComponentBadgeUssClassName);
+
+            var tooltip = new System.Text.StringBuilder();
+            foreach (var type in ComponentsDebugger.EnumerateShownComponentTypes(target))
+            {
+                if (tooltip.Length > 0)
+                    tooltip.Append('\n');
+                tooltip.Append(type.Name);
+            }
+            badge.tooltip = tooltip.ToString();
+
+            badgeCont.Add(badge);
+            return badgeCont;
         }
 
         private void HighlightItemInTargetWindow(VisualElement item)

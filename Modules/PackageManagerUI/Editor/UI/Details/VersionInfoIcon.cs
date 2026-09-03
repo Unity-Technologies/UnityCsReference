@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 UIUtils.SetElementDisplay(this, true);
                 tooltip = string.Format(
-                    L10n.Tr("Unity installed version {0} instead of the requested version {1} because other packages or features might depend on it, or because of an editor's requirements."),
+                    L10n.Tr("Unity installed version {0} instead of the requested version {1} because other packages or features might depend on it, or because of an editor's requirements.", null),
                     version.versionString, version.versionInManifest);
                 return;
             }
@@ -46,7 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!version.HasTag(PackageTag.BuiltIn) && recommended == null)
             {
                 UIUtils.SetElementDisplay(this, true);
-                tooltip = string.Format(L10n.Tr("This package is not officially supported for Unity {0}."), m_Application.unityVersion);
+                tooltip = string.Format(L10n.Tr("This package is not officially supported for Unity {0}.", null), m_Application.unityVersion);
                 return;
             }
 
@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 UIUtils.SetElementDisplay(this, true);
                 tooltip = string.Format(
-                    L10n.Tr("This version is not the recommended for Unity {0}. The recommended version is {1}."),
+                    L10n.Tr("This version is not the recommended for Unity {0}. The recommended version is {1}.", null),
                     m_Application.unityVersion, recommended.versionString);
             }
         }

@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class MinimumEditorVersionInfoCard : PackageInformationCard
 {
-    protected override string titleText => L10n.Tr("Minimum Editor Version");
+    protected override string titleText => L10n.Tr("Minimum Editor Version", null);
     protected override InformationCardSize cardSize => InformationCardSize.Small;
     public override void Refresh(IPackageVersion version)
     {
@@ -16,7 +16,7 @@ internal class MinimumEditorVersionInfoCard : PackageInformationCard
         if (!isVisible)
             return;
 
-        var minimumUnityVersion = !string.IsNullOrEmpty(version.minimumUnityVersion) ? version.minimumUnityVersion : L10n.Tr("Not set");
+        var minimumUnityVersion = !string.IsNullOrEmpty(version.minimumUnityVersion) ? version.minimumUnityVersion : L10n.Tr("Not set", null);
         contentText = minimumUnityVersion;
     }
 }

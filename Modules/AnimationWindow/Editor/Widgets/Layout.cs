@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using System;
 using Unity.IntegerTime;
 using UnityEditorInternal;
@@ -69,30 +70,30 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         [NoAutoStaticsCleanup]
         static readonly CustomStyleProperty<float> k_RecordColorMultiplier = new CustomStyleProperty<float>("--record-color-multiplier");
 
-        static readonly string s_AnimatorOptimizedText = L10n.Tr("Editing and playback of animations on optimized game object hierarchy is not supported.\nPlease select a game object that does not have 'Optimize Game Objects' applied.");
-        static readonly string s_AnimatorAndAnimationClipText = L10n.Tr("an Animator and an Animation Clip");
-        static readonly string s_AnimationClipText = L10n.Tr("an Animation Clip");
-        static readonly string s_FormatIsMissingText = L10n.Tr("To begin animating {0}, create {1}.");
-        static readonly string s_NoAnimatableObjectSelectedText = L10n.Tr("No animatable object selected.");
+        static readonly string s_AnimatorOptimizedText = L10n.Tr("Editing and playback of animations on optimized game object hierarchy is not supported.\nPlease select a game object that does not have 'Optimize Game Objects' applied.", null);
+        static readonly string s_AnimatorAndAnimationClipText = L10n.Tr("an Animator and an Animation Clip", null);
+        static readonly string s_AnimationClipText = L10n.Tr("an Animation Clip", null);
+        static readonly string s_FormatIsMissingText = L10n.Tr("To begin animating {0}, create {1}.", null);
+        static readonly string s_NoAnimatableObjectSelectedText = L10n.Tr("No animatable object selected.", null);
 
-        static readonly string s_RecordContentTooltip = L10n.Tr("Enable/disable keyframe recording mode.");
-        static readonly string s_PreviewContentTooltip = L10n.Tr("Enable/disable scene preview mode.");
+        static readonly string s_RecordContentTooltip = L10n.Tr("Enable/disable keyframe recording mode.", null);
+        static readonly string s_PreviewContentTooltip = L10n.Tr("Enable/disable scene preview mode.", null);
 
-        static readonly string s_RevertContentTooltip = L10n.Tr("Discard changes made to imported animation.");
-        static readonly string s_ApplyContentTooltip = L10n.Tr("Apply changes made to imported animation.");
-        static readonly string s_AddKeyframeContentTooltip = L10n.Tr("Add keyframe ({0}).");
-        static readonly string s_AddEventContentTooltip = L10n.Tr("Add event.");
-        static readonly string s_FilterBySelectionContentTooltip = L10n.Tr("Filter by selection.");
-        static readonly string s_SequencerLinkContentTooltip = L10n.Tr("Animation Window is linked to Timeline Editor.  Press to Unlink.");
-        static readonly string s_ModeRippleContentTooltip = L10n.Tr("Ripple mode ({0}).");
+        static readonly string s_RevertContentTooltip = L10n.Tr("Discard changes made to imported animation.", null);
+        static readonly string s_ApplyContentTooltip = L10n.Tr("Apply changes made to imported animation.", null);
+        static readonly string s_AddKeyframeContentTooltip = L10n.Tr("Add keyframe ({0}).", null);
+        static readonly string s_AddEventContentTooltip = L10n.Tr("Add event.", null);
+        static readonly string s_FilterBySelectionContentTooltip = L10n.Tr("Filter by selection.", null);
+        static readonly string s_SequencerLinkContentTooltip = L10n.Tr("Animation Window is linked to Timeline Editor.  Press to Unlink.", null);
+        static readonly string s_ModeRippleContentTooltip = L10n.Tr("Ripple mode ({0}).", null);
 
         const float k_LeftMargin = 40f;
         const float k_RightMargin = 40f;
 
         class DopesheetButton : IToggleButtonItem
         {
-            static readonly string s_Name = L10n.Tr("Dopesheet");
-            static readonly string s_Tooltip = L10n.Tr("Show Dopesheet ({0})");
+            static readonly string s_Name = L10n.Tr("Dopesheet", null);
+            static readonly string s_Tooltip = L10n.Tr("Show Dopesheet ({0})", null);
 
             public string Name => s_Name;
             public string Tooltip => string.Format(s_Tooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Show Curves"));
@@ -100,8 +101,8 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
         class CurveEditorButton : IToggleButtonItem
         {
-            static readonly string s_Name = L10n.Tr("Curves");
-            static readonly string s_Tooltip = L10n.Tr("Show Curves ({0})");
+            static readonly string s_Name = L10n.Tr("Curves", null);
+            static readonly string s_Tooltip = L10n.Tr("Show Curves ({0})", null);
 
             public string Name => s_Name;
             public string Tooltip => string.Format(s_Tooltip, ShortcutManager.instance.GetShortcutBinding("Animation/Show Curves"));
@@ -200,7 +201,9 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
             InitPlayHead();
             InitToolbar();
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             InitAnimationContent();
+            #pragma warning restore UAL0015
             InitControlsResize();
 
             state.onRefresh += OnRefresh;
@@ -747,3 +750,4 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
 
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

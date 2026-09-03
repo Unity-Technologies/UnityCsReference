@@ -221,6 +221,8 @@ namespace UnityEditor.TerrainTools
         public virtual void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext) { }
         public virtual bool OnPaint(Terrain terrain, IOnPaint editContext) { return false; }
 
+        public override bool IsAvailable() => TerrainEditorUtility.IsEditable();
+
         public override void OnActivated()
         {
             OnEnterToolMode();
@@ -234,6 +236,12 @@ namespace UnityEditor.TerrainTools
 
         public override void OnToolGUI(EditorWindow window)
         {
+            if (!TerrainEditorUtility.IsEditable())
+            {
+                PaintContext.ApplyDelayedActions();
+                return;
+            }
+
             Terrain = null;
             // currently this is always true but assert in case it changes in the future
             var sceneView = (SceneView)window;

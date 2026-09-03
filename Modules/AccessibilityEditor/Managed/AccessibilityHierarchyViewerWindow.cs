@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Accessibility not yet converted
 using UnityEngine;
 using UnityEngine.Accessibility;
 using UnityEngine.UIElements;
@@ -13,6 +14,10 @@ namespace UnityEditor.Accessibility
     /// </summary>
     internal class AccessibilityHierarchyViewerWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal AccessibilityHierarchyViewerWindow() { }
+        #pragma warning restore UAL0015
+
         private static readonly string s_WindowTitle = "Accessibility Hierarchy Viewer";
 
         private AccessibilityHierarchyViewModel m_ActiveHierarchyModel;
@@ -26,7 +31,7 @@ namespace UnityEditor.Accessibility
         private void OnEnable()
         {
             minSize = new Vector2(200, 200);
-            titleContent = new GUIContent(L10n.Tr(s_WindowTitle));
+            titleContent = new GUIContent(L10n.Tr(s_WindowTitle, null));
             AssistiveSupport.activeHierarchyChanged += OnActiveHierarchyChanged;
         }
 
@@ -58,3 +63,4 @@ namespace UnityEditor.Accessibility
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

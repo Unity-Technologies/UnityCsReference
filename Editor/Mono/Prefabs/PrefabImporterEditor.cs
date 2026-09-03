@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System.Collections.Generic;
 using UnityEditor.AssetImporters;
 using UnityEditor.SceneManagement;
@@ -22,8 +23,8 @@ namespace UnityEditor
             public static readonly GUIContent multiSelectionMissingScriptsHelpText = EditorGUIUtility.TrTextContent("Some of the selected Prefabs have missing scripts and needs to be fixed before editing them. Click to Open Prefab to fix the issue.");
             public static readonly GUIContent savingFailedHelpText = EditorGUIUtility.TrTextContent("Saving has failed. Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nOpen Prefab to fix the issue.");
             public static readonly GUIContent variantOfText = EditorGUIUtility.TrTextContent("Variant Parent");
-            public static readonly string localizedTitleMultiplePrefabs = L10n.Tr("Prefab Assets");
-            public static readonly string localizedTitleSinglePrefab = L10n.Tr("Prefab Asset");
+            public static readonly string localizedTitleMultiplePrefabs = L10n.Tr("Prefab Assets", null);
+            public static readonly string localizedTitleSinglePrefab = L10n.Tr("Prefab Asset", null);
             public static readonly GUIStyle openButtonStyle = "AC Button";
             public static readonly GUIContent hierarchyIcon = EditorGUIUtility.IconContent("UnityEditor.SceneHierarchyWindow");
             public const int kHierarchyIconWidth = 44;
@@ -227,9 +228,9 @@ namespace UnityEditor
                         PrefabUtility.SavePrefabAsset(trackedAsset.asset, out savedSuccesfully);
                         if (!savedSuccesfully)
                         {
-                            string title = L10n.Tr("Saving Failed");
-                            string message = L10n.Tr("Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nYou can open Prefab Mode to fix any issues on child GameObjects");
-                            EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+                            string title = L10n.Tr("Saving Failed", null);
+                            string message = L10n.Tr("Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nYou can open Prefab Mode to fix any issues on child GameObjects", null);
+                            EditorUtility.DisplayDialog(title, message, L10n.Tr("OK", null));
 
                             m_SavingHasFailed = true;
                             break;
@@ -445,3 +446,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

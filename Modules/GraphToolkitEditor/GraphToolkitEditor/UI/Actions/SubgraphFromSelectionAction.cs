@@ -40,7 +40,8 @@ namespace Unity.GraphToolkit.Editor
 
             var selection = view.GetSelection();
 
-            if (selection.Exists(e => e is IPlaceholder || e is IHasDeclarationModel hasDeclarationModel && hasDeclarationModel.DeclarationModel is IPlaceholder)
+            if (selection.Exists(e => PlaceholderModelHelper.IsMissingTypeModel(e)
+                    || (e is IHasDeclarationModel hasDeclarationModel && hasDeclarationModel.DeclarationModel is IPlaceholder))
                 || !selection.Exists(e => e is AbstractNodeModel || e is PlacematModel || e is StickyNoteModel))
                 return InvalidData;
 

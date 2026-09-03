@@ -14,8 +14,8 @@ namespace Unity.Profiling.Editor.UI
     {
         static class Content
         {
-            public static readonly string k_AskAssistantButtonText = L10n.Tr("Ask Assistant");
-            public static readonly string k_NoSelectionLabelText = L10n.Tr("Nothing is selected or no details available");
+            public static readonly string k_AskAssistantButtonText = L10n.Tr("Ask Assistant", null);
+            public static readonly string k_NoSelectionLabelText = L10n.Tr("Nothing is selected or no details available", null);
         }
 
         // Model.

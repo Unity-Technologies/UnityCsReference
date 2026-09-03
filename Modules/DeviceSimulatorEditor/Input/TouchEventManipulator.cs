@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: DeviceSimulator not yet converted
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -30,7 +31,9 @@ namespace UnityEditor.DeviceSimulation
             var activeInputHandler = playerSettings.FindProperty("activeInputHandler");
             // 0 -> Input Manager, 1 -> Input System, 2 -> Both
             if (activeInputHandler.intValue == 0 || activeInputHandler.intValue == 2)
+                #pragma warning disable UAL0015 // subscribes EditorApplication.update; unsubscribed by this object's own Dispose within the code-loaded scope
                 m_InputManagerBackend = new InputManagerBackend();
+                #pragma warning restore UAL0015
 
             m_DeviceSimulator = deviceSimulator;
         }
@@ -287,3 +290,4 @@ namespace UnityEditor.DeviceSimulation
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

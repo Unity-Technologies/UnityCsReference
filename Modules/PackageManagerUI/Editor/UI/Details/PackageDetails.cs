@@ -87,7 +87,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (inProgress)
             {
-                var title = package.versions.primary.HasTag(PackageTag.Custom) ? L10n.Tr("Please wait, creating a package...") : L10n.Tr("Please wait, installing a package...");
+                var title = package.versions.primary.HasTag(PackageTag.Custom) ? L10n.Tr("Please wait, creating a package...", null) : L10n.Tr("Please wait, installing a package...", null);
                 var description = package.uniqueId;
                 inProgressView.UpdateMessage(title, description);
                 return;

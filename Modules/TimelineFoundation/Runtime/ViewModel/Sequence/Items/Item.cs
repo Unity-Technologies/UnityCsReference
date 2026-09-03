@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.Time;
 using UnityEngine.Bindings;
@@ -24,7 +24,8 @@ namespace Unity.Timeline.Foundation.ViewModel
             Marker
         }
 
-        public static Item Invalid = new Item(UniqueID.Invalid, -1, Type.Invalid, TimeRange.Empty, TimeRange.Empty, null, null);
+        [NoAutoStaticsCleanup] // immutable invalid-sentinel; parent and content are null, all other members are invalid/empty value types
+        public static readonly Item Invalid = new Item(UniqueID.Invalid, -1, Type.Invalid, TimeRange.Empty, TimeRange.Empty, null, null);
 
         public readonly int index;
         public readonly UniqueID ID;
@@ -113,4 +114,3 @@ namespace Unity.Timeline.Foundation.ViewModel
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

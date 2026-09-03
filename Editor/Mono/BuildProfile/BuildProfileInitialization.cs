@@ -50,6 +50,12 @@ namespace UnityEditor.Build.Profile
             /// before proceeding to <see cref="InstallingPackages"/> or <see cref="Ready"/>.
             /// </summary>
             AwaitingDomainReload,
+
+            /// <summary>
+            /// State where any required extensions (e.g. build profile extension,
+            /// SDK platform extension) is pending.
+            /// </summary>
+            AwaitingExtension,
         }
 
         /// <summary>
@@ -91,6 +97,14 @@ namespace UnityEditor.Build.Profile
         bool m_ReloadPending;
 
         /// <summary>
+        /// Set to true when entering <see cref="State.AwaitingExtension"/> if the profile is expecting
+        /// extensions to be loaded in the current editor session. Cleared on domain reload (non-serialized).
+        /// Determines whether the bootstrap spinner should be shown until the first post-install domain reload completes.
+        /// </summary>
+        [NonSerialized]
+        bool m_EnteredAwaitingExtensionThisSession;
+
+        /// <summary>
         /// Factory method to create a <see cref="BuildProfileInitialization"/> instance.
         /// </summary>
         public static BuildProfileInitialization Create(
@@ -129,6 +143,41 @@ namespace UnityEditor.Build.Profile
         public bool IsDone() => state == State.Ready;
 
         /// <summary>
+        /// Determines if the bootstrap spinner view should be shown for this profile.
+        /// </summary>
+        public bool ShouldShowBootstrapView()
+        {
+            if (state == State.Ready)
+                return false;
+
+            if (state == State.AwaitingExtension)
+            {
+                if (packageAddInfo == null)
+                    return false;
+
+                return m_EnteredAwaitingExtensionThisSession;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Checks if the build profile's required extensions (e.g. build profile extension,
+        /// SDK platform extension) are available.
+        /// </summary>
+        bool AreRequiredExtensionsAvailable(BuildProfile profile)
+        {
+            var extensionGuid = profile.isMultiTarget ? profile.selectedPlatformGuid : profile.platformGuid;
+            if (BuildProfileModuleUtil.GetBuildProfileExtension(extensionGuid) == null)
+                return false;
+
+            if (profile.isMultiTarget && !BuildTargetDiscovery.TryGetSDKPlatformExtension(profile.platformGuid, out _))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
         /// Updates initialization work based on the current state. Expects
         /// to be called on <see cref="BuildProfile.OnEnable"/> and during
         /// async work completion.
@@ -147,6 +196,8 @@ namespace UnityEditor.Build.Profile
                         NextState(State.AwaitingDomainReload, profile);
                     else if (packageAddInfo != null)
                         NextState(State.InstallingPackages, profile);
+                    else if (!AreRequiredExtensionsAvailable(profile))
+                        NextState(State.AwaitingExtension, profile);
                     else
                         NextState(State.Ready, profile);
                     break;
@@ -154,7 +205,12 @@ namespace UnityEditor.Build.Profile
                 case State.AwaitingDomainReload:
                     if (!m_ReloadPending)
                     {
-                        NextState(packageAddInfo != null ? State.InstallingPackages : State.Ready, profile);
+                        if (packageAddInfo != null)
+                            NextState(State.InstallingPackages, profile);
+                        else if (!AreRequiredExtensionsAvailable(profile))
+                            NextState(State.AwaitingExtension, profile);
+                        else
+                            NextState(State.Ready, profile);
                     }
                     break;
                 case State.InstallingPackages:
@@ -166,7 +222,7 @@ namespace UnityEditor.Build.Profile
                             // Expect no packages left to install on profile enable.
                             // This ensures that any package compilation has finished.
                             packageAddInfo.OnPackageAddComplete?.Invoke();
-                            NextState(State.Ready, profile);
+                            NextState(!AreRequiredExtensionsAvailable(profile) ? State.AwaitingExtension : State.Ready, profile);
                         }
                         else
                             packageAddInfo.RequestPackageInstallation();
@@ -177,8 +233,15 @@ namespace UnityEditor.Build.Profile
                     }
                     break;
                 case State.InstallingError:
-                    Debug.LogError(JsonUtility.ToJson(this.packageAddInfo.GetPackageAddProgressInfo()));
-                    NextState(State.Ready, profile);
+                    Debug.LogError(JsonUtility.ToJson(this.packageAddInfo?.GetPackageAddProgressInfo()));
+                    if (!AreRequiredExtensionsAvailable(profile))
+                        NextState(State.AwaitingExtension, profile);
+                    else
+                        NextState(State.Ready, profile);
+                    break;
+                case State.AwaitingExtension:
+                    if (AreRequiredExtensionsAvailable(profile))
+                        NextState(State.Ready, profile);
                     break;
                 case State.Ready:
                     // No-op
@@ -199,8 +262,9 @@ namespace UnityEditor.Build.Profile
             if (next == state)
                 return;
 
+            var previous = state;
             state = next;
-            OnEnterState(next, profile);
+            OnEnterState(next, previous, profile);
             OnState(profile);
         }
 
@@ -221,7 +285,7 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Perform one-time actions upon entering a new state.
         /// </summary>
-        void OnEnterState(State state, BuildProfile profile)
+        void OnEnterState(State state, State previousState, BuildProfile profile)
         {
             switch (state)
             {
@@ -232,6 +296,13 @@ namespace UnityEditor.Build.Profile
                     EditorPrefs.SetInt(platformId.ToString(), 1);
                     EditorPrefs.SetString("LastEnabledPlatformGUID", platformId.ToString());
                     BuildProfileModuleUtil.RequestScriptCompilation(null);
+                    break;
+                }
+                case State.AwaitingExtension:
+                {
+                    var extensionGuid = profile.isMultiTarget ? profile.selectedPlatformGuid : profile.platformGuid;
+                    m_EnteredAwaitingExtensionThisSession = previousState != State.InstallingError
+                        && Modules.ModuleManager.IsPlatformSupportLoadedByGuid(extensionGuid);
                     break;
                 }
                 case State.Ready:

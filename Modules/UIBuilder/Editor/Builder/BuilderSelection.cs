@@ -14,18 +14,25 @@ namespace Unity.UI.Builder
 {
     class BuilderSyncCommand : Command<BuilderSyncCommand>
     {
-        public static BuilderSyncCommand GetPooled(BuilderHierarchyChangeType hierarchyChangeType, BuilderStylingChangeType? stylingChangeType = null)
+        // The sender's document assets travel on the command because a Builder edit records no undo objects
+        // through the command system; sibling Builder windows use them to know whether they are affected.
+        readonly List<UnityEngine.Object> m_Assets = new List<UnityEngine.Object>();
+
+        public static BuilderSyncCommand GetPooled(BuilderPaneWindow senderWindow, BuilderHierarchyChangeType hierarchyChangeType, BuilderStylingChangeType? stylingChangeType = null)
         {
             var cmd = GetPooled();
             cmd.Source = CommandSources.Builder;
+            cmd.SenderWindow = senderWindow;
+            cmd.IsUndoRedoRefresh = senderWindow is Builder { isInUndoRedo: true };
             cmd.HierarchyChangeType = hierarchyChangeType;
             cmd.StylingChangeType = stylingChangeType;
+            cmd.CollectDocumentAssets(senderWindow != null ? senderWindow.document : null);
             return cmd;
         }
 
-        public static void Execute(BuilderHierarchyChangeType hierarchyChangeType, BuilderStylingChangeType? stylingChangeType)
+        public static void Execute(BuilderPaneWindow senderWindow, BuilderHierarchyChangeType hierarchyChangeType, BuilderStylingChangeType? stylingChangeType)
         {
-            using var command = GetPooled(hierarchyChangeType, stylingChangeType);
+            using var command = GetPooled(senderWindow, hierarchyChangeType, stylingChangeType);
             UICommandQueue.Execute(command);
         }
 
@@ -49,12 +56,41 @@ namespace Unity.UI.Builder
 
         public BuilderHierarchyChangeType HierarchyChangeType { get; private set; }
         public BuilderStylingChangeType? StylingChangeType { get; private set; }
+        public BuilderPaneWindow SenderWindow { get; private set; }
+        public bool IsUndoRedoRefresh { get; private set; }
+        public IReadOnlyList<UnityEngine.Object> Assets => m_Assets;
 
         protected override void Init()
         {
             base.Init();
             HierarchyChangeType = 0;
             StylingChangeType = null;
+            SenderWindow = null;
+            IsUndoRedoRefresh = false;
+            m_Assets.Clear();
+        }
+
+        void CollectDocumentAssets(BuilderDocument document)
+        {
+            if (document == null)
+                return;
+
+            foreach (var openUXMLFile in document.openUXMLFiles)
+            {
+                var visualTreeAsset = openUXMLFile.visualTreeAsset;
+                if (visualTreeAsset == null)
+                    continue;
+
+                m_Assets.Add(visualTreeAsset);
+                if (visualTreeAsset.inlineSheet != null)
+                    m_Assets.Add(visualTreeAsset.inlineSheet);
+
+                foreach (var openUSSFile in openUXMLFile.openUSSFiles)
+                {
+                    if (openUSSFile.styleSheet != null)
+                        m_Assets.Add(openUSSFile.styleSheet);
+                }
+            }
         }
     }
 
@@ -144,7 +180,7 @@ namespace Unity.UI.Builder
                 if (selectedElement.GetVisualElementAsset() == null)
                 {
                     if (selectedElement.visualElementAsset != null
-                        && BuilderAssetUtilities.GetVisualElementRootTemplate(selectedElement) != null
+                        && BuilderAssetUtilities.GetVisualElementRootTemplate(selectedElement, m_PaneWindow.document) != null
                         && !BuilderAssetUtilities.HasDynamicallyCreatedTemplateAncestor(selectedElement))
                     {
                         return BuilderSelectionType.ElementInTemplateInstance;
@@ -335,14 +371,14 @@ namespace Unity.UI.Builder
 
             // This is so anyone interested can refresh their use of this UXML with
             // the latest (unsaved to disk) changes.
-            if (Builder.ActiveWindow.hierarchy.elementHierarchyView.hasUnsavedChanges && !isAnonymousDocument)
+            if (m_PaneWindow is Builder builder && builder.hierarchy.elementHierarchyView.hasUnsavedChanges && !isAnonymousDocument)
             {
                 EditorUtility.SetDirty(m_PaneWindow.document.visualTreeAsset);
                 UIElementsUtility.MarkVisualTreeAssetAsChanged(m_PaneWindow.document.visualTreeAsset);
             }
 
             if (!isApplyingExternalCommand)
-                BuilderSyncCommand.Execute(changeType, null);
+                BuilderSyncCommand.Execute(m_PaneWindow, changeType, null);
         }
 
         internal void ForceVisualAssetUpdateWithoutSave(
@@ -396,7 +432,7 @@ namespace Unity.UI.Builder
 
             QueueUpPostPanelUpdaterChangeAction(NotifyOfStylingChangePostStylingUpdate);
             if (!isApplyingExternalCommand)
-                BuilderSyncCommand.Execute(default, changeType);
+                BuilderSyncCommand.Execute(m_PaneWindow, default, changeType);
         }
 
         public void NotifyPreSaveDocument()
@@ -479,7 +515,7 @@ namespace Unity.UI.Builder
 
             // This is so anyone interested can refresh their use of this USS with
             // the latest (unsaved to disk) changes.
-            if (Builder.ActiveWindow.styleSheets.elementHierarchyView.hasUnsavedChanges && !isAnonymousDocument)
+            if (m_PaneWindow is Builder builder && builder.styleSheets.elementHierarchyView.hasUnsavedChanges && !isAnonymousDocument)
             {
                 m_PaneWindow.document.MarkStyleSheetsDirty();
                 UIElementsUtility.MarkVisualTreeAssetAsChanged(m_PaneWindow.document.visualTreeAsset);

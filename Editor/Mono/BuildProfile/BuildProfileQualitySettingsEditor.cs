@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: BuildSettingsWindow not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.UIElements;
@@ -22,10 +21,10 @@ namespace UnityEditor.Build.Profile
         const string k_QualitySettingsWindow = "Project/Quality";
         static readonly GUIContent k_qualitySettingsWindow = EditorGUIUtility.TrTextContent("Quality...");
         static readonly string k_InvalidQualityLevelWarning =
-            L10n.Tr("The Quality levels in this profile do not match those that exist in the project. This may result in unexpected results on build.");
+            L10n.Tr("The Quality levels in this profile do not match those that exist in the project. This may result in unexpected results on build.", null);
         static readonly string k_EmptyQualitySettingsWarning =
-            L10n.Tr("When no Quality levels are listed, the build will take from the global list of Quality levels.");
-        static readonly string k_SetDefaultQualityLevelMenuText = L10n.Tr("Set as Default");
+            L10n.Tr("When no Quality levels are listed, the build will take from the global list of Quality levels.", null);
+        static readonly string k_SetDefaultQualityLevelMenuText = L10n.Tr("Set as Default", null);
         // Best-effort count cache (-1 = needs refresh). Refreshed on quality-settings asset create/remove.
         // The count is derived from the set of loaded build profiles, which can change on a code reload
         // (in-memory profiles are lost - see BuildProfile.GetAllBuildProfiles). Pre-CoreCLR a domain reload
@@ -256,7 +255,7 @@ namespace UnityEditor.Build.Profile
         {
             const string k_Uxml = "BuildProfile/UXML/BuildProfileQualitySettingsListElement.uxml";
             const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
-            static readonly string k_DefaultIndicatorText = L10n.Tr("Default");
+            static readonly string k_DefaultIndicatorText = L10n.Tr("Default", null);
             protected readonly Label m_Text;
             protected readonly Label m_DefaultIndicator;
 
@@ -291,4 +290,3 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

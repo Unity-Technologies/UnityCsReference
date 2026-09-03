@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
@@ -34,7 +35,9 @@ namespace UnityEditor
 
         SceneViewCameraOverlay(Camera camera)
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             minSize = new Vector2(40, 40);
+            #pragma warning restore UAL0015
             maxSize = new Vector2(4000, 4000);
             defaultSize = new Vector2(240, 135);
             m_SelectedCamera = camera;
@@ -42,7 +45,9 @@ namespace UnityEditor
                 ? "Camera Preview"
                 : selectedCamera.name;
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             s_CameraOverlays.Add(camera, (this ,1));
+            #pragma warning restore UAL0015
         }
 
         public static SceneViewCameraOverlay GetOrCreateCameraOverlay(Camera camera)
@@ -147,3 +152,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

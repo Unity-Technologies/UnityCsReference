@@ -42,8 +42,8 @@ namespace UnityEditor
             public static readonly string driverVersionText = "driverVersionString";
 
             // Localized plain strings
-            public static readonly string hardwareProfilesOverrideWarning = L10n.Tr("Vulkan Device Filtering changes do not take effect because hardware profiles are enabled and override these settings. To use device filtering, remove hardware profile scripts.");
-            public static readonly string gfxJobsFilterOrderInfo = L10n.Tr("The order of the Graphics Jobs Filters is important. Filtering will use the first passing filter to determine Graphics Jobs Mode at runtime.");
+            public static readonly string hardwareProfilesOverrideWarning = L10n.Tr("Vulkan Device Filtering changes do not take effect because hardware profiles are enabled and override these settings. To use device filtering, remove hardware profile scripts.", null);
+            public static readonly string gfxJobsFilterOrderInfo = L10n.Tr("The order of the Graphics Jobs Filters is important. Filtering will use the first passing filter to determine Graphics Jobs Mode at runtime.", null);
 
             // Styling
             public const float kItemPaddingTop = 4f;

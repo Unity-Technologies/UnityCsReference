@@ -13,11 +13,11 @@ namespace Unity.Profiling.Editor.UI
     {
         static class Content
         {
-            public static readonly string k_SystemsImpactTitleFormat = L10n.Tr("Systems impact across {0} (mean time)");
-            public static readonly string k_CaptureDescriptor = L10n.Tr("capture");
-            public static readonly string k_SelectionDescriptor = L10n.Tr("selection");
-            public static readonly string k_WholeCaptureNoDataText = L10n.Tr("Record a new capture or load an existing one to see its details here.");
-            public static readonly string k_SelectionNoDataText = L10n.Tr("Select a frame from the charts above to see its details here.");
+            public static readonly string k_SystemsImpactTitleFormat = L10n.Tr("Systems impact across {0} (mean time)", null);
+            public static readonly string k_CaptureDescriptor = L10n.Tr("capture", null);
+            public static readonly string k_SelectionDescriptor = L10n.Tr("selection", null);
+            public static readonly string k_WholeCaptureNoDataText = L10n.Tr("Record a new capture or load an existing one to see its details here.", null);
+            public static readonly string k_SelectionNoDataText = L10n.Tr("Select a frame from the charts above to see its details here.", null);
         }
 
         // Model.
@@ -209,8 +209,8 @@ namespace Unity.Profiling.Editor.UI
         static class RangeContent
         {
             // Range-specific bottleneck descriptions (with target set)
-            public static readonly string k_BoundTitleFormat = L10n.Tr("<b>The {0} exceeded your target frame time in this frame range.</b>");
-            public static readonly string k_NotBoundTitle = L10n.Tr("<b>The CPU and the GPU are within your target frame time in this frame range.</b>");
+            public static readonly string k_BoundTitleFormat = L10n.Tr("<b>The {0} exceeded your target frame time in this frame range.</b>", null);
+            public static readonly string k_NotBoundTitle = L10n.Tr("<b>The CPU and the GPU are within your target frame time in this frame range.</b>", null);
         }
 
         public RangeSummaryDetailsPanelViewController(

@@ -239,7 +239,7 @@ namespace Unity.U2D.Physics
         /// A composer layer handle.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct LayerHandle
+        public readonly record struct LayerHandle
         {
             /// <undoc/>
             public override readonly string ToString() => $"index={m_IndexId}, composer={m_Composer}, generation={m_Revision}";

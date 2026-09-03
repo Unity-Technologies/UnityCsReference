@@ -603,33 +603,19 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Builds a <see cref="GraphMenuContext"/> from the current right-click
+        /// Builds a <see cref="MenuContext"/> from the current right-click
         /// and invokes every static method decorated with
         /// <see cref="BlackboardMenuAttribute"/>. Exceptions raised by
         /// user code are logged so they don't break the rest of the menu.
         /// </summary>
         void InvokeUserBlackboardContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            // TODO: Add support for state machine menu options (https://jira.unity3d.com/browse/GTF-2539)
-            var graph = (BlackboardView?.BlackboardRootViewModel?.GraphModelState?.GraphModel as GraphModelImp)?.Graph as Graph;
-            if (graph == null)
-                return;
+            var owner = (BlackboardView?.BlackboardRootViewModel?.GraphModelState?.GraphModel as GraphModelImp)?.Graph;
 
             var blackboardElement = FindClickedBlackboardElement(evt);
             var clickedVariable = blackboardElement?.GraphElementModel as IVariable;
 
-            var context = new GraphMenuContext(graph, clickedVariable, evt.mousePosition, evt.menu);
-
-            var itemCountBefore = evt.menu.MenuItems().Count;
-            MenuCommandRegistry.InvokeBlackboardHandlers(context);
-
-            // If a handler added entries, separate them from the built-in entries
-            // above so the user's items don't blend visually with the previous
-            // category. Skip when the user's first item is already a separator so
-            // a handler that prepends its own doesn't end up with two.
-            var items = evt.menu.MenuItems();
-            if (items.Count > itemCountBefore && items[itemCountBefore] is not DropdownMenuSeparator)
-                evt.menu.InsertSeparator(string.Empty, itemCountBefore);
+            ContextualMenuUserEntries.AppendBlackboardEntries(evt, owner, clickedVariable);
         }
 
         static BlackboardElement FindClickedBlackboardElement(ContextualMenuPopulateEvent evt)
@@ -712,7 +698,7 @@ namespace Unity.GraphToolkit.Editor
             if (!blackboardContentModel.HasDefaultButton())
                 return;
 
-            evt.menu.AppendAction(L10n.Tr("Create Variable"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Create Variable", null), _ =>
             {
                 CreateVariable();
             });
@@ -739,7 +725,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            evt.menu.AppendAction(L10n.Tr("Create Group"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Create Group", null), _ =>
             {
                 if (groupModel == null)
                     CreateGroup(null);
@@ -750,7 +736,7 @@ namespace Unity.GraphToolkit.Editor
 
         void AppendSelectUnusedMenuItem(ContextualMenuPopulateEvent evt)
         {
-            evt.menu.AppendAction(L10n.Tr("Select Unused"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Select Unused", null), _ =>
             {
                 BlackboardView.DispatchSelectUnusedVariables();
             });

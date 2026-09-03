@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class PackageStateInfoCard : PackageInformationCard
 {
-    protected override string titleText => L10n.Tr("Package State");
+    protected override string titleText => L10n.Tr("Package State", null);
     protected override InformationCardSize cardSize => InformationCardSize.Small;
 
     private Button m_LinkButton;
@@ -40,13 +40,13 @@ internal class PackageStateInfoCard : PackageInformationCard
         m_Version = version;
         if (version.HasTag(PackageTag.Experimental))
         {
-            buttonText = L10n.Tr("Experimental");
+            buttonText = L10n.Tr("Experimental", null);
             m_ButtonUrl = $"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/pack-exp.html";
             m_AnalyticsId = "package-state-experimental-link";
         }
         else if (version.HasTag(PackageTag.PreRelease))
         {
-            buttonText = L10n.Tr("Pre-Release");
+            buttonText = L10n.Tr("Pre-Release", null);
             m_ButtonUrl = $"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/pack-preview.html";
             m_AnalyticsId = "package-state-pre-release-link";
         }

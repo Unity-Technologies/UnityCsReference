@@ -61,6 +61,7 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Gets the hash for the BuildReferenceMap.</summary>
         ///<remarks>Internal use only. See <see cref="BuildReferenceMap" />.</remarks>
+        ///<returns>A 128-bit hash of the BuildReferenceMap.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern Hash128 GetHash128();
 
@@ -76,6 +77,10 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Adds a mapping for a single Object to where it will be serialized out to the build.</summary>
         ///<remarks>Internal use only. See <see cref="BuildReferenceMap" />.</remarks>
+        /// <param name="internalFileName">The internal file name for the build.</param>
+        /// <param name="serializationIndex">The serialization index for the object.</param>
+        /// <param name="objectID">The ObjectIdentifier for the object.</param>
+        /// <param name="overwrite">If true, any existing mapping for the object is overwritten. If false, an exception is thrown if a mapping already exists for the object.</param>
         public void AddMapping(string internalFileName, long serializationIndex, ObjectIdentifier objectID, bool overwrite = false)
         {
             Internal_AddMapping(internalFileName, serializationIndex, objectID, overwrite);
@@ -86,6 +91,9 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Adds mappings for a set of Objects to where they will be serialized out to the build.</summary>
         ///<remarks>Internal use only. See <see cref="BuildReferenceMap" />.</remarks>
+        /// <param name="internalFileName">The internal file name for the build.</param>
+        /// <param name="objectIDs">An array of SerializationInfo structs for the objects.</param>
+        /// <param name="overwrite">If true, any existing mapping for the objects is overwritten. If false, an exception is thrown if a mapping already exists for any of the objects.</param>
         public void AddMappings(string internalFileName, SerializationInfo[] objectIDs, bool overwrite = false)
         {
             Internal_AddMappings(internalFileName, objectIDs, overwrite);
@@ -101,6 +109,8 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Returns true if the objects are equal.</summary>
         ///<remarks>Internal use only. See <see cref="BuildReferenceMap" />.</remarks>
+        ///<param name="obj">The object to compare with the current instance.</param>
+        ///<returns>True if the specified object is equal to the current instance. Otherwise, false.</returns>
         public override bool Equals(object obj)
         {
             BuildReferenceMap other = obj as BuildReferenceMap;
@@ -111,6 +121,7 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Gets the hash code for the BuildReferenceMap.</summary>
         ///<remarks>Internal use only. See <see cref="BuildReferenceMap" />.</remarks>
+        ///<returns>A hash code for the current instance.</returns>
         public override int GetHashCode()
         {
             return GetHash128().GetHashCode();

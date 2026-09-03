@@ -56,8 +56,8 @@ namespace UnityEditor
         public bool allowDeleteLastKeyInCurve = false;
         public bool undoRedoSelection = false;
         public bool flushCurveCache = true;
-        public string xAxisLabel = L10n.Tr("time");
-        public string yAxisLabel = L10n.Tr("value");
+        public string xAxisLabel = L10n.Tr("time", null);
+        public string yAxisLabel = L10n.Tr("value", null);
         public Vector2 curveRegionDomain = new Vector2(0, 1); // X axis range in which to draw the shaded curve region between 2 curves.
         public bool rippleTime = false;
 

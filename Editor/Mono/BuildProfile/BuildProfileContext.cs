@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: BuildSettingsWindow not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,6 +35,8 @@ namespace UnityEditor.Build.Profile
         const string k_SharedProfilePath = $"{k_BuildProfilePath}/SharedProfile.asset";
         [AutoStaticsCleanupOnCodeReload]
         static BuildProfileContext s_Instance;
+
+        bool m_Initializing;
 
         /// <summary>
         /// Collection of all build profile initilization metadata.
@@ -169,7 +171,7 @@ namespace UnityEditor.Build.Profile
             {
                 bool isAutomatedEnvironment = Application.isBatchMode || BuildPipeline.isBuildingPlayer;
 
-                if (isAutomatedEnvironment || EditorUtility.DisplayDialog(L10n.Tr("Active Build Profile Scripting Defines Have Been Modified"), L10n.Tr("Do you want to apply changes now?"), L10n.Tr("Apply"), L10n.Tr("Revert")))
+                if (isAutomatedEnvironment || EditorUtility.DisplayDialog(L10n.Tr("Active Build Profile Scripting Defines Have Been Modified", null), L10n.Tr("Do you want to apply changes now?", null), L10n.Tr("Apply", null), L10n.Tr("Revert", null)))
                 {
                     activeProfile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(defines);
                     BuildProfileModuleUtil.RequestScriptCompilation(activeProfile);
@@ -512,27 +514,70 @@ namespace UnityEditor.Build.Profile
 
         void OnEnable()
         {
-            BuildTargetDiscovery.ValidateSDKPlatformProviders();
+            InitializeInstance();
+        }
 
-            EditorUserBuildSettings.isBuildProfileAvailable = true;
-            EditorApplication.quitting -= SyncActiveProfileToFallback;
-            EditorApplication.quitting += SyncActiveProfileToFallback;
-
-            if (classicPlatformProfiles == null)
-                classicPlatformProfiles = new List<BuildProfile>();
-
-            if (classicPlatformProfiles.Count > 0)
-            {
-                // classicPlatformProfiles survived the domain reload - just readd them to the classic profile map
-                foreach (var profileObj in classicPlatformProfiles)
-                    m_PlatformIdToClassicPlatformProfile.Add(profileObj.platformGuid, profileObj);
-            }
-
-            // Load platform build profiles from the Library folder.
-            if (!Directory.Exists(k_BuildProfilePath))
+        void InitializeInstance()
+        {
+            // No "already initialized" check here because an early call could potentially find no
+            // installed platforms and create no profiles, so a later call must finish the job without
+            // duplicating what exists.
+            if (m_Initializing)
                 return;
 
+            m_Initializing = true;
+            try
+            {
+                BuildTargetDiscovery.ValidateSDKPlatformProviders();
+
+                EditorUserBuildSettings.isBuildProfileAvailable = true;
+                EditorApplication.quitting -= SyncActiveProfileToFallback;
+                EditorApplication.quitting += SyncActiveProfileToFallback;
+
+                if (classicPlatformProfiles == null)
+                    classicPlatformProfiles = new List<BuildProfile>();
+
+                // Readd any profiles we still hold to the classic profile map. Nothing removes from the
+                // list, so a destroyed profile leaves a stale entry; drop those and let the fill pass
+                // below recreate them.
+                for (int i = classicPlatformProfiles.Count - 1; i >= 0; i--)
+                {
+                    var profileObj = classicPlatformProfiles[i];
+                    if (profileObj == null)
+                    {
+                        classicPlatformProfiles.RemoveAt(i);
+                        continue;
+                    }
+
+                    if (!m_PlatformIdToClassicPlatformProfile.ContainsKey(profileObj.platformGuid))
+                        m_PlatformIdToClassicPlatformProfile.Add(profileObj.platformGuid, profileObj);
+                }
+
+                EnsureClassicAndSharedProfilesExist();
+
+                EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
+
+                SyncClassicPlatformToEditorUserBuildSettings();
+            }
+            finally
+            {
+                m_Initializing = false;
+            }
+        }
+
+        // Loads the classic and shared profiles that exist on disk and creates the ones that do not, so a
+        // missing or deleted Library folder is recreated instead of leaving the system without profiles.
+        void EnsureClassicAndSharedProfilesExist()
+        {
+            // Newly created classic profiles copy from the shared profile, so it has to exist first
+            if (!TryLoadSharedBuildProfile())
+                GetOrCreateSharedBuildProfile();
+
             var viewablePlatformKeys = BuildProfileModuleUtil.FindAllViewablePlatforms();
+
+            // A stored profile can be keyed by a different guid than the platform key it was found under, so
+            // loading and filling gaps have to be separate passes. Loading needs to happen first because
+            // creating first would discard these profiles.
             for (var index = 0; index < viewablePlatformKeys.Count; index++)
             {
                 var key = viewablePlatformKeys[index];
@@ -546,42 +591,77 @@ namespace UnityEditor.Build.Profile
                 if (BuildProfileModuleUtil.IsPlatformVisibleInPlatformBrowserOnly(key))
                     continue;
 
-                string path = GetFilePathForBuildProfile(key);
-
-                if (!File.Exists(path))
-                {
-                    GetOrCreateClassicPlatformBuildProfile(key);
-                    continue;
-                }
-
-                var profile = InternalEditorUtility.LoadSerializedFileAndForget(path);
-                if (profile == null || profile.Length == 0 || profile[0] is not BuildProfile profileObj)
-                {
-                    Debug.LogWarning($"Failed to load build profile from {path}.");
-                    continue;
-                }
-
-                m_PlatformIdToClassicPlatformProfile.Add(profileObj.platformGuid, profileObj);
-                classicPlatformProfiles.Add(profileObj);
+                TryLoadClassicPlatformBuildProfile(key);
             }
 
-            if (sharedProfile == null)
+            for (var index = 0; index < viewablePlatformKeys.Count; index++)
             {
-                if (!File.Exists(k_SharedProfilePath))
-                    return;
+                var key = viewablePlatformKeys[index];
 
-                var sharedProfileArray = InternalEditorUtility.LoadSerializedFileAndForget(k_SharedProfilePath);
-                if (sharedProfileArray == null || sharedProfileArray.Length == 0 || sharedProfileArray[0] is not BuildProfile sharedProfileObj)
+                if (m_PlatformIdToClassicPlatformProfile.ContainsKey(key))
+                    continue;
+
+                if (!BuildProfileModuleUtil.IsModuleInstalled(key))
+                    continue;
+
+                if (BuildProfileModuleUtil.IsPlatformVisibleInPlatformBrowserOnly(key))
+                    continue;
+
+                if (ModuleManager.GetBuildProfileExtension(key) == null)
                 {
-                    Debug.LogWarning($"Failed to load shared profile from {k_SharedProfilePath}.");
-                    return;
+                    var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(key);
+                    Debug.LogWarning($"Platform {displayName} does not support build profiles.");
+                    continue;
                 }
 
-                sharedProfile = sharedProfileObj;
+                GetOrCreateClassicPlatformBuildProfile(key);
+            }
+        }
+
+        bool TryLoadClassicPlatformBuildProfile(GUID platformId)
+        {
+            string path = GetFilePathForBuildProfile(platformId);
+            if (!File.Exists(path))
+                return false;
+
+            var profile = InternalEditorUtility.LoadSerializedFileAndForget(path);
+            if (profile == null || profile.Length == 0 || profile[0] is not BuildProfile profileObj)
+            {
+                Debug.LogWarning($"Failed to load build profile from {path}.");
+                return false;
             }
 
-            EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
+            // The stored guid can differ from the platform key this profile was found under, so it may
+            // already be mapped
+            if (m_PlatformIdToClassicPlatformProfile.ContainsKey(profileObj.platformGuid))
+                return true;
 
+            m_PlatformIdToClassicPlatformProfile.Add(profileObj.platformGuid, profileObj);
+            classicPlatformProfiles.Add(profileObj);
+            return true;
+        }
+
+        bool TryLoadSharedBuildProfile()
+        {
+            if (sharedProfile != null)
+                return true;
+
+            if (!File.Exists(k_SharedProfilePath))
+                return false;
+
+            var sharedProfileArray = InternalEditorUtility.LoadSerializedFileAndForget(k_SharedProfilePath);
+            if (sharedProfileArray == null || sharedProfileArray.Length == 0 || sharedProfileArray[0] is not BuildProfile sharedProfileObj)
+            {
+                Debug.LogWarning($"Failed to load shared profile from {k_SharedProfilePath}.");
+                return false;
+            }
+
+            sharedProfile = sharedProfileObj;
+            return true;
+        }
+
+        void SyncClassicPlatformToEditorUserBuildSettings()
+        {
             if (activeProfile != null)
                 return;
 
@@ -599,37 +679,6 @@ namespace UnityEditor.Build.Profile
             {
                 extension.CopyPlatformSettingsToBuildProfile(buildProfile.platformBuildProfile);
             }
-        }
-
-        /// <summary>
-        /// Creates platform build profiles for all installed and buildable platforms.
-        /// Platforms with sub targets will generate multiple profiles.
-        /// </summary>
-        void CheckInstalledBuildPlatforms()
-        {
-            var viewablePlatformKeys = BuildProfileModuleUtil.FindAllViewablePlatforms();
-            for (var index = 0; index < viewablePlatformKeys.Count; index++)
-            {
-                var key = viewablePlatformKeys[index];
-
-                if (BuildProfileModuleUtil.IsPlatformVisibleInPlatformBrowserOnly(key))
-                    continue;
-
-                if (!BuildProfileModuleUtil.IsModuleInstalled(key))
-                    continue;
-
-                if (ModuleManager.GetBuildProfileExtension(key) == null)
-                {
-                    // Require platform support and implemented build profile extension for the target platform.
-                    var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(key);
-                    Debug.LogWarning($"Platform {displayName} does not support build profiles.");
-                    continue;
-                }
-
-                GetOrCreateClassicPlatformBuildProfile(key);
-            }
-
-            GetOrCreateSharedBuildProfile();
         }
 
         BuildProfile GetOrCreateClassicPlatformBuildProfile(GUID platformId)
@@ -724,11 +773,11 @@ namespace UnityEditor.Build.Profile
             }
 
             System.Diagnostics.Debug.Assert(s_Instance != null);
-            s_Instance.CheckInstalledBuildPlatforms();
 
             s_Instance.cachedEditorScriptingDefines = BuildDefines.GetBuildProfileScriptDefines();
 
             BuildProfileModuleUtil.DeleteLastRunnableBuildKeyForDeletedProfiles();
+            s_Instance.ClearOrphanedBuildProfileInitializations();
 
             OnActiveProfileChangedForSettingExtension(null, activeProfile);
         }
@@ -1060,7 +1109,7 @@ namespace UnityEditor.Build.Profile
             return false;
         }
 
-        void ClearBuildProfileInitialization(BuildProfile profile)
+        internal void ClearBuildProfileInitialization(BuildProfile profile)
         {
             if (m_BuildProfileInitializations.Count == 0)
                 return;
@@ -1077,6 +1126,16 @@ namespace UnityEditor.Build.Profile
                 }
             }
         }
+
+        void ClearOrphanedBuildProfileInitializations()
+        {
+            for (int index = m_BuildProfileInitializations.Count - 1; index >= 0; index--)
+            {
+                var assetPath = AssetDatabase.GUIDToAssetPath(m_BuildProfileInitializations[index].assetGUID);
+                if (string.IsNullOrEmpty(assetPath) || !AssetDatabase.AssetPathExists(assetPath))
+                    m_BuildProfileInitializations.RemoveAt(index);
+            }
+        }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

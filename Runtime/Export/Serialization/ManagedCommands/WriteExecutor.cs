@@ -372,6 +372,29 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     break;
                 }
 
+                case RttiDataType.ManagedReferenceArray:
+                {
+                    var hdr = (ManagedReferenceArrayHeader*)pos;
+                    pos += sizeof(ManagedReferenceArrayHeader);
+
+                    int count;
+                    if (hdr->kind == LinearCollectionKind.Array)
+                    {
+                        Array arr = Unsafe.As<byte, Array>(
+                            ref Unsafe.AddByteOffset(ref baseAddr, (nint)hdr->fieldOffset));
+                        count = arr == null ? 0 : arr.Length;
+                    }
+                    else
+                    {
+                        ListLayout list = Unsafe.As<byte, ListLayout>(
+                            ref Unsafe.AddByteOffset(ref baseAddr, (nint)hdr->fieldOffset));
+                        count = (list == null || list._items == null) ? 0 : list._size;
+                    }
+
+                    ConsumeLinearCollectionManagedReferenceArray(ctx, count, ref bufferDataStager);
+                    break;
+                }
+
                 // [SerializeReference] inline RefId. Reuses the UnityObject write
                 // group shape (UnityObjectWriteEntry: {fieldOffset, destOffset}), but
                 // the field is NOT read: the gather pass resolved every SR field's

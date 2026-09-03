@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
@@ -37,7 +38,9 @@ namespace Unity.UI.Builder
             BuilderStyleSheetsDragger styleSheetsDragger,
             HighlightOverlayPainter highlightOverlayPainter,
             BuilderTooltipPreview tooltipPreview)
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             : base(
+            #pragma warning restore UAL0015
                 paneWindow,
                 viewport,
                 selection,
@@ -128,7 +131,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            pane.AppendActionToEllipsisMenu(L10n.Tr("Full selector text"),
+            pane.AppendActionToEllipsisMenu(L10n.Tr("Full selector text", null),
                 a => ChangeVisibilityState(BuilderElementInfoVisibilityState.FullSelectorText),
             a => m_ElementHierarchyView.elementInfoVisibilityState
                 .HasFlag(BuilderElementInfoVisibilityState.FullSelectorText)
@@ -372,3 +375,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.CSO;
+using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using Unity.GraphToolkit.InternalBridge;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
@@ -391,6 +392,27 @@ namespace Unity.GraphToolkit.Editor
             return false;
         }
 
+        /// <summary>
+        /// The <see cref="ConditionView"/> under <paramref name="position"/>, innermost first, or
+        /// null when the position is outside the condition list.
+        /// </summary>
+        ConditionView GetConditionAtPosition(Vector2 position)
+        {
+            if (panel == null)
+                return null;
+
+            k_PickedElements.Clear();
+            panel.PickAll(position, k_PickedElements);
+
+            for (var i = 0; i < k_PickedElements.Count; i++)
+            {
+                if (k_PickedElements[i] is ConditionView conditionView)
+                    return conditionView;
+            }
+
+            return null;
+        }
+
         GroupConditionView GetGroupAtPosition(Vector2 position)
         {
             k_PickedElements.Clear();
@@ -543,6 +565,10 @@ namespace Unity.GraphToolkit.Editor
                 DuplicateSelected();
             }, CanDuplicateSelection ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
+            // Resolved by picking rather than from the event target: pressing on a row captures the
+            // mouse, so the contextual menu event targets this editor and never the row.
+            ContextualMenuUserEntries.AppendConditionEntries(evt, TransitionSupportModel, TransitionModel,
+                GetConditionAtPosition(evt.mousePosition)?.ConditionModel);
 
             evt.StopPropagation();
         }

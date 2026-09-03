@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class LegacyFormatDropdownButton : BaseDropdownButton<GenericDropdownMenu>, IPackageToolBarButton
 {
-    private static readonly string k_InProjectText = L10n.Tr("In Project");
+    private static readonly string k_InProjectText = L10n.Tr("In Project", null);
 
     protected override int numDropdownItems => menu?.items.Count ?? 0;
     protected override void ShowDropdown() => menu?.DropDown(worldBound, this, DropdownMenuSizeMode.Auto);

@@ -19,22 +19,45 @@ partial class BaseDataTypeStyleMapper
     [AutoStaticsCleanupOnCodeReload]
     static readonly Dictionary<Type, Dictionary<Type, (Texture2D icon, Color color)>> k_TypeStylesPerGraphType = new();
 
-    /// <summary>
-    /// Instantiates all non-abstract derived types to ensure their style registrations are initialized.
-    /// This relies on the fact that their constructors call Register() for the types.
-    /// </summary>
-    [OnCodeLoaded]
-    static void Initialize()
+    [AutoStaticsCleanupOnCodeReload]
+    static bool s_Initialized;
+
+    static void EnsureInitialized()
     {
+        if (s_Initialized)
+            return;
+        s_Initialized = true;
         foreach (var type in TypeCache.GetTypesDerivedFrom<BaseDataTypeStyleMapper>())
         {
             if (!type.IsAbstract)
-                Activator.CreateInstance(type, true);
+                TryInstantiate(type);
         }
         foreach (var type in TypeCache.GetTypesDerivedFrom<DataTypeStyleMapper>())
         {
             if (!type.IsAbstract)
-                Activator.CreateInstance(type, true);
+                TryInstantiate(type);
+        }
+    }
+
+    static void TryInstantiate(Type type)
+    {
+        try
+        {
+            Activator.CreateInstance(type, nonPublic: true);
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+    }
+
+    internal static class TestAccess
+    {
+        public static void Reset()
+        {
+            s_Initialized = false;
+            k_TypeStylesForAllGraphTypes.Clear();
+            k_TypeStylesPerGraphType.Clear();
         }
     }
 
@@ -91,6 +114,8 @@ partial class BaseDataTypeStyleMapper
     {
         if (dataType == null)
             return null;
+
+        EnsureInitialized();
 
         // 1. Check for registered styles specific to that graph.
         if (graphType != null && k_TypeStylesPerGraphType.TryGetValue(graphType, out var perGraphStyles) && perGraphStyles.TryGetValue(dataType, out var stylePerGraph))

@@ -23,7 +23,7 @@ static partial class PlayModeButtons
     [OnCodeLoaded]
     static void Initialize()
     {
-        RefreshToolbarCallback = RefreshToolbar;
+        RefreshToolbarCallback = RefreshMainToolbar;
 
         EditorApplication.delayCall += () =>
         {
@@ -33,10 +33,14 @@ static partial class PlayModeButtons
             PlayModeScenarioUtils.AssetsChanged += RefreshToolbar;
             ScenarioManagerProvider.instance.StateChanged -= OnStateChanged;
             ScenarioManagerProvider.instance.StateChanged += OnStateChanged;
+
+            RefreshToolbar();
         };
     }
 
-    static void RefreshToolbar()
+    static void RefreshToolbar() => (RefreshToolbarCallback ?? RefreshMainToolbar)();
+
+    static void RefreshMainToolbar()
     {
         try
         {
@@ -79,8 +83,7 @@ static partial class PlayModeButtons
             yield return new MainToolbarDropdown(GetScenarioDropdownContent(), ShowPlaymodeConfigPopup);
         }
 
-        var isPlaying = EditorApplication.isPlayingOrWillChangePlaymode ||
-                        PlayModeScenarioState.Running == ScenarioManagerProvider.instance.CurrentState;
+        var isPlaying = EditorApplication.isPlayingOrWillChangePlaymode || PlayModeScenarioManager.IsScenarioRunningOrStarting;
 
         yield return new MainToolbarToggle(
             isPlaying
@@ -120,7 +123,7 @@ static partial class PlayModeButtons
     static void PopulatePlayContextMenu(DropdownMenu menu)
     {
         menu.AppendAction(
-            L10n.Tr("Open Game View On Play"),
+            L10n.Tr("Open Game View On Play", null),
             ChangeOpenGameViewOnPlayModeBehavior,
             PlayModeView.openWindowOnEnteringPlayMode ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
     }
@@ -136,11 +139,18 @@ static partial class PlayModeButtons
         {
             if (value)
             {
-                ScenarioManagerProvider.instance.Start();
+                try
+                {
+                    ScenarioManagerProvider.instance.Start();
+                }
+                finally
+                {
+                    ScheduleRefresh();
+                }
             }
             else
             {
-                if (PlayModeScenarioManager.State != PlayModeScenarioState.Running)
+                if (!PlayModeScenarioManager.IsScenarioRunningOrStarting)
                 {
                     EditorApplication.isPlaying = false;
                 }

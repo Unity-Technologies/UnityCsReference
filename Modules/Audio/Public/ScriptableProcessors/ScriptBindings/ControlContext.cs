@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Unity.Audio;
+using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.IntegerTime;
 using UnityEngine.Bindings;
@@ -222,7 +223,7 @@ namespace UnityEngine.Audio
             in TRealtime realtimeState,
             in TControl controlState,
             AudioFormat? nestedFormat = null,
-            in ProcessorInstance.CreationParameters creationParameters = default
+            in GeneratorInstance.CreationParameters creationParameters = default
         )
             where TRealtime : unmanaged, GeneratorInstance.IRealtime
             where TControl : unmanaged, GeneratorInstance.IControl<TRealtime>
@@ -279,7 +280,7 @@ namespace UnityEngine.Audio
         /// <returns>
         /// A <see cref="RootOutputInstance"/> you own and control, that must later be destroyed with <see cref="ControlContext.Destroy(RootOutputInstance)"/>.
         /// </returns>
-        public readonly RootOutputInstance AllocateRootOutput<TRealtime, TControl>(in TRealtime realtimeState, in TControl controlState, in ProcessorInstance.CreationParameters creationParameters = default)
+        public readonly RootOutputInstance AllocateRootOutput<TRealtime, TControl>(in TRealtime realtimeState, in TControl controlState, in RootOutputInstance.CreationParameters creationParameters = default)
             where TRealtime : unmanaged, RootOutputInstance.IRealtime
             where TControl : unmanaged, RootOutputInstance.IControl<TRealtime>
         {

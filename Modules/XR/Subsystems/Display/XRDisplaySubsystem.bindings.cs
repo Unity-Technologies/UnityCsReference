@@ -408,6 +408,10 @@ namespace UnityEngine.XR
             ///<remarks>See the <see href="https://docs.unity3d.com/Packages/com.unity.xr.openxr@latest?subfolder=/manual/features/spacewarp.html">SpaceWarp</see> documentation in the OpenXR Plugin package for more information.</remarks>
             public bool spaceWarpRightHandedNDC;
 
+            /// <summary>When <c>true</c>, SRP-based foveated rendering is always skipped during the FinalBlit and UberPostProcess passes.</summary>
+            ///<remarks>See the <see href="https://docs.unity3d.com/Packages/com.unity.xr.openxr@latest?subfolder=/manual/features/foveatedrendering.html">Foveated Rendering</see> documentation in the OpenXR Plugin package for more information.</remarks>
+            public bool skipFDMForFinalPasses;
+
             ///<summary>An index that a render pipeline can pass to <see cref="XR.XRDisplaySubsystem.GetCullingParameters" /> to obtain culling information.</summary>
             ///<remarks>Multiple <see cref="XRRenderPass">render passes</see> can share the same index. This means that the renderer only needs to cull once, and can reuse the result of the culling for all render passes that use the same index.</remarks>
             public int cullingPassIndex;

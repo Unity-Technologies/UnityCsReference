@@ -30,7 +30,7 @@ namespace UnityEditor.Search
         }
 
         const string k_TokenSeparatedParentProviderSuffix = "_TokenSeparatedParent";
-        static readonly string k_ParentCycleErrorFormat = L10n.Tr("Parent cycle detected for SearchItem \"{0}\".");
+        static readonly string k_ParentCycleErrorFormat = L10n.Tr("Parent cycle detected for SearchItem \"{0}\".", null);
 
         ISearchView m_ViewModel;
         readonly SearchItemHierarchyNodeMap m_SearchItemHierarchyNodeMap = new();

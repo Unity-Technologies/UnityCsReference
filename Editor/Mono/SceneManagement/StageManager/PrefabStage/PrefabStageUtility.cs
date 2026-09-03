@@ -22,9 +22,9 @@ namespace UnityEditor.SceneManagement
     {
         static readonly string k_PrefabModifierKey = Application.platform == RuntimePlatform.OSXEditor ? "Option" : "Alt";
 
-        static readonly string k_InContextTooltip = string.Format(L10n.Tr("Open Prefab Asset in context.\nPress the {0} modifier key to open in isolation."), k_PrefabModifierKey);
+        static readonly string k_InContextTooltip = string.Format(L10n.Tr("Open Prefab Asset in context.\nPress the {0} modifier key to open in isolation.", null), k_PrefabModifierKey);
 
-        static readonly string k_InIsolationTooltip = string.Format(L10n.Tr("Open Prefab Asset in isolation.\nPress the {0} modifier key to open in context."), k_PrefabModifierKey);
+        static readonly string k_InIsolationTooltip = string.Format(L10n.Tr("Open Prefab Asset in isolation.\nPress the {0} modifier key to open in context.", null), k_PrefabModifierKey);
 
         [Shortcut("Stage/Enter Prefab Mode", KeyCode.P, displayName = "Stage/Edit Prefab in Context")]
         static void EnterInContextPrefabModeShortcut()
@@ -248,11 +248,11 @@ namespace UnityEditor.SceneManagement
                 if (blockingNames.Length > 1000)
                     blockingNames = blockingNames.Substring(0, 1000) + "\n...";
                 return EditorUtility.DisplayDialog(
-                    L10n.Tr("Risk of unwanted modifications"),
+                    L10n.Tr("Risk of unwanted modifications", null),
                     string.Format(
-                        L10n.Tr("The following scripts on the Prefab open in Prefab Mode use the [ExecuteInEditMode] attribute which means they may accidentally affect or be affected by Play Mode:\n\n{0}\n\nSee the documentation for [ExecuteInEditMode] and [ExecuteAlways] for info on how to make scripts compatible with Prefab Mode during Play Mode."),
+                        L10n.Tr("The following scripts on the Prefab open in Prefab Mode use the [ExecuteInEditMode] attribute which means they may accidentally affect or be affected by Play Mode:\n\n{0}\n\nSee the documentation for [ExecuteInEditMode] and [ExecuteAlways] for info on how to make scripts compatible with Prefab Mode during Play Mode.", null),
                         blockingNames),
-                    L10n.Tr("Exit Prefab Mode"), L10n.Tr("Ignore"),
+                    L10n.Tr("Exit Prefab Mode", null), L10n.Tr("Ignore", null),
                     DialogOptOutDecisionType.ForThisMachine,
                     "PrefabStageUtility.ExecuteInEditModeRisk");
             }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: QuickInstall not yet converted
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
@@ -65,7 +66,7 @@ namespace UnityEditor.QuickInstall
             s_Initialized = InitializeState.InProgress;
             EditorApplication.update += CreatePackageListHandler();
             PackageManager.Events.registeredPackages += OnPackagesRegistered;
-            AssemblyReloadEvents.beforeAssemblyReload += RemoveMenuItemsForAllInstallers;
+            PackageManager.Events.registeringPackages += _ => RemoveMenuItemsForAllInstallers();
         }
 
         internal static AddRequest InstallPackage(string packageName, InstallMethod installationMethod)
@@ -194,8 +195,10 @@ namespace UnityEditor.QuickInstall
         internal QuickInstaller(QuickInstallConfig config)
         {
             m_Config = config;
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             s_InstallersByPackageName.Add(m_Config.PackageName, this);
             s_InstallersByAssemblyName.Add(m_Config.Assembly, this);
+            #pragma warning restore UAL0015
 
             m_SettingsProvider = m_Config.SettingsPageConfig != null
                 ? new QuickInstallSettingsProvider(m_Config.PackageName, m_Config.SettingsPageConfig)
@@ -249,3 +252,4 @@ namespace UnityEditor.QuickInstall
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

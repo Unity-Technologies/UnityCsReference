@@ -18,8 +18,26 @@ namespace UnityEngine.UIElements
     {
         static readonly BindingId sortColumnDescriptionsProperty = nameof(sortColumnDescriptions);
 
+        List<SortColumnDescription> m_SortColumnDescriptions = new();
+
         [UxmlObjectReference]
-        internal List<SortColumnDescription> sortColumnDescriptions { get; set; } = new List<SortColumnDescription>();
+        internal List<SortColumnDescription> sortColumnDescriptions
+        {
+            get => m_SortColumnDescriptions;
+            set
+            {
+                m_SortColumnDescriptions.Clear();
+
+                if (value == null)
+                    return;
+
+                foreach (var d in value)
+                {
+                    if (d != null)
+                        m_SortColumnDescriptions.Add(d);
+                }
+            }
+        }
 
         /// <summary>
         /// Event sent when the descriptions changed.

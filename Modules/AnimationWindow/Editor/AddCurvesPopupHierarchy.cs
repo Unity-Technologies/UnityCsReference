@@ -13,7 +13,7 @@ namespace UnityEditorInternal
     internal class AddCurvesPopupHierarchy
     {
         private static readonly GUIContent s_AllPropertiesAddedContent = EditorGUIUtility.TrTextContent("All animatable properties have been added");
-        private static readonly string s_NoResultsFoundString = L10n.Tr("No results found for \"{0}\"");
+        private static readonly string s_NoResultsFoundString = L10n.Tr("No results found for \"{0}\"", null);
 
         private TreeViewController m_TreeView;
         private TreeViewState m_TreeViewState;

@@ -72,7 +72,8 @@ namespace Unity.GraphToolkit.Editor
 
             if (newElem == null)
             {
-                Debug.LogError($"GraphElementFactory doesn't know how to create a UI of type {typeof(T)} for model of type: {model.GetType()}");
+                var resolved = ext == null ? "No extension method was found" : $"The resolved method {ext.DeclaringType?.Name}.{ext.Name} returned null, threw, or did not return a {typeof(T).Name}";
+                Debug.LogError($"GraphElementFactory doesn't know how to create a UI of type {typeof(T)} for model of type {model.GetType()}. ({resolved})");
                 return null;
             }
 

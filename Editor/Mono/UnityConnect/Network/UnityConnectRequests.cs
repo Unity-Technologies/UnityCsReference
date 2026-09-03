@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -10,6 +9,7 @@ using System.Threading.Tasks;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
@@ -17,8 +17,9 @@ namespace UnityEditor.Connect
     /// Class containing the legacy identity api requests
     /// Documentation for the apis: https://services.docs.internal.unity3d.com/unity-services-gateway/api-documentation/routes/unity/legacy/v1
     /// </summary>
-    internal static class UnityConnectRequests
+    internal static partial class UnityConnectRequests
     {
+        [NoAutoStaticsCleanup] // singleton; survives code reload by design
         static readonly IUnityConnectRequestUriProvider k_UnityConnectRequestUriProvider =
             new UnityConnectRequestUriProvider();
 
@@ -461,4 +462,3 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

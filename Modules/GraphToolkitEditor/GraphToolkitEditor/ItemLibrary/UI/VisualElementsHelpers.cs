@@ -11,7 +11,7 @@ namespace Unity.GraphToolkit.ItemLibrary.Editor
 {
     static class VisualElementsHelpers
     {
-        const string k_UxmlPath = "UXML/GraphToolkit";
+        const string k_UxmlPath = "GraphToolkit/UXML";
         public static readonly string k_ItemLibraryUxmlPath = $"{k_UxmlPath}/ItemLibrary";
 
         // /// <summary>

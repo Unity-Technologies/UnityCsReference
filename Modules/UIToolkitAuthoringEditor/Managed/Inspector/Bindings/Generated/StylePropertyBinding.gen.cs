@@ -199,6 +199,8 @@ namespace Unity.UIToolkit.Editor
                     return Update(in id, authoringContext.StyleDiff.translate, authoringContext, targetElement);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return Update(in id, authoringContext.StyleDiff.unityBackgroundImageTintColor, authoringContext, targetElement);
+                case StylePropertyId.UnityCurvature:
+                    return Update(in id, authoringContext.StyleDiff.unityCurvature, authoringContext, targetElement);
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return Update(in id, authoringContext.StyleDiff.unityEditorTextRenderingMode, authoringContext, targetElement);
                 case StylePropertyId.UnityFont:
@@ -417,6 +419,9 @@ namespace Unity.UIToolkit.Editor
                     break;
                 case StylePropertyId.Translate:
                     RegisterCallbacks<StyleTranslate, Translate>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
+                    break;
+                case StylePropertyId.UnityCurvature:
+                    RegisterCallbacks<StyleCurvature, Curvature>(binding, in id, targetElement, ProcessChange, ProcessChange, binding.ProcessChange, binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     RegisterEnumCallbacks<EditorTextRenderingMode>(binding, id, targetElement);
@@ -727,6 +732,12 @@ namespace Unity.UIToolkit.Editor
                     targetElement.UnregisterCallback<ChangeEvent<StyleTranslate>, CallbackContext>(ProcessChange);
                     targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Translate>, CallbackContext>(binding.ProcessChange);
                     targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleTranslate>, CallbackContext>(binding.ProcessChange);
+                    break;
+                case StylePropertyId.UnityCurvature:
+                    targetElement.UnregisterCallback<ChangeEvent<Curvature>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<ChangeEvent<StyleCurvature>, CallbackContext>(ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<Curvature>, CallbackContext>(binding.ProcessChange);
+                    targetElement.UnregisterCallback<CompositeStylePropertyChangeEvent<StyleCurvature>, CallbackContext>(binding.ProcessChange);
                     break;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     targetElement.UnregisterCallback<ChangeEvent<EditorTextRenderingMode>, CallbackContext>(ProcessChange);
@@ -1062,6 +1073,16 @@ namespace Unity.UIToolkit.Editor
         internal static void SetTranslate(StyleProperty property, StyleSheet sheet, StyleTranslate styleValue)
         {
             SetStyleValue<StyleTranslate, Translate>(property, sheet, styleValue, SetTranslate);
+        }
+
+        internal static void SetCurvature(StyleProperty property, StyleSheet sheet, Curvature value)
+        {
+            property.SetCurvature(sheet, value);
+        }
+
+        internal static void SetCurvature(StyleProperty property, StyleSheet sheet, StyleCurvature styleValue)
+        {
+            SetStyleValue<StyleCurvature, Curvature>(property, sheet, styleValue, SetCurvature);
         }
 
         internal static void SetFont(StyleProperty property, StyleSheet sheet, Font value)
@@ -1631,6 +1652,26 @@ namespace Unity.UIToolkit.Editor
             ProcessChange(evt, ctx, SetTranslate);
         }
 
+        private static void ProcessChange(ChangeEvent<Curvature> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetCurvature);
+        }
+
+        private static void ProcessChange(ChangeEvent<StyleCurvature> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetCurvature);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<Curvature> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetCurvature);
+        }
+
+        private void ProcessChange(CompositeStylePropertyChangeEvent<StyleCurvature> evt, CallbackContext ctx)
+        {
+            ProcessChange(evt, ctx, SetCurvature);
+        }
+
         private static void ProcessChange(ChangeEvent<Font> evt, CallbackContext ctx)
         {
             ProcessChange(evt, ctx, SetFont);
@@ -1784,7 +1825,7 @@ namespace Unity.UIToolkit.Editor
             PropertyContainer.Accept(visitor, ref element, evt.property);
         }
 
-        private partial class GenericValueAtPath : PathVisitor, IProcessGenericChange<Align>, IProcessGenericChange<StyleEnum<Align>>, IProcessGenericChange<List<float>>, IProcessGenericChange<StyleList<float>>, IProcessGenericChange<List<AnimationDirection>>, IProcessGenericChange<StyleList<AnimationDirection>>, IProcessGenericChange<List<AnimationIterationCount>>, IProcessGenericChange<StyleList<AnimationIterationCount>>, IProcessGenericChange<List<UIAnimationClip>>, IProcessGenericChange<StyleList<UIAnimationClip>>, IProcessGenericChange<List<AnimationPlayState>>, IProcessGenericChange<StyleList<AnimationPlayState>>, IProcessGenericChange<Ratio>, IProcessGenericChange<StyleRatio>, IProcessGenericChange<List<FilterFunction>>, IProcessGenericChange<StyleList<FilterFunction>>, IProcessGenericChange<Color>, IProcessGenericChange<StyleColor>, IProcessGenericChange<Background>, IProcessGenericChange<StyleBackground>, IProcessGenericChange<BackgroundPosition>, IProcessGenericChange<StyleBackgroundPosition>, IProcessGenericChange<BackgroundRepeat>, IProcessGenericChange<StyleBackgroundRepeat>, IProcessGenericChange<BackgroundSize>, IProcessGenericChange<StyleBackgroundSize>, IProcessGenericChange<Length>, IProcessGenericChange<StyleLength>, IProcessGenericChange<float>, IProcessGenericChange<StyleFloat>, IProcessGenericChange<UnityEngine.UIElements.Cursor>, IProcessGenericChange<StyleCursor>, IProcessGenericChange<DisplayStyle>, IProcessGenericChange<StyleEnum<DisplayStyle>>, IProcessGenericChange<FlexDirection>, IProcessGenericChange<StyleEnum<FlexDirection>>, IProcessGenericChange<Wrap>, IProcessGenericChange<StyleEnum<Wrap>>, IProcessGenericChange<List<GridTrackSize>>, IProcessGenericChange<StyleList<GridTrackSize>>, IProcessGenericChange<GridAutoFlow>, IProcessGenericChange<StyleEnum<GridAutoFlow>>, IProcessGenericChange<GridLine>, IProcessGenericChange<StyleGridLine>, IProcessGenericChange<Justify>, IProcessGenericChange<StyleEnum<Justify>>, IProcessGenericChange<OverflowInternal>, IProcessGenericChange<StyleEnum<Overflow>>, IProcessGenericChange<Position>, IProcessGenericChange<StyleEnum<Position>>, IProcessGenericChange<Rotate>, IProcessGenericChange<StyleRotate>, IProcessGenericChange<Scale>, IProcessGenericChange<StyleScale>, IProcessGenericChange<TextOverflow>, IProcessGenericChange<StyleEnum<TextOverflow>>, IProcessGenericChange<TextShadow>, IProcessGenericChange<StyleTextShadow>, IProcessGenericChange<TransformOrigin>, IProcessGenericChange<StyleTransformOrigin>, IProcessGenericChange<List<TimeValue>>, IProcessGenericChange<StyleList<TimeValue>>, IProcessGenericChange<List<StylePropertyName>>, IProcessGenericChange<StyleList<StylePropertyName>>, IProcessGenericChange<List<EasingFunction>>, IProcessGenericChange<StyleList<EasingFunction>>, IProcessGenericChange<Translate>, IProcessGenericChange<StyleTranslate>, IProcessGenericChange<EditorTextRenderingMode>, IProcessGenericChange<StyleEnum<EditorTextRenderingMode>>, IProcessGenericChange<Font>, IProcessGenericChange<StyleFont>, IProcessGenericChange<FontDefinition>, IProcessGenericChange<StyleFontDefinition>, IProcessGenericChange<FontStyle>, IProcessGenericChange<StyleEnum<FontStyle>>, IProcessGenericChange<MaterialDefinition>, IProcessGenericChange<StyleMaterialDefinition>, IProcessGenericChange<OverflowClipBox>, IProcessGenericChange<StyleEnum<OverflowClipBox>>, IProcessGenericChange<int>, IProcessGenericChange<StyleInt>, IProcessGenericChange<SliceType>, IProcessGenericChange<StyleEnum<SliceType>>, IProcessGenericChange<TextAnchor>, IProcessGenericChange<StyleEnum<TextAnchor>>, IProcessGenericChange<TextAutoSize>, IProcessGenericChange<StyleTextAutoSize>, IProcessGenericChange<TextGeneratorType>, IProcessGenericChange<StyleEnum<TextGeneratorType>>, IProcessGenericChange<TextOverflowPosition>, IProcessGenericChange<StyleEnum<TextOverflowPosition>>, IProcessGenericChange<Visibility>, IProcessGenericChange<StyleEnum<Visibility>>, IProcessGenericChange<WhiteSpace>, IProcessGenericChange<StyleEnum<WhiteSpace>>
+        private partial class GenericValueAtPath : PathVisitor, IProcessGenericChange<Align>, IProcessGenericChange<StyleEnum<Align>>, IProcessGenericChange<List<float>>, IProcessGenericChange<StyleList<float>>, IProcessGenericChange<List<AnimationDirection>>, IProcessGenericChange<StyleList<AnimationDirection>>, IProcessGenericChange<List<AnimationIterationCount>>, IProcessGenericChange<StyleList<AnimationIterationCount>>, IProcessGenericChange<List<UIAnimationClip>>, IProcessGenericChange<StyleList<UIAnimationClip>>, IProcessGenericChange<List<AnimationPlayState>>, IProcessGenericChange<StyleList<AnimationPlayState>>, IProcessGenericChange<Ratio>, IProcessGenericChange<StyleRatio>, IProcessGenericChange<List<FilterFunction>>, IProcessGenericChange<StyleList<FilterFunction>>, IProcessGenericChange<Color>, IProcessGenericChange<StyleColor>, IProcessGenericChange<Background>, IProcessGenericChange<StyleBackground>, IProcessGenericChange<BackgroundPosition>, IProcessGenericChange<StyleBackgroundPosition>, IProcessGenericChange<BackgroundRepeat>, IProcessGenericChange<StyleBackgroundRepeat>, IProcessGenericChange<BackgroundSize>, IProcessGenericChange<StyleBackgroundSize>, IProcessGenericChange<Length>, IProcessGenericChange<StyleLength>, IProcessGenericChange<float>, IProcessGenericChange<StyleFloat>, IProcessGenericChange<UnityEngine.UIElements.Cursor>, IProcessGenericChange<StyleCursor>, IProcessGenericChange<DisplayStyle>, IProcessGenericChange<StyleEnum<DisplayStyle>>, IProcessGenericChange<FlexDirection>, IProcessGenericChange<StyleEnum<FlexDirection>>, IProcessGenericChange<Wrap>, IProcessGenericChange<StyleEnum<Wrap>>, IProcessGenericChange<List<GridTrackSize>>, IProcessGenericChange<StyleList<GridTrackSize>>, IProcessGenericChange<GridAutoFlow>, IProcessGenericChange<StyleEnum<GridAutoFlow>>, IProcessGenericChange<GridLine>, IProcessGenericChange<StyleGridLine>, IProcessGenericChange<Justify>, IProcessGenericChange<StyleEnum<Justify>>, IProcessGenericChange<OverflowInternal>, IProcessGenericChange<StyleEnum<Overflow>>, IProcessGenericChange<Position>, IProcessGenericChange<StyleEnum<Position>>, IProcessGenericChange<Rotate>, IProcessGenericChange<StyleRotate>, IProcessGenericChange<Scale>, IProcessGenericChange<StyleScale>, IProcessGenericChange<TextOverflow>, IProcessGenericChange<StyleEnum<TextOverflow>>, IProcessGenericChange<TextShadow>, IProcessGenericChange<StyleTextShadow>, IProcessGenericChange<TransformOrigin>, IProcessGenericChange<StyleTransformOrigin>, IProcessGenericChange<List<TimeValue>>, IProcessGenericChange<StyleList<TimeValue>>, IProcessGenericChange<List<StylePropertyName>>, IProcessGenericChange<StyleList<StylePropertyName>>, IProcessGenericChange<List<EasingFunction>>, IProcessGenericChange<StyleList<EasingFunction>>, IProcessGenericChange<Translate>, IProcessGenericChange<StyleTranslate>, IProcessGenericChange<Curvature>, IProcessGenericChange<StyleCurvature>, IProcessGenericChange<EditorTextRenderingMode>, IProcessGenericChange<StyleEnum<EditorTextRenderingMode>>, IProcessGenericChange<Font>, IProcessGenericChange<StyleFont>, IProcessGenericChange<FontDefinition>, IProcessGenericChange<StyleFontDefinition>, IProcessGenericChange<FontStyle>, IProcessGenericChange<StyleEnum<FontStyle>>, IProcessGenericChange<MaterialDefinition>, IProcessGenericChange<StyleMaterialDefinition>, IProcessGenericChange<OverflowClipBox>, IProcessGenericChange<StyleEnum<OverflowClipBox>>, IProcessGenericChange<int>, IProcessGenericChange<StyleInt>, IProcessGenericChange<SliceType>, IProcessGenericChange<StyleEnum<SliceType>>, IProcessGenericChange<TextAnchor>, IProcessGenericChange<StyleEnum<TextAnchor>>, IProcessGenericChange<TextAutoSize>, IProcessGenericChange<StyleTextAutoSize>, IProcessGenericChange<TextGeneratorType>, IProcessGenericChange<StyleEnum<TextGeneratorType>>, IProcessGenericChange<TextOverflowPosition>, IProcessGenericChange<StyleEnum<TextOverflowPosition>>, IProcessGenericChange<Visibility>, IProcessGenericChange<StyleEnum<Visibility>>, IProcessGenericChange<WhiteSpace>, IProcessGenericChange<StyleEnum<WhiteSpace>>
         {
             void IProcessGenericChange<Align>.ProcessGenericChange(ref Align value)
             {
@@ -2327,6 +2368,22 @@ namespace Unity.UIToolkit.Editor
                 if (ShouldProcessChange())
                 {
                     ProcessChange(value, authoringContext, binding, SetTranslate);
+                }
+            }
+
+            void IProcessGenericChange<Curvature>.ProcessGenericChange(ref Curvature value)
+            {
+                if (ShouldProcessChange())
+                {
+                    ProcessChange(value, authoringContext, binding, SetCurvature);
+                }
+            }
+
+            void IProcessGenericChange<StyleCurvature>.ProcessGenericChange(ref StyleCurvature value)
+            {
+                if (ShouldProcessChange())
+                {
+                    ProcessChange(value, authoringContext, binding, SetCurvature);
                 }
             }
 

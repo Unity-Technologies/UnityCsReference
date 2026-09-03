@@ -215,7 +215,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var headerButton = new Button();
             headerButton.name = $"{tab.id}Button";
             headerButton.userData = tab.id;
-            headerButton.text = L10n.Tr(tab.displayName);
+            headerButton.text = L10n.Tr(tab.displayName, null);
             headerButton.clicked += () => OnTabHeaderClicked(tab);
             return headerButton;
         }

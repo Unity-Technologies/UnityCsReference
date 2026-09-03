@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -27,7 +26,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 35, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 36, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -272,6 +271,14 @@ namespace UnityEditor.UIElements
                     return "Uxml object has an authoring-id that is already used by another Uxml object: {0}";
                 case ImportErrorCode.AttributeParsing:
                     return "Could not parse attribute value: {0}";
+                case ImportErrorCode.ComponentRequiresElementOwner:
+                    return "Component '{0}' must be a child of a VisualElement; it cannot appear at the document root or under a non-element node.";
+                case ImportErrorCode.ComponentCannotHaveChildren:
+                    return "Component '{0}' cannot have child elements; components are leaf nodes.";
+                case ImportErrorCode.DuplicateComponentType:
+                    return "Component '{0}' is already attached to this element; only one component of a given type is allowed per element.";
+                case ImportErrorCode.ComponentRequiresElementType:
+                    return "Component '{0}' cannot be attached to this element: it does not satisfy the component's RequiresElementOfType owner constraint.";
                 default:
                     throw new ArgumentOutOfRangeException("Unhandled error code " + errorCode);
             }
@@ -696,6 +703,14 @@ namespace UnityEditor.UIElements
             var templateAsset = uxmlAsset as TemplateAsset;
             var uxmlObjectAsset = uxmlAsset as UxmlObjectAsset;
 
+            // A [VisualElementComponent] node configures its parent element rather than producing a child element:
+            // its serialized data is appended to the parent's m_ComponentData and never added to the tree.
+            if (uxmlSerializedDataDescription is { isComponent: true } && vea != null)
+            {
+                LoadComponentNode(elt, parent, vea, uxmlSerializedDataDescription, vta);
+                return;
+            }
+
             if (vea is { isRoot: true })
             {
                 vta.SetRootAsset(vea);
@@ -743,6 +758,66 @@ namespace UnityEditor.UIElements
                     }
                 }
             }
+        }
+
+        // Handles a [VisualElementComponent] child node: validates placement, parses its attributes onto the
+        // generated UxmlSerializedData, and appends it to the owner element's m_ComponentData. The
+        // throwaway VisualElementAsset created during type resolution is never added to the tree.
+        void LoadComponentNode(XElement elt, UxmlAsset parent, VisualElementAsset componentVea, UxmlSerializedDataDescription description, VisualTreeAsset vta)
+        {
+            var componentData = (UxmlComponentSerializedData)componentVea.serializedData;
+
+            // The owner must be a resolved element (a VisualElementAsset with serialized data). The
+            // document-root container has null serialized data, so this also rejects root-level components.
+            if (parent is not VisualElementAsset ownerVea || ownerVea.serializedData == null)
+            {
+                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ComponentRequiresElementOwner, componentVea.fullTypeName, elt);
+                return;
+            }
+
+            // One component per type per element.
+            if (ownerVea.hasComponentData)
+            {
+                var newType = componentData.GetType();
+                foreach (var existing in ownerVea.componentData)
+                {
+                    if (existing.GetType() == newType)
+                    {
+                        LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateComponentType, componentVea.fullTypeName, elt);
+                        return;
+                    }
+                }
+            }
+
+            // [RequiresElementOfType]: a component may restrict which element types host it. The owner's
+            // element type and the component type are the declaring types of their serialized-data classes.
+            if (System.Attribute.GetCustomAttribute(componentData.GetType().DeclaringType, typeof(UnityEngine.UIElements.RequiresElementOfTypeAttribute))
+                is UnityEngine.UIElements.RequiresElementOfTypeAttribute requires)
+            {
+                var ownerType = ownerVea.serializedData.GetType().DeclaringType;
+                if (ownerType == null || !requires.ElementType.IsAssignableFrom(ownerType))
+                {
+                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ComponentRequiresElementType, componentVea.fullTypeName, elt);
+                    return;
+                }
+            }
+
+            ParseAttributes(elt, componentVea, vta, description, componentData);
+
+            // A component is a leaf in the visual hierarchy, but may carry [UxmlObjectReference] fields
+            // authored as child nodes. Route those into the component's serialized data by reusing the
+            // element machinery (parent = the throwaway component asset, parentSerializedData = the
+            // component data). Any non-UxmlObject child (element / component / template / <Bindings>) is
+            // rejected — components have no visual children, and binding nodes land with the data-bindings stage.
+            foreach (var childElt in elt.Elements())
+            {
+                if (TryResolveType(childElt, componentVea, vta, out var childAsset, out _) && childAsset is UxmlObjectAsset)
+                    LoadXml(childElt, componentVea, componentData, vta);
+                else
+                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ComponentCannotHaveChildren, componentVea.fullTypeName, childElt);
+            }
+
+            ownerVea.AddComponentData(componentData);
         }
 
         /// <summary>
@@ -989,6 +1064,31 @@ namespace UnityEditor.UIElements
                 };
 
                 templateAsset.attributeOverrides.Add(attributeOverride);
+            }
+
+            // Component overrides are authored as child nodes of <AttributeOverrides>:
+            //   <AttributeOverrides element-name="card"><game:Foo key="..." /></AttributeOverrides>
+            // Each resolves to a component UxmlSerializedData targeting the named element.
+            foreach (var childElt in attributeOverridesElt.Elements())
+            {
+                if (!TryResolveType(childElt, null, vta, out var childAsset, out var childDesc) || childDesc is not { isComponent: true })
+                {
+                    LogWarning(vta, ImportErrorType.Semantic, ImportErrorCode.AttributeOverridesInvalidAttr, childElt.Name.LocalName, attributeOverridesElt);
+                    continue;
+                }
+
+                if (childElt.HasElements)
+                {
+                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.ComponentCannotHaveChildren, (childAsset as VisualElementAsset)?.fullTypeName, childElt);
+                    continue;
+                }
+
+                var componentData = (childAsset as VisualElementAsset)?.serializedData as UxmlComponentSerializedData;
+                if (componentData == null)
+                    continue;
+
+                ParseAttributes(childElt, childAsset, vta, childDesc, componentData);
+                templateAsset.AddComponentAttributeOverride(elementNameAttr.Value.Split(), componentData);
             }
 
             ListPool<VisualElementAsset>.Release(resolvedVisualElementAssetsInTemplate);
@@ -1493,6 +1593,10 @@ namespace UnityEditor.UIElements
         InvalidUxmlObjectChild,
         DuplicateAuthoringId,
         AttributeParsing,
+        ComponentRequiresElementOwner,
+        ComponentCannotHaveChildren,
+        DuplicateComponentType,
+        ComponentRequiresElementType,
     }
 
     internal enum ImportErrorType
@@ -1501,4 +1605,3 @@ namespace UnityEditor.UIElements
         Semantic
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

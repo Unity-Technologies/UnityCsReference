@@ -186,7 +186,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = GetDocumentationUrl(packageInfo, isUnityPackage),
                 offlinePath = GetOfflineDocumentationPath(packageInfo),
                 analyticsEventName = "viewDocs",
-                displayName = L10n.Tr("Documentation")
+                displayName = L10n.Tr("Documentation", null)
             };
         }
 
@@ -200,7 +200,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = GetChangelogUrl(packageInfo, isUnityPackage),
                 offlinePath = GetOfflineChangelogPath(packageInfo),
                 analyticsEventName = "viewChangelog",
-                displayName = L10n.Tr("Changelog")
+                displayName = L10n.Tr("Changelog", null)
             };
         }
 
@@ -214,7 +214,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = GetChangelogUrl(packageInfo, isUnityPackage),
                 offlinePath = GetOfflineChangelogPath(packageInfo),
                 analyticsEventName = "viewChangelog",
-                displayName = L10n.Tr("Changelog")
+                displayName = L10n.Tr("Changelog", null)
             };
         }
 
@@ -228,7 +228,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = GetLicensesUrl(packageInfo, isUnityPackage),
                 offlinePath = GetOfflineLicensesPath(packageInfo),
                 analyticsEventName = "viewLicense",
-                displayName = L10n.Tr("Licenses")
+                displayName = L10n.Tr("Licenses", null)
             };
         }
 
@@ -241,7 +241,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = GetQuickStartUrl(packageInfo),
                 offlinePath = string.Empty,
                 analyticsEventName = "viewQuickstart",
-                displayName = L10n.Tr("QuickStart")
+                displayName = L10n.Tr("QuickStart", null)
             };
         }
 
@@ -254,7 +254,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = productInfo?.assetStoreProductUrl ?? string.Empty,
                 offlinePath = string.Empty,
                 analyticsEventName = "viewProductInAssetStore",
-                displayName = L10n.Tr("View in Asset Store")
+                displayName = L10n.Tr("View in Asset Store", null)
             };
         }
 
@@ -268,7 +268,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = reviewUrl,
                 offlinePath = string.Empty,
                 analyticsEventName = "leaveReview",
-                displayName = L10n.Tr("Leave a Review")
+                displayName = L10n.Tr("Leave a Review", null)
             };
         }
 
@@ -294,7 +294,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = productInfo?.publisherSupportUrl ?? string.Empty,
                 offlinePath = string.Empty,
                 analyticsEventName = "viewPublisherSupport",
-                displayName = L10n.Tr("Publisher Support")
+                displayName = L10n.Tr("Publisher Support", null)
             };
         }
 
@@ -307,7 +307,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = productInfo?.publisherWebsiteUrl ?? string.Empty,
                 offlinePath = string.Empty,
                 analyticsEventName = "viewPublisherWebsite",
-                displayName = L10n.Tr("Publisher Website")
+                displayName = L10n.Tr("Publisher Website", null)
             };
         }
 
@@ -318,7 +318,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = EditorGameServiceExtension.GetUseCasesUrl(version) ?? string.Empty,
                 offlinePath = string.Empty,
                 analyticsEventName = "viewUseCases",
-                displayName = L10n.Tr("Use Cases")
+                displayName = L10n.Tr("Use Cases", null)
             };
         }
 
@@ -329,7 +329,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 url = EditorGameServiceExtension.GetDashboardUrl(version) ?? string.Empty,
                 offlinePath = string.Empty,
                 analyticsEventName = "viewDashboard",
-                displayName = L10n.Tr("Go to Dashboard")
+                displayName = L10n.Tr("Go to Dashboard", null)
             };
         }
     }

@@ -2745,8 +2745,8 @@ namespace Unity.Burst.Intrinsics
             public static v128 cvtpd_epi32(v128 a)
             {
                 v128 dst = default(v128);
-                dst.SInt0 = (int)Math.Round(a.Double0);
-                dst.SInt1 = (int)Math.Round(a.Double1);
+                dst.SInt0 = ConvertToInt32(Math.Round(a.Double0));
+                dst.SInt1 = ConvertToInt32(Math.Round(a.Double1));
                 return dst;
             }
 
@@ -2757,7 +2757,7 @@ namespace Unity.Burst.Intrinsics
             [DebuggerStepThrough]
             public static int cvtsd_si32(v128 a)
             {
-                return (int)Math.Round(a.Double0);
+                return ConvertToInt32(Math.Round(a.Double0));
             }
 
             // _mm_cvtsd_si64
@@ -2767,7 +2767,7 @@ namespace Unity.Burst.Intrinsics
             [DebuggerStepThrough]
             public static long cvtsd_si64(v128 a)
             {
-                return (long)Math.Round(a.Double0);
+                return ConvertToInt64(Math.Round(a.Double0));
             }
 
             // _mm_cvtsd_si64x
@@ -2828,8 +2828,8 @@ namespace Unity.Burst.Intrinsics
             public static v128 cvttpd_epi32(v128 a)
             {
                 v128 dst = default(v128);
-                dst.SInt0 = (int)a.Double0;
-                dst.SInt1 = (int)a.Double1;
+                dst.SInt0 = ConvertToInt32(Math.Truncate(a.Double0));
+                dst.SInt1 = ConvertToInt32(Math.Truncate(a.Double1));
                 return dst;
             }
 
@@ -2840,7 +2840,7 @@ namespace Unity.Burst.Intrinsics
             [DebuggerStepThrough]
             public static int cvttsd_si32(v128 a)
             {
-                return (int)a.Double0;
+                return ConvertToInt32(Math.Truncate(a.Double0));
             }
 
             // _mm_cvttsd_si64
@@ -2850,7 +2850,7 @@ namespace Unity.Burst.Intrinsics
             [DebuggerStepThrough]
             public static long cvttsd_si64(v128 a)
             {
-                return (long)a.Double0;
+                return ConvertToInt64(Math.Truncate(a.Double0));
             }
 
             // _mm_cvttsd_si64x
@@ -2872,10 +2872,10 @@ namespace Unity.Burst.Intrinsics
             public static v128 cvtps_epi32(v128 a)
             {
                 v128 dst = default(v128);
-                dst.SInt0 = (int)Math.Round(a.Float0);
-                dst.SInt1 = (int)Math.Round(a.Float1);
-                dst.SInt2 = (int)Math.Round(a.Float2);
-                dst.SInt3 = (int)Math.Round(a.Float3);
+                dst.SInt0 = ConvertToInt32(Math.Round(a.Float0));
+                dst.SInt1 = ConvertToInt32(Math.Round(a.Float1));
+                dst.SInt2 = ConvertToInt32(Math.Round(a.Float2));
+                dst.SInt3 = ConvertToInt32(Math.Round(a.Float3));
                 return dst;
             }
 
@@ -2887,10 +2887,10 @@ namespace Unity.Burst.Intrinsics
             public static v128 cvttps_epi32(v128 a)
             {
                 v128 dst = default(v128);
-                dst.SInt0 = (int)a.Float0;
-                dst.SInt1 = (int)a.Float1;
-                dst.SInt2 = (int)a.Float2;
-                dst.SInt3 = (int)a.Float3;
+                dst.SInt0 = ConvertToInt32(Math.Truncate(a.Float0));
+                dst.SInt1 = ConvertToInt32(Math.Truncate(a.Float1));
+                dst.SInt2 = ConvertToInt32(Math.Truncate(a.Float2));
+                dst.SInt3 = ConvertToInt32(Math.Truncate(a.Float3));
                 return dst;
             }
 

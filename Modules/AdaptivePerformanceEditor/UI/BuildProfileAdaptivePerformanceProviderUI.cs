@@ -101,8 +101,8 @@ namespace UnityEditor.AdaptivePerformance.Editor
         {
             if (!s_ShowingDialog)
             {
-                bool Ok = EditorUtility.DisplayDialog(L10n.Tr("Install Package: "), L10n.Tr($"Missing Package {packageId} for provider. Do you want to Install?"),
-                    L10n.Tr("Ok"), L10n.Tr("Cancel"));
+                bool Ok = EditorUtility.DisplayDialog(L10n.Tr("Install Package: ", null), L10n.Tr($"Missing Package {packageId} for provider. Do you want to Install?", null),
+                    L10n.Tr("Ok", null), L10n.Tr("Cancel", null));
                 s_ShowingDialog = true;
                 if (Ok)
                 {

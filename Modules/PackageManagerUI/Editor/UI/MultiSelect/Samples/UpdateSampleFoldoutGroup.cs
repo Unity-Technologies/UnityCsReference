@@ -12,7 +12,7 @@ internal class UpdateSampleFoldoutGroup : SampleMultiSelectFoldoutGroup
 
     public override void Refresh()
     {
-        mainFoldout.headerTextTemplate = L10n.Tr("Update {0}");
+        mainFoldout.headerTextTemplate = L10n.Tr("Update {0}", null);
         base.Refresh();
     }
 

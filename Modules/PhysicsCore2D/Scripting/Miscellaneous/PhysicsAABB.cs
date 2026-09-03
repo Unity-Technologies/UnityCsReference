@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public partial struct PhysicsAABB
+    public partial record struct PhysicsAABB
     {
         /// <summary>
         /// Create an axis-aligned bounding-box with the specified bounds.

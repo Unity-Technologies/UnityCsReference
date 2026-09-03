@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -400,6 +400,10 @@ internal partial class VisualTreeAssetExporter
             WriteAttributeOverrides(ref ctx, template.attributeOverrides);
         }
 
+        // Components configure the element, so they are written before the visual children.
+        if (asset is VisualElementAsset componentOwner && componentOwner.hasComponentData)
+            WriteComponents(ref ctx, componentOwner);
+
         WriteChildren(ref ctx, children);
 
         ctx.DecreaseIndent();
@@ -664,6 +668,162 @@ internal partial class VisualTreeAssetExporter
         }
     }
 
+    // A [VisualElementComponent] is kept in the owner element's component data, not in its visual children,
+    // because at run time it configures the element instead of becoming a child element. When the
+    // document is saved its UXML is re-generated from the asset, so each component must be written
+    // back as a child node or it is lost. The node is rebuilt directly from the component's
+    // serialized data, which is the only place the authored values are stored.
+    protected void WriteComponents(ref ExportContext ctx, VisualElementAsset owner)
+    {
+        var components = owner.componentData;
+        if (components == null)
+            return;
+
+        for (var i = 0; i < components.Count; ++i)
+        {
+            var data = components[i];
+            var declaringType = data?.GetType().DeclaringType;
+            if (declaringType == null)
+                continue;
+
+            var description = UxmlSerializedDataRegistry.GetDescription(declaringType.FullName);
+            if (description == null)
+                continue;
+
+            // The component node carries no namespace declarations of its own, so its prefix is
+            // resolved against the owner, which is where the surrounding declarations live.
+            WriteSerializedDataNode(ref ctx, owner, declaringType.FullName, data, description);
+        }
+    }
+
+    // Writes one serialized-data node: a component, or a nested [UxmlObjectReference] value. The
+    // "namespaceScope" asset is the one whose namespace declarations apply to this node's type name.
+    void WriteSerializedDataNode(ref ExportContext ctx, UxmlAsset namespaceScope, string fullTypeName,
+        UxmlSerializedData data, UxmlSerializedDataDescription description)
+    {
+        var namespaceDefinition =
+            ctx.visualTreeAsset.FindUxmlNamespaceDefinitionForTypeName(namespaceScope, fullTypeName);
+
+        ctx.AppendIndent();
+        WriteTag(ref ctx, "<");
+        WriteElementTypeName(ref ctx, fullTypeName, namespaceDefinition);
+
+        // Plain attributes are written inline. Only values that differ from the default are kept,
+        // which is the same rule used when element attributes are exported.
+        var hasObjectChildren = false;
+        foreach (var attribute in description.serializedAttributes)
+        {
+            if (attribute.isUxmlObject)
+            {
+                if (HasUxmlObjectValue(attribute, data))
+                    hasObjectChildren = true;
+                continue;
+            }
+
+            var value = attribute.GetSerializedValue(data);
+            if (UxmlAttributeComparison.ObjectEquals(value, attribute.defaultValue))
+                continue;
+
+            if (value == null ||
+                !UxmlAttributeConverter.TryConvertToString(value, ctx.visualTreeAsset, out var stringValue))
+                stringValue = value?.ToString();
+
+            WriteSpace(ref ctx);
+            WriteAttribute(ref ctx, attribute.name, stringValue ?? string.Empty);
+        }
+
+        if (!hasObjectChildren)
+        {
+            WriteTag(ref ctx, "/>");
+            WriteLine(ref ctx);
+            return;
+        }
+
+        WriteTag(ref ctx, ">");
+        WriteLine(ref ctx);
+        ctx.IncreaseIndent();
+
+        foreach (var attribute in description.serializedAttributes)
+        {
+            if (attribute.isUxmlObject && attribute is UxmlSerializedUxmlObjectAttributeDescription objectAttribute)
+                WriteUxmlObjectField(ref ctx, namespaceScope, objectAttribute, data);
+        }
+
+        ctx.DecreaseIndent();
+        ctx.AppendIndent();
+        WriteTag(ref ctx, "</");
+        WriteElementTypeName(ref ctx, fullTypeName, namespaceDefinition);
+        WriteTag(ref ctx, ">");
+        WriteLine(ref ctx);
+    }
+
+    static bool HasUxmlObjectValue(UxmlSerializedAttributeDescription attribute, UxmlSerializedData data)
+    {
+        var value = attribute.GetSerializedValue(data);
+        if (value is IList list)
+            return list.Count > 0;
+        return value != null;
+    }
+
+    // A [UxmlObjectReference] field is written as a wrapper node named after the field, holding the
+    // typed object node(s). An unnamed field has no wrapper and writes the object node directly. This
+    // is the same shape the importer reads back into the component's serialized data.
+    void WriteUxmlObjectField(ref ExportContext ctx, UxmlAsset namespaceScope,
+        UxmlSerializedUxmlObjectAttributeDescription attribute, UxmlSerializedData data)
+    {
+        using (ListPool<UxmlSerializedData>.Get(out var items))
+        {
+            var value = attribute.GetSerializedValue(data);
+            if (value is IList list)
+            {
+                foreach (var item in list)
+                {
+                    if (item is UxmlSerializedData serializedItem)
+                        items.Add(serializedItem);
+                }
+            }
+            else if (value is UxmlSerializedData single)
+            {
+                items.Add(single);
+            }
+
+            if (items.Count == 0)
+                return;
+
+            var hasWrapper = !string.IsNullOrEmpty(attribute.rootName);
+            if (hasWrapper)
+            {
+                ctx.AppendIndent();
+                WriteTag(ref ctx, "<");
+                WriteElementTypeName(ref ctx, string.Empty, attribute.rootName);
+                WriteTag(ref ctx, ">");
+                WriteLine(ref ctx);
+                ctx.IncreaseIndent();
+            }
+
+            foreach (var item in items)
+            {
+                var itemType = item.GetType().DeclaringType;
+                if (itemType == null)
+                    continue;
+                var itemDescription = UxmlSerializedDataRegistry.GetDescription(itemType.FullName);
+                if (itemDescription == null)
+                    continue;
+                WriteSerializedDataNode(ref ctx, namespaceScope, itemType.FullName, item, itemDescription);
+            }
+
+            if (hasWrapper)
+            {
+                ctx.DecreaseIndent();
+                ctx.AppendIndent();
+                WriteTag(ref ctx, "</");
+                WriteElementTypeName(ref ctx, string.Empty, attribute.rootName);
+                WriteTag(ref ctx, ">");
+                WriteLine(ref ctx);
+            }
+        }
+    }
+
     protected bool ExportsChildrenNodes(UxmlAsset asset, ExportOptions options)
     {
         var childCount = 0;
@@ -681,7 +841,7 @@ internal partial class VisualTreeAssetExporter
                     return true;
                 break;
             case VisualElementAsset vea:
-                if (childCount > 0 || vea.stylesheets.Count > 0)
+                if (childCount > 0 || vea.stylesheets.Count > 0 || vea.hasComponentData)
                     return true;
 
                 if (vea.isRoot) //  && vea.visualTreeAsset.usings.Count > 0)
@@ -698,4 +858,3 @@ internal partial class VisualTreeAssetExporter
 
     static Color HtmlColor(string htmlColor) => ColorUtility.TryParseHtmlString(htmlColor, out var color) ? color : Color.clear;
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -15,11 +15,15 @@ namespace Unity.UIToolkit.Editor
     /// per-element <see cref="UIAnimationClip"/> target without depending on
     /// <see cref="VisualElementAnimationWindowController"/>.
     /// </summary>
-    internal static class PerElementAnimationContext
+    internal static partial class PerElementAnimationContext
     {
+        [AutoStaticsCleanupOnCodeReload]
         static UIAnimationClip s_ActiveClip;
+        [AutoStaticsCleanupOnCodeReload]
         static VisualElement s_ActiveClipOwner;
+        [AutoStaticsCleanupOnCodeReload]
         static UIAnimationBinder s_ActiveBinder;
+        [AutoStaticsCleanupOnCodeReload]
         static AnimationModeDriver s_ActiveDriver;
 
         internal static UIAnimationClip activeClip => s_ActiveClip;
@@ -134,4 +138,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

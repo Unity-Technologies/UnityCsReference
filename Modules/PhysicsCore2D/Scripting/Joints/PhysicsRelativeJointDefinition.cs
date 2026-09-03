@@ -16,7 +16,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public struct PhysicsRelativeJointDefinition
+    public record struct PhysicsRelativeJointDefinition
     {
         /// <summary>
         /// Create a default <see cref="PhysicsRelativeJoint"/> definition.

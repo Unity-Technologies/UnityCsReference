@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Profiling;
@@ -27,12 +26,12 @@ namespace UnityEditor.UIElements
         // (panel-only column on a batch row, missing PANEL_METRICS chunk, sums that don't compose).
         public const string NoDataCell = "—";
 
-        public static readonly string OpenFrameDebuggerLabel = L10n.Tr("Open Frame Debugger");
-        public static readonly string OpenFrameDebuggerTooltip = L10n.Tr("Opens the Frame Debugger window to inspect draw calls.");
-        public static readonly string OpenUiToolkitDebuggerLabel = L10n.Tr("Open UI Toolkit Debugger");
-        public static readonly string OpenUiToolkitDebuggerTooltip = L10n.Tr("Opens the UI Toolkit Debugger window.");
-        public static readonly string DocumentationTooltip = L10n.Tr("Opens the manual page for UI Toolkit profiler markers (Documentation/Manual/UIE-profiler-markers.html).");
-        public static readonly string PingTooltip = L10n.Tr("Ping");
+        public static readonly string OpenFrameDebuggerLabel = L10n.Tr("Open Frame Debugger", null);
+        public static readonly string OpenFrameDebuggerTooltip = L10n.Tr("Opens the Frame Debugger window to inspect draw calls.", null);
+        public static readonly string OpenUiToolkitDebuggerLabel = L10n.Tr("Open UI Toolkit Debugger", null);
+        public static readonly string OpenUiToolkitDebuggerTooltip = L10n.Tr("Opens the UI Toolkit Debugger window.", null);
+        public static readonly string DocumentationTooltip = L10n.Tr("Opens the manual page for UI Toolkit profiler markers (Documentation/Manual/UIE-profiler-markers.html).", null);
+        public static readonly string PingTooltip = L10n.Tr("Ping", null);
 
         public static ToolbarButton CreateOpenFrameDebuggerButton()
         {
@@ -210,7 +209,7 @@ namespace UnityEditor.UIElements
         {
             type = null;
             if (entityId == EntityId.None)
-                return L10n.Tr("(Unknown)");
+                return L10n.Tr("(Unknown)", null);
 
             // The icon type comes from the live object, resolved only for current-session frames:
             // captured or cross-session frames would map the EntityId to an unrelated object in this
@@ -271,4 +270,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

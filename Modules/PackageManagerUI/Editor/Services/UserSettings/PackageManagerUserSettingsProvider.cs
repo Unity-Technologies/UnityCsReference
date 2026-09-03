@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,7 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public const string k_PackageManagerUserSettingsPath = "Preferences/Package Manager";
         public static readonly string[] k_Keywords = new []
         {
-            L10n.Tr("cache"), L10n.Tr("assetstore"), L10n.Tr("packages"), "UPM_CACHE_ROOT", "ASSETSTORE_CACHE_PATH"
+            L10n.Tr("cache", null), L10n.Tr("assetstore", null), L10n.Tr("packages", null), "UPM_CACHE_ROOT", "ASSETSTORE_CACHE_PATH"
         };
 
         private const string k_UserSettingsStylesheet = "StyleSheets/PackageManager/PackageManagerUserSettings.uss";
@@ -27,9 +28,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_PackageManagerUserSettingsTemplate = "PackageManagerUserSettings.uxml";
         private const string k_AssetStoreFolder = "Asset Store-5.x";
 
-        private static readonly string k_OpenFolder = L10n.Tr("Open Containing Folder");
-        private static readonly string k_ChangeLocation = L10n.Tr("Change Location");
-        private static readonly string k_ResetToDefaultLocation = L10n.Tr("Reset to Default Location");
+        private static readonly string k_OpenFolder = L10n.Tr("Open Containing Folder", null);
+        private static readonly string k_ChangeLocation = L10n.Tr("Change Location", null);
+        private static readonly string k_ResetToDefaultLocation = L10n.Tr("Reset to Default Location", null);
 
         [NonSerialized]
         private CachePathConfig m_CurrentAssetStoreConfig = new CachePathConfig();
@@ -122,7 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }, action => DropdownMenuAction.Status.Normal, "openLocation");
             packagesCacheDropdownMenu.AppendAction(k_ChangeLocation, action =>
             {
-                var path = m_ApplicationProxy.OpenFolderPanel(L10n.Tr("Select Packages Cache Location"), currentPackagesNormalizedPath);
+                var path = m_ApplicationProxy.OpenFolderPanel(L10n.Tr("Select Packages Cache Location", null), currentPackagesNormalizedPath);
                 path = path.NormalizePath();
                 if (!string.IsNullOrWhiteSpace(path) && string.CompareOrdinal(path, currentPackagesNormalizedPath) != 0)
                     m_UpmCacheRootClient.SetCacheRoot(path);
@@ -154,14 +155,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packagesCachePath.text = string.Empty;
                 packagesCacheDropdown.SetEnabled(false);
 
-                DisplayPackagesCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("Cannot get the Packages Cache location, UPM server is not running."));
+                DisplayPackagesCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("Cannot get the Packages Cache location, UPM server is not running.", null));
             }
         }
 
         private void DisplayAssetStoreCachePathSetting()
         {
             assetsCacheLocationInfo.enableRichText = true;
-            assetsCacheLocationInfo.text = string.Format(L10n.Tr("Your assets will be stored in <b>{0}</b> subfolder."), k_AssetStoreFolder);
+            assetsCacheLocationInfo.text = string.Format(L10n.Tr("Your assets will be stored in <b>{0}</b> subfolder.", null), k_AssetStoreFolder);
             assetsCacheDropdown.SetIcon(Icon.Folder);
             var assetsCacheDropdownMenu = new DropdownMenu();
             assetsCacheDropdownMenu.AppendAction(k_OpenFolder, action =>
@@ -171,7 +172,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }, action => m_CurrentAssetStoreConfig.status == AssetStoreCachePathManager.ConfigStatus.InvalidPath ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal, "openLocation");
             assetsCacheDropdownMenu.AppendAction(k_ChangeLocation, action =>
             {
-                var path = m_ApplicationProxy.OpenFolderPanel(L10n.Tr("Select Assets Cache Location"), Paths.Combine(currentAssetStoreNormalizedPath, k_AssetStoreFolder));
+                var path = m_ApplicationProxy.OpenFolderPanel(L10n.Tr("Select Assets Cache Location", null), Paths.Combine(currentAssetStoreNormalizedPath, k_AssetStoreFolder));
                 if (!string.IsNullOrWhiteSpace(path))
                 {
                     path = path.NormalizePath();
@@ -194,7 +195,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         new []{ m_CurrentAssetStoreConfig.source.ToString(), m_CurrentAssetStoreConfig.status.ToString() });
 
                     if (status == AssetStoreCachePathManager.ConfigStatus.Failed)
-                        DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr($"Cannot set the Assets Cache location, \"{path}\" is invalid or inaccessible."));
+                        DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr($"Cannot set the Assets Cache location, \"{path}\" is invalid or inaccessible.", null));
                 }
             }, action => m_CurrentAssetStoreConfig.source != ConfigSource.Environment ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled, "selectLocation");
             assetsCacheDropdownMenu.AppendAction(k_ResetToDefaultLocation, action =>
@@ -212,7 +213,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     new []{ m_CurrentAssetStoreConfig.source.ToString(), m_CurrentAssetStoreConfig.status.ToString()});
 
                 if (status == AssetStoreCachePathManager.ConfigStatus.Failed)
-                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("Cannot reset the Assets Cache location to default."));
+                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("Cannot reset the Assets Cache location to default.", null));
             }, action => m_CurrentAssetStoreConfig.source == ConfigSource.User ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled, "resetLocation");
             assetsCacheDropdown.menu = assetsCacheDropdownMenu;
 
@@ -226,9 +227,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return true;
 
             if (m_ApplicationProxy.isBatchMode || !m_ApplicationProxy.DisplayDialog("abortDownloadBeforeChangeAssetsCacheLocation",
-                L10n.Tr("Changing Assets Cache location"),
-                L10n.Tr("Changing the Assets Cache location will cancel all downloads in progress."),
-                L10n.Tr("Continue"), L10n.Tr("Cancel")))
+                L10n.Tr("Changing Assets Cache location", null),
+                L10n.Tr("Changing the Assets Cache location will cancel all downloads in progress.", null),
+                L10n.Tr("Continue", null), L10n.Tr("Cancel", null)))
                 return false;
 
             m_AssetStoreDownloadManager.AbortAllDownloads();
@@ -250,22 +251,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (m_CurrentAssetStoreConfig.status == AssetStoreCachePathManager.ConfigStatus.ReadOnly)
                 {
-                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Warning, L10n.Tr("The Assets Cache location set by environment variable ASSETSTORE_CACHE_PATH is read only. Download or update of assets won't be possible."));
+                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Warning, L10n.Tr("The Assets Cache location set by environment variable ASSETSTORE_CACHE_PATH is read only. Download or update of assets won't be possible.", null));
                 }
                 else if (m_CurrentAssetStoreConfig.status == AssetStoreCachePathManager.ConfigStatus.InvalidPath)
                 {
                     assetsCacheDropdown.SetEnabled(false);
-                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("The Assets Cache location set by environment variable ASSETSTORE_CACHE_PATH is invalid or inaccessible."));
+                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("The Assets Cache location set by environment variable ASSETSTORE_CACHE_PATH is invalid or inaccessible.", null));
                 }
                 else
-                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Info, L10n.Tr("The Assets Cache location is set by environment variable ASSETSTORE_CACHE_PATH, you cannot change it."));
+                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Info, L10n.Tr("The Assets Cache location is set by environment variable ASSETSTORE_CACHE_PATH, you cannot change it.", null));
             }
             else
             {
                 if (m_CurrentAssetStoreConfig.status == AssetStoreCachePathManager.ConfigStatus.ReadOnly)
-                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Warning, L10n.Tr("The Assets Cache location is read only. Download or update of assets won't be possible."));
+                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Warning, L10n.Tr("The Assets Cache location is read only. Download or update of assets won't be possible.", null));
                 else if (m_CurrentAssetStoreConfig.status != AssetStoreCachePathManager.ConfigStatus.Success && m_CurrentAssetStoreConfig.status != AssetStoreCachePathManager.ConfigStatus.Default)
-                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("The Assets Cache location is invalid or inaccessible. Change location or reset it to default location."));
+                    DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("The Assets Cache location is invalid or inaccessible. Change location or reset it to default location.", null));
             }
         }
 
@@ -280,7 +281,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             RefreshCurrentPackagesConfig(config);
             if (m_CurrentPackagesConfig.source == ConfigSource.Environment)
-                DisplayPackagesCacheErrorBox(HelpBoxMessageType.Info, L10n.Tr("The Packages Cache location is set by environment variable UPM_CACHE_ROOT, you cannot change it."));
+                DisplayPackagesCacheErrorBox(HelpBoxMessageType.Info, L10n.Tr("The Packages Cache location is set by environment variable UPM_CACHE_ROOT, you cannot change it.", null));
         }
 
         private void OnPackagesSetCacheRootOperationResult(CacheRootConfig config)
@@ -316,17 +317,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnPackagesGetCacheRootOperationError(UIError error)
         {
             packagesCacheDropdown.SetEnabled(false);
-            DisplayPackagesCacheErrorBox(HelpBoxMessageType.Error, string.Format(L10n.Tr("Cannot get the Packages Cache location, reason: {0}."), error.message));
+            DisplayPackagesCacheErrorBox(HelpBoxMessageType.Error, string.Format(L10n.Tr("Cannot get the Packages Cache location, reason: {0}.", null), error.message));
         }
 
         private void OnPackagesSetCacheRootOperationError(UIError error, string path)
         {
-            DisplayPackagesCacheErrorBox(HelpBoxMessageType.Error, string.Format(L10n.Tr("Cannot set the Packages Cache location to '{0}', reason: {1}."), path, error.message));
+            DisplayPackagesCacheErrorBox(HelpBoxMessageType.Error, string.Format(L10n.Tr("Cannot set the Packages Cache location to '{0}', reason: {1}.", null), path, error.message));
         }
 
         private void OnPackagesClearCacheRootOperationError(UIError error)
         {
-            DisplayPackagesCacheErrorBox(HelpBoxMessageType.Error, string.Format(L10n.Tr("Cannot reset the Packages Cache location to default, reason: {0}."), error.message));
+            DisplayPackagesCacheErrorBox(HelpBoxMessageType.Error, string.Format(L10n.Tr("Cannot reset the Packages Cache location to default, reason: {0}.", null), error.message));
         }
 
         private void DisplayPackagesCacheErrorBox(HelpBoxMessageType type, string message)
@@ -360,3 +361,4 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Label assetsCacheLocationInfo => m_Cache.Get<Label>("assetsCacheLocationInfo");
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

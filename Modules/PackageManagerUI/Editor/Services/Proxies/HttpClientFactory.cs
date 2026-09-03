@@ -18,8 +18,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal class HttpClientFactory : BaseService<IHttpClientFactory>, IHttpClientFactory
     {
-        public static readonly string k_InvalidJSONErrorMessage = L10n.Tr("Server response is not a valid JSON");
-        public static readonly string k_ServerErrorMessage = L10n.Tr("Server response is");
+        public static readonly string k_InvalidJSONErrorMessage = L10n.Tr("Server response is not a valid JSON", null);
+        public static readonly string k_ServerErrorMessage = L10n.Tr("Server response is", null);
 
         [ExcludeFromCodeCoverage]
         public IAsyncHTTPClient GetASyncHTTPClient(string url)

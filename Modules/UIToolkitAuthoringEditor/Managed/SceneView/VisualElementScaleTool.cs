@@ -45,7 +45,7 @@ namespace Unity.UIToolkit.Editor
         {
             if (window is not SceneView)
                 return;
-            if (!VisualElementToolUtility.IsAuthoringStageActive())
+            if (!VisualElementToolUtility.CanUseTransformTools())
                 return;
 
             var allSelected = VisualElementToolUtility.GetSelectedElements();
@@ -57,17 +57,18 @@ namespace Unity.UIToolkit.Editor
                 return;
 
             var activePanel = VisualElementSceneViewOverlay.FindPanelComponentForElement(activeElement);
-            if (activePanel == null)
+            if (activePanel == null || !VisualElementToolUtility.IsGizmoTarget(activePanel))
                 return;
 
-            var topmost = VisualElementToolUtility.GetTopmostElements(allSelected);
+            var panelSelection = VisualElementToolUtility.FilterByHostPanel(allSelected, activePanel);
+            var topmost = VisualElementToolUtility.GetTopmostElements(panelSelection);
             var dragInProgress = GUIUtility.hotControl != 0;
 
             if (dragInProgress && !m_IsDragging)
             {
                 m_StartIsCenterMode = Tools.pivotMode == PivotMode.Center;
                 var pivot = m_StartIsCenterMode
-                    ? VisualElementToolUtility.GetSelectionWorldCenter(allSelected, activePanel)
+                    ? VisualElementToolUtility.GetSelectionWorldCenter(panelSelection, activePanel)
                     : VisualElementToolUtility.GetElementWorldPivot(activeElement, activePanel);
 
                 m_StartPivotWorld = pivot;
@@ -108,7 +109,7 @@ namespace Unity.UIToolkit.Editor
             else
             {
                 gizmoPivot = Tools.pivotMode == PivotMode.Center
-                    ? VisualElementToolUtility.GetSelectionWorldCenter(allSelected, activePanel)
+                    ? VisualElementToolUtility.GetSelectionWorldCenter(panelSelection, activePanel)
                     : VisualElementToolUtility.GetElementWorldPivot(activeElement, activePanel);
                 gizmoRotation = VisualElementToolUtility.GetGizmoRotation(activeElement, activePanel);
             }
@@ -138,8 +139,7 @@ namespace Unity.UIToolkit.Editor
                 // dragScale is a cumulative multiplier (Handles.ScaleHandle was seeded with one),
                 // so it's component-wise multiply against the snapshot, not addition.
                 var nextScaleValue = VisualElementToolUtility.CleanVector3(Vector3.Scale(snapshot.ScaleValue, dragScale));
-                SetInlineStylePropertyCommand<Scale>.Execute(
-                    CommandSources.Scene,
+                VisualElementToolUtility.WriteStyleProperty(
                     element,
                     StylePropertyId.Scale,
                     StylePropertyBinding.SetScale,
@@ -166,8 +166,7 @@ namespace Unity.UIToolkit.Editor
                     new Length(sum.y, LengthUnit.Pixel),
                     sum.z);
 
-                SetInlineStylePropertyCommand<Translate>.Execute(
-                    CommandSources.Scene,
+                VisualElementToolUtility.WriteStyleProperty(
                     element,
                     StylePropertyId.Translate,
                     StylePropertyBinding.SetTranslate,

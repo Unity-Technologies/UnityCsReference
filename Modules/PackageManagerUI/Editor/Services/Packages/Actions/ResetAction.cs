@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class ResetAction : PackageAction
@@ -32,16 +30,16 @@ internal class ResetAction : PackageAction
         var packageNameAndVersions = string.Join("\n\u2022 ",
             packagesToUninstall.SelectAsEnumerable(package => $"{package.displayName} - {package.versions.recommended.version}"));
 
-        var title = string.Format(L10n.Tr("Resetting {0}"), version.GetDescriptor());
+        var title = string.Format(L10n.Tr("Resetting {0}", null), version.GetDescriptor());
         var message = packagesToUninstall.Count == 1 ?
             string.Format(
-                L10n.Tr("Are you sure you want to reset this {0}?\nThe following included package will reset to the required version:\n\u2022 {1}"),
+                L10n.Tr("Are you sure you want to reset this {0}?\nThe following included package will reset to the required version:\n\u2022 {1}", null),
                 version.GetDescriptor(), packageNameAndVersions) :
             string.Format(
-                L10n.Tr("Are you sure you want to reset this {0}?\nThe following included packages will reset to their required versions:\n\u2022 {1}"),
+                L10n.Tr("Are you sure you want to reset this {0}?\nThe following included packages will reset to their required versions:\n\u2022 {1}", null),
                 version.GetDescriptor(), packageNameAndVersions);
 
-        if (!m_Application.DisplayDialog("resetPackage", title, message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
+        if (!m_Application.DisplayDialog("resetPackage", title, message, L10n.Tr("Continue", null), L10n.Tr("Cancel", null)))
             return false;
 
         m_PageManager.activePage.SetUserUnlockedState(packagesToUninstall.SelectAsEnumerable(p => p.uniqueId), false);
@@ -62,42 +60,47 @@ internal class ResetAction : PackageAction
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
-        return string.Format(L10n.Tr("Click to reset this {0} dependencies to their default versions."), version.GetDescriptor());
+        return string.Format(L10n.Tr("Click to reset this {0} dependencies to their default versions.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Reset");
+        return L10n.Tr("Reset", null);
     }
 
     public override bool IsInProgress(IPackageVersion version) => false;
 
-    internal class DisableIfCannotReset : DisableCondition
+    internal class DisableIfCannotReset : IDisableCondition<IPackageVersion>
     {
-        public DisableIfCannotReset(IPackageDatabase packageDatabase, IPackageVersion version)
+        private readonly IPackageDatabase m_PackageDatabase;
+        public DisableIfCannotReset(IPackageDatabase packageDatabase)
         {
-            var nonResettableCustomizedDependencies = packageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.NonResettable);
-            active = nonResettableCustomizedDependencies.Count > 0;
-            if (!active)
-                return;
+            m_PackageDatabase = packageDatabase;
+        }
+
+        public bool IsActive(IPackageVersion version, out string tooltip)
+        {
+            tooltip = null;
+            var nonResettableCustomizedDependencies = m_PackageDatabase.GetCustomizedDependencies(version, CustomizedDependencyType.NonResettable);
+            if (nonResettableCustomizedDependencies.Count == 0)
+                return false;
 
             var anyCustomDependencies = nonResettableCustomizedDependencies.AnyMatches(p => p.versions.installed.HasTag(PackageTag.Custom));
             tooltip = anyCustomDependencies ?
                 string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages is customized. " +
-                                      "You must remove them manually. See the list of packages in the {0} for more information."), version.GetDescriptor()) :
+                                      "You must remove them manually. See the list of packages in the {0} for more information.", null), version.GetDescriptor()) :
                 string.Format(L10n.Tr("You cannot reset this {0} because one of its included packages has changed version. " +
-                                      "See the list of packages in the {0} for more information."), version.GetDescriptor());
+                                      "See the list of packages in the {0} for more information.", null), version.GetDescriptor());
+            return true;
         }
     }
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
+        new DisableIfCompiling(m_Application)
+    );
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfCannotReset(m_PackageDatabase, version);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfCannotReset(m_PackageDatabase)
+    );
 }

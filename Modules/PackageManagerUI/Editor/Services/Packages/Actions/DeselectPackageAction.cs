@@ -36,12 +36,12 @@ internal class DeselectPackageAction : PackageAction
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Click to deselect these items from the list.");
+        return L10n.Tr("Click to deselect these items from the list.", null);
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Deselect");
+        return L10n.Tr("Deselect", null);
     }
 
     public override bool IsInProgress(IPackageVersion version) => false;

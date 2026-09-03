@@ -32,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (state == FeatureDependencyState.Customized && featureVersion.isInstalled)
             {
                 m_State.AddToClassList(state.ToString().ToLower());
-                m_State.tooltip = L10n.Tr("This package has been manually customized");
+                m_State.tooltip = L10n.Tr("This package has been manually customized", null);
             }
 
             Add(m_State);
@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Application = applicationProxy;
 
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Packages Included");
+            m_DisplayName = L10n.Tr("Packages Included", null);
 
             var root = resourceLoader.GetTemplate("DetailsTabs/FeatureDependencies.uxml");
             m_ContentContainer.Add(root);
@@ -172,20 +172,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                 item.EnableInClassList(k_SelectedClassName, item.packageName == selectedDependencyPackageName);
 
             dependencyTitle.text = version?.displayName ?? selectedDependencyPackageName;
-            dependencyDesc.text =  version?.description ?? L10n.Tr("This package will be automatically installed with this feature.");
+            dependencyDesc.text =  version?.description ?? L10n.Tr("This package will be automatically installed with this feature.", null);
 
             if (!showElementsInDetailsView)
                 return;
 
             var installedPackageVersion = version.package?.versions.installed;
-            dependencyVersion.text = installedPackageVersion != null && installedPackageVersion.versionString != version?.versionString ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
+            dependencyVersion.text = installedPackageVersion != null && installedPackageVersion.versionString != version?.versionString ? string.Format(L10n.Tr("Version {0} (Installed {1})", null), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}", null), version.versionString);
 
             var featureDependencyState = GetFeatureDependencyState(version);
             versionState.ClearClassList();
             if (featureDependencyState == FeatureDependencyState.Info)
             {
                 versionState.AddToClassList(featureDependencyState.ToString().ToLower());
-                versionState.tooltip = string.Format(L10n.Tr("Using version {0} because at least one other package or feature depends on it"), installedPackageVersion.versionString);
+                versionState.tooltip = string.Format(L10n.Tr("Using version {0} because at least one other package or feature depends on it", null), installedPackageVersion.versionString);
             }
 
             var pageId = version.isDirectDependency ? InProjectPage.k_Id : UnityRegistryPage.k_Id;
@@ -195,12 +195,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (installedPackageVersion?.HasTag(PackageTag.Custom) ?? false)
             {
                 dependencyInfoBox.readMoreUrl= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/fs-details.html";
-                dependencyInfoBox.text = L10n.Tr("This package has been customized.");
+                dependencyInfoBox.text = L10n.Tr("This package has been customized.", null);
             }
             else
             {
                 dependencyInfoBox.readMoreUrl= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-ui-remove.html";
-                dependencyInfoBox.text = L10n.Tr("This package has been manually changed.");
+                dependencyInfoBox.text = L10n.Tr("This package has been manually changed.", null);
             }
         }
 

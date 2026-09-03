@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
@@ -49,8 +50,10 @@ namespace UnityEditor.TerrainTools
         public TerrainTransientToolbarOverlay() : base("TerrainTransientToolbar")
         {
             // default collapsed icon
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             collapsedIcon = EditorGUIUtility.LoadIcon("TerrainOverlays/ToolModeIcons/SculptMode_On.png");
             s_TerrainTransientToolbarOverlay = this;
+            #pragma warning restore UAL0015
             m_OverlaysPackageInstalled = IsOverlaysPackageVersionInstalled();
         }
 
@@ -84,7 +87,10 @@ namespace UnityEditor.TerrainTools
         internal static TerrainTransientToolbarOverlay s_TerrainTransientToolbarOverlay;
 
         // determines whether the toolbar should be visible or not
-        public bool visible => m_OverlaysPackageInstalled && TerrainInspector.s_activeTerrainInspectorInstance != null && BrushesOverlay.IsSelectedObjectTerrain();
+        public bool visible => TerrainEditorUtility.IsEditable() &&
+            m_OverlaysPackageInstalled &&
+            TerrainInspector.s_activeTerrainInspectorInstance != null &&
+            BrushesOverlay.IsSelectedObjectTerrain();
 
         internal TerrainTransientToolbar m_TerrainToolbarOverlay;
         private string m_PackageVersion = string.Empty;
@@ -511,7 +517,9 @@ namespace UnityEditor.TerrainTools
             StoreToolsInDictionary();
 
             // loop through all the terrain tools and store them in TerrainTool lists
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             GetPaintTools();
+            #pragma warning restore UAL0015
 
             // sort each list by terrainTool.GetIconIndex()
             foreach (TerrainCategory category in Enum.GetValues(typeof(TerrainCategory)))
@@ -528,7 +536,9 @@ namespace UnityEditor.TerrainTools
             // by default, set the last active tool to be the first in the list
             SetLastActiveToolToDefaultTool();
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             CreateMainMenu();
+            #pragma warning restore UAL0015
 
             CreateSeparator();
 
@@ -543,9 +553,12 @@ namespace UnityEditor.TerrainTools
             Add(m_DefaultToolsVE);
 
             // register callbacks
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             RegisterCallback<AttachToPanelEvent>(evt => RegisterToolChangeCallbacks());
+            #pragma warning restore UAL0015
             RegisterCallback<DetachFromPanelEvent>(evt => DeregisterToolChangeCallbacks());
 
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

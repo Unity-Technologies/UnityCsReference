@@ -52,23 +52,22 @@ internal class OpenManifestExternallyAction : PackageAction
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Open package manifest to view or edit in your script editor.");
+        return L10n.Tr("Open package manifest to view or edit in your script editor.", null);
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return version.HasTag(PackageTag.Custom | PackageTag.Local) ? L10n.Tr("Edit Manifest Externally") : L10n.Tr("Open Manifest Externally");
+        return version.HasTag(PackageTag.Custom | PackageTag.Local) ? L10n.Tr("Edit Manifest Externally", null) : L10n.Tr("Open Manifest Externally", null);
     }
 
     public override string GetMultiSelectText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Open Manifest Externally");
+        return L10n.Tr("Open Manifest Externally", null);
     }
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfPackageIsInInvalidLocation(version);
-        yield return new DisableIfEntitlementsError(version);
-        yield return new DisableIfPackageIsNotLoaded(version);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfPackageIsInInvalidLocation(),
+        new DisableIfEntitlementsError(),
+        new DisableIfPackageIsNotLoaded()
+    );
 }

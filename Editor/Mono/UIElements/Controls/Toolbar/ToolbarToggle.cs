@@ -12,7 +12,7 @@ namespace UnityEditor.UIElements
     /// <summary>
     /// A toggle for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarToggle|UXML element ToolbarToggle]].
     /// </summary>
-    [UxmlElement(visibility = LibraryVisibility.Visible)]
+    [UxmlElement]
     [Icon("UIToolkit/Icons/ToolbarToggle.png")]
     public partial class ToolbarToggle : Toggle
     {

@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public override RefreshOptions refreshOptions => isOfflineMode ? RefreshOptions.UpmListOffline : RefreshOptions.UpmList;
 
-        protected override string operationErrorMessage => isOfflineMode ? L10n.Tr("Error fetching package list offline.") : L10n.Tr("Error fetching package list.");
+        protected override string operationErrorMessage => isOfflineMode ? L10n.Tr("Error fetching package list offline.", null) : L10n.Tr("Error fetching package list.", null);
 
         public void List()
         {

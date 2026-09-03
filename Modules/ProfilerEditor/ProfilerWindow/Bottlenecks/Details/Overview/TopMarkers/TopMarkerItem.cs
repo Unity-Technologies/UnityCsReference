@@ -14,9 +14,9 @@ namespace Unity.Profiling.Editor.UI
     {
         static class Content
         {
-            public static readonly string k_OccurrenceInFrameFormat = L10n.Tr("{0} occurrence in frame {1}.");
-            public static readonly string k_OccurrencesInFrameFormat = L10n.Tr("{0} occurrences in frame {1}.");
-            public static readonly string k_ClickForMoreDetails = L10n.Tr("Click for more details");
+            public static readonly string k_OccurrenceInFrameFormat = L10n.Tr("{0} occurrence in frame {1}.", null);
+            public static readonly string k_OccurrencesInFrameFormat = L10n.Tr("{0} occurrences in frame {1}.", null);
+            public static readonly string k_ClickForMoreDetails = L10n.Tr("Click for more details", null);
         }
 
         readonly VisualElement m_Bar;

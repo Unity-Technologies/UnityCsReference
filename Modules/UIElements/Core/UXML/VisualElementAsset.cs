@@ -88,6 +88,26 @@ namespace UnityEngine.UIElements
             set => m_SerializedData = value;
         }
 
+        // Components attached to this element, authored as child XML nodes. Polymorphic (one generated
+        // class per component type), hence [SerializeReference], and allocated lazily so elements with
+        // no components carry no list.
+        [SerializeReference]
+        private List<UxmlComponentSerializedData> m_ComponentData;
+
+        public List<UxmlComponentSerializedData> componentData
+        {
+            get => m_ComponentData;
+            set => m_ComponentData = value;
+        }
+
+        public bool hasComponentData => m_ComponentData != null && m_ComponentData.Count > 0;
+
+        public void AddComponentData(UxmlComponentSerializedData data)
+        {
+            m_ComponentData ??= new List<UxmlComponentSerializedData>();
+            m_ComponentData.Add(data);
+        }
+
         [SerializeField] private bool m_SkipClone;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -102,7 +122,26 @@ namespace UnityEngine.UIElements
         {
         }
 
-        private static bool IdsPathMatchesAttributeOverrideIdsPath(List<int> idsPath, List<int> attributeOverrideIdsPath, int templateId)
+        /// <summary>
+        /// Applies one matched serialized-data override to a live element, both its element-level
+        /// data and its component overrides.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static void ApplySerializedDataOverride(in TemplateAsset.UxmlSerializedDataOverride dataOverride, VisualElement ve)
+        {
+            // m_SerializedData is null for a component-only override entry.
+            dataOverride.m_SerializedData?.Deserialize(ve);
+
+            var componentOverrides = dataOverride.m_ComponentOverrides;
+            if (componentOverrides != null)
+            {
+                for (var c = 0; c < componentOverrides.Count; ++c)
+                    componentOverrides[c].Deserialize(ve);
+            }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+        internal static bool IdsPathMatchesAttributeOverrideIdsPath(List<int> idsPath, List<int> attributeOverrideIdsPath, int templateId)
         {
             if (idsPath == null || attributeOverrideIdsPath == null
                                 || idsPath.Count == 0 || attributeOverrideIdsPath.Count == 0)
@@ -134,6 +173,19 @@ namespace UnityEngine.UIElements
             var ve = (VisualElement) serializedData.CreateInstance();
             serializedData.Deserialize(ve);
 
+            // Attach this element's authored components (in document order). Each CreateInstance(ve)
+            // does owner.GetOrAddComponent<T>(); Deserialize(ve) writes the authored attribute values.
+            // Done before the template-override pass so component overrides find the live component.
+            if (hasComponentData)
+            {
+                for (var i = 0; i < m_ComponentData.Count; ++i)
+                {
+                    var componentEntry = m_ComponentData[i];
+                    componentEntry.CreateInstance(ve);
+                    componentEntry.Deserialize(ve);
+                }
+            }
+
             if (cc.templateAsset != null)
             {
                 ve.templateAsset = cc.templateAsset;
@@ -149,9 +201,7 @@ namespace UnityEngine.UIElements
                     foreach (var attributeOverride in cc.serializedDataOverrides[i].attributeOverrides)
                     {
                         if (attributeOverride.m_ElementId == id && IdsPathMatchesAttributeOverrideIdsPath(cc.veaIdsPath, attributeOverride.m_ElementIdsPath, cc.serializedDataOverrides[i].templateId))
-                        {
-                            attributeOverride.m_SerializedData.Deserialize(ve);
-                        }
+                            ApplySerializedDataOverride(in attributeOverride, ve);
                     }
                 }
                 cc.veaIdsPath.Remove(id);

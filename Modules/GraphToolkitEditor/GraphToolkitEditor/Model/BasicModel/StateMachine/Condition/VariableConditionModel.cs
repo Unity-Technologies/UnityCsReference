@@ -28,6 +28,12 @@ namespace Unity.GraphToolkit.Editor
         [SerializeReference]
         Constant m_Value;
 
+        // The graph the variable was assigned from. Only used to validate a condition that is temporarily detached
+        // from any graph, for example while it sits in a group that has not been attached to a graph yet. It is not
+        // serialized: a deserialized condition always comes back attached to its graph, so GraphModel is enough.
+        [NonSerialized]
+        GraphModel m_VariableGraphModel;
+
         /// <summary>
         /// Whether a variable has been assigned to this condition.
         /// </summary>
@@ -57,6 +63,28 @@ namespace Unity.GraphToolkit.Editor
                     return declaration;
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Checks whether the assigned variable can be used in the specified <see cref="GraphModel"/>.
+        /// </summary>
+        /// <param name="graphModel">The graph model in which the variable would be used.</param>
+        /// <returns>False when the assigned variable belongs to another graph; true otherwise.</returns>
+        /// <remarks>
+        /// A condition that is detached from any graph has no <see cref="GraphModel"/> to resolve its variable
+        /// against, so the graph the variable was assigned from is used instead. A variable that resolves in no
+        /// graph at all -- one that was deleted -- does not belong to another graph and is accepted.
+        /// </remarks>
+        public bool CanUseVariableIn(GraphModel graphModel)
+        {
+            if (!m_VariableGuid.isValid)
+                return true;
+
+            var variableGraphModel = GraphModel ?? m_VariableGraphModel;
+            if (variableGraphModel == null || variableGraphModel == graphModel)
+                return true;
+
+            return !variableGraphModel.TryGetModelFromGuid<VariableDeclarationModelBase>(m_VariableGuid, out _);
         }
 
         /// <summary>
@@ -92,6 +120,7 @@ namespace Unity.GraphToolkit.Editor
         public void SetVariable(VariableDeclarationModelBase variable)
         {
             m_VariableGuid = variable?.Guid ?? default;
+            m_VariableGraphModel = variable?.GraphModel;
 
             if (variable == null)
                 m_Value = null;

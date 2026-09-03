@@ -62,7 +62,7 @@ namespace UnityEditor.Accessibility
 
             AddToClassList(s_UssClassName);
 
-            m_FieldHelpLabel = new Label(L10n.Tr("Search by id, label, role"));
+            m_FieldHelpLabel = new Label(L10n.Tr("Search by id, label, role", null));
             m_FieldHelpLabel.pickingMode = PickingMode.Ignore;
             m_FieldHelpLabel.AddToClassList(s_SearchLabelUssClassName);
             m_FieldHelpLabel.AddToClassList(s_SearchLabelHelpUssClassName);

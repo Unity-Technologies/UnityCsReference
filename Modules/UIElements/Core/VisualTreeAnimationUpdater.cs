@@ -122,6 +122,7 @@ namespace UnityEngine.UIElements
             if (m_IterationListDirty)
                 RebuildIterationList();
 
+            // Not gated on suspension: these are script-driven, so a script that starts one means it.
             if (m_HasNewAnimations || lastUpdate != now)
             {
                 foreach (var anim in m_IterationList)
@@ -139,6 +140,7 @@ namespace UnityEngine.UIElements
             }
 
             var styleAnim = panel.styleAnimationSystem;
+            // Not gated: authoring surfaces need clip players and binders even while playback is suspended.
             ForwardDirtyElementsToStyleAnimation(styleAnim, now);
 
             using (stylePropertyAnimationProfilerMarker.Auto())

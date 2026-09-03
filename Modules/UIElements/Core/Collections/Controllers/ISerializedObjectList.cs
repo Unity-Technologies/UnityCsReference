@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
         public void RemoveAt(int index, int listCount);
         public void Move(int srcIndex, int destIndex);
         public int minArraySize { get; }
+        public int maxArraySize { get; }
         public int arraySize { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -15,9 +16,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    [AutoStaticsCleanupOnCodeReload]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
-    [AutoStaticsCleanupOnCodeReload]
     internal partial class ScriptAttributeUtility
     {
         readonly struct CustomPropertyDrawerContainer
@@ -35,20 +34,28 @@ namespace UnityEditor
         }
 
         // Internal API members
+        [AutoStaticsCleanupOnCodeReload] // holds PropertyDrawer instances, which can be user-defined types
         internal static Stack<PropertyDrawer> s_DrawerStack = new Stack<PropertyDrawer>();
         [NoAutoStaticsCleanup]
         private static Dictionary<string, List<PropertyAttribute>> s_BuiltinAttributes = null;
+        [AutoStaticsCleanupOnCodeReload] // keyed/valued by Type/FieldInfo, which can pin a user-script assembly
         static Dictionary<Type, List<FieldInfo>> s_AutoLoadProperties;
         [NoAutoStaticsCleanup]
         private static PropertyHandler s_SharedNullHandler = new PropertyHandler();
+        [AutoStaticsCleanupOnCodeReload] // reusable PropertyHandler scratch instance, can reference a user PropertyDrawer
         private static PropertyHandler s_NextHandler = new PropertyHandler();
 
+        [AutoStaticsCleanupOnCodeReload] // caches PropertyHandler instances, which can reference user PropertyDrawers
         private static PropertyHandlerCache s_GlobalCache = new PropertyHandlerCache();
+        [AutoStaticsCleanupOnCodeReload] // caches PropertyHandler instances, which can reference user PropertyDrawers
         private static PropertyHandlerCache s_CurrentCache = null;
 
+        [AutoStaticsCleanupOnCodeReload] // Lazy<T> holder; values keyed by Type/CustomPropertyDrawerContainer.drawerType, which can be a user-defined type
         static Lazy<Dictionary<Type, CustomPropertyDrawerContainer[]>> k_DrawerTypeForType = new(BuildDrawerTypeForTypeDictionary);
-        static readonly Dictionary<Type, Type> k_DrawerStaticTypesCache = new();
-        static readonly Dictionary<Type, Type[]> k_SupportedRenderPipelinesForSerializedObject = new();
+        [AutoStaticsCleanupOnCodeReload] // keyed/valued by Type, which can pin a user-script assembly; readonly removed per CS8785
+        static Dictionary<Type, Type> k_DrawerStaticTypesCache = new();
+        [AutoStaticsCleanupOnCodeReload] // keyed/valued by Type, which can pin a user-script assembly; readonly removed per CS8785
+        static Dictionary<Type, Type[]> k_SupportedRenderPipelinesForSerializedObject = new();
 
         [NoAutoStaticsCleanup]
         static readonly Comparer<CustomPropertyDrawerContainer> k_RenderPipelineTypeComparer
@@ -61,6 +68,7 @@ namespace UnityEditor
             });
 
 
+        [AutoStaticsCleanupOnCodeReload] // caches a Type that can come from a user-defined render pipeline asset
         static Type[] s_CurrentRenderPipelineAssetTypeArray;
 
         static Type[] currentRenderPipelineAssetTypeArray
@@ -512,6 +520,7 @@ namespace UnityEditor
                 var assemblyPart = managedReferenceFullTypename.Substring(0, splitIndex);
                 var nsClassnamePart = managedReferenceFullTypename.Substring(splitIndex);
                 managedReferenceInstanceType = Type.GetType($"{nsClassnamePart}, {assemblyPart}");
+
             }
 
             return managedReferenceInstanceType != null;
@@ -573,6 +582,7 @@ namespace UnityEditor
             public Type type;
         }
 
+        [AutoStaticsCleanupOnCodeReload] // FieldInfoCache holds FieldInfo/Type, which can pin a user-script assembly
         static Dictionary<Cache, FieldInfoCache> s_FieldInfoFromPropertyPathCache = new Dictionary<Cache, FieldInfoCache>();
 
         // Precompiled regexes used by GetFieldInfoFromPropertyPath on cache misses to avoid pattern parsing
@@ -745,3 +755,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -279,7 +279,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // A `GetTemplate` call could implicitly call itself again, creating nested GetTemplate calls.
             // We only want to call localization in the top level `GetTemplate` call to avoid multiple localization attempts on the same element.
             if (m_NestedGetTemplateDepth == 0)
-                LocalizeVisualElement(result, L10n.Tr);
+                LocalizeVisualElement(result, text => L10n.Tr(text, null));
 
             if (result == null && shouldThrowException)
                 throw new ResourceLoaderException($"Unable to load resource {templateFilename}");

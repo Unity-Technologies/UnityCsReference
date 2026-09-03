@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
+using UnityEditor.Build.Profile.Analytics;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -43,8 +44,8 @@ namespace UnityEditor.Modules
         static readonly GUIContent k_InstallInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
 
         // Development build infobox
-        static readonly string developmentBuildInfoBoxText = string.Format(L10n.Tr("Starting in Unity 6.6, part of the Development Build setting has been split out into the Managed Code Variant player setting. <a href={0}>Click here</a> for more information."), kDevelopmentBuildInfoBoxUrl);
-        static readonly string developmentBuildInfoBoxButtonText = L10n.Tr("Dismiss");
+        static readonly string developmentBuildInfoBoxText = string.Format(L10n.Tr("Starting in Unity 6.6, part of the Development Build setting has been split out into the Managed Code Variant player setting. <a href={0}>Click here</a> for more information.", null), kDevelopmentBuildInfoBoxUrl);
+        static readonly string developmentBuildInfoBoxButtonText = L10n.Tr("Dismiss", null);
         const string kDevelopmentBuildInfoBoxUrl = "https://discussions.unity.com/t/-/1721546";
         const string kDevelopmentBuildInfoBoxPreferenceKey = "developmentBuildInfoBoxDismissed";
 
@@ -392,9 +393,11 @@ namespace UnityEditor.Modules
         {
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_Development, k_DevelopmentBuild);
-            if (EditorGUI.EndChangeCheck() && m_IsClassicProfile)
+            if (EditorGUI.EndChangeCheck())
             {
-                m_SharedSettings.development = m_Development.boolValue;
+                BuildSettingsAnalytics.SendSettingChanged("development_build", m_Development.boolValue, m_BuildTarget, m_BuildProfile.platformGuid);
+                if (m_IsClassicProfile)
+                    m_SharedSettings.development = m_Development.boolValue;
             }
         }
 

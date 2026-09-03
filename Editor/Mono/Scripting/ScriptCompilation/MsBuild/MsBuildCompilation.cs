@@ -133,9 +133,21 @@ partial class MsBuildCompilation
 
         //throw new NotImplementedException();
         result = new CompilationDoneResult();
-        var buildResult = buildState
-            .GetLastBuildResultAsync(GetMsBuildConfiguration(target, EditorUserBuildSettings.activeBuildTarget),
-                !disableNugetRestore).Result;
+
+        NullableBuildResultMessage buildResult;
+        try
+        {
+            buildResult = buildState
+                .GetLastBuildResultAsync(GetMsBuildConfiguration(target, EditorUserBuildSettings.activeBuildTarget),
+                    !disableNugetRestore).Result;
+        }
+        catch (Exception e)
+        {
+            UnityEngine.Debug.LogWarning($"Could not query the MSBuild build host for the last build result: {e}");
+            result = null;
+            return false;
+        }
+
         if (!buildResult.HasValue)
         {
             result = null;
@@ -180,8 +192,9 @@ partial class MsBuildCompilation
 
             var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog");
             var disableNugetRestore = Application.HasARGV("disable-nuget-restore");
+            var configuration = GetMsBuildConfiguration(target, buildTarget);
 
-            _currentBuildTask = _currentBuildState.BuildAsync(_shouldRestore, generateBinLog, GetMsBuildConfiguration(target, buildTarget), !disableNugetRestore);
+            _currentBuildTask = _currentBuildState.BuildAsync(_shouldRestore, generateBinLog, configuration, !disableNugetRestore);
 
             _shouldRestore = false;
 
@@ -199,57 +212,54 @@ partial class MsBuildCompilation
                     Task.Delay(1);
                     continue;
                 }
-                EditorUtility.DisplayCancelableProgressBar("Compiling Scripts", buildEvent.Text ?? "Building...", buildEvent.Progress);
+                // Cancelling aborts the call, which lands the task as Canceled and is the only way
+                // out of a build the host has wedged, since nothing times it out by wall clock.
+                if (EditorUtility.DisplayCancelableProgressBar("Compiling Scripts", buildEvent.Text ?? "Building...", buildEvent.Progress))
+                    _currentBuildState.CancellationTokenSource.Cancel();
             }
 
-            BuildResultMessage buildResult = _currentBuildTask.Result;
-            _editorAssembliesMightBeDirty = true;
-            UnityMSBuildLogger.LogCompilerMessages(buildResult, IsEditorTarget(target));
-            if (generateBinLog)
-            {
-                UnityMSBuildLogger.LogProjectBuildManagerMessages(buildResult);
-            }
+            EditorUtility.ClearProgressBar();
 
-            var compilationStatus = GetCompileStatus(buildResult);
-
-            ReportBuildFinished(target, buildResult);
-            _currentBuildState = null;
-            _currentBuildTask = null;
-            return GetCompileStatus(buildResult);
+            return CompleteBuild(target, configuration, generateBinLog);
         }
 
-        if (_currentBuildTask.IsCompletedSuccessfully)
+        return CompleteBuild(target, GetMsBuildConfiguration(target, buildTarget),
+            (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog"));
+    }
+
+    private EditorCompilation.CompileStatus CompleteBuild(CompileTarget target, string configuration, bool generateBinLog)
+    {
+        var buildState = _currentBuildState;
+        var buildTask = _currentBuildTask;
+        _currentBuildState = null;
+        _currentBuildTask = null;
+
+        // Superseded by a newer request, or cancelled by the user; the replacement is already queued.
+        if (buildTask.IsCanceled)
         {
-            var buildResult = _currentBuildTask.Result;
-            _currentBuildState = null;
-            _currentBuildTask = null;
-
-            UnityMSBuildLogger.LogCompilerMessages(buildResult, IsEditorTarget(target));
-            var generateBinLog = (bool)UnityEngine.Debug.GetDiagnosticSwitch("ScriptCompilationMsBuildBinlog").value || Application.HasARGV("generate-binlog");
-            if (generateBinLog)
-            {
-                UnityMSBuildLogger.LogProjectBuildManagerMessages(buildResult);
-            }
-
-            ReportBuildFinished(target, buildResult);
-            _editorAssembliesMightBeDirty = true;
-            return GetCompileStatus(buildResult);
-        }
-
-        if (_currentBuildTask.IsCanceled || _currentBuildTask.IsFaulted)
-        {
-            if (_currentBuildTask.IsFaulted)
-                UnityEngine.Debug.LogError("Internal BuildSystem Error: " + _currentBuildTask.Exception);
-
-            _currentBuildState = null;
-            _currentBuildTask = null;
             _editorAssembliesMightBeDirty = false;
             return EditorCompilation.CompileStatus.CompilationFailed;
         }
 
-        _currentBuildState = null;
-        _currentBuildTask = null;
-        return EditorCompilation.CompileStatus.Idle;
+        if (buildTask.IsFaulted)
+        {
+            _editorAssembliesMightBeDirty = false;
+            UnityMSBuildLogger.LogBuildFailedWithoutResult(buildTask.Exception, buildState?.Elapsed ?? TimeSpan.Zero,
+                buildState?.LastProgressText ?? "unknown", configuration, generateBinLog);
+            return EditorCompilation.CompileStatus.CompilationFailed;
+        }
+
+        var buildResult = buildTask.Result;
+        _editorAssembliesMightBeDirty = true;
+
+        UnityMSBuildLogger.LogCompilerMessages(buildResult, IsEditorTarget(target));
+        if (generateBinLog)
+        {
+            UnityMSBuildLogger.LogProjectBuildManagerMessages(buildResult);
+        }
+
+        ReportBuildFinished(target, buildResult);
+        return GetCompileStatus(buildResult);
     }
 
     private CompilationDoneResult GetCompilationDoneResult(CompileTarget target, BuildResultMessage buildResult)

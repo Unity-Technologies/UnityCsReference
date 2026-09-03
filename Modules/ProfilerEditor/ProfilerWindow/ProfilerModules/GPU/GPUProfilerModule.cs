@@ -25,19 +25,19 @@ namespace UnityEditorInternal.Profiling
         protected override ProfilerViewType DefaultViewTypeSetting => ProfilerViewType.Hierarchy;
         protected override bool IsGpuView => true;
 
-        static readonly string k_GpuProfilingDisabled = L10n.Tr("GPU Profiling was not enabled so no data was gathered.");
+        static readonly string k_GpuProfilingDisabled = L10n.Tr("GPU Profiling was not enabled so no data was gathered.", null);
 
-        static readonly string k_GpuProfilingNotSupportedWithEditorProfilingBefore2021_2 = L10n.Tr("GPU Profiling was not supported when profiling the Editor before 2021.2.");
-        static readonly string k_GpuProfilingNotSupportedWithLegacyGfxJobs = L10n.Tr("GPU Profiling is currently not supported when using Graphics Jobs.");
-        static readonly string k_GpuProfilingNotSupportedWithNativeGfxJobs = L10n.Tr("GPU Profiling is currently not supported when using Graphics Jobs.");
-        static readonly string k_GpuProfilingNotSupportedByDevice = L10n.Tr("GPU Profiling is currently not supported by this device.");
-        static readonly string k_GpuProfilingNotSupportedByGraphicsAPI = L10n.Tr("GPU Profiling is currently not supported by the used graphics API.");
-        static readonly string k_GpuProfilingNotSupportedDueToFrameTimingStatsAndDisjointTimerQuery = L10n.Tr("GPU Profiling is currently not supported on this device when PlayerSettings.enableFrameTimingStats is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"Frame Timing Stats\">Click here to edit</a>)");
-        static readonly string k_GpuProfilingNotSupportedWithVulkan = L10n.Tr("GPU Profiling is currently not supported when using Vulkan.");
-        static readonly string k_GpuProfilingNotSupportedWithMetal = L10n.Tr("GPU Profiling is currently not supported when using Metal.");
-        static readonly string k_GpuProfilingNotSupportedWithOpenGLGPURecorders = L10n.Tr("GPU Profiling is currently not supported in OpenGL when PlayerSettings.\nenableOpenGLProfilerGPURecorders is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"OpenGL: Profiler GPU Recorders\">Click here to edit</a>)");
+        static readonly string k_GpuProfilingNotSupportedWithEditorProfilingBefore2021_2 = L10n.Tr("GPU Profiling was not supported when profiling the Editor before 2021.2.", null);
+        static readonly string k_GpuProfilingNotSupportedWithLegacyGfxJobs = L10n.Tr("GPU Profiling is currently not supported when using Graphics Jobs.", null);
+        static readonly string k_GpuProfilingNotSupportedWithNativeGfxJobs = L10n.Tr("GPU Profiling is currently not supported when using Graphics Jobs.", null);
+        static readonly string k_GpuProfilingNotSupportedByDevice = L10n.Tr("GPU Profiling is currently not supported by this device.", null);
+        static readonly string k_GpuProfilingNotSupportedByGraphicsAPI = L10n.Tr("GPU Profiling is currently not supported by the used graphics API.", null);
+        static readonly string k_GpuProfilingNotSupportedDueToFrameTimingStatsAndDisjointTimerQuery = L10n.Tr("GPU Profiling is currently not supported on this device when PlayerSettings.enableFrameTimingStats is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"Frame Timing Stats\">Click here to edit</a>)", null);
+        static readonly string k_GpuProfilingNotSupportedWithVulkan = L10n.Tr("GPU Profiling is currently not supported when using Vulkan.", null);
+        static readonly string k_GpuProfilingNotSupportedWithMetal = L10n.Tr("GPU Profiling is currently not supported when using Metal.", null);
+        static readonly string k_GpuProfilingNotSupportedWithOpenGLGPURecorders = L10n.Tr("GPU Profiling is currently not supported in OpenGL when PlayerSettings.\nenableOpenGLProfilerGPURecorders is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"OpenGL: Profiler GPU Recorders\">Click here to edit</a>)", null);
         static readonly string k_PerformanceWarningMessage = L10n.Tr("Collecting GPU Profiler data disables graphics jobs, causes overhead and reduces the accuracy of the CPU Module. Close this module if you don't need this data.\n\n" +
-            "HDRP and URP Renderers are currently not supported: the profiler won't show most GPU markers if these renderers are enabled.");
+            "HDRP and URP Renderers are currently not supported: the profiler won't show most GPU markers if these renderers are enabled.", null);
 
         [NoAutoStaticsCleanup] // Fixed content, safe to persist
         static readonly Dictionary<GpuProfilingStatisticsAvailabilityStates, string> s_StatisticsAvailabilityStateReason

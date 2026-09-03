@@ -66,5 +66,18 @@ namespace Unity.Burst.Intrinsics
         {
             return (v & 0x7ffffffffffffffful) > 0x7ff0000000000000ul;
         }
+
+        // x86 CVT instructions return int/long.MinValue for NaN/Inf/out-of-range, but .NET 9+ casts saturate.
+        // learn.microsoft.com/dotnet/core/compatibility/jit/9.0/fp-to-integer
+        private static int ConvertToInt32(double value)
+        {
+            return value >= int.MinValue && value <= int.MaxValue ? (int)value : int.MinValue;
+        }
+
+        private static long ConvertToInt64(double value)
+        {
+            // long.MaxValue isn't a representable double, so bound against 2^63.
+            return value >= long.MinValue && value < 9223372036854775808.0 ? (long)value : long.MinValue;
+        }
     }
 }

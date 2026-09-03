@@ -187,5 +187,25 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        // Like FindSpecifiedStyles, but for USS custom properties (--name), which have no StylePropertyId
+        // and so are skipped by the built-in pass. Keyed by the custom-property name; the cascade-ordered
+        // matchRecords mean the last matching rule wins (the same overwrite rule the built-in pass uses).
+        public static void FindSpecifiedCustomProperties(IEnumerable<SelectorMatchRecord> matchRecords, Dictionary<string, int> result)
+        {
+            result.Clear();
+            foreach (var record in matchRecords)
+            {
+                int specificity = record.complexSelector.specificity;
+                if (record.sheet.isDefaultStyleSheet)
+                    specificity = UnitySpecificity;
+
+                foreach (var property in record.complexSelector.rule.properties)
+                {
+                    if (property.name != null && property.name.StartsWith("--", StringComparison.Ordinal))
+                        result[property.name] = specificity;
+                }
+            }
+        }
     }
 }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
@@ -42,7 +41,9 @@ namespace UnityEditor
 
         [NoAutoStaticsCleanup] // within-call reentrancy guard; always reset to false, safe to persist
         private static bool s_RecursionLock = false;
+        [NoAutoStaticsCleanup] // value-type flag; reset by Stop(), safe to persist
         private static bool s_ScrollToMode = false;
+        [NoAutoStaticsCleanup] // timestamp; reset by Stop(), safe to persist
         private static float s_ScrollToArrivalTime = -1f;
 
         // Timing and colors match the Graphics settings reveal.
@@ -572,4 +573,3 @@ namespace UnityEditor
         internal static bool isUIToolkitWindow => s_ViewWindow != null && s_ViewWindow.isUIToolkitWindow;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

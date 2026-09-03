@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using UnityEditor.Connect;
 using UnityEditor.PackageManager.UI;
@@ -33,7 +34,7 @@ namespace UnityEditor.Toolbars
         [MainToolbarElement(k_Path, defaultDockIndex = 6, defaultDockPosition = MainToolbarDockPosition.Right)]
         static MainToolbarElement CreateButton()
         {
-            return new MainToolbarButton(new MainToolbarContent(EditorGUIUtility.LoadIcon("Icons/CloudConnect.png"), L10n.Tr("Manage services")), () => OpenServicesDiscoveryWindow(EditorGameServicesAnalytics.SendToolbarCloudEvent))
+            return new MainToolbarButton(new MainToolbarContent(EditorGUIUtility.LoadIcon("Icons/CloudConnect.png"), L10n.Tr("Manage services", null)), () => OpenServicesDiscoveryWindow(EditorGameServicesAnalytics.SendToolbarCloudEvent))
             {
                 displayed = s_Availability
             };
@@ -52,3 +53,4 @@ namespace UnityEditor.Toolbars
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

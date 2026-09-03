@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphView not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -25,7 +26,9 @@ namespace UnityEditor.Experimental.GraphView
             m_TemplateHelper= templateHelper;
             m_HiddenSearchQuery = hiddenSearchQuery;
             m_AdbOnly = adbOnly;
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             fetchItems = (context, items, provider) => SearchItems(context, provider);
+            #pragma warning restore UAL0015
             toObject = (item, _) => item.ToObject();
             fetchPropositions = FetchPropositions;
         }
@@ -206,3 +209,4 @@ namespace UnityEditor.Experimental.GraphView
         private bool IsIndexingComplete() => SearchDatabase.GetDefaultSearchDatabase().ready;
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

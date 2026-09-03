@@ -26,7 +26,7 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
         const string k_ItemInvalidClassName = "clip-dropdown-window__item--invalid";
         const string k_SelectedClassName = "selected";
 
-        static readonly string s_CreateNewClip = L10n.Tr("Create New Clip...");
+        static readonly string s_CreateNewClip = L10n.Tr("Create New Clip...", null);
 
         private ToolbarSearchField m_SearchField;
         private ScrollView m_ScrollView;
@@ -359,12 +359,12 @@ namespace UnityEditor.Animations.AnimationWindow.Widgets
                 return s_CreateNewClip;
 
             if (clip == null || !clip.isValid)
-                return L10n.Tr("[No Clip]");
+                return L10n.Tr("[No Clip]", null);
 
             string name = clip.name;
 
             if (clip.isReadOnly)
-                name = string.Format(L10n.Tr("{0} (Read-Only)"), name);
+                name = string.Format(L10n.Tr("{0} (Read-Only)", null), name);
 
             return name;
         }

@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class AssetStoreListOperation : IOperation
     {
         private const int k_QueryLimit = 500;
-        private static readonly string k_UserNotLoggedInErrorMessage = L10n.Tr("User not logged in.");
+        private static readonly string k_UserNotLoggedInErrorMessage = L10n.Tr("User not logged in.", null);
 
         public string packageUniqueId => string.Empty;
         public long productId => 0;

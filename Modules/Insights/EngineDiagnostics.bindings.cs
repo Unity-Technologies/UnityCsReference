@@ -37,6 +37,7 @@ namespace Unity.EngineDiagnostics
 
         public static extern bool IsEventAllowed(int eventType);
 
+        [NativeMethod(IsThreadSafe = true)]
         public static extern void LogEvent(int eventType, ReadOnlySpan<char> eventData, bool immediate = false);
     }
 }

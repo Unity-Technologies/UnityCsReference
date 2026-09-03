@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.GraphToolkit.CSO;
@@ -26,7 +27,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Function to determine if a port is an untyped port. Defaults to checking if the port's data type is Untyped.
         /// </summary>
-        public Func<PortModel, bool> IsUntypedPort = p => p.PortDataType == typeof(Untyped);
+        public Func<PortModel, bool> IsUntypedPort = p => p.DataTypeHandle == TypeHandle.Untyped || p.PortDataType == typeof(Untyped);
 
         /// <summary>
         /// Resets the state of the action.
@@ -251,3 +252,4 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

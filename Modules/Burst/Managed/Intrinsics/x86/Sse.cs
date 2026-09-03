@@ -917,7 +917,7 @@ namespace Unity.Burst.Intrinsics
             [DebuggerStepThrough]
             public static int cvt_ss2si(v128 a)
             {
-                return (int)Math.Round(a.Float0, MidpointRounding.ToEven);
+                return ConvertToInt32(Math.Round(a.Float0, MidpointRounding.ToEven));
             }
 
             // _mm_cvtss_si64
@@ -930,7 +930,7 @@ namespace Unity.Burst.Intrinsics
             [DebuggerStepThrough]
             public static long cvtss_si64(v128 a)
             {
-                return (long)Math.Round(a.Float0, MidpointRounding.ToEven);
+                return ConvertToInt64(Math.Round(a.Float0, MidpointRounding.ToEven));
             }
 
             // _mm_cvtss_f32
@@ -952,7 +952,7 @@ namespace Unity.Burst.Intrinsics
             {
                 using (var csr = new RoundingScope(MXCSRBits.RoundTowardZero))
                 {
-                    return (int)a.Float0;
+                    return ConvertToInt32(Math.Truncate(a.Float0));
                 }
             }
 
@@ -976,7 +976,7 @@ namespace Unity.Burst.Intrinsics
             {
                 using (var csr = new RoundingScope(MXCSRBits.RoundTowardZero))
                 {
-                    return (long)a.Float0;
+                    return ConvertToInt64(Math.Truncate(a.Float0));
                 }
             }
 

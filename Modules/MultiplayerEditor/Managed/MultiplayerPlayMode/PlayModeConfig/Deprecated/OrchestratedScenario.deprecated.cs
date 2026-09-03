@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using Unity.PlayMode.Editor;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
@@ -29,6 +28,18 @@ sealed partial class OrchestratedScenario : PlayModeScenario, ISerializationCall
         UpgradeMainEditor();
         UpgradeCloneEditors();
         UpgradeLocalInstances();
+
+        UpgradeInstanceItems();
+    }
+
+    // Version 1
+    void UpgradeInstanceItems()
+    {
+        for (var i = 0; i < m_Settings.InstanceCount; i++)
+        {
+            if (m_Settings[i] is IUpgradablePlayModeControllerItem item)
+                m_Settings[i] = item.Upgrade();
+        }
     }
 
     void UpgradeMainEditor()

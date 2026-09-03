@@ -1074,35 +1074,44 @@ namespace UnityEditor
 
         internal static string[] GetDragAndDropPaths(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
         {
-            // Assets
+            // Only main assets contribute a path: GetAssetPath on a sub asset returns its containing
+            // file, so it can only repeat the main asset's path. 'seen' also serves the dragged item's
+            // already-covered check below.
             List<string> paths = new List<string>();
+            HashSet<string> seen = new HashSet<string>();
             foreach (EntityId entityId in selectedInstanceIDs)
             {
                 if (AssetDatabase.IsMainAsset(entityId))
-                {
-                    string path = AssetDatabase.GetAssetPath(entityId);
-                    paths.Add(path);
-                }
+                    AddPath(AssetDatabase.GetAssetPath(entityId), paths, seen);
             }
 
             string dragPath = AssetDatabase.GetAssetPath(draggedInstanceID);
-            if (!string.IsNullOrEmpty(dragPath))
+
+            // A builtin resource or scene object. The selection's paths are dropped too, as before.
+            if (string.IsNullOrEmpty(dragPath))
+                return Array.Empty<string>();
+
+            // Already covered by the selection.
+            if (seen.Contains(dragPath))
+                return paths.ToArray();
+
+            // Ctrl/cmd extends the selection with the grabbed item. Event.current is null outside a GUI
+            // event, where no modifier can be held; reading it unguarded used to throw.
+            Event currentEvent = Event.current;
+            if (currentEvent != null && (currentEvent.control || currentEvent.command))
             {
-                if (paths.Contains(dragPath))
-                {
-                    return paths.ToArray();
-                }
-                else if (Event.current.control || Event.current.command)
-                {
-                    paths.Add(dragPath);
-                    return paths.ToArray();
-                }
-                else
-                {
-                    return new[] { dragPath };
-                }
+                AddPath(dragPath, paths, seen);
+                return paths.ToArray();
             }
-            return Array.Empty<string>();
+
+            return new[] { dragPath };
+        }
+
+        // Skips empties and paths already carried.
+        static void AddPath(string path, List<string> paths, HashSet<string> seen)
+        {
+            if (!string.IsNullOrEmpty(path) && seen.Add(path))
+                paths.Add(path);
         }
 
         // Returns instanceID of folders (and main asset if input is a subasset) up until and including the Assets folder
@@ -1320,7 +1329,7 @@ namespace UnityEditor
             bool foundAssetsFolder = instanceIDs.Contains(AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets"));
             if (foundAssetsFolder)
             {
-                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), L10n.Tr("Deleting the 'Assets' folder is not allowed"), L10n.Tr("OK"));
+                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete", null), L10n.Tr("Deleting the 'Assets' folder is not allowed", null), L10n.Tr("OK", null));
                 return false;
             }
 
@@ -1337,11 +1346,11 @@ namespace UnityEditor
                 string title;
                 if (paths.Length > 1)
                 {
-                    title = L10n.Tr("Delete selected assets?");
+                    title = L10n.Tr("Delete selected assets?", null);
                 }
                 else
                 {
-                    title = L10n.Tr("Delete selected asset?");
+                    title = L10n.Tr("Delete selected asset?", null);
                 }
 
                 int maxCount = 3;
@@ -1366,7 +1375,7 @@ namespace UnityEditor
                     infotext.AppendLine("...");
                 }
                 infotext.AppendLine("");
-                infotext.AppendLine(L10n.Tr("You cannot undo the delete assets action."));
+                infotext.AppendLine(L10n.Tr("You cannot undo the delete assets action.", null));
 
                 if (containsMaterial)
                 {
@@ -1381,14 +1390,14 @@ namespace UnityEditor
                     string name = (paths.Length == 1) ? "This Material" : "One or more of these Material(s)";
                     infotext.AppendLine(name + " is inherited by one or more children. Deleting will result in the children re-mapping to their closest remaining ancestor. Would you like to proceed with re-parenting?");
 
-                    bool dialogOptionIndex = EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete and re-parent children"), L10n.Tr("Cancel"));
+                    bool dialogOptionIndex = EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete and re-parent children", null), L10n.Tr("Cancel", null));
 
                     if (dialogOptionIndex)
                         reparentMaterials = true;
                     else
                         return false;
                 }
-                else if (!EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete"), L10n.Tr("Cancel")))
+                else if (!EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete", null), L10n.Tr("Cancel", null)))
                     return false;
             }
 
@@ -1423,10 +1432,10 @@ namespace UnityEditor
                         vcsOffline = !Provider.isActive;
                 }
                 var message = vcsOffline ?
-                    L10n.Tr("Some assets could not be deleted.\nMake sure you are connected to your Version Control server or \"Work Offline\" is enabled.") :
-                    L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example.");
+                    L10n.Tr("Some assets could not be deleted.\nMake sure you are connected to your Version Control server or \"Work Offline\" is enabled.", null) :
+                    L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example.", null);
 
-                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), message, L10n.Tr("OK"));
+                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete", null), message, L10n.Tr("OK", null));
             }
 
             PackageManager.Client.Resolve(false);

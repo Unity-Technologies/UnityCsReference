@@ -61,6 +61,7 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Gets the hash for the BuildReferenceMap.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.BuildUsageTagSet" />.</remarks>
+        ///<returns>A 128-bit hash of the BuildUsageTagSet.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern Hash128 GetHash128();
 
@@ -77,8 +78,9 @@ namespace UnityEditor.Build.Content
         [NativeMethod(IsThreadSafe = true)]
         internal extern string GetBuildUsageJson(ObjectIdentifier objectId);
 
-        ///<summary>Returns an array of <see cref="ObjectIdentifiers" /> that this BuildUsageTagSet contains usage information about.</summary>
+        ///<summary>Obtains an array of <see cref="ObjectIdentifiers" /> that the BuildUsageTagSet contains usage information about.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.BuildUsageTagSet" />.</remarks>
+        ///<returns>An array of the ObjectIdentifier structs that the BuildUsageTagSet contains usage information about.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern ObjectIdentifier[] GetObjectIdentifiers();
 
@@ -95,6 +97,8 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Returns true if the objects are equal.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.BuildUsageTagSet" />.</remarks>
+        ///<param name="obj">The object to compare with the current instance.</param>
+        ///<returns>True if the specified object is equal to the current instance. Otherwise, false.</returns>
         public override bool Equals(object obj)
         {
             BuildUsageTagSet other = obj as BuildUsageTagSet;

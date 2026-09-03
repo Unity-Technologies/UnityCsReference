@@ -16,10 +16,10 @@ namespace UnityEditor.AdaptivePerformance.Editor
         private string m_NewProfileName = "New Scaler Profile";
         private bool m_NeedsFocus = true;
         private List<string> existingProfileNames = new List<string>();
-        static readonly string s_WarningPopup = L10n.Tr("Warning");
-        static readonly string s_WarningPopupOption = L10n.Tr("Ok");
+        static readonly string s_WarningPopup = L10n.Tr("Warning", null);
+        static readonly string s_WarningPopupOption = L10n.Tr("Ok", null);
         const int k_maxChars = 256;
-        static readonly string k_ErrorMessageLength = string.Format(L10n.Tr("Scaler profile name is too long (maximum {0} characters)"), k_maxChars);
+        static readonly string k_ErrorMessageLength = string.Format(L10n.Tr("Scaler profile name is too long (maximum {0} characters)", null), k_maxChars);
 
         public EnterNamePopup(SerializedProperty profiles, EnterDelegate cb)
         {
@@ -79,13 +79,13 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
                 if (existingProfileNames.Contains(m_NewProfileName))
                 {
-                    EditorUtility.DisplayDialog(s_WarningPopup, L10n.Tr("The Adaptive Performance Scaler Profile named " + m_NewProfileName + " already exists. Please rename and try again."), s_WarningPopupOption);
+                    EditorUtility.DisplayDialog(s_WarningPopup, L10n.Tr("The Adaptive Performance Scaler Profile named " + m_NewProfileName + " already exists. Please rename and try again.", null), s_WarningPopupOption);
                     return;
                 }
 
                 if (string.IsNullOrEmpty(m_NewProfileName))
                 {
-                    EditorUtility.DisplayDialog(s_WarningPopup, L10n.Tr("The Adaptive Performance Scaler Profile name is empty or contains white space only. Trailing white spaces are removed. Please rename and try again."), s_WarningPopupOption);
+                    EditorUtility.DisplayDialog(s_WarningPopup, L10n.Tr("The Adaptive Performance Scaler Profile name is empty or contains white space only. Trailing white spaces are removed. Please rename and try again.", null), s_WarningPopupOption);
                     return;
                 }
 

@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System.Collections.Generic;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Time;
 using Unity.Timeline.Foundation.Widgets.Internals;
 using UnityEngine;
@@ -15,8 +15,11 @@ namespace Unity.Timeline.Foundation.Widgets
     [UxmlElement]
     internal partial class TimeArea : VisualElement
     {
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<int> k_AttrTickRulerDistLabel = new CustomStyleProperty<int>("--tick-label-padding");
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<float> k_AttrTickRulerHeightMax = new CustomStyleProperty<float>("--tick-max-height");
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<Color> k_AttrLineColor = new CustomStyleProperty<Color>("--line-color");
 
         const string k_Style = "timeArea";
@@ -25,6 +28,7 @@ namespace Unity.Timeline.Foundation.Widgets
         const float k_DefaultTickRulerHeightMax = 0.7f; // height of the ruler tick marks when they are highest
 
         static readonly Color k_DefaultLineColor = new Color(1.0f, 1.0f, 1.0f, 0.2f);
+        [NoAutoStaticsCleanup] // Immutable USS stylesheet-path descriptor; holds only fixed path strings, safe to persist across reload.
         static readonly StylesheetResource k_Stylesheet = UIResources.StylesheetFactory.Get<TimeArea>();
 
         public TimeRange DisplayRange => m_DisplayRange;
@@ -272,4 +276,3 @@ namespace Unity.Timeline.Foundation.Widgets
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

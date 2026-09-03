@@ -27,20 +27,20 @@ namespace UnityEditor
         {
             if (!IsValidOpenInEditorUrl(openInEditorUrl,  out var uri)) 
             {
-                Debug.LogWarning(string.Format(L10n.Tr("Invalid URL \"{0}\". Ignoring deeplink operation."), openInEditorUrl));
+                Debug.LogWarning(string.Format(L10n.Tr("Invalid URL \"{0}\". Ignoring deeplink operation.", null), openInEditorUrl));
                 return;
             }
 
             if (!TryGetUrlNamespaceTarget(openInEditorUrl, out var urlNamespaceTarget)) 
             {
-                Debug.LogWarning(string.Format(L10n.Tr("Invalid URL \"{0}\", missing namespace target. Ignoring deeplink operation."), openInEditorUrl));
+                Debug.LogWarning(string.Format(L10n.Tr("Invalid URL \"{0}\", missing namespace target. Ignoring deeplink operation.", null), openInEditorUrl));
                 return;
             }
 
             var deeplinkHandler = FindDeeplinkHandler(urlNamespaceTarget);
             if (deeplinkHandler == null)
             {
-                Debug.LogWarning(string.Format(L10n.Tr("Missing handler for URL \"{0}\". Ignoring deeplink operation."), openInEditorUrl));
+                Debug.LogWarning(string.Format(L10n.Tr("Missing handler for URL \"{0}\". Ignoring deeplink operation.", null), openInEditorUrl));
                 return;
             }
 
@@ -57,12 +57,12 @@ namespace UnityEditor
                 // Otherwise prompt user for manual confirmation
                 if (InternalEditorUtility.isHumanControllingUs)
                 {
-                    var dialogText = new StringBuilder(string.Format(L10n.Tr("An URL targeting the \"{0}\" namespace has been received:\n"), urlNamespaceTarget));
+                    var dialogText = new StringBuilder(string.Format(L10n.Tr("An URL targeting the \"{0}\" namespace has been received:\n", null), urlNamespaceTarget));
                     dialogText.AppendLine(openInEditorUrl);
 
-                    bool openURL = EditorUtility.DisplayDialog(L10n.Tr("Open URL in Editor"),
+                    bool openURL = EditorUtility.DisplayDialog(L10n.Tr("Open URL in Editor", null),
                         dialogText.ToString(),
-                        L10n.Tr("Open"), L10n.Tr("Dismiss"));
+                        L10n.Tr("Open", null), L10n.Tr("Dismiss", null));
 
                     if (openURL)
                     {
@@ -71,7 +71,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    Debug.LogWarning(string.Format(L10n.Tr("Unvalidated URL \"{0}\" requires manual user confirmation before opening. Ignoring deeplink operation."), openInEditorUrl));
+                    Debug.LogWarning(string.Format(L10n.Tr("Unvalidated URL \"{0}\" requires manual user confirmation before opening. Ignoring deeplink operation.", null), openInEditorUrl));
                 }
             }
         }
@@ -82,12 +82,12 @@ namespace UnityEditor
             {
                 if (methodInfo.GetParameters().Length != 1)
                 {
-                    Debug.LogWarning(string.Format(L10n.Tr("Missing System.Uri parameter in method '{0} {1}'."), methodInfo.DeclaringType.FullName, methodInfo.Name));
+                    Debug.LogWarning(string.Format(L10n.Tr("Missing System.Uri parameter in method '{0} {1}'.", null), methodInfo.DeclaringType.FullName, methodInfo.Name));
                     continue;
                 }
                 if (methodInfo.GetParameters()[0].ParameterType != typeof(Uri))
                 {
-                    Debug.LogWarning(string.Format(L10n.Tr("Wrong parameter type in method '{0} {1}'. Expecting System.Uri parameter."), methodInfo.DeclaringType.FullName, methodInfo.Name));
+                    Debug.LogWarning(string.Format(L10n.Tr("Wrong parameter type in method '{0} {1}'. Expecting System.Uri parameter.", null), methodInfo.DeclaringType.FullName, methodInfo.Name));
                     continue;
                 }
                 var deeplinkHandlerAttribute = methodInfo.GetCustomAttribute<DeeplinkHandlerAttribute>();

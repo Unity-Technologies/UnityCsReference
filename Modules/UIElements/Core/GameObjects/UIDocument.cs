@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
@@ -416,6 +417,11 @@ namespace UnityEngine.UIElements
 
         [SerializeField, HideInInspector] private BoxCollider m_WorldSpaceCollider;
 
+        // Curved UI: minimum local Z extent of the document's 3D picking bounds for a MatchDocumentRect
+        // collider to be promoted to the full 3D bounding box. A flat panel's picking bounds are effectively
+        // zero-thickness; any real curvature sag clears this comfortably.
+        const float k_CurvatureColliderDepthThreshold = 1e-3f;
+
         /// <summary>
         /// The order in which this UIDocument will show up on the hierarchy in relation to other UIDocuments either
         /// attached to the same PanelSettings, or with the same UIDocument parent.
@@ -508,6 +514,42 @@ namespace UnityEngine.UIElements
 
         void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
         bool IPanelComponent.GetComponentEnabled() => this.enabled;
+
+        // Serialized opt-out gate for the generated accessibility hierarchy, evaluated before this
+        // document's tree is ever walked. Only drawn in the inspector while the experimental
+        // accessibility project setting is on.
+        [SerializeField, HideInInspector]
+        private bool m_GenerateAccessibilityHierarchy = true;
+
+        /// <summary>
+        /// Whether this document's content is included in the automatically generated accessibility
+        /// hierarchy. The default value is @@true@@.
+        /// </summary>
+        /// <remarks>
+        /// This property only takes effect while the experimental **Generate Accessibility
+        /// Hierarchies for Runtime Panels** setting is enabled in **Project Settings &gt; UI
+        /// Toolkit**. An opted-out document contributes nothing to the generated hierarchy,
+        /// including the content of any child documents. Changing the value on a live document
+        /// adds or removes its content in place, without rebuilding the rest of the generated
+        /// hierarchy.
+        /// </remarks>
+        public bool generateAccessibilityHierarchy
+        {
+            get => m_GenerateAccessibilityHierarchy;
+            set
+            {
+                if (m_GenerateAccessibilityHierarchy == value)
+                    return;
+
+                m_GenerateAccessibilityHierarchy = value;
+                // The shadow lives with the editor-only validation region that reads it.
+                m_OldGenerateAccessibilityHierarchy = value;
+                UITKAccessibilityBridge.OnPanelComponentGateChanged(this);
+            }
+        }
+
+        void IPanelComponent.SetAccessibilityEnabled(bool enabled) => generateAccessibilityHierarchy = enabled;
+        bool IPanelComponent.GetAccessibilityEnabled() => generateAccessibilityHierarchy;
 
         //This need to be in the implementation for code stripping reason,is duplicated in PanelRenderer
         Vector3 IPanelComponent.GetPanelPosition(IEventHandler pickedElement, Ray worldRay)
@@ -651,7 +693,15 @@ namespace UnityEngine.UIElements
             }
 
             Bounds bb;
-            if (mode == ColliderUpdateMode.MatchBoundingBox)
+            // Curved UI: MatchDocumentRect builds a flat, zero-thickness collider from the 2D document
+            // rect. Curved content bends OUT of that plane (toward and away from the viewer), so a flat collider
+            // lets the physics ray - which gates world-space picking - miss the bent surface wherever it has left
+            // the plane. When curvature is active and the document's 3D picking bounds have real local depth, use
+            // those bounds so the collider is a conservative box enclosing the whole surface; the managed pick
+            // (VisualElement.IntersectLocalRay) then refines to the exact curved element.
+            bool curvedDepth = rootVisualElement.mayBeInCurvedChain &&
+                WorldSpaceInput.GetPicking3DLocalBounds(rootVisualElement).size.z > k_CurvatureColliderDepthThreshold;
+            if (mode == ColliderUpdateMode.MatchBoundingBox || curvedDepth)
             {
                 bb = WorldSpaceInput.GetPicking3DWorldBounds(rootVisualElement);
             }
@@ -1182,6 +1232,7 @@ namespace UnityEngine.UIElements
 
         private VisualTreeAsset m_OldUxml = null;
         private float m_OldSortingOrder = k_DefaultSortingOrder;
+        private bool m_OldGenerateAccessibilityHierarchy = true;
 
         [NoAutoStaticsCleanup]
         // For unit tests
@@ -1240,6 +1291,15 @@ namespace UnityEngine.UIElements
                 m_OldSortingOrder = m_SortingOrder;
             }
 
+            // Undo/Redo, revert and paste write m_GenerateAccessibilityHierarchy directly,
+            // bypassing the property setter; without the resync the bridge keeps the stale
+            // registration. The bridge's own feature gate makes this a no-op in edit mode.
+            if (m_OldGenerateAccessibilityHierarchy != m_GenerateAccessibilityHierarchy)
+            {
+                m_OldGenerateAccessibilityHierarchy = m_GenerateAccessibilityHierarchy;
+                UITKAccessibilityBridge.OnPanelComponentGateChanged(this);
+            }
+
             if (isWorldSpace)
             {
                 SetupWorldSpaceSize();
@@ -1259,3 +1319,4 @@ namespace UnityEngine.UIElements
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

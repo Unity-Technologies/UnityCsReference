@@ -239,6 +239,7 @@ namespace UnityEditor.DeviceSimulation
                 "supportsMultisampledTextures",
                 "supportsMultisampleAutoResolve",
                 "supportsMultisampledShaderResolve",
+                "supportsSwapChainPreTransform",
                 "supportsTextureWrapMirrorOnce",
                 "usesReversedZBuffer",
                 "npotSupport",

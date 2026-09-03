@@ -7,7 +7,7 @@ using System;
 namespace Unity.GraphToolkit.Editor;
 
 /// <summary>
-/// Categories of change that can be reported on a graph element.
+/// Categories of change that can be reported on a graph or state machine element.
 /// </summary>
 /// <remarks>
 /// <see cref="ChangeKind"/> is a bit-flag enum, so a single value can describe multiple categories of change
@@ -38,15 +38,16 @@ public enum ChangeKind
     Style         = 1 << 1,
     /// <summary>Model data (for example, an inspectable field) changed.</summary>
     Data          = 1 << 2,
-    /// <summary>Graph topology changed; typically, a wire was connected or disconnected.</summary>
-    GraphTopology = 1 << 3,
+    /// <summary>Graph or state machine topology changed; typically, a wire or transition was connected or disconnected.</summary>
+    Topology = 1 << 3,
     /// <summary>Grouping of variables in the blackboard changed.</summary>
     Grouping      = 1 << 4,
-    /// <summary>The element was added to the graph.</summary>
+    /// <summary>The element was added to the graph or state machine.</summary>
     Added         = 1 << 5,
-    /// <summary>The element was removed from the graph.</summary>
+    /// <summary>The element was removed from the graph or state machine.</summary>
     Removed       = 1 << 6,
     /// <summary>A port on the node changed; inspect <see cref="ChangedNode.ChangedPorts"/> for details.</summary>
+    /// <remarks>This change kind is never reported by a state machine element.</remarks>
     PortChanged   = 1 << 7,
     /// <summary>The view for the element must be torn down and recreated (for example, a variable node flipped between Get and Set).</summary>
     RecreateView  = 1 << 8,
@@ -67,7 +68,7 @@ static class ChangeHintExtensions
         if (hint == ChangeHint.Layout)        return ChangeKind.Layout;
         if (hint == ChangeHint.Style)         return ChangeKind.Style;
         if (hint == ChangeHint.Data)          return ChangeKind.Data;
-        if (hint == ChangeHint.GraphTopology) return ChangeKind.GraphTopology;
+        if (hint == ChangeHint.GraphTopology) return ChangeKind.Topology;
         if (hint == ChangeHint.Grouping)      return ChangeKind.Grouping;
         if (hint == ChangeHint.RecreateView)  return ChangeKind.RecreateView;
         return ChangeKind.None;

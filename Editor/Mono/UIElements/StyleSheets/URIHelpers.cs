@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.IO;
 using UnityEngine.Bindings;
@@ -257,7 +256,7 @@ namespace UnityEditor.UIElements.StyleSheets
                                 {
                                     response.warningMessage = string.Format(
                                         L10n.Tr(
-                                            "Asset reference to GUID '{0}' resolved to '{2}', but URL path hints at '{1}'. Update the URL '{3}' to remove this warning."),
+                                            "Asset reference to GUID '{0}' resolved to '{2}', but URL path hints at '{1}'. Update the URL '{3}' to remove this warning.", null),
                                         query.guid, response.resolvedProjectRelativePath, pathFromGuid, originalPath);
                                 }
                                 response.resolvedUrlChanged = true;
@@ -269,13 +268,13 @@ namespace UnityEditor.UIElements.StyleSheets
                             // but the path points to a valid asset, so let's use that
                             response.warningMessage = string.Format(
                                 L10n.Tr(
-                                    "Could not resolve asset with GUID '{0}' and file ID '{1}' from URL '{2}'. Using asset path '{3}' instead. Update the URL to remove this warning."),
+                                    "Could not resolve asset with GUID '{0}' and file ID '{1}' from URL '{2}'. Using asset path '{3}' instead. Update the URL to remove this warning.", null),
                                 query.guid, query.fileId, path, response.resolvedProjectRelativePath);
                             response.resolvedUrlChanged = true;
                         }
                         else
                         {
-                            response.warningMessage = string.Format(L10n.Tr("Invalid asset path hint \"{0}\" for referenced asset GUID \"{1}\""),
+                            response.warningMessage = string.Format(L10n.Tr("Invalid asset path hint \"{0}\" for referenced asset GUID \"{1}\"", null),
                                 response.resolvedProjectRelativePath, query.guid);
                             response.errorToken = originalPath;
                             response.result = URIValidationResult.InvalidURIProjectAssetPath;
@@ -298,7 +297,7 @@ namespace UnityEditor.UIElements.StyleSheets
                                 // URL path points to some other asset -> warn the user
                                 response.warningMessage = string.Format(
                                     L10n.Tr(
-                                        "Ambiguous asset reference detected. Asset reference to GUID '{0}' resolved to '{2}', but URL path hints at '{1}', which is also valid asset path. Update the URL '{3}' to remove this warning."),
+                                        "Ambiguous asset reference detected. Asset reference to GUID '{0}' resolved to '{2}', but URL path hints at '{1}', which is also valid asset path. Update the URL '{3}' to remove this warning.", null),
                                     query.guid, response.resolvedProjectRelativePath, realAssetPath, originalPath);
                             }
                             else
@@ -306,7 +305,7 @@ namespace UnityEditor.UIElements.StyleSheets
                                 // URL path points to nothing -> warn the user
                                 response.warningMessage = string.Format(
                                     L10n.Tr(
-                                        "Asset reference to GUID '{0}' was moved from '{1}' to '{2}'. Update the URL '{3}' to remove this warning."),
+                                        "Asset reference to GUID '{0}' was moved from '{1}' to '{2}'. Update the URL '{3}' to remove this warning.", null),
                                     query.guid, response.resolvedProjectRelativePath, realAssetPath, originalPath);
                                 response.resolvedUrlChanged = true;
                             }
@@ -320,7 +319,7 @@ namespace UnityEditor.UIElements.StyleSheets
                         {
                             response.warningMessage = string.Format(
                                 L10n.Tr(
-                                    "Asset reference to GUID '{0}' and file ID '{1}' was renamed from '{2}' to '{3}'. Update the URL '{4}' to remove this warning."),
+                                    "Asset reference to GUID '{0}' and file ID '{1}' was renamed from '{2}' to '{3}'. Update the URL '{4}' to remove this warning.", null),
                                 query.guid, query.fileId, response.resolvedSubAssetPath, realAssetName, originalPath);
                         }
                         response.resolvedSubAssetPath = realAssetName;
@@ -472,4 +471,3 @@ namespace UnityEditor.UIElements.StyleSheets
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

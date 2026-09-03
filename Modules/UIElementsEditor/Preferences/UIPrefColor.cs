@@ -10,6 +10,9 @@ namespace UnityEditor.UIElements;
 
 [Serializable]
 [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+// Readonly statics of this type are whitelisted in the statics-cleanup analysis (s_AllowedReadonlyTypes in
+// AutoStaticsCleanupModel): preference colors self-register with PrefSettings and read their values from the
+// preferences store, so instances stay valid across code reload, like UnityEditor.PrefColor.
 class UIPrefColor : IPrefType
 {
     string m_Name;

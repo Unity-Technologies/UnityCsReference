@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
@@ -226,7 +227,15 @@ namespace UnityEngine.UIElements
             set
             {
                 ref var f = ref transformFlags;
+                var changed = areAncestorsAndSelfDisplayed != value;
                 f = value ? f | VisualElementTransformFlags.HierarchyDisplayed : f & ~VisualElementTransformFlags.HierarchyDisplayed;
+
+                // Displayed state decides an element's inclusion in the generated accessibility
+                // hierarchy, and a display flip bumps no bit on the affected descendants — this
+                // setter, which the layout updater drives for every affected element, is their
+                // only per-element signal.
+                if (changed)
+                    UITKAccessibilityBridge.OnElementDisplayedChanged(this);
 
                 if (renderData == null)
                     return;
@@ -483,6 +492,20 @@ namespace UnityEngine.UIElements
                 return computedBackdropFilter.Length > 0;
             }
         }
+
+        // Curved UI: true when -unity-curvature resolves to a non-flat value on either axis.
+        internal bool hasCurvature
+        {
+            get
+            {
+                var c = computedStyle.unityCurvature;
+                return c.x.value != 0f || c.y.value != 0f;
+            }
+        }
+
+        // Cheap curvature gate: the panel's sticky curvature bit lets hierarchies that never used curvature
+        // skip the per-element CountChain ancestor walk on the picking/bounds hot paths.
+        internal bool mayBeInCurvedChain => elementPanel is { mayHaveCurvedElements: true };
 
         /// <summary>
         /// Returns a transform styles object for this VisualElement.
@@ -961,6 +984,20 @@ namespace UnityEngine.UIElements
             var localBoundsWithNested = localBoundsWithoutNested;
             var pickingBounds = pickingMode == PickingMode.Position ? localBoundsWithNested : WorldSpaceData.k_Empty3DBounds;
 
+            // Curved UI: the element's mesh is bent onto a curved surface that recedes in Z (and shifts
+            // X/Y inward), so its flat rect no longer bounds it. Inflate by the surface extent — using the SAME
+            // bend math as the renderer and the pick raycast — so localBoundsPicking3D encloses the curved surface
+            // and the ray early-out (bb.IntersectRay) can't drop rays that hit a receded region. The recursive
+            // Encapsulate below then carries the depth up to the document root.
+            if (mayBeInCurvedChain && UIRCurvatureGeometry.CountChain(this) > 0)
+            {
+                var sagBounds = UIRCurvatureGeometry.SagLocalBounds(this, UIRCurvatureGeometry.PickZScale(this));
+                localBoundsWithoutNested.Encapsulate(sagBounds);
+                localBoundsWithNested.Encapsulate(sagBounds);
+                if (pickingMode == PickingMode.Position)
+                    pickingBounds.Encapsulate(sagBounds);
+            }
+
             if (!ShouldClip())
             {
                 var childCount = hierarchy.childCount;
@@ -1311,6 +1348,12 @@ namespace UnityEngine.UIElements
                         IncrementVersion(VersionChangeType.StyleSheet);
                     }
                 }
+
+                // Every effective disabled flip funnels through here (own state and the SetEnabled
+                // tree walk alike), and it bumps no version bit unless a style selector depends on
+                // it — so this is where the generated accessibility hierarchy learns about it.
+                if ((diff & PseudoStates.Disabled) != 0)
+                    UITKAccessibilityBridge.OnElementEnabledChanged(this);
             }
         }
 
@@ -1957,6 +2000,7 @@ namespace UnityEngine.UIElements
                     {
                         LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
                     }
+                    ReleaseComponentStorage();
                     ReleaseNativeResources(fromFinalizer: true);
                 }
                 s_FinalizerCount++;
@@ -2021,6 +2065,7 @@ namespace UnityEngine.UIElements
         {
             flags |= VisualElementFlags.Released;
             LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
+            ReleaseComponentStorage(returnManagedBoxesToPool: true);
 
             // Put back some of the lists we own to their pools
             // Note: we already know the child list was pooled back when clearing the element
@@ -2147,6 +2192,10 @@ namespace UnityEngine.UIElements
                     var layoutConfig = p != null ? p.layoutConfig : LayoutManager.SharedManager.GetDefaultConfig();
 
                     InvokeHierarchyChanged(HierarchyChangeType.DetachedFromPanel, elements);
+                    // Off-panel style changes never version (IncrementVersion is panel-gated), so an attaching
+                    // subtree's curvature can't be observed by the hierarchy updater nor read from carried
+                    // transform flags — check the computed style directly (stops after the first hit).
+                    bool checkCurved = p != null && !p.mayHaveCurvedElements;
                     foreach (var e in elements)
                     {
                         e.elementPanel?.MemberElementsByHandle.Remove(e.layoutNode.Handle);
@@ -2156,6 +2205,11 @@ namespace UnityEngine.UIElements
                         e.flags |= flagToAdd;
                         e.m_CachedNextParentWithEventInterests = null;
                         e.layoutNode.Config = layoutConfig;
+                        if (checkCurved && e.hasCurvature)
+                        {
+                            p.mayHaveCurvedElements = true;
+                            checkCurved = false;
+                        }
                     }
 
                     InvokeHierarchyChanged(HierarchyChangeType.AttachedToPanel, elements);
@@ -2223,6 +2277,7 @@ namespace UnityEngine.UIElements
                 RegisterRunningAnimations();
                 ProcessBindingRequests();
                 AttachDataSource();
+                ReArmDirtyComponentsOnAttach();
 
                 // We need to reset any visual pseudo state
                 pseudoStates &= ~(PseudoStates.Active | PseudoStates.Hover);
@@ -2296,13 +2351,6 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal void IncrementVersion(VersionChangeType changeType)
         {
-            if ((changeType & VersionChangeType.Repaint) != 0 && computedStyle.zIndex != int.MinValue)
-            {
-                var physicalParent = hierarchy.parent;
-                if (physicalParent != null)
-                    physicalParent.transformFlags |= VisualElementTransformFlags.MayHaveZIndexedChildren;
-            }
-
             elementPanel?.OnVersionChanged(this, changeType);
         }
 
@@ -3525,3 +3573,4 @@ namespace UnityEngine.UIElements
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

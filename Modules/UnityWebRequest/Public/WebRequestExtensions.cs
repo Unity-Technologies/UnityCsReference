@@ -522,7 +522,7 @@ namespace UnityEngine.Networking
         ///
         ///This method attaches a <see cref="DownloadHandlerBuffer" /> to the <see cref="UnityWebRequest" />. This is for convenience, as we anticipate most users will use the <see cref="DownloadHandler" /> to check replies from the server, particularly in the case of REST APIs.
         ///
-        ///The string in the <c>form</c> parameter is expected to be a preformatted HTML form. It will be escaped and sent as UTF-8 string.</remarks>
+        ///The string in the <c>form</c> parameter is expected to be a preformatted HTML form. It will be escaped and sent as UTF-8 string. Note that characters <c>=</c> and <c>&amp;</c> are not escaped as they separate fields and values. If your form contains values with these characters, use <see cref="Post(Uri, WWWForm)"/> instead.</remarks>
         ///<param name="uri">The target URI to which form data will be transmitted.</param>
         ///<param name="form">An HTML form to send.</param>
         ///<returns>A UnityWebRequest configured to send form data to <c>uri</c> via <c>POST</c>.</returns>
@@ -570,7 +570,7 @@ namespace UnityEngine.Networking
         ///
         ///This method attaches a <see cref="DownloadHandlerBuffer" /> to the <see cref="UnityWebRequest" />. This is for convenience, as we anticipate most users will use the <see cref="DownloadHandler" /> to check replies from the server, particularly in the case of REST APIs.
         ///
-        ///The string in the <c>form</c> parameter is expected to be a preformatted HTML form. It will be escaped and sent as UTF-8 string.</remarks>
+        ///The string in the <c>form</c> parameter is expected to be a preformatted HTML form. It will be escaped and sent as UTF-8 string. Note that characters <c>=</c> and <c>&amp;</c> are not escaped as they separate fields and values. If your form contains values with these characters, use <see cref="Post(string, WWWForm)"/> instead.</remarks>
         ///<param name="uri">The target URI to which form data will be transmitted.</param>
         ///<param name="form">An HTML form to send.</param>
         ///<returns>A UnityWebRequest configured to send form data to <c>uri</c> via <c>POST</c>.</returns>
@@ -619,7 +619,7 @@ namespace UnityEngine.Networking
             if (string.IsNullOrEmpty(postData))
                 return;  // no data to send, nothing more to setup
             byte[] payload = null;
-            string urlencoded = WWWTranscoder.DataEncode(postData, System.Text.Encoding.UTF8);
+            string urlencoded = WWWTranscoder.WwwFormEncode(postData, System.Text.Encoding.UTF8);
             payload = System.Text.Encoding.UTF8.GetBytes(urlencoded);
             request.uploadHandler = new UploadHandlerRaw(payload);
             request.uploadHandler.contentType = "application/x-www-form-urlencoded";

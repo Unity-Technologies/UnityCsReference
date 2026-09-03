@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Hierarchy;
@@ -45,7 +46,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
 
     internal static readonly PropertyName serializedPropertyKey = new PropertyName("--unity-visual-element-reference-field-serialized-property");
 
-    static readonly string k_PickerHeading = L10n.Tr("{0} Reference");
+    static readonly string k_PickerHeading = L10n.Tr("{0} Reference", null);
 
     /// <summary>
     /// The type that can be assigned, must be a <see cref="VisualElement"/> or derive from it.
@@ -186,10 +187,10 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
         public static readonly string nullIconUssClassName = iconUssClassName + "--value-null";
         public static readonly string acceptDropVariantUssClassName = ussClassName + "--accept-drop";
 
-        internal static readonly string k_MissingReferenceLabel = L10n.Tr("Missing Reference ({0})");
-        internal static readonly string k_NoneLabel = L10n.Tr("None ({0})");
-        internal static readonly string k_TypeMismatchLabel = L10n.Tr("Type mismatch");
-        internal static readonly string k_SceneMismatch = L10n.Tr("Scene mismatch (cross scene references not supported)");
+        internal static readonly string k_MissingReferenceLabel = L10n.Tr("Missing Reference ({0})", null);
+        internal static readonly string k_NoneLabel = L10n.Tr("None ({0})", null);
+        internal static readonly string k_TypeMismatchLabel = L10n.Tr("Type mismatch", null);
+        internal static readonly string k_SceneMismatch = L10n.Tr("Scene mismatch (cross scene references not supported)", null);
 
         readonly VisualElementReferenceField m_Field;
         readonly Image m_ObjectIcon = new Image { scaleMode = ScaleMode.ScaleAndCrop, pickingMode = PickingMode.Ignore };
@@ -390,7 +391,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
                 {
                     if (window is HierarchyWindow hierarchyWindow)
                     {
-                        var nodeHandler = hierarchyWindow.View.Source.GetOrCreateNodeTypeHandler<HierarchyVisualElementHandler>();
+                        var nodeHandler = hierarchyWindow.View.Source.GetOrCreateNodeTypeHandler<VisualElementNodeHandler>();
                         if (nodeHandler.GetMappings().TryGetNode(targetElement, out var node))
                         {
                             var entityId = nodeHandler.GetEntityIdFromNode(node);
@@ -417,7 +418,7 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
 
         VisualElement GetDraggedElement()
         {
-            if (DragAndDrop.GetGenericData(VisualElementNodeTypeHandler.DraggedVisualElementKey) is List<VisualElement> draggedElements &&
+            if (DragAndDrop.GetGenericData(VisualElementNodeHandler.DraggedVisualElementKey) is List<VisualElement> draggedElements &&
                 draggedElements.Count == 1 &&
                 m_Field.elementType.IsAssignableFrom(draggedElements[0].GetType()) &&
                 (draggedElements[0].visualElementAsset != null || draggedElements[0] is IPanelComponentRootElement))
@@ -469,3 +470,4 @@ public class VisualElementReferenceField : BaseField<VisualElementReference>
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

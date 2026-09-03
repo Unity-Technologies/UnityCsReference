@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,15 +29,26 @@ namespace UnityEditor.UIElements
         const string k_EditorExtensionsModeToggleName = "editor-extensions-mode-toggle";
         const string k_DisableMouseWheelZoomingToggleName = "disable-mouse-wheel-zooming";
         const string k_EnableAbsolutePositionPlacementToggleName = "enable-absolute-position-placement";
+        const string k_EnableFilterShaderGraphToggleName = "enable-filter-shader-graph";
         const string k_ConsistentAttributeOrdering = "consistent-attribute-ordering-toggle";
+        const string k_EnableMultiWindowBuilder = "enable-multi-window-builder";
         const string k_EnableEventDebugger = "enable-event-debugger";
         const string k_EnableLayoutDebugger = "enable-layout-debugger";
         const string k_EnableUSSStatsWindow = "enable-uss-stats-window";
         const string k_EnablePanelRendererAnimation = "enable-panel-renderer-animation";
+        const string k_EnableUIComponents = "enable-ui-components";
+        const string k_UIComponentsExperimentalLabel = "ui-components-experimental-label";
+        const string k_UIComponentsHelpBox = "ui-components-help-box";
         const string k_EnableGridLayout = "enable-grid-layout";
+        const string k_EnableZIndex = "enable-z-index";
+        const string k_EnableCurvedUI = "enable-curved-ui";
         const string k_EnableDebuggerLowLevelName = "enable-debugger-low-level";
         const string k_DefaultRuntimeTheme = "default-runtime-theme";
         const string k_DefaultEditorTheme = "default-editor-theme";
+
+        static readonly string k_EnableUIComponentsText = L10n.Tr("Enable UI Components", null);
+        static readonly string k_ExperimentalText = L10n.Tr("Experimental", null);
+        static readonly string k_UIComponentsHelpText = L10n.Tr("When enabled, shows a Components section in the UI Toolkit element inspector for adding and editing UI Toolkit components (IVisualElementComponent). Experimental features are not supported and should be used for testing only.", null);
 
         [AutoStaticsCleanupOnCodeReload]
         private static List<Type> s_ExtensionTypes = new();
@@ -88,10 +98,22 @@ namespace UnityEditor.UIElements
 
         public static string name => "Project/UI Toolkit";
 
+        // Localized strings live here rather than in the UXML, so they must be applied to every clone,
+        // including the search-interest one, or settings search stops matching them.
+        static void ApplyLocalizedStrings(VisualElement root)
+        {
+            root.Q<Toggle>(k_EnableUIComponents).text = k_EnableUIComponentsText;
+            root.Q<Label>(k_UIComponentsExperimentalLabel).text = k_ExperimentalText;
+            root.Q<HelpBox>(k_UIComponentsHelpBox).text = k_UIComponentsHelpText;
+        }
+
         private bool HasSearchInterestHandler(string searchContext)
         {
             if (m_HelpVisualTree == null)
+            {
                 m_HelpVisualTree = uiToolkitTemplate.CloneTree();
+                ApplyLocalizedStrings(m_HelpVisualTree);
+            }
             foreach (var e in m_HelpVisualTree.Query<TextElement>().Build())
             {
                 if (e.text.IndexOf(searchContext, System.StringComparison.OrdinalIgnoreCase) != -1)
@@ -117,12 +139,16 @@ namespace UnityEditor.UIElements
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
-            rootElement.AddToClassList(InspectorElement.ussClassName);
+            var wrapper = new VisualElement();
+            wrapper.AddToClassList(InspectorElement.ussClassName);
+            rootElement.Add(wrapper);
 
-            uiToolkitTemplate.CloneTree(rootElement);
+            uiToolkitTemplate.CloneTree(wrapper);
 
             var styleSheet = EditorGUIUtility.Load("UIPackageResources/Settings/UIToolkitSettingsView.uss") as StyleSheet;
-            rootElement.styleSheets.Add(styleSheet);
+            wrapper.styleSheets.Add(styleSheet);
+
+            ApplyLocalizedStrings(rootElement);
 
             var editorExtensionsModeToggle = rootElement.Q<Toggle>(k_EditorExtensionsModeToggleName);
             editorExtensionsModeToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableEditorExtensionModeByDefault);
@@ -145,11 +171,25 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.enableAbsolutePositionPlacement = e.newValue;
             });
 
+            var filterShaderGraphToggle = rootElement.Q<Toggle>(k_EnableFilterShaderGraphToggleName);
+            filterShaderGraphToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableFilterShaderGraph);
+            filterShaderGraphToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.enableFilterShaderGraph = e.newValue;
+            });
+
             var consistentAttributeOrderingToggle = rootElement.Q<Toggle>(k_ConsistentAttributeOrdering);
             consistentAttributeOrderingToggle.SetValueWithoutNotify(UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting);
             consistentAttributeOrderingToggle.RegisterValueChangedCallback(e =>
             {
                 UIToolkitProjectSettings.consistentAttributeOrderingWhenExporting = e.newValue;
+            });
+
+            var multiWindowBuilderToggle = rootElement.Q<Toggle>(k_EnableMultiWindowBuilder);
+            multiWindowBuilderToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableMultiWindowBuilder);
+            multiWindowBuilderToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.enableMultiWindowBuilder = e.newValue;
             });
 
             if (!Unsupported.IsDeveloperMode())
@@ -192,12 +232,33 @@ namespace UnityEditor.UIElements
                     animationRestartWarning.style.display = UIToolkitProjectSettings.isAnimationSettingDirty ? DisplayStyle.Flex : DisplayStyle.None;
             });
 
+            var uiComponentsToggle = rootElement.Q<Toggle>(k_EnableUIComponents);
+            uiComponentsToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableUIComponents);
+            uiComponentsToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.enableUIComponents = e.newValue;
+            });
+
             // CSS Grid takes effect live (the setter pushes to the native solver), so there is no restart warning.
             var gridLayoutToggle = rootElement.Q<Toggle>(k_EnableGridLayout);
             gridLayoutToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableGridLayout);
             gridLayoutToggle.RegisterValueChangedCallback(e =>
             {
                 UIToolkitProjectSettings.enableGridLayout = e.newValue;
+            });
+
+            var zIndexToggle = rootElement.Q<Toggle>(k_EnableZIndex);
+            zIndexToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableZIndex);
+            zIndexToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.enableZIndex = e.newValue;
+            });
+
+            var curvedUiToggle = rootElement.Q<Toggle>(k_EnableCurvedUI);
+            curvedUiToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableCurvedUI);
+            curvedUiToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.enableCurvedUI = e.newValue;
             });
 
             var enableDebuggerLowLevelToggle = rootElement.Q<Toggle>(k_EnableDebuggerLowLevelName);
@@ -333,4 +394,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

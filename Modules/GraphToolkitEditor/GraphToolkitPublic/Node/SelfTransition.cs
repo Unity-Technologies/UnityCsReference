@@ -58,6 +58,21 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc cref="ITransition.GetRules" />
         public IEnumerable<ITransitionRule> GetRules() => GetImplementation().GetRules();
 
+        /// <inheritdoc cref="ITransition.RuleCount" />
+        public int RuleCount => GetImplementation().RuleCount;
+
+        /// <inheritdoc cref="ITransition.GetRule" />
+        public ITransitionRule GetRule(int index) => GetImplementation().GetRule(index);
+
+        /// <inheritdoc cref="ITransition.AddRule()" />
+        public ITransitionRule AddRule() => GetImplementation().AddRule();
+
+        /// <inheritdoc cref="ITransition.AddRule(ITransitionRule)" />
+        public void AddRule(ITransitionRule rule) => GetImplementation().AddRule(rule);
+
+        /// <inheritdoc cref="ITransition.RemoveRule" />
+        public void RemoveRule(ITransitionRule rule) => GetImplementation().RemoveRule(rule);
+
         /// <summary>
         /// Called when the transition is created or when the state machine is enabled.
         /// </summary>

@@ -21,9 +21,9 @@ namespace UnityEditor.Build.Profile
         const string k_BuildAutomationErrorBox = "custom-build-automation-info-errorbox";
         const string k_BuildAutomationPackageName = "com.unity.services.cloud-build";
 
-        internal static readonly string buildAutomationLabelText = L10n.Tr("Build Automation Settings");
-        private static readonly string BuildAutomationError = L10n.Tr("Build Automation Settings failed to load");
-        private static readonly string s_PackageRequiredError = L10n.Tr("Build Automation Settings require the Build Automation package to be installed.");
+        internal static readonly string buildAutomationLabelText = L10n.Tr("Build Automation Settings", null);
+        private static readonly string BuildAutomationError = L10n.Tr("Build Automation Settings failed to load", null);
+        private static readonly string s_PackageRequiredError = L10n.Tr("Build Automation Settings require the Build Automation package to be installed.", null);
 
         VisualElement m_BuildAutomationRoot;
 

@@ -25,9 +25,9 @@ internal class RemoveImportedAction : PackageAction
 
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
-        if (!m_Application.DisplayDialog("removeMultiImported", L10n.Tr("Removing imported packages"),
-                L10n.Tr("Remove all assets from these packages?\nAny changes you made to the assets will be lost."),
-                L10n.Tr("Remove"), L10n.Tr("Cancel")))
+        if (!m_Application.DisplayDialog("removeMultiImported", L10n.Tr("Removing imported packages", null),
+                L10n.Tr("Remove all assets from these packages?\nAny changes you made to the assets will be lost.", null),
+                L10n.Tr("Remove", null), L10n.Tr("Cancel", null)))
             return false;
 
         m_OperationDispatcher.RemoveImportedAssets(packages);
@@ -44,23 +44,22 @@ internal class RemoveImportedAction : PackageAction
     {
         if (isInProgress)
             return k_InProgressGenericTooltip;
-        return string.Format(L10n.Tr("Remove this {0}'s imported assets from your project."), version.GetDescriptor());
+        return string.Format(L10n.Tr("Remove this {0}'s imported assets from your project.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Remove assets from project");
+        return L10n.Tr("Remove assets from project", null);
     }
 
     public override string GetMultiSelectText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Remove");
+        return L10n.Tr("Remove", null);
     }
 
     public override bool IsInProgress(IPackageVersion version) => false;
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfCompiling(m_Application)
+    );
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
@@ -63,7 +64,7 @@ namespace Unity.UI.Builder
             }
 
             UpdateZIndexRowVisibility();
-            UIToolkitAuthoringSettings.EnableZIndexChanged += UpdateZIndexRowVisibility;
+            UIToolkitProjectSettings.onEnableZIndexChanged += UpdateZIndexRowVisibility;
 
             var styleCategories = m_LocalStylesSection.Query<PersistedFoldout>(
                 className: "unity-builder-inspector__style-category-foldout").Build();
@@ -81,7 +82,9 @@ namespace Unity.UI.Builder
                     var currentStyleFields = styleRow.Query<BindableElement>().Build();
 
                     if (styleRow.ClassListContains(BuilderConstants.InspectorMultiFieldsRowClassName))
+                        #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                         m_StyleFields.BindDoubleFieldRow(styleRow);
+                        #pragma warning restore UAL0015
 
                     foreach (var styleField in currentStyleFields)
                     {
@@ -111,7 +114,9 @@ namespace Unity.UI.Builder
                         }
                         else if (styleField is TransitionsListView transitionsListView)
                         {
+                            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                             GenerateTransitionPropertiesContent();
+                            #pragma warning restore UAL0015
                             m_StyleFields.BindStyleField(styleRow, transitionsListView);
                         }
                         else if (styleField is StyleAnimationListView animationListView)
@@ -143,7 +148,7 @@ namespace Unity.UI.Builder
 
         public void Dispose()
         {
-            UIToolkitAuthoringSettings.EnableZIndexChanged -= UpdateZIndexRowVisibility;
+            UIToolkitProjectSettings.onEnableZIndexChanged -= UpdateZIndexRowVisibility;
             TransitionPropertyDropdownContent.Content = default;
         }
 
@@ -154,7 +159,7 @@ namespace Unity.UI.Builder
             {
                 if (row.bindingPath == "z-index")
                 {
-                    row.style.display = UIToolkitAuthoringSettings.EnableZIndex ? StyleKeyword.Null : DisplayStyle.None;
+                    row.style.display = UIToolkitProjectSettings.enableZIndex ? StyleKeyword.Null : DisplayStyle.None;
                     break;
                 }
             }
@@ -437,3 +442,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

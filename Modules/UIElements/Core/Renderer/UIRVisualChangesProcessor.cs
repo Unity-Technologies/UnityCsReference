@@ -119,6 +119,7 @@ namespace UnityEngine.UIElements.UIR
 
                 RenderEvents.SyncBackdropFilterState(m_RenderTreeManager, renderData);
                 RenderEvents.SyncFilterState(m_RenderTreeManager, renderData);
+                UIRCurvatureMeshModifier.SyncState(renderData);
 
                 bool effectiveModifiersChanged = RebuildEffectiveModifiers(renderData, inheritedRecursive);
 
@@ -132,9 +133,9 @@ namespace UnityEngine.UIElements.UIR
                     rootEntry = rootEntry
                 };
                 m_EntryProcessingList.Add(headInfo);
-                if (!renderData.isSubTreeQuad
-                    && renderData.m_EffectiveModifiers != null
-                    && renderData.m_EffectiveModifiers.Count > 0)
+                if (renderData.m_EffectiveModifiers != null
+                    && renderData.m_EffectiveModifiers.Count > 0
+                    && (!renderData.isSubTreeQuad || MeshModifierScheduler.HasSubTreeQuadModifier(renderData.m_EffectiveModifiers)))
                 {
                     m_ModifierEntryProcessingList.Add(headInfo);
                 }

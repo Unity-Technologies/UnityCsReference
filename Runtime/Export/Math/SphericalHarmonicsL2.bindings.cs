@@ -70,6 +70,9 @@ namespace UnityEngine.Rendering
         [FreeFunction]
         private extern static void EvaluateInternal(in SphericalHarmonicsL2 sh, Vector3[] directions, [Out] Color[] results);
 
+        [FreeFunction]
+        internal extern static void Internal_SetSHOutputDividedByPI(bool divided);
+
         public float this[int rgb, int coefficient]
         {
             readonly get

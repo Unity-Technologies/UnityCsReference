@@ -1,4 +1,3 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: ScriptingRuntime not yet converted
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Unity.Scripting.LifecycleManagement.CodeGen;
@@ -13,6 +12,9 @@ namespace Unity.Scripting.LifecycleManagement
 
     internal sealed class LifecycleController
     {
+        // Drives all lifecycle scope transitions, including code reload itself; the singleton must outlive
+        // every transition it orchestrates.
+        [NoAutoStaticsCleanup]
         private static LifecycleController? _instance;
         public static LifecycleController Instance
         {
@@ -208,29 +210,29 @@ namespace Unity.Scripting.LifecycleManagement
             }
         }
 
-        private void ExecuteOnMainThread(string transitionType, string scopeName, Action action)
+        private bool CheckMainThread(string transitionType, string scopeName)
         {
             if (!IsOnMainThread)
             {
                 DebugLifecycle.ReportError($"Lifecycle ERROR : {transitionType} scope {scopeName} can only be executed on the main thread\n" +
                     $"Calling thread was {Thread.CurrentThread.ManagedThreadId} while main thread is {MainThreadId}.");
-                return;
+                return false;
             }
 
-            lock (_lock)
-            {
-                action.Invoke();
-            }
+            return true;
         }
 
         internal void EnterScope<TScope>()
             where TScope : LifecycleScope, new()
         {
             var scope = new TScope();
-            ExecuteOnMainThread("Enter", scope.Name, () =>
+            if (!CheckMainThread("Enter", scope.Name))
+                return;
+
+            lock (_lock)
             {
                 _lifecycleTracker.RequestEnterScope(scope);
-            });
+            }
         }
 
         // EnterScope() and ExitScope() functions have a void return value even though this scope transition request may fail.
@@ -240,26 +242,35 @@ namespace Unity.Scripting.LifecycleManagement
         // To improve on this we can return a small struct which contains info whether the request has been processed, whether it was succesful and the reason for failure in case it isn't
         internal void EnterScope(LifecycleScope scope)
         {
-            ExecuteOnMainThread("Enter", scope.Name, () =>
+            if (!CheckMainThread("Enter", scope.Name))
+                return;
+
+            lock (_lock)
             {
                 _lifecycleTracker.RequestEnterScope(scope);
-            });
+            }
         }
 
         internal void EnterScope<T>(LifecycleScopeWithContext<T> scope)
             where T : class
         {
-            ExecuteOnMainThread("Enter", scope.Name, () =>
+            if (!CheckMainThread("Enter", scope.Name))
+                return;
+
+            lock (_lock)
             {
                 _lifecycleTracker.RequestEnterScope(scope);
-            });
+            }
         }
 
         internal void ExitScope<TScope>()
             where TScope : LifecycleScope, new()
         {
             var scopeName = typeof(TScope).Name;
-            ExecuteOnMainThread("Exit", scopeName, () =>
+            if (!CheckMainThread("Exit", scopeName))
+                return;
+
+            lock (_lock)
             {
                 if (!_lifecycleTracker.TryGetActiveScope<TScope>(out var scope))
                 {
@@ -269,7 +280,7 @@ namespace Unity.Scripting.LifecycleManagement
 
                 _lifecycleTracker.RequestExitScope(scope!);
                 Debug.Assert(!_lifecycleTracker.IsOrWillBeInsideScope(scope));
-            });
+            }
         }
 
         internal void ExitScope<TScope, TContext>(TContext context)
@@ -277,7 +288,10 @@ namespace Unity.Scripting.LifecycleManagement
             where TScope : LifecycleScopeWithContext<TContext>
         {
             var scopeName = typeof(TScope).Name;
-            ExecuteOnMainThread("Exit", scopeName, () =>
+            if (!CheckMainThread("Exit", scopeName))
+                return;
+
+            lock (_lock)
             {
                 if (!_lifecycleTracker.TryGetActiveScope<TScope, TContext>(context, out var scope))
                 {
@@ -287,24 +301,30 @@ namespace Unity.Scripting.LifecycleManagement
 
                 _lifecycleTracker.RequestExitScope(scope);
                 Debug.Assert(!_lifecycleTracker.IsOrWillBeInsideScopeWithActivationContext<TScope, TContext>(scope.Context));
-            });
+            }
         }
 
         internal void ExitScope(LifecycleScope scope)
         {
-            ExecuteOnMainThread("Exit", scope.Name, () =>
+            if (!CheckMainThread("Exit", scope.Name))
+                return;
+
+            lock (_lock)
             {
                 _lifecycleTracker.RequestExitScope(scope);
-            });
+            }
         }
 
         internal void ExitScope<TContext>(LifecycleScopeWithContext<TContext> scope)
             where TContext : class
         {
-            ExecuteOnMainThread("Exit", scope.Name, () =>
+            if (!CheckMainThread("Exit", scope.Name))
+                return;
+
+            lock (_lock)
             {
                 _lifecycleTracker.RequestExitScope(scope);
-            });
+            }
         }
 
         internal void RegisterAutoCleanup(ClassAutoCleanup classAutoCleanup, Type scopeType, ScopeTransitionType cleanOn)
@@ -318,4 +338,3 @@ namespace Unity.Scripting.LifecycleManagement
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

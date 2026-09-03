@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Time;
 using Unity.Timeline.Foundation.Widgets.Properties;
 using Unity.Timeline.Foundation.Widgets.Internals;
@@ -24,6 +24,7 @@ namespace Unity.Timeline.Foundation.Widgets
         const string k_StepButtonLeft = k_TimeRangeStepButton + "__left";
         const string k_StepButtonRight = k_TimeRangeStepButton + "__right";
 
+        [NoAutoStaticsCleanup] // Immutable USS stylesheet-path descriptor; holds only fixed path strings, safe to persist across reload.
         public static readonly StylesheetResource stylesheetResource = UIResources.StylesheetFactory.Get(
             $"{nameof(TimeRangeScroller)}/{nameof(TimeRangeScroller)}");
 
@@ -176,4 +177,3 @@ namespace Unity.Timeline.Foundation.Widgets
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

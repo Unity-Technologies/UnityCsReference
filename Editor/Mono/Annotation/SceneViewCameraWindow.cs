@@ -17,8 +17,8 @@ namespace UnityEditor
         static class Styles
         {
             // Dynamic tooltips
-            public static readonly string minTooltips = L10n.Tr($"The minimum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin}, {SceneView.CameraSettings.kAbsoluteSpeedMax - 1}].");
-            public static readonly string maxTooltips = L10n.Tr($"The maximum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin + .0001f}, {SceneView.CameraSettings.kAbsoluteSpeedMax}].");
+            public static readonly string minTooltips = L10n.Tr($"The minimum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin}, {SceneView.CameraSettings.kAbsoluteSpeedMax - 1}].", null);
+            public static readonly string maxTooltips = L10n.Tr($"The maximum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin + .0001f}, {SceneView.CameraSettings.kAbsoluteSpeedMax}].", null);
 
             // Menu labels
             public static readonly GUIContent copyPlacementLabel = EditorGUIUtility.TrTextContent("Copy Placement");

@@ -45,8 +45,8 @@ namespace UnityEditor.Overlays
         internal const string k_BoxBackground = "overlay-box-background";
 
 
-        static readonly string k_FoldedTooltip = L10n.Tr("Expend overlay");
-        static readonly string k_UnfoldedTooltip = L10n.Tr("Minimize overlay");
+        static readonly string k_FoldedTooltip = L10n.Tr("Expend overlay", null);
+        static readonly string k_UnfoldedTooltip = L10n.Tr("Minimize overlay", null);
 
         string m_Id, m_RootVisualElementName, m_DisplayName;
         Layout m_ActiveLayout = Layout.Panel;
@@ -499,7 +499,7 @@ namespace UnityEditor.Overlays
             dockArea.Add(m_BeforeDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.Before));
             dockArea.Add(m_AfterDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.After));
 
-            m_RootVisualElement.tooltip = L10n.Tr(displayName);
+            m_RootVisualElement.tooltip = L10n.Tr(displayName, null);
 
             CreateResizeTarget();
 
@@ -658,7 +658,7 @@ namespace UnityEditor.Overlays
 
         internal static string GetEventTypeErrorMessage(string errorEvent)
         {
-            return L10n.Tr($"Cannot modify {errorEvent} during event of type EventType.Layout");
+            return L10n.Tr($"Cannot modify {errorEvent} during event of type EventType.Layout", null);
         }
 
         internal void ResetSize()
@@ -1052,7 +1052,7 @@ namespace UnityEditor.Overlays
         {
             var menu = evt.menu;
 
-            menu.AppendAction(L10n.Tr("Hide"),
+            menu.AppendAction(L10n.Tr("Hide", null),
                 (action) => displayed = false,
                 userControlledVisibility ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
@@ -1063,26 +1063,26 @@ namespace UnityEditor.Overlays
             if (collapsed)
             {
                 if (container == null || container.IsOverlayLayoutSupported(supportedLayouts))
-                    menu.AppendAction(L10n.Tr("Expand"), (action) => collapsed = false);
+                    menu.AppendAction(L10n.Tr("Expand", null), (action) => collapsed = false);
             }
             else
-                menu.AppendAction(L10n.Tr("Collapse"), (action) => collapsed = true);
+                menu.AppendAction(L10n.Tr("Collapse", null), (action) => collapsed = true);
 
             if (!isInToolbar)
             {
                 if (OverlayUtilities.IsResizable(this))
-                    menu.AppendAction(L10n.Tr("Reset Size"), action => ResetSize());
+                    menu.AppendAction(L10n.Tr("Reset Size", null), action => ResetSize());
 
                 menu.AppendSeparator();
                 var layouts = supportedLayouts;
 
                 // Panel layout is always supported by default, we only add this option in the menu if other options are available
                 if ((layouts & Layout.HorizontalToolbar) != 0 || (layouts & Layout.VerticalToolbar) != 0)
-                    menu.AppendAction(L10n.Tr("Panel"), action => { layout = Layout.Panel; collapsed = false; }, GetMenuItemState(layout == Layout.Panel));
+                    menu.AppendAction(L10n.Tr("Panel", null), action => { layout = Layout.Panel; collapsed = false; }, GetMenuItemState(layout == Layout.Panel));
                 if ((layouts & Layout.HorizontalToolbar) != 0)
-                    menu.AppendAction(L10n.Tr("Horizontal"), action => { layout = Layout.HorizontalToolbar; collapsed = false; }, GetMenuItemState(layout == Layout.HorizontalToolbar));
+                    menu.AppendAction(L10n.Tr("Horizontal", null), action => { layout = Layout.HorizontalToolbar; collapsed = false; }, GetMenuItemState(layout == Layout.HorizontalToolbar));
                 if ((layouts & Layout.VerticalToolbar) != 0)
-                    menu.AppendAction(L10n.Tr("Vertical"), action => { layout = Layout.VerticalToolbar; collapsed = false; }, GetMenuItemState(layout == Layout.VerticalToolbar));
+                    menu.AppendAction(L10n.Tr("Vertical", null), action => { layout = Layout.VerticalToolbar; collapsed = false; }, GetMenuItemState(layout == Layout.VerticalToolbar));
             }
         }
 
@@ -1098,7 +1098,7 @@ namespace UnityEditor.Overlays
             m_RootVisualElementName = _uss;
             string name = string.IsNullOrEmpty(_display) ? GetType().Name : _display;
             m_Id = string.IsNullOrEmpty(_id) ? name : _id;
-            displayName = L10n.Tr(name);
+            displayName = L10n.Tr(name, null);
             rootVisualElement.style.display = DisplayStyle.None;
 
             // Taking into account the case where the user modifies the sizes in their overlay constructor.

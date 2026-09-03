@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.View.Internals;
 using Unity.Timeline.Foundation.ViewModel;
@@ -20,6 +20,7 @@ namespace Unity.Timeline.Foundation.View
         const string k_MarkerContainerName = "markerContainer";
         const string k_ExpansionContainerName = "expansionContainer";
 
+        [NoAutoStaticsCleanup] // Immutable UXML template-path descriptor; holds only a fixed path string, safe to persist across reload.
         static readonly TemplateResource k_Template = Internals.UIResources.TemplateFactory.Get<TrackElement>();
 
         protected Color m_TrackColor;
@@ -175,4 +176,3 @@ namespace Unity.Timeline.Foundation.View
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

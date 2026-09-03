@@ -134,9 +134,9 @@ namespace UnityEditor.Overlays
 
             // Pinned menu items have no "..." Show/Hide entry to un-hide from, so Hide removes them outright.
             if (createElementMethod == null)
-                menu.AppendAction(L10n.Tr("Hide"), (action) => MainToolbar.UnpinMenuItemByOverlayId(id));
+                menu.AppendAction(L10n.Tr("Hide", null), (action) => MainToolbar.UnpinMenuItemByOverlayId(id));
             else
-                menu.AppendAction(L10n.Tr("Hide"), (action) => displayed = false);
+                menu.AppendAction(L10n.Tr("Hide", null), (action) => displayed = false);
         }
         
         void SetElementTooltip(VisualElement element)
@@ -146,14 +146,14 @@ namespace UnityEditor.Overlays
                 key = "Command";
             
             if (!string.IsNullOrEmpty(element.tooltip))
-                element.tooltip += L10n.Tr(string.Format(k_Tooltip, key));
+                element.tooltip += L10n.Tr(string.Format(k_Tooltip, key), null);
             else 
-                element.tooltip = L10n.Tr(displayName) + L10n.Tr(string.Format(k_Tooltip, key));
+                element.tooltip = L10n.Tr(displayName, null) + L10n.Tr(string.Format(k_Tooltip, key), null);
         }
 
         void SetDraggerTooltip(VisualElement element)
         {
-            m_MainToolbarEditModeDragger.tooltip = !string.IsNullOrEmpty(element.tooltip) ? element.tooltip : L10n.Tr(displayName);
+            m_MainToolbarEditModeDragger.tooltip = !string.IsNullOrEmpty(element.tooltip) ? element.tooltip : L10n.Tr(displayName, null);
         }
 
         internal void SetEditMode(MainToolbarEditMode mode)

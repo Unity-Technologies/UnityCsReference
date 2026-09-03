@@ -320,6 +320,15 @@ namespace Unity.UI.Builder
                     });
                 }
             }
+            else if (IsComputedStyleCurvature(val) && fieldElement is CurvatureStyleField curvatureStyleField)
+            {
+                curvatureStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeCurvature(e, styleName));
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
+                    SetXAndYSubFieldsTooltips(curvatureStyleField,
+                    CurvatureStyleField.s_AngleXFieldName, styleValueTooltip,
+                    CurvatureStyleField.s_AngleYFieldName, styleValueTooltip);
+            }
             else if (IsComputedStyleBackgroundRepeat(val) && fieldElement is BackgroundRepeatStyleField backgroundRepeatStyleField)
             {
                 backgroundRepeatStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeBackgroundRepeat(e, styleName));
@@ -379,9 +388,8 @@ namespace Unity.UI.Builder
                 var newButton = styleRow?.MandatoryQ<Button>(BuilderConstants.AnimationClipNewButtonName);
                 if (newButton != null)
                 {
-                    // Replace clickable (not `clicked +=`) so re-binding doesn't stack handlers.
-                    newButton.clickable = new Clickable(() => CreateAndAssignNewUIAnimationClipFromDialog(objField, styleName));
-                    AnimationClipNewButtonController.MirrorEnabledStateOntoButton(newButton, objField);
+                    AnimationClipNewButtonController.ConnectObjectFieldButton(newButton, objField,
+                        () => CreateAndAssignNewUIAnimationClipFromDialog(objField, styleName));
                 }
             }
             else if (IsComputedStyleCursor(val) && fieldElement is CursorStyleField)
@@ -858,6 +866,17 @@ namespace Unity.UI.Builder
                 return true;
             }
 
+            if (IsComputedStyleCurvature(val) && fieldElement is CurvatureStyleField)
+            {
+                var uiField = fieldElement as CurvatureStyleField;
+                var value = GetComputedStyleCurvatureValue(val);
+                if (useStyleProperty && styleProperty.TryGetCurvature(styleSheet, out var propertyValue))
+                    value = propertyValue;
+
+                uiField.SetValueWithoutNotify(value);
+                return true;
+            }
+
             if (IsComputedStyleBackgroundRepeat(val) && fieldElement is BackgroundRepeatStyleField)
             {
                 var uiField = fieldElement as BackgroundRepeatStyleField;
@@ -991,7 +1010,7 @@ namespace Unity.UI.Builder
             if (IsComputedStyleFloat(val) && fieldElement is DimensionStyleField)
             {
                 var uiField = fieldElement as DimensionStyleField;
-                var value = (int)GetComputedStyleFloatValue(val);
+                var showsResolvedValue = true;
                 if (useStyleProperty)
                 {
                     var styleValue = styleProperty.values[0];
@@ -1000,12 +1019,14 @@ namespace Unity.UI.Builder
                         case StyleValueType.Keyword when styleProperty.TryGetKeyword(styleSheet, out StyleValueKeyword propertyValue):
                         {
                             uiField.keyword = propertyValue;
+                            showsResolvedValue = false;
                             break;
                         }
                         case StyleValueType.Dimension when styleProperty.TryGetDimension(styleSheet, out var propertyValue):
                         {
                             uiField.unit = propertyValue.unit;
                             uiField.length = propertyValue.value;
+                            showsResolvedValue = propertyValue.unit == Dimension.Unit.Pixel;
                             break;
                         }
                         case StyleValueType.Float when styleProperty.TryGetFloat(styleSheet, out var propertyValue):
@@ -1023,8 +1044,19 @@ namespace Unity.UI.Builder
                     if (keyword != StyleKeyword.Undefined)
                         uiField.keyword = keyword.ToStyleValueKeyword();
                     else
-                        uiField.SetValueWithoutNotify(value.ToString());
+                    {
+                        // The computed value is resolved px; DimensionStyleField keeps its previous unit unless we set it.
+                        uiField.unit = Dimension.Unit.Pixel;
+                        uiField.length = GetComputedStyleFloatValue(val);
+                    }
                 }
+
+                // A resolveToFloat property (font-size) whose authored value is a % or keyword resolves to a px the field
+                // can't display; surface it as a read-only hint, but only against a real element (a selector has no context).
+                var showHint = !showsResolvedValue
+                    && StyleDebug.IsResolveToFloatProperty(StyleDebug.GetStylePropertyIdFromName(styleName))
+                    && !BuilderSharedStyles.IsSelectorElement(currentVisualElement);
+                uiField.SetResolvedValueHint(showHint ? $"{GetComputedStyleFloatValue(val).ToString("0.##", CultureInfo.InvariantCulture)}px" : null);
 
                 return true;
             }
@@ -1550,6 +1582,10 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleRotate(val) && fieldElement is RotateStyleField rotateStyleField)
             {
                 DispatchChangeEvent(rotateStyleField);
+            }
+            else if (IsComputedStyleCurvature(val) && fieldElement is CurvatureStyleField curvatureStyleField)
+            {
+                DispatchChangeEvent(curvatureStyleField);
             }
             else if (IsComputedStyleEnum(val, styleType))
             {
@@ -2395,8 +2431,25 @@ namespace Unity.UI.Builder
                 else
                     m_Selection.ForceVisualAssetUpdateWithoutSave(currentVisualElement, hierarchyChangeType);
 
-                m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles, styleChangeType);
+                // A resolveToFloat property (font-size) shows a resolved-px hint taken from the recomputed style; the
+                // editing inspector is otherwise excluded from the post-recompute StylingChanged, leaving its hint stale.
+                var stylingSource = selfNotify || StylesContainResolveToFloatProperty(styles) ? null : m_Inspector;
+                m_Selection.NotifyOfStylingChange(stylingSource, styles, styleChangeType);
             }
+        }
+
+        static bool StylesContainResolveToFloatProperty(List<string> styles)
+        {
+            if (styles == null)
+                return false;
+
+            foreach (var styleName in styles)
+            {
+                if (StyleDebug.IsResolveToFloatProperty(StyleDebug.GetStylePropertyIdFromName(styleName)))
+                    return true;
+            }
+
+            return false;
         }
 
         // Style Updates
@@ -2834,28 +2887,26 @@ namespace Unity.UI.Builder
 
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            if (newValue.texture == null)
+            // Only a texture under Resources needs writing here; SetCursor covers every other shape.
+            if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue.texture, out var resolvedResourcePath))
             {
-                styleProperty.SetKeyword(styleSheet, StyleKeyword.Initial);
-            }
-            else if (newValue.hotspot == Vector2.zero)
-            {
-                if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue.texture, out var resolvedResourcePath))
+                if (newValue.hotspot == Vector2.zero)
+                {
                     styleProperty.SetResourcePath(styleSheet, resolvedResourcePath);
+                }
                 else
-                    styleProperty.SetAssetReference(styleSheet, newValue.texture);
+                {
+                    if (styleProperty.handleCount != 3)
+                        styleProperty.values = new StyleValueHandle[3];
+
+                    styleSheet.WriteResourcePath(ref styleProperty.values[0], resolvedResourcePath);
+                    styleSheet.WriteFloat(ref styleProperty.values[1], newValue.hotspot.x);
+                    styleSheet.WriteFloat(ref styleProperty.values[2], newValue.hotspot.y);
+                }
             }
             else
             {
-                if (styleProperty.handleCount != 3)
-                    styleProperty.values = new StyleValueHandle[3];
-                if (BuilderAssetUtilities.TryGetResourcesPathForAsset(newValue.texture, out var resolvedResourcePath))
-                    styleSheet.WriteResourcePath(ref styleProperty.values[0], resolvedResourcePath);
-                else
-                    styleSheet.WriteAssetReference(ref styleProperty.values[0], newValue.texture);
-
-                styleSheet.WriteFloat(ref styleProperty.values[1], newValue.hotspot.x);
-                styleSheet.WriteFloat(ref styleProperty.values[2], newValue.hotspot.y);
+                styleProperty.SetCursor(styleSheet, newValue);
             }
 
             PostStyleFieldSteps(e.target as VisualElement, styleProperty, styleName, isNewValue);
@@ -2908,6 +2959,14 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
+        void OnFieldValueChangeCurvature(ChangeEvent<Curvature> e, string styleName)
+        {
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+            var isNewValue = !styleProperty.HasValue();
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            styleProperty.SetCurvature(styleSheet, e.newValue);
+            PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
+        }
 
         void OnFieldValueChangeBackgroundRepeat(ChangeEvent<BackgroundRepeat> e, string styleName)
         {
@@ -3103,6 +3162,11 @@ namespace Unity.UI.Builder
             return val is StyleRotate || val is Rotate;
         }
 
+        static public bool IsComputedStyleCurvature(object val)
+        {
+            return val is StyleCurvature || val is Curvature;
+        }
+
         static public bool IsComputedStyleBackgroundRepeat(object val)
         {
             return val is StyleBackgroundRepeat || val is BackgroundRepeat;
@@ -3233,6 +3297,15 @@ namespace Unity.UI.Builder
                 return rotate;
 
             var style = (StyleRotate)val;
+            return style.value;
+        }
+
+        static public Curvature GetComputedStyleCurvatureValue(object val)
+        {
+            if (val is Curvature curvature)
+                return curvature;
+
+            var style = (StyleCurvature)val;
             return style.value;
         }
 

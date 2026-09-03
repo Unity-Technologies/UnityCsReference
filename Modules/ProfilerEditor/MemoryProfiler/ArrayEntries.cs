@@ -503,6 +503,15 @@ namespace UnityEditor.Profiling.Memory.Experimental
             return BitConverter.ToUInt64(data, (int)startIndex);
         }
 
+        public static byte ToByte(byte[] data, uint startIndex, uint numBytes)
+        {
+            if (numBytes != sizeof(byte))
+            {
+                throw new IOException("Invalid data entry");
+            }
+            return data[startIndex];
+        }
+
         public static bool ToBoolean(byte[] data, uint startIndex, uint numBytes)
         {
             if (numBytes != sizeof(bool))

@@ -71,7 +71,7 @@ namespace UnityEditor.Scripting
 #pragma warning restore UAC2002
             {
 #pragma warning disable UAC2001 // Avoid Linq
-                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (files not writable): {0}"), readOnlyFiles.Select(path => path).Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
+                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (files not writable): {0}", null), readOnlyFiles.Select(path => path).Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
 #pragma warning restore UAC2001
                 return false;
             }
@@ -94,7 +94,7 @@ namespace UnityEditor.Scripting
 #pragma warning restore UAC2001
             if (assetPath != null)
             {
-                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to add file to list): {0}"), assetPath);
+                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to add file to list): {0}", null), assetPath);
                 return false;
             }
 
@@ -104,7 +104,7 @@ namespace UnityEditor.Scripting
 #pragma warning disable UAC2001 // Avoid Linq
                 var notEditableList = notEditableFiles.Aggregate(string.Empty, (text, file) => text + $"\n\t{file}");
 #pragma warning restore UAC2001
-                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to check out): {0}"), notEditableList);
+                Debug.LogErrorFormat(L10n.Tr("[API Updater] Files cannot be updated (failed to check out): {0}", null), notEditableList);
                 return false;
             }
 

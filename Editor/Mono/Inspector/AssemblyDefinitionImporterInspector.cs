@@ -59,17 +59,17 @@ namespace UnityEditor
             public static Texture2D validDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kValidDefineConstraintHighDpi : kValidDefineConstraint;
             public static Texture2D invalidDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kInvalidDefineConstraintHighDpi : kInvalidDefineConstraint;
 
-            static readonly string kCompatibleTextTitle = L10n.Tr("Define constraints are met.");
-            static readonly string kIncompatibleTextTitle = L10n.Tr("One or more define constraints are invalid or not met.");
+            static readonly string kCompatibleTextTitle = L10n.Tr("Define constraints are met.", null);
+            static readonly string kIncompatibleTextTitle = L10n.Tr("One or more define constraints are invalid or not met.", null);
 
             public static string GetTitleTooltipFromDefineConstraintCompatibility(bool compatible)
             {
                 return compatible ? kCompatibleTextTitle : kIncompatibleTextTitle;
             }
 
-            static readonly string kCompatibleTextIndividual = L10n.Tr("Define constraint is met.");
-            static readonly string kIncompatibleTextIndividual = L10n.Tr("Define constraint is not met.");
-            static readonly string kInvalidTextIndividual = L10n.Tr("Define constraint is invalid.");
+            static readonly string kCompatibleTextIndividual = L10n.Tr("Define constraint is met.", null);
+            static readonly string kIncompatibleTextIndividual = L10n.Tr("Define constraint is not met.", null);
+            static readonly string kInvalidTextIndividual = L10n.Tr("Define constraint is invalid.", null);
 
             public static string GetIndividualTooltipFromDefineConstraintStatus(DefineConstraintsHelper.DefineConstraintStatus status)
             {
@@ -519,12 +519,12 @@ namespace UnityEditor
 
             var textFieldRect = new Rect(rect.x, rect.y + Styles.kCenterHeightOffset, rect.width - ReorderableList.Defaults.dragHandleWidth, rect.height);
 
-            string noValue = L10n.Tr("(Missing)");
+            string noValue = L10n.Tr("(Missing)", null);
 
             var label = string.IsNullOrEmpty(defineConstraint.stringValue) ? noValue : defineConstraint.stringValue;
             bool mixed = defineConstraint.hasMultipleDifferentValues;
             EditorGUI.showMixedValue = mixed;
-            var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)") : label);
+            var textFieldValue = EditorGUI.TextField(textFieldRect, mixed ? L10n.Tr("(Multiple Values)", null) : label);
             EditorGUI.showMixedValue = false;
 
             var defines = GetDefines();
@@ -704,7 +704,7 @@ namespace UnityEditor
             bool hasValue = !string.IsNullOrEmpty(pathProp.stringValue);
             if (!hasValue)
             {
-                m_PrecompileReferenceListEntry.Insert(0, L10n.Tr("None"));
+                m_PrecompileReferenceListEntry.Insert(0, L10n.Tr("None", null));
 
                 if (m_PrecompileReferenceListEntry.Count == 1)
                 {
@@ -1014,7 +1014,7 @@ namespace UnityEditor
             var assetProp = assemblyDefinitionFile.FindPropertyRelative("asset");
 
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
-            var label = string.IsNullOrEmpty(nameProp.stringValue) ? L10n.Tr("(Missing Reference)") : nameProp.stringValue;
+            var label = string.IsNullOrEmpty(nameProp.stringValue) ? L10n.Tr("(Missing Reference)", null) : nameProp.stringValue;
             using (var change = new EditorGUI.ChangeCheckScope())
             {
                 EditorGUI.showMixedValue = assetProp.hasMultipleDifferentValues;

@@ -2,21 +2,22 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
     /// <summary>
     /// Singleton class used to expose common services configurations
     /// </summary>
-    internal sealed class ServicesConfiguration
+    internal sealed partial class ServicesConfiguration
     {
-        static readonly ServicesConfiguration k_Instance;
+        [AutoStaticsCleanupOnCodeReload]
+        static ServicesConfiguration k_Instance;
         const string k_CloudHubServiceUrl = "https://public-cdn.cloud.unity3d.com/editor/production/cloud/hub";
         const string k_CloudUsageDashboardUrl = "/usage";
         const string k_CloudBuildAddTargetUrl = "/setup/platform";
@@ -61,7 +62,17 @@ namespace UnityEditor.Connect
         Dictionary<string, string> m_ServicesUrlsConfig = new Dictionary<string, string>();
 
 
-        public static ServicesConfiguration instance => k_Instance;
+        public static ServicesConfiguration instance
+        {
+            get
+            {
+                if (k_Instance == null)
+                {
+                    k_Instance = new ServicesConfiguration();
+                }
+                return k_Instance;
+            }
+        }
 
         public string cloudHubServiceUrl => k_CloudHubServiceUrl;
 
@@ -101,18 +112,10 @@ namespace UnityEditor.Connect
             ApiUrl,
         }
 
-        static ServicesConfiguration()
-        {
-            if (k_Instance == null)
-            {
-                k_Instance = new ServicesConfiguration();
-            }
-        }
-
         ServicesConfiguration()
         {
-            m_UnityTeamUrl = L10n.Tr("https://unity3d.com/teams"); // Should be https://unity3d.com/fr/teams in French !
-            m_LearnMoreCloudBuildUrl = L10n.Tr("https://unity.com/solutions/ci-cd"); // Should be https://unity3d.com/fr/teams in French !
+            m_UnityTeamUrl = L10n.Tr("https://unity3d.com/teams", null); // Should be https://unity3d.com/fr/teams in French !
+            m_LearnMoreCloudBuildUrl = L10n.Tr("https://unity.com/solutions/ci-cd", null); // Should be https://unity3d.com/fr/teams in French !
             PrepareAdsEnvironment(ConvertStringToServerEnvironment(UnityConnect.instance.GetEnvironment()));
             if (!string.IsNullOrEmpty(SessionState.GetString(k_ConfigJsonSessionStateKey, null)))
             {
@@ -194,7 +197,7 @@ namespace UnityEditor.Connect
                 Progress.Remove(m_ProgressId);
             }
 
-            m_ProgressId = Progress.Start(L10n.Tr(k_ProgressTitle), options: Progress.Options.Indefinite);
+            m_ProgressId = Progress.Start(L10n.Tr(k_ProgressTitle, null), options: Progress.Options.Indefinite);
         }
 
         void StopProgress()
@@ -729,4 +732,3 @@ namespace UnityEditor.Connect
         public string adsOperateApiUrl { get; private set; }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -648,6 +648,7 @@ namespace UnityEngineInternal
         Automatic,
     }
     [NativeHeader("Runtime/Misc/PlayerSettings.h")]
+    [NativeHeader("Runtime/Graphics/MemorylessRequesters.h")]
     public class MemorylessManager
     {
         public static MemorylessMode depthMemorylessMode
@@ -661,6 +662,14 @@ namespace UnityEngineInternal
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         [NativeMethod(Name = "SetFramebufferDepthMemorylessMode")]
         extern internal static void SetFramebufferDepthMemorylessMode(MemorylessMode mode);
+
+        public static bool isDepthMemoryless
+        {
+            get { return IsFramebufferDepthMemoryless(); }
+        }
+        [StaticAccessor("GetMemorylessRequester()", StaticAccessorType.Dot)]
+        [NativeMethod(Name = "IsFramebufferDepthMemoryless")]
+        extern internal static bool IsFramebufferDepthMemoryless();
     }
 }
 

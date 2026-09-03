@@ -33,7 +33,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         // The Upgrade breakdown shows only Upgrade-area issues relevant to the selected target version.
         protected override bool MatchesSummaryFilter(ReportItem issue)
         {
-            if (!HasUpgradeArea(issue))
+            if (!HasAnyAreas(issue, Areas.Upgrade))
                 return false;
 
             if (!ObsoleteLibrary.MatchesTargetVersion(issue, m_ViewStates.upgradeTargetVersion))
@@ -235,10 +235,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent BeforeUpgradeNoIssuesDescription = EditorGUIUtility.TrTextContent("There are no known issues to fix before you upgrade!");
             public static readonly GUIContent AfterUpgradeNoIssuesDescription = EditorGUIUtility.TrTextContent("There are no known issues to fix after you upgrade!");
 
-            public static readonly string BeforeUpgrade = L10n.Tr("Before you upgrade ({0} issue)");
-            public static readonly string BeforeUpgradePlural = L10n.Tr("Before you upgrade ({0} issues)");
-            public static readonly string AfterUpgrade = L10n.Tr("After you upgrade ({0} issue)");
-            public static readonly string AfterUpgradePlural = L10n.Tr("After you upgrade ({0} issues)");
+            public static readonly string BeforeUpgrade = L10n.Tr("Before you upgrade ({0} issue)", null);
+            public static readonly string BeforeUpgradePlural = L10n.Tr("Before you upgrade ({0} issues)", null);
+            public static readonly string AfterUpgrade = L10n.Tr("After you upgrade ({0} issue)", null);
+            public static readonly string AfterUpgradePlural = L10n.Tr("After you upgrade ({0} issues)", null);
         }
     }
 }

@@ -10,6 +10,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
     /// </summary>
     interface IUserModelImp
     {
+        bool IsMissingDefinition { get; }
+
         bool OnEnableCalled { get; set; }
 
         void CallOnEnable();

@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System;
 using System.Text;
 using System.Threading;
@@ -10,11 +10,12 @@ using UnityEditor.Advertisements;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
     [InitializeOnLoad]
-    internal class AdsService : SingleService
+    internal partial class AdsService : SingleService
     {
         const string k_GameIdApiUrl = "/unity/v1/games";
         const string k_JsonAppleGameId = "iOSGameKey";
@@ -42,20 +43,35 @@ namespace UnityEditor.Connect
         public override string serviceFlagName { get; }
         public override bool shouldSyncOnProjectRebind => true;
 
-        static readonly AdsService k_Instance;
+        [AutoStaticsCleanupOnCodeReload]
+        static AdsService k_Instance;
 
-        public static AdsService instance => k_Instance;
-
-        static AdsService()
+        public static AdsService instance
         {
-            k_Instance = new AdsService();
+            get
+            {
+                EnsureInstanceInitialized();
+                return k_Instance;
+            }
+        }
+
+        // [OnCodeLoaded] re-registers this service with ServicesRepository after a reload;
+        // the null check in `instance` covers consumers that reach us before it has run
+        // (ordering across classes is not guaranteed).
+        [OnCodeLoaded]
+        static void EnsureInstanceInitialized()
+        {
+            if (k_Instance == null)
+            {
+                k_Instance = new AdsService();
+            }
         }
 
         AdsService()
         {
             name = "Unity Ads";
-            title = L10n.Tr("Ads");
-            description = L10n.Tr("Monetize your games");
+            title = L10n.Tr("Ads", null);
+            description = L10n.Tr("Monetize your games", null);
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Ads.png";
             displayToggle = true;
             packageName = "com.unity.ads";
@@ -217,4 +233,4 @@ namespace UnityEditor.Connect
         internal event Action gameIdsUpdatedEvent;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

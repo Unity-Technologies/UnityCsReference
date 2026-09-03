@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -146,6 +145,12 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
     public VisualElement Header => m_Header;
 
+    /// <summary>
+    /// Re-clones the document into the panel. Supplied by whoever owns that panel, since the canvas only knows
+    /// the panel and not the document behind it.
+    /// </summary>
+    public Action RequestRefresh { get; set; }
+
     public bool PreviewMode
     {
         get => m_PreviewMode;
@@ -285,6 +290,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     {
         m_DocumentRoot.style.backgroundImage = default;
         PanelElement = null;
+        RequestRefresh = null;
 
         if (!m_Settings)
             return;
@@ -408,11 +414,12 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
     void SetupPreviewMode(bool enabled)
     {
-        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
+        // Driven through the panel rather than the current stage: outside the UI Stage there is no stage to ask.
+        if (m_PanelElement != null)
         {
-            stage.ContentOverflowMode(enabled ? Overflow.Hidden : Overflow.Visible);
-            stage.RequestRefresh();
+            m_PanelElement.ContentOverflowMode = enabled ? Overflow.Hidden : Overflow.Visible;
             m_PanelElement.EnableAnimationSystem(enabled);
+            RequestRefresh?.Invoke();
         }
 
         m_DocumentRoot.EventMode = enabled ? CanvasEventMode.Forward : CanvasEventMode.Pick;

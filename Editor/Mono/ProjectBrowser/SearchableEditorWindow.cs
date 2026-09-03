@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
@@ -14,6 +15,10 @@ namespace UnityEditor
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("CodeReloadSafety", "UAL0001:Unsealed Public Class", Justification = "Unsealed on purpose")]
     public partial class SearchableEditorWindow : EditorWindow, ISearchableContainer
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        public SearchableEditorWindow() { }
+        #pragma warning restore UAL0015
+
         public enum SearchMode { All, Name, Type, Label, AssetBundleName }
         public enum SearchModeHierarchyWindow { All, Name, Type }
 
@@ -227,13 +232,16 @@ namespace UnityEditor
 
             // Don't remove "Assets" prefix, we need to support Packages as well (https://fogbugz.unity3d.com/f/cases/1161019/)
             string path = AssetDatabase.GetAssetPath(instanceID);
-            if (path.IndexOf(' ') != -1)
-                path = '"' + path + '"';
 
             if (AssetDatabase.IsMainAsset(instanceID))
-                searchFilter = $"ref:{path}";
+                searchFilter = path;
             else
-                searchFilter = $"ref:{instanceID}:{path}";
+                searchFilter = $"{instanceID}:{path}";
+
+            if (searchFilter.IndexOf(' ') != -1)
+                searchFilter = '"' + searchFilter + '"';
+
+            searchFilter = $"ref:{searchFilter}";
 
             SetSearchText(searchFilter, HierarchyType.GameObjects);
         }
@@ -409,3 +417,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

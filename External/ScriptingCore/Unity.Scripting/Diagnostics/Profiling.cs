@@ -1,6 +1,6 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: ScriptingRuntime not yet converted
 using System;
 using System.Runtime.CompilerServices;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Scripting
 {
@@ -44,6 +44,9 @@ namespace Unity.Scripting
         /// <summary>
         /// Copy of the native function pointers that call native profiler api.
         /// </summary>
+        // Native profiler callbacks installed once at process initialization; process-level state that no
+        // scope transition should reset.
+        [NoAutoStaticsCleanup]
         private static ProfilerCallbacks profilerCallbacks;
 
         internal enum DomainReloadPhase
@@ -194,4 +197,3 @@ namespace Unity.Scripting
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

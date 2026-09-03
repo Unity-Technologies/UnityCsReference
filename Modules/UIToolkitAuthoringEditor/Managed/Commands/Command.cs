@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -133,6 +133,7 @@ abstract class Command : IDisposable
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal abstract class Command<T> : Command where T : Command<T>, new()
 {
+    [NoAutoStaticsCleanup] // command object pool, safe to persist
     static readonly ObjectPool<T> s_Pool = new(() => new T());
     internal static int PooledCount => s_Pool.Size();
     internal static void ClearPooledCommands() => s_Pool.Clear();
@@ -167,4 +168,3 @@ internal abstract class Command<T> : Command where T : Command<T>, new()
         s_Pool.Release((T)this);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

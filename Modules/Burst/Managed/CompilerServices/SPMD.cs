@@ -6,4 +6,12 @@ using System;
 
 namespace Unity.Burst.CompilerServices.Spmd
 {
+    /// <summary>
+    /// Specifies that multiple calls to a method act as if they are
+    /// executing in a Single Program, Multiple Data (SPMD) paradigm.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public class SpmdAttribute : Attribute
+    {
+    }
 }

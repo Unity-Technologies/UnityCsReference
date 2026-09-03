@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -12,15 +13,15 @@ namespace UnityEditor.Search
 {
     class SearchToolbar : UIElements.Toolbar, ISearchElement
     {
-        private static readonly string openSaveSearchesIconTooltip = L10n.Tr("Toggle Saved Searches Panel");
+        private static readonly string openSaveSearchesIconTooltip = L10n.Tr("Toggle Saved Searches Panel", null);
 
-        public static readonly string queryBuilderIconTooltip = L10n.Tr("Toggle Query Builder Mode");
+        public static readonly string queryBuilderIconTooltip = L10n.Tr("Toggle Query Builder Mode", null);
 
-        public static readonly string previewInspectorButtonTooltip = L10n.Tr("Toggle Inspector Panel");
+        public static readonly string previewInspectorButtonTooltip = L10n.Tr("Toggle Inspector Panel", null);
 
-        public static readonly string saveQueryButtonTooltip = L10n.Tr("Save search query as an asset.");
+        public static readonly string saveQueryButtonTooltip = L10n.Tr("Save search query as an asset.", null);
 
-        public static readonly string pressToFilterTooltip = L10n.Tr("Press Tab \u21B9 to filter");
+        public static readonly string pressToFilterTooltip = L10n.Tr("Press Tab \u21B9 to filter", null);
 
         protected readonly ISearchView m_ViewModel;
         protected readonly Toggle m_SearchQueryToggle;
@@ -215,3 +216,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

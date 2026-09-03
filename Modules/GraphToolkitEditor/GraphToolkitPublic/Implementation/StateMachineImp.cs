@@ -10,7 +10,7 @@ using UnityEngine;
 namespace Unity.GraphToolkit.Editor.Implementation
 {
     [Serializable]
-    class StateMachineImp : GraphModelImp
+    partial class StateMachineImp : GraphModelImp
     {
         [NonSerialized]
         IReadOnlyList<Type> m_SupportedSelfTransitions;
@@ -193,6 +193,85 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         internal IEnumerable<ITransition> GetTransitions(IState fromState, IState toState)
         {
+            ValidateStatePair(fromState, toState, out var fromModel, out var toModel);
+            return GetTransitionsBetween(fromModel, toModel);
+        }
+
+        internal ITransition Connect(IState fromState, IState toState)
+        {
+            CheckModificationLock();
+            ValidateStatePair(fromState, toState, out var fromModel, out var toModel);
+
+            TransitionSupportModel support;
+            if (ReferenceEquals(fromModel, toModel))
+                support = CreateOrExtendSelfTransitionSupport(fromModel, typeof(SelfTransitionModel));
+            else
+            {
+                var (fromSide, toSide) = ComputeFacingAnchorSides(fromModel.Position, toModel.Position);
+                support = CreateTransitionSupport(
+                    toModel.GetInPort(), toSide, ComputeAnchorOffset(toModel, toSide),
+                    fromModel.GetOutPort(), fromSide, ComputeAnchorOffset(fromModel, fromSide),
+                    typeof(StateToStateTransitionModel));
+            }
+
+            return support?.AsPublicTransition();
+        }
+
+        // Picks the pair of facing sides the transition would use if it had been drawn in the graph view.
+        static (AnchorSide fromSide, AnchorSide toSide) ComputeFacingAnchorSides(Vector2 fromPosition, Vector2 toPosition)
+        {
+            var delta = toPosition - fromPosition;
+
+            if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.y))
+                return delta.x >= 0 ? (AnchorSide.Right, AnchorSide.Left) : (AnchorSide.Left, AnchorSide.Right);
+
+            return delta.y >= 0 ? (AnchorSide.Bottom, AnchorSide.Top) : (AnchorSide.Top, AnchorSide.Bottom);
+        }
+
+        // Stacks the new anchor past the transitions already anchored on that side, so parallel transitions do not overlap.
+        static float ComputeAnchorOffset(StateModel state, AnchorSide side)
+        {
+            const float transitionWidth = 30.0f;
+
+            var maxOffset = 0f;
+            foreach (var wire in state.GetConnectedWires())
+            {
+                if (wire is not TransitionSupportModel transition)
+                    continue;
+
+                if (ReferenceEquals(transition.FromPort?.NodeModel, state) &&
+                    transition.FromNodeAnchorSide == side && transition.FromNodeAnchorOffset > maxOffset)
+                    maxOffset = transition.FromNodeAnchorOffset;
+
+                if (ReferenceEquals(transition.ToPort?.NodeModel, state) &&
+                    transition.ToNodeAnchorSide == side && transition.ToNodeAnchorOffset > maxOffset)
+                    maxOffset = transition.ToNodeAnchorOffset;
+            }
+
+            return maxOffset + transitionWidth;
+        }
+
+        internal bool Disconnect(IState fromState, IState toState)
+        {
+            CheckModificationLock();
+            ValidateStatePair(fromState, toState, out var fromModel, out var toModel);
+
+            List<WireModel> supportsToDelete = null;
+            foreach (var support in GetTransitionSupportsBetween(fromModel, toModel))
+            {
+                supportsToDelete ??= new List<WireModel>();
+                supportsToDelete.Add(support);
+            }
+
+            if (supportsToDelete == null)
+                return false;
+
+            DeleteWires(supportsToDelete);
+            return true;
+        }
+
+        void ValidateStatePair(IState fromState, IState toState, out StateModel fromModel, out StateModel toModel)
+        {
             if (fromState == null)
                 throw new ArgumentNullException(nameof(fromState));
             if (toState == null)
@@ -203,13 +282,11 @@ namespace Unity.GraphToolkit.Editor.Implementation
             if (!(toState is State || toState is StateModel))
                 throw new ArgumentException($"The provided IState ('{toState.GetType().Name}') is not a valid internal state implementation.", nameof(toState));
 
-            var fromModel = fromState.StateModel;
-            var toModel = toState.StateModel;
+            fromModel = fromState.StateModel;
+            toModel = toState.StateModel;
 
             if (fromModel.GraphModel != this || toModel.GraphModel != this)
                 throw new ArgumentException("Both states must belong to this state machine.");
-
-            return GetTransitionsBetween(fromModel, toModel);
         }
 
         /// <summary>
@@ -226,12 +303,18 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
         static IEnumerable<ITransition> GetTransitionsBetween(StateModel fromModel, StateModel toModel)
         {
+            foreach (var support in GetTransitionSupportsBetween(fromModel, toModel))
+                yield return support.AsPublicTransition();
+        }
+
+        static IEnumerable<TransitionSupportModel> GetTransitionSupportsBetween(StateModel fromModel, StateModel toModel)
+        {
             foreach (var wire in fromModel.GetOutPort().GetConnectedWires())
             {
                 if (wire is TransitionSupportModel support && support is not IGhostWireModel
                     && ReferenceEquals(support.ToPort?.NodeModel, toModel))
                 {
-                    yield return support.AsPublicTransition();
+                    yield return support;
                 }
             }
         }

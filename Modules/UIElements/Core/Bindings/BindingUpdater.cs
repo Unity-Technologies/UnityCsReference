@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using Unity.Properties;
 using Unity.Scripting.LifecycleManagement;
@@ -217,6 +216,19 @@ namespace UnityEngine.UIElements
             {
                 var message = GetRootDataSourceError(resolvedDataSource);
                 return new BindingResult(BindingStatus.Failure, message);
+            }
+
+            // A "${component:TypeName}.field" path reads from a component's data, not the element. Read the
+            // value out of the component and let UpdateSource convert+write it to the data source.
+            if (ComponentBinding.TryResolve(target, context.bindingId, out var componentHandle, out var componentSubPath))
+            {
+                if (!ComponentBinding.TryReadValue(target, componentHandle, componentSubPath, out var componentValue))
+                {
+                    var componentMessage = GetExtractValueErrorString(VisitReturnCode.InvalidPath, target, context.bindingId);
+                    return new BindingResult(BindingStatus.Failure, componentMessage);
+                }
+
+                return dataBinding.UpdateSource(in context, ref componentValue);
             }
 
             var visitAtPath = VisitAtPath(dataBinding, BindingUpdateStage.UpdateSource, ref target, context.bindingId, in context);
@@ -447,4 +459,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

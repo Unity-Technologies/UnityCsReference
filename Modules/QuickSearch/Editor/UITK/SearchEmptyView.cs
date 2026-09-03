@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,24 +69,24 @@ namespace UnityEditor.Search
             return 0;
         }
 
-        static readonly string k_NoResultsLabel = L10n.Tr("No Results.");
-        static readonly string k_SearchInProgressLabel = L10n.Tr("Search in progress...");
-        static readonly string k_NarrowYourSearchLabel = L10n.Tr("Narrow your search");
-        static readonly string k_SearchesLabel = L10n.Tr("Searches");
-        static readonly string k_AreaTooltipFormat = L10n.Tr("Double click to search in: {0}");
-        static readonly string k_NoResultsFoundLabel = L10n.Tr("No results found.");
-        static readonly string k_NoResultsFoundQueryFormat = L10n.Tr("No results found for <b>{0}</b>.");
-        static readonly string k_TrySomethingElseLabel = L10n.Tr("Try something else?");
-        static readonly string k_NoResultsInProviderFormat = L10n.Tr("There is no result in {0}.");
-        static readonly string k_SelectAnotherTabLabel = L10n.Tr("Select another search tab?");
-        static readonly string k_IndexesPropertiesLabel = L10n.Tr("Some indexes don't have properties enabled.");
-        static readonly string k_OpenIndexManagerLabel = L10n.Tr("Open Index Manager?");
-        static readonly string k_IndexesDisabledLabel = L10n.Tr("All indexes are disabled.");
-        static readonly string k_ShowMoreResultsLabel = L10n.Tr("Show more results is off.");
-        static readonly string k_TurnItOnLabel = L10n.Tr("Turn it on?");
-        static readonly string k_ShowPackagesLabel = L10n.Tr("Show Packages is off.");
-        static readonly string k_AddFilterOrKeywordLabel = L10n.Tr("The search query is empty. Try adding some filters or keywords.");
-        static readonly string k_TryAQueryLabel = L10n.Tr("The search query is empty. Try one of these queries:");
+        static readonly string k_NoResultsLabel = L10n.Tr("No Results.", null);
+        static readonly string k_SearchInProgressLabel = L10n.Tr("Search in progress...", null);
+        static readonly string k_NarrowYourSearchLabel = L10n.Tr("Narrow your search", null);
+        static readonly string k_SearchesLabel = L10n.Tr("Searches", null);
+        static readonly string k_AreaTooltipFormat = L10n.Tr("Double click to search in: {0}", null);
+        static readonly string k_NoResultsFoundLabel = L10n.Tr("No results found.", null);
+        static readonly string k_NoResultsFoundQueryFormat = L10n.Tr("No results found for <b>{0}</b>.", null);
+        static readonly string k_TrySomethingElseLabel = L10n.Tr("Try something else?", null);
+        static readonly string k_NoResultsInProviderFormat = L10n.Tr("There is no result in {0}.", null);
+        static readonly string k_SelectAnotherTabLabel = L10n.Tr("Select another search tab?", null);
+        static readonly string k_IndexesPropertiesLabel = L10n.Tr("Some indexes don't have properties enabled.", null);
+        static readonly string k_OpenIndexManagerLabel = L10n.Tr("Open Index Manager?", null);
+        static readonly string k_IndexesDisabledLabel = L10n.Tr("All indexes are disabled.", null);
+        static readonly string k_ShowMoreResultsLabel = L10n.Tr("Show more results is off.", null);
+        static readonly string k_TurnItOnLabel = L10n.Tr("Turn it on?", null);
+        static readonly string k_ShowPackagesLabel = L10n.Tr("Show Packages is off.", null);
+        static readonly string k_AddFilterOrKeywordLabel = L10n.Tr("The search query is empty. Try adding some filters or keywords.", null);
+        static readonly string k_TryAQueryLabel = L10n.Tr("The search query is empty. Try one of these queries:", null);
 
         Label m_NoResultLabel;
         VisualElement m_QueryPropositionContainer;
@@ -821,3 +822,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

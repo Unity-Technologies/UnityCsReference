@@ -23,6 +23,8 @@ namespace Unity.GraphToolkit.Editor
 
         void IGraphInternal.CheckImplementation() => CheckImplementation();
 
+        void IGraphInternal.OnGraphChanged(ILogger logger) => OnGraphChanged((GraphLogger)logger);
+
         internal void CheckImplementation()
         {
             if (m_Implementation == null)

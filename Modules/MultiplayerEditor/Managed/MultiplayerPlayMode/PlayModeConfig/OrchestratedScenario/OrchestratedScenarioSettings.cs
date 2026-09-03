@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
@@ -12,42 +13,42 @@ namespace Unity.Multiplayer.PlayMode.Editor;
 struct OrchestratedScenarioSettings
 {
     const string k_DefaultInstanceName = "";
-    internal const string k_InstanceItemsPropertyName = nameof(m_InstanceItems);
+    internal const string k_ControllerItemsPropertyName = nameof(m_ControllerItems);
 
-    [SerializeField] Hash128 m_ExtensionsHash;
-    [SerializeReference] List<IInstanceItem> m_InstanceItems;
+    [SerializeField, FormerlySerializedAs("m_ExtensionsHash")] Hash128 m_ControllersHash;
+    [SerializeReference, FormerlySerializedAs("m_InstanceItems")] List<IPlayModeControllerItem> m_ControllerItems;
 
-    public readonly int InstanceCount => m_InstanceItems?.Count ?? 0;
-    internal readonly Hash128 ExtensionsHash => m_ExtensionsHash;
+    public readonly int InstanceCount => m_ControllerItems?.Count ?? 0;
+    internal readonly Hash128 ControllersHash => m_ControllersHash;
 
     public GUID AddInstance<TController, TSettings>(string name, TSettings settings)
-        where TController : InstanceController<TSettings>
+        where TController : PlayModeController<TSettings>
         where TSettings : struct
     {
-        if (m_InstanceItems == null)
-            m_InstanceItems = new();
+        if (m_ControllerItems == null)
+            m_ControllerItems = new();
 
-        var newItem = new InstanceItem<TController, TSettings>(name, settings);
-        m_InstanceItems.Add(newItem);
+        var newItem = new PlayModeControllerItem<TController, TSettings>(name, settings);
+        m_ControllerItems.Add(newItem);
         return newItem.GetId();
     }
 
     public GUID AddInstance<TController, TSettings>()
-        where TController : InstanceController<TSettings>
+        where TController : PlayModeController<TSettings>
         where TSettings : struct
     {
-        return AddInstance<TController, TSettings>(k_DefaultInstanceName, InstanceController<TSettings>.GetDefaultSettings());
+        return AddInstance<TController, TSettings>(k_DefaultInstanceName, PlayModeController<TSettings>.GetDefaultSettings());
     }
 
     public GUID AddInstance<TController, TSettings>(string name)
-        where TController : InstanceController<TSettings>
+        where TController : PlayModeController<TSettings>
         where TSettings : struct
     {
-        return AddInstance<TController, TSettings>(name, InstanceController<TSettings>.GetDefaultSettings());
+        return AddInstance<TController, TSettings>(name, PlayModeController<TSettings>.GetDefaultSettings());
     }
 
     public GUID AddInstance<TController, TSettings>(TSettings settings)
-        where TController : InstanceController<TSettings>
+        where TController : PlayModeController<TSettings>
         where TSettings : struct
     {
         return AddInstance<TController, TSettings>(k_DefaultInstanceName, settings);
@@ -55,20 +56,20 @@ struct OrchestratedScenarioSettings
 
     public readonly TSettings GetInstanceSettings<TSettings>(GUID id)
     {
-        return m_InstanceItems[FindInstanceIndexById(id)].GetSettings<TSettings>();
+        return m_ControllerItems[FindInstanceIndexById(id)].GetSettings<TSettings>();
     }
 
     public void SetInstanceSettings<TSettings>(GUID id, TSettings settings)
     {
         var index = FindInstanceIndexById(id);
-        m_InstanceItems[index] = m_InstanceItems[index].WithSettings(settings);
+        m_ControllerItems[index] = m_ControllerItems[index].WithSettings(settings);
     }
 
     public readonly TSettings GetDecoratorSettings<TDecorator, TSettings>(GUID id)
-        where TDecorator : InstanceControllerDecorator<TSettings>
+        where TDecorator : PlayModeControllerDecorator<TSettings>
         where TSettings : struct
     {
-        var item = m_InstanceItems[FindInstanceIndexById(id)];
+        var item = m_ControllerItems[FindInstanceIndexById(id)];
         var decoratorItem = item.GetDecoratorItem<TDecorator>();
         if (decoratorItem == null)
             throw new KeyNotFoundException($"Instance with id '{id}' does not have a decorator of type '{typeof(TDecorator).Name}'.");
@@ -77,73 +78,67 @@ struct OrchestratedScenarioSettings
     }
 
     public void SetDecoratorSettings<TDecorator, TSettings>(GUID id, TSettings settings)
-        where TDecorator : InstanceControllerDecorator<TSettings>
+        where TDecorator : PlayModeControllerDecorator<TSettings>
         where TSettings : struct
     {
         var index = FindInstanceIndexById(id);
-        var item = m_InstanceItems[index];
-        m_InstanceItems[index] = item.WithDecoratorSettings<TDecorator, TSettings>(settings);
-    }
-
-    public void SetInstanceRunningMode(GUID id, RunModeState runMode)
-    {
-        var index = FindInstanceIndexById(id);
-        m_InstanceItems[index] = m_InstanceItems[index].WithRunMode(runMode);
+        var item = m_ControllerItems[index];
+        m_ControllerItems[index] = item.WithDecoratorSettings<TDecorator, TSettings>(settings);
     }
 
     public void SetInstanceName(GUID id, string name)
     {
         var index = FindInstanceIndexById(id);
-        m_InstanceItems[index] = m_InstanceItems[index].WithName(name);
+        m_ControllerItems[index] = m_ControllerItems[index].WithName(name);
     }
 
-    internal readonly IEnumerable<IInstanceItem> GetAllInstanceItems()
+    internal readonly IEnumerable<IPlayModeControllerItem> GetAllControllerItems()
     {
-        if (m_InstanceItems == null)
-            return Array.Empty<IInstanceItem>();
+        if (m_ControllerItems == null)
+            return Array.Empty<IPlayModeControllerItem>();
 
-        return m_InstanceItems;
+        return m_ControllerItems;
     }
 
-    internal IInstanceItem this[int index]
+    internal IPlayModeControllerItem this[int index]
     {
-        readonly get => m_InstanceItems[index];
-        set => m_InstanceItems[index] = value;
+        readonly get => m_ControllerItems[index];
+        set => m_ControllerItems[index] = value;
     }
 
     internal void RemoveInstanceAt(int index)
     {
-        m_InstanceItems.RemoveAt(index);
+        m_ControllerItems.RemoveAt(index);
     }
 
-    internal readonly IInstanceItem FindInstanceItemById(GUID id)
+    internal readonly IPlayModeControllerItem FindControllerItemById(GUID id)
     {
-        return m_InstanceItems[FindInstanceIndexById(id)];
+        return m_ControllerItems[FindInstanceIndexById(id)];
     }
 
     internal void RefreshDecorators(bool force = false)
     {
-        if (!force && m_ExtensionsHash == InstanceExtensionManager.Hash)
+        if (!force && m_ControllersHash == PlayModeControllerRegistry.Hash)
             return;
 
         for (var i = 0; i < InstanceCount; i++)
         {
-            var item = m_InstanceItems[i];
-            item.GenerateMissingDecoratorsAndRemoveDuplicates(InstanceExtensionManager.GetDecoratorTypes(item.GetInstanceType()));
-            m_InstanceItems[i] = item;
+            var item = m_ControllerItems[i];
+            item.GenerateMissingDecoratorsAndRemoveDuplicates(PlayModeControllerRegistry.GetDecoratorTypes(item.GetInstanceType()));
+            m_ControllerItems[i] = item;
         }
 
-        m_ExtensionsHash = InstanceExtensionManager.Hash;
+        m_ControllersHash = PlayModeControllerRegistry.Hash;
     }
 
     readonly int FindInstanceIndexById(GUID id)
     {
-        if (m_InstanceItems == null)
+        if (m_ControllerItems == null)
             throw new KeyNotFoundException($"No instances in scenario.");
 
-        for (int i = 0; i < m_InstanceItems.Count; i++)
+        for (int i = 0; i < m_ControllerItems.Count; i++)
         {
-            var item = m_InstanceItems[i];
+            var item = m_ControllerItems[i];
             if (item.GetId() == id)
             {
                 return i;

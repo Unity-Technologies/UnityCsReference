@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -54,21 +53,21 @@ namespace UnityEditor.UIElements
 
         static class Strings
         {
-            public static readonly string DetailViewModeTooltip = L10n.Tr("Show or hide UI Toolkit related data next to the panel timing list.");
-            public static readonly string ComponentsFoldoutTitle = L10n.Tr("Panel components");
-            public static readonly string ComponentsFoldoutTitleCounted = L10n.Tr("Panel components ({0})");
-            public static readonly string ComponentsFoldoutTooltip = L10n.Tr("IPanelComponent objects from UI Toolkit frame metadata for the selected panel or batch.");
-            public static readonly string EventsFoldoutTitle = L10n.Tr("Events");
-            public static readonly string EventsFoldoutTitleCounted = L10n.Tr("Events ({0})");
+            public static readonly string DetailViewModeTooltip = L10n.Tr("Show or hide UI Toolkit related data next to the panel timing list.", null);
+            public static readonly string ComponentsFoldoutTitle = L10n.Tr("Panel components", null);
+            public static readonly string ComponentsFoldoutTitleCounted = L10n.Tr("Panel components ({0})", null);
+            public static readonly string ComponentsFoldoutTooltip = L10n.Tr("IPanelComponent objects from UI Toolkit frame metadata for the selected panel or batch.", null);
+            public static readonly string EventsFoldoutTitle = L10n.Tr("Events", null);
+            public static readonly string EventsFoldoutTitleCounted = L10n.Tr("Events ({0})", null);
             // Plain "Batch #N". The CSS adds a 6px left margin between the panel name and this
             // label for visual separation — no bullet/glyph in the string itself so the heading
             // reads cleanly when long localized panel names cause the strip to wrap or ellipsize.
-            public static readonly string HeaderBatchSuffix = L10n.Tr("Batch #{0}");
-            public static readonly string EmptyOverviewMessage = L10n.Tr("Select a panel row for an overview of its batches, components, and events. Select a batch row to see why it broke.");
-            public static readonly string StatusNoMetadataEntry = L10n.Tr("No UI Toolkit panel metadata for this panel in the selected frame.");
-            public static readonly string StatusNoPanelComponents = L10n.Tr("No panel components in metadata for this panel.");
-            public static readonly string StatusNoBatchComponents = L10n.Tr("No panel components contributed to this batch.");
-            public static readonly string StatusListEmptyCouldNotLoadDetails = L10n.Tr("Panel components are present in frame metadata but details could not be loaded for this frame.");
+            public static readonly string HeaderBatchSuffix = L10n.Tr("Batch #{0}", null);
+            public static readonly string EmptyOverviewMessage = L10n.Tr("Select a panel row for an overview of its batches, components, and events. Select a batch row to see why it broke.", null);
+            public static readonly string StatusNoMetadataEntry = L10n.Tr("No UI Toolkit panel metadata for this panel in the selected frame.", null);
+            public static readonly string StatusNoPanelComponents = L10n.Tr("No panel components in metadata for this panel.", null);
+            public static readonly string StatusNoBatchComponents = L10n.Tr("No panel components contributed to this batch.", null);
+            public static readonly string StatusListEmptyCouldNotLoadDetails = L10n.Tr("Panel components are present in frame metadata but details could not be loaded for this frame.", null);
 
             // Replacement tooltips shown over the disabled ping button so the user understands
             // why ping is unavailable instead of seeing the affordance silently disappear.
@@ -76,21 +75,21 @@ namespace UnityEditor.UIElements
             //                   (e.g. emitter cleared the EntityId before flush).
             //   - CrossSession: the frame came from a saved profile or remote player and its
             //                   EntityIds don't resolve against this editor's object table.
-            public static readonly string PingUnavailableNoEntityTooltip = L10n.Tr("Ping is unavailable: no object reference recorded for this component in frame metadata.");
-            public static readonly string PingUnavailableCrossSessionTooltip = L10n.Tr("Ping is unavailable for frames captured outside this editor session, such as saved profiles or remote players.");
+            public static readonly string PingUnavailableNoEntityTooltip = L10n.Tr("Ping is unavailable: no object reference recorded for this component in frame metadata.", null);
+            public static readonly string PingUnavailableCrossSessionTooltip = L10n.Tr("Ping is unavailable for frames captured outside this editor session, such as saved profiles or remote players.", null);
 
-            public static readonly string EventsListTooltip = L10n.Tr("Events dispatched on the selected panel during the frame (pointer, keyboard, navigation, and others), in dispatch order.");
-            public static readonly string EventsStatusSelectPanelRow = L10n.Tr("Select a panel row on the left to list the input events dispatched on it this frame.");
-            public static readonly string EventsStatusNoEvents = L10n.Tr("No input events dispatched on this panel this frame.");
+            public static readonly string EventsListTooltip = L10n.Tr("Events dispatched on the selected panel during the frame (pointer, keyboard, navigation, and others), in dispatch order.", null);
+            public static readonly string EventsStatusSelectPanelRow = L10n.Tr("Select a panel row on the left to list the input events dispatched on it this frame.", null);
+            public static readonly string EventsStatusNoEvents = L10n.Tr("No input events dispatched on this panel this frame.", null);
 
             // Event row composition. {0} = event type, {1} = target (VisualElement "Type#name" or, when
             // the event had no element target, the owning IPanelComponent), {2} = owning IPanelComponent.
-            public static readonly string EventOnTarget = L10n.Tr("{0} on {1}");
-            public static readonly string EventOnTargetInOwner = L10n.Tr("{0} on {1} in {2}");
-            public static readonly string EventWithPayload = L10n.Tr("{0}  ({1})");
+            public static readonly string EventOnTarget = L10n.Tr("{0} on {1}", null);
+            public static readonly string EventOnTargetInOwner = L10n.Tr("{0} on {1} in {2}", null);
+            public static readonly string EventWithPayload = L10n.Tr("{0}  ({1})", null);
             // Shown when an interned-string reference can't be resolved to a name (pool overflow or a
             // truncated capture) — see ResolveInternedString.
-            public static readonly string Unknown = L10n.Tr("Unknown");
+            public static readonly string Unknown = L10n.Tr("Unknown", null);
         }
 
         enum DetailsSplitMode { NoDetails = 0, RelatedData = 1 }
@@ -1277,8 +1276,8 @@ namespace UnityEditor.UIElements
                     // just the position rather than a meaningless "btn -1".
                     var button = unchecked((int)info.buttonOrKeyCode);
                     var text = button < 0
-                        ? string.Format(L10n.Tr("@ ({0:F2}, {1:F2})"), info.positionX, info.positionY)
-                        : string.Format(L10n.Tr("btn {0} @ ({1:F2}, {2:F2})"), button, info.positionX, info.positionY);
+                        ? string.Format(L10n.Tr("@ ({0:F2}, {1:F2})", null), info.positionX, info.positionY)
+                        : string.Format(L10n.Tr("btn {0} @ ({1:F2}, {2:F2})", null), button, info.positionX, info.positionY);
                     return AppendModifiers(text, modifiers);
                 }
                 case UIToolkitProfilerEventKind.Keyboard:
@@ -1306,7 +1305,7 @@ namespace UnityEditor.UIElements
                     // direction with a zero vector — so show it only when an input source actually
                     // provided one, the same way the keyboard case drops pieces that add no info.
                     var text = (info.positionX != 0f || info.positionY != 0f)
-                        ? string.Format(L10n.Tr("{0} ({1:F2}, {2:F2})"), direction, info.positionX, info.positionY)
+                        ? string.Format(L10n.Tr("{0} ({1:F2}, {2:F2})", null), direction, info.positionX, info.positionY)
                         : direction.ToString();
                     return AppendModifiers(text, modifiers);
                 }
@@ -1399,4 +1398,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

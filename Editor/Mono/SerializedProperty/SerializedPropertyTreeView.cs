@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Serialization not yet converted
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -281,7 +282,9 @@ namespace UnityEditor
             public static readonly Column.DrawEntry DrawDefault = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) =>
             {
                 Profiler.BeginSample("PropDrawDefault");
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 EditorGUI.PropertyField(r, prop, GUIContent.none);
+                #pragma warning restore UAL0015
                 Profiler.EndSample();
             };
             [NoAutoStaticsCleanup] // static lambda bound to engine code, no user references, safe to persist
@@ -291,7 +294,9 @@ namespace UnityEditor
                 float off = System.Math.Max(0.0f, ((r.width / 2) - 8));
                 r.x += off;
                 r.width -= off;
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 EditorGUI.PropertyField(r, prop, GUIContent.none);
+                #pragma warning restore UAL0015
                 Profiler.EndSample();
             };
             [NoAutoStaticsCleanup] // static lambda bound to engine code, no user references, safe to persist
@@ -811,3 +816,4 @@ namespace UnityEditor
         private Column Col(int idx) { return (Column)multiColumnHeader.state.columns[idx]; }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

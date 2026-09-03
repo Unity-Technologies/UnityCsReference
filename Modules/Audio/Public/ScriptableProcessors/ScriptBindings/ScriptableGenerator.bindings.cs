@@ -103,7 +103,19 @@ namespace UnityEngine.Audio
         /// <param name="creationParameters">
         /// Initialization parameters passed through.
         /// </param>
-        GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters creationParameters);
+        GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat, GeneratorInstance.CreationParameters creationParameters)
+#pragma warning disable CS0618 // Bridges to definitions that still implement the obsolete ProcessorInstance.CreationParameters overload.
+            => CreateInstance(context, nestedFormat, new ProcessorInstance.CreationParameters { controlUpdateSetting = creationParameters.controlUpdateSetting, realtimeUpdateSetting = creationParameters.realtimeUpdateSetting });
+#pragma warning restore CS0618
+
+        /// <summary>
+        /// Deprecated. Implement <see cref="CreateInstance(ControlContext, AudioFormat?, GeneratorInstance.CreationParameters)"/> instead.
+        /// </summary>
+        // Kept out of the docs: MemDocToMemXml shortens both CreationParameters types to their leaf name, so it cannot tell the two overloads apart.
+        [UnityEngine.Internal.ExcludeFromDocs]
+        [Obsolete("Implement/call the GeneratorInstance.CreationParameters overload of CreateInstance instead; ProcessorInstance.CreationParameters will be removed.")]
+        GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters creationParameters)
+            => throw new NotSupportedException("CreateInstance(ControlContext, AudioFormat?, ProcessorInstance.CreationParameters) is obsolete. Implement or call the GeneratorInstance.CreationParameters overload instead.");
     }
 
     /// <summary>
@@ -221,6 +233,53 @@ namespace UnityEngine.Audio
         {
             // Speakermode etc., metadata
             byte m_Reserved;
+        }
+
+        /// <summary>
+        /// Parameters controlling how a <see cref="GeneratorInstance"/> is created.
+        /// </summary>
+        /// <remarks>
+        /// Owns the cross-cutting update behaviour shared by all scriptable processors directly, plus any construction
+        /// arguments that only make sense for a <see cref="GeneratorInstance"/>.
+        /// Pass this to <see cref="ControlContext.AllocateGenerator{TRealtime,TControl}"/>; the implicit conversion from
+        /// <see cref="ProcessorInstance.CreationParameters"/> keeps existing call sites working.
+        /// </remarks>
+        public struct CreationParameters
+        {
+            /// <summary>
+            /// Control under what circumstances <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> will be called.
+            /// </summary>
+            public ProcessorInstance.UpdateSetting controlUpdateSetting { get; set; }
+
+            /// <summary>
+            /// Control under what circumstances <see cref="ProcessorInstance.IRealtime.Update"/> will be called.
+            /// </summary>
+            public ProcessorInstance.UpdateSetting realtimeUpdateSetting { get; set; }
+
+            internal readonly ProcessorInstance.InitializationFlags BuildInitializationFlags()
+            {
+                ProcessorInstance.InitializationFlags flags = 0;
+
+                if (controlUpdateSetting == ProcessorInstance.UpdateSetting.UpdateIfDataIsAvailable)
+                    flags |= ProcessorInstance.InitializationFlags.UpdateControlIfDataIsAvailable;
+                else if (controlUpdateSetting == ProcessorInstance.UpdateSetting.UpdateAlways)
+                    flags |= ProcessorInstance.InitializationFlags.UpdateControlAlways;
+
+                if (realtimeUpdateSetting == ProcessorInstance.UpdateSetting.UpdateIfDataIsAvailable)
+                    flags |= ProcessorInstance.InitializationFlags.UpdateProcessorIfDataIsAvailable;
+                else if (realtimeUpdateSetting == ProcessorInstance.UpdateSetting.UpdateAlways)
+                    flags |= ProcessorInstance.InitializationFlags.UpdateProcessorAlways;
+
+                return flags;
+            }
+
+#pragma warning disable CS0618 // Intentionally bridges from the obsolete ProcessorInstance.CreationParameters.
+            // Kept out of the docs: the qualified nested parameter type breaks doc-ID parsing in the doc pipeline.
+            [UnityEngine.Internal.ExcludeFromDocs]
+            [Obsolete("Construct GeneratorInstance.CreationParameters directly; ProcessorInstance.CreationParameters will be removed.")]
+            public static implicit operator CreationParameters(ProcessorInstance.CreationParameters common)
+                => new() { controlUpdateSetting = common.controlUpdateSetting, realtimeUpdateSetting = common.realtimeUpdateSetting };
+#pragma warning restore CS0618
         }
 
         /// <summary>
@@ -535,7 +594,7 @@ namespace UnityEngine.Audio
                 public TUserControl UserControl;
             }
 
-            internal static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserControl, TUserProcessor>>();
+            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserControl, TUserProcessor>>();
 
             [BurstDiscard]
             internal static unsafe void Initialize()
@@ -620,7 +679,7 @@ namespace UnityEngine.Audio
                 public TUserProcessor UserProcessor;
             }
 
-            internal static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserProcessor>>();
+            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserProcessor>>();
 
             [BurstDiscard]
             internal static unsafe void Initialize()
@@ -675,6 +734,7 @@ namespace UnityEngine.Audio
 #pragma warning restore 0169, 0649
 
     [NativeHeader("Modules/Audio/Public/ScriptableProcessors/ScriptBindings/ScriptableProcessor.bindings.h")]
+    [NativeHeader("Modules/Audio/Public/ScriptableProcessors/SAPProfiler.h")]
     internal static class ScriptableGeneratorBindings
     {
         [RequiredByNativeCode(GenerateProxy = true)]
@@ -685,7 +745,8 @@ namespace UnityEngine.Audio
                 fixed (ControlHeader* pResources = &control)
                 {
                     var context = new ControlContext(pResources);
-                    runtimeHandle = definition.CreateInstance(context, null,default);
+                    runtimeHandle = definition.CreateInstance(context, null, default(GeneratorInstance.CreationParameters));
+
 
                     if (context.Exists(runtimeHandle))
                     {
@@ -730,5 +791,6 @@ namespace UnityEngine.Audio
 
         [NativeMethod(Name = "audio::InitializeGeneratorHandle", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe DualThreadHandle InternalInitializeGeneratorHandle(/*Generator.GeneratorHeader* */void* header, int tailSize, /*ControlHeader*/ void* control, AudioConfiguration* nestedConfiguration, ProcessorInstance.InitializationFlags flags);
+
     }
 }

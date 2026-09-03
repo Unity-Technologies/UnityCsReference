@@ -1026,7 +1026,7 @@ namespace UnityEditor
 
         void CreateLightmapParameters(LightmapParameters from = null)
         {
-            string newName = L10n.Tr("New Lightmap Parameters");
+            string newName = L10n.Tr("New Lightmap Parameters", null);
 
             LightmapParameters lmp;
             if (from == null)

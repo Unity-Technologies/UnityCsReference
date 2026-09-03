@@ -108,7 +108,7 @@ namespace UnityEditor.Scripting
             }
             else
             {
-                APIUpdaterLogger.WriteToFile(L10n.Tr($"Unable to retrieve project configured packages; AssemblyUpdater may fail to resolve assemblies from packages. Status = {req.Error?.message} ({req.Error?.errorCode})"));
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Unable to retrieve project configured packages; AssemblyUpdater may fail to resolve assemblies from packages. Status = {req.Error?.message} ({req.Error?.errorCode})", null));
             }
 
             var searchPath = NetStandardFinder.GetReferenceDirectory().Escape(Path.PathSeparator) + Path.PathSeparator

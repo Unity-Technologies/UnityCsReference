@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using UnityEditor.Connect;
 using System;
 using UnityEngine;
@@ -33,7 +34,7 @@ namespace UnityEditor.Toolbars
             }
             else
             {
-                string text = s_LoggedIn ? GetUserInitials(UnityConnect.instance.userInfo.displayName) : L10n.Tr("Sign in");
+                string text = s_LoggedIn ? GetUserInitials(UnityConnect.instance.userInfo.displayName) : L10n.Tr("Sign in", null);
                 info = new MainToolbarButton(new MainToolbarContent(text), UnityConnect.instance.ShowLogin);
             }
             info.displayed = s_Available;
@@ -85,7 +86,7 @@ namespace UnityEditor.Toolbars
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("My account"));
             }
 
-            var name = $"{L10n.Tr("Sign out")} {UnityConnect.instance.userInfo.displayName}";
+            var name = $"{L10n.Tr("Sign out", null)} {UnityConnect.instance.userInfo.displayName}";
             menu.AddItem(new GUIContent(name), false, () => UnityConnect.instance.Logout());
 
             if (!UnityEngine.Application.HasProLicense())
@@ -120,3 +121,4 @@ namespace UnityEditor.Toolbars
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

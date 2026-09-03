@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +36,9 @@ namespace UnityEditor
         {
             if (m_BrushList == null)
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 LoadBrushes();
+                #pragma warning restore UAL0015
                 UpdateSelection(0);
             }
         }
@@ -157,7 +160,7 @@ namespace UnityEditor
             if (b != null && !b.readOnly)
             {
                 if (GUILayout.Button("Delete Brush...")
-                    && EditorUtility.DisplayDialog(L10n.Tr("Delete Brush"), L10n.Tr("Deleting this brush will delete the brush asset from disk. You cannot undo this operation. Do you wish to continue?"), L10n.Tr("Yes"), L10n.Tr("No")))
+                    && EditorUtility.DisplayDialog(L10n.Tr("Delete Brush", null), L10n.Tr("Deleting this brush will delete the brush asset from disk. You cannot undo this operation. Do you wish to continue?", null), L10n.Tr("Yes", null), L10n.Tr("No", null)))
                 {
                     AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(b));
                     LoadBrushes();
@@ -298,3 +301,4 @@ namespace UnityEditor
         }
     }
 } //namespace
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

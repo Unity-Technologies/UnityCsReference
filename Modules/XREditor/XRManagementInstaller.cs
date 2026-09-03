@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: XREditor not yet converted
 using System;
 using System.IO;
 using UnityEngine;
@@ -12,8 +11,8 @@ namespace UnityEditor.XR
     [UnityEngine.Internal.ExcludeFromDocs]
     class XRManagementInstaller : SettingsProvider
     {
-        static string s_ManagementPackageId = "com.unity.xr.management";
-        static string s_ManagementPackagePath = $"Packages/{s_ManagementPackageId}/package.json";
+        const string s_ManagementPackageId = "com.unity.xr.management";
+        static readonly string s_ManagementPackagePath = $"Packages/{s_ManagementPackageId}/package.json";
 
 
         private PackageManager.Requests.AddRequest m_AddManagementRequest = null;
@@ -21,10 +20,10 @@ namespace UnityEditor.XR
         static class Content
         {
             internal const string s_InstallationHelpText = "In order to use the new XR Plugin system you need to install the XR Plugin Management package. Clicking the button below will install the latest XR Plugin Management package and allow you to configure your project for XR.";
-            internal static string s_SettingsRootTitle = "Project/XR Plugin Management";
-            internal static GUIContent s_AddXrManagement = EditorGUIUtility.TrTextContent("Install XR Plugin Management");
-            internal static GUIContent s_DownloadingText = new GUIContent("Downloading XR Management system...");
-            internal static GUIContent s_InstallingText = new GUIContent("Installing XR Management system...");
+            internal const string s_SettingsRootTitle = "Project/XR Plugin Management";
+            internal static readonly GUIContent s_AddXrManagement = EditorGUIUtility.TrTextContent("Install XR Plugin Management");
+            internal static readonly GUIContent s_DownloadingText = new GUIContent("Downloading XR Management system...");
+            internal static readonly GUIContent s_InstallingText = new GUIContent("Installing XR Management system...");
         }
 
         [UnityEngine.Internal.ExcludeFromDocs]
@@ -74,4 +73,3 @@ namespace UnityEditor.XR
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

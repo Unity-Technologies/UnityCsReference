@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public HiddenProductHelpBox(IApplicationProxy application) : base(application)
         {
-            text = L10n.Tr("This asset has been set to Hidden.");
+            text = L10n.Tr("This asset has been set to Hidden.", null);
             messageType = HelpBoxMessageType.Info;
             readMoreAnalyticsId = "hidden-product-help-box";
         }

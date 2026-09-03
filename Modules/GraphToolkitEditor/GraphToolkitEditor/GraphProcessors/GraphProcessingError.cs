@@ -36,9 +36,9 @@ namespace Unity.GraphToolkit.Editor
         public GraphReference SourceGraphReference { get; }
 
         /// <summary>
-        /// GraphLogAction to address the error.
+        /// The log action to address the error.
         /// </summary>
-        public GraphLogAction Action { get; }
+        public ILogAction Action { get; }
 
         /// <summary>
         /// The error type.
@@ -52,7 +52,7 @@ namespace Unity.GraphToolkit.Editor
 
         internal GraphProcessingError() { }
 
-        public GraphProcessingError(string description, Hash128 sourceModelGuid, LogType errorType, GraphReference sourceGraphReference, IReadOnlyList<GraphElementModel> context, GraphLogAction action = null, object userData = null)
+        public GraphProcessingError(string description, Hash128 sourceModelGuid, LogType errorType, GraphReference sourceGraphReference, IReadOnlyList<GraphElementModel> context, ILogAction action = null, object userData = null)
             : this()
         {
             Description = description;
@@ -85,7 +85,7 @@ namespace Unity.GraphToolkit.Editor
                 SourceModelGuid == other.SourceModelGuid &&
                 ErrorType == other.ErrorType &&
                 Equals(Context, other.Context) &&
-                Action == other.Action &&
+                ReferenceEquals(Action, other.Action) &&
                 UserData == other.UserData;
 
             return isEquals;

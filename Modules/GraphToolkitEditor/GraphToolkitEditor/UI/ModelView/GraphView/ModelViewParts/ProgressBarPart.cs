@@ -83,9 +83,9 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
         {
-            if (m_Model is IHasElementColor hasElementColor)
+            if (m_Model is IHasElementColor hasElementColor && visitor.ChangeHints.HasChange(ChangeHint.Style))
             {
-                SetColor(hasElementColor.DefaultColor);
+                SetColor(hasElementColor.ElementColor.Color);
             }
 
             if (m_Model is IHasProgress hasProgress)
@@ -131,16 +131,8 @@ namespace Unity.GraphToolkit.Editor
 
         internal void SetColor(Color color)
         {
-            if (color == default)
-                color = GetColor();
-
-            var currentColor = GetColor();
-            currentColor.a = color.a;
-            if (currentColor != color) // only update if the color changed, ignoring the current alpha
-            {
-                m_Progress.style.backgroundColor = color;
-                m_Root.style.backgroundColor = color;
-            }
+            m_Progress.style.backgroundColor = color;
+            m_Root.style.backgroundColor = color;
         }
 
         internal Color GetColor() => m_Root == null ? Color.clear : m_Root.resolvedStyle.backgroundColor;

@@ -205,6 +205,9 @@ namespace Unity.GraphToolkit.Editor
             // copying wires between nodes in placemats
             foreach (var wire in GraphModel.WireModels)
             {
+                if (wire == null)
+                    continue;
+
                 if (nodesInPlacemat.Contains(wire.FromPort?.NodeModel) && nodesInPlacemat.Contains(wire.ToPort?.NodeModel))
                     elementsToCopySet.Add(wire);
             }

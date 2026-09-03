@@ -761,7 +761,7 @@ namespace UnityEngine
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal bool TouchScreenKeyboardCanBeUsed()
+        internal static bool TouchScreenKeyboardCanBeUsed()
         {
             switch (Application.platform)
             {

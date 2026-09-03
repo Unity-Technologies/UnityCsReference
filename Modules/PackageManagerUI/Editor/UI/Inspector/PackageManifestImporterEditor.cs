@@ -26,9 +26,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             AlwaysVisible
         }
 
-        private static readonly string s_LocalizedTitle = L10n.Tr("{0} '{1}' Manifest");
-        private static readonly string s_LocalizedMultipleTitle = L10n.Tr("{0} Package Manifests");
-        private static readonly string s_LocalizedInvalidPackageManifest = L10n.Tr("Invalid Package Manifest");
+        private static readonly string s_LocalizedTitle = L10n.Tr("{0} '{1}' Manifest", null);
+        private static readonly string s_LocalizedMultipleTitle = L10n.Tr("{0} Package Manifests", null);
+        private static readonly string s_LocalizedInvalidPackageManifest = L10n.Tr("Invalid Package Manifest", null);
 
         private const float k_MinHeightDescriptionScrollView = 96f;
         private const long k_MaxVersion = 999999999L;
@@ -398,7 +398,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var errors = new List<string>();
                 foreach (var entry in packageState.propertiesErrorsAndWarnings)
                     errors.AddRange(entry.Value.m_ErrorMessages);
-                throw new InvalidOperationException(string.Format(L10n.Tr("The Inspector window contains errors, information can't be saved.\n{0}"), String.Join("\n", errors)));
+                throw new InvalidOperationException(string.Format(L10n.Tr("The Inspector window contains errors, information can't be saved.\n{0}", null), String.Join("\n", errors)));
             }
 
 
@@ -649,7 +649,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isFeatureSet)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.HelpBox(L10n.Tr("Customization of a feature is not supported. Doing this may break your project. Use at your own risk."), MessageType.Warning);
+                EditorGUILayout.HelpBox(L10n.Tr("Customization of a feature is not supported. Doing this may break your project. Use at your own risk.", null), MessageType.Warning);
             }
         }
 
@@ -786,7 +786,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (System.IO.IOException)
             {
-                Debug.Log(string.Format(L10n.Tr("Couldn't open package manifest file {0}."), assetPath));
+                Debug.Log(string.Format(L10n.Tr("Couldn't open package manifest file {0}.", null), assetPath));
                 packageState.isValidFile = false;
             }
         }
@@ -808,7 +808,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (System.IO.IOException)
             {
-                Debug.Log(string.Format(L10n.Tr("Couldn't open package manifest file {0}."), assetPath));
+                Debug.Log(string.Format(L10n.Tr("Couldn't open package manifest file {0}.", null), assetPath));
             }
 
             if (json == null)
@@ -821,8 +821,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 renameFolder = newTechnicalName != json[k_ManifestFieldName] as string
                                && ServicesContainer.instance.Resolve<IApplicationProxy>().DisplayDialog(
                                    "matchPackageFolderName",
-                                   L10n.Tr("Update Folder Name to Match"),
-                                   L10n.Tr("You changed the package’s technical name. Do you also want to update the package’s folder to match the technical name?"), "Update Name", "Keep Current");
+                                   L10n.Tr("Update Folder Name to Match", null),
+                                   L10n.Tr("You changed the package’s technical name. Do you also want to update the package’s folder to match the technical name?", null), "Update Name", "Keep Current");
                 json[k_ManifestFieldName] = newTechnicalName;
             }
 
@@ -930,11 +930,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (System.IO.IOException)
             {
-                Debug.Log(string.Format(L10n.Tr("Couldn't write package manifest file {0}."), assetPath));
+                Debug.Log(string.Format(L10n.Tr("Couldn't write package manifest file {0}.", null), assetPath));
             }
             catch (UnauthorizedAccessException)
             {
-                Debug.LogError(string.Format(L10n.Tr("Access denied when accessing package manifest file {0}. Please make sure the file is not read-only."), assetPath));
+                Debug.LogError(string.Format(L10n.Tr("Access denied when accessing package manifest file {0}. Please make sure the file is not read-only.", null), assetPath));
             }
 
             Client.Resolve();
@@ -957,17 +957,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal void ValidateDependencyVersion(PropertyErrorsAndWarnings propertyErrorsAndWarnings, SerializedProperty version, string packageName)
         {
             if (string.IsNullOrEmpty(version.stringValue))
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Version is mandatory and missing for dependency '{0}'."), packageName));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Version is mandatory and missing for dependency '{0}'.", null), packageName));
             else if (!PackageValidator.ValidateVersion(version.stringValue, out var majorStr, out var minorStr, out var patchStr))
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid version '{0}' for dependency '{1}'."), version.stringValue, packageName));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid version '{0}' for dependency '{1}'.", null), version.stringValue, packageName));
             else
             {
                 if (!long.TryParse(majorStr, out var major) || major > k_MaxVersion ||
                     !long.TryParse(minorStr, out var minor) || minor > k_MaxVersion ||
                     !long.TryParse(patchStr, out var patch) || patch > k_MaxVersion)
-                    propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Each component of version '{0}' for dependency '{1}' must be an integer less than or equal to {2}."), version.stringValue, packageName, k_MaxVersion));
+                    propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Each component of version '{0}' for dependency '{1}' must be an integer less than or equal to {2}.", null), version.stringValue, packageName, k_MaxVersion));
                 else if (major > k_RecommendedMaxVersion || minor > k_RecommendedMaxVersion || patch > k_RecommendedMaxVersion)
-                    propertyErrorsAndWarnings.m_WarningMessages.Add(string.Format(L10n.Tr("Consider to use an integer less than or equal to {0} for each component of version '{1}' for dependency '{2}'."), k_RecommendedMaxVersion, version.stringValue, packageName));
+                    propertyErrorsAndWarnings.m_WarningMessages.Add(string.Format(L10n.Tr("Consider to use an integer less than or equal to {0} for each component of version '{1}' for dependency '{2}'.", null), k_RecommendedMaxVersion, version.stringValue, packageName));
             }
         }
 
@@ -976,17 +976,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
 
             if (string.IsNullOrEmpty(version))
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(L10n.Tr("Version is a required property."));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(L10n.Tr("Version is a required property.", null));
             else if (!PackageValidator.ValidateVersion(version, out var majorStr, out var minorStr, out var patchStr))
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid version '{0}'."), version));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid version '{0}'.", null), version));
             else
             {
                 if (!long.TryParse(majorStr, out var major) || major > k_MaxVersion ||
                     !long.TryParse(minorStr, out var minor) || minor > k_MaxVersion ||
                     !long.TryParse(patchStr, out var patch) || patch > k_MaxVersion)
-                    propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Each component of version '{0}' must be an integer less than or equal to {1}."), version, k_MaxVersion));
+                    propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Each component of version '{0}' must be an integer less than or equal to {1}.", null), version, k_MaxVersion));
                 else if (major > k_RecommendedMaxVersion || minor > k_RecommendedMaxVersion || patch > k_RecommendedMaxVersion)
-                    propertyErrorsAndWarnings.m_WarningMessages.Add(string.Format(L10n.Tr("Consider using an integer less than or equal to {0} for each component of version '{1}'."), k_RecommendedMaxVersion, version));
+                    propertyErrorsAndWarnings.m_WarningMessages.Add(string.Format(L10n.Tr("Consider using an integer less than or equal to {0} for each component of version '{1}'.", null), k_RecommendedMaxVersion, version));
             }
         }
 
@@ -1000,7 +1000,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (!unityVersionEnabled.boolValue)
-                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("The recommended best practice is to include a Minimum Unity version."));
+                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("The recommended best practice is to include a Minimum Unity version.", null));
             packageState.propertiesErrorsAndWarnings[unityVersionEnabled.propertyPath] = propertyErrorsAndWarnings;
         }
 
@@ -1008,14 +1008,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (string.IsNullOrEmpty(unityMajor.stringValue) && string.IsNullOrEmpty(unityMinor.stringValue) && string.IsNullOrEmpty(unityRelease.stringValue))
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(L10n.Tr("Version is a required property when the Minimum Unity version is checked."));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(L10n.Tr("Version is a required property when the Minimum Unity version is checked.", null));
             else if (!PackageValidator.ValidateUnityVersion(unityMajor.stringValue, unityMinor.stringValue, unityRelease.stringValue))
             {
                 var unityVersion = $"{unityMajor.stringValue}.{unityMinor.stringValue}";
                 if (!string.IsNullOrWhiteSpace(unityRelease.stringValue))
                     unityVersion += "." + unityRelease.stringValue.Trim();
 
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid Unity Version '{0}'."), unityVersion));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid Unity Version '{0}'.", null), unityVersion));
             }
             packageState.propertiesErrorsAndWarnings[unityMajor.propertyPath] = propertyErrorsAndWarnings;
         }
@@ -1033,11 +1033,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!string.IsNullOrEmpty(packageName.stringValue))
                 {
                     if (distinctDependencies.Contains(packageName.stringValue))
-                        propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Dependency {0} is already in the list."), packageName.stringValue));
+                        propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Dependency {0} is already in the list.", null), packageName.stringValue));
                     else
                         distinctDependencies.Add(packageName.stringValue);
                     if (!PackageValidator.ValidateCompleteTechnicalName(packageName.stringValue))
-                        propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid Technical Name '{0}'."), packageName.stringValue));
+                        propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid Technical Name '{0}'.", null), packageName.stringValue));
                     ValidateDependencyVersion(propertyErrorsAndWarnings, version, packageName.stringValue);
                 }
                 currIndex++;
@@ -1049,14 +1049,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (string.IsNullOrEmpty(technicalName))
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(L10n.Tr("Technical Name is a required property."));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(L10n.Tr("Technical Name is a required property.", null));
             else if (technicalName.Length > PackageValidator.k_MaxAllowedCharsInTechnicalName)
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Technical Name is too long '{0}'."), technicalName));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Technical Name is too long '{0}'.", null), technicalName));
             else if (!PackageValidator.ValidateCompleteTechnicalName(technicalName))
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid Technical Name '{0}'."), technicalName));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Invalid Technical Name '{0}'.", null), technicalName));
 
             if (packageInfo != null && IOUtils.GetParentDirectory(IOUtils.PathsCombine(packageInfo.assetPath, "package.json")) != IOUtils.GetParentDirectory(assetPath))
-                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Technical Name '{0}' is already used in this project."), technicalName));
+                propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("Technical Name '{0}' is already used in this project.", null), technicalName));
         }
 
         internal void ValidateTechnicalNameProperty(SerializedProperty technicalName, PackageInfo packageInfo, string assetPath)
@@ -1069,7 +1069,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (string.IsNullOrWhiteSpace(displayName.stringValue) || displayName.stringValue.Trim().Length == 0)
-                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("The recommended best practice is to include a Display Name."));
+                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("The recommended best practice is to include a Display Name.", null));
             packageState.propertiesErrorsAndWarnings[displayName.propertyPath] = propertyErrorsAndWarnings;
         }
 
@@ -1077,7 +1077,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (string.IsNullOrWhiteSpace(description.stringValue) || description.stringValue.Trim().Length == 0)
-                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("The recommended best practice is to include a package description."));
+                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("The recommended best practice is to include a package description.", null));
             packageState.propertiesErrorsAndWarnings[description.propertyPath] = propertyErrorsAndWarnings;
         }
 
@@ -1085,7 +1085,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             if (string.IsNullOrWhiteSpace(authorName.stringValue) || authorName.stringValue.Trim().Length == 0)
-                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("Package author name should be provided when author field is checked."));
+                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("Package author name should be provided when author field is checked.", null));
             packageState.propertiesErrorsAndWarnings[authorName.propertyPath] = propertyErrorsAndWarnings;
         }
 
@@ -1094,9 +1094,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var propertyErrorsAndWarnings = new PropertyErrorsAndWarnings();
             var packageVisibility = (PackageVisibility)visibility.intValue;
             if (packageVisibility == PackageVisibility.AlwaysHidden)
-                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("This package and all its assets will be hidden by default in the Editor because its visibility is set to 'Always Hidden'."));
+                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("This package and all its assets will be hidden by default in the Editor because its visibility is set to 'Always Hidden'.", null));
             if (packageVisibility == PackageVisibility.AlwaysVisible)
-                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("This package and all its assets will be visible by default in the Editor because its visibility is set to 'Always Visible'."));
+                propertyErrorsAndWarnings.m_WarningMessages.Add(L10n.Tr("This package and all its assets will be visible by default in the Editor because its visibility is set to 'Always Visible'.", null));
             packageState.propertiesErrorsAndWarnings[visibility.propertyPath] = propertyErrorsAndWarnings;
         }
 
@@ -1107,7 +1107,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (!(Uri.TryCreate(url.stringValue, UriKind.Absolute, out var uriResult) &&
                     (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)))
-                    propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("This URL is malformed or invalid '{0}'."), url.stringValue));
+                    propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("This URL is malformed or invalid '{0}'.", null), url.stringValue));
             }
             packageState.propertiesErrorsAndWarnings[url.propertyPath] = propertyErrorsAndWarnings;
         }
@@ -1118,7 +1118,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!string.IsNullOrWhiteSpace(email.stringValue))
             {
                 if (!s_EmailRegex.IsMatch(email.stringValue))
-                    propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("This email format is malformed or invalid '{0}'."), email.stringValue));
+                    propertyErrorsAndWarnings.m_ErrorMessages.Add(string.Format(L10n.Tr("This email format is malformed or invalid '{0}'.", null), email.stringValue));
             }
             packageState.propertiesErrorsAndWarnings[email.propertyPath] = propertyErrorsAndWarnings;
         }

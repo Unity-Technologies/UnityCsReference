@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -29,9 +30,9 @@ namespace UnityEngine
         [AutoStaticsCleanupOnCodeReload]
         private static TextSettings s_EditorTextSettings;
 
-        [NoAutoStaticsCleanup] // entries may be isCachedOnNative; native holds a reference until Internal_DestroyTextGenerator runs via ClearUnusedTextHandles(), so a blind reload wipe orphans the native generator
+        [NoAutoStaticsCleanup] // entries own native generators and buffers; a blind reload wipe orphans them, so ReleaseCacheOnUnloading empties the cache explicitly instead
         private static Dictionary<int, IMGUITextHandle> textHandles = new ();
-        [NoAutoStaticsCleanup] // same native ownership as textHandles; cleared explicitly by ClearUnusedTextHandles(), not by reload
+        [NoAutoStaticsCleanup] // same native ownership as textHandles; cleared explicitly, not by reload
         private static LinkedList<TextHandleTuple> textHandlesTuple = new ();
         [NoAutoStaticsCleanup] // cleanup timestamp; if stale after reload the time-delta goes negative and cleanup runs immediately (handled explicitly)
         private static float lastCleanupTime;
@@ -89,15 +90,27 @@ namespace UnityEngine
         internal static void EmptyCache()
         {
             GUIStyle.Internal_CleanupAllTextGenerator();
-            textHandles.Clear();
-            textHandlesTuple.Clear();
+            EmptyManagedCache();
         }
 
         // This only cleans up the cache on the managed side. We assume it is already cleaned on the native side to avoid calls.
         internal static void EmptyManagedCache()
         {
+            foreach (var handle in textHandles.Values)
+            {
+                handle.RemoveFromTemporaryCache();
+                handle.RemoveFromPermanentCache();
+            }
             textHandles.Clear();
             textHandlesTuple.Clear();
+        }
+
+        // Free on the main thread, before the domain unloads. (OnAssemblyUnloading->crash) 
+        // Native generator cache is left to TextCoreGeneratorGroup::CleanupAll: destroying its GPU buffers mid-reload is not safe.
+        [OnCodeUnloading]
+        internal static void ReleaseCacheOnUnloading()
+        {
+            EmptyManagedCache();
         }
 
         /// <summary>
@@ -183,6 +196,7 @@ namespace UnityEngine
 
             if (textHandles.TryGetValue(hash, out IMGUITextHandle textHandleCached))
             {
+                textHandleCached.tuple.Value.lastTimeUsed = currentTime;
                 textHandlesTuple.Remove(textHandleCached.tuple);
                 textHandlesTuple.AddLast(textHandleCached.tuple);
 
@@ -304,7 +318,9 @@ namespace UnityEngine
                 s_EditorTextSettings = (TextSettings)GetEditorTextSettings?.Invoke();
             }
 
+#pragma warning disable UAL0018 // settings.textSettings is reassigned from the platform's text settings singleton on every call before being consumed; a reload window with a stale value is never observed
             settings.textSettings = s_EditorTextSettings;
+#pragma warning restore UAL0018
 
             if (settings.textSettings == null)
                 return;
@@ -501,3 +517,4 @@ namespace UnityEngine
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

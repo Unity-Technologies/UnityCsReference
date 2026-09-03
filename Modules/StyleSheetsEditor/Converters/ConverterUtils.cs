@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: StyleSheetsEditor not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Experimental;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
@@ -92,9 +92,12 @@ namespace UnityEditor.StyleSheets
         public const string k_GeneratedSkinPath = "Assets/Editor Default Resources/Builtin Skins/Generated/Skins";
         public const string k_BundleSkinPath = "Builtin Skins/Generated/Skins";
 
-        public static Dictionary<string, string> k_GuiStyleTypeNames;
-        public static HashSet<string> k_StyleProperties;
-        public static List<string> k_SkinStylePrefixes;
+        [NoAutoStaticsCleanup] // lookup table of GUIStyle property names built once from reflection over engine types; no user code references
+        public static readonly Dictionary<string, string> k_GuiStyleTypeNames;
+        [NoAutoStaticsCleanup] // fixed set of USS property names built once in the static ctor
+        public static readonly HashSet<string> k_StyleProperties;
+        [NoAutoStaticsCleanup] // fixed list of skin style prefixes built once in the static ctor
+        public static readonly List<string> k_SkinStylePrefixes;
 
         static ConverterUtils()
         {
@@ -890,4 +893,3 @@ namespace UnityEditor.StyleSheets
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

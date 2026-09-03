@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -348,13 +347,19 @@ internal static class WorldSpaceInput
             : PerformPick2D(root, ray, outResults);
     }
 
-    private static unsafe VisualElement PerformPick2D(VisualElement root, Ray ray, List<VisualElement> outResults)
+    private static VisualElement PerformPick2D(VisualElement root, Ray ray, List<VisualElement> outResults)
     {
         if (root.elementPanel == null)
             return null;
 
+        // Flat path keeps its historical behavior: IntersectLocalRay returns the Z=0-plane point (in or out of
+        // rect) and the native pick filters by layout.
         root.IntersectLocalRay(ray, out var point);
+        return PerformPickByPoint(root, point, outResults);
+    }
 
+    private static unsafe VisualElement PerformPickByPoint(VisualElement root, Vector3 point, List<VisualElement> outResults)
+    {
         using var buffer = outResults != null ? UnmanagedHandleBuffer.CreateTemporary() : UnmanagedHandleBuffer.None();
 
         // Native implementation is 2-3 times faster, so we use it if we can.
@@ -385,6 +390,13 @@ internal static class WorldSpaceInput
         if (root.pickingMode == PickingMode.Ignore && root.hierarchy.childCount == 0)
             return default;
 
+        // Curved UI: curved elements are handled by the normal recursion below - IntersectLocalRay is
+        // curvature-aware, so each element is tested against its OWN composed bend chain. An earlier optimization
+        // intersected only the outermost curved root's surface once and resolved the target from the flat layout
+        // at the un-bent point, but that is only correct when the whole subtree lies on that single surface: a
+        // NESTED curved element places its content on the composed (outer-then-inner) surface, which the
+        // single-surface delegation mis-projects - measured as whole-tile mispicks where the inner bend's sag is
+        // largest. Per-element testing is exact for any chain depth (and measured identical on single chains).
         var bb = GetPicking3DLocalBounds(root);
         if (!bb.IntersectRay(ray))
         {
@@ -397,8 +409,8 @@ internal static class WorldSpaceInput
         // Now since this is a virtual, we can't just start to call it with global pos... we could break client code.
         // EdgeControl and port connectors in GraphView overload this.
 
-        bool containsPoint = root.IntersectLocalRay(ray, out var point) &&
-                             root.ContainsPoint(point);
+        bool intersects = root.IntersectLocalRay(ray, out var point);
+        bool containsPoint = intersects && root.ContainsPoint(point);
         // we only skip children in the case we visually clip them
         if (!containsPoint && root.ShouldClip())
         {
@@ -507,4 +519,3 @@ internal static class WorldSpaceInput
                GameObjectWorldSpaceToLocalPoint(element, Vector3.zero);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Profiling.Editor;
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -17,11 +18,31 @@ namespace UnityEditorInternal.Profiling
     {
         const int k_DefaultOrderIndex = 4;
 
+        /// <summary>
+        /// ID for SAP profiler frame metadata. Must match kSAPProfilerGuidBytes in SAPProfiler.h.
+        /// Spells "SAPProfiler00000" in ASCII.
+        /// </summary>
+        static readonly byte[] k_SAPProfilerGuidBytes = {
+            (byte)'S', (byte)'A', (byte)'P', (byte)'P', (byte)'r', (byte)'o', (byte)'f', (byte)'i',
+            (byte)'l', (byte)'e', (byte)'r', (byte)'0', (byte)'0', (byte)'0', (byte)'0', (byte)'0'
+        };
+
+        /// <summary>
+        /// Tags for different SAP profiler data types. Must match MetadataTag enum in SAPProfiler.h.
+        /// </summary>
+        enum SAPMetadataTag
+        {
+            ProcessorInfo = 0,
+            SummaryInfo = 1,
+            Names = 2
+        }
+
         Vector2 m_PaneScroll_AudioChannels = Vector2.zero;
         Vector2 m_PaneScroll_AudioDSPLeft = Vector2.zero;
         Vector2 m_PaneScroll_AudioDSPRight_ScrollPos = Vector2.zero;
         Vector2 m_PaneScroll_AudioDSPRight_Size = new Vector2(10000, 20000);
         Vector2 m_PaneScroll_AudioClips = Vector2.zero;
+        Vector2 m_PaneScroll_Processors = Vector2.zero;
 
         [SerializeField]
         bool m_ShowInactiveDSPChains = false;
@@ -46,6 +67,18 @@ namespace UnityEditorInternal.Profiling
         private AudioProfilerClipViewBackend m_AudioProfilerClipViewBackend;
 
         private AudioProfilerDSPView m_AudioProfilerDSPView;
+
+        // SAP Processors view
+        private SAPProfilerProcessorTreeViewState m_SAPProfilerProcessorTreeViewState;
+        private SAPProfilerProcessorView m_SAPProfilerProcessorView = null;
+        private SAPProfilerProcessorViewBackend m_SAPProfilerProcessorViewBackend;
+
+        // Cached collections for SAP profiler to avoid GC allocations
+        private readonly List<SAPProfilerSummary> m_SAPSummaries = new List<SAPProfilerSummary>();
+        private readonly Dictionary<int, ulong> m_SAPDtmBufferTimes = new Dictionary<int, ulong>();
+        private readonly List<SAPProfilerProcessorInfoWrapper> m_SAPItems = new List<SAPProfilerProcessorInfoWrapper>();
+        // Cache resolved source asset names so they persist after assets are unloaded (e.g., exiting play mode)
+        private readonly Dictionary<ulong, string> m_SourceAssetNameCache = new Dictionary<ulong, string>();
         enum ProfilerAudioPopupItems
         {
             Simple = 0,
@@ -98,6 +131,15 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
+        internal override void OnDisable()
+        {
+            base.OnDisable();
+
+            // Clear cached source asset names to avoid holding stale references
+            // across domain reloads or when profiling different sessions
+            m_SourceAssetNameCache.Clear();
+        }
+
         internal override void SaveViewSettings()
         {
             base.SaveViewSettings();
@@ -128,6 +170,7 @@ namespace UnityEditorInternal.Profiling
                 if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.ChannelsAndGroups, "Channels and groups", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.ChannelsAndGroups;
                 if (Unsupported.IsDeveloperMode() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.DSPGraph, "DSP Graph", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.DSPGraph;
                 if (Unsupported.IsDeveloperMode() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Clips, "Clips", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Clips;
+                if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Processors, "Processors", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Processors;
                 if (newShowDetailedAudioPane != m_ShowDetailedAudioPane)
                 {
                     m_ShowDetailedAudioPane = newShowDetailedAudioPane;
@@ -184,11 +227,12 @@ namespace UnityEditorInternal.Profiling
 #pragma warning restore CS0618
                     if (property == null)
                         return;
-                    if (!property.frameDataReady)
-                        return;
 
                     using (property)
                     {
+                        if (!property.frameDataReady)
+                            return;
+
                         var currentFrame = ProfilerWindow.GetActiveVisibleFrameIndex();
                         if (currentFrame == -1 || m_LastAudioProfilerFrame != currentFrame)
                         {
@@ -212,6 +256,96 @@ namespace UnityEditorInternal.Profiling
                         if (m_AudioProfilerClipView != null)
                             m_AudioProfilerClipView.OnGUI(treeRect);
                     }
+                }
+                else if (m_ShowDetailedAudioPane == ProfilerAudioView.Processors)
+                {
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.EndHorizontal();
+
+                    var treeRect = DrawAudioStatsPane(ref m_PaneScroll_Processors);
+
+                    // TREE
+                    if (m_SAPProfilerProcessorTreeViewState == null)
+                        m_SAPProfilerProcessorTreeViewState = new SAPProfilerProcessorTreeViewState();
+
+                    if (m_SAPProfilerProcessorViewBackend == null)
+                        m_SAPProfilerProcessorViewBackend = new SAPProfilerProcessorViewBackend(m_SAPProfilerProcessorTreeViewState);
+
+                    var currentFrame = ProfilerWindow.GetActiveVisibleFrameIndex();
+                    if (currentFrame == -1)
+                        return;
+
+                    if (m_LastAudioProfilerFrame != currentFrame)
+                    {
+                        m_LastAudioProfilerFrame = currentFrame;
+
+                        // Get frame data using the modern FrameMetaData API
+                        using (var frameData = ProfilerDriver.GetRawFrameDataView(currentFrame, 0))
+                        {
+                            if (!frameData.valid)
+                                return;
+
+                            // Fetch SAP profiler data from frame metadata
+                            using (var sourceItems = frameData.GetFrameMetaData<SAPProfilerProcessorInfo>(k_SAPProfilerGuidBytes, (int)SAPMetadataTag.ProcessorInfo))
+                            using (var sourceSummaries = frameData.GetFrameMetaData<SAPProfilerSummary>(k_SAPProfilerGuidBytes, (int)SAPMetadataTag.SummaryInfo))
+                            using (var namesBuffer = frameData.GetFrameMetaData<byte>(k_SAPProfilerGuidBytes, (int)SAPMetadataTag.Names))
+                            {
+                                // Build summaries list and DTM lookup (reuse cached collections)
+                                m_SAPSummaries.Clear();
+                                m_SAPDtmBufferTimes.Clear();
+                                if (sourceSummaries.Length > 0)
+                                {
+                                    for (int i = 0; i < sourceSummaries.Length; i++)
+                                    {
+                                        var summary = sourceSummaries[i];
+                                        m_SAPSummaries.Add(summary);
+                                        m_SAPDtmBufferTimes[summary.dtmIdentifier] = summary.DspBufferTimeNs;
+                                    }
+                                }
+
+                                // Build processor items (reuse cached collection)
+                                m_SAPItems.Clear();
+                                if (sourceItems.Length > 0)
+                                {
+                                    for (int i = 0; i < sourceItems.Length; i++)
+                                    {
+                                        var s = sourceItems[i];
+                                        var typeName = GetNameFromBuffer(namesBuffer, s.typeNameOffset);
+                                        if (string.IsNullOrEmpty(typeName))
+                                            typeName = "<Unknown>";
+                                        var category = GetNameFromBuffer(namesBuffer, s.categoryNameOffset);
+                                        // Resolve source asset entity ID to name (with caching to avoid repeated lookups)
+                                        string sourceName = null;
+                                        if (s.sourceAssetEntityId != 0)
+                                        {
+                                            if (!m_SourceAssetNameCache.TryGetValue(s.sourceAssetEntityId, out sourceName))
+                                            {
+                                                var entityId = EntityId.FromULong(s.sourceAssetEntityId);
+                                                var sourceObj = EditorUtility.EntityIdToObject(entityId);
+                                                sourceName = sourceObj != null ? sourceObj.name : null;
+                                                // Cache even null results to avoid repeated failed lookups
+                                                m_SourceAssetNameCache[s.sourceAssetEntityId] = sourceName;
+                                            }
+                                        }
+                                        // Look up correct DSP buffer time for this processor's DTM
+                                        ulong dspBufferTimeNs = m_SAPDtmBufferTimes.TryGetValue(s.dtmIdentifier, out var time) ? time : 0;
+                                        m_SAPItems.Add(new SAPProfilerProcessorInfoWrapper(s, typeName, category, sourceName, dspBufferTimeNs, i));
+                                    }
+                                }
+                            }
+                        }
+
+                        // Create view if needed (show even with no processors, as long as we have DTM summaries)
+                        if (m_SAPProfilerProcessorView == null && m_SAPSummaries.Count > 0)
+                        {
+                            m_SAPProfilerProcessorView = new SAPProfilerProcessorView(ProfilerWindow as EditorWindow, m_SAPProfilerProcessorTreeViewState);
+                            m_SAPProfilerProcessorView.Init(treeRect, m_SAPProfilerProcessorViewBackend);
+                        }
+                        m_SAPProfilerProcessorViewBackend.SetData(m_SAPItems, m_SAPSummaries);
+                    }
+                    // Show view if we have DTM data (even with no processors)
+                    if (m_SAPProfilerProcessorView != null && m_SAPProfilerProcessorViewBackend.dtmDataList.Count > 0)
+                        m_SAPProfilerProcessorView.OnGUI(treeRect);
                 }
                 else
                 {
@@ -243,11 +377,12 @@ namespace UnityEditorInternal.Profiling
 #pragma warning restore CS0618
                     if (property == null)
                         return;
-                    if (!property.frameDataReady)
-                        return;
 
                     using (property)
                     {
+                        if (!property.frameDataReady)
+                            return;
+
                         var currentFrame = ProfilerWindow.GetActiveVisibleFrameIndex();
                         if (currentFrame == -1 || m_LastAudioProfilerFrame != currentFrame)
                         {
@@ -331,6 +466,31 @@ namespace UnityEditorInternal.Profiling
             EditorGUI.DrawRect(new Rect(statsRect.xMax - 1, statsRect.y, 1, statsRect.height), Color.black);
 
             return rightRect;
+        }
+
+        /// <summary>
+        /// Extracts a null-terminated string from a byte buffer at the given offset.
+        /// </summary>
+        static string GetNameFromBuffer(Unity.Collections.NativeArray<byte> buffer, int offset)
+        {
+            if (buffer.Length == 0 || offset < 0 || offset >= buffer.Length)
+                return string.Empty;
+
+            // Find the null terminator
+            int end = offset;
+            while (end < buffer.Length && buffer[end] != 0)
+                end++;
+
+            if (end == offset)
+                return string.Empty;
+
+            // Copy bytes and decode as UTF-8
+            int length = end - offset;
+            var bytes = new byte[length];
+            for (int i = 0; i < length; i++)
+                bytes[i] = buffer[offset + i];
+
+            return System.Text.Encoding.UTF8.GetString(bytes);
         }
     }
 }

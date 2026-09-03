@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -226,13 +227,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             column.getter = args => args.item?.GetValue("Severity");
             column.cellCreator = _ => CreateIconLabelCell(16);
+            column.comparer = CompareSeverity;
             column.binder = (args, element) =>
             {
                 var text = args.value as string;
                 var icon = element.Q<Image>("icon");
                 var label = element.Q<Label>("label");
 
-                if (!string.IsNullOrEmpty(text) && Enum.TryParse<Severity>(text, true, out var severity))
+                if (TryParseSeverity(args.value as string, out var severity))
                 {
                     icon.image = Utility.GetSeverityIcon(severity).image;
                     label.text = text;
@@ -243,6 +245,29 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                     label.text = text ?? string.Empty;
                 }
             };
+        }
+
+        static bool TryParseSeverity(string text, out Severity severity)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                severity = Severity.None;
+                return false;
+            }
+
+            return Enum.TryParse(text, true, out severity);
+        }
+
+        static int CompareSeverity(SearchColumnCompareArgs args)
+        {
+            var order = args.sortAscending ? 1 : -1;
+            var lhsText = args.lhs.value as string;
+            var rhsText = args.rhs.value as string;
+
+            if (TryParseSeverity(lhsText, out var lhs) && TryParseSeverity(rhsText, out var rhs))
+                return order * ((int)lhs).CompareTo((int)rhs);
+
+            return order * string.Compare(lhsText, rhsText, StringComparison.OrdinalIgnoreCase);
         }
 
         private static Texture2D FetchThumbnail(SearchItem item, SearchContext context)
@@ -277,3 +302,4 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTemplate not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -110,7 +111,7 @@ namespace UnityEditor.SceneTemplate
         static class Styles
         {
             public static readonly Vector2 typeSelectorWindowSize = new Vector2(350, 200);
-            public static readonly GUIContent addTypeContent = L10n.TextContent("Add type...");
+            public static readonly GUIContent addTypeContent = L10n.TextContent("Add type...", null, null, null);
             public static readonly float buttonWidth = 65;
             public static readonly float addTypeButtonWidth = 70;
             public static readonly float verticalSpace = 10;
@@ -400,7 +401,7 @@ namespace UnityEditor.SceneTemplate
         {
             return new SettingsProvider(k_SettingsKey, SettingsScope.Project)
             {
-                keywords = L10n.Tr(new[] { "unity", "editor", "scene", "clone", "template" }),
+                keywords = L10n.Tr(new[] { "unity", "editor", "scene", "clone", "template" }, null),
                 activateHandler = (text, rootElement) =>
                 {
                     if (m_AllTypesPropositions == null)
@@ -411,7 +412,7 @@ namespace UnityEditor.SceneTemplate
 #pragma warning restore UAC2001
                     }
                 },
-                label = L10n.Tr("Scene Template"),
+                label = L10n.Tr("Scene Template", null),
                 guiHandler = OnGUIHandler
             };
         }
@@ -441,18 +442,20 @@ namespace UnityEditor.SceneTemplate
             using (new SettingsWindow.GUIScope())
             {
                 var oldLabelWidth = EditorGUIUtility.labelWidth;
+                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 EditorGUIUtility.labelWidth = m_MaxLabelWidth;
+                #pragma warning restore UAL0018
 
                 if (Unsupported.IsDeveloperMode())
                 {
-                    if (GUILayout.Button(L10n.Tr("Clear Scene Template Preferences")))
+                    if (GUILayout.Button(L10n.Tr("Clear Scene Template Preferences", null)))
                     {
                         ClearPreferences();
                     }
                 }
 
                 EditorGUI.BeginChangeCheck();
-                settings.newSceneOverride = (NewSceneOverride)EditorGUILayout.EnumPopup(L10n.TextContent("New Scene Menu"), settings.newSceneOverride, GUILayout.Width(m_MaxLabelWidth + 150), GUILayout.ExpandWidth(false));
+                settings.newSceneOverride = (NewSceneOverride)EditorGUILayout.EnumPopup(L10n.TextContent("New Scene Menu", null, null, null), settings.newSceneOverride, GUILayout.Width(m_MaxLabelWidth + 150), GUILayout.ExpandWidth(false));
                 if (EditorGUI.EndChangeCheck())
                 {
                     Save();
@@ -462,8 +465,8 @@ namespace UnityEditor.SceneTemplate
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    GUILayout.Label(L10n.Tr("Default types"), EditorStyles.boldLabel, GUILayout.Width(m_MaxLabelWidth - 15));
-                    GUILayout.Label(L10n.Tr("Clone"), EditorStyles.boldLabel);
+                    GUILayout.Label(L10n.Tr("Default types", null), EditorStyles.boldLabel, GUILayout.Width(m_MaxLabelWidth - 15));
+                    GUILayout.Label(L10n.Tr("Clone", null), EditorStyles.boldLabel);
                 }
 
                 foreach (var depInfo in settings.dependencyTypeInfos)
@@ -480,7 +483,7 @@ namespace UnityEditor.SceneTemplate
                             Save();
                         }
 
-                        if (GUILayout.Button(L10n.Tr("Remove"), GUILayout.Width(Styles.buttonWidth)))
+                        if (GUILayout.Button(L10n.Tr("Remove", null), GUILayout.Width(Styles.buttonWidth)))
                         {
                             settings.dependencyTypeInfos.Remove(depInfo);
                             Save();
@@ -492,7 +495,7 @@ namespace UnityEditor.SceneTemplate
                 GUILayout.Space(Styles.verticalSpace);
 
                 EditorGUI.BeginChangeCheck();
-                var clone = EditorGUILayout.Toggle(L10n.TextContent("All Other Types"), settings.defaultDependencyTypeInfo.defaultInstantiationMode == TemplateInstantiationMode.Clone);
+                var clone = EditorGUILayout.Toggle(L10n.TextContent("All Other Types", null, null, null), settings.defaultDependencyTypeInfo.defaultInstantiationMode == TemplateInstantiationMode.Clone);
                 if (EditorGUI.EndChangeCheck())
                 {
                     settings.defaultDependencyTypeInfo.defaultInstantiationMode = clone ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference;
@@ -529,7 +532,7 @@ namespace UnityEditor.SceneTemplate
                 GUILayout.Space(Styles.verticalSpace);
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button(L10n.Tr("Reset Defaults")))
+                    if (GUILayout.Button(L10n.Tr("Reset Defaults", null)))
                     {
                         ResetDefaults();
                     }
@@ -594,3 +597,4 @@ namespace UnityEditor.SceneTemplate
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -25,13 +25,13 @@ internal class DownloadNewAction : DownloadActionBase
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
         if (isInProgress)
-            return L10n.Tr("The download request has been sent. Please wait for the download to start.");
-        return string.Format(L10n.Tr("Click to download this {0} for later use."), version.GetDescriptor());
+            return L10n.Tr("The download request has been sent. Please wait for the download to start.", null);
+        return string.Format(L10n.Tr("Click to download this {0} for later use.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Download");
+        return L10n.Tr("Download", null);
     }
 
     public override bool IsInProgress(IPackageVersion version)

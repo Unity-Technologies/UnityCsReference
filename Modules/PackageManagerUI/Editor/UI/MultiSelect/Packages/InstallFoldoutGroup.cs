@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class InstallFoldoutGroup : PackageMultiSelectFoldoutGroup
@@ -14,14 +15,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override void Refresh()
         {
             if (mainFoldout.items.Count > 0 && mainFoldout.items[0].versions.primary.HasTag(PackageTag.BuiltIn))
-                mainFoldout.headerTextTemplate = L10n.Tr("Enable {0}");
+                mainFoldout.headerTextTemplate = L10n.Tr("Enable {0}", null);
             else
-                mainFoldout.headerTextTemplate = L10n.Tr("Install {0}");
+                mainFoldout.headerTextTemplate = L10n.Tr("Install {0}", null);
 
             if (inProgressFoldout.items.Count > 0 && inProgressFoldout.items[0].versions.primary.HasTag(PackageTag.BuiltIn))
-                inProgressFoldout.headerTextTemplate = L10n.Tr("Enabling {0}");
+                inProgressFoldout.headerTextTemplate = L10n.Tr("Enabling {0}", null);
             else
-                inProgressFoldout.headerTextTemplate = L10n.Tr("Installing {0}");
+                inProgressFoldout.headerTextTemplate = L10n.Tr("Installing {0}", null);
 
             base.Refresh();
         }
@@ -34,3 +35,4 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

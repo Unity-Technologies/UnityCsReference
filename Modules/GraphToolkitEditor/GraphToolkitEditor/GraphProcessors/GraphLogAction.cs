@@ -14,7 +14,7 @@ namespace Unity.GraphToolkit.Editor;
 /// The <see cref="object"/> parameter is the same as the context passed when logging messages with the <see cref="GraphLogger"/>.
 /// </remarks>
 [UnityRestricted]
-public class GraphLogAction
+public class GraphLogAction : ILogAction
 {
     /// <summary>
     /// The description of the action.

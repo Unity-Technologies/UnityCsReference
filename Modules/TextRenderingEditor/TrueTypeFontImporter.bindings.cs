@@ -59,6 +59,33 @@ namespace UnityEditor
         internal extern bool IsFormatSupported();
         public extern Font GenerateEditableFont(string path);
 
+        [NativeMethod("SetMarshalledSubsetRecipes")]
+        internal extern void SetSubsetRecipes(
+            [UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] keys,
+            [UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] characters,
+            [UnityMarshalAs(NativeType.ScriptingObjectPtr)] int[] flags,
+            [UnityMarshalAs(NativeType.ScriptingObjectPtr)] int[] faceIndices);
+
+        [NativeMethod("GetMarshalledSubsetRecipeKeys")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern string[] GetSubsetRecipeKeys();
+
+        [NativeMethod("GetMarshalledSubsetRecipeCharacters")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern string[] GetSubsetRecipeCharacters();
+
+        [NativeMethod("GetMarshalledSubsetRecipeFlags")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern int[] GetSubsetRecipeFlags();
+
+        [NativeMethod("GetMarshalledSubsetRecipeFaceIndices")]
+        [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
+        internal extern int[] GetSubsetRecipeFaceIndices();
+
+        [NativeHeader("Modules/TextRenderingEditor/FontSubsetter.h")]
+        [FreeFunction("TextCore::FontSubsetter::GetSubsetSize")]
+        internal static extern ulong GetSubsetFontSize(string fontPath, int faceIndex, string unicodeRanges, uint flags);
+
         [return: UnityMarshalAs(NativeType.ScriptingObjectPtr)]
         internal extern Font[] MarshalledLookupFallbackFontReferences([UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] names);
         internal Font[] LookupFallbackFontReferences([UnityMarshalAs(NativeType.ScriptingObjectPtr)] string[] names)

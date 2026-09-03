@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,6 +10,7 @@ using UnityEngine.UIElements;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEngine.Bindings;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -131,6 +131,7 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
     const int k_ItemHeight = 20;
     internal const int k_PauseDelay = 250;
 
+    [NoAutoStaticsCleanup] // shared empty list sentinel, safe to persist
     static readonly List<TData> k_SEmptyMatchingDataList = [];
 
     // Properties
@@ -1051,4 +1052,3 @@ class FieldSearchCompleter<TData> : IFieldSearchCompleter
         };
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

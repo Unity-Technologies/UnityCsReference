@@ -73,6 +73,10 @@ namespace UnityEngine.UIElements
         {
         }
 
+        abstract class InlineStyleCurvatureProperty : InlineStyleProperty<StyleCurvature>
+        {
+        }
+
         abstract class InlineStyleScaleProperty : InlineStyleProperty<StyleScale>
         {
         }

@@ -73,6 +73,13 @@ namespace Unity.U2D.Physics.Editor
         /// </summary>
         protected virtual (string localAnchorA, string autoAnchorA, string localAnchorB, string autoAnchorB)? anchorFields => null;
 
+        /// <summary>
+        /// The serialized name of the auto-axis flag and whether the joint reads anchor B's authored rotation, or null for a joint with no slide axis.
+        /// While the flag is set the engine derives the affected rotations, so their rows hide: anchor A's always, anchor B's when the joint reads it (the slider bakes the axis into both frames).
+        /// A joint that never reads anchor B's rotation at all (the wheel, which spins freely) never shows that row.
+        /// </summary>
+        protected virtual (string autoAxisField, bool usesRotationB)? axisFields => null;
+
         #region UITK
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
@@ -166,6 +173,7 @@ namespace Unity.U2D.Physics.Editor
 
         // One anchor: its own foldout with the auto flag as the first row, and the anchor's own fields below it.
         // Those fields hide while the flag is set because the engine recomputes the anchor when the joint is created and the stored values are not used.
+        // The rotation row additionally hides while the joint does not read this frame's authored rotation (see axisFields).
         VisualElement CreateAnchor(SerializedProperty property, string anchorField)
         {
             var anchorProperty = property.FindPropertyRelative(anchorField);
@@ -177,18 +185,36 @@ namespace Unity.U2D.Physics.Editor
             {
                 text = anchorProperty.displayName,
                 value = false,
-                tooltip = L10n.Tr(Tooltips.anchor),
+                tooltip = L10n.Tr(Tooltips.anchor, null),
                 viewDataKey = GetType() + "." + anchorField
             };
 
             // Labelled without the A or B because the anchor's own foldout already says which one this is.
-            foldout.Add(new PropertyField(autoProperty, L10n.Tr("Auto")));
+            foldout.Add(new PropertyField(autoProperty, L10n.Tr("Auto", null)));
 
             var body = new VisualElement();
             foldout.Add(body);
 
+            var axis = axisFields;
+            var isA = anchorField == anchorFields.Value.localAnchorA;
+            var rotationUnused = axis.HasValue && !isA && !axis.Value.usesRotationB;
+            var autoAxisProperty = axis.HasValue ? property.FindPropertyRelative(axis.Value.autoAxisField) : null;
+            var rotationDerived = autoAxisProperty != null && (isA || axis.Value.usesRotationB);
+
             foreach (var child in Children(anchorProperty))
-                body.Add(new PropertyField(child));
+            {
+                if (child.name == k_RotationField && rotationUnused)
+                    continue;
+
+                var childField = new PropertyField(child);
+                body.Add(childField);
+
+                if (child.name == k_RotationField && rotationDerived)
+                {
+                    childField.style.display = Hides(autoAxisProperty) ? DisplayStyle.None : DisplayStyle.Flex;
+                    childField.TrackPropertyValue(autoAxisProperty, changed => childField.style.display = Hides(changed) ? DisplayStyle.None : DisplayStyle.Flex);
+                }
+            }
 
             body.style.display = Hides(autoProperty) ? DisplayStyle.None : DisplayStyle.Flex;
             body.TrackPropertyValue(autoProperty, changed => body.style.display = Hides(changed) ? DisplayStyle.None : DisplayStyle.Flex);
@@ -200,7 +226,7 @@ namespace Unity.U2D.Physics.Editor
         {
             return new Foldout
             {
-                text = L10n.Tr(title),
+                text = L10n.Tr(title, null),
                 value = false,
                 tooltip = Tooltips.For(title),
                 viewDataKey = GetType() + "." + title
@@ -262,7 +288,7 @@ namespace Unity.U2D.Physics.Editor
                         continue;
 
                     if (draw)
-                        expansionProperty.isExpanded = EditorGUI.Foldout(Line(position, y), expansionProperty.isExpanded, new GUIContent(L10n.Tr(group.title), Tooltips.For(group.title)), true);
+                        expansionProperty.isExpanded = EditorGUI.Foldout(Line(position, y), expansionProperty.isExpanded, new GUIContent(L10n.Tr(group.title, null), Tooltips.For(group.title)), true);
 
                     y += LineHeight;
 
@@ -329,7 +355,7 @@ namespace Unity.U2D.Physics.Editor
                 return 0f;
 
             if (draw)
-                groupExpansionProperty.isExpanded = EditorGUI.Foldout(Line(position, y), groupExpansionProperty.isExpanded, new GUIContent(L10n.Tr(group.title), Tooltips.For(group.title)), true);
+                groupExpansionProperty.isExpanded = EditorGUI.Foldout(Line(position, y), groupExpansionProperty.isExpanded, new GUIContent(L10n.Tr(group.title, null), Tooltips.For(group.title)), true);
 
             y += LineHeight;
 
@@ -347,7 +373,7 @@ namespace Unity.U2D.Physics.Editor
                     continue;
 
                 if (draw)
-                    anchorProperty.isExpanded = EditorGUI.Foldout(Line(position, y), anchorProperty.isExpanded, new GUIContent(anchorProperty.displayName, L10n.Tr(Tooltips.anchor)), true);
+                    anchorProperty.isExpanded = EditorGUI.Foldout(Line(position, y), anchorProperty.isExpanded, new GUIContent(anchorProperty.displayName, L10n.Tr(Tooltips.anchor, null)), true);
 
                 y += LineHeight;
 
@@ -357,7 +383,7 @@ namespace Unity.U2D.Physics.Editor
                 if (draw)
                 {
                     EditorGUI.indentLevel++;
-                    EditorGUI.PropertyField(Row(position, y, autoProperty), autoProperty, new GUIContent(L10n.Tr("Auto")), true);
+                    EditorGUI.PropertyField(Row(position, y, autoProperty), autoProperty, new GUIContent(L10n.Tr("Auto", null)), true);
                 }
 
                 y += EditorGUI.GetPropertyHeight(autoProperty, true) + EditorGUIUtility.standardVerticalSpacing;
@@ -366,6 +392,9 @@ namespace Unity.U2D.Physics.Editor
                 {
                     foreach (var child in Children(anchorProperty))
                     {
+                        if (child.name == k_RotationField && RotationRowHidden(property, anchorField))
+                            continue;
+
                         if (draw)
                             EditorGUI.PropertyField(Row(position, y, child), child, true);
 
@@ -446,6 +475,22 @@ namespace Unity.U2D.Physics.Editor
             return anchorField == fields.Value.localAnchorA ? fields.Value.autoAnchorA : fields.Value.autoAnchorB;
         }
 
+        // Whether this anchor's rotation row is hidden: the joint never reads it (anchor B on a joint whose usesRotationB is false),
+        // or the engine derives it while the auto-axis flag is set (see axisFields).
+        bool RotationRowHidden(SerializedProperty property, string anchorField)
+        {
+            var axis = axisFields;
+            if (!axis.HasValue)
+                return false;
+
+            var isA = anchorField == anchorFields.Value.localAnchorA;
+            if (!isA && !axis.Value.usesRotationB)
+                return true;
+
+            var autoAxisProperty = property.FindPropertyRelative(axis.Value.autoAxisField);
+            return autoAxisProperty != null && Hides(autoAxisProperty);
+        }
+
         // The visible children of a serialized struct, which for an anchor are its position and rotation.
         static IEnumerable<SerializedProperty> Children(SerializedProperty property)
         {
@@ -498,6 +543,9 @@ namespace Unity.U2D.Physics.Editor
                 Debug.LogError(GetType().Name + " does not place " + string.Join(", ", missing) + ", so those fields are missing from the inspector.");
         }
 
+        // The serialized name of a PhysicsTransform's rotation child, matched when deciding whether an anchor's rotation row is shown.
+        const string k_RotationField = "rotation";
+
         /// <summary>
         /// Group titles, shared so the tooltips and the concrete drawers cannot drift apart.
         /// </summary>
@@ -526,13 +574,13 @@ namespace Unity.U2D.Physics.Editor
             {
                 switch (title)
                 {
-                    case k_AnchorsTitle: return L10n.Tr(anchors);
-                    case k_SpringTitle: return L10n.Tr(spring);
-                    case k_MotorTitle: return L10n.Tr(motor);
-                    case k_LimitTitle: return L10n.Tr(limit);
-                    case k_ThresholdsTitle: return L10n.Tr(thresholds);
-                    case k_TuningTitle: return L10n.Tr(tuning);
-                    case k_DrawingTitle: return L10n.Tr(drawing);
+                    case k_AnchorsTitle: return L10n.Tr(anchors, null);
+                    case k_SpringTitle: return L10n.Tr(spring, null);
+                    case k_MotorTitle: return L10n.Tr(motor, null);
+                    case k_LimitTitle: return L10n.Tr(limit, null);
+                    case k_ThresholdsTitle: return L10n.Tr(thresholds, null);
+                    case k_TuningTitle: return L10n.Tr(tuning, null);
+                    case k_DrawingTitle: return L10n.Tr(drawing, null);
                     default: return string.Empty;
                 }
             }

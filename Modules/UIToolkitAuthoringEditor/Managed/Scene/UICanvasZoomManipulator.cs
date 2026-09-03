@@ -2,11 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -43,6 +43,7 @@ sealed class UICanvasZoomManipulator : PointerManipulator
     }
 
     // Short list of zoom scales for the Zoom menu
+    [NoAutoStaticsCleanup] // zoom-scale presets, safe to persist
     public static List<float> ZoomMenuScaleValues { get; } = new() { 0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 4f, 5f, 10f, 25f, 50f, 75f, 100f };
 
     bool m_Zooming;
@@ -54,7 +55,7 @@ sealed class UICanvasZoomManipulator : PointerManipulator
     public UICanvasZoomManipulator(UIViewport viewport)
     {
         m_Viewport = viewport;
-        m_Viewport.AddManipulator(this);
+        m_Viewport.Surface.AddManipulator(this);
         m_Canvas = m_Viewport.Canvas;
         activators.Add(new ManipulatorActivationFilter { button = MouseButton.RightMouse, modifiers = EventModifiers.Alt});
     }
@@ -121,7 +122,7 @@ sealed class UICanvasZoomManipulator : PointerManipulator
 
         m_Zooming = false;
         target.ReleaseMouse();
-        evt.StopPropagation();
+        evt.StopImmediatePropagation();
     }
 
     void OnPointerMove(PointerMoveEvent evt)
@@ -179,4 +180,3 @@ sealed class UICanvasZoomManipulator : PointerManipulator
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

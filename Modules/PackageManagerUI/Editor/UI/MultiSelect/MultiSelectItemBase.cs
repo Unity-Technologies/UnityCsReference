@@ -45,7 +45,7 @@ internal abstract class MultiSelectItemBase<T> : VisualElement
         }
 
         m_Spinner.Start();
-        m_Spinner.tooltip = L10n.Tr("Operation in progress...");
+        m_Spinner.tooltip = L10n.Tr("Operation in progress...", null);
         UIUtils.SetElementDisplay(m_RightInfoLabel, false);
     }
 

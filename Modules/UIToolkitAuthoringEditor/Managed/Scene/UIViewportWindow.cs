@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
@@ -23,14 +23,27 @@ partial class UIViewportWindow : EditorWindow
 {
     class ShortcutContext : IShortcutContext
     {
-        public bool active =>
-            (focusedWindow is UIViewportWindow or HierarchyWindow) &&
-            s_OpenWindows.Count > 0 &&
-            StageUtility.GetCurrentStage() is VisualElementEditingStage;
+        // The Hierarchy only answers inside the UI Stage: its Main Stage rows are GameObjects, where the plain
+        // F binding belongs to stock Frame Selected — which is why FrameAndFaceShortcut takes Alt+F.
+        public bool active
+        {
+            get
+            {
+                if (focusedWindow is UIViewportWindow viewport)
+                    return viewport.m_Context is { IsValid: true };
+
+                return focusedWindow is HierarchyWindow &&
+                       s_OpenWindows.Count > 0 &&
+                       StageUtility.GetCurrentStage() is VisualElementEditingStage;
+            }
+        }
     }
 
+    [AutoStaticsCleanupOnCodeReload]
     static readonly List<UIViewportWindow> s_OpenWindows = new();
+    [AutoStaticsCleanupOnCodeReload]
     static UIViewportWindow s_LastFocusedWindow;
+    [AutoStaticsCleanupOnCodeReload]
     static ShortcutContext s_ShortcutContext;
 
     const string k_MenuPath = "Window/UI Toolkit/UI Viewport";
@@ -46,6 +59,7 @@ partial class UIViewportWindow : EditorWindow
 
     public const string EnterStageModeWarningContainerUssClass = UssClass + "__container__enter-stage-mode-warning";
     const string HiddenEnterStageModeWarningContainerUssClass = EnterStageModeWarningContainerUssClass + HiddenPostFix;
+    const string EnterStageModeWarningLabelUssClass = UssClass + "__enter-stage-mode-warning";
     public const string ViewportWrapperContainerUssClass = UssClass + "__container__viewport-wrapper";
     const string HiddenViewportWrapperContainerUssClass = ViewportWrapperContainerUssClass + HiddenPostFix;
 
@@ -53,6 +67,7 @@ partial class UIViewportWindow : EditorWindow
     const string ViewportUssClass = UssClass + "__viewport";
 
     VisualElement m_EnterStageModeOverlay;
+    Label m_EnterStageModeLabel;
     VisualElement m_ViewportOverlay;
     Button m_OpenSettingsButton;
 
@@ -93,8 +108,18 @@ partial class UIViewportWindow : EditorWindow
         }
     }
 
+    // What the window is pointed at when no UI Stage is open. Serialized so the preview survives a domain
+    // reload, and sticky: only a selection that names a panel component replaces it.
+    [SerializeField]
+    Component m_PanelComponentSource;
+    [SerializeField]
+    VisualTreeAsset m_DocumentSource;
+    [SerializeField]
+    PanelSettings m_PanelSettingsSource;
+
     [NonSerialized]
-    EntityId m_StageId;
+    IUIViewportContext m_Context;
+
     UICanvas m_Canvas;
     UIViewport m_Viewport;
 
@@ -103,27 +128,19 @@ partial class UIViewportWindow : EditorWindow
     UxmlCodePreview m_UxmlPreview;
     UssCodePreview m_UssPreview;
 
-    public EntityId StageId
-    {
-        get => m_StageId;
-        private set
-        {
-            if (m_StageId == value)
-                return;
-
-            ReleaseStage();
-            m_StageId = value;
-            AcquireStage(m_StageId);
-        }
-    }
+    internal IUIViewportContext Context => m_Context;
 
     void OnEnable()
     {
         titleContent.text = "UI Viewport";
         titleContent.image = UIResources.GetIconForType(typeof(UIViewportWindow), UIResources.RequestSize.Px16, GetPixelsPerPoint(rootVisualElement)).texture;
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnEnableInSceneAuthoringChanged;
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnAuthoringSettingChanged;
+        UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnAuthoringSettingChanged;
         EditorApplication.projectChanged += OnProjectChanged;
+        EditorApplication.hierarchyChanged += OnHierarchyChanged;
+        ObjectChangeEvents.changesPublished += OnObjectChangesPublished;
+        Selection.selectionChanged += OnSelectionChanged;
         s_OpenWindows.Add(this);
         UICommandQueue.RegisterHandler<RequestFramingCommand>(OnFramingRequested);
     }
@@ -132,11 +149,19 @@ partial class UIViewportWindow : EditorWindow
     {
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
         EditorApplication.projectChanged -= OnProjectChanged;
+        EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+        ObjectChangeEvents.changesPublished -= OnObjectChangesPublished;
+        Selection.selectionChanged -= OnSelectionChanged;
         UICommandQueue.UnregisterHandler<RequestFramingCommand>(OnFramingRequested);
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnEnableInSceneAuthoringChanged;
+        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnAuthoringSettingChanged;
+        UIToolkitAuthoringSettings.MainStageAuthoringChanged -= OnAuthoringSettingChanged;
         s_OpenWindows.Remove(this);
         if (s_LastFocusedWindow == this)
             s_LastFocusedWindow = null;
+
+        // The canvas holding the panel is rebuilt after a domain reload, so a panel the context owns has to go
+        // with it. The canvas settings are meant to survive one, and only go when the window itself does.
+        ReleaseContext(destroyCanvasSettings: false);
     }
 
     void OnFocus()
@@ -159,6 +184,7 @@ partial class UIViewportWindow : EditorWindow
             rootVisualElement.styleSheets.Add(styleSheet);
 
         m_EnterStageModeOverlay = rootVisualElement.Q(className: EnterStageModeWarningContainerUssClass);
+        m_EnterStageModeLabel = rootVisualElement.Q<Label>(className: EnterStageModeWarningLabelUssClass);
         m_ViewportOverlay = rootVisualElement.Q(className: ViewportWrapperContainerUssClass);
         m_OpenSettingsButton = rootVisualElement.Q<Button>("unity-ui-viewport__open-settings-button");
         m_OpenSettingsButton.clicked += UIToolkitAuthoringSettingsProvider.OpenSettings;
@@ -170,7 +196,8 @@ partial class UIViewportWindow : EditorWindow
 
         rootVisualElement.RegisterCallback<CanvasManipulatorMessageEvent>(OnCanvasManipulatorMessage);
 
-        OnStageChanged(StageUtility.GetCurrentStage());
+        AdoptSelectionWhenSourceless();
+        RefreshContext();
     }
 
     void OnCanvasManipulatorMessage(CanvasManipulatorMessageEvent e) =>
@@ -178,44 +205,291 @@ partial class UIViewportWindow : EditorWindow
 
     void OnDestroy()
     {
-        ReleaseStage();
+        ReleaseContext(destroyCanvasSettings: true);
     }
 
-    void OnStageChanged(Stage stage)
-    {
-        if (m_Canvas == null)
-            return;
+    void OnStageChanged(Stage stage) => RefreshContext();
 
-        var uiStage = stage as VisualElementEditingStage;
+    // A deleted panel component is only reported here, and it is what the preview was resolved from.
+    void OnHierarchyChanged() => RefreshContext();
 
-        var isUIStage = uiStage != null;
-        m_EnterStageModeOverlay.EnableInClassList(HiddenEnterStageModeWarningContainerUssClass, isUIStage);
-        m_ViewportOverlay.EnableInClassList(HiddenViewportWrapperContainerUssClass, !isUIStage);
-
-        StageId = stage.GetEntityId();
-
-        if (isUIStage)
-            SetToolbarBreadcrumbs();
-        else
-            m_Viewport.ClearBreadcrumbs();
-    }
+    // What the viewport may author into follows these, without the document on screen changing.
+    void OnAuthoringSettingChanged(bool enabled) => RefreshContext();
 
     void OnProjectChanged()
     {
+        RefreshContext();
+        RefreshContextMetadata();
+    }
+
+    void OnObjectChangesPublished(ref ObjectChangeEventStream stream)
+    {
         if (m_Canvas == null)
             return;
 
-        if (StageUtility.GetCurrentStage() is not VisualElementEditingStage stage)
+        // Removing the component leaves the context stale rather than changed, and the event that reports it
+        // names an object that no longer resolves to anything, so validity is re-checked on every batch.
+        if (m_Context is { IsValid: false })
+        {
+            RefreshContext();
+            return;
+        }
+
+        if (!m_PanelComponentSource)
             return;
 
-        SetToolbarBreadcrumbs();
+        // The component can be pointed at another document, or its GameObject renamed, from the inspector —
+        // neither a selection, a stage nor a scene change.
+        var componentId = m_PanelComponentSource.GetEntityId();
+        var gameObjectId = m_PanelComponentSource.gameObject.GetEntityId();
 
-        if (stage.EditedVisualTreeAsset != null)
-            m_Canvas.HeaderTitle = stage.EditedVisualTreeAsset.name + ".uxml";
+        for (var i = 0; i < stream.length; ++i)
+        {
+            if (stream.GetEventType(i) != ObjectChangeKind.ChangeGameObjectOrComponentProperties)
+                continue;
+
+            stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var args);
+            if (args.entityId != componentId && args.entityId != gameObjectId)
+                continue;
+
+            RefreshContext();
+            RefreshContextMetadata();
+            return;
+        }
     }
 
-    void OnEnableInSceneAuthoringChanged(bool enabled)
+    void OnSelectionChanged()
     {
+        // The UI Stage decides what the viewport shows; selecting inside it must not retarget the window.
+        if (m_Canvas == null || StageUtility.GetCurrentStage() is VisualElementEditingStage)
+            return;
+
+        // Sticky: a selection naming no panel component leaves the viewport on the document it shows. The
+        // refresh runs either way, which is what drops a source that was just deleted.
+        var panelComponent = MainStageViewportSelection.ResolveFromSelection();
+        if (panelComponent != null)
+            SetPanelComponentSource(panelComponent);
+        else
+            RefreshContext();
+    }
+
+    /// <summary>Points the window at the document <paramref name="panelComponent"/> renders.</summary>
+    internal void SetPanelComponentSource(IPanelComponent panelComponent)
+    {
+        m_PanelComponentSource = panelComponent as Component;
+        m_DocumentSource = null;
+        m_PanelSettingsSource = null;
+        RefreshContext();
+    }
+
+    /// <summary>
+    /// Points the window at <paramref name="document"/>, for callers with no panel component to point at. A
+    /// null document empties the window.
+    /// </summary>
+    internal void SetDocumentSource(VisualTreeAsset document, PanelSettings panelSettings)
+    {
+        m_PanelComponentSource = null;
+        m_DocumentSource = document;
+        m_PanelSettingsSource = panelSettings;
+        RefreshContext();
+    }
+
+    /// <summary>Points every open UI Viewport at <paramref name="document"/>.</summary>
+    internal static void SetDocumentSourceForAll(VisualTreeAsset document, PanelSettings panelSettings)
+    {
+        for (var i = s_OpenWindows.Count - 1; i >= 0; --i)
+            s_OpenWindows[i].SetDocumentSource(document, panelSettings);
+    }
+
+    /// <summary>
+    /// Re-resolves what the window should show, swapping the context when that is something else. Everything
+    /// that can change the answer ends up here.
+    /// </summary>
+    void RefreshContext()
+    {
+        // The window is enabled long before its GUI exists, for example while a window layout is loaded.
+        if (m_Canvas == null)
+            return;
+
+        DropDeletedSources();
+
+        var context = ResolveContext();
+        if (!IsSameContext(m_Context, context))
+            SetContext(context);
+
+        UpdateDropManipulator();
+        UpdateOverlays();
+    }
+
+    IUIViewportContext ResolveContext()
+    {
+        if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
+            return new StageViewportContext(stage);
+
+        // Previewing a scene document is part of in-scene authoring: it is picked from the Hierarchy, which
+        // that switch is what turns on.
+        if (!UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
+            return null;
+
+        if (m_PanelComponentSource is IPanelComponent panelComponent && panelComponent.visualTreeAsset != null)
+            return new DocumentViewportContext(panelComponent);
+
+        if (m_DocumentSource != null)
+            return new DocumentViewportContext(m_DocumentSource, m_PanelSettingsSource);
+
+        return null;
+    }
+
+    /// <summary>
+    /// Adopts what the selection names when the window has no source of its own, so opening it on a selected
+    /// document shows that document at once. Called on window creation only, so a window pointed at nothing
+    /// stays empty and a sticky source is never replaced behind the user's back.
+    /// </summary>
+    void AdoptSelectionWhenSourceless()
+    {
+        if (m_PanelComponentSource != null || m_DocumentSource != null)
+            return;
+        if (StageUtility.GetCurrentStage() is VisualElementEditingStage)
+            return;
+
+        m_PanelComponentSource = MainStageViewportSelection.ResolveFromSelection() as Component;
+    }
+
+    // A destroyed object is still a non-null C# reference, which would keep the window pointed at nothing.
+    void DropDeletedSources()
+    {
+        if (!m_PanelComponentSource)
+            m_PanelComponentSource = null;
+        if (!m_DocumentSource)
+            m_DocumentSource = null;
+    }
+
+    // Same means swapping one for the other would show the same thing, so the live panel can be kept. A stale
+    // context never is, which is what gets it replaced rather than left on screen.
+    static bool IsSameContext(IUIViewportContext current, IUIViewportContext candidate)
+    {
+        if (current == null || candidate == null)
+            return current == null && candidate == null;
+
+        return current.IsValid
+               && current.GetType() == candidate.GetType()
+               && ReferenceEquals(current.Source, candidate.Source)
+               && current.EditedVisualTreeAsset == candidate.EditedVisualTreeAsset
+               && current.PanelSettings == candidate.PanelSettings;
+    }
+
+    void SetContext(IUIViewportContext context)
+    {
+        ReleaseContext(destroyCanvasSettings: true);
+
+        m_Context = context is { IsValid: true } ? context : null;
+        if (m_Context != null)
+            AcquireContext();
+
+        UpdateDropManipulator();
+        UpdateOverlays();
+    }
+
+    void AcquireContext()
+    {
+        m_Context.Acquire();
+
+        var document = m_Context.EditedVisualTreeAsset;
+
+        m_Canvas.HeaderTitle = m_Context.HeaderTitle;
+        m_Canvas.RequestRefresh = m_Context.RequestRefresh;
+        m_Canvas.SetContext(m_Context.PanelElement, m_Context.CanvasStorageKey);
+
+        m_ThemeState = PreviewThemeState.ForDocument(m_Context.RootVisualTreeAsset);
+        SetupThemeMenu(m_Context.PanelSettings, m_ThemeState.SelectedTheme);
+
+        m_UxmlPreview.Asset = document;
+        m_UssPreview.Asset = GetActiveStyleSheetQuery.Get() ?? document.GetAllReferencedStyleSheets().FirstOrDefault();
+        UICommandQueue.RegisterHandler<ActiveStyleSheetChangedMessage>(ActiveStyleSheetChanged);
+        UICommandQueue.RegisterHandler<GetCanvasThemeQuery>(GetCanvasThemeRequest);
+
+        m_Context.PopulateBreadcrumbs(m_Viewport);
+    }
+
+    void ReleaseContext(bool destroyCanvasSettings)
+    {
+        // The window can be destroyed before CreateGUI runs, for example while a window layout is loaded.
+        if (m_Canvas == null)
+        {
+            m_Context = null;
+            return;
+        }
+
+        if (destroyCanvasSettings)
+            m_Canvas.DestroySettingsPermanently();
+
+        // The canvas has to let go of the panel before the context destroys it.
+        m_Canvas.PanelElement = null;
+        m_Canvas.RequestRefresh = null;
+        ClearThemeMenu();
+
+        m_UxmlPreview.Asset = null;
+        m_UssPreview.Asset = null;
+        UICommandQueue.UnregisterHandler<ActiveStyleSheetChangedMessage>(ActiveStyleSheetChanged);
+        UICommandQueue.UnregisterHandler<GetCanvasThemeQuery>(GetCanvasThemeRequest);
+
+        m_Viewport.ClearBreadcrumbs();
+
+        if (m_Context != null)
+        {
+            m_Context.Release();
+            m_Context = null;
+        }
+
+        UpdateDropManipulator();
+    }
+
+    // Rewired on every refresh, not only when the context changes: what the viewport may author into follows a
+    // setting that can be toggled while the same document stays on screen. A null document leaves it inert.
+    void UpdateDropManipulator()
+    {
+        var context = m_Context is { IsValid: true, AllowsAuthoring: true } ? m_Context : null;
+
+        m_Viewport.DropManipulator.EditedVisualTreeAsset = context?.EditedVisualTreeAsset;
+        m_Viewport.DropManipulator.RequestRefresh = context != null ? context.RequestRefresh : null;
+        m_Viewport.DropManipulator.WouldCauseCircularDependency = context != null ? context.WillCauseCircularDependency : null;
+    }
+
+    // What can change without the context itself changing: a document rename, a GameObject rename, the stage
+    // history.
+    void RefreshContextMetadata()
+    {
+        if (m_Canvas == null || m_Context == null)
+            return;
+
+        if (!m_Context.IsValid)
+        {
+            SetContext(null);
+            return;
+        }
+
+        m_Canvas.HeaderTitle = m_Context.HeaderTitle;
+        m_Context.PopulateBreadcrumbs(m_Viewport);
+    }
+
+    void UpdateOverlays()
+    {
+        if (m_EnterStageModeOverlay == null)
+            return;
+
+        var hasContext = m_Context is { IsValid: true };
+        m_EnterStageModeOverlay.EnableInClassList(HiddenEnterStageModeWarningContainerUssClass, hasContext);
+        m_ViewportOverlay.EnableInClassList(HiddenViewportWrapperContainerUssClass, !hasContext);
+
+        if (!hasContext && m_EnterStageModeLabel != null)
+        {
+            // Without in-scene authoring there is nothing to pick a document from, so the stage is the only
+            // way in — which is what the button below the message offers to change.
+            m_EnterStageModeLabel.text = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring
+                ? L10n.Tr("Select a UI document in the Hierarchy to preview it.", null)
+                : L10n.Tr("Enter visual element editing stage to have access to this feature.", null);
+        }
+
         UpdateOpenSettingsButton();
     }
 
@@ -227,59 +501,6 @@ partial class UIViewportWindow : EditorWindow
         m_OpenSettingsButton.style.display = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring
             ? DisplayStyle.None
             : DisplayStyle.Flex;
-    }
-
-    void SetToolbarBreadcrumbs()
-    {
-        if (m_Viewport == null)
-            return;
-
-        m_Viewport.ClearBreadcrumbs();
-
-        var history = StageNavigationManager.instance.stageHistory;
-        for (var i = 0; i < history.Count; i++)
-        {
-            var stage = history[i];
-            var content = stage.CreateHeaderContent();
-            var icon = content.image as Texture2D;
-            var label = content.text;
-
-            var isCurrentStage = i == history.Count - 1;
-            if (isCurrentStage)
-            {
-                m_Viewport.PushBreadcrumb(label, icon);
-            }
-            else
-            {
-                m_Viewport.PushBreadcrumb(label, icon, () => StageUtility.GoToStage(stage, false));
-            }
-        }
-    }
-
-    void AcquireStage(EntityId stageId)
-    {
-        var stage = EditorUtility.EntityIdToObject(stageId) as VisualElementEditingStage;
-        if (!stage)
-            return;
-
-        m_Canvas.HeaderTitle = stage.EditedVisualTreeAsset.name + ".uxml";
-
-        var hash = stage.GetHashForStateStorage();
-        var storageKey = $"CanvasSettings-{hash}";
-
-        m_Canvas.SetContext(stage.PanelElement, storageKey);
-
-        m_ThemeState = PreviewThemeState.ForDocument(stage.Context.RootVisualTreeAsset);
-        SetupThemeMenu(stage.Context.PanelSettings, m_ThemeState.SelectedTheme);
-
-        m_Viewport.DropManipulator.EditedVisualTreeAsset = stage.EditedVisualTreeAsset;
-        m_Viewport.DropManipulator.RequestRefresh = stage.RequestRefresh;
-        m_Viewport.DropManipulator.WouldCauseCircularDependency = stage.Context.WillCauseCircularDependency;
-
-        m_UxmlPreview.Asset = stage.EditedVisualTreeAsset;
-        m_UssPreview.Asset = GetActiveStyleSheetQuery.Get() ?? stage.EditedVisualTreeAsset.GetAllReferencedStyleSheets().FirstOrDefault();
-        UICommandQueue.RegisterHandler<ActiveStyleSheetChangedMessage>(ActiveStyleSheetChanged);
-        UICommandQueue.RegisterHandler<GetCanvasThemeQuery>(GetCanvasThemeRequest);
     }
 
     void SetupThemeMenu(PanelSettings panelSettings, ThemeStyleSheet selectedTheme)
@@ -315,25 +536,6 @@ partial class UIViewportWindow : EditorWindow
             m_Canvas.PanelElement.ThemeStyleSheet = null;
     }
 
-    void ReleaseStage()
-    {
-        // The window can be destroyed before CreateGUI runs, for example while a window layout is loaded.
-        if (m_Canvas == null)
-            return;
-
-        m_Canvas.DestroySettingsPermanently();
-        ClearThemeMenu();
-
-        m_Viewport.DropManipulator.EditedVisualTreeAsset = null;
-        m_Viewport.DropManipulator.RequestRefresh = null;
-        m_Viewport.DropManipulator.WouldCauseCircularDependency = null;
-
-        m_UxmlPreview.Asset = null;
-        m_UssPreview.Asset = null;
-        UICommandQueue.UnregisterHandler<ActiveStyleSheetChangedMessage>(ActiveStyleSheetChanged);
-        UICommandQueue.UnregisterHandler<GetCanvasThemeQuery>(GetCanvasThemeRequest);
-    }
-
     static float GetPixelsPerPoint(VisualElement element)
     {
         return element?.panel == null
@@ -351,4 +553,4 @@ partial class UIViewportWindow : EditorWindow
         GetCanvasThemeQuery.QueryPayload.Execute(CommandSources.Viewport, theme);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

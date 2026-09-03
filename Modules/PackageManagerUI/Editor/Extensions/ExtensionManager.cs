@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         class EventDispatcher
         {
-            private static readonly string k_ExtensionErrorMessage = L10n.Tr("[Package Manager Window] Package manager extension failed with error: {0}");
+            private static readonly string k_ExtensionErrorMessage = L10n.Tr("[Package Manager Window] Package manager extension failed with error: {0}", null);
 
             private IWindow m_Window = null;
 
@@ -173,7 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_CollapsedPackageActions = new DropdownButton();
             m_CollapsedPackageActions.alwaysShowDropdown = true;
-            m_CollapsedPackageActions.text = L10n.Tr("Extensions");
+            m_CollapsedPackageActions.text = L10n.Tr("Extensions", null);
             m_CollapsedPackageActions.onBeforeShowDropdown += CollapsedPackageActionsOnBeforeShowDropdown;
             UIUtils.SetElementDisplay(m_CollapsedPackageActions, false);
             m_ToolbarExtensionContainer.Add(m_CollapsedPackageActions);

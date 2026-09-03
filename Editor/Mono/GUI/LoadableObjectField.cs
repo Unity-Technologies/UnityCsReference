@@ -108,7 +108,7 @@ namespace UnityEditor
                 var contextMenu = new GenericMenu();
                 if (property != null && FillPropertyContextMenu(property, null, contextMenu) != null)
                     contextMenu.AddSeparator("");
-                contextMenu.AddItem(GUIContent.Temp(L10n.Tr("Properties...")), false, () => PropertyEditor.OpenPropertyEditor(obj));
+                contextMenu.AddItem(GUIContent.Temp(L10n.Tr("Properties...", null)), false, () => PropertyEditor.OpenPropertyEditor(obj));
                 var mousePos = Event.current.mousePosition;
                 contextMenu.DropDown(new Rect(mousePos.x, mousePos.y, 0, 0));
                 Event.current.Use();

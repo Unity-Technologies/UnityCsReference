@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -59,7 +60,7 @@ namespace UnityEditor.Connect
         {
             if (rootVisualElement == null)
             {
-                throw new ArgumentException(L10n.Tr(k_NullVisualElementExceptionMessage));
+                throw new ArgumentException(L10n.Tr(k_NullVisualElementExceptionMessage, null));
             }
 
             // This notification subscriber needs a specific container to work.
@@ -110,7 +111,7 @@ namespace UnityEditor.Connect
             m_NextButton = m_NotificationRoot.Q<Button>(null, k_NextButtonClassName);
 
             m_PreviousButton.text = k_PreviousButtonText;
-            m_PageCount.text = string.Format(L10n.Tr(k_PagerTextTemplate), k_PagerDefaultValue, k_PagerDefaultValue);
+            m_PageCount.text = string.Format(L10n.Tr(k_PagerTextTemplate, null), k_PagerDefaultValue, k_PagerDefaultValue);
             m_NextButton.text = k_NextButtonText;
 
             m_PreviousButton.clicked += () =>
@@ -228,7 +229,7 @@ namespace UnityEditor.Connect
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(k_NotificationSeverityParamName,
-                            string.Format(L10n.Tr(k_UnknownSeverityExceptionMessage), m_Notifications[m_CurrentIndex].severity));
+                            string.Format(L10n.Tr(k_UnknownSeverityExceptionMessage, null), m_Notifications[m_CurrentIndex].severity));
                 }
 
                 m_LastDisplayedSeverity = m_Notifications[m_CurrentIndex].severity;
@@ -244,7 +245,7 @@ namespace UnityEditor.Connect
             else
             {
                 m_PagerContainer.style.display = DisplayStyle.Flex;
-                m_PageCount.text = string.Format(L10n.Tr(k_PagerTextTemplate), m_CurrentIndex + 1, m_Notifications.Count);
+                m_PageCount.text = string.Format(L10n.Tr(k_PagerTextTemplate, null), m_CurrentIndex + 1, m_Notifications.Count);
                 m_PreviousButton.SetEnabled(m_CurrentIndex > 0);
                 m_NextButton.SetEnabled(m_CurrentIndex + 1 < m_Notifications.Count);
             }
@@ -281,3 +282,4 @@ namespace UnityEditor.Connect
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

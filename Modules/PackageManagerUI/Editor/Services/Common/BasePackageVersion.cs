@@ -119,7 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual string GetDescriptor(bool isFirstLetterCapitalized = false)
         {
-            return isFirstLetterCapitalized ? L10n.Tr("Package") : L10n.Tr("package");
+            return isFirstLetterCapitalized ? L10n.Tr("Package", null) : L10n.Tr("package", null);
         }
 
         public virtual void OnBeforeSerialize()
@@ -185,7 +185,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (searchParams.HasFlag(SearchTextParams.Author))
             {
-                var authorName = isFromUnity ? L10n.Tr("Unity Technologies") : author?.name;
+                var authorName = isFromUnity ? L10n.Tr("Unity Technologies", null) : author?.name;
                 if (!string.IsNullOrEmpty(authorName) &&
                     authorName.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
                     return true;
@@ -194,7 +194,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (searchParams.HasFlag(SearchTextParams.SignatureOrgName))
             {
                 var signatureOrg = (trustAndSignature == TrustAndSignature.FullTrustUnitySignature || trustAndSignature == TrustAndSignature.FullTrustBuiltInPackage)
-                    ? L10n.Tr("Unity Technologies") : signatureOrgName;
+                    ? L10n.Tr("Unity Technologies", null) : signatureOrgName;
                 if (!string.IsNullOrEmpty(signatureOrg) &&
                     signatureOrg.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
                     return true;

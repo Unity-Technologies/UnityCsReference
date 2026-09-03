@@ -794,7 +794,7 @@ namespace Unity.UI.Builder
         public const string InlineValuesOnCanvasNotification = "Changes made to inline values on properties with resolved bindings do not appear on the canvas.";
         public const string BindingsOnPreviewModeNotification = "Modifying attribute values in Preview could change a resolved binding's value depending on binding mode.";
         public const string DoNotShowAgainNotificationButtonText = "Do not show again";
-        public static readonly string UsingDeprecatedAPINotification = L10n.Tr("Some controls in this file use a deprecated API and may render incorrectly. See Console for details.");
+        public static readonly string UsingDeprecatedAPINotification = L10n.Tr("Some controls in this file use a deprecated API and may render incorrectly. See Console for details.", null);
 
         //
         // UXML/USS

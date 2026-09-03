@@ -32,6 +32,16 @@ namespace Unity.GraphToolkit.Editor
         BaseModelPropertyField m_Field;
 
         /// <summary>
+        /// Whether <see cref="BuildUI"/> builds the field for the condition's serialized value.
+        /// </summary>
+        protected virtual bool DisplayValueField => true;
+
+        /// <summary>
+        /// Whether <see cref="BuildUI"/> builds the fallback label when the condition has no value field.
+        /// </summary>
+        protected virtual bool DisplayTitleLabel => true;
+
+        /// <summary>
         /// Creates a new instance of the <see cref="SingleValueConditionView"/> class.
         /// </summary>
         /// <param name="fieldInfo">The <paramref name="fieldInfo"/> of the single field.</param>
@@ -70,11 +80,26 @@ namespace Unity.GraphToolkit.Editor
 
             if (m_FieldInfo == null)
             {
+                if (!DisplayTitleLabel)
+                    return;
+
                 var label = new Label(m_DisplayName) { tooltip = m_Tooltip };
                 label.AddToClassList(valueUssClassName);
                 m_Container.Add(label);
                 return;
             }
+
+            if (DisplayValueField)
+                BuildValueField();
+        }
+
+        /// <summary>
+        /// Builds the field for the condition's serialized value, if it exists and was not built yet.
+        /// </summary>
+        protected void BuildValueField()
+        {
+            if (m_FieldInfo == null || m_Field != null)
+                return;
 
             var modelArray = new[] { Model };
 

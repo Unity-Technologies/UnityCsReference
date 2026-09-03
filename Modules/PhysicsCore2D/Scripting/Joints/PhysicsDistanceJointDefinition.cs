@@ -16,7 +16,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public struct PhysicsDistanceJointDefinition
+    public record struct PhysicsDistanceJointDefinition
     {
         /// <summary>
         /// Create a default <see cref="PhysicsDistanceJoint"/> definition.

@@ -10,10 +10,10 @@ internal static class PackageSourceExtension
     {
         return source switch
         {
-            PackageSource.LocalTarball => L10n.Tr("Tarball"),
-            PackageSource.BuiltIn => L10n.Tr("Built-in"),
-            PackageSource.Embedded => L10n.Tr("Custom"),
-            _ => L10n.Tr(source.ToString())
+            PackageSource.LocalTarball => L10n.Tr("Tarball", null),
+            PackageSource.BuiltIn => L10n.Tr("Built-in", null),
+            PackageSource.Embedded => L10n.Tr("Custom", null),
+            _ => L10n.Tr(source.ToString(), null)
         };
     }
 }

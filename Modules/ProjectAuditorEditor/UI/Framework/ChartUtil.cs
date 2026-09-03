@@ -83,8 +83,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                             if (skipZeroValues && inValues[i].Value == 0)
                                 continue;
 
-                            DrawLegendItem(draw2D, inValues[i].Label, inValues[i].Tooltip, inValues[i].Value,
-                                inValues[i].Color, labelFormat, numberFormat, inValues[i].IconContent, false);
+                            DrawLegendItem(draw2D, inValues[i], labelFormat, numberFormat, false);
                         }
                     }
 
@@ -127,10 +126,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 using (new EditorGUILayout.VerticalScope())
                 {
                     for (int i = 0; i < firstColumnNum; ++i)
-                    {
-                        DrawLegendItem(draw2D, inValues[i].Label, inValues[i].Tooltip, inValues[i].Value, inValues[i].Color, labelFormat,
-                            numberFormat, inValues[i].IconContent);
-                    }
+                        DrawLegendItem(draw2D, inValues[i], labelFormat, numberFormat);
 
                     DrawLine(draw2D);
                 }
@@ -140,10 +136,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 using (new EditorGUILayout.VerticalScope())
                 {
                     for (int i = firstColumnNum; i < inValues.Count; ++i)
-                    {
-                        DrawLegendItem(draw2D, inValues[i].Label, inValues[i].Tooltip, inValues[i].Value, inValues[i].Color, labelFormat,
-                            numberFormat, inValues[i].IconContent);
-                    }
+                        DrawLegendItem(draw2D, inValues[i], labelFormat, numberFormat);
 
                     DrawLine(draw2D);
                 }
@@ -165,33 +158,15 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             EditorGUILayout.EndVertical();
         }
 
-        static void DrawLegendItem(Draw2D draw2D, string text, string tooltip, float count, Color color,
-            string labelFormat = "{0}", string numberFormat = "#", GUIContent iconContent = null, bool drawLines = true)
+        static void DrawLegendItem(Draw2D draw2D, in Element element, string labelFormat, string numberFormat, bool drawLines = true)
         {
             if (drawLines)
                 DrawLine(draw2D);
 
             EditorGUILayout.BeginHorizontal(s_Row, GUILayout.Height(10), GUILayout.Width(120));
-
-            if (iconContent != null)
-            {
-                EditorGUILayout.LabelField(iconContent,
-                    GUILayout.Width(28), GUILayout.Height(20));
-            }
-            else
-            {
-                var rect = EditorGUILayout.GetControlRect(GUILayout.Width(10), GUILayout.Height(20));
-                if (draw2D.DrawStart(rect))
-                {
-                    var alphaColor = new Color(color.r, color.g, color.b, color.a * 0.6f);
-                    draw2D.DrawFilledCircle(4, 9, 4.5f, alphaColor, 6);
-                    draw2D.DrawFilledCircle(4, 9, 4, color, 6);
-                    draw2D.DrawEnd();
-                }
-            }
-
-            EditorGUILayout.LabelField(new GUIContent(text, tooltip), SharedStyles.Label, GUILayout.Width(k_LabelWidth));
-            EditorGUILayout.LabelField(new GUIContent(String.Format(labelFormat, count.ToString(numberFormat)), tooltip), SharedStyles.BoldLabel, GUILayout.Width(k_NumberLabelWidth));
+            EditorGUILayout.LabelField(element.IconContent, GUILayout.Width(28), GUILayout.Height(20));
+            EditorGUILayout.LabelField(new GUIContent(element.Label, element.Tooltip), SharedStyles.Label, GUILayout.Width(k_LabelWidth));
+            EditorGUILayout.LabelField(new GUIContent(string.Format(labelFormat, element.Value.ToString(numberFormat)), element.Tooltip), SharedStyles.BoldLabel, GUILayout.Width(k_NumberLabelWidth));
 
             EditorGUILayout.EndHorizontal();
         }

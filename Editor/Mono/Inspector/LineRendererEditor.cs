@@ -19,7 +19,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent alignment = EditorGUIUtility.TrTextContent("Alignment", "Lines can rotate to face their transform component or the camera. When using Local mode, lines face the XY plane of the Transform.");
             public static readonly GUIContent colorGradient = EditorGUIUtility.TrTextContent("Color", "The gradient describing the color along the line.");
-            public static readonly string disabledEditMessage = L10n.Tr("Editing is only available when editing a single LineRenderer in a scene.");
+            public static readonly string disabledEditMessage = L10n.Tr("Editing is only available when editing a single LineRenderer in a scene.", null);
             public static readonly GUIContent inputMode = EditorGUIUtility.TrTextContent("Input", "Use mouse position or physics raycast to determine where to create points.");
             public static readonly GUIContent layerMask = EditorGUIUtility.TrTextContent("Layer Mask", "The layer mask to use when performing raycasts.");
             public static readonly GUIContent normalOffset = EditorGUIUtility.TrTextContent("Offset", "The offset applied to created points either from the scene camera or raycast normal, when using physics.");

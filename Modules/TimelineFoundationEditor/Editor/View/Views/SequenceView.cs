@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Commands.Time;
 using Unity.Timeline.Foundation.Commands.ViewData;
 using Unity.Timeline.Foundation.Common;
@@ -21,6 +21,7 @@ namespace Unity.Timeline.Foundation.View
     {
         const string k_Name = "sequenceView";
         const string k_Class = "sequenceView";
+        [NoAutoStaticsCleanup] // Immutable USS stylesheet-path descriptor; holds only fixed path strings, safe to persist across reload.
         static readonly StylesheetResource k_Stylesheet = Internals.UIResources.StylesheetFactory.Get<SequenceView>();
 
         readonly SequenceElementBuilder m_Builder = new();
@@ -194,4 +195,3 @@ namespace Unity.Timeline.Foundation.View
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

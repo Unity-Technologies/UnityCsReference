@@ -90,7 +90,7 @@ namespace Unity.GraphToolkit.Editor
             {
                 if (visitor.ChangeHints.HasChange(ChangeHint.Style))
                 {
-                    m_Arrow.FillColor = transition.ElementColor.Color;
+                    m_Arrow.FillColor = transition.DefaultColor;
                     m_Arrow.tooltip = transition.Tooltip ?? string.Empty;
                 }
             }

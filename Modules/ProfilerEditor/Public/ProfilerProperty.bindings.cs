@@ -88,6 +88,114 @@ namespace UnityEditorInternal
         public UInt64 instancePtr;
     }
 
+    /// <summary>
+    /// Per-processor profiler information for Scriptable Audio Pipeline.
+    /// </summary>
+    [System.Serializable]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SAPProfilerProcessorInfo
+    {
+        /// <summary>
+        /// Last Process() call duration in nanoseconds.
+        /// </summary>
+        public ulong lastProcessTimeNs;
+
+        /// <summary>
+        /// Offset into the names buffer for the processor type name.
+        /// </summary>
+        public int typeNameOffset;
+
+        /// <summary>
+        /// Offset into the names buffer for the processor category name.
+        /// </summary>
+        public int categoryNameOffset;
+
+        /// <summary>
+        /// Index of parent processor in the processors array, or -1 if root.
+        /// </summary>
+        public int parentIndex;
+
+        /// <summary>
+        /// DTM identifier this processor belongs to.
+        /// </summary>
+        public int dtmIdentifier;
+
+        /// <summary>
+        /// Sample rate this processor operates at, or 0 if unknown.
+        /// </summary>
+        public int sampleRate;
+
+        /// <summary>
+        /// Processor handle bits for stable identification across frames.
+        /// </summary>
+        public uint handleBits;
+
+        /// <summary>
+        /// Entity ID of the source asset (e.g., AudioClip, ScriptableObject).
+        /// Use EditorUtility.EntityIdToObject to resolve to the actual object.
+        /// </summary>
+        public ulong sourceAssetEntityId;
+    }
+
+    /// <summary>
+    /// Summary statistics for SAP profiling.
+    /// </summary>
+    [System.Serializable]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SAPProfilerSummary
+    {
+        /// <summary>
+        /// DTM identifier (for multi-DTM scenarios).
+        /// </summary>
+        public int dtmIdentifier;
+
+        /// <summary>
+        /// DSP buffer size in samples (frames per callback).
+        /// </summary>
+        public int dspBufferSize;
+
+        /// <summary>
+        /// Sample rate in Hz.
+        /// </summary>
+        public int sampleRate;
+
+        // --- DTM Health Stats ---
+
+        /// <summary>
+        /// Number of batches submitted (control → realtime) since last capture.
+        /// </summary>
+        public uint batchesSubmitted;
+
+        /// <summary>
+        /// Number of batches returned (realtime → control) since last capture.
+        /// </summary>
+        public uint batchesReturned;
+
+        /// <summary>
+        /// Number of flush timeouts since last capture.
+        /// </summary>
+        public uint flushTimeouts;
+
+        /// <summary>
+        /// Data bytes submitted (control → realtime) since last capture.
+        /// </summary>
+        public ulong bytesSubmitted;
+
+        /// <summary>
+        /// Data bytes returned (realtime → control) since last capture.
+        /// </summary>
+        public ulong bytesReturned;
+
+        // --- Computed Properties ---
+
+        /// <summary>
+        /// Time available per DSP callback in nanoseconds.
+        /// </summary>
+        public ulong DspBufferTimeNs => sampleRate > 0 ? (ulong)dspBufferSize * 1_000_000_000UL / (ulong)sampleRate : 0;
+    }
+
     [Flags]
     public enum BatchBreakingReason
     {

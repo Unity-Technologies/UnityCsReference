@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -105,7 +106,7 @@ namespace UnityEditor.Connect
             {
                 m_MainServiceToggle.RegisterValueChangedCallback(evt =>
                 {
-                    if (currentUserPermission != UserRole.Owner && currentUserPermission != UserRole.Manager)
+                    if (!CanEditServices(currentUserPermission))
                     {
                         UpdateServiceToggleAndDashboardLink(evt.previousValue);
                         return;
@@ -135,7 +136,7 @@ namespace UnityEditor.Connect
 
         void SetUpGameId()
         {
-            var unavailableGameId = L10n.Tr("N/A");
+            var unavailableGameId = L10n.Tr("N/A", null);
 
             // Getting the textfield for updates with the actual GameId values...
             var appleGameId = AdvertisementSettings.GetGameId(RuntimePlatform.IPhonePlayer);
@@ -346,7 +347,7 @@ namespace UnityEditor.Connect
 
                 if (assetStorePackageInstalled && !m_AssetStoreWarningHasBeenShown)
                 {
-                    NotificationManager.instance.Publish(Notification.Topic.AdsService, Notification.Severity.Warning, L10n.Tr(k_AdsAssetStorePackageInstalledWarning));
+                    NotificationManager.instance.Publish(Notification.Topic.AdsService, Notification.Severity.Warning, L10n.Tr(k_AdsAssetStorePackageInstalledWarning, null));
                     m_AssetStoreWarningHasBeenShown = true;
                 }
 
@@ -397,3 +398,4 @@ namespace UnityEditor.Connect
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

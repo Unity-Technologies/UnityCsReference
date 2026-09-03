@@ -63,6 +63,13 @@ namespace UnityEngine.TextCore.Text
             UpdateFontEditorRef(nativeFontAsset, SourceFont_EditorRef);
         }
 
+        internal void UpdateSourceFontFile()
+        {
+            if (m_NativeFontAsset == IntPtr.Zero)
+                return;
+            UpdateSourceFontFile(m_NativeFontAsset, m_SourceFontFile);
+        }
+
         internal void UpdateFallbacks()
         {
             UpdateFallbacks(nativeFontAsset, GetFallbacks());
@@ -251,6 +258,8 @@ namespace UnityEngine.TextCore.Text
         }
 
         static extern void UpdateFontEditorRef(IntPtr ptr, Font sourceFont_EditorRef);
+
+        static extern void UpdateSourceFontFile(IntPtr ptr, Font sourceFontFile);
 
         static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
         static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);

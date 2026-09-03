@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: StyleSheetsEditor not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Experimental;
 using UnityEngine;
 using Unity.Collections;
@@ -16,8 +16,10 @@ namespace UnityEditor.StyleSheets
     {
         private static readonly int k_EnableHovering = "-unity-enable-hovering".GetHashCode();
 
-        static Dictionary<StyleState, StyleState[]> s_StatesCache = new Dictionary<StyleState, StyleState[]>();
+        [NoAutoStaticsCleanup] // cache of enum-flag combinations; pure value data with no user code references
+        static readonly Dictionary<StyleState, StyleState[]> s_StatesCache = new Dictionary<StyleState, StyleState[]>();
 
+        [NoAutoStaticsCleanup] // scratch rect updated every draw; a stale value is harmless
         private static Rect s_ToolTipRect = Rect.zero;
 
         internal static bool DrawStyle(GUIStyle gs, Rect position, GUIContent content, DrawStates states)
@@ -86,6 +88,7 @@ namespace UnityEditor.StyleSheets
             return EditorResources.GetStyle(name, states);
         }
 
+        [NoAutoStaticsCleanup] // size-capped cache of generated gradient textures, rebuilt on miss; no user code references
         private static readonly Dictionary<long, Texture2D> s_Gradients = new Dictionary<long, Texture2D>();
         private static Texture2D GenerateGradient(StyleFunctionCall call, Rect rect)
         {
@@ -338,6 +341,7 @@ namespace UnityEditor.StyleSheets
         }
 
         // Note: Assign lambda to local variable to avoid the allocation caused by method group.
+        [NoAutoStaticsCleanup] // allocation-avoidance lambda over this class's own code; nothing user-provided
         private static readonly Func<StyleFunctionCall, GradientParams, bool> DrawGradient = (call, gp) =>
         {
             if (call.name != "linear-gradient")
@@ -469,4 +473,3 @@ namespace UnityEditor.StyleSheets
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -8660,6 +8660,7 @@ namespace UnityEngine
         ///    {
         ///        sr = gameObject.AddComponent<SpriteRenderer>();
         ///        rb2D = gameObject.AddComponent<Rigidbody2D>();
+        ///        rb2D.bodyType = RigidbodyType2D.Kinematic;
         ///    }
         ///
         ///    void Start()

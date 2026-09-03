@@ -60,7 +60,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleFloat, float> m_FlexGrow = new(StylePropertyId.FlexGrow);
         private StylePropertyData<StyleFloat, float> m_FlexShrink = new(StylePropertyId.FlexShrink);
         private StylePropertyData<StyleEnum<Wrap>, Wrap> m_FlexWrap = new(StylePropertyId.FlexWrap);
-        private StylePropertyData<StyleLength, Length> m_FontSize = new(StylePropertyId.FontSize);
+        private StylePropertyData<StyleLength, float> m_FontSize = new(StylePropertyId.FontSize);
         private StylePropertyData<StyleList<GridTrackSize>, List<GridTrackSize>> m_GridAutoColumns = new(StylePropertyId.GridAutoColumns);
         private StylePropertyData<StyleEnum<GridAutoFlow>, GridAutoFlow> m_GridAutoFlow = new(StylePropertyId.GridAutoFlow);
         private StylePropertyData<StyleList<GridTrackSize>, List<GridTrackSize>> m_GridAutoRows = new(StylePropertyId.GridAutoRows);
@@ -105,6 +105,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleList<EasingFunction>, List<EasingFunction>> m_TransitionTimingFunction = new(StylePropertyId.TransitionTimingFunction);
         private StylePropertyData<StyleTranslate, Translate> m_Translate = new(StylePropertyId.Translate);
         private StylePropertyData<StyleColor, Color> m_UnityBackgroundImageTintColor = new(StylePropertyId.UnityBackgroundImageTintColor);
+        private StylePropertyData<StyleCurvature, Curvature> m_UnityCurvature = new(StylePropertyId.UnityCurvature);
         private StylePropertyData<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode> m_UnityEditorTextRenderingMode = new(StylePropertyId.UnityEditorTextRenderingMode);
         private StylePropertyData<StyleFont, Font> m_UnityFont = new(StylePropertyId.UnityFont);
         private StylePropertyData<StyleFontDefinition, FontDefinition> m_UnityFontDefinition = new(StylePropertyId.UnityFontDefinition);
@@ -266,7 +267,7 @@ namespace UnityEngine.UIElements
         public StylePropertyData<StyleEnum<Wrap>, Wrap> flexWrap => m_FlexWrap;
 
         [CreateProperty]
-        public StylePropertyData<StyleLength, Length> fontSize => m_FontSize;
+        public StylePropertyData<StyleLength, float> fontSize => m_FontSize;
 
         [CreateProperty]
         public StylePropertyData<StyleList<GridTrackSize>, List<GridTrackSize>> gridAutoColumns => m_GridAutoColumns;
@@ -399,6 +400,9 @@ namespace UnityEngine.UIElements
 
         [CreateProperty]
         public StylePropertyData<StyleColor, Color> unityBackgroundImageTintColor => m_UnityBackgroundImageTintColor;
+
+        [CreateProperty]
+        public StylePropertyData<StyleCurvature, Curvature> unityCurvature => m_UnityCurvature;
 
         [CreateProperty]
         public StylePropertyData<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode> unityEditorTextRenderingMode => m_UnityEditorTextRenderingMode;
@@ -1277,6 +1281,13 @@ namespace UnityEngine.UIElements
             notify |= ApplyContext(ref m_UnityBackgroundImageTintColor, in context);
             if (notify)
                 Notify(nameof(unityBackgroundImageTintColor));
+
+            notify = false;
+            notify |= SetInlineValue(ref m_UnityCurvature, element.style.unityCurvature);
+            notify |= SetComputedValue(ref m_UnityCurvature, element.computedStyle.unityCurvature);
+            notify |= ApplyContext(ref m_UnityCurvature, in context);
+            if (notify)
+                Notify(nameof(unityCurvature));
 
             notify = false;
             notify |= SetInlineValue(ref m_UnityEditorTextRenderingMode, element.style.unityEditorTextRenderingMode);

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -38,17 +39,19 @@ namespace UnityEngine.UIElements.UIR
 
                 mgc.AllocateTempMesh(4, 6, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
 
-                vertices[0] = new Vertex { position = new Vector3(quad.xMin, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMin) }; // BL
-                vertices[1] = new Vertex { position = new Vector3(quad.xMin, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMax) }; // TL
-                vertices[2] = new Vertex { position = new Vector3(quad.xMax, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMax) }; // TR
-                vertices[3] = new Vertex { position = new Vector3(quad.xMax, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMin) }; // BR
+                UIRUtility.ConvertSlicesToSpans(vertices, indices, out var vertexSpan, out var indexSpan);
 
-                indices[0] = 0;
-                indices[1] = 1;
-                indices[2] = 2;
-                indices[3] = 2;
-                indices[4] = 3;
-                indices[5] = 0;
+                vertexSpan[0] = new Vertex { position = new Vector3(quad.xMin, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMin) }; // BL
+                vertexSpan[1] = new Vertex { position = new Vector3(quad.xMin, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMin, uvRect.yMax) }; // TL
+                vertexSpan[2] = new Vertex { position = new Vector3(quad.xMax, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMax) }; // TR
+                vertexSpan[3] = new Vertex { position = new Vector3(quad.xMax, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(uvRect.xMax, uvRect.yMin) }; // BR
+
+                indexSpan[0] = 0;
+                indexSpan[1] = 1;
+                indexSpan[2] = 2;
+                indexSpan[3] = 2;
+                indexSpan[4] = 3;
+                indexSpan[5] = 0;
 
                 mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, nestedRenderTree.quadTextureId, true, nestedRenderTree.quadIsGammaEncoded);
             }
@@ -222,10 +225,13 @@ namespace UnityEngine.UIElements.UIR
 
             var veRect = new Rect(0, 0, veSize.x, veSize.y);
 
-            // Compute texture size from world bound (same calculation as in UpdateBackdropFilterUVCorners)
+            // Only the extents are consumed, so map the size directly: the render-time rect mapping
+            // reads the active viewport, which means nothing during mesh generation.
             Rect worldBound = ve.worldBound;
-            RectInt pixelRect = RenderChainCommand.RectPointsToPixelsAndFlipYAxis(worldBound, Vector2.zero, ve.scaledPixelsPerPoint);
-            var texSize = new Vector2(pixelRect.width, pixelRect.height);
+            float pixelsPerPoint = ve.scaledPixelsPerPoint;
+            var texSize = new Vector2(
+                Mathf.RoundToInt(worldBound.width * pixelsPerPoint),
+                Mathf.RoundToInt(worldBound.height * pixelsPerPoint));
 
             var rectParams = new MeshGenerator.RectangleParams
             {
@@ -602,3 +608,4 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

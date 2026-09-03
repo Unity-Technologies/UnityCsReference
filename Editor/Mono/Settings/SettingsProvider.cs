@@ -38,7 +38,7 @@ namespace UnityEditor
                     return m_Name;
                 return m_Label;
             }
-            set { m_Label = L10n.Tr(value); }
+            set { m_Label = L10n.Tr(value, null); }
         }
 
         public string settingsPath { get; }
@@ -69,7 +69,7 @@ namespace UnityEditor
             {
                 name = settingsPath.Substring(nameIndex + 1);
             }
-            m_Name = L10n.Tr(name);
+            m_Name = L10n.Tr(name, null);
 
             pathTokens = settingsPath.Split('/');
             this.scope = scopes;
@@ -156,6 +156,10 @@ namespace UnityEditor
             {
                 // Set activated=false first, so even if OnDeactivate fails it will be considered deactivated.
                 m_Activated = false;
+                // Only a focused Settings window flushes the pending delayed-field edit before teardown; a background
+                // reload of an unfocused one must not commit an edit the user is making in another window (UUM-149200).
+                if (EditorWindow.focusedWindow is SettingsWindow)
+                    EditorGUI.CommitActiveDelayedTextField();
                 OnDeactivate();
             }
         }

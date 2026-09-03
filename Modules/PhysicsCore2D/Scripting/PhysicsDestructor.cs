@@ -17,13 +17,13 @@ namespace Unity.U2D.Physics
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly struct PhysicsDestructor
+    public readonly record struct PhysicsDestructor
     {
         /// <summary>
         /// The polygon geometry used when fragmenting.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct FragmentGeometry
+        public readonly record struct FragmentGeometry
         {
             /// <summary>
             /// Create fragment geometry.
@@ -49,7 +49,7 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsDestructor.Fragment(FragmentGeometry, FragmentGeometry, ReadOnlySpan{Vector2}, Allocator)"/> and <see cref="PhysicsDestructor.Fragment(FragmentGeometry, ReadOnlySpan{Vector2}, Allocator)"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct FragmentResult : IDisposable
+        public readonly record struct FragmentResult : IDisposable
         {
             /// <summary>
             /// The transform used when fragmenting. All returned geometry uses this.
@@ -101,7 +101,7 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsDestructor.Slice"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct SliceResult : IDisposable
+        public readonly record struct SliceResult : IDisposable
         {
             /// <summary>
             /// The transform used when slicing. All returned geometry uses this.

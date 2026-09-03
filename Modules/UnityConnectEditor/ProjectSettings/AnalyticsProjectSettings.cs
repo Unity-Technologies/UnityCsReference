@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -192,7 +193,7 @@ namespace UnityEditor.Connect
             {
                 m_MainServiceToggle.RegisterValueChangedCallback(evt =>
                 {
-                    if (currentUserPermission != UserRole.Owner && currentUserPermission != UserRole.Manager)
+                    if (!CanEditServices(currentUserPermission))
                     {
                         UpdateServiceToggleAndDashboardLink(evt.previousValue);
                         return;
@@ -309,7 +310,7 @@ namespace UnityEditor.Connect
             catch (Exception ex)
             {
                 NotificationManager.instance.Publish(serviceInstance.notificationTopic, Notification.Severity.Error,
-                    string.Format(L10n.Tr(k_DataValidationExceptionMessage), Connect.UnityConnect.instance.projectInfo.projectName, ex.Message));
+                    string.Format(L10n.Tr(k_DataValidationExceptionMessage, null), Connect.UnityConnect.instance.projectInfo.projectName, ex.Message));
 
                 Debug.LogException(ex);
             }
@@ -348,7 +349,7 @@ namespace UnityEditor.Connect
                     catch (Exception ex)
                     {
                         NotificationManager.instance.Publish(serviceInstance.notificationTopic, Notification.Severity.Error,
-                            string.Format(L10n.Tr(k_AuthSignatureExceptionMessage), Connect.UnityConnect.instance.projectInfo.projectName, ex.Message));
+                            string.Format(L10n.Tr(k_AuthSignatureExceptionMessage, null), Connect.UnityConnect.instance.projectInfo.projectName, ex.Message));
                     }
 
                     if (m_ValidationPoller.IsReady())
@@ -731,3 +732,4 @@ namespace UnityEditor.Connect
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

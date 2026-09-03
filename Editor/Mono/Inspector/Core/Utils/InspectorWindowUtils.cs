@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,14 +22,16 @@ namespace UnityEditor
                 : base(message, messageType)
             {
                 // Set up the dismiss button
-                buttonText = L10n.Tr("Dismiss...");
+                buttonText = L10n.Tr("Dismiss...", null);
                 onButtonClicked += OnDismissClicked;
 
                 // Store the callback so we can unsubscribe later
                 m_OnPreferenceChanged = OnPreferenceChanged;
 
                 // Subscribe to preference changes
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 PreferencesProvider.hideDeprecationWarningsChanged += m_OnPreferenceChanged;
+                #pragma warning restore UAL0015
 
                 // Set initial visibility
                 UpdateVisibility();
@@ -51,9 +54,9 @@ namespace UnityEditor
 
             private void OnDismissClicked()
             {
-                if (EditorUtility.DisplayDialog(L10n.Tr("Hide deprecation warnings?"),
-                    L10n.Tr("Do you want to hide the deprecation warnings for deprecated components? You can re-enable the warnings in the Preferences window at any time."),
-                    L10n.Tr("Hide All"), L10n.Tr("Cancel")))
+                if (EditorUtility.DisplayDialog(L10n.Tr("Hide deprecation warnings?", null),
+                    L10n.Tr("Do you want to hide the deprecation warnings for deprecated components? You can re-enable the warnings in the Preferences window at any time.", null),
+                    L10n.Tr("Hide All", null), L10n.Tr("Cancel", null)))
                 {
                     PreferencesProvider.hideDeprecationWarnings = true;
                 }
@@ -239,3 +242,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

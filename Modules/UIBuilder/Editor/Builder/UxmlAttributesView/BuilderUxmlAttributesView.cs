@@ -908,7 +908,7 @@ namespace Unity.UI.Builder
             var result = BuilderAssetUtilities.SynchronizePath(context, rootElement.rootPath, false);
             if (result.success)
             {
-                return IsAttributeOverriden(result.uxmlAsset == context.elementAsset ? context.element : null, result.uxmlAsset, attribute);
+                return IsAttributeOverriden(result.uxmlAsset == context.elementAsset ? context.element : null, result.uxmlAsset, attribute, context.document);
             }
 
             return false;
@@ -919,9 +919,10 @@ namespace Unity.UI.Builder
         /// </summary>
         /// <param name="attributesOwner">An instance of the uxml element that owns the uxml attribute</param>
         /// <param name="attribute">The uxml attribute</param>
-        public static bool IsAttributeOverriden(VisualElement attributesOwner, UxmlSerializedAttributeDescription attribute)
+        /// <param name="document">The document the element is being edited in</param>
+        public static bool IsAttributeOverriden(VisualElement attributesOwner, UxmlSerializedAttributeDescription attribute, BuilderDocument document)
         {
-            return IsAttributeOverriden(attributesOwner, attributesOwner.GetVisualElementAsset(), attribute);
+            return IsAttributeOverriden(attributesOwner, attributesOwner.GetVisualElementAsset(), attribute, document);
         }
 
         /// <summary>
@@ -930,8 +931,9 @@ namespace Unity.UI.Builder
         /// <param name="attributeOwner">An instance created from the uxml element that owns the related xml attribute.</param>
         /// <param name="attributeUxmlOwner">The uxml element that owns the uxml attribute to evaluate.</param>
         /// <param name="attribute">The uxml attribute.</param>
+        /// <param name="document">The document the element is being edited in.</param>
         /// <returns></returns>
-        public static bool IsAttributeOverriden(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlSerializedAttributeDescription attribute)
+        public static bool IsAttributeOverriden(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlSerializedAttributeDescription attribute, BuilderDocument document)
         {
             if (attribute is UxmlSerializedAttributeDescription { isUxmlObject: true })
                 return false;
@@ -951,13 +953,13 @@ namespace Unity.UI.Builder
                     if (!string.IsNullOrEmpty(ve.name))
                         return true;
                 }
-                else if (BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(ve, attribute.name))
+                else if (BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(ve, attribute.name, document))
                 {
                     return true;
                 }
                 else
                 {
-                    var template = BuilderAssetUtilities.GetVisualElementRootTemplate(ve);
+                    var template = BuilderAssetUtilities.GetVisualElementRootTemplate(ve, document);
                     var templateVta = template?.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
                     var linkedOpenVta = ve.GetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName) as VisualTreeAsset;
                     if ((templateVta == null || templateVta == linkedOpenVta) && DataBindingUtility.TryGetBinding(ve, new PropertyPath(attribute.name), out _))
@@ -1055,7 +1057,7 @@ namespace Unity.UI.Builder
                     var bindingProperty = GetBindingPropertyName(field);
                     var isAttributeOverrideAttribute =
                         context.isInTemplateInstance
-                        && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(context.element, attributeName);
+                        && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(context.element, attributeName, context.document);
                     var canUnsetBinding = !context.isInTemplateInstance && DataBindingUtility.TryGetBinding(context.element, new PropertyPath(bindingProperty), out _);
 
                     // Check UxmlObjects
@@ -1064,7 +1066,7 @@ namespace Unity.UI.Builder
 
                     var result = BuilderAssetUtilities.SynchronizePath(context, root.rootPath, false);
                     if (result.success)
-                        hasAttributeOverride = IsAttributeOverriden(result.uxmlAsset == context.elementAsset ? context.element : null, result.uxmlAsset, field.GetLinkedAttributeDescription());
+                        hasAttributeOverride = IsAttributeOverriden(result.uxmlAsset == context.elementAsset ? context.element : null, result.uxmlAsset, field.GetLinkedAttributeDescription(), context.document);
 
                     return hasAttributeOverride || isAttributeOverrideAttribute || canUnsetBinding
                         ? DropdownMenuAction.Status.Normal
@@ -1096,7 +1098,7 @@ namespace Unity.UI.Builder
                     continue;
                 }
 
-                if (IsAttributeOverriden(context.element, attribute))
+                if (IsAttributeOverriden(context.element, attribute, context.document))
                     return true;
             }
 
@@ -1113,11 +1115,11 @@ namespace Unity.UI.Builder
         {
             var undoGroup = Undo.GetCurrentGroup();
             BuilderAssetUtilities.UndoRecordDocument(context, (BuilderConstants.ChangeAttributeValueUndoMessage));
-            var builder = Builder.ActiveWindow;
+            var builder = context.builder;
 
             if (context.isInTemplateInstance)
             {
-                var parentTemplate = BuilderAssetUtilities.GetVisualElementRootTemplate(context.element);
+                var parentTemplate = BuilderAssetUtilities.GetVisualElementRootTemplate(context.element, context.document);
                 var parentTemplateAsset = parentTemplate.GetVisualElementAsset() as TemplateAsset;
                 var attributeOverrides = new List<TemplateAsset.AttributeOverride>(parentTemplateAsset.attributeOverrides);
                 var pathToTemplateAsset = parentTemplateAsset.GetPathToTemplateAsset(context.element);
@@ -1248,12 +1250,12 @@ namespace Unity.UI.Builder
 
         void UnsetTemplateAttribute(string attributeName, bool removeBinding)
         {
-            var templateContainer = BuilderAssetUtilities.GetVisualElementRootTemplate(context.element);
+            var templateContainer = BuilderAssetUtilities.GetVisualElementRootTemplate(context.element, context.document);
             var templateAsset = templateContainer.GetVisualElementAsset() as TemplateAsset;
 
             if (templateAsset != null)
             {
-                var builder = Builder.ActiveWindow;
+                var builder = context.builder;
                 var hierarchyView = builder.hierarchy.elementHierarchyView;
                 var selectionId = hierarchyView.GetSelectedItemId();
                 var pathToTemplateAsset = templateAsset.GetPathToTemplateAsset(context.element);

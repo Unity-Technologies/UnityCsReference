@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System.Collections.Generic;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
@@ -168,12 +169,12 @@ namespace Unity.UIToolkit.Editor
             m_EmptyState = new Label
             {
                 name = "empty-state",
-                text = L10n.Tr("No UI Document assigned"),
+                text = L10n.Tr("No UI Document assigned", null),
             };
             m_EmptyState.AddToClassList(k_EmptyStateUssClass);
             m_PreviewContainer.Add(m_EmptyState);
 
-            m_EditButton = new Button(EditInViewport) { name = "edit-button", text = L10n.Tr("Edit in UI Viewport") };
+            m_EditButton = new Button(EditInViewport) { name = "edit-button", text = L10n.Tr("Edit in UI Viewport", null) };
             m_EditButton.AddToClassList(k_EditButtonUssClass);
             root.Add(m_EditButton);
 
@@ -439,7 +440,7 @@ namespace Unity.UIToolkit.Editor
             if (m_EditButton != null)
             {
                 m_EditButton.EnableInClassList(k_HiddenUssClass, !hasTarget);
-                m_EditButton.text = L10n.Tr(hasContent ? "Edit in UI Viewport" : "Open UI Viewport");
+                m_EditButton.text = L10n.Tr(hasContent ? "Edit in UI Viewport" : "Open UI Viewport", null);
             }
         }
 
@@ -994,3 +995,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

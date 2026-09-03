@@ -63,6 +63,9 @@ namespace UnityEngine.UIElements.UIR
         internal static readonly Rect k_FullNormalizedRect = new Rect(-1, -1, 2, 2);
 
 
+        // Below this, a points-space extent is degenerate and unusable as a divisor.
+        const float k_MinProjectionExtent = 0.5f;
+
         public void Reset()
         {
             view.Clear();
@@ -71,6 +74,7 @@ namespace UnityEngine.UIElements.UIR
             scissor.Push(k_UnlimitedRect);
             defaultMaterial.Clear();
             drawBounds = Rect.zero;
+            pixelScale = Vector2.one;
         }
 
         internal readonly Stack<Matrix4x4> view = new Stack<Matrix4x4>(8);
@@ -81,6 +85,24 @@ namespace UnityEngine.UIElements.UIR
         // Always equal to drawBounds.min; derived rather than stored so the two can't drift out of sync.
         internal Vector2 boundsMin => drawBounds.min;
         internal Rect drawBounds;
+
+        // Points-to-pixels scale of the active projection, per axis.
+        internal Vector2 pixelScale;
+
+        // The projection maps bounds onto the viewport, so their ratio is the real scale;
+        // pixelsPerPoint only agrees when the panel sizes its visual tree in points. Falls back to it
+        // when there is no usable projection, as when commands are serialized for cameras.
+        internal void SetProjection(Rect bounds, float pixelsPerPoint)
+        {
+            drawBounds = bounds;
+
+            RectInt viewport = Utility.GetActiveViewport();
+            bool usableProjection = bounds.width >= k_MinProjectionExtent && bounds.height >= k_MinProjectionExtent
+                && viewport.width > 0 && viewport.height > 0;
+            pixelScale = usableProjection
+                ? new Vector2(viewport.width / bounds.width, viewport.height / bounds.height)
+                : new Vector2(pixelsPerPoint, pixelsPerPoint);
+        }
     }
 
     partial class RenderChainCommand : LinkedPoolItem<RenderChainCommand>
@@ -127,14 +149,14 @@ namespace UnityEngine.UIElements.UIR
             panelComponentId = EntityId.None;
         }
 
-        public void ExecuteNonDrawMesh(DrawParams drawParams, float pixelsPerPoint, ref Exception immediateException)
+        public void ExecuteNonDrawMesh(DrawParams drawParams, ref Exception immediateException)
         {
             switch (type)
             {
                 case CommandType.ImmediateCull:
                 {
                     // TODO: Validate VisualElement access for RenderTrees
-                    RectInt worldRect = RectPointsToPixelsAndFlipYAxis(owner.owner.worldBound, drawParams.boundsMin, pixelsPerPoint);
+                    RectInt worldRect = RectPointsToPixelsAndFlipYAxis(owner.owner.worldBound, drawParams);
                     if (!worldRect.Overlaps(Utility.GetActiveViewport()))
                         break;
 
@@ -161,7 +183,7 @@ namespace UnityEngine.UIElements.UIR
                         UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out var matrix);
                         GL.modelview = matrix;
 
-                        PushScissor(drawParams, owner.clippingRect, pixelsPerPoint);
+                        PushScissor(drawParams, owner.clippingRect);
                     }
                     try
                     {
@@ -173,7 +195,7 @@ namespace UnityEngine.UIElements.UIR
                     }
                     using (s_ImmediateOverheadMarker.Auto())
                     {
-                        PopScissor(drawParams, pixelsPerPoint);
+                        PopScissor(drawParams);
 
                         Camera.SetupCurrent(oldCamera);
                         RenderTexture.active = oldRT;
@@ -198,7 +220,7 @@ namespace UnityEngine.UIElements.UIR
                         clipRect = parent.clippingRect;
                     else
                         clipRect = DrawParams.k_FullNormalizedRect;
-                    PushScissor(drawParams, clipRect, pixelsPerPoint);
+                    PushScissor(drawParams, clipRect);
                     break;
                 }
                 case CommandType.PopView:
@@ -207,17 +229,17 @@ namespace UnityEngine.UIElements.UIR
                     drawParams.view.Pop();
                     GL.modelview = drawParams.view.Peek();
                     // Scissors
-                    PopScissor(drawParams, pixelsPerPoint);
+                    PopScissor(drawParams);
                     break;
                 }
                 case CommandType.PushScissor:
                 {
-                    PushScissor(drawParams, owner.clippingRect, pixelsPerPoint);
+                    PushScissor(drawParams, owner.clippingRect);
                     break;
                 }
                 case CommandType.PopScissor:
                 {
-                    PopScissor(drawParams, pixelsPerPoint);
+                    PopScissor(drawParams);
                     break;
                 }
 
@@ -247,7 +269,7 @@ namespace UnityEngine.UIElements.UIR
                     RectInt oldViewport = Utility.GetActiveViewport();
                     Utility.DisableScissor();
 
-                    BackdropFilterHelper.GenerateBackdropFilterTexture(drawParams, ve, pixelsPerPoint, owner);
+                    BackdropFilterHelper.GenerateBackdropFilterTexture(drawParams, ve, owner);
 
                     if (restoreTargetState)
                         Graphics.SetRenderTarget(oldColor, oldDepth);
@@ -258,27 +280,27 @@ namespace UnityEngine.UIElements.UIR
                     if (scissor.x == DrawParams.k_UnlimitedRect.x)
                         Utility.DisableScissor();
                     else
-                        Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(scissor, drawParams.boundsMin, pixelsPerPoint));
+                        Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(scissor, drawParams));
                     break;
                 }
             }
         }
 
-        public static void PushScissor(DrawParams drawParams, Rect scissor, float pixelsPerPoint)
+        public static void PushScissor(DrawParams drawParams, Rect scissor)
         {
             Rect elemRect = CombineScissorRects(scissor, drawParams.scissor.Peek());
             drawParams.scissor.Push(elemRect);
-            Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, drawParams.boundsMin, pixelsPerPoint));
+            Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, drawParams));
         }
 
-        public static void PopScissor(DrawParams drawParams, float pixelsPerPoint)
+        public static void PopScissor(DrawParams drawParams)
         {
             drawParams.scissor.Pop();
             Rect prevRect = drawParams.scissor.Peek();
             if (prevRect.x == DrawParams.k_UnlimitedRect.x)
                 Utility.DisableScissor();
             else
-                Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, drawParams.boundsMin, pixelsPerPoint));
+                Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, drawParams));
         }
 
         static Rect CombineScissorRects(Rect r0, Rect r1)
@@ -291,11 +313,11 @@ namespace UnityEngine.UIElements.UIR
             return r;
         }
 
-        internal static RectInt RectPointsToPixelsAndFlipYAxis(Rect rect, Vector2 boundsMin, float pixelsPerPoint)
+        internal static RectInt RectPointsToPixelsAndFlipYAxis(Rect rect, DrawParams drawParams)
         {
             // UUM-142586: Offset the scissor rect by boundsMin. This matters for nested render trees whose
             // bounds are inflated by filters or contain negatively-positioned descendants.
-            return RectPointsToPixels(rect, boundsMin, pixelsPerPoint, pixelsPerPoint, Utility.GetActiveViewport());
+            return RectPointsToPixels(rect, drawParams.boundsMin, drawParams.pixelScale.x, drawParams.pixelScale.y, Utility.GetActiveViewport());
         }
 
         // Maps a points-space rect into viewport pixels: translate by origin, scale per-axis, flip Y within the viewport.

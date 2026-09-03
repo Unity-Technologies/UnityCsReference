@@ -23,11 +23,11 @@ class SmartFormatterPropertyDrawer : PropertyDrawer
 
         var settings = property.FindPropertyRelative("m_SmartSettings");
         if (settings != null)
-            root.Add(new PropertyField(settings, L10n.Tr("Settings")));
+            root.Add(new PropertyField(settings, L10n.Tr("Settings", null)));
 
-        root.Add(BuildList(L10n.Tr("Sources"), L10n.Tr("Evaluates a selector. Checked in order, top first."),
+        root.Add(BuildList(L10n.Tr("Sources", null), L10n.Tr("Evaluates a selector. Checked in order, top first.", null),
             property.FindPropertyRelative("m_Sources"), typeof(ISource), property.serializedObject));
-        root.Add(BuildList(L10n.Tr("Formatters"), L10n.Tr("Converts a value to a string. Checked in order, top first."),
+        root.Add(BuildList(L10n.Tr("Formatters", null), L10n.Tr("Converts a value to a string. Checked in order, top first.", null),
             property.FindPropertyRelative("m_Formatters"), typeof(IFormatter), property.serializedObject));
 
         return root;
@@ -155,8 +155,8 @@ class SmartFormatterPropertyDrawer : PropertyDrawer
     static string GetElementLabel(SerializedProperty element)
     {
         var value = element.managedReferenceValue;
-        return value != null ? GetDisplayName(value.GetType()) : L10n.Tr("None");
+        return value != null ? GetDisplayName(value.GetType()) : L10n.Tr("None", null);
     }
 
-    static string GetDisplayName(Type type) => L10n.Tr(ObjectNames.NicifyVariableName(type.Name));
+    static string GetDisplayName(Type type) => L10n.Tr(ObjectNames.NicifyVariableName(type.Name), null);
 }

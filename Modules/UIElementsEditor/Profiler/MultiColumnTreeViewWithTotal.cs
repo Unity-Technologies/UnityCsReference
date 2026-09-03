@@ -75,7 +75,7 @@ namespace UnityEditor.UIElements
         void OnHeaderContextMenuPopulate(ContextualMenuPopulateEvent evt, Column _)
         {
             // Insert the "Reset Columns" action at index 1, right after the built-in "Resize To Fit" action.
-            evt.menu.InsertAction(1, L10n.Tr("Reset Columns"), _ => ResetColumnsToDefault());
+            evt.menu.InsertAction(1, L10n.Tr("Reset Columns", null), _ => ResetColumnsToDefault());
         }
 
         void ResetColumnsToDefault()

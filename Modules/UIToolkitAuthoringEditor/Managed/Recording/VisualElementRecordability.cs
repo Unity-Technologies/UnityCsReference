@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -19,6 +20,9 @@ namespace Unity.UIToolkit.Editor
     /// <see cref="NoElementSelected"/> is the selection-shape case (probe called with
     /// a null element) and is kept distinct from <see cref="NoBinderAvailable"/> so the
     /// inspector banner can say "no element" instead of "not animatable".
+    /// <see cref="NoAnimationClip"/> is that same degenerate case inside a
+    /// <see cref="VisualElementEditingStage"/>, where adding a component is not the fix
+    /// because the stage hosts the document without one.
     /// </summary>
     internal enum RecordabilityReason
     {
@@ -28,6 +32,7 @@ namespace Unity.UIToolkit.Editor
         PropertyNotRecordable,
         ElementHasNoName,
         NoBinderAvailable,
+        NoAnimationClip,
     }
 
     /// <summary>
@@ -48,15 +53,17 @@ namespace Unity.UIToolkit.Editor
         // in both places. The copy is intentionally action-oriented ("add a component",
         // "give this element a name") so the user knows what to change.
         internal static readonly string k_NoElementSelectedMessage =
-            L10n.Tr("Recording disabled: No element selected.");
+            L10n.Tr("Recording disabled: No element selected.", null);
         internal static readonly string k_ProjectSettingDisabledMessage =
-            L10n.Tr("Recording disabled: Enable PanelRenderer animation in UI Toolkit project settings.");
+            L10n.Tr("Recording disabled: Enable PanelRenderer animation in UI Toolkit project settings.", null);
         internal static readonly string k_NoBinderAvailableMessage =
-            L10n.Tr("Recording disabled: Add a PanelRenderer component to display this element and enable recording.");
+            L10n.Tr("Recording disabled: Add a PanelRenderer component to display this element and enable recording.", null);
+        internal static readonly string k_NoAnimationClipMessage =
+            L10n.Tr("Recording disabled: Create a UI Animation Clip on this element or an ancestor to make it animatable.", null);
         internal static readonly string k_ElementHasNoNameMessage =
-            L10n.Tr("Recording disabled: Give this element a unique name to make it animatable.");
+            L10n.Tr("Recording disabled: Give this element a unique name to make it animatable.", null);
         internal static readonly string k_PropertyNotRecordableMessage =
-            L10n.Tr("Recording disabled: This property cannot be recorded in the Animation window.");
+            L10n.Tr("Recording disabled: This property cannot be recorded in the Animation window.", null);
 
         public readonly RecordabilityReason Reason;
         public readonly UIAnimationBinder Binder;
@@ -84,6 +91,8 @@ namespace Unity.UIToolkit.Editor
                     return k_ProjectSettingDisabledMessage;
                 case RecordabilityReason.NoBinderAvailable:
                     return k_NoBinderAvailableMessage;
+                case RecordabilityReason.NoAnimationClip:
+                    return k_NoAnimationClipMessage;
                 case RecordabilityReason.ElementHasNoName:
                     return k_ElementHasNoNameMessage;
                 case RecordabilityReason.PropertyNotRecordable:
@@ -121,9 +130,20 @@ namespace Unity.UIToolkit.Editor
             if (!UIToolkitProjectSettings.enablePanelRendererAnimation)
                 return new VisualElementRecordability(RecordabilityReason.ProjectSettingDisabled, null, null);
 
-            if (!TryFindBinder(element, out var binder))
-                return new VisualElementRecordability(RecordabilityReason.NoBinderAvailable, null, null);
+            if (TryFindBinder(element, out var panelBinder))
+                return ResolvePath(element, panelBinder);
 
+            if (TryFindClipOwnerBinder(element, out var clipOwnerBinder))
+                return ResolvePath(element, clipOwnerBinder);
+
+            var reason = StageUtility.GetCurrentStage() is VisualElementEditingStage
+                ? RecordabilityReason.NoAnimationClip
+                : RecordabilityReason.NoBinderAvailable;
+            return new VisualElementRecordability(reason, null, null);
+        }
+
+        static VisualElementRecordability ResolvePath(VisualElement element, UIAnimationBinder binder)
+        {
             binder.UpdateElementNamesIfNeeded();
 
             if (!binder.TryGetPathForElement(element, out var path))
@@ -162,6 +182,26 @@ namespace Unity.UIToolkit.Editor
                 return false;
 
             binder = pr.GetOrCreateAnimationBinder();
+            return binder != null;
+        }
+
+        /// <summary>
+        /// Resolves the binder for the GameObject-free route: inside a
+        /// <see cref="VisualElementEditingStage"/> there is no <see cref="PanelRenderer"/> to carry
+        /// a panel-level binder, so recording binds against the nearest ancestor holding a
+        /// <see cref="UIAnimationClip"/>. Tried only after <see cref="TryFindBinder"/> - callers
+        /// that pair <see cref="Path"/> with a PanelRenderer target would otherwise be handed a
+        /// per-element path for scene hierarchies that carry both.
+        /// </summary>
+        internal static bool TryFindClipOwnerBinder(VisualElement element, out UIAnimationBinder binder)
+        {
+            binder = null;
+
+            var clipOwner = VisualElementAnimationClipUtility.FindClipOwner(element);
+            if (clipOwner == null)
+                return false;
+
+            binder = (clipOwner.panel as Panel)?.GetOrCreateElementBinder(clipOwner);
             return binder != null;
         }
     }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TreeEditor not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -16,7 +15,7 @@ namespace TreeEditor
     [System.Serializable]
     public class TreeGroupBranch : TreeGroup
     {
-        private static float spreadMul = 5.0f;
+        private const float spreadMul = 5.0f;
 
         public enum GeometryMode
         {
@@ -27,16 +26,16 @@ namespace TreeEditor
 
         static class Styles
         {
-            public static string groupSeedString = LocalizationDatabase.GetLocalizedString("Group Seed|The seed for this group of branches. Modify to vary procedural generation.");
-            public static string frequencyString = LocalizationDatabase.GetLocalizedString("Frequency|Adjusts the number of branches created for each parent branch.");
-            public static string distributionModeString = LocalizationDatabase.GetLocalizedString("Distribution|The way the branches are distributed along their parent.");
-            public static string twirlString = LocalizationDatabase.GetLocalizedString("Twirl|Twirl around the parent branch.");
-            public static string whorledStepString = LocalizationDatabase.GetLocalizedString("Whorled Step|Defines how many nodes are in each whorled step when using Whorled distribution. For real plants this is normally a Fibonacci number.");
-            public static string growthScaleString = LocalizationDatabase.GetLocalizedString("Growth Scale|Defines the scale of nodes along the parent node. Use the curve to adjust and the slider to fade the effect in and out.");
-            public static string growthAngleString = LocalizationDatabase.GetLocalizedString("Growth Angle|Defines the initial angle of growth relative to the parent. Use the curve to adjust and the slider to fade the effect in and out.");
-            public static string mainWindString = LocalizationDatabase.GetLocalizedString("Main Wind|Primary wind effect. This creates a soft swaying motion and is typically the only parameter needed for primary branches.");
-            public static string mainTurbulenceString = LocalizationDatabase.GetLocalizedString("Main Turbulence|Secondary turbulence effect. Produces more stochastic motion, which is individual per branch. Typically used for branches with fronds, such as ferns and palms.");
-            public static string edgeTurbulenceString = LocalizationDatabase.GetLocalizedString("Edge Turbulence|Turbulence along the edge of fronds. Useful for ferns, palms, etc.");
+            public static readonly string groupSeedString = LocalizationDatabase.GetLocalizedString("Group Seed|The seed for this group of branches. Modify to vary procedural generation.");
+            public static readonly string frequencyString = LocalizationDatabase.GetLocalizedString("Frequency|Adjusts the number of branches created for each parent branch.");
+            public static readonly string distributionModeString = LocalizationDatabase.GetLocalizedString("Distribution|The way the branches are distributed along their parent.");
+            public static readonly string twirlString = LocalizationDatabase.GetLocalizedString("Twirl|Twirl around the parent branch.");
+            public static readonly string whorledStepString = LocalizationDatabase.GetLocalizedString("Whorled Step|Defines how many nodes are in each whorled step when using Whorled distribution. For real plants this is normally a Fibonacci number.");
+            public static readonly string growthScaleString = LocalizationDatabase.GetLocalizedString("Growth Scale|Defines the scale of nodes along the parent node. Use the curve to adjust and the slider to fade the effect in and out.");
+            public static readonly string growthAngleString = LocalizationDatabase.GetLocalizedString("Growth Angle|Defines the initial angle of growth relative to the parent. Use the curve to adjust and the slider to fade the effect in and out.");
+            public static readonly string mainWindString = LocalizationDatabase.GetLocalizedString("Main Wind|Primary wind effect. This creates a soft swaying motion and is typically the only parameter needed for primary branches.");
+            public static readonly string mainTurbulenceString = LocalizationDatabase.GetLocalizedString("Main Turbulence|Secondary turbulence effect. Produces more stochastic motion, which is individual per branch. Typically used for branches with fronds, such as ferns and palms.");
+            public static readonly string edgeTurbulenceString = LocalizationDatabase.GetLocalizedString("Edge Turbulence|Turbulence along the edge of fronds. Useful for ferns, palms, etc.");
         }
 
         // members
@@ -1080,4 +1079,3 @@ namespace TreeEditor
         internal override string EdgeTurbulenceString { get { return Styles.edgeTurbulenceString; } }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

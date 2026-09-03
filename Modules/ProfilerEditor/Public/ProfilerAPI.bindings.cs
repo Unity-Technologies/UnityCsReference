@@ -68,7 +68,8 @@ namespace UnityEditorInternal
         Groups = 2,
         ChannelsAndGroups = 3,
         DSPGraph = 4,
-        Clips = 5
+        Clips = 5,
+        Processors = 6
     }
 
     public enum ProfilerCaptureFlags

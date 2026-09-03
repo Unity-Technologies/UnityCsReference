@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: SafeMode not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SafeMode not yet converted
 using UnityEngine;
 using System;
 using UnityEditor.PackageManager;
@@ -43,7 +43,7 @@ namespace UnityEditor
             public static readonly GUIContent safeModeExitContent = EditorGUIUtility.TrTextContent("Exit Safe Mode");
             public static readonly GUIContent csScriptIcon = EditorGUIUtility.IconContent("cs Script Icon");
 
-            public static float helpBoxWidth = 450;
+            public const float helpBoxWidth = 450;
 
             static Styles()
             {
@@ -62,17 +62,17 @@ namespace UnityEditor
         {
             if (EditorApplication.isCompiling)
             {
-                EditorDialog.DisplayAlertDialog(L10n.Tr("Exit Safe Mode blocked"), L10n.Tr("Cannot exit Safe Mode while compiling scripts"), default, DialogIconType.Error);
+                EditorDialog.DisplayAlertDialog(L10n.Tr("Exit Safe Mode blocked", null), L10n.Tr("Cannot exit Safe Mode while compiling scripts", null), default, DialogIconType.Error);
                 return;
             }
 
             if (EditorDialog.DisplayDecisionDialog(
-                titleText: L10n.Tr("Exiting Safe Mode"),
+                titleText: L10n.Tr("Exiting Safe Mode", null),
                 messageText: L10n.Tr("Are you sure you want to exit?\n\n" +
                     "Exiting Safe Mode while you still have compilation errors may cause your project to be in an incomplete or broken state. " +
-                    "For example, packages in your project may fail to load, and your assets may not import correctly."),
-                yesButtonText: L10n.Tr("Exit Anyway"),
-                noButtonText: L10n.Tr("Cancel")))
+                    "For example, packages in your project may fail to load, and your assets may not import correctly.", null),
+                yesButtonText: L10n.Tr("Exit Anyway", null),
+                noButtonText: L10n.Tr("Cancel", null)))
             {
                 EditorUtility.RequestPartialScriptReload();
             }
@@ -228,4 +228,4 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

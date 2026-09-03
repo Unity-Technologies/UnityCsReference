@@ -19,6 +19,10 @@ namespace Unity.UI.Builder
         {
             GetOrCreateFieldListForStyleName(AnimationStyleNames.Animation).Add(animationListView);
 
+            // The Animation window edits the clip on the global selection, which the Builder does not change,
+            // so its rows offer creation only until the window's context can be driven from here.
+            animationListView.canEditClipsInAnimationWindow = false;
+
             // The authoring host gets its per-longhand affordance menus from StylePropertyBinding; the Builder
             // has no such binding, so it supplies the Unset menu for each longhand here (applied on row bind).
             animationListView.SetLonghandContextMenu(StylePropertyId.AnimationNames, m => BuildAnimationLonghandMenu(m, AnimationStyleNames.Clip));

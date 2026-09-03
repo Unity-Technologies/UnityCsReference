@@ -178,7 +178,11 @@ namespace Unity.GraphToolkit.Editor
             /// <remarks>Provides a way to create a node option without the use of the <see cref="NodeOptionAttribute"/>.</remarks>
             public NodeOption AddNodeOption(string optionName, TypeHandle dataType, string optionId = null, string tooltip = null, bool showInInspectorOnly = false, int order = 0, Attribute[] attributes = null, Action<Constant> initializationCallback = null, Action<object> setterAction = null)
             {
-                if (dataType.Resolve() == typeof(Unknown) || dataType.Resolve() == typeof(Untyped) || dataType.Resolve() == typeof(MissingPort) || dataType == TypeHandle.MissingType)
+                if (dataType == TypeHandle.Unknown || dataType == TypeHandle.Untyped || dataType == TypeHandle.MissingType || dataType == TypeHandle.MissingPort)
+                    throw new ArgumentException("Invalid type for node option");
+
+                var resolvedDataType = dataType.Resolve();
+                if (resolvedDataType == typeof(Unknown) || resolvedDataType == typeof(Untyped) || resolvedDataType == typeof(MissingPort))
                     throw new ArgumentException("Invalid type for node option");
 
                 optionId ??= optionName;
@@ -878,6 +882,9 @@ namespace Unity.GraphToolkit.Editor
 
         void RemoveObsoleteWiresAndConstants()
         {
+            // A node with no definition has no ports other than the ones its wires created.
+            var hasNoDefinition = PlaceholderModelHelper.IsMissingTypeModel(this);
+
             var removedPortModels = new List<PortModel>();
             #pragma warning disable UAC2001 // Avoid Linq
             foreach (var kv in m_InputPortInfos.previousPorts
@@ -890,7 +897,7 @@ namespace Unity.GraphToolkit.Editor
                     GraphModel?.UnregisterPort(kv.Value);
                     removedPortModels.Add(kv.Value);
                 }
-                else if (kv.Value.PortType == PortType.MissingPort && kv.Value.GetConnectedWires().Count > 0)
+                else if (kv.Value.PortType == PortType.MissingPort && IsMissingPortStillWired(kv.Value))
                 {
                     // Prevents added missing ports that aren't obsolete yet from being overwritten by newly instantiated ports in OnDefineNode().
                     m_InputPortInfos.portsById.Add(kv.Value);
@@ -908,7 +915,7 @@ namespace Unity.GraphToolkit.Editor
                     GraphModel?.UnregisterPort(kv.Value);
                     removedPortModels.Add(kv.Value);
                 }
-                else if (kv.Value.PortType == PortType.MissingPort && kv.Value.GetConnectedWires().Count > 0)
+                else if (kv.Value.PortType == PortType.MissingPort && IsMissingPortStillWired(kv.Value))
                 {
                     // Prevents added missing ports that aren't obsolete yet from being overwritten by newly instantiated ports in OnDefineNode().
                     m_OutputPortInfos.portsById.Add(kv.Value);
@@ -935,6 +942,32 @@ namespace Unity.GraphToolkit.Editor
             // remove expanded status for removed ports
             CleanupExpandedPortDictionary(ref m_InputPortInfos);
             CleanupExpandedPortDictionary(ref m_OutputPortInfos);
+
+            bool IsMissingPortStillWired(PortModel port)
+            {
+                // GetConnectedWires resolves wires through the port lists this method is rebuilding, so a node with no definition has to match its wires by reference instead.
+                if (!hasNoDefinition)
+                    return port.GetConnectedWires().Count > 0;
+
+                var wireModels = GraphModel?.WireModels;
+                if (wireModels == null)
+                    return false;
+
+                for (var i = 0; i < wireModels.Count; i++)
+                {
+                    var wire = wireModels[i];
+                    if (wire == null)
+                        continue;
+
+                    var isWired = port.Direction == PortDirection.Output
+                        ? wire.FromNodeGuid == Guid && wire.FromPortId == port.UniqueName
+                        : wire.ToNodeGuid == Guid && wire.ToPortId == port.UniqueName;
+                    if (isWired)
+                        return true;
+                }
+
+                return false;
+            }
 
             void CleanupExpandedPortDictionary(ref PortInfos portInfos)
             {

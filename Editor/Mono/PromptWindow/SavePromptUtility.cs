@@ -10,9 +10,9 @@ namespace UnityEditor
     {
         internal const int nameCharacterLimit = 64;
 
-        static readonly string k_SaveNameTooLong = L10n.Tr("{0} Name exceeds maximum length ("+nameCharacterLimit+")");
-        static readonly string k_SaveNameEmpty = L10n.Tr("{0} Name is empty");
-        static readonly string k_SaveNameWithUnsupportedCharacters = L10n.Tr("{0} Name has unsupported characters");
+        static readonly string k_SaveNameTooLong = L10n.Tr("{0} Name exceeds maximum length ("+nameCharacterLimit+")", null);
+        static readonly string k_SaveNameEmpty = L10n.Tr("{0} Name is empty", null);
+        static readonly string k_SaveNameWithUnsupportedCharacters = L10n.Tr("{0} Name has unsupported characters", null);
 
         static bool ValidateCharacters(string name)
         {

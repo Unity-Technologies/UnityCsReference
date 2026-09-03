@@ -27,6 +27,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
     [NativeHeader("Runtime/Misc/GameObjectUtility.h")]
     [NativeHeader("Runtime/Shaders/Shader.h")]
+    [NativeHeader("Runtime/Camera/ReflectionProbes.h")]
     [UsedByNativeCode]
     [global::UnityEngine.NativeClass("Camera", PersistentTypeId = 20)]
     [RequireComponent(typeof(Transform))]
@@ -175,6 +176,11 @@ namespace UnityEngine
 
         extern public RenderTexture targetTexture { get; set; }
         extern public RenderTexture activeTexture {[NativeName("GetCurrentTargetTexture")] get; }
+
+        // The reflection probe currently being rendered by this camera. Only valid while the camera
+        // is rendering a reflection probe; null otherwise (e.g. when rendering the environment reflection).
+        extern public ReflectionProbe reflectionProbeRendered {[NativeName("GetReflectionProbeRendered")] get; }
+
         extern public int targetDisplay { get; set; }
 
         [FreeFunction("CameraScripting::SetTargetBuffers",  HasExplicitThis = true)] extern private void SetTargetBuffersImpl(RenderBuffer color, RenderBuffer depth);

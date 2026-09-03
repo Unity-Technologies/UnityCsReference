@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.UIToolkit.Editor.Importers;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -14,47 +16,56 @@ internal sealed class DuplicateElementsCommand : Command<DuplicateElementsComman
 {
     const string CommandUndoName = "Duplicate elements";
 
-    public static DuplicateElementsCommand GetPooled(object source, VisualElementAsset[] toDuplicate)
-    {
-        var cmd = GetPooled();
-        cmd.Source = source;
-        cmd.ToDuplicateAssets = toDuplicate;
-        return cmd;
-    }
-
-    public static void Execute(object source, VisualElementAsset[] toDuplicate)
-    {
-        using var command = GetPooled(source, toDuplicate);
-        UICommandQueue.Execute(command);
-    }
-
-    public VisualElementAsset[] ToDuplicateAssets { get; private set; }
+    public VisualElementAsset[] ElementsToDuplicate { get; private set; }
 
     public override string UndoName => CommandUndoName;
     public override CommandCategory Category => CommandCategory.Hierarchy;
 
-    protected override void Init()
+    public static DuplicateElementsCommand GetPooled(object source, VisualElementAsset[] toDuplicate)
     {
-        base.Init();
-        ToDuplicateAssets = null;
+        var cmd = GetPooled();
+        cmd.Source = source;
+        cmd.ElementsToDuplicate = toDuplicate;
+        return cmd;
     }
 
-    public override bool Validate()
+    public static bool Validate(object source, VisualElementAsset[] elements)
     {
-        if (ToDuplicateAssets == null)
+        using var cmd = GetPooled(source, elements);
+        return cmd.Validate();
+    }
+
+    public static bool Validate(ReadOnlySpan<VisualElementAsset> elements)
+    {
+        if (elements.IsEmpty)
             return false;
-        foreach (var asset in ToDuplicateAssets)
+        foreach (var element in elements)
         {
-            if (asset == null || asset.visualTreeAsset == null)
+            if (element == null || element.visualTreeAsset == null)
                 return false;
         }
         return true;
     }
 
+    public static CommandExecutionStatus Execute(object source, VisualElementAsset[] toDuplicate)
+    {
+        using var command = GetPooled(source, toDuplicate);
+        return UICommandQueue.Execute(command).Status;
+    }
+
+    protected override void Init()
+    {
+        base.Init();
+        ElementsToDuplicate = null;
+    }
+
+    public override bool Validate()
+        => Validate(ElementsToDuplicate.AsSpan());
+
     public override void Prepare(in PrepareContext context)
     {
         using var _ = HashSetPool<VisualTreeAsset>.Get(out var set);
-        foreach (var asset in ToDuplicateAssets)
+        foreach (var asset in ElementsToDuplicate)
         {
             if (set.Add(asset.visualTreeAsset))
                 context.RecordUndo(asset.visualTreeAsset);
@@ -67,7 +78,7 @@ internal sealed class DuplicateElementsCommand : Command<DuplicateElementsComman
         using var exportListHandle = ListPool<UxmlAsset>.Get(out var exportList);
         using var toSelectNodesHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
 
-        foreach (var asset in ToDuplicateAssets)
+        foreach (var asset in ElementsToDuplicate)
         {
             exportList.Clear();
             exportList.Add(asset);
@@ -91,6 +102,7 @@ internal sealed class DuplicateElementsCommand : Command<DuplicateElementsComman
         }
 
         UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
+        Clipboard.GetClipboardForStage()?.ClearCutElements();
         return CommandExecutionStatus.Success;
     }
 }

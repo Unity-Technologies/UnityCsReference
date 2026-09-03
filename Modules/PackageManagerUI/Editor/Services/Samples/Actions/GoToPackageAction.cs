@@ -12,8 +12,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerWindowProxy = packageManagerWindowProxy;
         }
 
-        public override string GetText(Sample sample, bool isInProgress) => L10n.Tr("Go to Package View");
-        public override string GetTooltip(Sample sample, bool isInProgress) => L10n.Tr("Click to view the package this sample belongs to.");
+        public override string GetText(Sample sample, bool isInProgress) => L10n.Tr("Go to Package View", null);
+        public override string GetTooltip(Sample sample, bool isInProgress) => L10n.Tr("Click to view the package this sample belongs to.", null);
 
         protected override bool TriggerActionImplementation(Sample sample)
         {

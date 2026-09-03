@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _2D not yet converted
 using System.Collections.Generic;
 using System.IO;
 using Unity.Jobs;
@@ -85,10 +86,10 @@ namespace UnityEditor.U2D
             public readonly int packableElementHash = "PackableElement".GetHashCode();
             public readonly int packableSelectorHash = "PackableSelector".GetHashCode();
 
-            public readonly string swapObjectRegisterUndo = L10n.Tr("Swap Packable");
+            public readonly string swapObjectRegisterUndo = L10n.Tr("Swap Packable", null);
             public readonly string secondaryTextureNameTextControlName = "secondary_texture_name_text_field";
-            public readonly string defaultTextForSecondaryTextureName = L10n.Tr("(Matches the names of the Secondary Textures in your Sprites.)");
-            public readonly string nameUniquenessWarning = L10n.Tr("Secondary Texture names must be unique within a Sprite or Sprite Atlas.");
+            public readonly string defaultTextForSecondaryTextureName = L10n.Tr("(Matches the names of the Secondary Textures in your Sprites.)", null);
+            public readonly string nameUniquenessWarning = L10n.Tr("Secondary Texture names must be unique within a Sprite or Sprite Atlas.", null);
 
             public readonly int[] atlasTypeValues = { 0, 1 };
             public readonly GUIContent[] atlasTypeOptions =
@@ -368,7 +369,7 @@ namespace UnityEditor.U2D
         // Populate the platform settings dropdown list with secondary texture names found through serialized properties of the Sprite Atlas assets.
         private void PopulatePlatformSettingsOptions()
         {
-            m_PlatformSettingsOptions = new List<string> { L10n.Tr("Main Texture"), "", "", L10n.Tr("New Secondary Texture settings.") };
+            m_PlatformSettingsOptions = new List<string> { L10n.Tr("Main Texture", null), "", "", L10n.Tr("New Secondary Texture settings.", null) };
             SerializedProperty secondaryPlatformSettings = serializedObject.FindProperty("m_SecondaryTextureSettings");
             if (secondaryPlatformSettings != null && !secondaryPlatformSettings.hasMultipleDifferentValues)
             {
@@ -1079,3 +1080,4 @@ namespace UnityEditor.U2D
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

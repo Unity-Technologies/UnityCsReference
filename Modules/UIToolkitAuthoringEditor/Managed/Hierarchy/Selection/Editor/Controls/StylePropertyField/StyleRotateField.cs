@@ -15,7 +15,7 @@ namespace Unity.UIToolkit.Editor
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
-        public new static readonly string ussClassName = "unity-rotate-field";
+        public new static readonly string ussClassName = "unity-style-rotate-field";
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
@@ -40,9 +40,12 @@ namespace Unity.UIToolkit.Editor
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
 
-            var dragger = new FieldMouseDragger<Angle>(valueField.angleField);
-            dragger.SetDragZone(labelElement);
-            labelElement.EnableInClassList(labelDraggerVariantUssClassName, true);
+            // If label is null, remove the labelElement added with the affordance so only the foldout header shows the name.
+            if (Contains(labelElement) && string.IsNullOrEmpty(labelElement.text))
+            {
+                AddToClassList(noLabelVariantUssClassName);
+                labelElement.RemoveFromHierarchy();
+            }
         }
 
         protected override RotateField CreateValueField()

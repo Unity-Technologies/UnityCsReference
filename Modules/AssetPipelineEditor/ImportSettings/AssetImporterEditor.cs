@@ -114,13 +114,13 @@ namespace UnityEditor.AssetImporters
 
         static partial class Styles
         {
-            public static readonly string localizedTitleString = L10n.Tr("{0} Import Settings");
+            public static readonly string localizedTitleString = L10n.Tr("{0} Import Settings", null);
 
-            public static readonly string applyButton = L10n.Tr("Apply");
-            public static readonly string revertButton = L10n.Tr("Revert");
-            public static readonly string unappliedSettingSingleAsset = L10n.Tr("Unapplied import settings for \'{0}\'");
-            public static readonly string unappliedSettingMultipleAssets = L10n.Tr("Unapplied import settings for \'{0}\' files");
-            public static readonly string unableToAppliedMessage = L10n.Tr("Your changes might contain errors and cannot be applied. \nYou can either \'Revert\' the changes, or hit \'Cancel\' to go back and fix the errors.");
+            public static readonly string applyButton = L10n.Tr("Apply", null);
+            public static readonly string revertButton = L10n.Tr("Revert", null);
+            public static readonly string unappliedSettingSingleAsset = L10n.Tr("Unapplied import settings for \'{0}\'", null);
+            public static readonly string unappliedSettingMultipleAssets = L10n.Tr("Unapplied import settings for \'{0}\' files", null);
+            public static readonly string unableToAppliedMessage = L10n.Tr("Your changes might contain errors and cannot be applied. \nYou can either \'Revert\' the changes, or hit \'Cancel\' to go back and fix the errors.", null);
         }
 
         // Target asset values, these are the main imported object Editor and targets.
@@ -686,7 +686,9 @@ namespace UnityEditor.AssetImporters
                 revertButton.name = "revertButton";
                 revertButton.clicked += () =>
                 {
+                    #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                     editor.DiscardChanges();
+                    #pragma warning restore UAL0015
                     if (editor.HasModified())
                     {
                         Debug.LogError("Importer reports modified values after reset.");
@@ -881,7 +883,7 @@ namespace UnityEditor.AssetImporters
         static partial class Styles
         {
             public static readonly GUIContent ImporterSelection = EditorGUIUtility.TrTextContent("Importer");
-            public static readonly string defaultImporterName = L10n.Tr("{0} (Default)");
+            public static readonly string defaultImporterName = L10n.Tr("{0} (Default)", null);
         }
 
         // Support for importer overrides

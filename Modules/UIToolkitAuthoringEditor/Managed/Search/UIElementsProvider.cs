@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,13 +12,14 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
     /// <summary>
     /// Search provider for UI Toolkit elements - provides a picker window for browsing and searching UI controls.
     /// </summary>
-    internal static class UIElementsProvider
+    internal static partial class UIElementsProvider
     {
         class ProviderConfig
         {
@@ -40,6 +41,7 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
+        [NoAutoStaticsCleanup] // immutable provider configs, safe to persist
         static readonly ProviderConfig[] s_ProviderConfigs =
         {
             new(k_EngineProviderId, "Engine", typeKey => typeKey.id.StartsWith("UnityEngine")),
@@ -47,8 +49,11 @@ namespace Unity.UIToolkit.Editor
         };
 
         // Cache for sorted and filtered library types per category
+        [AutoStaticsCleanupOnCodeReload] // readonly: cleanup calls Clear()
         static readonly Dictionary<string, List<LibraryTypeKey>> s_CachedTypesByCategory = new();
+        [AutoStaticsCleanupOnCodeReload]
         static List<LibraryTypeKey> s_SortedTypes;
+        [AutoStaticsCleanupOnCodeReload]
         static int s_CachedTypesHash;
         const string k_CustomProviderId = "uicustom";
         const string k_EngineProviderId = "uiengine";
@@ -57,9 +62,12 @@ namespace Unity.UIToolkit.Editor
         const string k_WindowTitle = "UI Library";
         const string k_EngineNamespaceRoot = "UnityEngine";
 
+        [AutoStaticsCleanupOnCodeReload]
         static Texture2D s_FolderIcon;
         static Texture2D FolderIcon => s_FolderIcon != null ? s_FolderIcon : s_FolderIcon = EditorGUIUtility.FindTexture("Folder Icon");
+        [NoAutoStaticsCleanup] // dead views are pruned on refresh, safe to persist
         static readonly List<ISearchView> s_OpenLibraryViews = new();
+        [AutoStaticsCleanupOnCodeReload] // the scheduled delayCall dies with the domain
         static bool s_RefreshScheduled;
         const string k_VisibilityButtonClassName = "search-groupbar__visibility-button";
         const string k_NativeVisibilityButtonName = "SearchVisibilityOptions";
@@ -568,4 +576,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

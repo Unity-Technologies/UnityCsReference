@@ -9,6 +9,6 @@ internal class NoActionsOnSamplesFoldout : SampleMultiSelectFoldout
     public NoActionsOnSamplesFoldout(IPageManager pageManager)
         : base(new DeselectSampleAction(pageManager))
     {
-        headerTextTemplate = L10n.Tr("No common action available for {0}");
+        headerTextTemplate = L10n.Tr("No common action available for {0}", null);
     }
 }

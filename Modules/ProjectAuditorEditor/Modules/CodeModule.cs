@@ -181,7 +181,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
         {
             base.Initialize();
 
-            #pragma warning disable UAC2001 // Avoid Linq
+            RoslynAnalyzerAssetWatcher.Initialize();
+            RoslynDiagnosticsLibrary.EnsureLoaded();
+
+#pragma warning disable UAC2001 // Avoid Linq
             m_OpCodes = new List<OpCode>(GetAnalyzers().OfType<CodeModuleInstructionAnalyzer>().Select(a => a.opCodes).SelectMany(c => c).Distinct());
 #pragma warning restore UAC2001
 
@@ -223,6 +226,10 @@ namespace Unity.ProjectAuditor.Editor.Modules
         {
             if (m_Ids == null)
                 throw new Exception("Descriptors Database not initialized.");
+
+            // Kick off async Roslyn analyzer diagnostic loading
+            // (overlaps the precompiled assembly analysis; blocks at RoslynDiagnosticsLibrary.IsLoaded()).
+            RoslynDiagnosticsLibrary.EnsureLoaded();
 
             if (m_AssemblyAnalysisThread != null)
                 m_AssemblyAnalysisThread.Join();
@@ -286,13 +293,17 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             yield return null;
 
+            // Ensure the roslyn info is loaded before we start analysis.
+            while (!RoslynDiagnosticsLibrary.PollLoading())
+                yield return new WaitForEndOfFrame();
+
             // find all roslyn analyzer DLLs by label
-            #pragma warning disable UAC2001 // Avoid Linq
+#pragma warning disable UAC2001 // Avoid Linq
             var roslynAnalyzerAssets = new List<string>(AssetDatabase.FindAssets("l:RoslynAnalyzer").Select(AssetDatabase.GUIDToAssetPath));
 #pragma warning restore UAC2001
 
             // report all roslyn analyzers as PrecompiledAssembly issues
-            #pragma warning disable UAC2001 // Avoid Linq
+#pragma warning disable UAC2001 // Avoid Linq
             var roslynAnalyzerIssues = roslynAnalyzerAssets
 #pragma warning restore UAC2001
                 .Distinct()

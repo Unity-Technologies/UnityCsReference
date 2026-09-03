@@ -288,7 +288,7 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         internal static CallbackFunction assetBundleNameChanged;
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.GraphToolkitModule", "UnityEditor.UIToolkitAuthoringModule")]
         [AutoStaticsCleanupOnCodeReload]
         internal static CallbackFunction fileMenuSaved;
 
@@ -400,7 +400,7 @@ namespace UnityEditor
 
             if (desc.codeCoverageEnabled)
             {
-                title += " " + L10n.Tr("[CODE COVERAGE]");
+                title += " " + L10n.Tr("[CODE COVERAGE]", null);
             }
 
             if (k_ShowScriptingBackendInTitle)
@@ -423,7 +423,7 @@ namespace UnityEditor
         internal static ApplicationTitleDescriptor GetApplicationTitleDescriptor()
         {
             var activeSceneName = string.IsNullOrEmpty(SceneManager.GetActiveScene().path)
-                ? L10n.Tr("Untitled")
+                ? L10n.Tr("Untitled", null)
                 : Path.GetFileNameWithoutExtension(SceneManager.GetActiveScene().path);
 
             var unityVersion = Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()
@@ -552,7 +552,15 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void Internal_EnterEditModeLifecycleScope()
         {
-            Debug.Assert(!Unity.Scripting.LifecycleManagement.LifecycleController.Instance.IsScopePresent<UnityEditor.Scripting.LifecycleManagement.EditModeScope>(), "Tried to enter EditModeScope while already in EditModeScope");
+            // EditModeScope can already be active when this is called (UUM-148454):
+            // with "Script Changes While Playing" set to "Recompile After Finished Playing",
+            // a script edited during play mode is compiled while the assembly reload is locked.
+            // On stop, ExitPlayMode() unlocks the reload and runs AutoRefresh(), which performs
+            // the pending domain reload synchronously before the EnteredEditMode notification
+            // fires. After that reload EditModeScopePostprocessor.OnPostprocessAllAssets has
+            // already re-entered EditModeScope, so entering it here again must be skipped.
+            if (Unity.Scripting.LifecycleManagement.LifecycleController.Instance.IsScopePresent<UnityEditor.Scripting.LifecycleManagement.EditModeScope>())
+                return;
 
             Unity.Scripting.LifecycleManagement.LifecycleController.Instance.EnterScope<UnityEditor.Scripting.LifecycleManagement.EditModeScope>();
         }

@@ -15,6 +15,10 @@ namespace Unity.UIToolkit.Editor
     {
         public static readonly BindingId showUnitAsDropdownProperty = nameof(showUnitAsDropdown);
 
+        internal static readonly string resolvedValueLabelUssClassName = "unity-style-field__resolved-label";
+        static readonly string k_ShowResolvedHintUssClassName = "unity-style-field--show-resolved";
+        Label m_ResolvedValueLabel;
+
         [UxmlAttribute, CreateProperty]
         public bool showUnitAsDropdown
         {
@@ -36,6 +40,22 @@ namespace Unity.UIToolkit.Editor
         {
             valueField.showUnitAsDropdown = true;
             valueField.RegisterCallback<PropertyChangedEvent, StyleLengthField>(PropagateEvents, this);
+
+            m_ResolvedValueLabel = new Label { pickingMode = PickingMode.Ignore, tabIndex = -1 };
+            m_ResolvedValueLabel.AddToClassList(resolvedValueLabelUssClassName);
+            m_ResolvedValueLabel.style.display = DisplayStyle.None;
+            var textInput = valueField.Q("unity-text-input");
+            (textInput ?? (VisualElement)this).Add(m_ResolvedValueLabel);
+        }
+
+        // Read-only companion showing the resolved px for font-size (whose computed value drops the authoring unit).
+        // SetValueWithoutNotify: a plain text set would bubble a ChangeEvent<string> into the field's value handler.
+        internal void SetResolvedValueHint(string text)
+        {
+            var hasText = !string.IsNullOrEmpty(text);
+            ((INotifyValueChanged<string>)m_ResolvedValueLabel).SetValueWithoutNotify(hasText ? text : string.Empty);
+            m_ResolvedValueLabel.style.display = hasText ? DisplayStyle.Flex : DisplayStyle.None;
+            EnableInClassList(k_ShowResolvedHintUssClassName, hasText);
         }
 
         [EventInterest(typeof(AttachToPanelEvent))]

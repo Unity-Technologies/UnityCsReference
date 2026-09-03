@@ -10,7 +10,7 @@ internal class InstalledFromInfoCard : PackageInformationCard
 {
     private CopyIconButton m_CopyIcon;
 
-    protected override string titleText => L10n.Tr("Installed From");
+    protected override string titleText => L10n.Tr("Installed From", null);
     protected override InformationCardSize cardSize => InformationCardSize.Large;
 
     public InstalledFromInfoCard(IApplicationProxy applicationProxy)

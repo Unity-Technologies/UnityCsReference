@@ -7,11 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Unity.Burst;
-using Unity.Burst.Intrinsics;
-using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Jobs.LowLevel.Unsafe;
-using Unity.Mathematics;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -65,34 +62,42 @@ namespace UnityEngine
         [NativeMethod(Name = "EntityIdStorePlatformSupportsVirtualMemory", IsFreeFunction = true, IsThreadSafe = true)]
         public static extern bool EntityIdStorePlatformSupportsVirtualMemory();
 
-        // Commit a block's slot page if not already committed.
-        // Caller must already hold the per-block lock (entityCount[blockIndex] == k_BlockBusy).
-        [NativeMethod(Name = "EntityIdStore_EnsureBlockCommitted", IsFreeFunction = true, IsThreadSafe = true)]
-        public static extern void EnsureBlockCommitted(uint blockIndex);
+        // Fallbacks into the native pool for whatever the direct magazine
+        // paths cannot serve: Burst callers, refills, reserved and stale ids,
+        // and teardown-scale batches.
+        [NativeMethod(Name = "EntityIdStore_AllocateForManaged", IsFreeFunction = true, IsThreadSafe = true)]
+        public static extern unsafe void AllocateForManaged(void* outIds, int count);
 
-        // OS yield for the escalation branch of BlockSpinBackoff (defined in EntityComponentStoreEntities.cs).
-        [NativeMethod(Name = "EntityIdStore_OsThreadYield", IsFreeFunction = true, IsThreadSafe = true)]
-        public static extern void OsThreadYield();
+        [NativeMethod(Name = "EntityIdStore_ReleaseForManaged", IsFreeFunction = true, IsThreadSafe = true)]
+        public static extern unsafe void ReleaseForManaged(void* ids, int count);
+
+        // The calling thread's native magazine cache, for the direct managed
+        // fast paths. The layout getters below address its fields.
+        [NativeMethod(Name = "EntityIdStore_GetThreadCacheForManaged", IsFreeFunction = true, IsThreadSafe = true)]
+        public static extern unsafe void* GetThreadCacheForManaged();
+
+        [NativeMethod(Name = "EntityIdStore_GetMagazineCapacity", IsFreeFunction = true, IsThreadSafe = true)]
+        public static extern uint GetMagazineCapacity();
+
+        [NativeMethod(Name = "EntityIdStore_GetMagazineCountOffset", IsFreeFunction = true, IsThreadSafe = true)]
+        public static extern uint GetMagazineCountOffset();
+
+        [NativeMethod(Name = "EntityIdStore_GetMagazineIdsOffset", IsFreeFunction = true, IsThreadSafe = true)]
+        public static extern uint GetMagazineIdsOffset();
+
+        [NativeMethod(Name = "EntityIdStore_GetCacheActiveOffset", IsFreeFunction = true, IsThreadSafe = true)]
+        public static extern uint GetCacheActiveOffset();
+
+        [NativeMethod(Name = "EntityIdStore_GetCacheBackupOffset", IsFreeFunction = true, IsThreadSafe = true)]
+        public static extern uint GetCacheBackupOffset();
     }
 
-    // Managed view of the native EntityIdStore.
-    //
-    // Layout MUST stay in sync with Runtime/BaseClasses/EntityIdStore.{h,cpp}:
-    //   - EntitySlot: 16 bytes, ulong versionAndChunk + IntPtr nativeObjectPtr.
-    //   - versionAndChunk packing: [chunkIndex:32 | indexInChunk:8 | version:24].
-    //   - EntityId packing: [Version:24 | TypeId:12 | Index:28]. See EntityID.h.
-    //
-    // Storage mode is decided natively and queried once at type init through
-    // context.PlatformSupportsVirtualMemory, matching the native side. It cannot be a
-    // C# compile-time #if: C# has no 64-bit define and the native
-    // PLATFORM_SUPPORTS_ENTITYID_VIRTUAL_MEMORY define is forced off on 32-bit.
-    // Either:
-    //   Virtual memory mode: a flat EntitySlot array indexed directly by entity index.
-    //   Page table mode:     a Block** indexed by (blockIndex, slotInBlock). slots is
-    //                        the first member of each Block, so a block pointer is also
-    //                        &slots[0] (see GetSlot).
-    // The block geometry and committed-table base are queried once via
-    // EntityIdStoreBindings and cached in the ContextData SharedStatic.
+    // Managed view of the native EntityIdStore. The layout must stay in sync
+    // with Runtime/BaseClasses/EntityIdStore.{h,cpp}: EntitySlot is 16 bytes
+    // (ulong versionAndChunk [chunkIndex:32|indexInChunk:8|version:24] plus
+    // IntPtr nativeObjectPtr); EntityId packs [Version:24|TypeId:12|Index:28].
+    // The storage mode is decided natively and queried once at init because
+    // C# has no 64-bit compile-time define.
     internal unsafe partial class EntityIdStore
     {
         // Mirrors native EntitySlot in Runtime/BaseClasses/EntityIdStore.h.
@@ -106,14 +111,13 @@ namespace UnityEngine
             public IntPtr nativeObjectPtr;
         }
 
-        // Version is the LOW 24 bits of versionAndChunk (mask-only extraction).
-        internal const ulong k_SlotVersionMask = (1UL << 24) - 1; // 0x00FFFFFF
+        internal const ulong k_SlotVersionMask = (1UL << 24) - 1;
 
-        // versionAndChunk field shifts — mirror C++ k_SlotIndexInChunkShift / k_SlotChunkIndexShift.
+        // Mirror C++ k_SlotIndexInChunkShift / k_SlotChunkIndexShift.
         internal const int k_IndexInChunkShift = 24;
         internal const int k_ChunkIndexShift   = 32;
 
-        // versionAndChunk field helpers — mirror C++ SlotGetVersion / SlotPackVersionAndChunk / SlotSetVersion.
+        // Mirror C++ SlotGetVersion / SlotPackVersionAndChunk / SlotSetVersion.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static uint  SlotGetVersion(ulong vac)      => (uint)(vac & k_SlotVersionMask);
 
@@ -133,12 +137,12 @@ namespace UnityEngine
         internal static ulong SlotSetVersion(ulong vac, uint newVersion)
             => (vac & ~k_SlotVersionMask) | (newVersion & k_SlotVersionMask);
 
-        // Per-block spinlock sentinel — mirrors C++ k_BlockBusy.
+        // Mirrors C++ k_BlockBusy.
         internal const int k_BlockBusy = -1;
 
-        // Bitmap word geometry — mirrors C++ k_WordShift / k_WordMask.
-        internal const int  k_WordShift = 6;   // log2(64) — bits per UInt64
-        internal const uint k_WordMask  = 63;  // 64 - 1
+        // Mirror C++ k_WordShift / k_WordMask.
+        internal const int  k_WordShift = 6;
+        internal const uint k_WordMask  = 63;
 
         // Layout fields that Burst-compiled code must be able to read are stored in a
         // SharedStatic so the Burst JIT never needs to call (or analyse) the class
@@ -150,24 +154,32 @@ namespace UnityEngine
         {
             internal struct BurstIdentifier {}
 
-            // Storage-mode selector — JIT folds branches on this after Initialize().
+            // Storage-mode selector; the JIT folds branches on this after Initialize().
             public bool PlatformSupportsVirtualMemory;
             // Block geometry.
             public int   BlockShift;
             public uint  BlockMask;
-            // Allocator tables.
+            // Allocator tables, used by the integrity checks only; allocation
+            // and release forward to native.
             public int*  EntityCount;    // baselib::atomic<int>[], same layout as int[]
             public uint  BlockCount;
             public uint  WordsPerBlock;
             public ulong* AllocatedBits; // null on page-table path
             public ulong* ReservedBits;  // null on page-table path and in player builds
-            public byte*  BlockCommitted;// allocator-side commit gating; null on page-table path
+            public byte*  BlockCommitted;// null on page-table path
             public uint*  CommittedIndexBound; // read-side gate: one past the committed index prefix; null on page-table path
+            // Magazine-cache layout, exported so the direct fast paths can
+            // address the native cache and magazine fields.
+            public int MagCapacity;
+            public int MagCountOffset;
+            public int MagIdsOffset;
+            public int CacheActiveOffset;
+            public int CacheBackupOffset;
             // Raw store pointer: EntitySlot* (VM path) or Block** (page-table path).
             public void*  NativeStore;
             // Zeroed sentinel slot: version 0 never matches any live entity.
             public EntitySlot NullSlot;
-            // Byte offset of the GCHandle member inside a C++ Object — for GetManagedObject.
+            // Byte offset of the GCHandle member inside a C++ Object.
             public int OffsetOfGCHandleInObject;
             // Set to true by Initialize() so subsequent calls are no-ops.
             public bool IsInitialized;
@@ -176,11 +188,11 @@ namespace UnityEngine
         internal static readonly SharedStatic<ContextData> s_Context =
             SharedStatic<ContextData>.GetOrCreate<ContextData.BurstIdentifier>();
 
-        // Populates the SharedStatic layout from native once; subsequent calls are no-ops.
-        // [OnCodeLoaded] runs this from managed code at domain load, before any Burst-compiled
-        // caller can reach AllocateEntityIds. Burst cannot execute the P/Invoke calls here,
-        // so eager managed-side initialization is required — same role as the C++ side's
-        // RegisterRuntimeInitializeAndCleanup for InitializeEntityIdStore.
+        // Populates the SharedStatic layout from native once; subsequent calls
+        // are no-ops. [OnCodeLoaded] runs this at domain load, before any
+        // Burst-compiled caller can reach AllocateEntityIds; Burst cannot
+        // execute the P/Invoke calls here, so eager managed-side
+        // initialization is required.
         [Unity.Scripting.LifecycleManagement.OnCodeLoaded]
         internal static void Initialize()
         {
@@ -196,9 +208,18 @@ namespace UnityEngine
             ctx.ReservedBits  = (ulong*)EntityIdStoreBindings.GetEntityIdStoreReservedBits();
             ctx.BlockCommitted= (byte*)EntityIdStoreBindings.GetEntityIdStoreBlockCommittedTable();
             ctx.CommittedIndexBound = (uint*)EntityIdStoreBindings.GetEntityIdStoreCommittedIndexBoundAddress();
+            ctx.MagCapacity       = (int)EntityIdStoreBindings.GetMagazineCapacity();
+            ctx.MagCountOffset    = (int)EntityIdStoreBindings.GetMagazineCountOffset();
+            ctx.MagIdsOffset      = (int)EntityIdStoreBindings.GetMagazineIdsOffset();
+            ctx.CacheActiveOffset = (int)EntityIdStoreBindings.GetCacheActiveOffset();
+            ctx.CacheBackupOffset = (int)EntityIdStoreBindings.GetCacheBackupOffset();
             ctx.NativeStore              = EntityIdStoreBindings.GetEntityIdAllocatorStore();
             ctx.NullSlot                 = default;
             ctx.OffsetOfGCHandleInObject = EntityIdStoreBindings.GetOffsetOfGCHandleInCPlusPlusObject();
+            // The Block struct below hardcodes the native block geometry; a
+            // mismatch would misplace the bitmaps inside the slot array.
+            Assert.AreEqual(1u << ctx.BlockShift, (uint)k_NativeBlockSlots);
+            Assert.AreEqual(ctx.WordsPerBlock, (uint)k_NativeBlockWords);
             ctx.IsInitialized = true;
         }
 
@@ -208,11 +229,9 @@ namespace UnityEngine
         // Native slot lookup
         // ----------------------------------------------------------------------
 
-        // Returns a reference to the slot for the given entity index, or to a
-        // process-wide zeroed sentinel if the slot is on an uncommitted page.
-        // Mirrors native EntityIdStore_GetSlot(UInt32) in EntityIdStore.h; the
-        // sentinel keeps the call sites branch-free and lets the version check
-        // act as the single validation step.
+        // Slot for the entity index, or a zeroed sentinel for uncommitted
+        // pages (version 0 never matches, so the version check is the single
+        // validation step). Mirrors native EntityIdStore_GetSlot.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ref EntitySlot GetSlot(uint entityIndex)
         {
@@ -222,7 +241,7 @@ namespace UnityEngine
                 // Committed blocks form a contiguous index prefix, so a single
                 // bound check replaces the per-block committed-flag lookup.
                 // Volatile.Read is the acquire that pairs with the native
-                // committer's release stores — see EntityIdStore_GetSlot.
+                // committer's release stores, as in EntityIdStore_GetSlot.
                 if (entityIndex >= Volatile.Read(ref *ctx.CommittedIndexBound))
                     return ref ctx.NullSlot;
                 return ref ((EntitySlot*)ctx.NativeStore)[entityIndex];
@@ -231,7 +250,7 @@ namespace UnityEngine
             {
                 // Volatile.Read pairs with native CommitBlock's release publish
                 // of the block pointer, so a non-null entry implies the block's
-                // zeroed contents are visible — mirrors native's acquire load.
+                // zeroed contents are visible.
                 EntitySlot* slots = (EntitySlot*)Volatile.Read(
                     ref ((IntPtr*)ctx.NativeStore)[entityIndex >> ctx.BlockShift]);
                 if (slots == null)
@@ -271,20 +290,23 @@ namespace UnityEngine
 
         // Mirrors C++ struct Block in EntityIdStore.cpp (page-table path only).
         // slots[] is at offset 0 so (EntitySlot*)blockPtr == &block->slots[0].
+        // Block geometry is compile-time on both sides (1024 slots, 16 bitmap
+        // words); Initialize() cross-checks these against the native exports.
+        internal const int k_NativeBlockSlots = 1024; // C++ gEntitiesInBlock
+        internal const int k_NativeBlockWords = 16;   // C++ gWordsPerBlock
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct Block
         {
-            fixed byte slotsRaw[256 * 16];     // EntitySlot slots[256] at offset 0
-            public fixed ulong allocated[4];    // UInt64 allocated[wordsPerBlock]
-            public fixed ulong reserved[4];
+            fixed byte slotsRaw[k_NativeBlockSlots * 16];        // EntitySlot slots[1024] at offset 0
+            public fixed ulong allocated[k_NativeBlockWords];     // UInt64 allocated[gWordsPerBlock]
+            public fixed ulong reserved[k_NativeBlockWords];
         }
 
         // ----------------------------------------------------------------------
         // Public API
         // ----------------------------------------------------------------------
 
-        // Pure C# existence check — mirrors C++ EntityExists in EntityIdStore.cpp.
-        // Version 0 is the uninitialized-slot sentinel and is never assigned to a live entity.
+        // Mirrors C++ EntityExists; version 0 never belongs to a live entity.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool Exists(EntityId entity)
         {
@@ -296,13 +318,21 @@ namespace UnityEngine
             return SlotGetVersion(slot.versionAndChunk) == entity.Version;
         }
 
-        // Overwrites the version stored in an entity's slot — used by deserialization.
-        // Version 0 is the uninitialized-slot sentinel and must never be written to a live slot.
+        // Overwrites the version stored in an entity's slot. Version 0 is the
+        // uninitialized-slot sentinel and must never be written to a live slot.
         internal static void SetEntityVersion(EntityId entity, int version)
         {
             uint maskedVersion = (uint)version & (uint)k_SlotVersionMask;
             Assert.AreNotEqual(0u, maskedVersion);
             ref EntitySlot slot = ref GetSlot(entity.Index);
+            // GetSlot returns the shared sentinel for uncommitted indices, and a
+            // nonzero version written into it would make every stale id on an
+            // uncommitted page look live.
+            if (UnsafeUtility.AddressOf(ref slot) == UnsafeUtility.AddressOf(ref s_Context.Data.NullSlot))
+            {
+                Assert.IsTrue(false, "SetEntityVersion: entity index is out of bounds or not committed.");
+                return;
+            }
             ulong vac = Volatile.Read(ref slot.versionAndChunk);
             Volatile.Write(ref slot.versionAndChunk, SlotSetVersion(vac, maskedVersion));
         }
@@ -312,11 +342,9 @@ namespace UnityEngine
         {
             ref EntitySlot slot = ref GetSlot(entity.Index);
 
-            // Mirrors native GetNativePtr: slot versions only move forward, so
-            // an allocator-issued version that matches after the pointer load
-            // also matched before it. Volatile.Read on the pointer is an
-            // acquire load — it orders the version load after itself and pairs
-            // with native SetNativePtr's release store.
+            // Mirrors native GetNativePtr: versions only move forward, so a
+            // version matching after the (acquire) pointer load also matched
+            // before it.
             IntPtr ptr = Volatile.Read(ref slot.nativeObjectPtr);
             // Plain read (native uses relaxed): the acquire read above keeps it
             // ordered. Version bits sit in the low 32-bit half, so a torn read
@@ -346,7 +374,7 @@ namespace UnityEngine
         }
 
         // ----------------------------------------------------------------------
-        // ── Integrity check — mirrors C++ IntegrityCheck in EntityIdStore.cpp ───
+        // Integrity check; mirrors C++ IntegrityCheck in EntityIdStore.cpp.
 
         // Counts allocated entity IDs, skipping blocks that are currently locked.
         // Thread-unsafe by design; call only from single-threaded diagnostic contexts.
@@ -397,367 +425,189 @@ namespace UnityEngine
                 IntegrityCheck(i);
         }
 
-        // ── Allocation infrastructure
-        //
-        // Mirrors C++ EntityIdStore.cpp: block spinlock, per-thread pool, global
-        // block scanner, and deallocation.  All non-ECS code (e.g. future native
-        // Object allocations) uses these directly; Unity.Entities wraps them with
-        // thin adapters that add chunk-placement stamping.
+        // ----------------------------------------------------------------------
+        // Allocation. Managed fast paths operate the calling thread's native
+        // magazine cache directly: the pointer comes from one native call and
+        // lives in thread-local storage, which no other thread can read and
+        // which dies with the thread. Native is crossed only where the cache
+        // cannot serve: magazine refills and depot exchanges, reserved and
+        // stale ids, teardown-scale batches, and Burst-compiled callers, for
+        // whom the thread-static is unreachable and t_ThreadCache reads null.
         // ----------------------------------------------------------------------
 
-        // Mirrors C++ BlockSpinBackoff. Exponential CPU pause escalating to an OS
-        // yield after 7 iterations (matches k_BlockSpinYieldAfterIterations = 7).
-        // Common.Pause() emits the hardware PAUSE/YIELD instruction in Burst; the
-        // [BurstDiscard] managed fallback uses Thread.SpinWait for a richer OS spin.
+        // Valid across code reloads: the native store and the thread survive,
+        // so the cached pointer stays correct; a runtime that resets
+        // thread-statics anyway just causes a re-fetch.
+        [NoAutoStaticsCleanup]
+        [ThreadStatic] static IntPtr t_ThreadCache;
+
+        // Null under Burst (the helper is discarded) and before the thread's
+        // first use; both fall back to the native calls.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void BlockSpinBackoff(ref int iter)
+        static byte* GetThreadCache()
         {
-            if (iter < 7)
-            {
-                int count = 1 << iter;
-                ManagedSpinWait(count);              // Thread.SpinWait in managed, no-op in Burst
-                for (int p = 0; p < count; ++p)
-                    Common.Pause();                  // hardware PAUSE/YIELD in Burst (and managed)
-            }
-            else
-                EntityIdStoreBindings.OsThreadYield();
-            ++iter;
+            IntPtr cache = IntPtr.Zero;
+            GetThreadCacheManaged(ref cache);
+            return (byte*)cache;
         }
 
-        // Discarded by Burst; gives managed callers a single efficient OS-level spin
-        // wait in place of the Common.Pause() loop below.
         [BurstDiscard]
-        static void ManagedSpinWait(int count) => Thread.SpinWait(count);
-
-        // Per-thread EntityId cache. Mirrors C++ EntityIdThreadPool.
-        // GetOrCreateStorage() lazily allocates the backing storage; TakeEntityIds() fills a
-        // thread's slice on first use, then hands IDs out one batch at a time, no global sync.
-        // Process-wide per-thread entity ID pool — the single SharedStatic instance.
-        // Callers use EntityIdStore.Pool directly rather than going through EntityComponentStore.
-        internal static readonly SharedStatic<EntityIdPool> Pool =
-            SharedStatic<EntityIdPool>.GetOrCreate<EntityIdPool.BurstStaticIdentifier>();
-
-        // Drain and free the pool when code is unloaded. This fires from CodeLoadedScope.Exit,
-        // which runs both on an editor domain reload and at player/editor shutdown (see
-        // CleanupAllObjects in Runtime/Misc/SaveAndLoadHelper.cpp) — in both cases before the
-        // native store is torn down, so Drain (returns slots) and Dispose (frees the
-        // Allocator.Persistent buffers) are safe.
-        //   - Editor reload: Burst zeroes every SharedStatic at domainUnloadComplete
-        //     (BurstCompilerService::ClearSharedMemory), but never frees the pool's Persistent
-        //     buffers and never clears the native allocation bitmap. Without this, each reload
-        //     would leak those buffers and strand the pool's reserved-but-unhanded-out slots.
-        //   - Player shutdown: matches the old native EntityIdThreadPool, which was drained in
-        //     DisposeEntityIdStore, so leak detection stays clean at exit.
-        [Unity.Scripting.LifecycleManagement.OnCodeUnloading]
-        static void OnCodeUnloading()
+        static void GetThreadCacheManaged(ref IntPtr cache)
         {
-            Pool.Data.Drain();
-            Pool.Data.Dispose();
+            IntPtr c = t_ThreadCache;
+            if (c == IntPtr.Zero)
+            {
+                unsafe { c = (IntPtr)EntityIdStoreBindings.GetThreadCacheForManaged(); }
+                t_ThreadCache = c;
+            }
+            cache = c;
         }
 
-        internal struct EntityIdPool
-        {
-            internal struct BurstStaticIdentifier { }
-
-            struct ArrayInfo
-            {
-                public int m_AvailableCount;
-                public int m_NextIndex;
-            }
-
-            IntPtr m_Storage; // [(ArrayInfo + EntityId x k_PooledPerThread) x MaxJobThreadCount]
-
-            // 127 ids + an 8-byte ArrayInfo make each thread's slice exactly 1024 bytes, a whole
-            // number of cache lines at both 64- and 128-byte line sizes, so threads never share one.
-            internal const int k_PooledPerThread = 127;
-
-            static long PerThreadByteSize => sizeof(ArrayInfo) + (long)k_PooledPerThread * sizeof(EntityId);
-
-            int m_Allocating;
-
-            internal byte* GetOrCreateStorage()
-            {
-                // Only one thread should do the actual allocation
-                if (Interlocked.CompareExchange(ref m_Allocating, 1, 0) == 0)
-                {
-                    // Skip allocation in the unlikely event that another thread beat us to it
-                    if (m_Storage == IntPtr.Zero)
-                    {
-                        long size = PerThreadByteSize * JobsUtility.MaxJobThreadCount;
-
-                        // Align to 128 (largest cache line we target; not JobsUtility.CacheLineSize,
-                        // which is 64) so each 1024-byte slice sits on its own lines — no false sharing.
-                        byte* storage = (byte*)UnsafeUtility.Malloc(size, 128, Allocator.Persistent);
-
-                        // Zero-init only: every thread starts with 0 available ids, so the first
-                        // TakeEntityIds on a thread is what allocates its ids — threads that never
-                        // take an id never allocate.
-                        UnsafeUtility.MemClear(storage, size);
-
-                        // This Volatile.Write ensures everything that precedes it gets written to memory,
-                        // we don't want the compiler or CPU to reorder stuff here.
-                        Volatile.Write(ref m_Storage, (IntPtr)storage);
-                    }
-
-                    Interlocked.Exchange(ref m_Allocating, 0);
-                    return (byte*)m_Storage;
-                }
-
-                // We're in the case where another thread was busy allocating,
-                // wait for it to complete. BlockSpinBackoff softens the spinloop.
-                // Volatile.Read is required because we want the pointer to be read at every
-                // iteration of the loop, not hoisted out of it.
-                int spin = 0;
-                IntPtr storagePtr;
-                while ((storagePtr = Volatile.Read(ref m_Storage)) == IntPtr.Zero)
-                    BlockSpinBackoff(ref spin);
-                return (byte*)storagePtr;
-            }
-
-            // Returns un-consumed pool IDs back to the store so their slots can be
-            // reallocated. Must be called before world teardown to avoid leaking slots.
-            // After Drain the pool has 0 available per thread; the next TakeEntityIds
-            // call will naturally trigger an AllocateEntityIdsGlobal refill.
-            // Single-threaded before teardown, so plain reads of m_Storage are fine.
-            internal void Drain()
-            {
-                byte* storage = (byte*)m_Storage;
-                if (storage == null) return;
-                for (int i = 0; i < JobsUtility.MaxJobThreadCount; i++)
-                {
-                    byte* threadSlice    = storage + i * PerThreadByteSize;
-                    ArrayInfo* info      = (ArrayInfo*)threadSlice;
-                    EntityId*  threadBuf = (EntityId*)(threadSlice + sizeof(ArrayInfo));
-                    int available = info->m_AvailableCount;
-                    if (available > 0)
-                        ReleaseEntityIds(threadBuf + info->m_NextIndex, available);
-                    info->m_NextIndex     = 0;
-                    info->m_AvailableCount = 0;
-                }
-            }
-
-            internal void Dispose()
-            {
-                if (m_Storage == IntPtr.Zero) return;
-                UnsafeUtility.Free((void*)m_Storage, Allocator.Persistent);
-                m_Storage = IntPtr.Zero;
-            }
-
-            // Hot path: LIFO pop from this thread's pool slice.
-            // Falls back to AllocateEntityIds for the remainder and then refills.
-            internal void TakeEntityIds(EntityId* outIds, int count)
-            {
-                // Lazy allocate on first use — mirrors C++ GetOrCreateThreadPool().
-                // Note that reading m_Storage doesn't need a memory barrier, in the odd case
-                // we'd read a stale null the extra call to GetOrCreateStorage is harmless.
-                byte* storage = (byte*)m_Storage;
-                if (storage == null)
-                    storage = GetOrCreateStorage();
-
-                byte* threadSlice    = storage + (long)JobsUtility.ThreadIndex * PerThreadByteSize;
-                ArrayInfo* info      = (ArrayInfo*)threadSlice;
-                EntityId*  threadBuf = (EntityId*)(threadSlice + sizeof(ArrayInfo));
-
-                int available = info->m_AvailableCount;
-                if (available >= count)
-                {
-                    UnsafeUtility.MemCpy(outIds, threadBuf + info->m_NextIndex, (long)count * sizeof(EntityId));
-                    info->m_NextIndex    += count;
-                    info->m_AvailableCount -= count;
-                    return;
-                }
-
-                // Copy what we have, allocate the remainder and refill directly via the
-                // global scanner so we don't recurse back through the pool routing.
-                UnsafeUtility.MemCpy(outIds, threadBuf + info->m_NextIndex, (long)available * sizeof(EntityId));
-                int remaining = count - available;
-                AllocateEntityIdsGlobal(outIds + available, remaining);
-                AllocateEntityIdsGlobal(threadBuf, k_PooledPerThread);
-                info->m_NextIndex    = 0;
-                info->m_AvailableCount = k_PooledPerThread;
-            }
-        }
-
-        // Entry point: routes small no-chunk requests through the per-thread pool
-        // (fast path, no locking) and everything else through the global block scanner.
-        // Mirrors C++ AllocateEntityIds() which does the same pool/global split.
+        // Entry point: served from this thread's magazines, with the remainder
+        // crossing into native. Chunk placement is stamped at hand-out time on
+        // slots the allocation already owns, so every allocation takes the
+        // same path regardless of chunk bits.
         internal static void AllocateEntityIds(EntityId* outIds, int count,
-            uint chunkBits = 0, byte firstIndexInChunk = 0)
-        {
-            bool hasChunk = chunkBits != 0 || firstIndexInChunk != 0;
-            if (count < EntityIdPool.k_PooledPerThread && !hasChunk)
-                Pool.Data.TakeEntityIds(outIds, count);   // lazily allocates on first call
-            else
-                AllocateEntityIdsGlobal(outIds, count, chunkBits, firstIndexInChunk);
-        }
-
-        // Global block scanner — mirrors C++ AllocateEntityIdsGlobal.
-        // Called directly by the pool for refills and bulk allocations to avoid
-        // recursing through the routing entry point above.
-        static void AllocateEntityIdsGlobal(EntityId* outIds, int count,
             uint chunkBits = 0, byte firstIndexInChunk = 0)
         {
             if (count <= 0) return;
 
             ref ContextData ctx = ref s_Context.Data;
-            bool hasChunk       = chunkBits != 0 || firstIndexInChunk != 0;
-            int  allocatedCount = 0;
-            int  rescanSpin     = 0;
-            byte indexInChunk   = firstIndexInChunk;
-
-            for (;;)
+            int produced = 0;
+            byte* cache = count <= 2 * ctx.MagCapacity ? GetThreadCache() : null;
+            while (cache != null && produced < count)
             {
-                bool sawContention = false;
-                for (uint i = 0; i < ctx.BlockCount && allocatedCount < count; i++)
+                byte* mag = *(byte**)(cache + ctx.CacheActiveOffset);
+                int magCount = *(int*)(mag + ctx.MagCountOffset);
+                if (magCount == 0)
                 {
-                    int  entitiesPerBlock = (int)(ctx.BlockMask + 1);
-                    int  blockCount;
-                    bool acquired = false;
-                    int  spinIter = 0;
-                    while (true)
-                    {
-                        blockCount = Volatile.Read(ref ctx.EntityCount[i]);
-                        if (blockCount == entitiesPerBlock) break;  // full
-                        if (blockCount == k_BlockBusy) { sawContention = true; break; }
-                        if (Interlocked.CompareExchange(ref ctx.EntityCount[i], k_BlockBusy, blockCount) == blockCount)
-                        { acquired = true; break; }
-                        BlockSpinBackoff(ref spinIter);
-                    }
-                    if (!acquired) continue;
-
-                    // Mirrors C++ CommitBlockIfNeeded — commit on first use for both
-                    // the VM path (virtual-memory commit) and the page-table path
-                    // (Block struct allocation). The caller already holds the block lock.
-                    if (!BlockIsCommitted(i))
-                        EntityIdStoreBindings.EnsureBlockCommitted(i);
-
-                    ulong* allocated = BlockAllocated(i);
-                    ulong* reserved  = BlockReserved(i);
-                    uint baseIndex   = i * (uint)entitiesPerBlock;
-                    int  allocInBlock = 0;
-
-                    for (uint wordIdx = 0; wordIdx < ctx.WordsPerBlock && allocatedCount < count; wordIdx++)
-                    {
-                        ulong freeBits = ~(allocated[wordIdx] | reserved[wordIdx]);
-                        while (freeBits != 0 && allocatedCount < count)
-                        {
-                            int bit    = math.tzcnt(freeBits);
-                            freeBits  &= freeBits - 1;
-
-                            uint entityIndex = baseIndex + (wordIdx << k_WordShift) + (uint)bit;
-                            // EntityId index field is 28 bits — any index at or above this is out of range.
-                            if (entityIndex >= (1u << 28)) goto blockDone;
-
-                            ref EntitySlot slot = ref GetSlot(entityIndex);
-                            uint oldVersion = SlotGetVersion(Volatile.Read(ref slot.versionAndChunk));
-                            // Free slots carry an even version (parity invariant); next is always odd.
-                            uint newVersion = (oldVersion + 1) & (uint)k_SlotVersionMask;
-
-                            Volatile.Write(ref slot.nativeObjectPtr, IntPtr.Zero);
-                            Volatile.Write(ref slot.versionAndChunk,
-                                SlotPackVersionAndChunk(newVersion,
-                                    hasChunk ? indexInChunk : (byte)0,
-                                    hasChunk ? chunkBits   : 0u));
-                            allocated[wordIdx] |= 1UL << bit;
-
-                            // EntityId bit layout: [Version:24 | TypeId:12 | Index:28]
-                            // Version at bits 40-63, Index at bits 0-27.
-                            ulong rawId = ((ulong)newVersion << 40) | (entityIndex & 0x0FFFFFFFuL);
-                            outIds[allocatedCount] = UnsafeUtility.As<ulong, EntityId>(ref rawId);
-
-                            allocatedCount++;
-                            allocInBlock++;
-                            if (hasChunk) indexInChunk++;
-                        }
-                    }
-
-                    blockDone:
-                    int prev = Interlocked.CompareExchange(ref ctx.EntityCount[i], blockCount + allocInBlock, k_BlockBusy);
-                    Assert.AreEqual(k_BlockBusy, prev);
+                    byte* backup = *(byte**)(cache + ctx.CacheBackupOffset);
+                    if (*(int*)(backup + ctx.MagCountOffset) == 0)
+                        break; // refill crosses into native
+                    *(byte**)(cache + ctx.CacheBackupOffset) = mag;
+                    *(byte**)(cache + ctx.CacheActiveOffset) = backup;
+                    continue;
                 }
-
-                if (allocatedCount == count) return;
-                if (!sawContention) break;
-                BlockSpinBackoff(ref rescanSpin);
+                int take = count - produced;
+                if (take > magCount) take = magCount;
+                magCount -= take;
+                *(int*)(mag + ctx.MagCountOffset) = magCount;
+                UnsafeUtility.MemCpy(outIds + produced,
+                    (EntityId*)(mag + ctx.MagIdsOffset) + magCount, (long)take * sizeof(EntityId));
+                produced += take;
             }
+            if (produced < count)
+                EntityIdStoreBindings.AllocateForManaged(outIds + produced, count - produced);
 
-            throw new InvalidOperationException(
-                $"EntityIdStore: ran out of entity IDs after allocating {allocatedCount} of {count} requested.");
+            if (chunkBits != 0 || firstIndexInChunk != 0)
+                StampChunk(outIds, count, chunkBits, firstIndexInChunk);
         }
 
-        // Mirrors C++ ReleaseEntityIds. Coalesces same-block IDs into runs so the
-        // per-block CAS lock is taken once per run rather than once per entity.
+        // Writes DOTS chunk placement into freshly allocated slots. The
+        // allocation owns these slots, so plain ordering is enough; concurrent
+        // readers only validate the version, which does not change.
+        static void StampChunk(EntityId* ids, int count, uint chunkBits, byte firstIndexInChunk)
+        {
+            byte indexInChunk = firstIndexInChunk;
+            for (int i = 0; i < count; ++i)
+            {
+                ref EntitySlot slot = ref GetSlot(ids[i].Index);
+                Volatile.Write(ref slot.versionAndChunk,
+                    SlotPackVersionAndChunk(ids[i].Version, indexInChunk++, chunkBits));
+            }
+        }
+
+        // Recycles one id in place, mirroring the native TryRecycleIdInPlace:
+        // no lock and no shared-state mutation, just the owned slot moving
+        // from live to cached (version stepped +2, pointer nulled, chunk bits
+        // cleared). False routes the id to native: stale ids (that path owns
+        // the asserts) and editor-reserved ids (their release parks the slot).
+        static bool TryRecycleIdInPlace(ref ContextData ctx, EntityId id, out EntityId recycled)
+        {
+            recycled = default;
+            uint entityIndex = id.Index;
+            uint blockIndex = entityIndex >> ctx.BlockShift;
+
+            if (!BlockIsCommitted(blockIndex))
+                return false;
+
+            uint indexInBlock = entityIndex & ctx.BlockMask;
+            ulong mask = 1UL << (int)(indexInBlock & k_WordMask);
+            uint wordIdx = indexInBlock >> k_WordShift;
+
+            // Unlocked probes are safe: only the id's owner may release it, so
+            // this slot's bit and version cannot change underneath us.
+            if ((BlockAllocated(blockIndex)[wordIdx] & mask) == 0)
+                return false;
+
+            if ((BlockReserved(blockIndex)[wordIdx] & mask) != 0)
+                return false;
+
+            ref EntitySlot slot = ref GetSlot(entityIndex);
+            uint version = SlotGetVersion(slot.versionAndChunk);
+            if (version != id.Version)
+                return false;
+
+            // Store order matches the native release: pointer first, then the
+            // version with release, so a reader that still version-matches can
+            // only have loaded the pointer from before this release.
+            slot.nativeObjectPtr = IntPtr.Zero;
+            uint newVersion = (version + 2) & (uint)k_SlotVersionMask;
+            Volatile.Write(ref slot.versionAndChunk, SlotPackVersionAndChunk(newVersion, 0, 0));
+
+            ulong rawId = ((ulong)newVersion << 40) | (entityIndex & 0x0FFFFFFFuL);
+            recycled = UnsafeUtility.As<ulong, EntityId>(ref rawId);
+            return true;
+        }
+
+        // Releases through this thread's magazines; the same-thread LIFO makes
+        // a free followed by an allocate return the id just freed. Reserved,
+        // stale, and teardown-scale releases cross into native.
         internal static void ReleaseEntityIds(EntityId* ids, int count)
         {
             if (count <= 0) return;
 
             ref ContextData ctx = ref s_Context.Data;
-            int i = 0;
-            while (i < count)
+            byte* cache = count <= 2 * ctx.MagCapacity ? GetThreadCache() : null;
+            if (cache == null)
             {
-                if (ids[i] == EntityId.None) { ++i; continue; }
+                EntityIdStoreBindings.ReleaseForManaged(ids, count);
+                return;
+            }
 
-                uint blockIndex = ids[i].Index >> ctx.BlockShift;
-                Assert.IsTrue(blockIndex < ctx.BlockCount);
-
-                if (!BlockIsCommitted(blockIndex)) { ++i; continue; }
-
-                int runEnd = i + 1;
-                while (runEnd < count
-                    && ids[runEnd] != EntityId.None
-                    && (ids[runEnd].Index >> ctx.BlockShift) == blockIndex)
-                    ++runEnd;
-
-                int spinIter = 0;
-                for (;;)
+            for (int i = 0; i < count; ++i)
+            {
+                if (ids[i] == EntityId.None)
+                    continue;
+                EntityId recycled;
+                if (!TryRecycleIdInPlace(ref ctx, ids[i], out recycled))
                 {
-                    int blockCount = Volatile.Read(ref ctx.EntityCount[blockIndex]);
-                    if (blockCount == k_BlockBusy) { BlockSpinBackoff(ref spinIter); continue; }
-                    // blockCount == 0 means all entities in this block are already free; the
-                    // input entities must be stale. Skip the run gracefully, same as C++.
-                    if (blockCount == 0) break;
-
-                    if (Interlocked.CompareExchange(ref ctx.EntityCount[blockIndex], k_BlockBusy, blockCount) == blockCount)
+                    EntityIdStoreBindings.ReleaseForManaged(ids + i, 1);
+                    continue;
+                }
+                byte* mag = *(byte**)(cache + ctx.CacheActiveOffset);
+                int magCount = *(int*)(mag + ctx.MagCountOffset);
+                if (magCount == ctx.MagCapacity)
+                {
+                    byte* backup = *(byte**)(cache + ctx.CacheBackupOffset);
+                    if (*(int*)(backup + ctx.MagCountOffset) < ctx.MagCapacity)
                     {
-                        ulong* allocated = BlockAllocated(blockIndex);
-                        ulong* reserved  = BlockReserved(blockIndex);
-                        int freed = 0;
-                        for (int j = i; j < runEnd; ++j)
-                        {
-                            EntityId entity    = ids[j];
-                            uint entityIndex   = entity.Index;
-                            uint indexInBlock  = entityIndex & ctx.BlockMask;
-                            ulong mask         = 1UL << (int)(indexInBlock & k_WordMask);
-                            uint  wordIdx      = indexInBlock >> k_WordShift;
-
-                            ref EntitySlot slot = ref GetSlot(entityIndex);
-                            uint slotVersion    = SlotGetVersion(Volatile.Read(ref slot.versionAndChunk));
-
-                            // Graceful skip: if the bit is clear (double-free or stale id) or the
-                            // version doesn't match, just continue — mirrors C++ ReleaseEntityIds
-                            // which does the same after AssertFormatMsg (non-fatal in release builds).
-                            if ((allocated[wordIdx] & mask) == 0 || slotVersion != entity.Version) continue;
-
-                            bool isReserved = (reserved[wordIdx] & mask) != 0;
-                            Volatile.Write(ref slot.nativeObjectPtr, IntPtr.Zero);
-
-                            if (!isReserved)
-                            {
-                                ulong vac        = Volatile.Read(ref slot.versionAndChunk);
-                                uint  nextVersion = (SlotGetVersion(vac) + 1) & (uint)k_SlotVersionMask;
-                                Volatile.Write(ref slot.versionAndChunk, SlotSetVersion(vac, nextVersion));
-                            }
-
-                            allocated[wordIdx] &= ~mask;
-                            ++freed;
-                        }
-
-                        int prevVal = Interlocked.CompareExchange(ref ctx.EntityCount[blockIndex], blockCount - freed, k_BlockBusy);
-                        Assert.AreEqual(k_BlockBusy, prevVal);
-                        break;
+                        *(byte**)(cache + ctx.CacheBackupOffset) = mag;
+                        *(byte**)(cache + ctx.CacheActiveOffset) = backup;
+                        mag = backup;
+                        magCount = *(int*)(mag + ctx.MagCountOffset);
+                    }
+                    else
+                    {
+                        // The depot exchange crosses into native. The recycled
+                        // id is a valid cached id and releasable as-is; native
+                        // recycles it once more onto the fresh active magazine.
+                        EntityIdStoreBindings.ReleaseForManaged(&recycled, 1);
+                        continue;
                     }
                 }
-                i = runEnd;
+                ((EntityId*)(mag + ctx.MagIdsOffset))[magCount] = recycled;
+                *(int*)(mag + ctx.MagCountOffset) = magCount + 1;
             }
         }
     }

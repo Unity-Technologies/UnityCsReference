@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public const string k_Id = "UnityRegistry";
 
         public override string id => k_Id;
-        public override string displayName => L10n.Tr("Unity Registry");
+        public override string displayName => L10n.Tr("Unity Registry", null);
         public override Icon icon => Icon.UnityRegistryPage;
         public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.UpmSearch;
 
@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string GetGroupName(IPackage package)
         {
-            return package.versions.AllMatches(v => v.HasTag(PackageTag.Feature)) ? L10n.Tr("Features") : L10n.Tr("Packages");
+            return package.versions.AllMatches(v => v.HasTag(PackageTag.Feature)) ? L10n.Tr("Features", null) : L10n.Tr("Packages", null);
         }
 
         protected override void RebuildVisualStateList()

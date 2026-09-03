@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 //#define PA_DRAW_LOGO
 
 using System;
@@ -253,7 +254,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                 },
                 new Page
                 {
-                    id = PageId.Upgrade, name = "Upgrade",
+                    id = PageId.Upgrade,
+                    name = "Upgrade",
                     category = IssueCategory.UpgradeSummary,
                     children =
                     [
@@ -283,12 +285,61 @@ namespace Unity.ProjectAuditor.Editor.UI
                         },
                     ]
                 },
+                new Page
+                {
+                    id = PageId.MigrationToURP,
+                    name = "Migrate to URP",
+                    category = IssueCategory.MigrateToURPSummary,
+                    children =
+                    [
+                        new Page
+                        {
+                            id = PageId.Code,
+                            name = "Code",
+                            category = IssueCategory.Code
+                        },
+                        new Page
+                        {
+                            id = PageId.Assets,
+                            name = "Assets",
+                            category = IssueCategory.AssetIssue
+                        },
+                        new Page
+                        {
+                            id = PageId.GameObjects,
+                            name = "Game Objects",
+                            category = IssueCategory.GameObject
+                        },
+                        new Page
+                        {
+                            id = PageId.ProjectSettings,
+                            name = "Project Settings",
+                            category = IssueCategory.ProjectSetting
+                        },
+                    ]
+                },
+                new Page
+                {
+                    id = PageId.MigrationToCoreCLR,
+                    name = "Migrate to CoreCLR",
+                    category = IssueCategory.MigrateToCoreCLRSummary,
+                    children =
+                    [
+                        new Page
+                        {
+                            id = PageId.Code,
+                            name = "Code",
+                            category = IssueCategory.Code
+                        }
+                    ]
+                },
             ];
 
-            // Pages under Optimization show non-Upgrade issues; pages under Upgrade show only
-            // Upgrade-area issues. Applied to each group's whole subtree.
-            ApplyGroupFilter(pages, PageId.Optimization, issue => !HasUpgradeArea(issue));
-            ApplyGroupFilter(pages, PageId.Upgrade, HasUpgradeArea);
+            // Apply page filters.
+            ApplyGroupFilter(pages, PageId.Optimization, issue => !HasAnyAreas(issue, Areas.Upgrade));
+            ApplyGroupFilter(pages, PageId.Upgrade, issue => HasAnyAreas(issue, Areas.Upgrade));
+            ApplyGroupFilter(pages, PageId.MigrationToURP, issue => HasAnyAreas(issue, Areas.MigrationToURP));
+            ApplyGroupFilter(pages, PageId.MigrationToCoreCLR, issue => HasAnyAreas(issue, Areas.MigrationToCoreCLR));
 
             // Upgrade pages additionally offer a target-version selector in the Filters panel.
             ApplyGroupDrawFilters(pages, PageId.Upgrade, DiagnosticView.DrawUpgradeTargetVersionFilter);
@@ -323,10 +374,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        // True if the issue is flagged with the Upgrade area.
-        static bool HasUpgradeArea(ReportItem issue)
+        // True if the issue is flagged with the specified areas.
+        static bool HasAnyAreas(ReportItem issue, Areas areas)
         {
-            return issue.Id.IsValid() && (issue.Id.GetDescriptor().Areas & Areas.Upgrade) != 0;
+            return issue.Id.IsValid() && (issue.Id.GetDescriptor().Areas & areas) != 0;
         }
 
         public bool Match(ReportItem issue)
@@ -999,6 +1050,18 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Category = IssueCategory.UpgradeSummary,
                 DisplayName = "Upgrade",
                 Type = typeof(UpgradeSummaryView),
+            });
+            ViewDescriptor.Register(new ViewDescriptor
+            {
+                Category = IssueCategory.MigrateToURPSummary,
+                DisplayName = "Migrate to URP",
+                Type = typeof(MigrateToURPSummaryView),
+            });
+            ViewDescriptor.Register(new ViewDescriptor
+            {
+                Category = IssueCategory.MigrateToCoreCLRSummary,
+                DisplayName = "Migrate to CoreCLR",
+                Type = typeof(MigrateToCoreCLRSummaryView),
             });
             ViewDescriptor.Register(new ViewDescriptor
             {
@@ -2518,9 +2581,9 @@ To generate a report, select the project area, platform, and code to analyze the
 
             public static readonly GUIContent ShaderVariants = new GUIContent("Variants", "Inspect Shader Variants");
 
-            public static readonly string PendingAnalyzeInfoText = L10n.Tr("{0} analysis is still running in the background… (see more in Window > General > Progress)");
-            public static readonly string AnalyzeInfoText = L10n.Tr("{0} analysis is not yet included in this report. Run analysis now?");
-            public static readonly string AnalyzeButtonText = L10n.Tr("Start {0} Analysis");
+            public static readonly string PendingAnalyzeInfoText = L10n.Tr("{0} analysis is still running in the background… (see more in Window > General > Progress)", null);
+            public static readonly string AnalyzeInfoText = L10n.Tr("{0} analysis is not yet included in this report. Run analysis now?", null);
+            public static readonly string AnalyzeButtonText = L10n.Tr("Start {0} Analysis", null);
 
             public static readonly GUIContent OpenBackgroundTasks = EditorGUIUtility.TrTextContent("Open Background Tasks");
             public static readonly GUIContent ProjectAreaSelection = new GUIContent("Project Areas", "Select project areas to analyze.");
@@ -2536,3 +2599,4 @@ To generate a report, select the project area, platform, and code to analyze the
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

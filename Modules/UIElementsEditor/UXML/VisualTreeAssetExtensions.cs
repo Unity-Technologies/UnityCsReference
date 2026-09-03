@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System.Collections.Generic;
 using System.IO;
 using JetBrains.Annotations;
@@ -39,9 +38,48 @@ namespace UnityEditor.UIElements
             foreach (var attribute in overriddenAttributes)
                 vea.SetAttribute(attribute.Key, attribute.Value);
 
+            SyncSerializedDataFromVisualElement(vea, visualElement, overriddenAttributes);
+
             parent ??= vta.visualTree;
             parent.Add(vea);
             return vea;
+        }
+
+        /// <summary>
+        /// Fills in the serialized data of a newly created <paramref name="vea"/> from the element it was created
+        /// for, marking as overridden the attributes <paramref name="overriddenAttributes"/> reports.
+        /// </summary>
+        /// <remarks>
+        /// The asset has to leave its creation in a state that can be instantiated:
+        /// <see cref="VisualElementAsset.Instantiate"/> builds the element from the serialized data alone — the
+        /// attributes set above are the legacy representation and are not read — and
+        /// <see cref="VisualTreeAsset.Create"/> logs an error and substitutes a <see cref="Label"/> when there is
+        /// none. Everything needed is on the element we were handed, so it is filled in here rather than left for
+        /// whoever clones the document next to discover (or patch) a half-built asset.
+        /// </remarks>
+        static void SyncSerializedDataFromVisualElement(VisualElementAsset vea, VisualElement visualElement,
+            Dictionary<string, string> overriddenAttributes)
+        {
+            if (UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName) is not { } description)
+                return;
+
+            var serializedData = description.CreateDefaultSerializedData();
+
+            // GetOverriddenAttributes reports exactly the attributes whose value differs from the default, which
+            // is what authoring an override means, so they carry over as overrides.
+            foreach (var attribute in overriddenAttributes)
+            {
+                if (description.FindAttributeWithUxmlName(attribute.Key) is not { } attributeDescription)
+                    continue;
+
+                // Synced from the element rather than parsed back from the legacy string, so UxmlObjects and
+                // lists come across through the same path the rest of the serialization uses.
+                attributeDescription.SyncSerializedData(visualElement, serializedData);
+                attributeDescription.SetSerializedValueAttributeFlags(serializedData,
+                    UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+            }
+
+            vea.serializedData = serializedData;
         }
 
         public static TemplateAsset AddTemplateInstance(
@@ -197,4 +235,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

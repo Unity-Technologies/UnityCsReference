@@ -51,9 +51,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
 
                 if (operation.isInPause)
-                    currentProgressState.text = L10n.Tr("Paused");
+                    currentProgressState.text = L10n.Tr("Paused", null);
                 else if(operation.isInProgress)
-                    currentProgressState.text = L10n.Tr("Downloading");
+                    currentProgressState.text = L10n.Tr("Downloading", null);
                 else
                     currentProgressState.text = string.Empty;
             }

@@ -220,7 +220,7 @@ namespace UnityEditor
                 if (!this.isValidDisplayNameCache)
                 {
                     this.isValidDisplayNameCache = true;
-                    m_CachedLocalizedDisplayName = L10n.Tr(displayName, m_SerializedObject.targetObject);
+                    m_CachedLocalizedDisplayName = L10n.TrForContext(displayName, m_SerializedObject.targetObject);
                 }
                 return m_CachedLocalizedDisplayName;
             }
@@ -234,7 +234,7 @@ namespace UnityEditor
                 var res = new string[names.Length];
                 for (var i = 0; i < res.Length; ++i)
                 {
-                    res[i] = L10n.Tr(names[i], m_SerializedObject.targetObject);
+                    res[i] = L10n.TrForContext(names[i], m_SerializedObject.targetObject);
                 }
                 return res;
             }
@@ -491,6 +491,7 @@ namespace UnityEditor
         }
 
         extern private bool EndOfData();
+        [NativeMethod(ThrowsException = true)]
         extern private void SyncSerializedObjectVersion();
 
         [Flags]
@@ -777,42 +778,17 @@ namespace UnityEditor
             }
         }
 
-        /// <summary>
-        /// Returns the indices of duplicate dictionary entries (e.g. duplicate keys) for the dictionary this property refers to.
-        /// Use when drawing a dictionary to highlight or skip duplicate rows. Returns an empty array when it's not a dictionary property or there are no duplicate entries.
-        /// Duplicate entries are keyed by (hosting entity id, canonical property path). For SerializeReference nesting, only the innermost ref id is used with the path under that object (same as native FieldUniqueIdentifierContext::FormatFieldUniqueIdentifier, which prepends the active referenced object id once).
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown when the underlying <see cref="SerializedObject"/> represents multiple selected targets. Multi-selection of dictionaries is not supported.
-        /// </exception>
-        public int[] GetDictionaryDuplicateEntryIndices()
-        {
-            Verify(VerifyFlags.None);
-            if (serializedObject != null && serializedObject.targetObjectsCount > 1)
-                throw new InvalidOperationException(
-                    "GetDictionaryDuplicateEntryIndices is not supported on a SerializedObject that represents multiple selected targets.");
-
-            UnityEngine.Debug.Assert(propertyType == SerializedPropertyType.Generic,
-                $"GetDictionaryDuplicateEntryIndices was called on property '{propertyPath}' whose type is '{propertyType}'. This API is only valid on a Dictionary<,> field (which surfaces as SerializedPropertyType.Generic).");
-
-            EntityId entityId = EntityId.None;
-            if (serializedObject?.targetObject is UnityEngine.Object target)
-                entityId = target.GetEntityId();
-            if (entityId == EntityId.None || !UnityEngine.DictionarySerialization.HostHasIgnoredDictionaryEntries(entityId))
-                return Array.Empty<int>();
-            // Only the genuine duplicate-key rows are surfaced here; the null-key placeholder rows are discarded.
-            return UnityEngine.DictionarySerialization.GetIgnoredEntryIndices(
-                entityId, GetDictionaryIgnoredEntryIdentifierInternal()).duplicateEntryIndices;
-        }
-
         [NativeName("GetDictionaryIgnoredEntryIdentifier")]
         private extern string GetDictionaryIgnoredEntryIdentifierInternal();
 
         /// <summary>
         /// Returns, in a single pass, the dictionary's duplicate-key and null-key placeholder rows -- both shown by
-        /// the inspector but excluded from the runtime dictionary. Prefer this over
-        /// <see cref="GetDictionaryDuplicateEntryIndices"/> plus a separate null-key query when both sets are needed:
-        /// resolving the ignored-entry identifier is the expensive part and this does it only once.
+        /// the inspector but excluded from the runtime dictionary. Resolving the ignored-entry identifier is the
+        /// expensive part, and this does it only once for both sets.
+        /// Entries are keyed by (hosting entity id, canonical property path). For SerializeReference nesting, only
+        /// the innermost ref id is used with the path under that object (same as native
+        /// FieldUniqueIdentifierContext::FormatFieldUniqueIdentifier, which prepends the active referenced object id once).
+        /// Returns <see cref="DictionaryIgnoredEntries.Empty"/> when it's not a dictionary property or there are no ignored entries.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the underlying <see cref="SerializedObject"/> represents multiple selected targets. Multi-selection of dictionaries is not supported.
@@ -2123,7 +2099,20 @@ namespace UnityEditor
             }
         }
 
+        // The maximum number of elements this array can be resized to: the lesser of the maximum
+        // serialized object size and a practical memory budget for this machine (int.MaxValue when
+        // not an array).
+        internal int maxArraySize
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetMaxArraySize();
+            }
+        }
+
         extern private int GetMinArraySize();
+        extern private int GetMaxArraySize();
         extern private int GetInspectableArraySize();
         extern private void ResizeArray(int value);
 

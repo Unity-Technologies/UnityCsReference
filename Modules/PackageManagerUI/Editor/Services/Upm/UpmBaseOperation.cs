@@ -105,7 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isInProgress)
             {
                 Debug.LogError(L10n.Tr("[Package Manager Window] Unable to start the operation again while it's in progress. " +
-                    "Please cancel the operation before re-start or wait until the operation is completed."));
+                    "Please cancel the operation before re-start or wait until the operation is completed.", null));
                 return;
             }
 
@@ -114,7 +114,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 EditorApplication.delayCall += () =>
                 {
-                    OnError(new UIError(UIErrorCode.UpmError_ServerNotRunning, L10n.Tr("UPM server is not running")));
+                    OnError(new UIError(UIErrorCode.UpmError_ServerNotRunning, L10n.Tr("UPM server is not running", null)));
                     Cancel();
                 };
                 return;
@@ -150,7 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 else if (m_Request.Status >= StatusCode.Failure)
                     OnError(new UIError(m_Request.Error));
                 else
-                    Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unsupported progress state {0}."), m_Request.Status));
+                    Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unsupported progress state {0}.", null), m_Request.Status));
                 OnFinalize();
             }
         }
@@ -170,11 +170,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (!string.IsNullOrEmpty(consoleErrorMessage))
                         consoleErrorMessage += " ";
-                    consoleErrorMessage += L10n.Tr("An error occurred, likely on the server. Please try again later.");
+                    consoleErrorMessage += L10n.Tr("An error occurred, likely on the server. Please try again later.", null);
                 }
                 if (!string.IsNullOrEmpty(error.message))
                     consoleErrorMessage += !string.IsNullOrEmpty(consoleErrorMessage) ? $"\n{error.message}" : error.message;
-                Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, string.Format(L10n.Tr("[Package Manager Window] {0}"), consoleErrorMessage));
+                Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, string.Format(L10n.Tr("[Package Manager Window] {0}", null), consoleErrorMessage));
                 error.attribute |= UIError.Attribute.DetailInConsole;
             }
             onOperationError?.Invoke(this, error);

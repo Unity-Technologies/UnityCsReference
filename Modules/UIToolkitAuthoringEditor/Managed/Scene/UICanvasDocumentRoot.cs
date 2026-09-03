@@ -171,7 +171,8 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
                 m_ManipulatorOverlayManager.UpdateAllOverlays();
                 break;
             case PointerDownEvent pointerDownEvent when EventMode == CanvasEventMode.Pick:
-                if (m_PanelElement == null)
+                // The gesture never starts when there is nothing to select: no picker popup, and no rubber band.
+                if (m_PanelElement == null || !CanSelectContent)
                     break;
                 // Ctrl/Cmd + Right click opens the picker popup. Intercept here so the pan manipulator
                 // on UIViewport — which would normally take any right-click drag — doesn't engage.
@@ -315,7 +316,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         var selectedIds = Selection.entityIds;
         foreach (var selectedId in selectedIds)
         {
-            if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection selection)
+            if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection selection && ShowsElement(selection.Element))
                 AddToSelection(selection);
         }
 
@@ -323,6 +324,15 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         if (m_ElementSelections.Count == 1)
             m_ManipulatorOverlayManager.AcquireOverlay(m_ElementSelections[0]);
     }
+
+    // The selection is global: outside the UI Stage it holds the elements of a scene panel while this canvas
+    // shows an independent clone of the same document, whose bounds are in another panel's coordinates.
+    bool ShowsElement(VisualElement element)
+        => element?.panel != null && ReferenceEquals(element.panel, m_PanelElement?.SubPanel);
+
+    // An injected preview panel is not selection-tracked, so none of its elements carry a selection object and
+    // there is nothing here to select — least of all the empty selection a click would otherwise write.
+    bool CanSelectContent => VisualElementSelectionRegistry.Instance?.IsTracked(m_PanelElement?.SubPanel) ?? false;
 
     void AddToSelection(VisualElementSelection selection)
     {
@@ -431,7 +441,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
 
     internal void PerformSelection(Vector2 canvasPosition, EventModifiers modifiers, Vector2 menuPanelPosition, long timestampMs)
     {
-        if (m_PanelElement == null)
+        if (m_PanelElement == null || !CanSelectContent)
             return;
 
         var isShift = (modifiers & EventModifiers.Shift) != 0;
@@ -480,7 +490,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     // under the pointer. Mirrors SceneView's SceneViewPiercingMenu (Mouse1 + ShortcutModifiers.Action).
     internal void PerformPickerPopup(Vector2 canvasPosition, Vector2 menuPanelPosition)
     {
-        if (m_PanelElement == null)
+        if (m_PanelElement == null || !CanSelectContent)
             return;
         using var _ = ListPool<VisualElement>.Get(out var picked);
         PickSelectableElements(canvasPosition, picked);
@@ -624,6 +634,9 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     // on it (union / subtract).
     internal void BeginRectangleSelection(EventModifiers modifiers)
     {
+        if (!CanSelectContent)
+            return;
+
         m_SelectionSnapshot = Selection.entityIds;
 
         var hasShift = (modifiers & EventModifiers.Shift) != 0;
@@ -650,7 +663,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
 
     internal void PerformRectangleSelection(Rect canvasRect, EventModifiers modifiers)
     {
-        if (m_PanelElement == null)
+        if (m_PanelElement == null || !CanSelectContent)
             return;
 
         using var _ = HashSetPool<VisualElementSelection>.Get(out var candidates);
@@ -680,7 +693,8 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         {
             foreach (var id in Selection.entityIds)
             {
-                if (EditorUtility.EntityIdToObject(id) is VisualElementSelection sel)
+                // Filtered like the handles are: a selection from another panel maps onto nothing here.
+                if (EditorUtility.EntityIdToObject(id) is VisualElementSelection sel && ShowsElement(sel.Element))
                     result.Add(sel);
             }
         }
@@ -737,6 +751,9 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
 
     internal void UpdatePreviewSelection(Rect canvasRect, EventModifiers modifiers)
     {
+        if (!CanSelectContent)
+            return;
+
         EnsurePreviewHandles();
 
         // Hide the regular handles while the preview is on screen so the user sees only one set

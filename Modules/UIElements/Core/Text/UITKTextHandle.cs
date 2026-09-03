@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
@@ -231,7 +232,7 @@ namespace UnityEngine.UIElements
 
             var uiScale = GetPixelsPerPoint();
             //this rounding should be moved to the resolved style so user could get the result...
-            var effectiveFontSize = fontsize ?? style.fontSize.value;
+            var effectiveFontSize = fontsize ?? style.fontSize;
             tgs.fontSize = (int)Math.Round(((effectiveFontSize * uiScale)), MidpointRounding.AwayFromZero);
 
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
@@ -339,7 +340,7 @@ namespace UnityEngine.UIElements
 
             var padding = Mathf.Max(horizontalPadding, verticalPadding) + k_MinPadding;
 
-            var factor = ConvertPixelUnitsToTextCoreRelativeUnits(style.fontSize.value, fontAsset);
+            var factor = ConvertPixelUnitsToTextCoreRelativeUnits(style.fontSize, fontAsset);
             var gradientScale = fontAsset.atlasPadding + 1;
 
             return Mathf.Min(padding * factor * gradientScale, gradientScale);
@@ -399,3 +400,4 @@ namespace UnityEngine.UIElements
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

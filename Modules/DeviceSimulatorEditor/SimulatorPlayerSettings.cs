@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: DeviceSimulator not yet converted
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -32,7 +33,9 @@ namespace UnityEditor.DeviceSimulation
 
         public SimulationPlayerSettings()
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             var serializedSettings = PlayerSettings.GetSerializedObject();
+            #pragma warning restore UAL0015
             serializedSettings.Update();
 
             resolutionScalingMode = (ResolutionScalingMode)serializedSettings.FindProperty("resolutionScalingMode").intValue;
@@ -53,3 +56,4 @@ namespace UnityEditor.DeviceSimulation
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

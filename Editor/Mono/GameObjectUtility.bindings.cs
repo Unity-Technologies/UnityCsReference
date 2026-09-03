@@ -83,9 +83,9 @@ namespace UnityEditor
             var result = EditorDialog.DisplayComplexDecisionDialog(
                 title,
                 message,
-                L10n.Tr("Yes, change children"),
-                L10n.Tr("No, this object only"),
-                L10n.Tr("Cancel"));
+                L10n.Tr("Yes, change children", null),
+                L10n.Tr("No, this object only", null),
+                L10n.Tr("Cancel", null));
 
             switch (result)
             {

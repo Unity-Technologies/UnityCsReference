@@ -1,4 +1,3 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: ScriptingRuntime not yet converted
 using UnityEngine.Scripting;
 using PreserveAttribute = Unity.Private.Scripting.PreserveAttribute;
 
@@ -16,6 +15,9 @@ namespace Unity.Scripting.LifecycleManagement
 
     internal sealed class UDMScope : ImplicitLifecycleScope
     {
+        // Scope singleton: part of the scope hierarchy itself, referenced from other scopes' outer-scope
+        // lists, and must outlive every scope transition.
+        [NoAutoStaticsCleanup]
         public static UDMScope Instance { get; } = new UDMScope();
 
         private UDMScope() : base(nameof(UDMScope))
@@ -33,4 +35,3 @@ namespace Unity.Scripting.LifecycleManagement
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

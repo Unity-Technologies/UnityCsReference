@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ShortcutManagement not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -165,6 +166,10 @@ namespace UnityEditor.ShortcutManagement
 
     class ShortcutManagerWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal ShortcutManagerWindow() { }
+        #pragma warning restore UAL0015
+
         SerializedShortcutManagerWindowState m_State = new SerializedShortcutManagerWindowState();
         ShortcutManagerWindowView m_View;
         ShortcutManagerWindowViewController m_ViewController;
@@ -188,7 +193,9 @@ namespace UnityEditor.ShortcutManagement
             var contextManager = ShortcutIntegration.instance.contextManager;
             var profileManager = ShortcutIntegration.instance.profileManager;
             var bindingValidator = ShortcutIntegration.instance.bindingValidator;
+            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_ViewController = new ShortcutManagerWindowViewController(m_State, directory, bindingValidator, profileManager, contextManager, ShortcutIntegration.instance);
+            #pragma warning restore UAL0018
             m_View = new ShortcutManagerWindowView(m_ViewController, m_ViewController);
             m_ViewController.SetView(m_View);
 
@@ -239,3 +246,4 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

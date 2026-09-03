@@ -14,7 +14,7 @@ namespace UnityEditor.Connect
     {
         internal static void TranslateStringsInTree(VisualElement rootElement)
         {
-            rootElement.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
+            rootElement.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text, null));
         }
 
         internal static void CapitalizeStringsInTree(VisualElement rootElement)

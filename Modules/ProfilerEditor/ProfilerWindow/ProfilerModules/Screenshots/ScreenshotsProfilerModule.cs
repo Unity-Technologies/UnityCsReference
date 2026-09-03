@@ -15,7 +15,9 @@ namespace UnityEditorInternal.Profiling
     [ProfilerModuleMetadata("Screenshots", IconPath = "Profiler.Video")]
     internal class ScreenshotsProfilerModule : ProfilerModuleBase
     {
-        const int k_DefaultOrderIndex = 20;
+        // Same order as CPU (0); the sort's secondary tiebreak is alphabetical by display name, so
+        // "CPU Usage" sorts first and Screenshots lands immediately after it, ahead of the rest.
+        const int k_DefaultOrderIndex = 0;
 
         public override bool usesCounters => false;
 

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -33,7 +34,9 @@ namespace UnityEditor.Lighting
 
             var button = new Button(() =>
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 LightmapPreviewWindow.CreateLightmapPreviewWindowIndexedWithExposure(lightmapIndex, false, false, exposure);
+                #pragma warning restore UAL0015
             })
             { text = k_OpenPreviewText };
             button.AddToClassList(k_PreviewButtonClassName);
@@ -52,3 +55,4 @@ namespace UnityEditor.Lighting
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

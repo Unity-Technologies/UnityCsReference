@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -1053,11 +1054,6 @@ namespace UnityEditor.Search
             if (Application.HasARGV("readonly"))
                 return false;
 
-            // If we are a mppm clone: we are a secondary process
-            // NOTE: Use Application.HasARGV instead of : Unity.Multiplayer.PlayMode.Editor.VirtualProjectsEditor.IsClone to avoid allocation
-            if (Application.HasARGV(Unity.Multiplayer.PlayMode.Editor.CommandLineParameters.k_CloneProcess))
-                return false;
-
             if (EditorUtility.isInSafeMode)
                 return false;
 
@@ -1886,3 +1882,4 @@ namespace UnityEditor.Search
     }
 
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

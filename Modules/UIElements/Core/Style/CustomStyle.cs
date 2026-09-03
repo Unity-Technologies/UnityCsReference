@@ -9,6 +9,11 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Define a custom style property for an element to be retrieved with <see cref="CustomStyleResolvedEvent"/>.
     /// </summary>
+    // Readonly statics of this type are whitelisted in the statics-cleanup analysis (s_AllowedReadonlyTypes in
+    // AutoStaticsCleanupModel) because values stay valid across code reload: the cached UniqueStyleString id below
+    // indexes into intern tables that are [NoAutoStaticsCleanup] and survive reload. The whitelist matches
+    // constructed types by name, so readonly statics with a new T also need a new entry there. If those tables
+    // ever get cleaned up on reload, the whitelist entries must be removed together with that change.
     public struct CustomStyleProperty<T> : IEquatable<CustomStyleProperty<T>>
     {
         /// <summary>
@@ -93,6 +98,16 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <returns>True if the property is found, false if not.</returns>
         bool TryGetValue(CustomStyleProperty<Color> property, out Color value);
+        /// <summary>
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
+        /// </summary>
+        /// <returns>True if the property is found, false if not.</returns>
+        bool TryGetValue(CustomStyleProperty<Length> property, out Length value);
+        /// <summary>
+        /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
+        /// </summary>
+        /// <returns>True if the property is found, false if not.</returns>
+        bool TryGetValue<TEnum>(CustomStyleProperty<StyleEnum<TEnum>> property, out StyleEnum<TEnum> value) where TEnum : struct, Enum;
         /// <summary>
         /// Gets the value associated with the specified <see cref="CustomStyleProperty{T}"/>.
         /// </summary>

@@ -44,10 +44,7 @@ namespace UnityEngine.UIElements.UIR
         {
             var newArray = new NativeArray<T>(newLength, m_MemoryLabel, NativeArrayOptions.UninitializedMemory);
             if (m_Count > 0)
-            {
-                var dst = newArray.Slice(0, m_Count);
-                dst.CopyFrom(m_NativeArray);
-            }
+                NativeArray<T>.Copy(m_NativeArray, newArray, m_Count);
 
             // Defer disposal if needed, otherwise dispose immediately
             if (m_MaxQueuedFrameCount > 0 && m_DeferredArrays != null)

@@ -117,12 +117,12 @@ namespace UnityEditor.Accessibility
 
         public static string GetDisplayRoleText(AccessibilityRole role)
         {
-            return role.ToString() + (role == AccessibilityRole.None ? L10n.Tr(" (Role)") : null);
+            return role.ToString() + (role == AccessibilityRole.None ? L10n.Tr(" (Role)", null) : null);
         }
 
         public static string GetDisplayLabelText(bool active, string label)
         {
-            return "\"" + ReplaceNewLines(label) + "\"" + (!active ? L10n.Tr(" (Inactive)") : null);
+            return "\"" + ReplaceNewLines(label) + "\"" + (!active ? L10n.Tr(" (Inactive)", null) : null);
         }
 
         private void UpdateTexts()

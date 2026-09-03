@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
@@ -39,7 +40,7 @@ namespace UnityEditor.UIElements
 
             UIDocument.IsEditingPrefab = () => PrefabStageUtility.GetCurrentPrefabStage() != null;
 
-            L10nUtility.SetTranslateFunc(L10n.Tr);
+            L10nUtility.SetTranslateFunc(text => L10n.Tr(text, null));
         }
 
         private static void SetICUDataAsset(PanelSettings target)
@@ -56,3 +57,4 @@ namespace UnityEditor.UIElements
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System.Collections.Generic;
 using System.Globalization;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -48,6 +48,7 @@ namespace Unity.UIToolkit.Editor
             static readonly string s_OptionsPopupContainerUssClass = "unity-style-field__options-popup-container";
             static readonly string s_OptionsPopupUssClass = "unity-style-field__options-popup";
 
+            [NoAutoStaticsCleanup] // fixed option labels, never mutated
             static readonly List<string> k_Options = new() { k_NoOption, k_Auto };
 
             readonly PopupField<string> m_OptionsPopup;
@@ -108,4 +109,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,6 +11,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -694,7 +694,7 @@ namespace Unity.UIToolkit.Editor
         }
 
         // Reuse the generator-emitted color row to keep AddColorMods allocation-free.
-        [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+        [NoAutoStaticsCleanup] // immutable color-suffix list, safe to persist
         private static readonly IReadOnlyList<string> k_ColorSuffixes =
             UIAnimationBinder.GetChannelSuffixes(StylePropertyId.Color);
 
@@ -972,16 +972,13 @@ namespace Unity.UIToolkit.Editor
             if (string.IsNullOrEmpty(propertyName))
                 return false;
 
-            var lastSlash = propertyName.LastIndexOf('/');
-            if (lastSlash < 0 || lastSlash == propertyName.Length - 1)
+            // A bare root-level name is refused on purpose: the panel-wide binder registers its root with
+            // exposeRootElement false, so a panel-wide style name always carries at least one segment.
+            if (!UIAnimationPath.TrySplitElementPath(propertyName, out var elementPath) || elementPath.Length == 0)
                 return false;
 
-            var baseName = propertyName.Substring(lastSlash + 1);
-            var dot = baseName.IndexOf('.');
-            if (dot > 0)
-                baseName = baseName.Substring(0, dot);
-
-            return Enum.TryParse(baseName, false, out stylePropertyId) && stylePropertyId != StylePropertyId.Unknown;
+            return Enum.TryParse(UIAnimationPath.BaseName(propertyName), false, out stylePropertyId)
+                && stylePropertyId != StylePropertyId.Unknown;
         }
 
         internal static bool TryGetBindingPropertyName(StylePropertyId stylePropertyId, out string bindingName)
@@ -1236,7 +1233,7 @@ namespace Unity.UIToolkit.Editor
 
         internal static void AddModification(List<UndoPropertyModification> list, UnityEngine.Object target, string elementPath, string propName, string channelSuffix, float previousValue, float currentValue)
         {
-            var propertyName = BuildStyleKeyPropertyName(elementPath, propName, channelSuffix);
+            var propertyName = UIAnimationPath.BuildPropertyName(elementPath, propName, channelSuffix);
 
             var prevStr = previousValue.ToString(CultureInfo.InvariantCulture);
             var curStr = currentValue.ToString(CultureInfo.InvariantCulture);
@@ -1265,7 +1262,7 @@ namespace Unity.UIToolkit.Editor
         // `value` is left as an empty string because the native AddPropertyModification path crashes on null.
         internal static void AddObjectModification(List<UndoPropertyModification> list, UnityEngine.Object target, string elementPath, string propName, string channelSuffix, UnityEngine.Object previousValue, UnityEngine.Object currentValue)
         {
-            var propertyName = BuildStyleKeyPropertyName(elementPath, propName, channelSuffix);
+            var propertyName = UIAnimationPath.BuildPropertyName(elementPath, propName, channelSuffix);
 
             var prevMod = new PropertyModification
             {
@@ -1287,18 +1284,6 @@ namespace Unity.UIToolkit.Editor
                 previousValue = prevMod,
                 currentValue = curMod
             });
-        }
-
-        internal static string BuildStyleKeyPropertyName(string elementPath, string propName, string channelSuffix)
-        {
-            // Empty path produces "Opacity", not "/Opacity", to match Add Property and stored curves.
-            var baseName = string.IsNullOrEmpty(elementPath)
-                ? propName
-                : $"{elementPath}/{propName}";
-
-            return string.IsNullOrEmpty(channelSuffix)
-                ? baseName
-                : baseName + channelSuffix;
         }
 
         // Enumerates the fully-qualified keys a driven property registers, one per channel suffix
@@ -1356,17 +1341,16 @@ namespace Unity.UIToolkit.Editor
                     {
                         if (m_Index > 0)
                             return false;
-                        m_Current = BuildStyleKeyPropertyName(m_ElementPath, m_PropName, null);
+                        m_Current = UIAnimationPath.BuildPropertyName(m_ElementPath, m_PropName, null);
                         return true;
                     }
 
                     if (m_Index >= m_Count)
                         return false;
-                    m_Current = BuildStyleKeyPropertyName(m_ElementPath, m_PropName, m_Suffixes[m_Index]);
+                    m_Current = UIAnimationPath.BuildPropertyName(m_ElementPath, m_PropName, m_Suffixes[m_Index]);
                     return true;
                 }
             }
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

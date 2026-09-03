@@ -8,13 +8,14 @@ namespace Unity.Profiling.Editor
     public readonly struct ProfilerCounterDescriptor
     {
         public ProfilerCounterDescriptor(string name, ProfilerCategory category) : this(name, category.Name) {}
-        
+
         public ProfilerCounterDescriptor(string name, string description, ProfilerCategory category) : this(name, description, category.Name) {}
 
         public ProfilerCounterDescriptor(string name, string categoryName)
         {
             Name = name;
             CategoryName = categoryName;
+            DisplayName = name;
         }
 
         public ProfilerCounterDescriptor(string name, string description, string categoryName)
@@ -22,12 +23,27 @@ namespace Unity.Profiling.Editor
             Name = name;
             Description = description;
             CategoryName = categoryName;
+            DisplayName = name;
+        }
+
+        public ProfilerCounterDescriptor(string name, ProfilerCategory category, string displayName) : this(name, null, category.Name, displayName) {}
+
+        public ProfilerCounterDescriptor(string name, string description, ProfilerCategory category, string displayName) : this(name, description, category.Name, displayName) {}
+
+        public ProfilerCounterDescriptor(string name, string description, string categoryName, string displayName)
+        {
+            Name = name;
+            Description = description;
+            CategoryName = categoryName;
+            DisplayName = displayName ?? name;
         }
 
         public readonly string Name { get; }
         public readonly string Description { get; }
         public readonly string CategoryName { get; }
 
-        public override string ToString() => $"{Name} ({CategoryName})";
+        public readonly string DisplayName { get; }
+
+        public override string ToString() => DisplayName == Name ? $"{Name} ({CategoryName})" : $"{DisplayName} ({CategoryName})";
     }
 }

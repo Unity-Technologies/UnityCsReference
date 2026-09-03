@@ -29,13 +29,13 @@ internal class RemoveAction : PackageAction
     protected override bool TriggerActionImplementation(IReadOnlyCollection<IPackage> packages)
     {
         var isModules = packages.AnyMatches(p => p.versions.primary.HasTag(PackageTag.BuiltIn));
-        var title = string.Format(L10n.Tr(isModules ? "Disabling {0} items" : "Removing {0} items"), packages.Count);
+        var title = string.Format(L10n.Tr(isModules ? "Disabling {0} items" : "Removing {0} items", null), packages.Count);
 
         var result = 0;
         if (!m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation)
         {
-            var message = L10n.Tr(isModules ? "Are you sure you want to disable these items?" : "Are you sure you want to remove these items?");
-            result = m_Application.DisplayDialogComplex("removeMultiplePackages", title, message, L10n.Tr(isModules ? "Disable" : "Remove"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
+            var message = L10n.Tr(isModules ? "Are you sure you want to disable these items?" : "Are you sure you want to remove these items?", null);
+            result = m_Application.DisplayDialogComplex("removeMultiplePackages", title, message, L10n.Tr(isModules ? "Disable" : "Remove", null), L10n.Tr("Cancel", null), L10n.Tr("Never ask", null));
         }
 
         // Cancel
@@ -61,9 +61,9 @@ internal class RemoveAction : PackageAction
             if (!m_PackageManagerPrefs.skipDisableConfirmation)
             {
                 result = m_Application.DisplayDialogComplex("disableBuiltInPackage",
-                    L10n.Tr("Disable Built-In Package"),
-                    L10n.Tr("Are you sure you want to disable this built-in package?"),
-                    L10n.Tr("Disable"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
+                    L10n.Tr("Disable Built-In Package", null),
+                    L10n.Tr("Are you sure you want to disable this built-in package?", null),
+                    L10n.Tr("Disable", null), L10n.Tr("Cancel", null), L10n.Tr("Never ask", null));
             }
         }
         else
@@ -72,17 +72,17 @@ internal class RemoveAction : PackageAction
             if (isPartOfFeature || !m_PackageManagerPrefs.skipRemoveConfirmation)
             {
                 var descriptor = version.GetDescriptor();
-                var title = string.Format(L10n.Tr("Removing {0}"), descriptor);
+                var title = string.Format(L10n.Tr("Removing {0}", null), descriptor);
                 if (isPartOfFeature)
                 {
-                    var message = string.Format(L10n.Tr("Are you sure you want to remove this {0} that is used by at least one installed feature?"), descriptor);
-                    var removeIt = m_Application.DisplayDialog("removePackagePartOfFeature", title, message, L10n.Tr("Remove"), L10n.Tr("Cancel"));
+                    var message = string.Format(L10n.Tr("Are you sure you want to remove this {0} that is used by at least one installed feature?", null), descriptor);
+                    var removeIt = m_Application.DisplayDialog("removePackagePartOfFeature", title, message, L10n.Tr("Remove", null), L10n.Tr("Cancel", null));
                     result = removeIt ? 0 : 1;
                 }
                 else
                 {
-                    var message = string.Format(L10n.Tr("Are you sure you want to remove this {0}?"), descriptor);
-                    result = m_Application.DisplayDialogComplex("removePackage", title, message, L10n.Tr("Remove"), L10n.Tr("Cancel"), L10n.Tr("Never ask"));
+                    var message = string.Format(L10n.Tr("Are you sure you want to remove this {0}?", null), descriptor);
+                    result = m_Application.DisplayDialogComplex("removePackage", title, message, L10n.Tr("Remove", null), L10n.Tr("Cancel", null), L10n.Tr("Never ask", null));
                 }
             }
         }
@@ -125,42 +125,45 @@ internal class RemoveAction : PackageAction
         if (isInProgress)
             return k_InProgressGenericTooltip;
         if (version?.HasTag(PackageTag.BuiltIn) == true)
-            return string.Format(L10n.Tr("Disable the use of this {0} in your project."), version.GetDescriptor());
-        return string.Format(L10n.Tr("Click to remove this {0} from your project."), version.GetDescriptor());
+            return string.Format(L10n.Tr("Disable the use of this {0} in your project.", null), version.GetDescriptor());
+        return string.Format(L10n.Tr("Click to remove this {0} from your project.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
         if (version?.HasTag(PackageTag.BuiltIn) == true)
-            return isInProgress ? L10n.Tr("Disabling") : L10n.Tr("Disable");
-        return isInProgress ? L10n.Tr("Removing") : L10n.Tr("Remove");
+            return isInProgress ? L10n.Tr("Disabling", null) : L10n.Tr("Disable", null);
+        return isInProgress ? L10n.Tr("Removing", null) : L10n.Tr("Remove", null);
     }
 
     public override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsUninstallInProgress(version.package);
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
+        new DisableIfCompiling(m_Application)
+    );
 
-    internal class DisableIfInstalledAsDependency : DisableCondition
+    internal class DisableIfInstalledAsDependency : IDisableCondition<IPackageVersion>
     {
-        private static readonly string k_TooltipTemplate = L10n.Tr("You cannot remove this {0} because another installed package or feature depends on it. See dependencies for more details.");
-        public DisableIfInstalledAsDependency(IPackageVersion version)
+        private static readonly string k_TooltipTemplate = L10n.Tr("You cannot remove this {0} because another installed package or feature depends on it. See dependencies for more details.", null);
+
+        public bool IsActive(IPackageVersion version, out string tooltip)
         {
-            active = version != null && version.package.versions.installed == version
-                                    && !version.isDirectDependency
-                                    && !version.isInvalidSemVerInManifest;
-            tooltip = string.Format(k_TooltipTemplate, version?.GetDescriptor() ?? string.Empty);
+            tooltip = null;
+            if (version == null || version.package.versions.installed != version
+                || version.isDirectDependency
+                || version.isInvalidSemVerInManifest)
+                return false;
+
+            tooltip = string.Format(k_TooltipTemplate, version.GetDescriptor());
+            return true;
         }
     }
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfInstalledAsDependency(version);
-        yield return new DisableIfExportingInProgress(version.package);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfInstalledAsDependency(),
+        new DisableIfExportingInProgress()
+    );
 
     private void DeselectPackages(IReadOnlyCollection<IPackage> packages)
     {

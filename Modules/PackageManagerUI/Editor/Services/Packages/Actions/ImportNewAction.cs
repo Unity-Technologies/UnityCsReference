@@ -29,11 +29,11 @@ internal class ImportNewAction : ImportActionBase
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
-        return string.Format(L10n.Tr("Click to import assets from the {0} into your project."), version.GetDescriptor());
+        return string.Format(L10n.Tr("Click to import assets from the {0} into your project.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return !string.IsNullOrEmpty(version?.versionString) ? string.Format(L10n.Tr("Import {0} to project"), version.versionString) : L10n.Tr("Import");
+        return !string.IsNullOrEmpty(version?.versionString) ? string.Format(L10n.Tr("Import {0} to project", null), version.versionString) : L10n.Tr("Import", null);
     }
 }

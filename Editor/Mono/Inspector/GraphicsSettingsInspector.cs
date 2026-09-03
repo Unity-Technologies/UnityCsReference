@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphicsDeviceFeatures not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,11 +37,11 @@ namespace UnityEditor
             internal const string helpBoxesTemplateForSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-HelpBoxes.uxml";
             internal const string builtInTabContent = "UXML/ProjectSettings/GraphicsSettingsEditor-BuiltInTab.uxml";
             internal static readonly string k_BuildProfileGraphicsSettingsOverrideWarning =
-                L10n.Tr("The current active build profile has overridden certain Graphics settings. To ensure that the correct settings are included in your build, see the Build Profiles...");
+                L10n.Tr("The current active build profile has overridden certain Graphics settings. To ensure that the correct settings are included in your build, see the Build Profiles...", null);
             internal static readonly string k_GraphicsSettingsBuiltinInfo =
-                L10n.Tr("The Built-In Render Pipeline is deprecated. Migrate your project to the Universal Render Pipeline instead.");
+                L10n.Tr("The Built-In Render Pipeline is deprecated. Migrate your project to the Universal Render Pipeline instead.", null);
             internal static readonly string k_GraphicsSettingsBuiltinWarning =
-                L10n.Tr("If you don't assign a render pipeline asset in your project, Unity uses the Built-In Render Pipeline which is deprecated. Migrate your project to the Universal Render Pipeline instead.");
+                L10n.Tr("If you don't assign a render pipeline asset in your project, Unity uses the Built-In Render Pipeline which is deprecated. Migrate your project to the Universal Render Pipeline instead.", null);
         }
         internal IEnumerable<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings => m_GlobalSettings;
 
@@ -182,13 +183,13 @@ namespace UnityEditor
 
         void CalculateLightmapStrippingFromCurrentScene()
         {
-            Undo.RegisterCompleteObjectUndo(target, L10n.Tr("Calculate Lightmap Stripping From Current Scene"));
+            Undo.RegisterCompleteObjectUndo(target, L10n.Tr("Calculate Lightmap Stripping From Current Scene", null));
             ShaderUtil.CalculateLightmapStrippingFromCurrentScene();
         }
 
         void CalculateFogStrippingFromCurrentScene()
         {
-            Undo.RegisterCompleteObjectUndo(target, L10n.Tr("Calculate Fog Stripping From Current Scene"));
+            Undo.RegisterCompleteObjectUndo(target, L10n.Tr("Calculate Fog Stripping From Current Scene", null));
             ShaderUtil.CalculateFogStrippingFromCurrentScene();
         }
 
@@ -258,10 +259,10 @@ namespace UnityEditor
             saveButton.clickable = new Clickable(() =>
             {
                 var assetPath = EditorUtility.SaveFilePanelInProject(
-                    L10n.Tr("Save Shader Variant Collection"),
+                    L10n.Tr("Save Shader Variant Collection", null),
                     "NewShaderVariants",
                     "shadervariants",
-                    L10n.Tr("Save shader variant collection"),
+                    L10n.Tr("Save shader variant collection", null),
                     ProjectWindowUtil.GetActiveFolderPath());
                 if (!string.IsNullOrEmpty(assetPath))
                     ShaderUtil.SaveCurrentShaderVariantCollection(assetPath);
@@ -447,7 +448,7 @@ namespace UnityEditor
 
             var enumField = lightBakerSection.Q<EnumField>("DefaultLightBaker");
 
-            infoBox.buttonText = L10n.Tr("Don't show again");
+            infoBox.buttonText = L10n.Tr("Don't show again", null);
             infoBox.onButtonClicked += () =>
             {
                 EditorPrefs.SetBool(k_UnityComputeLightBakerInfoBoxDismissedKey, true);
@@ -824,3 +825,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

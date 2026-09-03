@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 /*
 GUILayout.TextureGrid number of horiz elements doesn't work
 */
@@ -177,6 +178,7 @@ namespace UnityEditor
             public readonly GUIContent addOrEnable = EditorGUIUtility.TrTextContent("Add/Enable");
             public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("This inspector tab is not the active Terrain inspector, paint functionality disabled.");
             public readonly GUIContent makeMeActive = EditorGUIUtility.TrTextContent("Activate this inspector");
+            public readonly GUIContent readOnlyEditor = EditorGUIUtility.TrTextContent("Terrain editing is not available in an Editor instance that cannot modify the project's assets.");
 
             // Heightmaps
             public readonly GUIContent textures = EditorGUIUtility.TrTextContent("Texture Resolutions (On Terrain Data)");
@@ -490,6 +492,9 @@ namespace UnityEditor
 
         internal void SelectToolByName(string toolName)
         {
+            if (!TerrainEditorUtility.IsEditable())
+                return;
+
             Debug.Assert(!string.IsNullOrEmpty(toolName) && m_ToolNameToType.ContainsKey(toolName),
                 $"Cannot select tool with invalid tool name: {toolName}. Make sure the tool name is correct and that the tool is loaded.");
             ITerrainPaintTool tool;
@@ -1604,10 +1609,10 @@ namespace UnityEditor
                             ResampleDetailResolution(terrainData, terrainData.detailResolution, terrainData.detailResolutionPerPatch, detailScatterMode);
                         }
                         else if (EditorUtility.DisplayDialog(
-                            L10n.Tr("Change Detail Scatter Mode"),
-                            L10n.Tr("Changing detail scatter mode to \"Instance count\" will erase existing detail placements. This action is undoable. Do you wish to continue?"),
-                            L10n.Tr("Yes"),
-                            L10n.Tr("No"))
+                            L10n.Tr("Change Detail Scatter Mode", null),
+                            L10n.Tr("Changing detail scatter mode to \"Instance count\" will erase existing detail placements. This action is undoable. Do you wish to continue?", null),
+                            L10n.Tr("Yes", null),
+                            L10n.Tr("No", null))
                             )
                         {
                             m_Terrain.terrainData.SetDetailScatterMode(detailScatterMode);
@@ -2203,6 +2208,14 @@ namespace UnityEditor
                 GUILayout.EndVertical();
             }
 
+            var isReadOnlyEditor = !TerrainEditorUtility.IsEditable();
+            if (isReadOnlyEditor)
+            {
+                GUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Label(styles.readOnlyEditor, EditorStyles.wordWrappedLabel);
+                GUILayout.EndVertical();
+            }
+
             if (Event.current.type == EventType.Layout)
                 m_TerrainCollider = m_Terrain.gameObject.GetComponent<TerrainCollider>();
 
@@ -2220,7 +2233,7 @@ namespace UnityEditor
                 GUILayout.EndVertical();
             }
 
-            EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetEntityId() || s_activeTerrainInspectorInstance != this);
+            EditorGUI.BeginDisabledGroup(isReadOnlyEditor || s_activeTerrainInspector != GetEntityId() || s_activeTerrainInspectorInstance != this);
 
             int tool = (int)selectedCategory;
             // Show the master tool selector
@@ -2247,6 +2260,8 @@ namespace UnityEditor
 
             // Display a warning if scale is not 1, and if rotation is not 0.
             TerrainInspectorUtility.TerrainTransformValidationGUI(m_Terrain.transform);
+
+            EditorGUI.BeginDisabledGroup(isReadOnlyEditor);
 
             switch ((TerrainTool)tool)
             {
@@ -2280,6 +2295,8 @@ namespace UnityEditor
                     break;
             }
 
+            EditorGUI.EndDisabledGroup();
+
             serializedObject.ApplyModifiedProperties();
         }
 
@@ -2298,6 +2315,9 @@ namespace UnityEditor
 
         public void DisplayActiveTerrainTool()
         {
+            if (!TerrainEditorUtility.IsEditable())
+                return;
+
             var activeTool = GetActiveTerrainTool();
             if (activeTool != null)
             {
@@ -2544,7 +2564,7 @@ namespace UnityEditor
 
             Initialize();
 
-            if (selectedCategory == TerrainTool.None || GetActiveTerrainTool() == null)
+            if (selectedCategory == TerrainTool.None || GetActiveTerrainTool() == null || !TerrainEditorUtility.IsEditable())
             {
                 return;
             }
@@ -2700,3 +2720,4 @@ namespace UnityEditor
         }
     }
 } //namespace
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

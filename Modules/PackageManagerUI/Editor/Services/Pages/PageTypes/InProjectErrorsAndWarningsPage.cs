@@ -13,7 +13,7 @@ internal class InProjectErrorsAndWarningsPage : InProjectPage
     public new const string k_Id = "ErrorsAndWarnings";
 
     public override string id => k_Id;
-    public override string displayName => L10n.Tr("Errors and Warnings");
+    public override string displayName => L10n.Tr("Errors and Warnings", null);
 
     [SerializeField]
     private Icon m_Icon;

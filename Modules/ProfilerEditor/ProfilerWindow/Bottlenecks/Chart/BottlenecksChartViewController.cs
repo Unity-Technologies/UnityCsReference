@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -106,7 +107,7 @@ namespace Unity.Profiling.Editor.UI
             var modelBuilder = new BottlenecksChartViewModelBuilder(m_DataService, m_SettingsService, targetFrameDurationNs);
             m_Model = modelBuilder.Build();
 
-            m_TitleLabel.text = L10n.Tr("Highlights");
+            m_TitleLabel.text = L10n.Tr("Highlights", null);
             foreach (var fpsValue in k_FPSValues)
             {
                 m_TargetMenu.menu.AppendAction($"{fpsValue} FPS", (action) => { SetTargetFramesPerSecondSetting(fpsValue); });
@@ -447,3 +448,4 @@ namespace Unity.Profiling.Editor.UI
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

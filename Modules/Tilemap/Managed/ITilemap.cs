@@ -325,6 +325,13 @@ namespace UnityEngine.Tilemaps
             m_RefreshCount = 0;
             m_NeedSort = true;
 
+            TileBase lastTile = null;
+            EntityId lastEntityId = EntityId.None;
+            // The Tile may not be resolvable, eg. it has been destroyed or unloaded while still
+            // referenced by the Tilemap. Skip it, as the single refresh path does. Cached alongside
+            // lastTile as the null test on an Object is not free.
+            bool lastTileValid = false;
+
             for (int i = 0; i < count; i++)
             {
                 var oldTileId = oldTilesIds[i];
@@ -332,13 +339,25 @@ namespace UnityEngine.Tilemaps
                 var position = positions[i];
                 if (oldTileId != EntityId.None)
                 {
-                    var tile = (TileBase) Resources.EntityIdToObject( oldTileId);
-                    tile.RefreshTile(position, this);
+                    if (lastEntityId != oldTileId)
+                    {
+                        lastTile = Resources.EntityIdToObject(oldTileId) as TileBase;
+                        lastEntityId = oldTileId;
+                        lastTileValid = lastTile != null;
+                    }
+                    if (lastTileValid)
+                        lastTile.RefreshTile(position, this);
                 }
                 if (newTileId != EntityId.None)
                 {
-                    var tile = (TileBase) Resources.EntityIdToObject(newTileId);
-                    tile.RefreshTile(position, this);
+                    if (lastEntityId != newTileId)
+                    {
+                        lastTile = Resources.EntityIdToObject(newTileId) as TileBase;
+                        lastEntityId = newTileId;
+                        lastTileValid = lastTile != null;
+                    }
+                    if (lastTileValid)
+                        lastTile.RefreshTile(position, this);
                 }
             }
         }
@@ -371,12 +390,19 @@ namespace UnityEngine.Tilemaps
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, ash);
             tilemap.m_NeedSort = false;
 
-            tilemap.HandleRefreshPositions(count, usedTileIds, oldTilesIds, newTilesIds, positions);
+            try
+            {
+                tilemap.HandleRefreshPositions(count, usedTileIds, oldTilesIds, newTilesIds, positions);
 
-            tilemap.m_Tilemap.RefreshTilesNative(tilemap.m_RefreshPos.m_Buffer, tilemap.m_RefreshCount, tilemap.m_NeedSort);
-            tilemap.m_RefreshPos.Dispose();
-            tilemap.m_AddToList = false;
-            tilemap.m_NeedSort = true;
+                tilemap.m_Tilemap.RefreshTilesNative(tilemap.m_RefreshPos.m_Buffer, tilemap.m_RefreshCount, tilemap.m_NeedSort);
+            }
+            finally
+            {
+                // A Tile refreshing itself can throw, so always restore state for the next refresh.
+                tilemap.m_RefreshPos.Dispose();
+                tilemap.m_AddToList = false;
+                tilemap.m_NeedSort = true;
+            }
 
             AtomicSafetyHandle.Release(ash);
         }
@@ -421,6 +447,9 @@ namespace UnityEngine.Tilemaps
             , NativeArray<Vector3Int> positions
             , NativeArray<TileData> tileDataArray)
         {
+            TileBase lastTile = null;
+            EntityId lastEntityId = EntityId.None;
+            bool lastTileValid = false;
             for (int i = 0; i < count; i++)
             {
                 var tileId = tileIds[i];
@@ -429,8 +458,14 @@ namespace UnityEngine.Tilemaps
                 {
                     ref var tileData = ref UnsafeUtility.ArrayElementAsRef<TileData>(tileDataArray.GetUnsafePtr(), i);
                     tileData = TileData.Default;
-                    var tile = Resources.EntityIdToObject(tileId) as TileBase;
-                    tile.GetTileData(position, this, ref tileData);
+                    if (lastEntityId != tileId)
+                    {
+                        lastTile = Resources.EntityIdToObject(tileId) as TileBase;
+                        lastEntityId = tileId;
+                        lastTileValid = lastTile != null;
+                    }
+                    if (lastTileValid)
+                        lastTile.GetTileData(position, this, ref tileData);
                 }
             }
             return default(JobHandle);
@@ -490,10 +525,13 @@ namespace UnityEngine.Tilemaps
                             {
                                 var position = positions[i];
                                 var tile = Resources.EntityIdToObject(tileId) as TileBase;
-                                TileAnimationData tileAnimationData = default;
-                                tile.GetTileAnimationData(positions[i], this, ref tileAnimationData);
-                                ref var tileAnimationEntityIdData = ref UnsafeUtility.ArrayElementAsRef<TileAnimationEntityIdData>(tileAnimationDataArray.GetUnsafePtr(), i);
-                                tileAnimationEntityIdData.CopyFrom(tileAnimationData);
+                                if (tile != null)
+                                {
+                                    TileAnimationData tileAnimationData = default;
+                                    tile.GetTileAnimationData(position, this, ref tileAnimationData);
+                                    ref var tileAnimationEntityIdData = ref UnsafeUtility.ArrayElementAsRef<TileAnimationEntityIdData>(tileAnimationDataArray.GetUnsafePtr(), i);
+                                    tileAnimationEntityIdData.CopyFrom(tileAnimationData);
+                                }
                             }
                             break;
                         }
@@ -552,6 +590,10 @@ namespace UnityEngine.Tilemaps
             Vector3Int* positionsPtrCast = (Vector3Int*)positions.GetUnsafePtr();
             EntityId* tileIdPtrCast = (EntityId*)tileIds.GetUnsafePtr();
             EntityId* goIdPtrCast = (EntityId*)tileGameObjectIds.GetUnsafePtr();
+
+            TileBase lastTile = null;
+            int lastTileIdx = -1;
+            bool lastTileValid = false;
             for (int i = 0; i < count; i++)
             {
                 var tileId = *(tileIdPtrCast + i);
@@ -568,8 +610,14 @@ namespace UnityEngine.Tilemaps
                                 go = null;
                                 if (goId != EntityId.None)
                                     go = Resources.EntityIdToObject(goId) as GameObject;
-                                var tile = Resources.EntityIdToObject(tileId) as TileBase;
-                                tile.StartUp(position, this, go);
+                                if (lastTileIdx != j)
+                                {
+                                    lastTileIdx = j;
+                                    lastTile = Resources.EntityIdToObject(tileId) as TileBase;
+                                    lastTileValid = lastTile != null;
+                                }
+                                if (lastTileValid)
+                                    lastTile.StartUp(position, this, go);
                             }
                             break;
                         }

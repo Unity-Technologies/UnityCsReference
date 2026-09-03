@@ -45,12 +45,12 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Name to be displayed in the build button name
         /// </summary>
-        public string buildButtonDisplayName { get; set; } = L10n.Tr("Build");
+        public string buildButtonDisplayName { get; set; } = L10n.Tr("Build", null);
 
         /// <summary>
         /// Name to be displayed in the build and run button name
         /// </summary>
-        public string buildAndRunButtonDisplayName { get; set; } = L10n.Tr("Build And Run");
+        public string buildAndRunButtonDisplayName { get; set; } = L10n.Tr("Build And Run", null);
 
         /// <summary>
         /// Activate action allows a profile to be set as active profile.

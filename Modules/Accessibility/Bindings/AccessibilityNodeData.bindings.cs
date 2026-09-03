@@ -539,6 +539,13 @@ namespace UnityEngine.Accessibility
     /// when a screen reader user performs a scrolling action.
     /// </para>
     /// <para>
+    /// Each direction describes how the visible region of the content should move: <see cref="Up"/> and
+    /// <see cref="Left"/> should move the visible region toward the start of the content, revealing the content
+    /// above or to the left of it, and <see cref="Down"/> and <see cref="Right"/> should move it toward the end.
+    /// <see cref="Forward"/> and <see cref="Backward"/> should scroll to the next and previous portion of the
+    /// content along its main scrolling axis.
+    /// </para>
+    /// <para>
     /// SA:
     ///
     ///- [[wiki:accessibility|Accessibility for mobile applications]]
@@ -554,50 +561,53 @@ namespace UnityEngine.Accessibility
         Unknown,
 
         /// <summary>
-        /// The user is scrolling forward.
+        /// The user wants to move the visible region to the next portion of the content, along its main scrolling axis.
         /// </summary>
         /// <remarks>
-        /// **Platform support**: The forward scroll direction isn't supported on Windows.
+        /// **Platform support**: The @@Forward@@ scroll direction is not supported on Windows.
         /// </remarks>
         Forward,
 
         /// <summary>
-        /// The user is scrolling backward.
+        /// The user wants to move the visible region to the previous portion of the content, along its main scrolling
+        /// axis.
         /// </summary>
         /// <remarks>
-        /// **Platform support**: The backward scroll direction is not supported on Windows.
+        /// **Platform support**: The @@Backward@@ scroll direction is not supported on Windows.
         /// </remarks>
         Backward,
 
         /// <summary>
-        /// The user is scrolling from right to left.
+        /// The user wants to move the visible region toward the left edge of the content, revealing the content to the
+        /// left.
         /// </summary>
         /// <remarks>
-        /// **Platform support**: The right-to-left scroll direction is not supported on Android.
+        /// **Platform support**: The @@Left@@ scroll direction is not supported on Android.
         /// </remarks>
         Left,
 
         /// <summary>
-        /// The user is scrolling from left to right.
+        /// The user wants to move the visible region toward the right edge of the content, revealing the content to the
+        /// right.
         /// </summary>
         /// <remarks>
-        /// **Platform support**: The left-to-right scroll direction is not supported on Android.
+        /// **Platform support**: The @@Right@@ scroll direction is not supported on Android.
         /// </remarks>
         Right,
 
         /// <summary>
-        /// The user is scrolling from bottom to top.
+        /// The user wants to move the visible region toward the top of the content, revealing the content above.
         /// </summary>
         /// <remarks>
-        /// **Platform support**: The bottom-to-top scroll direction is not supported on Android.
+        /// **Platform support**: The @@Up@@ scroll direction is not supported on Android.
         /// </remarks>
         Up,
 
         /// <summary>
-        /// The user is scrolling from top to bottom.
+        /// The user wants to move the visible region toward the bottom of the content, revealing the content below.
         /// </summary>
         /// <remarks>
-        /// **Platform support**: The top-to-bottom scroll direction is not supported on Android.
+        /// **Platform support**: The @@Down@@ scroll direction is not supported on Android.
         /// </remarks>
         Down,
     }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -160,6 +161,7 @@ namespace UnityEngine.UIElements
             hierarchy.Add(m_Container);
 
             m_OptionsPopup.RegisterValueChangedCallback(OnPopupFieldValueChange);
+            RegisterCallback<NavigationMoveEvent>(OnNavigationMove, TrickleDown.TrickleDown);
             UpdateFields();
             showUnitAsDropdown = true;
         }
@@ -444,6 +446,14 @@ namespace UnityEngine.UIElements
                 m_OptionsPopup.SetValueWithoutNotify(unitStr);
         }
 
+        void OnNavigationMove(NavigationMoveEvent evt)
+        {
+            // Stop the navigation event before the field's own tab handling re-routes focus back onto
+            // the unit selector and traps it there (UUM-147715).
+            if (evt.elementTarget?.parent == m_OptionsPopup)
+                evt.StopPropagation();
+        }
+
         void OnPopupFieldValueChange(ChangeEvent<string> evt)
         {
             // There's a bug in UIE that makes the PopupField send a ChangeEvent<string> even
@@ -511,3 +521,4 @@ namespace UnityEngine.UIElements
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

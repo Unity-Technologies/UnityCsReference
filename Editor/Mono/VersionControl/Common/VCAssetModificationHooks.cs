@@ -100,7 +100,7 @@ namespace UnityEditorInternal.VersionControl
             if (!Provider.PathIsVersioned(to))
                 return AssetMoveResult.DidNotMove;
 
-            if (InternalEditorUtility.isHumanControllingUs && Directory.Exists(from) && !EditorUtility.DisplayDialog("Confirm version control operation", L10n.Tr($"You are about to move or rename a folder that is under version control.\n\nFrom:\t{from}\nTo:\t{to}\n\nAre you sure you want to perform this action?"), "Yes", "No"))
+            if (InternalEditorUtility.isHumanControllingUs && Directory.Exists(from) && !EditorUtility.DisplayDialog("Confirm version control operation", L10n.Tr($"You are about to move or rename a folder that is under version control.\n\nFrom:\t{from}\nTo:\t{to}\n\nAre you sure you want to perform this action?", null), "Yes", "No"))
             {
                 return AssetMoveResult.FailedMove;
             }

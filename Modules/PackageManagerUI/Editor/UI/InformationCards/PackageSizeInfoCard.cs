@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class PackageSizeInfoCard : PackageInformationCard
 {
-    protected override string titleText => L10n.Tr("Package Size");
+    protected override string titleText => L10n.Tr("Package Size", null);
     protected override InformationCardSize cardSize => InformationCardSize.Small;
 
     public override void Refresh(IPackageVersion version)
@@ -27,6 +27,6 @@ internal class PackageSizeInfoCard : PackageInformationCard
         }
         sizeInfo ??= version.sizes[version.sizes.Count - 1];
 
-        contentText = string.Format(L10n.Tr("{0} ({1} files)"), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount);
+        contentText = string.Format(L10n.Tr("{0} ({1} files)", null), UIUtils.ConvertToHumanReadableSize(sizeInfo.downloadSize), sizeInfo.assetCount);
     }
 }

@@ -57,7 +57,7 @@ namespace Unity.U2D.Physics
         [Obsolete("PhysicsWorld.autoTriggerCallbacks is obsolete. There is no longer a performance benefit to disabling automatic trigger callback dispatch, so trigger callbacks are now always sent every simulation step. Individual shapes can still control whether they generate trigger events at all via PhysicsShape.triggerEvents.", true)]
         public readonly bool autoTriggerCallbacks { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
-        public partial struct WorldProfile
+        public partial record struct WorldProfile
         {
             [ExcludeFromDocs]
             [EditorBrowsable(EditorBrowsableState.Never)]
@@ -70,7 +70,7 @@ namespace Unity.U2D.Physics
             public float solveConstraints { readonly get => constraints; set => constraints = value; }
         }
 
-        public partial struct WorldCounters
+        public partial record struct WorldCounters
         {
             [ExcludeFromDocs]
             [EditorBrowsable(EditorBrowsableState.Never)]
@@ -79,7 +79,7 @@ namespace Unity.U2D.Physics
         }
     }
 
-    public partial struct PhysicsWorldDefinition
+    public partial record struct PhysicsWorldDefinition
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -140,7 +140,7 @@ namespace Unity.U2D.Physics
         public readonly bool SetAndWriteTransform(PhysicsTransform transform) => throw new NotSupportedException();
     }
 
-    public partial struct PhysicsBodyDefinition
+    public partial record struct PhysicsBodyDefinition
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -174,7 +174,7 @@ namespace Unity.U2D.Physics
             ApplyWind(input);
         }
 
-        public partial struct SurfaceMaterial
+        public partial record struct SurfaceMaterial
         {
             [ExcludeFromDocs]
             [EditorBrowsable(EditorBrowsableState.Never)]
@@ -206,7 +206,7 @@ namespace Unity.U2D.Physics
         public readonly PhysicsMaterialCombine2D bouncinessCombine { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
     }
 
-    public partial struct SegmentGeometry
+    public partial record struct SegmentGeometry
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -214,7 +214,7 @@ namespace Unity.U2D.Physics
         public readonly Vector2 ClosestPoint(PhysicsTransform transform, Vector2 point) => ClosestPoint(transform.TransformPoint(point));
     }
 
-    public partial struct ChainSegmentGeometry
+    public partial record struct ChainSegmentGeometry
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -222,7 +222,7 @@ namespace Unity.U2D.Physics
         public readonly Vector2 ClosestPoint(PhysicsTransform transform, Vector2 point) => ClosestPoint(transform.TransformPoint(point));
     }
 
-    public partial struct ChainGeometry
+    public partial record struct ChainGeometry
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -235,7 +235,7 @@ namespace Unity.U2D.Physics
         public ChainGeometry(ReadOnlySpan<Vector2> vertices) => throw new NotSupportedException();
     }
 
-    public partial struct PhysicsRotate
+    public partial record struct PhysicsRotate
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -248,9 +248,9 @@ namespace Unity.U2D.Physics
         public readonly float angle => PhysicsRotate_GetAngle(this);
     }
 
-    public readonly partial struct PhysicsQuery
+    public readonly partial record struct PhysicsQuery
     {
-        public readonly partial struct CastResult
+        public readonly partial record struct CastResult
         {
             [ExcludeFromDocs]
             [EditorBrowsable(EditorBrowsableState.Never)]
@@ -259,9 +259,9 @@ namespace Unity.U2D.Physics
         }
     }
 
-    public readonly partial struct PhysicsEvents
+    public readonly partial record struct PhysicsEvents
     {
-        public readonly partial struct TransformWriteEvent
+        public readonly partial record struct TransformWriteEvent
         {
             [ExcludeFromDocs]
             [EditorBrowsable(EditorBrowsableState.Never)]
@@ -269,7 +269,7 @@ namespace Unity.U2D.Physics
             public readonly PhysicsWorld.TransformPlaneCustom transfomPlaneCustom => transformPlaneCustom;
         }
 
-        public readonly partial struct TransformTweenWriteEvent
+        public readonly partial record struct TransformTweenWriteEvent
         {
             [ExcludeFromDocs]
             [EditorBrowsable(EditorBrowsableState.Never)]
@@ -278,7 +278,7 @@ namespace Unity.U2D.Physics
         }
     }
 
-    public partial struct PhysicsAABB
+    public partial record struct PhysicsAABB
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -286,7 +286,7 @@ namespace Unity.U2D.Physics
         public void Normalized() => Normalize();
     }
 
-    public readonly partial struct PhysicsConstants
+    public readonly partial record struct PhysicsConstants
     {
         [ExcludeFromDocs]
         [EditorBrowsable(EditorBrowsableState.Never)]

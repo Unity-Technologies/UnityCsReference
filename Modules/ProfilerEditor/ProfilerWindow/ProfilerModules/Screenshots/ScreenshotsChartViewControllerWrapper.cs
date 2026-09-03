@@ -27,7 +27,7 @@ namespace UnityEditorInternal.Profiling
         {
             m_ProfilerWindow = profilerWindow;
 
-            model.Tooltip = L10n.Tr("A chart showing a selection of recorded screenshots.");
+            model.Tooltip = L10n.Tr("A chart showing a selection of recorded screenshots.", null);
 
             // We share the module's ChartModel with the base ProfilerModule.Update() path, which
             // re-anchors chartDomainOffset every frame from ProfilerDriver — that's what keeps the

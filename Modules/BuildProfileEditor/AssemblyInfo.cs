@@ -15,3 +15,11 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Insights.Editor.Tests")]
 
 [assembly: InternalsVisibleTo("UnityEditor.Rendering.ShaderBuildSettings.Tests")]
+
+// Platform editor extensions that reach into BuildProfileModule internals: TrText for the build
+// button labels, BuildProfileWindow for repaints. Mono did not enforce these accesses, CoreCLR does.
+[assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.PS5.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.QNX.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.WebGL.Extensions")]

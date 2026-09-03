@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public partial struct ChainGeometry
+    public partial record struct ChainGeometry
     {
         /// <summary>
         /// Create the geometry of a Chain using the specified vertices.

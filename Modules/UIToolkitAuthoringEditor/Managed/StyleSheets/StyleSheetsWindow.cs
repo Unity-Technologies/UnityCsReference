@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Hierarchy;
@@ -22,6 +23,8 @@ internal class StyleSheetsWindow : EditorWindow
     const string k_StyleSheetDark = "UIToolkitAuthoring/StyleSheets/StyleSheetsWindowDark.uss";
     const string k_StyleSheetLight = "UIToolkitAuthoring/StyleSheets/StyleSheetsWindowLight.uss";
     const string k_EmptyLabelSeparatorUssClassName = "unity-style-sheets-window__empty-label--separator";
+    static readonly string k_EditableEmptyLabel = L10n.Tr("Click the + icon to create a new StyleSheet.", null);
+    static readonly string k_ReadOnlyEmptyLabel = L10n.Tr("The selected UI Document has no style sheets.", null);
 
     Hierarchy.Hierarchy m_Hierarchy;
     HierarchyView m_HierarchyView;
@@ -34,9 +37,10 @@ internal class StyleSheetsWindow : EditorWindow
     StyleSheetAssetTracker m_StyleSheetTracker;
     VisualTreeAssetTracker m_VisualTreeAssetTracker;
     HierarchyGlobalSelectionHandler m_GlobalSelectionHandler;
-    VisualElement m_EmptyLabelElement;
+    Label m_EmptyLabelElement;
     VisualElement m_NoResultsLabelElement;
     VisualElement m_StagingModeContainerElement;
+    VisualElement m_ToolbarElement;
     Button m_OpenSettingsButton;
     VisualElement m_ContainerElement;
 
@@ -49,6 +53,22 @@ internal class StyleSheetsWindow : EditorWindow
     [NonSerialized]
     VisualTreeAssetEditingContext m_LastSource;
 
+    // Persisted so the last selection-driven document survives a domain reload, keeping the "last selected
+    // context" sticky behaviour used outside the UI Stage.
+    [SerializeField]
+    VisualTreeAsset m_LastSelectedDocument;
+
+    // The panel component driving the current selection-driven display. Tracked (not serialized) so the window
+    // reacts to it being deleted or re-targeted. Null when the display comes from a UI Stage or was restored
+    // from the serialized sticky document after a domain reload.
+    [NonSerialized]
+    IPanelComponent m_SelectedPanelComponent;
+
+    // Whether the queries only an authoring window can answer are currently routed here (see
+    // UpdateEditingCommandHandlers).
+    [NonSerialized]
+    bool m_EditingCommandHandlersRegistered;
+
     [SerializeReference]
     List<StyleSheet> m_LastStyleSheets = new();
 
@@ -59,6 +79,12 @@ internal class StyleSheetsWindow : EditorWindow
     internal HierarchyGlobalSelectionHandler GlobalSelectionHandler => m_GlobalSelectionHandler;
     internal int ParentStyleSheetCount => m_ParentStyleSheetNodes.Count;
     internal VisualTreeAsset EditedAsset => m_Context.EditedAsset;
+
+    /// <summary>The document whose stylesheets are currently displayed (editable or read-only).</summary>
+    internal VisualTreeAsset DisplayedDocument => m_Context.Document;
+
+    /// <summary>True when the displayed document cannot be edited from this window.</summary>
+    internal bool IsReadOnly => m_Context.IsReadOnly;
 
     [SerializeField]
     StyleSheet m_ActiveStyleSheet;
@@ -91,6 +117,9 @@ internal class StyleSheetsWindow : EditorWindow
 
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
         UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnEnableInSceneAuthoringChanged;
+        UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnMainStageAuthoringChanged;
+        UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
+        Selection.selectionChanged += RefreshSelectionContext;
 
         m_VisualTreeAssetTracker = new VisualTreeAssetTracker(OnVisualTreeAssetChanged);
         m_StyleSheetTracker = new StyleSheetAssetTracker(OnStyleSheetChanged);
@@ -113,10 +142,94 @@ internal class StyleSheetsWindow : EditorWindow
         DisposeHierarchyResources();
         StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
         UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnEnableInSceneAuthoringChanged;
+        UIToolkitAuthoringSettings.MainStageAuthoringChanged -= OnMainStageAuthoringChanged;
+        Selection.selectionChanged -= RefreshSelectionContext;
+
+        var registry = UIAssetRegistry.LiveInstance;
+        if (registry != null)
+            registry.AssetDirtyStateChanged -= OnAssetDirtyStateChanged;
+
+        // A disabled window has to stop answering the authoring queries. ApplyContext is what normally keeps
+        // that in step with the displayed document, and it does not run on the way out. The context itself is
+        // deliberately left alone.
+        SetEditingCommandHandlers(false);
 
         m_LiveReloadSystem = null;
         m_ActiveStyleSheet = null;
         m_ActiveStyleSheetInVisualTreeAsset.Clear();
+    }
+
+    /// <summary>
+    /// The style sheets on display whose unsaved changes this window answers for. Empty outside the Main Stage:
+    /// a UI Stage prompts for its own document when it is left, and with authoring off the rows are read-only,
+    /// so whatever is unsaved in them belongs to the tool that changed it.
+    /// </summary>
+    /// <remarks>
+    /// Rebuilt from the document rather than read off the rows — it is the same set they are built from, and it
+    /// still answers once the hierarchy is torn down.
+    /// </remarks>
+    void CollectUnsavedStyleSheets(List<StyleSheet> results)
+    {
+        if (!UIToolkitStageUtility.IsAuthoringActiveInMainStage)
+            return;
+
+        var registry = UIAssetRegistry.LiveInstance;
+        var document = m_Context.Document;
+        if (registry == null || document == null)
+            return;
+
+        using var _ = ListPool<StyleSheet>.Get(out var styleSheets);
+        document.GetAllReferencedStyleSheets(styleSheets);
+        foreach (var styleSheet in styleSheets)
+        {
+            if (styleSheet != null && registry.IsDirty(styleSheet))
+                results.Add(styleSheet);
+        }
+    }
+
+    /// <summary>
+    /// Keeps the editor's own unsaved-changes state in step with the registry, so closing the window (or the
+    /// tab, or the container) raises the standard Save/Discard/Cancel prompt over
+    /// <see cref="SaveChanges"/>/<see cref="DiscardChanges"/>, and the tab shows the same "*" its rows do.
+    /// </summary>
+    void RefreshUnsavedChangesState()
+    {
+        using var _ = ListPool<StyleSheet>.Get(out var unsaved);
+        CollectUnsavedStyleSheets(unsaved);
+
+        // Only rebuilt while there is something to report: the message is read when the prompt opens, which is
+        // always while hasUnsavedChanges holds.
+        if (unsaved.Count > 0)
+            saveChangesMessage = UIAssetSavePrompt.BuildMessage(unsaved,
+                L10n.Tr("Your changes will be lost if you don't save them.", null));
+
+        hasUnsavedChanges = unsaved.Count > 0;
+    }
+
+    public override void SaveChanges()
+    {
+        using var _ = ListPool<StyleSheet>.Get(out var unsaved);
+        CollectUnsavedStyleSheets(unsaved);
+
+        var registry = UIAssetRegistry.LiveInstance;
+        foreach (var styleSheet in unsaved)
+            registry?.SaveAsset(styleSheet, CommandSources.StyleSheets);
+
+        // Deliberately re-derived instead of base.SaveChanges(): a write that did not land — a read-only or
+        // unchecked-out file — leaves the sheet dirty, and the flag staying set is what aborts the close.
+        RefreshUnsavedChangesState();
+    }
+
+    public override void DiscardChanges()
+    {
+        using var _ = ListPool<StyleSheet>.Get(out var unsaved);
+        CollectUnsavedStyleSheets(unsaved);
+
+        var registry = UIAssetRegistry.LiveInstance;
+        foreach (var styleSheet in unsaved)
+            registry?.DiscardAsset(styleSheet, CommandSources.StyleSheets);
+
+        RefreshUnsavedChangesState();
     }
 
     void DisposeHierarchyResources()
@@ -176,69 +289,260 @@ internal class StyleSheetsWindow : EditorWindow
 
     void OnStageChanged(Stage newStage)
     {
-        UICommandQueue.UnregisterHandler<GetActiveStyleSheetQuery>(GetActiveStyleSheetRequest);
-        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Selection, OnSelectionRequested);
-
         if (m_ContainerElement == null || m_EmptyLabelElement == null)
             return;
 
-        if (newStage is not VisualElementEditingStage editingStage)
+        if (newStage is VisualElementEditingStage editingStage)
         {
-            m_Context = StyleSheetsContext.None;
-            m_EditingStage = null;
-
-            RemoveAssetTrackers();
-            foreach (var node in m_StyleSheetNodes.Values)
-            {
-                m_Handler.RemoveStyleSheet(node);
-            }
-            m_StyleSheetNodes.Clear();
-            foreach (var node in m_ParentStyleSheetNodes.Values)
-            {
-                m_Handler.RemoveStyleSheet(node);
-            }
-            m_ParentStyleSheetNodes.Clear();
-            if (m_GroupNode != HierarchyNode.Null)
-            {
-                m_Handler.RemoveStyleSheetGroup(m_GroupNode);
-                m_GroupNode = HierarchyNode.Null;
-            }
-            m_ActiveStyleSheetInVisualTreeAsset.Clear();
-
-            if (m_ContainerElement != null)
-                m_ContainerElement.style.display = DisplayStyle.None;
-
-            if (m_EmptyLabelElement != null)
-                m_EmptyLabelElement.style.display = DisplayStyle.None;
-
-            if (m_NoResultsLabelElement != null)
-                m_NoResultsLabelElement.style.display = DisplayStyle.None;
-
-            if (m_StagingModeContainerElement != null)
-                m_StagingModeContainerElement.style.display = DisplayStyle.Flex;
-
-            UpdateOpenSettingsButton();
+            EnterStageContext(editingStage);
             return;
         }
 
-        // Track when we first enter staging mode from a non-staging stage
+        // Outside the UI Stage the window is driven by the current selection. If it maps to a panel
+        // component we display that document; otherwise we keep the last one (sticky) or, failing that,
+        // show the contextual message.
+        m_EditingStage = null;
+        m_LastSource = default;
+
+        if (!TryApplySelectionContext() && !TryApplyStickyContext())
+            ClearContext();
+
+        // Which stage is displayed decides whether this window answers for the sheets at all, so it is
+        // re-evaluated even when the display itself did not have to be rebuilt.
+        RefreshUnsavedChangesState();
+    }
+
+    void EnterStageContext(VisualElementEditingStage editingStage)
+    {
+        // Track when we first enter staging mode from a non-staging stage so all sheets are expanded.
         if (m_EditingStage == null && m_Handler != null)
             m_Handler.SetEnteringStagingMode();
 
         m_EditingStage = editingStage;
         m_LastSource = editingStage.Context;
-        m_Context = StyleSheetsContextFactory.FromStage(editingStage);
-        m_ContainerElement.style.display = DisplayStyle.Flex;
-        m_StagingModeContainerElement.style.display = DisplayStyle.None;
 
+        var context = StyleSheetsContextFactory.FromStage(editingStage);
+        if (!m_Context.DisplaysSameContentAs(context))
+            ApplyContext(context);
+    }
+
+    /// <summary>
+    /// Re-evaluates the current global selection while outside the UI Stage. When the selection resolves to a
+    /// <see cref="PanelRenderer"/> or <see cref="UIDocument"/> with a document, that document is displayed;
+    /// any other selection is ignored, so the displayed content stays sticky.
+    /// </summary>
+    internal void RefreshSelectionContext()
+    {
+        // Inside the UI Stage the displayed data comes from the stage, not the selection.
+        if (m_EditingStage != null || m_ContainerElement == null)
+            return;
+
+        TryApplySelectionContext();
+    }
+
+    bool TryApplySelectionContext()
+    {
+        var component = ResolvePanelComponentFromSelection();
+        var document = component?.visualTreeAsset;
+        if (document == null)
+            return false;
+
+        m_SelectedPanelComponent = component;
+        m_LastSelectedDocument = document;
+        ApplySelectionContext(document);
+        return true;
+    }
+
+    bool TryApplyStickyContext()
+    {
+        if (m_LastSelectedDocument == null)
+            return false;
+
+        ApplySelectionContext(m_LastSelectedDocument);
+        return true;
+    }
+
+    /// <summary>
+    /// Displays a document resolved from the current selection, rebuilding the content only when what it shows
+    /// actually changes — the document itself, or its editability. Re-evaluating the same selection therefore
+    /// leaves the hierarchy (and the expansion and selection state it carries) alone.
+    /// </summary>
+    void ApplySelectionContext(VisualTreeAsset document)
+    {
+        var context = StyleSheetsContextFactory.FromSelectedDocument(document);
+        if (m_Context.DisplaysSameContentAs(context))
+            return;
+
+        ApplyContext(context);
+    }
+
+    void ClearContext() => ApplyContext(StyleSheetsContext.None);
+
+    static IPanelComponent ResolvePanelComponentFromSelection()
+    {
+        var gameObject = Selection.activeGameObject;
+        if (gameObject != null)
+        {
+            // Use TryGetComponent: casting a missing component (a Unity "fake null") to IPanelComponent would
+            // produce a non-null managed reference and throw a MissingComponentException on first access.
+            if (gameObject.TryGetComponent<PanelRenderer>(out var panelRenderer))
+                return panelRenderer;
+            if (gameObject.TryGetComponent<UIDocument>(out var uiDocument))
+                return uiDocument;
+        }
+
+        // Selecting a VisualElement from a panel component's in-scene hierarchy behaves like selecting the
+        // component itself: walk up to the owning PanelRenderer/UIDocument.
+        if (Selection.activeObject is VisualElementSelection { Element: not null } elementSelection)
+        {
+            var panelComponent = elementSelection.Element.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent;
+            if (panelComponent as UnityEngine.Object != null)
+                return panelComponent;
+        }
+
+        // Selecting a VisualTreeAsset from a panel component's in-scene hierarchy behaves like selecting the
+        // component itself: walk up to the owning PanelRenderer/UIDocument.
+        if (Selection.activeObject is VisualTreeAssetSelection { PanelComponent: not null } visualTreeAssetSelection)
+        {
+            var panelComponent = visualTreeAssetSelection.PanelComponent;
+            if (panelComponent as UnityEngine.Object != null)
+                return panelComponent;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The single entry point that sets the window's data. Every source (the UI Stage or the current
+    /// selection) funnels through here. Existing nodes are torn down so their read-only state always
+    /// matches the incoming context.
+    /// </summary>
+    void ApplyContext(StyleSheetsContext context)
+    {
+        TearDownAllNodes();
+
+        m_Context = context;
+        m_Handler?.SetReadOnly(context.IsReadOnly);
+        UpdateEditingCommandHandlers();
+
+        var hasContent = context.Document != null;
+
+        m_StagingModeContainerElement.style.display = hasContent ? DisplayStyle.None : DisplayStyle.Flex;
+        m_ContainerElement.style.display = hasContent ? DisplayStyle.Flex : DisplayStyle.None;
+        if (!hasContent)
+        {
+            m_EmptyLabelElement.style.display = DisplayStyle.None;
+            m_NoResultsLabelElement.style.display = DisplayStyle.None;
+        }
+
+        UpdateToolbarState();
+        UpdateOpenSettingsButton();
+
+        // A different document (or a different editability) means a different set of sheets to answer for.
+        RefreshUnsavedChangesState();
+
+        if (!hasContent)
+            return;
+
+        // UpdateAssetTrackers refreshes the stylesheet list once the trackers are (re)registered.
         UpdateAssetTrackers();
-        UICommandQueue.RegisterHandler<GetActiveStyleSheetQuery>(GetActiveStyleSheetRequest);
-        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Selection, OnSelectionRequested);
+    }
+
+    void TearDownAllNodes()
+    {
+        RemoveAssetTrackers();
+
+        if (m_Handler != null)
+        {
+            foreach (var node in m_StyleSheetNodes.Values)
+                m_Handler.RemoveStyleSheet(node);
+
+            foreach (var node in m_ParentStyleSheetNodes.Values)
+                m_Handler.RemoveStyleSheet(node);
+
+            if (m_GroupNode != HierarchyNode.Null)
+                m_Handler.RemoveStyleSheetGroup(m_GroupNode);
+        }
+
+        m_StyleSheetNodes.Clear();
+        m_ParentStyleSheetNodes.Clear();
+        m_GroupNode = HierarchyNode.Null;
+        ActiveStyleSheet = null;
+    }
+
+    void UpdateToolbarState()
+    {
+        // Authoring (add/create USS, add selectors) is only available on an editable document.
+        if (m_ToolbarElement != null)
+            m_ToolbarElement.style.display = m_Context.IsReadOnly ? DisplayStyle.None : DisplayStyle.Flex;
+
+        m_EmptyLabelElement.text = m_Context.IsReadOnly ? k_ReadOnlyEmptyLabel : k_EditableEmptyLabel;
+    }
+
+    /// <summary>
+    /// Registers the window as the answer to "which style sheet is being authored?" and "select this rule"
+    /// exactly while it has a document it can author — a UI Stage, or a scene document in the Main Stage.
+    /// </summary>
+    /// <remarks>
+    /// A read-only display must leave those queries unanswered: the tools asking (the inspector extracting
+    /// inline styles into a class, a style property being written to a rule) would otherwise write into a
+    /// document that is not theirs to change.
+    /// </remarks>
+    void UpdateEditingCommandHandlers() => SetEditingCommandHandlers(m_Context.EditedAsset != null);
+
+    void SetEditingCommandHandlers(bool register)
+    {
+        if (register == m_EditingCommandHandlersRegistered)
+            return;
+
+        m_EditingCommandHandlersRegistered = register;
+        if (register)
+        {
+            UICommandQueue.RegisterHandler<GetActiveStyleSheetQuery>(GetActiveStyleSheetRequest);
+            UICommandQueue.RegisterHandlerForCategory(CommandCategory.Selection, OnSelectionRequested);
+        }
+        else
+        {
+            UICommandQueue.UnregisterHandler<GetActiveStyleSheetQuery>(GetActiveStyleSheetRequest);
+            UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Selection, OnSelectionRequested);
+        }
     }
 
     void OnEnableInSceneAuthoringChanged(bool enabled)
     {
         UpdateOpenSettingsButton();
+        RefreshEditability();
+    }
+
+    void OnMainStageAuthoringChanged(bool enabled)
+    {
+        RefreshEditability();
+    }
+
+    // A style sheet this window is responsible for was dirtied or settled — by an edit made here, or by any
+    // other tool sharing it.
+    void OnAssetDirtyStateChanged(UnityEngine.Object asset)
+    {
+        if (asset is StyleSheet)
+            RefreshUnsavedChangesState();
+    }
+
+    /// <summary>
+    /// Re-applies the selection-driven context so the displayed document follows the authoring settings: its
+    /// stylesheets (and any selected rule) become editable once the scene documents themselves are, and
+    /// read-only again as soon as they are not.
+    /// </summary>
+    void RefreshEditability()
+    {
+        // A UI Stage is editable no matter how the Main Stage is configured.
+        if (m_EditingStage != null || m_ContainerElement == null || m_Context.Document == null)
+            return;
+
+        ApplySelectionContext(m_Context.Document);
+
+        // Whether the window answers for these sheets at all follows the settings, so it is re-evaluated even
+        // when the display itself did not have to be rebuilt.
+        RefreshUnsavedChangesState();
     }
 
     void UpdateOpenSettingsButton()
@@ -280,7 +584,7 @@ internal class StyleSheetsWindow : EditorWindow
         if (styleSheet == null)
         {
             using var _ = ListPool<StyleSheet>.Get(out var styleSheets);
-            GetEditableStyleSheets(styleSheets);
+            GetDocumentStyleSheets(styleSheets);
             if (styleSheets.Count > 0)
                 styleSheet = styleSheets[0];
         }
@@ -290,11 +594,60 @@ internal class StyleSheetsWindow : EditorWindow
 
     void Update()
     {
+        PumpHierarchyView();
+
+        // Keep the selection-driven display in sync with its source panel component: a PanelRenderer/UIDocument
+        // can be deleted or re-targeted to a different document without the global selection changing. This
+        // poll only runs from the editor tick, never re-entrantly from the internal PumpHierarchyView() calls
+        // made while rebuilding the list.
+        SyncSelectionContextWithSource();
+    }
+
+    void PumpHierarchyView()
+    {
         if (m_HierarchyView?.UpdateNeeded == true)
         {
             m_HierarchyView.Update();
             UpdateSearchResultsDisplay();
         }
+    }
+
+    /// <summary>
+    /// While displaying a selection-driven document, tracks the source panel component so the window reacts to
+    /// it being deleted or having its <c>visualTreeAsset</c> reassigned.
+    /// </summary>
+    internal void SyncSelectionContextWithSource()
+    {
+        if (m_EditingStage != null || m_ContainerElement == null)
+            return;
+
+        // A C# null means we have no live reference to track (e.g. restored from the serialized sticky
+        // document after a domain reload). Leave the display alone in that case.
+        if (m_SelectedPanelComponent == null)
+            return;
+
+        // The interface reference can still wrap a destroyed Unity object; a Unity null-check detects that
+        // the component (or its GameObject) was deleted. Stop tracking and re-evaluate the selection.
+        if (m_SelectedPanelComponent as UnityEngine.Object == null)
+        {
+            m_SelectedPanelComponent = null;
+            m_LastSelectedDocument = null;
+            if (!TryApplySelectionContext())
+                ClearContext();
+            return;
+        }
+
+        // Keep the display in sync with the tracked component's current document. The component stays tracked
+        // even when its document is cleared, so restoring it (e.g. via undo) brings the display back.
+        var currentDocument = m_SelectedPanelComponent.visualTreeAsset;
+        if (currentDocument == m_Context.Document)
+            return;
+
+        m_LastSelectedDocument = currentDocument;
+        if (currentDocument == null)
+            ClearContext();
+        else
+            ApplySelectionContext(currentDocument);
     }
 
     void UpdateSearchResultsDisplay()
@@ -344,7 +697,7 @@ internal class StyleSheetsWindow : EditorWindow
 
     void OnEmptyLabelDragPerform(DragPerformEvent evt)
     {
-        if (m_TrackedVTA == null)
+        if (m_Context.IsReadOnly || m_TrackedVTA == null)
             return;
 
         var addedAny = false;
@@ -367,7 +720,7 @@ internal class StyleSheetsWindow : EditorWindow
 
     bool HasDroppableStyleSheet()
     {
-        if (m_TrackedVTA == null)
+        if (m_Context.IsReadOnly || m_TrackedVTA == null)
             return false;
 
         foreach (var path in DragAndDrop.paths)
@@ -385,7 +738,7 @@ internal class StyleSheetsWindow : EditorWindow
             return false;
 
         using var _ = ListPool<StyleSheet>.Get(out var editable);
-        GetEditableStyleSheets(editable);
+        GetDocumentStyleSheets(editable);
         return !editable.Contains(styleSheet);
     }
 
@@ -406,6 +759,7 @@ internal class StyleSheetsWindow : EditorWindow
         m_EmptyLabelElement.RegisterCallback<DragPerformEvent>(OnEmptyLabelDragPerform);
         m_NoResultsLabelElement = rootVisualElement.Q<Label>("unity-style-sheets-window-no-results-label");
         m_ContainerElement = rootVisualElement.Q<VisualElement>("unity-style-sheets-window-container");
+        m_ToolbarElement = rootVisualElement.Q<VisualElement>("stylesheet-toolbar");
 
         var toolbarMenu = rootVisualElement.Q<ToolbarMenu>("add-uss-menu");
         toolbarMenu.menu.AppendAction("Create New USS", _ => CreateStyleSheet());
@@ -534,14 +888,14 @@ internal class StyleSheetsWindow : EditorWindow
         if (m_LiveReloadSystem == null)
             return;
 
-        var editedAsset = m_Context.EditedAsset;
-        if (editedAsset == null)
+        var document = m_Context.Document;
+        if (document == null)
             return;
 
         if (m_TrackedVTA)
             m_LiveReloadSystem.UnregisterAuthoringTrackerForAsset(m_VisualTreeAssetTracker, m_TrackedVTA);
 
-        m_TrackedVTA = editedAsset;
+        m_TrackedVTA = document;
         m_LiveReloadSystem.RegisterAuthoringTrackerForAsset(m_VisualTreeAssetTracker, m_TrackedVTA);
 
         // Re-register all existing stylesheets to the live reload system
@@ -561,6 +915,9 @@ internal class StyleSheetsWindow : EditorWindow
 
     void OnCreateNewStyleRule(NewSelectorSubmitEvent evt)
     {
+        if (m_Context.IsReadOnly)
+            return;
+
         if (!StyleSheetExtensions.ValidateStyleRule(evt.selectorStr, out var error))
         {
             Debug.LogError($"Invalid selector string '{evt.selectorStr}': {error}.");
@@ -584,7 +941,7 @@ internal class StyleSheetsWindow : EditorWindow
             return false;
 
         using var _ = ListPool<StyleSheet>.Get(out var sheets);
-        GetEditableStyleSheets(sheets);
+        GetDocumentStyleSheets(sheets);
 
         if (ActiveStyleSheet != null && sheets.Contains(ActiveStyleSheet))
             return true;
@@ -599,7 +956,7 @@ internal class StyleSheetsWindow : EditorWindow
         return TryCreateStyleSheet() && ActiveStyleSheet != null;
     }
 
-    void GetEditableStyleSheets(List<StyleSheet> output)
+    void GetDocumentStyleSheets(List<StyleSheet> output)
     {
         output.Clear();
         if (m_TrackedVTA != null)
@@ -655,7 +1012,7 @@ internal class StyleSheetsWindow : EditorWindow
     void RefreshStyleSheetList()
     {
         // Update the hierarchy nodes in case there any pending changes.
-        Update();
+        PumpHierarchyView();
 
         if (m_Handler == null || m_Hierarchy == null)
             return;
@@ -690,7 +1047,10 @@ internal class StyleSheetsWindow : EditorWindow
         }
 
         using var stylesheetsHandle = ListPool<StyleSheet>.Get(out var stylesheets);
-        GetEditableStyleSheets(stylesheets);
+        GetDocumentStyleSheets(stylesheets);
+
+        m_LastStyleSheets.Clear();
+        m_LastStyleSheets.AddRange(stylesheets);
 
         var parents = m_Context.ParentStyleSheets;
         var noEditableStyleSheets = stylesheets.Count == 0;
@@ -787,14 +1147,19 @@ internal class StyleSheetsWindow : EditorWindow
         foreach (var stylesheet in added)
         {
             m_LiveReloadSystem?.RegisterAuthoringTrackerForAsset(m_StyleSheetTracker, stylesheet);
-            var rootNode = m_Handler.AddStyleSheet(stylesheet);
+            var rootNode = m_Handler.AddStyleSheet(stylesheet, isReadOnly: m_Context.IsReadOnly);
             m_StyleSheetNodes[stylesheet] = rootNode;
         }
 
         AddNewParentStyleSheets(parents);
 
+        // The active stylesheet is an editing concept; a read-only display has none.
+        if (m_Context.IsReadOnly)
+        {
+            ActiveStyleSheet = null;
+        }
         // Set and store the active stylesheet for the current visual tree asset
-        if (m_TrackedVTA)
+        else if (m_TrackedVTA)
         {
             if (m_ActiveStyleSheetInVisualTreeAsset.TryGetValue(m_TrackedVTA, out var savedActive) && stylesheets.Contains(savedActive))
             {
@@ -826,11 +1191,9 @@ internal class StyleSheetsWindow : EditorWindow
 
     void RefreshContext()
     {
+        // Outside the UI Stage the context is set by the selection-driven path (ApplyContext); leave it alone.
         if (m_EditingStage == null)
-        {
-            m_Context = StyleSheetsContext.None;
             return;
-        }
 
         var source = m_EditingStage.Context;
         if (source == m_LastSource && !HasMissingParent())
@@ -857,7 +1220,24 @@ internal class StyleSheetsWindow : EditorWindow
             m_Handler.RefreshStyleSheetNodeName(node);
     }
 
-    bool TrySaveModifiedDocument() => m_EditingStage == null || m_EditingStage.AskUserToSaveModifiedStage();
+    /// <summary>
+    /// Settles the unsaved changes that are about to leave the document along with <paramref name="styleSheet"/>,
+    /// and reports whether the removal may go ahead. Nothing else would ask about them: once the document stops
+    /// referencing it, the stylesheet is no longer part of what the UI Stage or the Main Stage saves.
+    /// </summary>
+    bool TrySettleStyleSheetChanges(StyleSheet styleSheet)
+    {
+        if (m_EditingStage != null)
+            return m_EditingStage.AskUserToSaveModifiedStage();
+
+        var registry = UIAssetRegistry.LiveInstance;
+        if (registry == null || !registry.IsDirty(styleSheet))
+            return true;
+
+        return UIAssetSavePrompt.AskAndResolve(new UnityEngine.Object[] { styleSheet },
+            L10n.Tr("The stylesheet is about to be removed from the document. Your changes will be lost if you don't save them.", null),
+            allowCancel: true);
+    }
 
     void RemoveOldParentStyleSheets(IReadOnlyList<ParentStyleSheet> parents)
     {
@@ -914,14 +1294,14 @@ internal class StyleSheetsWindow : EditorWindow
     void RefreshStyleSheetRules()
     {
         // Update the hierarchy nodes in case there any pending changes.
-        Update();
+        PumpHierarchyView();
 
         if (m_Handler == null || m_Hierarchy == null)
             return;
 
         // Refresh rules for all existing stylesheets
         foreach (var (styleSheet, ruleNode) in m_StyleSheetNodes)
-            m_Handler.RefreshStyleSheetRules(ruleNode, styleSheet, isReadOnly: false);
+            m_Handler.RefreshStyleSheetRules(ruleNode, styleSheet, isReadOnly: m_Context.IsReadOnly);
 
         foreach (var (key, ruleNode) in m_ParentStyleSheetNodes)
             m_Handler.RefreshStyleSheetRules(ruleNode, key.styleSheet, isReadOnly: true);
@@ -949,6 +1329,9 @@ internal class StyleSheetsWindow : EditorWindow
 
     public void AddStyleSheet()
     {
+        if (m_Context.IsReadOnly)
+            return;
+
         var ussPath = StyleSheetAssetUtilities.DisplayOpenFileDialogForUSS();
         if (string.IsNullOrEmpty(ussPath))
             return;
@@ -967,9 +1350,9 @@ internal class StyleSheetsWindow : EditorWindow
 
         var styleSheet = node.StyleSheet;
 
-        // Make sure pending edits are saved *before* we remove the stylesheet, otherwise edits to that
+        // Make sure pending edits are settled *before* we remove the stylesheet, otherwise edits to that
         // stylesheet would be lost.
-        if (!TrySaveModifiedDocument())
+        if (!TrySettleStyleSheetChanges(styleSheet))
             return;
 
         RemoveStyleSheetCommand.Execute(CommandSources.StyleSheets, m_TrackedVTA, styleSheet);
@@ -982,7 +1365,7 @@ internal class StyleSheetsWindow : EditorWindow
             return;
 
         RefreshStyleSheetRules();
-        Update();
+        PumpHierarchyView();
 
         using var _ = ListPool<HierarchyNode>.Get(out var nodesToSelect);
 
@@ -1018,6 +1401,9 @@ internal class StyleSheetsWindow : EditorWindow
 
     bool TryCreateStyleSheet()
     {
+        if (m_Context.IsReadOnly)
+            return false;
+
         var ussPath = StyleSheetAssetUtilities.DisplaySaveFileDialogForUSS();
         if (string.IsNullOrEmpty(ussPath))
             return false;
@@ -1160,3 +1546,4 @@ internal class StyleSheetsWindow : EditorWindow
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

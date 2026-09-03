@@ -39,6 +39,7 @@ namespace UnityEngine
 
         ///<summary>Get all the dependent AssetBundles for the given AssetBundle.</summary>
         ///<param name="assetBundleName">Name of the asset bundle.</param>
+        ///<returns>An array of the names of all the AssetBundles that the specified AssetBundle depends on, including indirect dependencies.</returns>
         [NativeMethod("GetAllDependencies")]
         public extern string[] GetAllDependencies(string assetBundleName);
     }

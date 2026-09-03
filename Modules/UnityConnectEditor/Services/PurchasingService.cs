@@ -2,11 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System.Text;
 using System;
 using System.IO;
 using System.Net;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Purchasing;
 using UnityEditor.AssetPackage;
 using UnityEngine;
@@ -18,7 +19,7 @@ namespace UnityEditor.Connect
     /// The implementation of the In-App Purchasing service for the service window
     /// </summary>
     [InitializeOnLoad]
-    internal class PurchasingService : SingleService
+    internal partial class PurchasingService : SingleService
     {
         readonly Uri k_PackageUri;
 
@@ -58,9 +59,17 @@ namespace UnityEditor.Connect
         public override string serviceFlagName { get; }
         public override bool shouldSyncOnProjectRebind => true;
 
-        static readonly PurchasingService k_Instance;
+        [AutoStaticsCleanupOnCodeReload]
+        static PurchasingService k_Instance;
 
-        public static PurchasingService instance => k_Instance;
+        public static PurchasingService instance
+        {
+            get
+            {
+                EnsureInstanceInitialized();
+                return k_Instance;
+            }
+        }
 
         public string googleKeyJsonLabel
         {
@@ -82,9 +91,16 @@ namespace UnityEditor.Connect
             get { return m_LatestETag; }
         }
 
-        static PurchasingService()
+        // [OnCodeLoaded] re-registers this service with ServicesRepository after a reload;
+        // the null check in `instance` covers consumers that reach us before it has run
+        // (ordering across classes is not guaranteed).
+        [OnCodeLoaded]
+        static void EnsureInstanceInitialized()
         {
-            k_Instance = new PurchasingService();
+            if (k_Instance == null)
+            {
+                k_Instance = new PurchasingService();
+            }
         }
 
         PurchasingService()
@@ -92,8 +108,8 @@ namespace UnityEditor.Connect
             k_PackageUri = new Uri(PurchasingConfiguration.instance.purchasingPackageUrl);
 
             name = "Purchasing";
-            title = L10n.Tr("In-App Purchasing");
-            description = L10n.Tr("Simplify cross-platform IAP");
+            title = L10n.Tr("In-App Purchasing", null);
+            description = L10n.Tr("Simplify cross-platform IAP", null);
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Purchasing.png";
             displayToggle = true;
             packageName = "com.unity.purchasing";
@@ -170,7 +186,7 @@ namespace UnityEditor.Connect
                     }
                     else
                     {
-                        UnityEngine.Debug.LogError(L10n.Tr("Failed to download IAP package. Please check connectivity and retry. Web request Error: ") + request.error);
+                        UnityEngine.Debug.LogError(L10n.Tr("Failed to download IAP package. Please check connectivity and retry. Web request Error: ", null) + request.error);
                     }
                 };
                 EditorApplication.update += handler;
@@ -291,4 +307,4 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AssetDatabase not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,6 +26,10 @@ namespace UnityEditor
     //13905 in ResourceManager.cpp for RegisterBuiltinEditorScript
     internal partial class ImportActivityWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal ImportActivityWindow() { }
+        #pragma warning restore UAL0015
+
         public static readonly string kTimeStampFormat = "dd-MM-yyyy hh:mm:ss";
         [AutoStaticsCleanupOnCodeReload]
         public static ImportActivityWindow m_Instance = null;
@@ -3044,3 +3049,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

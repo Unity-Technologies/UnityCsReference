@@ -30,13 +30,18 @@ namespace UnityEditor.Build.Profile
             if (!m_ShaderBuildSettingsUI.HasUnsavedChanges)
                 return;
 
-            string profileName = null;
+            var parentProfile = FindProfileStillOwningTarget();
+            if (parentProfile == null)
+                return;
+
+            m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog(parentProfile.name);
+        }
+
+        BuildProfile FindProfileStillOwningTarget()
+        {
             var assetPath = AssetDatabase.GetAssetPath(target);
             var parentProfile = AssetDatabase.LoadMainAssetAtPath(assetPath) as BuildProfile;
-            if (parentProfile != null)
-                profileName = parentProfile.name;
-
-            m_ShaderBuildSettingsUI.HandleUnsavedChangesDialog(profileName);
+            return parentProfile != null && parentProfile.graphicsSettings == target ? parentProfile : null;
         }
 
         void OnDestroy()
@@ -155,10 +160,10 @@ namespace UnityEditor.Build.Profile
             saveButton.clickable = new Clickable(() =>
             {
                 var assetPath = EditorUtility.SaveFilePanelInProject(
-                    L10n.Tr("Save Shader Variant Collection"),
+                    L10n.Tr("Save Shader Variant Collection", null),
                     "NewShaderVariants",
                     "shadervariants",
-                    L10n.Tr("Save shader variant collection"),
+                    L10n.Tr("Save shader variant collection", null),
                     ProjectWindowUtil.GetActiveFolderPath());
                 if (!string.IsNullOrEmpty(assetPath))
                     ShaderUtil.SaveCurrentShaderVariantCollection(assetPath);

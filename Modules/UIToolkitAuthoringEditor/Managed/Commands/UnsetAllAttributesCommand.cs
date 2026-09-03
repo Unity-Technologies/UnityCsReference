@@ -143,6 +143,7 @@ internal sealed class UnsetAllAttributesCommand : Command<UnsetAllAttributesComm
 
                 // Reset the live element to the now-default serialized data so a subsequent live-property sync does not read stale values.
                 OwnerSerializedData.Deserialize(VisualElement, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
+                UxmlAssetUtilities.ReapplyAncestorSerializedDataOverrides(VisualElement);
                 VisualElement.IncrementVersion(VersionChangeType.Bindings);
             }
         }

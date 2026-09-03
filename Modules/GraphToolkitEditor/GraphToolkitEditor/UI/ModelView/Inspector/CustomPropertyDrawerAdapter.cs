@@ -215,8 +215,86 @@ namespace Unity.GraphToolkit.Editor
             // PropertyField handles SerializedObject.Update() and ApplyModifiedProperties() internally. It also calls PropertyDrawer.CreatePropertyGUI, we do not need to call it manually.
             var propertyField = new PropertyField(m_Property, labelText);
             propertyField.Bind(m_Property.serializedObject);
-
+            // Handle the case where the property is a DictionaryView.
+            AdjustDictionaryViewWidth(propertyField);
             return propertyField;
+        }
+
+        static void AdjustDictionaryViewWidth(PropertyField propertyField)
+        {
+            // In the blackboard, a dictionary variable is inside a scroll view whose content container has no constraint in width.
+            // When we resize the blackboard, the dictionary view can expand beyond the visible area and not shrink back.
+            // We fix this by binding the dictionary view's width to the viewport's visible width.
+            var isGeometryHandlerRegistered = false;
+            propertyField.RegisterCallback<AttachToPanelEvent>(_ =>
+            {
+                if (isGeometryHandlerRegistered)
+                    return;
+
+                var scrollView = propertyField.GetFirstAncestorOfType<ScrollView>();
+
+                var viewport = scrollView?.contentViewport;
+                if (viewport == null)
+                    return;
+
+                const string dictionaryViewClassName = "unity-dictionary-view";
+
+                // The DictionaryView may not be in the tree yet (on graph reopen the field unfolds one frame after attach).
+                // Register for geometry changes as a retry mechanism and also schedule a one-frame try in case the DictionaryView is already present by then.
+                propertyField.RegisterCallback<GeometryChangedEvent>(TryCompleteSetup);
+                propertyField.schedule.Execute(() => TryCompleteSetup(null));
+                return;
+
+                void TryCompleteSetup(GeometryChangedEvent _)
+                {
+                    if (isGeometryHandlerRegistered || propertyField.Q(className: dictionaryViewClassName) == null)
+                        return;
+
+                    propertyField.UnregisterCallback<GeometryChangedEvent>(TryCompleteSetup);
+                    viewport.RegisterCallback<GeometryChangedEvent>(SyncWidthToViewport);
+                    isGeometryHandlerRegistered = true;
+
+                    EventCallback<DetachFromPanelEvent> detachHandler = null;
+                    detachHandler = _ =>
+                    {
+                        propertyField.UnregisterCallback<GeometryChangedEvent>(TryCompleteSetup);
+                        viewport.UnregisterCallback<GeometryChangedEvent>(SyncWidthToViewport);
+                        isGeometryHandlerRegistered = false;
+                        propertyField.UnregisterCallback(detachHandler);
+                    };
+                    propertyField.RegisterCallback(detachHandler);
+
+                    if (viewport.resolvedStyle.width > 0f)
+                        SyncWidthToViewport(null);
+                }
+
+                void SyncWidthToViewport(GeometryChangedEvent _)
+                {
+                    var vpWidth = viewport.resolvedStyle.width;
+                    if (vpWidth <= 0f)
+                        return;
+
+                    var vpRight = viewport.worldBound.x + vpWidth;
+                    var pfLeft  = propertyField.worldBound.x;
+
+                    // The DictionaryView is nested inside other containers that each have their padding and borders.
+                    // Find the total right inset of the DictionaryView relative to the viewport's right side.
+                    var rightInset = propertyField.resolvedStyle.marginRight;
+                    var ve = propertyField.parent;
+                    while (ve != null && ve != scrollView.contentContainer)
+                    {
+                        rightInset += ve.resolvedStyle.paddingRight + ve.resolvedStyle.borderRightWidth + ve.resolvedStyle.marginRight;
+                        ve = ve.parent;
+                    }
+
+                    // Bind the DictionaryView's width so its right side aligns exactly with the visible right side of the viewport.
+                    var available = vpRight - pfLeft - rightInset;
+                    if (available > 0f)
+                        propertyField.style.width = available;
+                    else
+                        propertyField.style.width = StyleKeyword.Null;
+                }
+            });
         }
 
         static ModuleBuilder GetOrCreateModuleBuilder()
@@ -389,6 +467,10 @@ namespace Unity.GraphToolkit.Editor
 
             // ReSharper disable once MemberHidesStaticFromOuterClass
             public static Type GetOrCreateWrapperType(Type valueType) => CustomPropertyDrawerAdapter.GetOrCreateWrapperType(valueType);
+
+            // ReSharper disable once MemberHidesStaticFromOuterClass
+            public static void AdjustDictionaryViewWidth(PropertyField propertyField) =>
+                CustomPropertyDrawerAdapter.AdjustDictionaryViewWidth(propertyField);
         }
     }
 }

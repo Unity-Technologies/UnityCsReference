@@ -46,10 +46,10 @@ namespace UnityEditor
 
     public sealed partial class EditorDialog
     {
-        private static readonly string k_OkButtonText = L10n.Tr("OK");
-        private static readonly string k_CancelButtonText = L10n.Tr("Cancel");
-        private static readonly string k_DefaultOptionButtonText = L10n.Tr("Yes");
-        private static readonly string k_AlternateOptionText = L10n.Tr("No");
+        private static readonly string k_OkButtonText = L10n.Tr("OK", null);
+        private static readonly string k_CancelButtonText = L10n.Tr("Cancel", null);
+        private static readonly string k_DefaultOptionButtonText = L10n.Tr("Yes", null);
+        private static readonly string k_AlternateOptionText = L10n.Tr("No", null);
 
         private static readonly string k_OptOutPrefix = "DialogOptOut.";
         private static string PrefixedKey(string key) => k_OptOutPrefix + key;
@@ -116,9 +116,9 @@ namespace UnityEditor
             switch (optOutDecisionType)
             {
                 case DialogOptOutDecisionType.ForThisSession:
-                    return L10n.Tr("Don't ask again for this session");
+                    return L10n.Tr("Don't ask again for this session", null);
                 case DialogOptOutDecisionType.ForThisUser:
-                    return L10n.Tr("Don't ask again on this computer");
+                    return L10n.Tr("Don't ask again on this computer", null);
                 default:
                     throw new NotImplementedException("Unknown opt out decision type");
             }
@@ -146,7 +146,7 @@ namespace UnityEditor
             if (messageText.Length <= kMaxMessageLength)
                 return messageText;
 
-            string truncationMessage = L10n.Tr("...\n\n(For the full message, see the editor log file)\n");
+            string truncationMessage = L10n.Tr("...\n\n(For the full message, see the editor log file)\n", null);
 
             int truncationLength = kMaxMessageLength - truncationMessage.Length;
 

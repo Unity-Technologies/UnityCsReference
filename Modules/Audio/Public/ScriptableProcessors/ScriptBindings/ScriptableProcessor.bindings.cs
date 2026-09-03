@@ -6,6 +6,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Unity.Audio;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
@@ -110,6 +111,7 @@ namespace UnityEngine.Audio
         /// These are generally suggested setup from whomever is creating the <see cref="ProcessorInstance"/>, such as a <see cref="IAudioGenerator"/>.
         /// You can change properties to suit your particular needs.
         /// </remarks>
+        [Obsolete("Use the per-processor CreationParameters types (GeneratorInstance.CreationParameters, RootOutputInstance.CreationParameters) instead; this shared type will be removed.")]
         public partial struct CreationParameters
         {
             /// <summary>
@@ -217,6 +219,37 @@ namespace UnityEngine.Audio
             /// <param name="pipe">Cross-thread communications pipe.</param>
             /// <seealso cref="ProcessorInstance.IControl{TRealtime}.Update"/>
             public void Update(UpdatedDataContext context, Pipe pipe);
+
+            /// <summary>
+            /// Called immediately from <see cref="RealtimeContext.SendMessage"/> when a message was sent to this
+            /// <see cref="ProcessorInstance"/> on the real-time side.
+            /// </summary>
+            /// <remarks>
+            /// This is the real-time counterpart of <see cref="ProcessorInstance.IControl{TRealtime}.OnMessage"/>.
+            /// It runs synchronously on the real-time thread, within the originating <see cref="RealtimeContext"/>.
+            /// <para/>
+            /// This has a default implementation returning <see cref="Response.Unhandled"/>, so existing
+            /// <see cref="ProcessorInstance.IRealtime"/> implementations remain source-compatible; override it to
+            /// handle real-time messages. Since overriding default methods isn't positively constrained by the compiler, you may find it helpful to implement such interface methods <a href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/interfaces/explicit-interface-implementation">explicitly</a>.
+            /// </remarks>
+            /// <returns>
+            /// <see cref="Response.Handled"/> if this <see cref="ProcessorInstance"/> acknowledged and processed the message,
+            /// <see cref="Response.Unhandled"/> if not or ignored.
+            /// </returns>
+            /// <param name="context">
+            /// A <see cref="RealtimeMessageContext"/> giving cross-thread data communication via
+            /// <paramref name="pipe"/> (but no nested processing).
+            /// </param>
+            /// <param name="pipe">Cross-thread communications pipe.</param>
+            /// <param name="message">
+            /// The message someone sent to you through <see cref="RealtimeContext.SendMessage"/>.
+            /// The contents are sent by reference, so you can modify them and the sender will see the changes.
+            /// </param>
+            /// <seealso cref="RealtimeContext.SendMessage"/>
+            // Default interface method on purpose: keeps this interface source-compatible for existing
+            // implementors, and Burst handles the DIM call in the generic realtime dispatch via
+            // monomorphization (no boxing). Keep it a DIM rather than a required member.
+            public Response OnMessage(RealtimeMessageContext context, Pipe pipe, Message message) => Response.Unhandled;
         }
 
         /// <summary>
@@ -551,6 +584,74 @@ namespace UnityEngine.Audio
         }
     }
 
+    /// <summary>
+    /// A built-in message asking a processor to seek. Send it through <see cref="ControlContext.SendMessage{T}(ProcessorInstance, ref T)"/>
+    /// to a generator instance, for example an <c>AudioClip</c> instantiated as a generator (backed by a SampleProvider),
+    /// including within nested generator graphs.
+    /// </summary>
+    public struct SeekMessage
+    {
+        // Native can't compute the managed type hash, so make it known here. This covers seeks originating
+        // in managed: constructing one runs this first, so native recognizes the hash we send with it.
+        // Seeks originating in native are covered by BuiltInMessageTypeHashes, which native calls before
+        // its first send. Both store the same value, so it doesn't matter which runs first.
+        static SeekMessage()
+        {
+            ScriptableProcessorBindings.RegisterSeekMessageTypeHash(BurstRuntime.GetHashCode64<SeekMessage>());
+        }
+
+        // Layout must match the native audio::SeekMessage. A negative m_When encodes an immediate seek,
+        // which `when` surfaces as null so the sentinel never reaches users.
+        Unity.IntegerTime.DiscreteTime m_Destination;
+        Unity.IntegerTime.DiscreteTime m_When;
+
+        /// <summary>The clip position to seek to.</summary>
+        public Unity.IntegerTime.DiscreteTime destination => m_Destination;
+
+        /// <summary>
+        /// The clip position at which the seek fires: it is applied when playback reaches this position
+        /// (which itself jumps on each seek). Null means immediate, so the seek applies at the next block.
+        /// Seeks may be scheduled in any order and are evaluated in send order. A seek whose position
+        /// playback has already passed, including one the cursor jumped past via an earlier seek, is dropped.
+        /// </summary>
+        public Unity.IntegerTime.DiscreteTime? when => m_When.Value >= 0 ? m_When : null;
+
+        /// <summary>Creates a seek request. Omit <paramref name="when"/> (or pass null) for an immediate seek.</summary>
+        /// <param name="destination">The clip position to seek to.</param>
+        /// <param name="when">The clip position at which the seek fires, or null to seek immediately.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <paramref name="destination"/> or <paramref name="when"/> is negative.
+        /// </exception>
+        public SeekMessage(Unity.IntegerTime.DiscreteTime destination, Unity.IntegerTime.DiscreteTime? when = null)
+        {
+            if (destination.Value < 0)
+                throw new ArgumentOutOfRangeException(nameof(destination), "The seek destination cannot be negative.");
+
+            // when.Value is the DiscreteTime; its Value is the raw tick count.
+            if (when.HasValue && when.Value.Value < 0)
+                throw new ArgumentOutOfRangeException(nameof(when), "The seek time cannot be negative. Omit it to seek immediately.");
+
+            m_Destination = destination;
+            m_When = when ?? Unity.IntegerTime.DiscreteTime.FromTicks(-1);
+        }
+    }
+
+    [NativeHeader("Modules/Audio/Public/ScriptableProcessors/ScriptBindings/ScriptableProcessor.bindings.h")]
+    internal static class BuiltInMessageTypeHashes
+    {
+        // Native can build and send built-in messages on its own (through GeneratorHandle::SendSeekMessage)
+        // without managed ever constructing a SeekMessage, so a type's static constructor is too late to
+        // register its hash; native calls this before its first such send instead. No native sender exists
+        // today - AudioSource::SetSamplePosition no longer seeks generator instances - but the registration
+        // keeps that entry point safe. Idempotent: the hashes are compile-time constants, so repeat calls
+        // store the same values.
+        [RequiredByNativeCode(GenerateProxy = true)]
+        internal static void RegisterAll()
+        {
+            ScriptableProcessorBindings.RegisterSeekMessageTypeHash(BurstRuntime.GetHashCode64<SeekMessage>());
+        }
+    }
+
     #region context-structs
 
     /// <summary>
@@ -578,7 +679,7 @@ namespace UnityEngine.Audio
         internal DualThreadHandle Self;
     }
 
-    internal unsafe struct UpdateArguments
+    internal unsafe struct ControlUpdateArguments
     {
         internal ControlHeader* ControlContext;
         internal ProcessorInstance.AvailableData.Element* FirstElement;
@@ -591,7 +692,7 @@ namespace UnityEngine.Audio
         internal ControlHeader* ControlContext;
     }
 
-    internal unsafe struct MessageArguments
+    internal unsafe struct ControlMessageArguments
     {
         internal ControlHeader* Context;
         internal ProcessorInstance.Message* MessageData;
@@ -599,11 +700,19 @@ namespace UnityEngine.Audio
         internal ProcessorInstance.Response StatusReturn;
     };
 
-    internal unsafe struct ProcessorRealtimeUpdateArguments
+    internal unsafe struct RealtimeUpdateArguments
     {
         internal readonly RealtimeAccess Access;
         internal readonly ProcessorInstance.AvailableData.Element* Head;
         internal readonly DualThreadHandle Self;
+    }
+
+    internal unsafe struct RealtimeMessageArguments
+    {
+        internal RealtimeAccess Access;
+        internal ProcessorInstance.Message* MessageData;
+        internal DualThreadHandle Self;
+        internal ProcessorInstance.Response StatusReturn;
     }
 
     #endregion
@@ -615,7 +724,8 @@ namespace UnityEngine.Audio
         OutputProcessEarly = 3,
         OutputProcess = 4,
         OutputProcessEnd = 5,
-        OutputRemoved = 6
+        OutputRemoved = 6,
+        Message = 7
     };
 
     enum ControlFunction : UInt32
@@ -680,6 +790,12 @@ namespace UnityEngine.Audio
             }
         }
 
+        public static unsafe void InvokeRealtimeMessage(ref RealtimeMessageArguments args)
+        {
+            fixed (RealtimeMessageArguments* pArgs = &args)
+                InvokeRealtimeMessageInternal(pArgs);
+        }
+
         /// <summary>
         /// Validates the validity of the handle and that you can currently call process/produce etc. with
         /// <paramref name="handle"/>.
@@ -726,6 +842,10 @@ namespace UnityEngine.Audio
         [NativeMethod(Name = "audio::SendMessageToProcessor", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe ProcessorInstance.Response SendMessageToProcessorInternal(DualThreadHandle handle, /*ControlHeader* */ void* control, /* Message* */ void* message);
 
+        public static void RegisterSeekMessageTypeHash(long typeHash) => RegisterSeekMessageTypeHashInternal(typeHash);
+        [NativeMethod(Name = "audio::RegisterSeekMessageTypeHash", IsFreeFunction = true)]
+        static extern void RegisterSeekMessageTypeHashInternal(long typeHash);
+
         [NativeMethod(Name = "audio::PerformRecursiveUpdate", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe void PerformRecursiveUpdateInternal(DualThreadHandle handle, /*ControlHeader* */ void* control);
 
@@ -752,6 +872,9 @@ namespace UnityEngine.Audio
 
         [NativeMethod(Name = "audio::InvokeRealtimeGenerate", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         static extern unsafe void InvokeRealtimeGenerateInternal(/*RealtimeAccess**/ void* access, /* GeneratorProduceDataArguments**/ void* args);
+
+        [NativeMethod(Name = "audio::InvokeRealtimeMessage", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
+        static extern unsafe void InvokeRealtimeMessageInternal(/* ProcessorRealtimeMessageArguments**/ void* args);
 
         [NativeMethod(Name = "audio::AddDataToProcessor", IsFreeFunction = true, ThrowsException = true)]
         static extern unsafe bool AddDataToProcessorHandleInternal(/*ControlHeader* */ void* control, DualThreadHandle handle, void* data, int size, int align, long typeHash);
@@ -782,14 +905,14 @@ namespace UnityEngine.Audio
                 }
                 case ControlFunction.Update:
                 {
-                    var args = (UpdateArguments*)additionalPtr;
+                    var args = (ControlUpdateArguments*)additionalPtr;
                     control.Update(new (args->ControlContext), new (args->Self));
                     break;
                 }
 
                 case ControlFunction.Message:
                 {
-                    var args = (MessageArguments*)additionalPtr;
+                    var args = (ControlMessageArguments*)additionalPtr;
                     args->StatusReturn = control.OnMessage(new(args->Context), new(args->Self), *args->MessageData);
                     break;
                 }
@@ -806,8 +929,16 @@ namespace UnityEngine.Audio
                 case ProcessorFunction.Update:
                 {
                     // Natively, this is wrapped in a single element pointer struct so just reference it directly through.
-                    var args = *(ProcessorRealtimeUpdateArguments**)additionalPtr;
+                    var args = *(RealtimeUpdateArguments**)additionalPtr;
                     processor.Update(new(args->Access), new(args->Self, args->Head));
+                    break;
+                }
+                case ProcessorFunction.Message:
+                {
+                    // audio::InvokeRealtimeMessage passes the managed args straight through, so additionalPtr is a
+                    // single pointer to them (unlike Update, which native wraps in a pointer-to-pointer).
+                    var args = (RealtimeMessageArguments*)additionalPtr;
+                    args->StatusReturn = processor.OnMessage(new(args->Access), new(args->Self), *args->MessageData);
                     break;
                 }
                 default:

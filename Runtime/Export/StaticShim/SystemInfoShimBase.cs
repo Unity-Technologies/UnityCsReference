@@ -137,6 +137,8 @@ namespace UnityEngine
 
         public virtual bool supportsMultisampleAutoResolve => UnityEngine.SystemInfo.supportsMultisampleAutoResolve;
 
+        public virtual bool supportsSwapChainPreTransform => UnityEngine.SystemInfo.supportsSwapChainPreTransform;
+
         public virtual bool supportsMultisampledShaderResolve => UnityEngine.SystemInfo.supportsMultisampledShaderResolve;
 
         public virtual int supportsTextureWrapMirrorOnce => UnityEngine.SystemInfo.supportsTextureWrapMirrorOnce;
@@ -227,6 +229,8 @@ namespace UnityEngine
         public virtual bool supportsMachineLearning => UnityEngine.SystemInfo.supportsMachineLearning;
 
         public virtual bool supportsMemorylessTextures => UnityEngine.SystemInfo.supportsMemorylessTextures;
+
+        public virtual bool supportsBackbufferDepthMemoryless => UnityEngine.SystemInfo.supportsBackbufferDepthMemoryless;
 
         public virtual bool supportsSetConstantBuffer => UnityEngine.SystemInfo.supportsSetConstantBuffer;
 

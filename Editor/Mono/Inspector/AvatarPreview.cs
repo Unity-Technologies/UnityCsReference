@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -598,7 +599,7 @@ namespace UnityEditor
 
             // Enable character and render with camera into the shadowmap
             SetPreviewCharacterEnabled(true, false);
-            m_PreviewUtility.camera.Render();
+            m_PreviewUtility.RenderCamera();
 
             // Draw a quad, with shader that will produce white color everywhere
             // where something was rendered (via inverted depth test)
@@ -1185,3 +1186,4 @@ namespace UnityEditor
         }
     } // class AvatarPreview
 } // namespace UnityEditor
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

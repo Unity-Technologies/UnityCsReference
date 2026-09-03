@@ -67,7 +67,7 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
             var element = property.GetArrayElementAtIndex(index);
-            var label = element.objectReferenceValue == null ? L10n.Tr("(Missing Reference)") : ObjectNames.NicifyVariableName(element.objectReferenceValue.name);
+            var label = element.objectReferenceValue == null ? L10n.Tr("(Missing Reference)", null) : ObjectNames.NicifyVariableName(element.objectReferenceValue.name);
             EditorGUI.ObjectField(rect, element, GUIContent.Temp(label));
         }
 

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Hierarchy.Editor;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
@@ -46,6 +45,45 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     public override string assetPath => AssetDatabase.GetAssetPath(EditedVisualTreeAsset);
 
     internal Panel GetAuthoringPanel() => m_PanelElement?.SubPanel;
+
+    /// <summary>
+    /// The live element the edited (sub-)document hangs from: the authoring panel's root, or — when a
+    /// sub-document is edited in context — the template instance along
+    /// <see cref="VisualTreeAssetEditingContext.SubDocumentPath"/> that is being edited.
+    /// </summary>
+    /// <remarks>
+    /// The stage has no panel component, so this instance is the only thing that tells apart two clones of one
+    /// template in the same document: they are cloned from the same assets and differ only in the chain of
+    /// instances they hang from. A caller that authors without a live parent of its own — an add with nothing
+    /// selected — names this one, so its result is selected where the user is editing rather than in whichever
+    /// clone comes first.
+    /// </remarks>
+    internal VisualElement ResolveLocalRoot()
+    {
+        var panel = GetAuthoringPanel();
+        if (panel == null)
+            return null;
+
+        var localRoot = panel is PanelElement.RuntimePanel runtimePanel ? runtimePanel.Root : panel.visualTree;
+
+        var context = Context;
+        if (context.SubDocumentOptions is SubDocumentOptions.None or SubDocumentOptions.Isolation)
+            return localRoot;
+
+        var subDocumentPath = context.SubDocumentPath;
+        if (subDocumentPath == null)
+            return localRoot;
+
+        for (var i = 0; i < subDocumentPath.Length && localRoot != null; ++i)
+        {
+            var template = subDocumentPath[i];
+            localRoot = localRoot.Query<TemplateContainer>()
+                .Where(tc => (tc.visualElementAsset as TemplateAsset)?.id == template.id)
+                .First();
+        }
+
+        return localRoot;
+    }
 
     internal override bool isValid => ValidateContext();
 
@@ -187,7 +225,6 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         // TODO: [MP] Remove once we have the proper reload attributes for managed objects.
         if (StageUtility.GetCurrentStage() == this)
         {
-            HierarchyWindow.RegisterNodeTypeHandler<VisualElementEditingNodeHandler>();
             TrackStagePanel();
             AttachToRegistry();
         }
@@ -430,7 +467,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         if (isAssetMissing)
         {
             style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBoldMissing : BreadcrumbBar.DefaultStyles.labelMissing;
-            content.tooltip = L10n.Tr("VisualTreeAsset Asset has been deleted.");
+            content.tooltip = L10n.Tr("VisualTreeAsset Asset has been deleted.", null);
         }
 
         return new BreadcrumbBar.Item
@@ -580,12 +617,6 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     void OnPanelRepainted(PanelElement panel)
     {
         PanelWasRepainted?.Invoke(panel);
-    }
-
-    internal void ContentOverflowMode(Overflow overflow)
-    {
-        if (m_PanelElement != null)
-            m_PanelElement.ContentOverflowMode = overflow;
     }
 
     void TrackStagePanel()

@@ -29,12 +29,12 @@ internal class DeselectSampleAction : SampleAction
 
     public override string GetText(Sample item, bool isInProgress)
     {
-        return L10n.Tr("Deselect");
+        return L10n.Tr("Deselect", null);
     }
 
     public override string GetTooltip(Sample item, bool isInProgress)
     {
-        return L10n.Tr("Click to deselect these items from the list.");
+        return L10n.Tr("Click to deselect these items from the list.", null);
     }
 
     public override ToolbarButtonBase<Sample, Sample> CreateToolbarButton()

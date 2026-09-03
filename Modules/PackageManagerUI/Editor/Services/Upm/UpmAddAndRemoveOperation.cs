@@ -44,7 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
-        protected override string operationErrorMessage => string.Format(L10n.Tr("Error adding/removing packages: {0}."), string.Join(",", packageIdsToAdd.Join(packagesNamesToRemove)));
+        protected override string operationErrorMessage => string.Format(L10n.Tr("Error adding/removing packages: {0}.", null), string.Join(",", packageIdsToAdd.Join(packagesNamesToRemove)));
 
         [SerializeField]
         protected string[] m_PackageIdsToReset = Array.Empty<string>();

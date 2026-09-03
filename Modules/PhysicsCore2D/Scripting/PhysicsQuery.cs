@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     /// Various physics queries.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial struct PhysicsQuery
+    public readonly partial record struct PhysicsQuery
     {
         /// <summary>
         /// Check the intersection between two shapes (<see cref="PhysicsShape"/>).
@@ -188,7 +188,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct WorldMoverInput
+        public record struct WorldMoverInput
         {
             /// <summary>
             /// Create a default world mover input.
@@ -290,7 +290,7 @@ namespace Unity.U2D.Physics
         /// The world mover result used by the world mover.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct WorldMoverResult : IDisposable
+        public readonly record struct WorldMoverResult : IDisposable
         {
             /// <summary>
             /// The final transform the mover finished at.
@@ -330,7 +330,7 @@ namespace Unity.U2D.Physics
         /// </summary>            
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct QueryFilter
+        public record struct QueryFilter
         {
             /// <summary>
             /// Create a default filter set as <see cref="QueryFilter.defaultFilter"/>.
@@ -404,7 +404,7 @@ namespace Unity.U2D.Physics
         /// The results from performing any Overlap query.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct WorldOverlapResult
+        public readonly record struct WorldOverlapResult
         {
             /// <summary>
             /// The shape that was detected by the overlap.
@@ -427,7 +427,7 @@ namespace Unity.U2D.Physics
         /// The results from performing any Cast query against the <see cref="PhysicsWorld"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct WorldCastResult
+        public readonly record struct WorldCastResult
         {
             /// <summary>
             /// The shape that was detected by the cast.
@@ -460,7 +460,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly struct SortAscendingOrder : IComparer<WorldCastResult>
+            public readonly record struct SortAscendingOrder : IComparer<WorldCastResult>
             {
                 /// <undoc/>
                 readonly int IComparer<WorldCastResult>.Compare(WorldCastResult x, WorldCastResult y) => x.fraction.CompareTo(y.fraction);
@@ -502,7 +502,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct CastRayInput
+        public record struct CastRayInput
         {
             /// <summary>
             /// Create a default Cast Ray input.
@@ -564,7 +564,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct CastShapePairInput
+        public record struct CastShapePairInput
         {
             /// <summary>
             /// A proxy to the shape A.
@@ -620,7 +620,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct CastShapeInput
+        public record struct CastShapeInput
         {
             /// <summary>
             /// Create a default cast shape input.
@@ -763,7 +763,7 @@ namespace Unity.U2D.Physics
         /// Cast result when performing cast-ray or cast-shape queries against geometry.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly partial struct CastResult
+        public readonly partial record struct CastResult
         {
             /// <summary>
             /// The surface normal at the point of contact.
@@ -801,7 +801,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly struct SortAscendingOrder : IComparer<CastResult>
+            public readonly record struct SortAscendingOrder : IComparer<CastResult>
             {
                 /// <undoc/>
                 readonly int IComparer<CastResult>.Compare(CastResult x, CastResult y) => x.m_Fraction.CompareTo(y.m_Fraction);
@@ -823,7 +823,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct DistanceInput
+        public record struct DistanceInput
         {
             /// <summary>
             /// The proxy for shape A.
@@ -865,7 +865,7 @@ namespace Unity.U2D.Physics
         /// Distance result from shape distance queries.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct DistanceResult
+        public readonly record struct DistanceResult
         {
             /// <summary>
             /// Closest point on shape A.
@@ -896,7 +896,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly struct SortAscendingOrder : IComparer<DistanceResult>
+            public readonly record struct SortAscendingOrder : IComparer<DistanceResult>
             {
                 /// <undoc/>
                 readonly int IComparer<DistanceResult>.Compare(DistanceResult x, DistanceResult y) => x.m_Distance.CompareTo(y.m_Distance);
@@ -918,7 +918,7 @@ namespace Unity.U2D.Physics
         /// Segment distance result from segment distance queries.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct SegmentDistanceResult
+        public readonly record struct SegmentDistanceResult
         {
             /// <summary>
             /// The closest point on the first segment
@@ -948,7 +948,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly struct SortAscendingOrder : IComparer<SegmentDistanceResult>
+            public readonly record struct SortAscendingOrder : IComparer<SegmentDistanceResult>
             {
                 /// <undoc/>
                 readonly int IComparer<SegmentDistanceResult>.Compare(SegmentDistanceResult x, SegmentDistanceResult y) => x.m_Distance.CompareTo(y.m_Distance);
@@ -971,7 +971,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct ShapeSweep
+        public record struct ShapeSweep
         {
             /// <summary>
             /// The local center of mass.
@@ -1014,7 +1014,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct TimeOfImpactInput
+        public record struct TimeOfImpactInput
         {
             /// <summary>
             /// The proxy for shape A.
@@ -1056,7 +1056,7 @@ namespace Unity.U2D.Physics
         /// Time-of-impact result from time-of-impact query.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct TimeOfImpactResult
+        public readonly record struct TimeOfImpactResult
         {
             /// <summary>
             /// Describes the time-of-impact state.
@@ -1114,7 +1114,7 @@ namespace Unity.U2D.Physics
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly struct SortAscendingOrder : IComparer<TimeOfImpactResult>
+            public readonly record struct SortAscendingOrder : IComparer<TimeOfImpactResult>
             {
                 /// <undoc/>
                 readonly int IComparer<TimeOfImpactResult>.Compare(TimeOfImpactResult x, TimeOfImpactResult y) => x.fraction.CompareTo(y.fraction);

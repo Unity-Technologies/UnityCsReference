@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -123,7 +124,9 @@ namespace Unity.UI.Builder
             m_RebuildMarker = new ProfilerMarker($"ElementHierarchyView.Rebuild.{profilerMarkerName}");
             m_DocumentRootElement = documentRootElement;
             m_Selection = selection;
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_ClassDragger = classDragger;
+            #pragma warning restore UAL0015
             m_ExplorerDragger = explorerDragger;
             m_ContextMenuManipulator = contextMenuManipulator;
 
@@ -138,12 +141,14 @@ namespace Unity.UI.Builder
             this.RegisterCallback<FocusEvent>(e => m_TreeView?.Focus());
 
             // HACK: ListView/TreeView need to clear their selections when clicking on nothing.
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             this.RegisterCallback<MouseDownEvent>(e =>
             {
                 var target = e.elementTarget;
                 if (target.parent is ScrollView)
                     m_PaneWindow.primarySelection.ClearSelection(null);
             });
+            #pragma warning restore UAL0015
 
             RegisterCallback<GeometryChangedEvent>(e =>
             {
@@ -180,7 +185,9 @@ namespace Unity.UI.Builder
             m_TreeView.RegisterCallback<MouseDownEvent>(OnLeakedMouseClick);
             m_Container.Add(m_TreeView);
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_ContextMenuManipulator.RegisterCallbacksOnTarget(m_Container);
+            #pragma warning restore UAL0015
 
             RegisterCallback<KeyDownEvent>(evt =>
             {
@@ -1255,3 +1262,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

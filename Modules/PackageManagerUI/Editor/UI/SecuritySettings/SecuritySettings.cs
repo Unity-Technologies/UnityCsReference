@@ -124,8 +124,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return trustPolicyLevel switch
             {
-                TrustPolicyLevel.Signed => L10n.Tr("Valid Signatures"),
-                TrustPolicyLevel.AnyPackage => L10n.Tr("Any Signature Status"),
+                TrustPolicyLevel.Signed => L10n.Tr("Valid Signatures", null),
+                TrustPolicyLevel.AnyPackage => L10n.Tr("Any Signature Status", null),
                 _ => string.Empty
             };
         }

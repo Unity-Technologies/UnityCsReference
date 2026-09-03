@@ -27,7 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var message = error.message ?? string.Empty;
             if (error.HasAttribute(UIError.Attribute.DetailInConsole))
-                message = string.Format(L10n.Tr("{0} See console for more details."), message);
+                message = string.Format(L10n.Tr("{0} See console for more details.", null), message);
             text = message;
 
             messageType = error.HasAttribute(UIError.Attribute.Warning) ? HelpBoxMessageType.Warning : HelpBoxMessageType.Error;
@@ -48,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Application.OpenURL(productUrl);
                     PackageManagerWindowAnalytics.SendEvent("viewProductInAssetStoreFromAlertHelpBox", packageVersion.uniqueId);
                 };
-                SetCustomLinkButton(L10n.Tr("View in Asset Store"), buttonAction, productUrl);
+                SetCustomLinkButton(L10n.Tr("View in Asset Store", null), buttonAction, productUrl);
             }
             else if (!string.IsNullOrEmpty(error.readMoreURL))
             {
@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     PackageManagerWindowAnalytics.SendEvent($"alertreadmore_{error.errorCode}", packageVersion?.uniqueId);
                     m_Application.OpenURL(error.readMoreURL);
                 };
-                SetCustomLinkButton(L10n.Tr("Learn More"), buttonAction, error.readMoreURL);
+                SetCustomLinkButton(L10n.Tr("Learn More", null), buttonAction, error.readMoreURL);
             }
             else
                 SetCustomLinkButton(string.Empty, null, string.Empty);

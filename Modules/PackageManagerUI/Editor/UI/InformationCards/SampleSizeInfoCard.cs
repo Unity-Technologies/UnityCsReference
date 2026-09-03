@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class SampleSizeInfoCard: SampleInformationCard
     {
-        protected override string titleText => L10n.Tr("Sample Size");
+        protected override string titleText => L10n.Tr("Sample Size", null);
         protected override InformationCardSize cardSize => InformationCardSize.Small;
 
         public override void Refresh(Sample sample)

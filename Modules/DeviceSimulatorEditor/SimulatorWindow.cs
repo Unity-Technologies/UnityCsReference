@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: DeviceSimulator not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.SceneManagement;
@@ -17,6 +18,10 @@ namespace UnityEditor.DeviceSimulation
     [EditorWindowTitle(title = "Simulator", useTypeNameAsIconName = true)]
     internal partial class SimulatorWindow : PlayModeView, IHasCustomMenu
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal SimulatorWindow() {}
+        #pragma warning restore UAL0015
+
         [AutoStaticsCleanupOnCodeReload]
         private static List<SimulatorWindow> s_SimulatorInstances = new List<SimulatorWindow>();
         private bool m_DeviceListDirty;
@@ -225,3 +230,4 @@ namespace UnityEditor.DeviceSimulation
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

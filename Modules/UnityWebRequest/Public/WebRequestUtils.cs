@@ -455,6 +455,7 @@ namespace UnityEngine
         private static readonly byte[] urlSpace = new byte[] { (byte)'+' };
         private static readonly byte[] dataSpace = WWWForm.DefaultEncoding.GetBytes("%20");
         private static readonly byte[] urlForbidden = WWWForm.DefaultEncoding.GetBytes("@&;:<>=?\"'/\\!#%+$,{}|^[]`");
+        private static readonly byte[] wwwFormForbidden = WWWForm.DefaultEncoding.GetBytes("@;:<>?\"'/\\!#%+$,{}|^[]`");
         private static readonly byte qpEscapeChar = (byte)'=';
         private static readonly byte[] qpSpace = new byte[] {  (byte)'_' };
         private static readonly byte[] qpForbidden = WWWForm.DefaultEncoding.GetBytes("&;=?\"'%+_");
@@ -521,6 +522,12 @@ namespace UnityEngine
         public static byte[] DataEncode(byte[] toEncode)
         {
             return Encode(toEncode, urlEscapeChar, dataSpace, urlForbidden, false);
+        }
+
+        public static string WwwFormEncode(string toEncode, Encoding e)
+        {
+            byte[] data = Encode(e.GetBytes(toEncode), urlEscapeChar, dataSpace, wwwFormForbidden, false);
+            return WWWForm.DefaultEncoding.GetString(data, 0, data.Length);
         }
 
         public static string QPEncode(string toEncode)

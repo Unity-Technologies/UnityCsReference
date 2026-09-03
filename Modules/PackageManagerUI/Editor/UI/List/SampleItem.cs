@@ -50,13 +50,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (sample.isImported)
             {
                 m_StateIcon.AddToClassList(Icon.Installed.ClassName(), nameof(SampleState.Installed).ToLower());
-                m_StateIcon.tooltip = L10n.Tr("This sample is imported");
+                m_StateIcon.tooltip = L10n.Tr("This sample is imported", null);
                 UIUtils.SetElementDisplay(m_StateIcon, true);
             }
             else if (sample.previousImportPaths?.Count > 0)
             {
                 m_StateIcon.AddToClassList(Icon.UpdateAvailable.ClassName(), nameof(SampleState.UpdateAvailable).ToLower());
-                m_StateIcon.tooltip = L10n.Tr("A newer version of this sample is available.");
+                m_StateIcon.tooltip = L10n.Tr("A newer version of this sample is available.", null);
                 UIUtils.SetElementDisplay(m_StateIcon, true);
             }
             else

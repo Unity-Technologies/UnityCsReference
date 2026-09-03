@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -17,6 +18,22 @@ namespace UnityEngine.UIElements
                 (IntPtr)style.visualData.GetValuePtr(),
                 (IntPtr)style.rareData.GetValuePtr(),
                 (IntPtr)style.animationData.GetValuePtr());
+        }
+
+        // font-size is stored resolved (px); a percentage is relative to the parent's resolved font size.
+        internal static float ResolveFontSize(Length authored, ref ComputedStyle parentStyle)
+        {
+            return authored.unit == LengthUnit.Percent
+                ? parentStyle.fontSize * authored.value / 100f
+                : authored.value;
+        }
+
+        internal static float ResolveFontSize(Length authored, VisualElement ve)
+        {
+            var parent = ve.hierarchy.parent;
+            if (parent != null)
+                return ResolveFontSize(authored, ref parent.computedStyle);
+            return ResolveFontSize(authored, ref InitialStyle.Get());
         }
 
         [FreeFunction("UIToolkit::ComputedStyleUtility::HasStaleAssetReference")]

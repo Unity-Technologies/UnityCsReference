@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: VersionControl not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.ShortcutManagement;
@@ -19,6 +20,10 @@ namespace UnityEditor.VersionControl
     [EditorWindowTitle(title = "Version Control", icon = "UnityEditor.VersionControl")]
     internal partial class WindowPending : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal WindowPending() {}
+        #pragma warning restore UAL0015
+
         internal class Styles
         {
             public GUIStyle box = "CN Box";
@@ -766,3 +771,4 @@ namespace UnityEditor.VersionControl
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

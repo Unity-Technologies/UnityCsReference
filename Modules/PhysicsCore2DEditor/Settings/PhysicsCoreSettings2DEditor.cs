@@ -3,11 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+
 using UnityEditor;
-using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using Unity.Scripting.LifecycleManagement;
+using UnityEngine.UIElements;
 
 namespace Unity.U2D.Physics.Editor
 {
@@ -54,19 +53,33 @@ namespace Unity.U2D.Physics.Editor
             // Create the open button.
             var openButton = new Button { text = "Open in Project Settings" };
 
-            // Twice the default height.
-            openButton.style.height = EditorGUIUtility.singleLineHeight * 2;
+            // Half again the default height.
+            openButton.style.height = EditorGUIUtility.singleLineHeight * 1.5f;
 
             // Register for the clicked event.
-            openButton.clicked += () => SettingsService.OpenProjectSettings(PhysicsCoreSettings2DProvider.SettingsPath);
-            root.Add(openButton);
+            openButton.clicked += () => SettingsService.OpenProjectSettings(PhysicsCoreProjectSettings2DProvider.ProjectSettingPath.PhysicsCoreModule);
+
+            // The button sits in its own panel, separating it from the settings shown below.
+            // The top margin keeps the panel's top border off the very first row of the inspector's content area, where it would be clipped.
+            var buttonPanel = new VisualElement();
+            PhysicsCoreProjectSettings2DProvider.ApplyPanelStyle(buttonPanel);
+            buttonPanel.style.marginTop = 2;
+            buttonPanel.style.marginBottom = 10;
+            buttonPanel.Add(openButton);
+            root.Add(buttonPanel);
+
+            // Show the same tabbed settings view as the project-settings page, in its own matching panel.
+            var settingsPanel = new VisualElement();
+            PhysicsCoreProjectSettings2DProvider.ApplyPanelStyle(settingsPanel);
+            settingsPanel.Add(CreatePropertyGUI(serializedObject));
+            root.Add(settingsPanel);
 
             return root;
         }
 
-        public void OnEnable() => PhysicsCoreSettings2DProvider.SetSettingsObject();
+        public void OnEnable() => PhysicsCoreProjectSettings2DProvider.SetSettingsObject();
 
-        public void OnDisable() => PhysicsCoreSettings2DProvider.ClearSettingsObject();
+        public void OnDisable() => PhysicsCoreProjectSettings2DProvider.ClearSettingsObject();
 
         protected override bool ShouldHideOpenButton() => true;
 
@@ -79,9 +92,10 @@ namespace Unity.U2D.Physics.Editor
             // Fetch the selected settings.
             var selectedSettings = serializedObject.targetObject as PhysicsCoreSettings2D;
 
-            // Set title.
+            // Set the title, shown as the panel's bold header rather than a page title.
             var titleLabel = root.Q<Label>("settings-title");
-            titleLabel.text = selectedSettings.name + (PhysicsEditorOnly.physicsSettings == selectedSettings ? " (Assigned)" : " (Not Assigned)");
+            titleLabel.text = selectedSettings.name + (PhysicsEditorOnly.physicsSettings == selectedSettings ? " (Active)" : " (Inactive)");
+            titleLabel.AddToClassList("project-settings__physics__panel-header");
 
             // Add styles.
             root.styleSheets.Add(EditorGUIUtility.Load(PhysicsCoreProjectSettings2DProvider.StyleSheetPath.projectSettingsSheet) as StyleSheet);
@@ -94,8 +108,10 @@ namespace Unity.U2D.Physics.Editor
             SetupTabDefaultDefinitions(root.Q("tab-default-definitions-content"));
             SetupTabGlobal(root.Q("tab-global-content"));
 
-            // Tab view.
+            // Tab view, flush to the panel edges so the tabs align with the header above.
             var tabView = root.Q<TabView>("settings-tabs");
+            tabView.style.marginLeft = 0;
+            tabView.style.marginRight = 0;
             tabView.selectedTabIndex = EditorPrefs.GetInt(ViewDataKey.prefix + "selectedTabIndex", 0);
             tabView.activeTabChanged += (s, e) => { EditorPrefs.SetInt(ViewDataKey.prefix + "selectedTabIndex", tabView.selectedTabIndex); };
 
@@ -186,120 +202,4 @@ namespace Unity.U2D.Physics.Editor
             #endregion
         }
     }
-
-    #region Provider
-
-    class PhysicsCoreSettings2DProvider : SettingsProvider
-    {
-        public const string SettingsPath = "Project/Physics Core 2D/Settings";
-        static readonly string EmptySettingsLabel = $"Select a \"{ObjectNames.NicifyVariableName(nameof(PhysicsCoreSettings2D))}\" Asset to edit ...";
-        const string k_AutoEditPrefKey = "PhysicsCore2D.ProjectSettings.autoEditActiveSettings";
-
-        // Editor SettingsProvider singleton; assigned by the settings system when the provider is (re)created, so it is safe to persist across a code reload.
-        [NoAutoStaticsCleanup]
-        public static PhysicsCoreSettings2DProvider Instance { get; private set; }
-
-        VisualElement m_ProviderRoot;
-
-        public PhysicsCoreSettings2DProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null) : base(path, scopes, keywords) { }
-
-        public static void SetSettingsObject() => Instance?.RefreshContent();
-
-        public static void ClearSettingsObject() => Instance?.RefreshContent();
-
-        public static void RefreshActiveSettingContent()
-        {
-            if (Instance == null)
-                return;
-
-            if (EditorPrefs.GetBool(k_AutoEditPrefKey) && Selection.activeObject is not PhysicsCoreSettings2D)
-                Instance.RefreshContent();
-        }
-
-        void RefreshContent()
-        {
-            if (m_ProviderRoot == null)
-                return;
-
-            m_ProviderRoot.Clear();
-
-            if (Selection.activeObject is PhysicsCoreSettings2D selected)
-            {
-                var so = new SerializedObject(selected);
-                var contentRoot = PhysicsCoreSettings2DEditor.CreatePropertyGUI(so);
-                InjectAutoEditToggle(contentRoot);
-                m_ProviderRoot.Add(contentRoot);
-                keywords = GetSearchKeywordsFromSerializedObject(so);
-                return;
-            }
-
-            if (EditorPrefs.GetBool(k_AutoEditPrefKey) && PhysicsEditorOnly.physicsSettings != null)
-            {
-                var so = new SerializedObject(PhysicsEditorOnly.physicsSettings);
-                var contentRoot = PhysicsCoreSettings2DEditor.CreatePropertyGUI(so);
-                InjectAutoEditToggle(contentRoot);
-                m_ProviderRoot.Add(contentRoot);
-                keywords = GetSearchKeywordsFromSerializedObject(so);
-                return;
-            }
-
-            var emptyRoot = CreateEmptyPropertyGUI();
-            emptyRoot.Insert(0, CreateAutoEditToggle());
-            m_ProviderRoot.Add(emptyRoot);
-        }
-
-        static void InjectAutoEditToggle(VisualElement contentRoot)
-        {
-            var titleLabel = contentRoot.Q<Label>("settings-title");
-            titleLabel.parent.Insert(titleLabel.parent.IndexOf(titleLabel) + 1, CreateAutoEditToggle());
-        }
-
-        static Toggle CreateAutoEditToggle()
-        {
-            var toggle = new Toggle
-            {
-                text = "Auto-Edit Active Setting",
-                tooltip = "When enabled, the active Physics Core Settings 2D asset is always shown here for editing. When disabled, select a Physics Core Settings 2D asset in the Project window to edit it.",
-                value = EditorPrefs.GetBool(k_AutoEditPrefKey)
-            };
-            toggle.style.marginTop = 4;
-            toggle.style.marginLeft = 12;
-            toggle.RegisterValueChangedCallback(evt =>
-            {
-                EditorPrefs.SetBool(k_AutoEditPrefKey, evt.newValue);
-                Instance.RefreshContent();
-            });
-            return toggle;
-        }
-
-        static VisualElement CreateEmptyPropertyGUI()
-        {
-            var root = new VisualElement();
-            root.style.paddingTop = root.style.paddingLeft = root.style.paddingRight = 12;
-            root.Add(new HelpBox(EmptySettingsLabel, HelpBoxMessageType.Info));
-            return root;
-        }
-
-        [SettingsProvider]
-        public static SettingsProvider CreateProvider()
-        {
-            Instance = new PhysicsCoreSettings2DProvider(SettingsPath, SettingsScope.Project)
-            {
-                activateHandler = (searchContext, root) =>
-                {
-                    if (!EditorPrefs.HasKey(k_AutoEditPrefKey))
-                        EditorPrefs.SetBool(k_AutoEditPrefKey, true);
-
-                    Instance.m_ProviderRoot = root;
-                    Instance.RefreshContent();
-                },
-
-                deactivateHandler = () => Instance.m_ProviderRoot = null,
-            };
-
-            return Instance;
-        }
-    }
-
-    #endregion
 }

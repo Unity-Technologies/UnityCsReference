@@ -75,6 +75,10 @@ namespace UnityEngine.UIElements
         {
         }
 
+        abstract class ResolvedCurvatureProperty : ResolvedStyleProperty<Curvature>
+        {
+        }
+
         abstract class ResolvedScaleProperty : ResolvedStyleProperty<Scale>
         {
         }

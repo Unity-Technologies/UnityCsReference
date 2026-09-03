@@ -18,6 +18,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.InputForUIVisualizer")]
 [assembly: InternalsVisibleTo("UnityEngine.InputForUITests")]
 [assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")]
+// Lets the UI test framework override s_HasCurrentWindowKeyFocusFunc so IMGUI keyboard tests run in headless.
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Playmode")]
 [assembly: InternalsVisibleTo("Unity.Modules.InputForUI.Tests.Common")]

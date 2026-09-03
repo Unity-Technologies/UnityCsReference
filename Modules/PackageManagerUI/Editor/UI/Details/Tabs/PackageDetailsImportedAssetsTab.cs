@@ -19,9 +19,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal const int k_NumColumns = 3;
         private const int k_MinColumnWidth = 70;
 
-        private static readonly string k_LabelColumnTitle = L10n.Tr("Asset name");
-        private static readonly string k_LocationColumnTitle = L10n.Tr("Location in project");
-        private static readonly string k_VersionColumnTitle = L10n.Tr("Version");
+        private static readonly string k_LabelColumnTitle = L10n.Tr("Asset name", null);
+        private static readonly string k_LocationColumnTitle = L10n.Tr("Location in project", null);
+        private static readonly string k_VersionColumnTitle = L10n.Tr("Version", null);
 
         private MultiColumnListView m_ListView;
 
@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = packageManagerPrefs;
 
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Imported Assets");
+            m_DisplayName = L10n.Tr("Imported Assets", null);
 
             name = "importedAssetsDetailsContainer";
             m_ListView = new MultiColumnListView
@@ -134,7 +134,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     else
                     {
                         ((Label)ve).text = "-";
-                        ve.tooltip = L10n.Tr("This asset's version is unknown because it was imported with an older version of Unity. For accurate version tracking, import the asset again or update it.");
+                        ve.tooltip = L10n.Tr("This asset's version is unknown because it was imported with an older version of Unity. For accurate version tracking, import the asset again or update it.", null);
                     }
 
                 },

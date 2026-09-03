@@ -910,6 +910,33 @@ namespace UnityEngine
         public static extern void InOutArrayOfNonBlittableTypeWhenItemIsDeletedWorks([In, Out] StructWithStringIntAndFloat[] array);
     }
 
+    internal enum MarshallingPreventExecution
+    {
+        kNoMarshallingRestriction = 0,
+        kMarshallingTestsBlocked = 1 << 0,
+    }
+
+    [NativeHeader("Modules/Marshalling/OutArrayMarshallingTests.h")]
+    [ExcludeFromDocs]
+    internal static class PreventedOutMarshallingTests
+    {
+        const string k_HowToFix = "Call PreventedOutMarshallingTests.SetBlocked(false) first.";
+
+        public static extern void SetBlocked(bool blocked);
+
+        [PreventExecutionInState(MarshallingPreventExecution.kMarshallingTestsBlocked, PreventExecutionSeverity.PreventExecution_ManagedException, k_HowToFix)]
+        public static extern void OutArrayOfPrimitiveType([Out] int[] array, int value);
+
+        [PreventExecutionInState(MarshallingPreventExecution.kMarshallingTestsBlocked, PreventExecutionSeverity.PreventExecution_ManagedException, k_HowToFix)]
+        public static extern void OutArrayOfStringType([Out] string[] array, string value);
+
+        [PreventExecutionInState(MarshallingPreventExecution.kMarshallingTestsBlocked, PreventExecutionSeverity.PreventExecution_ManagedException, k_HowToFix)]
+        public static extern void OutListOfPrimitiveType([Out] List<int> list, int value);
+
+        [PreventExecutionInState(MarshallingPreventExecution.kMarshallingTestsBlocked, PreventExecutionSeverity.PreventExecution_ManagedException, k_HowToFix)]
+        public static extern void OutListOfStringType([Out] List<string> list, string value);
+    }
+
     [NativeHeader("Modules/Marshalling/ReturnArrayMarshallingTests.h")]
     [ExcludeFromDocs]
     internal static class ReturnArrayMarshallingTests

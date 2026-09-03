@@ -42,7 +42,9 @@ namespace UnityEditor
                 {
                     foreach (var implementedType in TypeCache.GetTypesDerivedFrom(type))
                     {
+                        #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                         AddType(implementedType);
+                        #pragma warning restore UAL0015
                     }
                 }
                 else

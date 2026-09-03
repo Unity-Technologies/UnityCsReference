@@ -24,6 +24,18 @@ namespace UnityEngine.LightTransport
             //    This is flipped back in GetShaderConstantsFromNormalizedSH before passed to shader.
             bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount);
 
+            // Same as above, but divideByPI controls step 2: pass false to keep textbook irradiance, matching a render
+            // pipeline that disables SupportedRenderingFeatures.divideBakedOutputByPI.
+            // The default implementation exists to keep pre-existing implementors source and binary compatible;
+            // it only supports the historical divide-by-PI convention and fails otherwise.
+            bool ConvertToUnityFormat(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> irradianceIn, BufferSlice<SphericalHarmonicsL2> irradianceOut, int probeCount, bool divideByPI)
+            {
+                if (!divideByPI)
+                    return false;
+
+                return ConvertToUnityFormat(context, irradianceIn, irradianceOut, probeCount);
+            }
+
             // Add two sets of SH coefficients together.
             bool AddSphericalHarmonicsL2(IDeviceContext context, BufferSlice<SphericalHarmonicsL2> A, BufferSlice<SphericalHarmonicsL2> B, BufferSlice<SphericalHarmonicsL2> sum, int probeCount);
 

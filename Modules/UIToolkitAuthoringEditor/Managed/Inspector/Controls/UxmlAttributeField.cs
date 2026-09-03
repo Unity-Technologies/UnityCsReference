@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
-using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
@@ -13,19 +13,47 @@ using Debug = UnityEngine.Debug;
 namespace Unity.UIToolkit.Editor;
 
 /// <summary>
-/// Represents a field for editing UXML attributes in the UXML Serialized Data Property View.
+/// An Editor-only control that displays a serialized UXML attribute in the Inspector, with override
+/// indicators and binding affordances.
 /// </summary>
+/// <remarks>
+/// Use <see cref="UxmlAttributeField"/> when you build custom drawers that derive from
+/// <see cref="UxmlSerializedDataPropertyDrawer"/>, so your fields match the auto-generated Inspector.
+/// The control shows the current attribute state: default, set inline, overridden in a template
+/// instance, or driven by a data binding.
+///
+/// When you don't set <see cref="label"/>, it falls back to the display name of the bound
+/// <see cref="UnityEditor.SerializedProperty"/>.
+/// </remarks>
+/// <example>
+/// The following example creates a field bound to a property from <c>FindPropertyRelative</c> inside a drawer.
+/// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/Scripts/UxmlAttributeFieldExamples.cs" region="example-bound"/>
+/// </example>
+/// <seealso cref="UxmlAttributeFieldDecorator"/>
+/// <seealso cref="UxmlSerializedDataPropertyDrawer"/>
 [UxmlElement]
-internal partial class UxmlAttributeField : VisualElement
+public partial class UxmlAttributeField : VisualElement
 {
+    /// <summary>
+    /// The USS class name for a UXML attribute field.
+    /// </summary>
+    /// <example>
+    /// The following example finds and styles these controls by their USS class names.
+    /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/Scripts/UxmlAttributeFieldExamples.cs" region="example-ussclass"/>
+    /// </example>
     public const string ussClassName = "unity-uxml-attribute-field";
 
     PropertyField m_PropertyField;
     UxmlAttributeFieldDecorator m_Decorator;
 
     /// <summary>
-    /// The decorator element that wraps the property field.
+    /// The decorator that draws the override indicator bar, binding affordances, and context menu for this field.
     /// </summary>
+    /// <example>
+    /// The following example reaches the decorator to add an action button next to the field.
+    /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/Scripts/UxmlAttributeFieldExamples.cs" region="example-decorator"/>
+    /// </example>
+    /// <seealso cref="UxmlAttributeFieldDecorator"/>
     public UxmlAttributeFieldDecorator decorator => m_Decorator;
 
     /// <summary>
@@ -34,8 +62,12 @@ internal partial class UxmlAttributeField : VisualElement
     internal SerializedProperty boundProperty => m_PropertyField.serializedProperty;
 
     /// <summary>
-    /// Optionally overwrite the label of the generate property field. If no label is provided the string will be taken from the SerializedProperty.
+    /// The label shown next to the field's input control.
     /// </summary>
+    /// <remarks>
+    /// When you don't set a label, it falls back to the display name of the bound
+    /// <see cref="UnityEditor.SerializedProperty"/>. Set a label to keep it stable regardless of the property name.
+    /// </remarks>
     [UxmlAttribute]
     public string label
     {
@@ -44,8 +76,12 @@ internal partial class UxmlAttributeField : VisualElement
     }
 
     /// <summary>
-    /// The binding path of the UXML attribute field.
+    /// The binding path of the serialized property this field displays and edits.
     /// </summary>
+    /// <remarks>
+    /// The path resolves relative to the <c>UxmlSerializedData</c> property, because the property view
+    /// sets up the binding context. Set this to bind a field you created with the parameterless constructor.
+    /// </remarks>
     [UxmlAttribute]
     public string bindingPath
     {
@@ -56,19 +92,35 @@ internal partial class UxmlAttributeField : VisualElement
     /// <summary>
     /// The UXML attributes authoring context associated with this field.
     /// </summary>
-    public UxmlAttributesEditingContext Context => m_Decorator.context;
+    internal UxmlAttributesEditingContext Context => m_Decorator.context;
 
     /// <summary>
-    /// Constructor for UxmlAttributeField.
+    /// Creates an unbound field. Set <see cref="bindingPath"/> to bind it to a serialized property.
     /// </summary>
+    /// <remarks>
+    /// The field starts unbound. Set <see cref="bindingPath"/> to bind it, or use
+    /// <see cref="UxmlAttributeField(UnityEditor.SerializedProperty)"/> to bind it when you create it.
+    /// </remarks>
+    /// <example>
+    /// The following example creates an unbound field and sets <see cref="bindingPath"/> to bind it.
+    /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/Scripts/UxmlAttributeFieldExamples.cs" region="example-unbound"/>
+    /// </example>
     public UxmlAttributeField() : this(null)
     {
     }
 
     /// <summary>
-    /// Constructor for UxmlAttributeField.
+    /// Creates a field bound to the given serialized property.
     /// </summary>
-    /// <param name="property">The property that represents the UXML attribute edited by this field</param>
+    /// <param name="property">The property to display and edit. Pass null to create an unbound field.</param>
+    /// <remarks>
+    /// When <paramref name="property"/> is null, the field starts unbound. Set <see cref="bindingPath"/>
+    /// after you create it, or use the parameterless constructor.
+    /// </remarks>
+    /// <example>
+    /// The following example creates a field bound to a property from <c>FindPropertyRelative</c>.
+    /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/Scripts/UxmlAttributeFieldExamples.cs" region="example-bound"/>
+    /// </example>
     public UxmlAttributeField(SerializedProperty property)
     {
         AddToClassList(ussClassName);
@@ -81,26 +133,51 @@ internal partial class UxmlAttributeField : VisualElement
 }
 
 /// <summary>
-/// Decorated fields to UXML attributes adding override and affordance functionality.
+/// An Editor-only container for bindable fields. It adds an override indicator bar, binding state
+/// indicators, and a context menu for use in a custom drawer.
 /// </summary>
+/// <remarks>
+/// Use <see cref="UxmlAttributeFieldDecorator"/> to wrap a <see cref="UnityEngine.UIElements.TextField"/>
+/// or another <see cref="UnityEngine.UIElements.BaseField{T}"/> in a custom layout or next to action buttons,
+/// while it still takes part in the override and binding system. For a plain property display, use
+/// <see cref="UxmlAttributeField"/> instead.
+///
+/// The decorator can hold several children, but it binds only its first direct
+/// <see cref="UnityEngine.UIElements.IBindable"/> child, and detects the binding path when that child
+/// binds to a <see cref="UnityEditor.SerializedProperty"/>.
+///
+/// Right-click the decorator to open a context menu whose actions depend on the attribute state:
+/// add a binding, edit or remove a binding, unset the attribute, or unset all attributes on the element.
+/// </remarks>
+/// <example>
+/// The following example wraps a text field in a decorator next to action buttons.
+/// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/Scripts/UxmlSerializedDataPropertyDrawerExamples.cs" region="example3"/>
+/// </example>
+/// <seealso cref="UxmlAttributeField"/>
+/// <seealso cref="UxmlSerializedDataPropertyDrawer"/>
 [UxmlElement]
-internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyProvider
+public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePropertyProvider
 {
+    /// <summary>
+    /// The USS class name for a UXML attribute field decorator.
+    /// </summary>
     public const string ussClassName = "unity-uxml-attribute-field-decorator";
-    public const string contentContainerUssClassName = ussClassName + "__content-container";
-    public const string affordanceElementName = "affordance-element";
-    public const string affordanceElementUssClassName = ussClassName + "__affordance-element";
-    public static readonly string s_InlineFieldUssClassName = "property-field__inline-value";
-    public static readonly UniqueStyleString s_BoundFieldUssClassName = new("property-field__bound");
+    internal const string contentContainerUssClassName = ussClassName + "__content-container";
+    internal const string affordanceElementName = "affordance-element";
+    internal const string affordanceElementUssClassName = ussClassName + "__affordance-element";
+    internal static readonly string s_InlineFieldUssClassName = "property-field__inline-value";
+    internal static readonly UniqueStyleString s_BoundFieldUssClassName = new("property-field__bound");
 
-    public static readonly string k_AddBindingText = L10n.Tr("Add Binding");
-    public static readonly string k_RemoveBindingText = L10n.Tr("Remove Binding");
-    public static readonly string k_EditBindingText = L10n.Tr("Edit Binding");
-    public static readonly string k_ViewBindingText = L10n.Tr("View Binding");
-    public static readonly string k_UnsetText = L10n.Tr("Unset");
-    public static readonly string k_UnsetAllText = L10n.Tr("Unset all");
+    internal static readonly string k_AddBindingText = L10n.Tr("Add Binding", null);
+    internal static readonly string k_RemoveBindingText = L10n.Tr("Remove Binding", null);
+    internal static readonly string k_EditBindingText = L10n.Tr("Edit Binding", null);
+    internal static readonly string k_ViewBindingText = L10n.Tr("View Binding", null);
+    internal static readonly string k_UnsetText = L10n.Tr("Unset", null);
+    internal static readonly string k_UnsetAllText = L10n.Tr("Unset all", null);
 
     readonly List<string> s_BindingIgnoredAttributeNames = ["property"];
+
+    const string k_ArraySizeRelativePath = "Array.size";
 
     class ContentContainer : VisualElement
     {
@@ -186,6 +263,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
     UxmlSerializedDataPropertyView m_PropertyView;
     SerializedProperty m_BoundProperty;
     SerializedProperty m_BoundPropertyFlags;
+    SerializedProperty m_BoundPropertyArraySize;
     UxmlSerializedAttributeDescription m_BoundAttributeDescription;
     UxmlAttributesEditingContext m_Context;
     OverrideRow m_OverrideRow;
@@ -208,8 +286,14 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
     }
 
     /// <summary>
-    /// The content container for this decorator.
+    /// The element that holds this decorator's children.
     /// </summary>
+    /// <remarks>
+    /// Add a bindable child here. The decorator tracks the first direct
+    /// <see cref="UnityEngine.UIElements.IBindable"/> child it receives and listens for that child's bind event,
+    /// which drives the override indicator, the binding affordances, and the context menu. It ignores any bindable
+    /// children added after the first, so add the field you want the decorator to follow before the others.
+    /// </remarks>
     public override VisualElement contentContainer => m_ContentContainer;
 
     /// <summary>
@@ -250,6 +334,9 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
             m_BoundProperty = value;
             m_BoundPropertyFlags = m_BoundProperty?.GetUxmlAttributeFlags();
+            m_BoundPropertyArraySize = m_BoundProperty is { isArray: true }
+                ? m_BoundProperty.FindPropertyRelative(k_ArraySizeRelativePath)
+                : null;
             m_CachedFullBindingPath = null;
 
             TrackPropertyValueChange();
@@ -304,11 +391,20 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
     /// <summary>
     /// Event sent when the bound property of this decorator has changed.
     /// </summary>
-    public event EventHandler boundPropertyChanged;
+    internal event EventHandler boundPropertyChanged;
 
     /// <summary>
-    /// Constructor for UxmlAttributeFieldDecorator.
+    /// Creates a decorator that has no bound property.
     /// </summary>
+    /// <remarks>
+    /// Add a bindable child element after you construct the decorator. The decorator stays unbound until that child
+    /// binds to a <see cref="UnityEditor.SerializedProperty"/>, and only then does it show the override indicator and
+    /// the context menu. Use this constructor when you build the hierarchy yourself rather than letting a drawer
+    /// create it for you.
+    /// </remarks>
+    /// <example>
+    /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/UIToolkit/Scripts/UxmlSerializedDataPropertyDrawerExamples.cs" region="example-decorator-constructor"/>
+    /// </example>
     public UxmlAttributeFieldDecorator() : this(null)
     {
     }
@@ -359,15 +455,26 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             if (vea == null)
                 return;
 
-            var container = context.element;
-
-            var bindingPath = GetFullBindingPath();
-            var isBindableProperty = PropertyContainer.IsPathValid(ref container, bindingPath);
-
             // Add a separator in case then menu is already filled with items (e.g: TextField's input)
             menu.AppendSeparator();
 
-            if (isBindableProperty && boundAttributeDescription != null)
+            // The binding section is shown only for contexts that support attribute binding, and only when
+            // the path addresses a bindable target. The context validates the path: an element checks its
+            // own property bag, a component checks the ${component:<Type>}.<field> selector against its data.
+            // The Unset / Unset All actions below always apply.
+            BindingId bindingPath = default;
+            var isBindableProperty = false;
+            if (context.supportsAttributeBindings)
+            {
+                bindingPath = GetFullBindingPath();
+                isBindableProperty = context.IsBindablePath(context.element, bindingPath);
+            }
+
+            // The element path additionally requires a resolved attribute description (rows without one,
+            // like composite sub-fields, get no binding menu). A component attribute has no element-side
+            // description by design — its attributes live on the component serialized data — so the
+            // component context qualifies on the bindable-path check alone.
+            if (isBindableProperty && (boundAttributeDescription != null || context is ComponentUxmlAttributesEditingContext))
             {
                 var hasDataBinding = false;
 
@@ -414,17 +521,19 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
             menu.AppendAction(k_UnsetText, (_) => UnsetAttribute(), (_) => CanUnsetAttribute() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
             menu.AppendAction(k_UnsetAllText, (_) => UnsetAllAttributes(), (_) => CanUnsetAllAttributes() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+            if (context.showsAncestorOverrides && boundAttributeDescription != null)
+            {
+                menu.AppendSeparator();
+                AttributeOverridesMenu.Append(menu, context, boundAttributeDescription);
+            }
         };
     }
 
     bool CanUnsetAttribute()
     {
-        bool isInline = m_AffordanceElement.fieldAffordanceData.sourceTypeInfo ==
-                        FieldAffordanceSourceInfoType.Inline;
-        bool hasBinding = m_AffordanceElement.fieldAffordanceData.sourceTypeInfo is
-            FieldAffordanceSourceInfoType.ResolvedBinding or
-            FieldAffordanceSourceInfoType.UnhandledBinding or
-            FieldAffordanceSourceInfoType.UnresolvedBinding;
+        if (context?.element == null || boundProperty is not { isValid: true })
+            return false;
 
         var result = UxmlAssetUtilities.SynchronizePath(context, boundProperty.propertyPath, false);
 
@@ -435,7 +544,11 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             return false;
         }
 
-        return !context.isReadOnly && (hasBinding || isInline);
+        // Asked of the element rather than read off the affordance, whose single source-type channel an
+        // ancestor override takes over from an unsuccessful binding.
+        var hasBinding = context.element.GetBinding(GetFullBindingPath()) != null;
+
+        return !context.isReadOnly && (hasBinding || IsAttributeOverridden(this, in result));
     }
 
     void UnsetAttribute()
@@ -630,17 +743,21 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
     /// <summary>
     /// Custom update delegate for field affordance data.
     /// </summary>
-    public delegate void CustomFieldAffordanceDataUpdate(UxmlAttributeFieldDecorator decorator, in FieldAffordanceData data,  VisualElement element,  Binding binding,  bool isInline);
+    internal delegate void CustomFieldAffordanceDataUpdate(UxmlAttributeFieldDecorator decorator, in FieldAffordanceData data,  VisualElement element,  Binding binding,  bool isInline);
 
     /// <summary>
     /// Allows custom update logic for the field affordance data.
     /// </summary>
-    public CustomFieldAffordanceDataUpdate customFieldAffordanceDataUpdate;
+    internal CustomFieldAffordanceDataUpdate customFieldAffordanceDataUpdate;
 
     static bool IsAttributeOverridden(UxmlAttributeFieldDecorator fieldDecorator)
     {
         var result = UxmlAssetUtilities.SynchronizePath(fieldDecorator.context, fieldDecorator.boundProperty.propertyPath, false);
+        return IsAttributeOverridden(fieldDecorator, in result);
+    }
 
+    static bool IsAttributeOverridden(UxmlAttributeFieldDecorator fieldDecorator, in SynchronizePathResult result)
+    {
         if (result.success)
         {
             var serializedData = result.serializedData as UnityEngine.UIElements.UxmlSerializedData;
@@ -654,6 +771,12 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
                 !declaringType.IsAssignableFrom(serializedData.GetType()))
                 return false;
 
+            // A component attribute at a template instance stores its override in the template's component
+            // overrides, which the shared element path below cannot see; let the context answer instead.
+            if (fieldDecorator.context.isInTemplateInstance &&
+                fieldDecorator.context.IsTemplateAttributeOverridden(fieldDecorator.boundAttributeDescription) is { } overridden)
+                return overridden;
+
             return UxmlAssetUtilities.IsAttributeOverridden(
                 fieldDecorator.context.editedVisualTreeAsset,
                 result.uxmlAsset == fieldDecorator.context.elementAsset ? fieldDecorator.context.element : null,
@@ -663,7 +786,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         return false;
     }
 
-    public void ScheduleRefresh()
+    internal void ScheduleRefresh()
     {
         m_RefreshBinding.MarkDirty();
     }
@@ -676,22 +799,36 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
         var isInline = IsAttributeOverridden(this);
 
-        Binding binding = null;
+        var binding = context.element.GetBinding(GetFullBindingPath());
         bool isBindingSuccessful = false;
-        if (context is { element: not null })
+        if (binding != null)
         {
-            binding = context.element.GetBinding(GetFullBindingPath());
-            if (binding != null)
-            {
-                // Check if binding is actually successful
-                isBindingSuccessful = context.element.TryGetLastBindingToUIResult(
-                    GetFullBindingPath(),
-                    out var bindingResult) &&
-                    bindingResult.status == BindingStatus.Success;
-            }
-            FieldAffordanceController.UpdateFieldAffordanceData(m_AffordanceElement.fieldAffordanceData, context.element, binding, isInline);
-            customFieldAffordanceDataUpdate?.Invoke(this, m_AffordanceElement.fieldAffordanceData, context.element, binding, isInline);
+            // Check if binding is actually successful
+            isBindingSuccessful = context.element.TryGetLastBindingToUIResult(
+                GetFullBindingPath(),
+                out var bindingResult) &&
+                bindingResult.status == BindingStatus.Success;
         }
+
+        // A live binding drives the runtime value, so it wins over the override state.
+        var isDrivenByAncestorOverride = false;
+        VisualTreeAsset ancestorOverrideDocument = null;
+        if (context.showsAncestorOverrides && !isBindingSuccessful)
+        {
+            isDrivenByAncestorOverride = UxmlAssetUtilities.TryGetDrivingAttributeOverride(context.element,
+                boundAttributeDescription, out ancestorOverrideDocument);
+        }
+
+        FieldAffordanceController.UpdateFieldAffordanceData(m_AffordanceElement.fieldAffordanceData, context.element, binding, isInline);
+        customFieldAffordanceDataUpdate?.Invoke(this, m_AffordanceElement.fieldAffordanceData, context.element, binding, isInline);
+
+        // After the custom hook, so no other update can replace the override state it knows nothing about.
+        // A binding keeps the source type it needs to report, even a failing one; the lock below is all
+        // the override contributes there.
+        var reportsAncestorOverride = isDrivenByAncestorOverride && binding == null;
+        m_AffordanceElement.fieldAffordanceData.definingDocument = reportsAncestorOverride ? ancestorOverrideDocument : null;
+        if (reportsAncestorOverride)
+            m_AffordanceElement.fieldAffordanceData.sourceTypeInfo = FieldAffordanceSourceInfoType.AncestorAttributeOverride;
 
         var isOverridden = isInline || binding != null;
         OnTrackedPropertyChanged?.Invoke(this, boundProperty.propertyPath,
@@ -703,11 +840,11 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
         if (m_ContentContainer.bindable is VisualElement bindableElement)
         {
-            bindableElement.SetEnabled(!isBindingSuccessful);
+            bindableElement.SetEnabled(!isBindingSuccessful && !isDrivenByAncestorOverride);
         }
     }
 
-    public BindingId GetFullBindingPath() =>
+    internal BindingId GetFullBindingPath() =>
         m_CachedFullBindingPath ??= m_BoundProperty?.GetFullBindingPath() ?? string.Empty;
 
     void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -737,6 +874,8 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
         this.TrackPropertyValue(m_BoundProperty, OnPropertyChanged);
 
+        if (m_BoundPropertyArraySize is { isValid: true })
+            this.TrackPropertyValue(m_BoundPropertyArraySize, OnArraySizeChanged);
 
         if (m_BoundPropertyFlags is not { isValid: true })
             return;
@@ -758,6 +897,45 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
             // Untrack the property even if it may be invalid
             this.UntrackPropertyValue(m_BoundPropertyFlags, OnPropertyChanged);
         }
+
+        if (m_BoundPropertyArraySize != null)
+        {
+            var _ = m_BoundPropertyArraySize.isValid;
+            this.UntrackPropertyValue(m_BoundPropertyArraySize, OnArraySizeChanged);
+        }
+    }
+
+    void OnArraySizeChanged(object obj, SerializedProperty property)
+    {
+        if (context == null
+            || boundProperty is not { isValid: true, isArray: true }
+            || boundAttributeDescription is not { isList: true, isUxmlObject: true })
+            return;
+
+        var acceptedTypes = boundAttributeDescription.uxmlObjectAcceptedTypes;
+
+        // With more than one accepted type there is no unambiguous choice, so leave the items null.
+        if (acceptedTypes.Count != 1 || !RejectsNullItems(acceptedTypes[0]))
+            return;
+
+        if (!UxmlAssetUtilities.FillNullArrayItemsInSerializedData(context, boundProperty, acceptedTypes[0]))
+            return;
+
+        FindUxmlObjectListView()?.Rebuild();
+    }
+
+    static bool RejectsNullItems(Type uxmlSerializedDataType)
+    {
+        var itemType = uxmlSerializedDataType?.DeclaringType;
+
+        return itemType == typeof(Column) || itemType == typeof(SortColumnDescription);
+    }
+
+    ListView FindUxmlObjectListView()
+    {
+        var propertyField = m_ContentContainer.bindable as PropertyField;
+
+        return propertyField?.Q<ListView>(classes: PropertyField.listViewUssClassName);
     }
 
     void OnPropertyFieldReset()
@@ -773,12 +951,7 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
 
     void HandleUxmlObjectListProperty()
     {
-        var propertyField = m_ContentContainer.bindable as PropertyField;
-
-        if (propertyField == null || propertyField.childCount == 0)
-            return;
-
-        var listView = propertyField.Q<ListView>(classes: PropertyField.listViewUssClassName);
+        var listView = FindUxmlObjectListView();
         if (listView == null)
             return;
 
@@ -802,3 +975,4 @@ internal partial class UxmlAttributeFieldDecorator : VisualElement, ITrackablePr
         UxmlAssetUtilities.RemoveArrayItemFromSerializedData(context, boundProperty, index);
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

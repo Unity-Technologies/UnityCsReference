@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TreeEditor not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: TreeEditor not yet converted
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -10,11 +10,12 @@ using UnityEngine.Scripting;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 
 namespace TreeEditor
 {
     [CustomEditor(typeof(Tree))]
-    internal class TreeEditor : Editor
+    internal partial class TreeEditor : Editor
     {
         private enum PropertyType
         {
@@ -37,162 +38,166 @@ namespace TreeEditor
             Duplicate = 7
         }
 
+        [AutoStaticsCleanupOnCodeReload]
         private static Vector3 s_StartPosition;
+        [AutoStaticsCleanupOnCodeReload]
         private static int s_SelectedPoint = -1;
+        [AutoStaticsCleanupOnCodeReload]
         private static TreeNode s_SelectedNode;
+        [AutoStaticsCleanupOnCodeReload]
         private static TreeGroup s_SelectedGroup;
 
-        private static string[] geometryModeOptions =
+        private static readonly string[] geometryModeOptions =
         {
-            L10n.Tr("Plane|"),
-            L10n.Tr("Cross|"),
-            L10n.Tr("TriCross|"),
-            L10n.Tr("Billboard|"),
-            L10n.Tr("Mesh|")
+            L10n.Tr("Plane|", null),
+            L10n.Tr("Cross|", null),
+            L10n.Tr("TriCross|", null),
+            L10n.Tr("Billboard|", null),
+            L10n.Tr("Mesh|", null)
         };
 
-        private static string createNewTreeString = L10n.Tr("Create New Tree");
+        private static readonly string createNewTreeString = L10n.Tr("Create New Tree", null);
 
-        private static string createWindZoneString = L10n.Tr("Create Wind Zone");
+        private static readonly string createWindZoneString = L10n.Tr("Create Wind Zone", null);
 
-        private static string[] toolbarIconStringsBranch =
+        private static readonly string[] toolbarIconStringsBranch =
         {
             "TreeEditor.BranchTranslate",
             "TreeEditor.BranchRotate",
             "TreeEditor.BranchFreeHand",
         };
 
-        private static string[] toolbarContentStringsBranch =
+        private static readonly string[] toolbarContentStringsBranch =
         {
-            L10n.Tr("Move Branch|Select a branch spline point and drag to move it."),
-            L10n.Tr("Rotate Branch|Select a branch spline point and drag to rotate it."),
-            L10n.Tr("Free Hand|Click on a branch spline node and drag to draw a new shape.")
+            L10n.Tr("Move Branch|Select a branch spline point and drag to move it.", null),
+            L10n.Tr("Rotate Branch|Select a branch spline point and drag to rotate it.", null),
+            L10n.Tr("Free Hand|Click on a branch spline node and drag to draw a new shape.", null)
         };
 
-        private static string[] toolbarIconStringsLeaf =
+        private static readonly string[] toolbarIconStringsLeaf =
         {
             "TreeEditor.LeafTranslate",
             "TreeEditor.LeafRotate",
         };
 
-        private static string[] toolbarContentStringsLeaf =
+        private static readonly string[] toolbarContentStringsLeaf =
         {
-            L10n.Tr("Move Leaf|Select a leaf spline point and drag to move it."),
-            L10n.Tr("Rotate Leaf|Select a leaf spline point and drag to rotate it.")
+            L10n.Tr("Move Leaf|Select a leaf spline point and drag to move it.", null),
+            L10n.Tr("Rotate Leaf|Select a leaf spline point and drag to rotate it.", null)
         };
 
-        private static string[] inspectorDistributionPopupOptions =
+        private static readonly string[] inspectorDistributionPopupOptions =
         {
-            L10n.Tr("Random|"),
-            L10n.Tr("Alternate|"),
-            L10n.Tr("Opposite|"),
-            L10n.Tr("Whorled|")
+            L10n.Tr("Random|", null),
+            L10n.Tr("Alternate|", null),
+            L10n.Tr("Opposite|", null),
+            L10n.Tr("Whorled|", null)
         };
 
-        private static string treeSeedString = L10n.Tr("Tree Seed|The global seed that affects the entire tree. Use it to randomize your tree, while keeping the general structure of it.");
+        private static readonly string treeSeedString = L10n.Tr("Tree Seed|The global seed that affects the entire tree. Use it to randomize your tree, while keeping the general structure of it.", null);
 
-        private static string areaSpreadString = L10n.Tr("Area Spread|Adjusts the spread of trunk nodes. Has an effect only if you have more than one trunk.");
+        private static readonly string areaSpreadString = L10n.Tr("Area Spread|Adjusts the spread of trunk nodes. Has an effect only if you have more than one trunk.", null);
 
-        private static string groundOffsetString = L10n.Tr("Ground Offset|Adjusts the offset of trunk nodes on Y axis.");
+        private static readonly string groundOffsetString = L10n.Tr("Ground Offset|Adjusts the offset of trunk nodes on Y axis.", null);
 
-        private static string lodQualityString = L10n.Tr("LOD Quality|Defines the level-of-detail for the entire tree. A low value will make the tree less complex, a high value will make the tree more complex. Check the statistics in the hierarchy view to see the current complexity of the mesh.");
+        private static readonly string lodQualityString = L10n.Tr("LOD Quality|Defines the level-of-detail for the entire tree. A low value will make the tree less complex, a high value will make the tree more complex. Check the statistics in the hierarchy view to see the current complexity of the mesh.", null);
 
-        private static string ambientOcclusionString = L10n.Tr("Ambient Occlusion|Toggles ambient occlusion on or off.");
+        private static readonly string ambientOcclusionString = L10n.Tr("Ambient Occlusion|Toggles ambient occlusion on or off.", null);
 
-        private static string aoDensityString = L10n.Tr("AO Density|Adjusts the density of ambient occlusion.");
+        private static readonly string aoDensityString = L10n.Tr("AO Density|Adjusts the density of ambient occlusion.", null);
 
-        private static string translucencyColorString = L10n.Tr("Translucency Color|The color that will be multiplied in when the leaves are backlit.");
+        private static readonly string translucencyColorString = L10n.Tr("Translucency Color|The color that will be multiplied in when the leaves are backlit.", null);
 
-        private static string transViewDepString = L10n.Tr("Trans. View Dep.|Translucency view dependency. Fully view dependent translucency is relative to the angle between the view direction and the light direction. View independent is relative to the angle between the leaf's normal vector and the light direction.");
+        private static readonly string transViewDepString = L10n.Tr("Trans. View Dep.|Translucency view dependency. Fully view dependent translucency is relative to the angle between the view direction and the light direction. View independent is relative to the angle between the leaf's normal vector and the light direction.", null);
 
-        private static string alphaCutoffString = L10n.Tr("Alpha Cutoff|Alpha values from the base texture smaller than the alpha cutoff are clipped creating a cutout.");
+        private static readonly string alphaCutoffString = L10n.Tr("Alpha Cutoff|Alpha values from the base texture smaller than the alpha cutoff are clipped creating a cutout.", null);
 
-        private static string shadowStrengthString = L10n.Tr("Shadow Strength|Makes the shadows on the leaves less harsh. Since it scales all the shadowing that the leaves receive, it should be used with care for trees that are e.g. in a shadow of a mountain.");
+        private static readonly string shadowStrengthString = L10n.Tr("Shadow Strength|Makes the shadows on the leaves less harsh. Since it scales all the shadowing that the leaves receive, it should be used with care for trees that are e.g. in a shadow of a mountain.", null);
 
-        private static string shadowOffsetString = L10n.Tr("Shadow Offset|Scales the values from the Shadow Offset texture set in the source material. It is used to offset the position of the leaves when collecting the shadows, so that the leaves appear as if they were not placed on one quad. It's especially important for billboarded leaves and they should have brighter values in the center of the texture and darker ones at the border. Start out with a black texture and add different shades of gray per leaf.");
+        private static readonly string shadowOffsetString = L10n.Tr("Shadow Offset|Scales the values from the Shadow Offset texture set in the source material. It is used to offset the position of the leaves when collecting the shadows, so that the leaves appear as if they were not placed on one quad. It's especially important for billboarded leaves and they should have brighter values in the center of the texture and darker ones at the border. Start out with a black texture and add different shades of gray per leaf.", null);
 
-        private static string[] leafMaterialOptions =
+        private static readonly string[] leafMaterialOptions =
         {
-            L10n.Tr("Full Res|"),
-            L10n.Tr("Half Res|"),
-            L10n.Tr("Quarter Res|"),
-            L10n.Tr("One-8th Res|"),
-            L10n.Tr("One-16th Res|")
+            L10n.Tr("Full Res|", null),
+            L10n.Tr("Half Res|", null),
+            L10n.Tr("Quarter Res|", null),
+            L10n.Tr("One-8th Res|", null),
+            L10n.Tr("One-16th Res|", null)
         };
 
-        private static string shadowCasterResString = L10n.Tr("Shadow Caster Res.|Defines the resolution of the texture atlas containing alpha values from source diffuse textures. The atlas is used when the leaves are rendered as shadow casters. Using lower resolution might increase performance.");
+        private static readonly string shadowCasterResString = L10n.Tr("Shadow Caster Res.|Defines the resolution of the texture atlas containing alpha values from source diffuse textures. The atlas is used when the leaves are rendered as shadow casters. Using lower resolution might increase performance.", null);
 
-        private static string lodMultiplierString = L10n.Tr("LOD Multiplier|Adjusts the quality of this group relative to tree's LOD Quality, so that it is of either higher or lower quality than the rest of the tree.");
+        private static readonly string lodMultiplierString = L10n.Tr("LOD Multiplier|Adjusts the quality of this group relative to tree's LOD Quality, so that it is of either higher or lower quality than the rest of the tree.", null);
 
-        private static string[] categoryNamesOptions =
+        private static readonly string[] categoryNamesOptions =
         {
-            L10n.Tr("Branch Only|"),
-            L10n.Tr("Branch + Fronds|"),
-            L10n.Tr("Fronds Only|")
+            L10n.Tr("Branch Only|", null),
+            L10n.Tr("Branch + Fronds|", null),
+            L10n.Tr("Fronds Only|", null)
         };
 
-        private static string geometryModeString = L10n.Tr("Geometry Mode|Type of geometry for this branch group.");
-        private static string branchMaterialString = L10n.Tr("Branch Material|The primary material for the branches.");
+        private static readonly string geometryModeString = L10n.Tr("Geometry Mode|Type of geometry for this branch group.", null);
+        private static readonly string branchMaterialString = L10n.Tr("Branch Material|The primary material for the branches.", null);
 
-        private static string breakMaterialString = L10n.Tr("Break Material|Material for capping broken branches.");
+        private static readonly string breakMaterialString = L10n.Tr("Break Material|Material for capping broken branches.", null);
 
-        private static string frondMaterialString = L10n.Tr("Frond Material|Material for the fronds.");
+        private static readonly string frondMaterialString = L10n.Tr("Frond Material|Material for the fronds.", null);
 
-        private static string lengthString = L10n.Tr("Length|Adjusts the length of the branches.");
+        private static readonly string lengthString = L10n.Tr("Length|Adjusts the length of the branches.", null);
 
-        private static string relativeLengthString = L10n.Tr("Relative Length|Determines whether the radius of a branch is affected by its length.");
+        private static readonly string relativeLengthString = L10n.Tr("Relative Length|Determines whether the radius of a branch is affected by its length.", null);
 
-        private static string radiusString = L10n.Tr("Radius|Adjusts the radius of the branches, use the curve to fine-tune the radius along the length of the branches.");
+        private static readonly string radiusString = L10n.Tr("Radius|Adjusts the radius of the branches, use the curve to fine-tune the radius along the length of the branches.", null);
 
-        private static string capSmoothingString = L10n.Tr("Cap Smoothing|Defines the roundness of the cap/tip of the branches. Useful for cacti.");
+        private static readonly string capSmoothingString = L10n.Tr("Cap Smoothing|Defines the roundness of the cap/tip of the branches. Useful for cacti.", null);
 
-        private static string crinklynessString = L10n.Tr("Crinkliness|Adjusts how crinkly/crooked the branches are, use the curve to fine-tune.");
+        private static readonly string crinklynessString = L10n.Tr("Crinkliness|Adjusts how crinkly/crooked the branches are, use the curve to fine-tune.", null);
 
-        private static string seekSunString = L10n.Tr("Seek Sun|Use the curve to adjust how the branches are bent upwards/downwards and the slider to change the scale.");
+        private static readonly string seekSunString = L10n.Tr("Seek Sun|Use the curve to adjust how the branches are bent upwards/downwards and the slider to change the scale.", null);
 
-        private static string noiseString = L10n.Tr("Noise|Overall noise factor, use the curve to fine-tune.");
+        private static readonly string noiseString = L10n.Tr("Noise|Overall noise factor, use the curve to fine-tune.", null);
 
-        private static string noiseScaleUString = L10n.Tr("Noise Scale U|Scale of the noise around the branch, lower values will give a more wobbly look, while higher values gives a more stochastic look.");
+        private static readonly string noiseScaleUString = L10n.Tr("Noise Scale U|Scale of the noise around the branch, lower values will give a more wobbly look, while higher values gives a more stochastic look.", null);
 
-        private static string noiseScaleVString = L10n.Tr("Noise Scale V|Scale of the noise along the branch, lower values will give a more wobbly look, while higher values gives a more stochastic look.");
+        private static readonly string noiseScaleVString = L10n.Tr("Noise Scale V|Scale of the noise along the branch, lower values will give a more wobbly look, while higher values gives a more stochastic look.", null);
 
-        private static string flareRadiusString = L10n.Tr("Flare Radius|The radius of the flares, this is added to the main radius, so a zero value means no flares.");
+        private static readonly string flareRadiusString = L10n.Tr("Flare Radius|The radius of the flares, this is added to the main radius, so a zero value means no flares.", null);
 
-        private static string flareHeightString = L10n.Tr("Flare Height|Defines how far up the trunk the flares start.");
+        private static readonly string flareHeightString = L10n.Tr("Flare Height|Defines how far up the trunk the flares start.", null);
 
-        private static string flareNoiseString = L10n.Tr("Flare Noise|Defines the noise of the flares, lower values will give a more wobbly look, while higher values gives a more stochastic look.");
+        private static readonly string flareNoiseString = L10n.Tr("Flare Noise|Defines the noise of the flares, lower values will give a more wobbly look, while higher values gives a more stochastic look.", null);
 
-        private static string weldLengthString = L10n.Tr("Weld Length|Defines how far up the branch the weld spread starts.");
+        private static readonly string weldLengthString = L10n.Tr("Weld Length|Defines how far up the branch the weld spread starts.", null);
 
-        private static string spreadTopString = L10n.Tr("Spread Top|Weld's spread factor on the top-side of the branch, relative to its parent branch. Zero means no spread.");
+        private static readonly string spreadTopString = L10n.Tr("Spread Top|Weld's spread factor on the top-side of the branch, relative to its parent branch. Zero means no spread.", null);
 
-        private static string spreadBottomString = L10n.Tr("Spread Bottom|Weld's spread factor on the bottom-side of the branch, relative to its parent branch. Zero means no spread.");
+        private static readonly string spreadBottomString = L10n.Tr("Spread Bottom|Weld's spread factor on the bottom-side of the branch, relative to its parent branch. Zero means no spread.", null);
 
-        private static string breakChanceString = L10n.Tr("Break Chance|Chance of a branch breaking, i.e. 0 = no branches are broken, 0.5 = half of the branches are broken, 1.0 = all the branches are broken.");
+        private static readonly string breakChanceString = L10n.Tr("Break Chance|Chance of a branch breaking, i.e. 0 = no branches are broken, 0.5 = half of the branches are broken, 1.0 = all the branches are broken.", null);
 
-        private static string breakLocationString = L10n.Tr("Break Location|This range defines where the branches will be broken. Relative to the length of the branch.");
+        private static readonly string breakLocationString = L10n.Tr("Break Location|This range defines where the branches will be broken. Relative to the length of the branch.", null);
 
-        private static string frondCountString = L10n.Tr("Frond Count|Defines the number of fronds per branch. Fronds are always evenly spaced around the branch.");
+        private static readonly string frondCountString = L10n.Tr("Frond Count|Defines the number of fronds per branch. Fronds are always evenly spaced around the branch.", null);
 
-        private static string frondWidthString = L10n.Tr("Frond Width|The width of the fronds, use the curve to adjust the specific shape along the length of the branch.");
+        private static readonly string frondWidthString = L10n.Tr("Frond Width|The width of the fronds, use the curve to adjust the specific shape along the length of the branch.", null);
 
-        private static string frondRangeString = L10n.Tr("Frond Range|Defines the starting and ending point of the fronds.");
+        private static readonly string frondRangeString = L10n.Tr("Frond Range|Defines the starting and ending point of the fronds.", null);
 
-        private static string frondRotationString = L10n.Tr("Frond Rotation|Defines rotation around the parent branch.");
+        private static readonly string frondRotationString = L10n.Tr("Frond Rotation|Defines rotation around the parent branch.", null);
 
-        private static string frondCreaseString = L10n.Tr("Frond Crease|Adjust to crease / fold the fronds.");
+        private static readonly string frondCreaseString = L10n.Tr("Frond Crease|Adjust to crease / fold the fronds.", null);
 
-        private static string geometryModeLeafString = L10n.Tr("Geometry Mode|The type of geometry created. You can use a custom mesh, by selecting the Mesh option, ideal for flowers, fruits, etc.");
+        private static readonly string geometryModeLeafString = L10n.Tr("Geometry Mode|The type of geometry created. You can use a custom mesh, by selecting the Mesh option, ideal for flowers, fruits, etc.", null);
 
-        private static string materialLeafString = L10n.Tr("Material|Material used for the leaves.");
+        private static readonly string materialLeafString = L10n.Tr("Material|Material used for the leaves.", null);
 
-        private static string meshString = L10n.Tr("Mesh|Mesh used for the leaves.");
+        private static readonly string meshString = L10n.Tr("Mesh|Mesh used for the leaves.", null);
 
-        private static string sizeString = L10n.Tr("Size|Adjusts the size of the leaves, use the range to adjust the minimum and the maximum size.");
+        private static readonly string sizeString = L10n.Tr("Size|Adjusts the size of the leaves, use the range to adjust the minimum and the maximum size.", null);
 
-        private static string perpendicularAlignString = L10n.Tr("Perpendicular Align|Adjusts whether the leaves are aligned perpendicular to the parent branch.");
+        private static readonly string perpendicularAlignString = L10n.Tr("Perpendicular Align|Adjusts whether the leaves are aligned perpendicular to the parent branch.", null);
 
-        private static string horizontalAlignString = L10n.Tr("Horizontal Align|Adjusts whether the leaves are aligned horizontally.");
+        private static readonly string horizontalAlignString = L10n.Tr("Horizontal Align|Adjusts whether the leaves are aligned horizontally.", null);
 
         public static EditMode editMode
         {
@@ -237,9 +242,12 @@ namespace TreeEditor
                 s_EditMode = value;
             }
         }
+        [AutoStaticsCleanupOnCodeReload]
         private static EditMode s_EditMode = EditMode.MoveNode;
 
+        [AutoStaticsCleanupOnCodeReload]
         private static string s_SavedSourceMaterialsHash;
+        [AutoStaticsCleanupOnCodeReload]
         private static float s_CutoutMaterialHashBeforeUndo;
 
         private bool m_WantCompleteUpdate = false;
@@ -249,6 +257,7 @@ namespace TreeEditor
         private const float kCurveSpace = 50.0f;
         private bool m_SectionHasCurves = true;
 
+        [AutoStaticsCleanupOnCodeReload]
         private static int s_ShowCategory = -1;
         private readonly Rect m_CurveRangesA = new Rect(0, 0, 1, 1); // Range 0..1
         private readonly Rect m_CurveRangesB = new Rect(0, -1, 1, 2); // Range -1..1
@@ -2006,9 +2015,9 @@ namespace TreeEditor
 
         public void InspectorRoot(TreeData treeData, TreeGroupRoot group)
         {
-            GUIContent[] categoryNames = { TreeEditorHelper.GetGUIContent(L10n.Tr("Distribution|")),
-                                           TreeEditorHelper.GetGUIContent(L10n.Tr("Geometry|")),
-                                           TreeEditorHelper.GetGUIContent(L10n.Tr("Material|Controls global material properties of the tree.")),
+            GUIContent[] categoryNames = { TreeEditorHelper.GetGUIContent(L10n.Tr("Distribution|", null)),
+                                           TreeEditorHelper.GetGUIContent(L10n.Tr("Geometry|", null)),
+                                           TreeEditorHelper.GetGUIContent(L10n.Tr("Material|Controls global material properties of the tree.", null)),
                                            null,
                                            null,
                                            null};
@@ -2086,11 +2095,11 @@ namespace TreeEditor
 
             GUIContent[] categoryNames =
             {
-                TreeEditorHelper.GetGUIContent(L10n.Tr("Distribution|Adjusts the count and placement of branches in the group. Use the curves to fine tune position, rotation and scale. The curves are relative to the parent branch or to the area spread in case of a trunk.")),
-                TreeEditorHelper.GetGUIContent(L10n.Tr("Geometry|Select what type of geometry is generated for this branch group and which materials are applied. LOD Multiplier allows you to adjust the quality of this group relative to tree's LOD Quality.")),
-                TreeEditorHelper.GetGUIContent(L10n.Tr("Shape|Adjusts the shape and growth of the branches. Use the curves to fine tune the shape, all curves are relative to the branch itself.")),
-                TreeEditorHelper.GetGUIContent(L10n.Tr("Fronds|")),
-                TreeEditorHelper.GetGUIContent(L10n.Tr("Wind|Adjusts the parameters used for animating this group of branches. The wind zones are only active in Play Mode."))
+                TreeEditorHelper.GetGUIContent(L10n.Tr("Distribution|Adjusts the count and placement of branches in the group. Use the curves to fine tune position, rotation and scale. The curves are relative to the parent branch or to the area spread in case of a trunk.", null)),
+                TreeEditorHelper.GetGUIContent(L10n.Tr("Geometry|Select what type of geometry is generated for this branch group and which materials are applied. LOD Multiplier allows you to adjust the quality of this group relative to tree's LOD Quality.", null)),
+                TreeEditorHelper.GetGUIContent(L10n.Tr("Shape|Adjusts the shape and growth of the branches. Use the curves to fine tune the shape, all curves are relative to the branch itself.", null)),
+                TreeEditorHelper.GetGUIContent(L10n.Tr("Fronds|", null)),
+                TreeEditorHelper.GetGUIContent(L10n.Tr("Wind|Adjusts the parameters used for animating this group of branches. The wind zones are only active in Play Mode.", null))
             };
 
             bool guiEnabled = GUI.enabled;
@@ -2458,6 +2467,7 @@ namespace TreeEditor
             public GUIStyle nodeLabelBot = "TE NodeLabelBot";
             public GUIStyle pinLabel = "TE PinLabel";
         }
+        [NoAutoStaticsCleanup] // lazy Styles instance of GUIStyles/GUIContent built from fixed editor skin names; reload-safe
         public static Styles styles;
 
         Vector2 hierachyScroll = new Vector2();
@@ -2946,4 +2956,4 @@ namespace TreeEditor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

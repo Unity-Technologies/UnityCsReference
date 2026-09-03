@@ -11,26 +11,26 @@ using UserSettings = Unity.Multiplayer.PlayMode.Editor.LocalPlayerController.Use
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
-[CustomPropertyDrawer(typeof(InstanceItem<LocalPlayerController, InstanceSettings>))]
-class LocalPlayerSettingsDrawer : InstanceItemDrawer
+[CustomPropertyDrawer(typeof(PlayModeControllerItem<LocalPlayerController, InstanceSettings>))]
+class LocalPlayerSettingsDrawer : PlayModeControllerItemDrawer
 {
     const string k_AdvancedSettingsLabel = "Advanced Configuration";
 
     public override VisualElement CreatePropertyGUI(SerializedProperty property)
     {
-        var instanceItem = (InstanceItem<LocalPlayerController, InstanceSettings>)property.boxedValue;
+        var instanceItem = (PlayModeControllerItem<LocalPlayerController, InstanceSettings>)property.boxedValue;
         var scenario = property.serializedObject.targetObject as OrchestratedScenario;
         var userSettingsProperty = OrchestratedScenarioUserSettings.GetSerializedSettingsProperty(scenario, instanceItem, LocalPlayerController.DefaultUserSettings);
         var container = base.CreatePropertyGUI(property);
         var deviceContainer = new VisualElement();
 
-        var buildProfileProperty = property.FindPropertyRelative($"{IInstanceItem.k_SettingsPropertyPath}.{nameof(InstanceSettings.BuildProfile)}");
+        var buildProfileProperty = property.FindPropertyRelative($"{IPlayModeControllerItem.k_SettingsPropertyPath}.{nameof(InstanceSettings.BuildProfile)}");
         var deviceNameProperty = userSettingsProperty.FindPropertyRelative(nameof(UserSettings.DeviceName));
         var deviceIdProperty = userSettingsProperty.FindPropertyRelative(nameof(UserSettings.DeviceID));
 
         container.Add(new BuildProfileField(buildProfileProperty));
         container.Add(deviceContainer);
-        container.Add(CreateAdvanceSettings(property.FindPropertyRelative(IInstanceItem.k_SettingsPropertyPath)));
+        container.Add(CreateAdvanceSettings(property.FindPropertyRelative(IPlayModeControllerItem.k_SettingsPropertyPath)));
 
         deviceContainer.TrackPropertyValue(
             buildProfileProperty,

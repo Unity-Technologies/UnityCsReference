@@ -249,7 +249,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     }
                     catch (Exception)
                     {
-                        var warningMessage = L10n.Tr("Multiple versions of the same package found on disk and we could not determine which one to take. Please remove one of the following files:\n");
+                        var warningMessage = L10n.Tr("Multiple versions of the same package found on disk and we could not determine which one to take. Please remove one of the following files:\n", null);
                         Debug.LogWarning($"{warningMessage}{existingInfo.packagePath}\n{info.packagePath}");
                         continue;
                     }

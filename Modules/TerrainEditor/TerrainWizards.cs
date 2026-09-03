@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEngine;
 using UnityEditor;
 using System;
@@ -16,6 +17,10 @@ namespace UnityEditor
 {
     public class TerrainWizard : ScriptableWizard
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        public TerrainWizard() { }
+        #pragma warning restore UAL0015
+
         internal const int kMaxResolution = 4097;
 
         internal Terrain      terrain;
@@ -74,6 +79,10 @@ namespace UnityEditor
 
     internal class ImportRawHeightmap : TerrainWizard
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal ImportRawHeightmap() { }
+        #pragma warning restore UAL0015
+
         internal enum Depth { Bit8 = 1, Bit16 = 2 }
         internal enum ByteOrder { Mac = 1, Windows = 2 }
 
@@ -229,6 +238,10 @@ namespace UnityEditor
 
     internal class ExportRawHeightmap : TerrainWizard
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal ExportRawHeightmap() { }
+        #pragma warning restore UAL0015
+
         internal enum Depth { Bit8 = 1, Bit16 = 2 }
 
         public Depth m_Depth = Depth.Bit16;
@@ -337,6 +350,10 @@ namespace UnityEditor
 
     class TreeWizard : TerrainWizard
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        TreeWizard() { }
+        #pragma warning restore UAL0015
+
         internal const int kNavMeshLodFirst = -1;
         internal const int kNavMeshLodLast = int.MaxValue;
 
@@ -543,6 +560,10 @@ namespace UnityEditor
 
     public class TerrainDetailMeshWizard : TerrainWizard
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        public TerrainDetailMeshWizard() { }
+        #pragma warning restore UAL0015
+
         GameObject   m_DetailPrefab;
         float        m_MinWidth;
         float        m_MaxWidth;
@@ -748,6 +769,10 @@ namespace UnityEditor
 
     public class TerrainDetailTextureWizard : TerrainWizard
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        public TerrainDetailTextureWizard() { }
+        #pragma warning restore UAL0015
+
         Texture2D    m_DetailTexture;
         float        m_MinWidth;
         float        m_MaxWidth;
@@ -925,6 +950,10 @@ namespace UnityEditor
 
     class PlaceTreeWizard : TerrainWizard
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        PlaceTreeWizard() { }
+        #pragma warning restore UAL0015
+
         public int numberOfTrees = 10000;
         public bool keepExistingTrees = true;
         private const int kMaxNumberOfTrees = 1000000;
@@ -951,6 +980,10 @@ namespace UnityEditor
 
     class FlattenHeightmap : TerrainWizard
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        FlattenHeightmap() { }
+        #pragma warning restore UAL0015
+
         public float height = 0.0F;
 
         internal override void OnWizardUpdate()
@@ -1013,3 +1046,4 @@ namespace UnityEditor
     }
     */
 } //namespace
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

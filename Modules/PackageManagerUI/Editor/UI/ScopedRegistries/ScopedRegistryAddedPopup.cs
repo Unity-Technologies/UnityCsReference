@@ -48,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     string.Empty, string.Empty,
                     "a scoped registry", $"{registriesAddedCount} scoped registries");
 
-                if (applicationProxy.DisplayDialog("onRegistriesAddedPopup", L10n.Tr(title), L10n.Tr(message), L10n.Tr("Learn More"), L10n.Tr("Close")))
+                if (applicationProxy.DisplayDialog("onRegistriesAddedPopup", L10n.Tr(title, null), L10n.Tr(message, null), L10n.Tr("Learn More", null), L10n.Tr("Close", null)))
                 {
                     applicationProxy.OpenURL($"https://docs.unity3d.com/{applicationProxy.shortUnityVersion}/Documentation/Manual/upm-scoped.html");
                 }

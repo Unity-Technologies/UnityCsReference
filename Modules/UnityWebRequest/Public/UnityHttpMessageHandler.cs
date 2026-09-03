@@ -186,6 +186,7 @@ namespace UnityEngine.Networking
             {
                 await Awaitable.MainThreadAsync(); // UnityWebRequest must be created on the main thread
                 unityWebRequest = new UnityWebRequest(httpRequest.RequestUri, httpRequest.Method.ToString());
+                unityWebRequest.profilerSource = 1; // WebRequestProfilerSource: HttpClient
                 unityWebRequest.httpForcedVersion = HttpForcedVersion;
                 if (CertificateHandler != null)
                 {

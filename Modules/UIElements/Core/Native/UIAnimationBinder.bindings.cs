@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -269,14 +268,7 @@ namespace UnityEngine.UIElements
 
             if (!string.IsNullOrEmpty(element.name) && !skipElement)
             {
-                if (string.IsNullOrEmpty(path))
-                {
-                    subPath = $"#{element.name}";
-                }
-                else
-                {
-                    subPath = $"{path}/#{element.name}";
-                }
+                subPath = UIAnimationPath.AppendSegment(path, element.name);
 
                 var propName = new PropertyName(subPath);
 
@@ -369,22 +361,13 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(propertyName))
                 return null;
 
-            string elementPath = ExtractElementPathFromPropertyName(propertyName);
-            if (string.IsNullOrEmpty(elementPath))
+            // The empty-path guard keeps the animation root unreachable through this API, as it always
+            // was: a root-level name splits to the empty path, which no caller of this method may address.
+            if (!UIAnimationPath.TrySplitElementPath(propertyName, out var elementPath)
+                || string.IsNullOrEmpty(elementPath))
                 return null;
 
             return GetVisualElementFromPath(elementPath);
-        }
-
-        private string ExtractElementPathFromPropertyName(string propertyName)
-        {
-            // Find the last '/' that separates element path from property name
-            // Example: "#Container/#Button/translate.x" -> "#Container/#Button"
-            int lastSlashIndex = propertyName.LastIndexOf('/');
-            if (lastSlashIndex < 0)
-                return null; // No separator found
-
-            return propertyName.Substring(0, lastSlashIndex);
         }
 
         private VisualElement GetVisualElementFromPath(string elementPath)
@@ -468,4 +451,3 @@ namespace UnityEngine.UIElements
 
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

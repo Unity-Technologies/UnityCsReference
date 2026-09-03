@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneHierarchy not yet converted
 using System.Collections.Generic;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -14,6 +15,10 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Hierarchy", useTypeNameAsIconName = true)]
     internal partial class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener, IFramableContainer, IHierarchyWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        public SceneHierarchyWindow() {}
+        #pragma warning restore UAL0015
+
         public static SceneHierarchyWindow lastInteractedHierarchyWindow => s_LastInteractedHierarchy;
         IHierarchyWindow IHierarchyWindow.LastInteractedHierarchyWindow => s_LastInteractedHierarchy;
         [AutoStaticsCleanupOnCodeReload]
@@ -415,3 +420,4 @@ namespace UnityEditor
         public override GUIContent content { get { return m_Content; } }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -16,7 +16,7 @@ namespace Unity.UIToolkit.Editor
     class ShowOnlyCompatibleResultsToggle : VisualElement
     {
         static readonly string s_UssClassName = "show-only-compatible-toggle";
-        static readonly string ShowOnlyCompatibleMessage = L10n.Tr("Show only compatible");
+        static readonly string ShowOnlyCompatibleMessage = L10n.Tr("Show only compatible", null);
 
         private Toggle m_Toggle;
         private Label m_RatioLabel;

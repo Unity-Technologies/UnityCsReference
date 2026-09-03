@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: VisualEffects not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
@@ -65,8 +66,10 @@ namespace UnityEditor
         public SubModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "SubModule", displayName)
         {
-            m_ToolTip = L10n.Tr("Sub emission of particles. This allows each particle to emit particles in another system.");
+            m_ToolTip = L10n.Tr("Sub emission of particles. This allows each particle to emit particles in another system.", null);
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             Init(); // Init when created because we need to query if we have any subemitters referenced
+            #pragma warning restore UAL0015
         }
 
         protected override void Init()
@@ -369,3 +372,4 @@ namespace UnityEditor
         }
     }
 } // namespace UnityEditor
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

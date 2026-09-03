@@ -13,13 +13,13 @@ namespace UnityEditor.Search
 {
     abstract class BaseSearchQueryNodeHandler : ISearchQueryNodeHandler
     {
-        protected static readonly string k_SaveMenuLabel = L10n.Tr("Save");
-        protected static readonly string k_OpenInNewWindowMenuLabel = L10n.Tr("Open in new window");
-        protected static readonly string k_RenameMenuLabel = L10n.Tr("Rename");
-        protected static readonly string k_SetIconMenuLabel = L10n.Tr("Set Icon...");
-        protected static readonly string k_SearchTemplateMenuLabel = L10n.Tr("Search Template");
-        protected static readonly string k_DeleteMenuLabel = L10n.Tr("Delete");
-        protected static readonly string k_EditInInspectorMenuLabel = L10n.Tr("Edit in Inspector");
+        protected static readonly string k_SaveMenuLabel = L10n.Tr("Save", null);
+        protected static readonly string k_OpenInNewWindowMenuLabel = L10n.Tr("Open in new window", null);
+        protected static readonly string k_RenameMenuLabel = L10n.Tr("Rename", null);
+        protected static readonly string k_SetIconMenuLabel = L10n.Tr("Set Icon...", null);
+        protected static readonly string k_SearchTemplateMenuLabel = L10n.Tr("Search Template", null);
+        protected static readonly string k_DeleteMenuLabel = L10n.Tr("Delete", null);
+        protected static readonly string k_EditInInspectorMenuLabel = L10n.Tr("Edit in Inspector", null);
 
         [NoAutoStaticsCleanup] // stateless comparer with no user-code refs; safe to persist across reloads
         protected static SearchQueryNodeComparer s_SearchQueryNodeComparer = new();

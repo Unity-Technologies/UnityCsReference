@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using UnityEditor.Experimental;
 using UnityEngine;
@@ -70,7 +71,7 @@ namespace UnityEditor
             var cancelButton = root.Q<Button>("cancel");
 
             // Set localized text
-            cancelButton.text = L10n.Tr("Cancel");
+            cancelButton.text = L10n.Tr("Cancel", null);
 
             // Set up event handlers
             m_TextField.RegisterValueChangedCallback(OnTextFieldValueChanged);
@@ -133,3 +134,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

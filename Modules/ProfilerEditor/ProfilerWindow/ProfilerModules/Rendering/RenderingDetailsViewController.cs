@@ -21,94 +21,94 @@ namespace UnityEditorInternal.Profiling
     internal class RenderingDetailsViewController : ProfilerModuleViewController
     {
         // All user-facing strings live here; per Modules/ProfilerEditor BEST_PRACTICES_AGENTS.md,
-        // localizable strings go through L10n.Tr() in a nested `Content` class.
+        // localizable strings go through L10n.Tr in a nested `Content` class.
         static class Content
         {
             // Card titles / section labels
-            public static readonly string GpuResidentDrawer = L10n.Tr("GPU Resident Drawer");
-            public static readonly string Coverage = L10n.Tr("GRD coverage");
-            public static readonly string Culling = L10n.Tr("Culling");
-            public static readonly string LODDistribution = L10n.Tr("LOD distribution");
-            public static readonly string Pipeline = L10n.Tr("Pipeline");
+            public static readonly string GpuResidentDrawer = L10n.Tr("GPU Resident Drawer", null);
+            public static readonly string Coverage = L10n.Tr("GRD coverage", null);
+            public static readonly string Culling = L10n.Tr("Culling", null);
+            public static readonly string LODDistribution = L10n.Tr("LOD distribution", null);
+            public static readonly string Pipeline = L10n.Tr("Pipeline", null);
 
             // Headline stats
-            public static readonly string SetPassCalls = L10n.Tr("SetPass calls");
-            public static readonly string DrawCalls = L10n.Tr("Draw calls");
-            public static readonly string Triangles = L10n.Tr("Triangles");
-            public static readonly string Vertices = L10n.Tr("Vertices");
+            public static readonly string SetPassCalls = L10n.Tr("SetPass calls", null);
+            public static readonly string DrawCalls = L10n.Tr("Draw calls", null);
+            public static readonly string Triangles = L10n.Tr("Triangles", null);
+            public static readonly string Vertices = L10n.Tr("Vertices", null);
 
             // Resource grid
-            public static readonly string Buffers = L10n.Tr("Buffers");
-            public static readonly string VBOUploads = L10n.Tr("VBO uploads");
-            public static readonly string IBOUploads = L10n.Tr("IBO uploads");
-            public static readonly string Textures = L10n.Tr("Textures");
-            public static readonly string RTChanges = L10n.Tr("RT changes");
-            public static readonly string SkinnedMeshes = L10n.Tr("Skinned meshes");
-            public static readonly string SkinnedSuffix = L10n.Tr("visible"); // "{n} visible"
+            public static readonly string Buffers = L10n.Tr("Buffers", null);
+            public static readonly string VBOUploads = L10n.Tr("VBO uploads", null);
+            public static readonly string IBOUploads = L10n.Tr("IBO uploads", null);
+            public static readonly string Textures = L10n.Tr("Textures", null);
+            public static readonly string RTChanges = L10n.Tr("RT changes", null);
+            public static readonly string SkinnedMeshes = L10n.Tr("Skinned meshes", null);
+            public static readonly string SkinnedSuffix = L10n.Tr("visible", null); // "{n} visible"
 
             // Draw Calls Breakdown
-            public static readonly string DcStandard = L10n.Tr("Standard");
-            public static readonly string DcSRPBatcher = L10n.Tr("SRP Batcher");
-            public static readonly string DcBRG = L10n.Tr("BRG");
-            public static readonly string DcOther = L10n.Tr("Other");
+            public static readonly string DcStandard = L10n.Tr("Standard", null);
+            public static readonly string DcSRPBatcher = L10n.Tr("SRP Batcher", null);
+            public static readonly string DcBRG = L10n.Tr("BRG", null);
+            public static readonly string DcOther = L10n.Tr("Other", null);
 
             // Coverage segments
-            public static readonly string GRD = L10n.Tr("GRD");
-            public static readonly string Excluded = L10n.Tr("Excluded");
+            public static readonly string GRD = L10n.Tr("GRD", null);
+            public static readonly string Excluded = L10n.Tr("Excluded", null);
             public static readonly string CoverageTooltip = L10n.Tr(
                 "Shows renderers that were considered for GPU Resident Drawer in this frame. " +
                 "Renderers are split between those currently using the GRD path and those excluded " +
-                "from GRD because of unsupported settings, components, or rendering features.");
-            public static readonly string ExclusionReasonsHeader = L10n.Tr("Exclusion reasons:");
+                "from GRD because of unsupported settings, components, or rendering features.", null);
+            public static readonly string ExclusionReasonsHeader = L10n.Tr("Exclusion reasons:", null);
 
             // Culling segments + detail rows
-            public static readonly string Visible = L10n.Tr("Visible");
-            public static readonly string Frustum = L10n.Tr("Frustum");
-            public static readonly string Occlusion = L10n.Tr("Occlusion");
-            public static readonly string GPUOcclusion = L10n.Tr("GPU occlusion");
-            public static readonly string LODGroup = L10n.Tr("LOD group");
-            public static readonly string SmallMesh = L10n.Tr("Small mesh");
-            public static readonly string Other = L10n.Tr("Other");
-            public static readonly string LayerMask = L10n.Tr("Layer mask");
-            public static readonly string RenderingDisabled = L10n.Tr("Rendering disabled");
+            public static readonly string Visible = L10n.Tr("Visible", null);
+            public static readonly string Frustum = L10n.Tr("Frustum", null);
+            public static readonly string Occlusion = L10n.Tr("Occlusion", null);
+            public static readonly string GPUOcclusion = L10n.Tr("GPU occlusion", null);
+            public static readonly string LODGroup = L10n.Tr("LOD group", null);
+            public static readonly string SmallMesh = L10n.Tr("Small mesh", null);
+            public static readonly string Other = L10n.Tr("Other", null);
+            public static readonly string LayerMask = L10n.Tr("Layer mask", null);
+            public static readonly string RenderingDisabled = L10n.Tr("Rendering disabled", null);
 
             // LOD bins
-            public static readonly string LOD0 = L10n.Tr("LOD 0");
-            public static readonly string LOD1 = L10n.Tr("LOD 1");
-            public static readonly string LOD2 = L10n.Tr("LOD 2");
-            public static readonly string LOD3Plus = L10n.Tr("LOD 3+");
+            public static readonly string LOD0 = L10n.Tr("LOD 0", null);
+            public static readonly string LOD1 = L10n.Tr("LOD 1", null);
+            public static readonly string LOD2 = L10n.Tr("LOD 2", null);
+            public static readonly string LOD3Plus = L10n.Tr("LOD 3+", null);
 
             // Pipeline stages
-            public static readonly string DataCollection = L10n.Tr("Data collection");
-            public static readonly string BatchBuilding = L10n.Tr("Batch building");
-            public static readonly string Upload = L10n.Tr("Upload");
-            public static readonly string CullingSchedule = L10n.Tr("Culling schedule");
-            public static readonly string CpuToGpuUpload = L10n.Tr("CPU to GPU upload");
-            public static readonly string Transform = L10n.Tr("Transform");
-            public static readonly string Motion = L10n.Tr("Motion");
-            public static readonly string Probe = L10n.Tr("Probe");
-            public static readonly string ComponentOverride = L10n.Tr("Component override");
+            public static readonly string DataCollection = L10n.Tr("Data collection", null);
+            public static readonly string BatchBuilding = L10n.Tr("Batch building", null);
+            public static readonly string Upload = L10n.Tr("Upload", null);
+            public static readonly string CullingSchedule = L10n.Tr("Culling schedule", null);
+            public static readonly string CpuToGpuUpload = L10n.Tr("CPU to GPU upload", null);
+            public static readonly string Transform = L10n.Tr("Transform", null);
+            public static readonly string Motion = L10n.Tr("Motion", null);
+            public static readonly string Probe = L10n.Tr("Probe", null);
+            public static readonly string ComponentOverride = L10n.Tr("Component override", null);
 
             // Trailing-value formats
-            public static readonly string PercentVisible = L10n.Tr("{0}% visible");      // string.Format
-            public static readonly string PercentHaveLOD = L10n.Tr("{0}% have LOD");
+            public static readonly string PercentVisible = L10n.Tr("{0}% visible", null);      // string.Format
+            public static readonly string PercentHaveLOD = L10n.Tr("{0}% have LOD", null);
 
             // GRD card title-row badges (right-aligned next to the title)
-            public static readonly string AssetIssuesBadge = L10n.Tr("⚠ {0} renderer issues");
-            public static readonly string AssetIssuesTooltipWithDetail = L10n.Tr("Breakdown: {0}.");
-            public static readonly string AssetIssuesTooltip = L10n.Tr("Detected during GRD classification. These are asset/setup issues that other rendering paths may tolerate silently. They are not GRD compatibility exclusions and are not counted in GRD Coverage.");
-            public static readonly string InactiveBadge = L10n.Tr("{0} inactive");
-            public static readonly string InactiveTooltip = L10n.Tr("Renderers whose GameObject or Renderer component is currently disabled. Not drawn by any path; not counted in Coverage.");
+            public static readonly string AssetIssuesBadge = L10n.Tr("⚠ {0} renderer issues", null);
+            public static readonly string AssetIssuesTooltipWithDetail = L10n.Tr("Breakdown: {0}.", null);
+            public static readonly string AssetIssuesTooltip = L10n.Tr("Detected during GRD classification. These are asset/setup issues that other rendering paths may tolerate silently. They are not GRD compatibility exclusions and are not counted in GRD Coverage.", null);
+            public static readonly string InactiveBadge = L10n.Tr("{0} inactive", null);
+            public static readonly string InactiveTooltip = L10n.Tr("Renderers whose GameObject or Renderer component is currently disabled. Not drawn by any path; not counted in Coverage.", null);
             public static readonly string BadgeSeparator = "·"; // visual only — no translation needed
 
             // Empty state
-            public static readonly string NoFrameData = L10n.Tr("No frame data available. Start a recording or select a frame to view rendering details.");
+            public static readonly string NoFrameData = L10n.Tr("No frame data available. Start a recording or select a frame to view rendering details.", null);
 
             // Legacy IMGUI stats fallback text
             public static readonly string LegacyBatching = L10n.Tr(
                 "Dynamic Batching: {0} calls, {1} batches\n" +
                 "Static Batching: {2} calls, {3} batches\n" +
-                "Instancing: {4} calls, {5} batches");
+                "Instancing: {4} calls, {5} batches", null);
         }
 
         const string k_UssPath = "Profiler/Modules/Rendering/RenderingDetailsView.uss";

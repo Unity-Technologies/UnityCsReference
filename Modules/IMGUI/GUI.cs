@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIFramework not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Scripting;
@@ -6579,7 +6580,9 @@ namespace UnityEngine
             public ScrollViewScope(Rect position, Vector2 scrollPosition, Rect viewRect)
             {
                 handleScrollWheel = true;
+            #pragma warning disable UAL0015 // ScrollViewScope is used()-scoped within a single OnGUI call and never outlives it; BeginScrollView's transitive side effect on GUIStateObjects.s_StateCache is benign
                 this.scrollPosition = BeginScrollView(position, scrollPosition, viewRect);
+            #pragma warning restore UAL0015
             }
 
             ///<summary>Create a new ScrollViewScope and begin the corresponding ScrollView.</summary>
@@ -6591,7 +6594,9 @@ namespace UnityEngine
             public ScrollViewScope(Rect position, Vector2 scrollPosition, Rect viewRect, bool alwaysShowHorizontal, bool alwaysShowVertical)
             {
                 handleScrollWheel = true;
+            #pragma warning disable UAL0015 // ScrollViewScope is used()-scoped within a single OnGUI call and never outlives it; BeginScrollView's transitive side effect on GUIStateObjects.s_StateCache is benign
                 this.scrollPosition = BeginScrollView(position, scrollPosition, viewRect, alwaysShowHorizontal, alwaysShowVertical);
+            #pragma warning restore UAL0015
             }
 
             ///<summary>Create a new ScrollViewScope and begin the corresponding ScrollView.</summary>
@@ -6603,7 +6608,9 @@ namespace UnityEngine
             public ScrollViewScope(Rect position, Vector2 scrollPosition, Rect viewRect, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar)
             {
                 handleScrollWheel = true;
+            #pragma warning disable UAL0015 // ScrollViewScope is used()-scoped within a single OnGUI call and never outlives it; BeginScrollView's transitive side effect on GUIStateObjects.s_StateCache is benign
                 this.scrollPosition = BeginScrollView(position, scrollPosition, viewRect, horizontalScrollbar, verticalScrollbar);
+            #pragma warning restore UAL0015
             }
 
             ///<summary>Create a new ScrollViewScope and begin the corresponding ScrollView.</summary>
@@ -6617,13 +6624,17 @@ namespace UnityEngine
             public ScrollViewScope(Rect position, Vector2 scrollPosition, Rect viewRect, bool alwaysShowHorizontal, bool alwaysShowVertical, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar)
             {
                 handleScrollWheel = true;
+            #pragma warning disable UAL0015 // ScrollViewScope is used()-scoped within a single OnGUI call and never outlives it; BeginScrollView's transitive side effect on GUIStateObjects.s_StateCache is benign
                 this.scrollPosition = BeginScrollView(position, scrollPosition, viewRect, alwaysShowHorizontal, alwaysShowVertical, horizontalScrollbar, verticalScrollbar);
+            #pragma warning restore UAL0015
             }
 
             internal ScrollViewScope(Rect position, Vector2 scrollPosition, Rect viewRect, bool alwaysShowHorizontal, bool alwaysShowVertical, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, GUIStyle background)
             {
                 handleScrollWheel = true;
+            #pragma warning disable UAL0015 // ScrollViewScope is used()-scoped within a single OnGUI call and never outlives it; BeginScrollView's transitive side effect on GUIStateObjects.s_StateCache is benign
                 this.scrollPosition = BeginScrollView(position, scrollPosition, viewRect, alwaysShowHorizontal, alwaysShowVertical, horizontalScrollbar, verticalScrollbar, background);
+            #pragma warning restore UAL0015
             }
 
             protected override void CloseScope()
@@ -6704,3 +6715,4 @@ namespace UnityEngine
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

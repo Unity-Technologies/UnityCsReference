@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -41,23 +42,23 @@ namespace UnityEditor
             public static readonly GUIContent deepProfileNotSupported = EditorGUIUtility.TrTextContent("Deep Profile", "Build a Player with Deep Profiling Support to be able to enable instrumentation of all scripting methods in a Player.");
             public static readonly GUIContent noActiveModules = EditorGUIUtility.TrTextContent("No Profiler Modules are active. Activate modules from the top left-hand drop-down.");
 
-            public static readonly string enableDeepProfilingWarningDialogTitle = L10n.Tr("Enable deep script profiling");
-            public static readonly string enableDeepProfilingWarningDialogContent = L10n.Tr("Enabling deep profiling requires reloading scripts.");
-            public static readonly string disableDeepProfilingWarningDialogTitle = L10n.Tr("Disable deep script profiling");
-            public static readonly string disableDeepProfilingWarningDialogContent = L10n.Tr("Disabling deep profiling requires reloading all scripts.");
-            public static readonly string domainReloadWarningDialogButton = L10n.Tr("Reload");
-            public static readonly string cancelDialogButton = L10n.Tr("Cancel");
+            public static readonly string enableDeepProfilingWarningDialogTitle = L10n.Tr("Enable deep script profiling", null);
+            public static readonly string enableDeepProfilingWarningDialogContent = L10n.Tr("Enabling deep profiling requires reloading scripts.", null);
+            public static readonly string disableDeepProfilingWarningDialogTitle = L10n.Tr("Disable deep script profiling", null);
+            public static readonly string disableDeepProfilingWarningDialogContent = L10n.Tr("Disabling deep profiling requires reloading all scripts.", null);
+            public static readonly string domainReloadWarningDialogButton = L10n.Tr("Reload", null);
+            public static readonly string cancelDialogButton = L10n.Tr("Cancel", null);
 
             public static readonly GUIContent recordCallstacks = EditorGUIUtility.TrTextContent("Call Stacks", "Record call stacks for special samples such as \"GC.Alloc\". " +
                 "To see the call stacks, select a sample in the CPU Usage module, e.g. in Timeline view. " +
                 "To also see call stacks in Hierarchy view, switch from \"No Details\" to \"Related Data\", select a \"GC.Alloc\" sample and select \"N/A\" items from the list.");
             public static readonly string[] recordCallstacksOptions =
             {
-                L10n.Tr("GC.Alloc"), L10n.Tr("UnsafeUtility.Malloc(Persistent)"), L10n.Tr("JobHandle.Complete")
+                L10n.Tr("GC.Alloc", null), L10n.Tr("UnsafeUtility.Malloc(Persistent)", null), L10n.Tr("JobHandle.Complete", null)
             };
             public static readonly string[] recordCallstacksDevelopmentOptions =
             {
-                L10n.Tr("GC.Alloc"), L10n.Tr("UnsafeUtility.Malloc(Persistent)"), L10n.Tr("JobHandle.Complete"), L10n.Tr("Native Allocations (Editor Only)")
+                L10n.Tr("GC.Alloc", null), L10n.Tr("UnsafeUtility.Malloc(Persistent)", null), L10n.Tr("JobHandle.Complete", null), L10n.Tr("Native Allocations (Editor Only)", null)
             };
             public static readonly ProfilerMemoryRecordMode[] recordCallstacksEnumValues =
             {
@@ -80,7 +81,7 @@ namespace UnityEditor
             public static readonly GUIContent saveProfilingData = EditorGUIUtility.TrIconContent("SaveAs", "Save current profiling information to a binary file");
             public static readonly GUIContent loadWindowTitle = EditorGUIUtility.TrTextContent("Load Window");
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrIconContent("Import", "Load binary profiling information from a file. Shift click to append to the existing data");
-            public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files"), "data,raw", L10n.Tr("All files"), "*" };
+            public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files", null), "data,raw", L10n.Tr("All files", null), "*" };
 
             public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Menu", "Additional Options");
             public static readonly GUIContent helpButtonContent = EditorGUIUtility.TrIconContent("_Help", "Open Manual (in a web browser)");
@@ -758,7 +759,7 @@ namespace UnityEditor
         internal void UpdateVisualTreeModulesOrder()
         {
             foreach (var module in m_AllModules)
-                module.ChartViewController.View.BringToFront();
+                module.ChartViewController?.View.BringToFront();
         }
 
         internal void OnModulePinnedStateChanged(ProfilerModule module)
@@ -836,7 +837,7 @@ namespace UnityEditor
             foreach (var module in m_AllModules)
             {
                 if (module.pinned && module.active)
-                    module.ChartViewController.View.BringToFront();
+                    module.ChartViewController?.View.BringToFront();
             }
         }
 
@@ -1854,14 +1855,17 @@ namespace UnityEditor
                 {
                     DeleteProfilerModuleAtIndex(index);
                 }
-
-                module.ResetToDefaultPreferences();
+                else
+                {
+                    module.ResetToDefaultPreferences();
+                }
 
                 index--;
             }
 
             SortModuleCollectionInPlace(ref m_AllModules);
             UpdateVisualTreeModulesOrder();
+            UpdatePinnedModulesOrder();
 
             PersistDynamicModulesToEditorPrefs();
             UpdateModules();
@@ -1993,7 +1997,8 @@ namespace UnityEditor
             moduleToDelete.active = false;
             moduleToDelete.OnDisable();
             moduleToDelete.DeleteAllPreferences();
-            moduleToDelete.ChartViewController?.Dispose();
+            // Clears the reference as well as disposing, so nothing can reach the dead controller.
+            moduleToDelete.DisposeChartViewController();
             m_AllModules.RemoveAt(index);
         }
 
@@ -2343,3 +2348,4 @@ namespace UnityEditor
         [Serializable] internal class ProfilerWindowControllerProxy {}
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

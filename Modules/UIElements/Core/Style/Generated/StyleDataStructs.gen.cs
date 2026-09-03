@@ -220,18 +220,18 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 176)]
+    [StructLayout(LayoutKind.Sequential, Size = 168)]
     internal struct InheritedData : IStyleDataGroup<InheritedData>, IEquatable<InheritedData>
     {
         public Color color;
         public UnmanagedMaterialDefinition unityMaterial;
         public Color unityTextOutlineColor;
-        public Length fontSize;
         public Length letterSpacing;
         public EntityId unityFont;
         public EntityId unityFontDefinition;
         public Length unityParagraphSpacing;
         public Length wordSpacing;
+        public float fontSize;
         public TextShadow textShadow;
         public EditorTextRenderingMode unityEditorTextRenderingMode;
         public FontStyle unityFontStyleAndWeight;
@@ -365,7 +365,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = 96)]
+    [StructLayout(LayoutKind.Sequential, Size = 120)]
     internal struct RareData : IStyleDataGroup<RareData>, IEquatable<RareData>
     {
         public Color unityBackgroundImageTintColor;
@@ -373,6 +373,7 @@ namespace UnityEngine.UIElements
         public Cursor cursor;
         public UnmanagedRefCountedList<UnmanagedFilterFunction> filter;
         public TextOverflow textOverflow;
+        public Curvature unityCurvature;
         public OverflowClipBox unityOverflowClipBox;
         public int unitySliceBottom;
         public int unitySliceLeft;
@@ -396,6 +397,7 @@ namespace UnityEngine.UIElements
             data.filter.CopyFrom(filter);
             data.textOverflow = textOverflow;
             data.unityBackgroundImageTintColor = unityBackgroundImageTintColor;
+            data.unityCurvature = unityCurvature;
             data.unityOverflowClipBox = unityOverflowClipBox;
             data.unitySliceBottom = unitySliceBottom;
             data.unitySliceLeft = unitySliceLeft;
@@ -415,6 +417,7 @@ namespace UnityEngine.UIElements
             filter.CopyFrom(other.filter);
             textOverflow = other.textOverflow;
             unityBackgroundImageTintColor = other.unityBackgroundImageTintColor;
+            unityCurvature = other.unityCurvature;
             unityOverflowClipBox = other.unityOverflowClipBox;
             unitySliceBottom = other.unitySliceBottom;
             unitySliceLeft = other.unitySliceLeft;
@@ -439,6 +442,7 @@ namespace UnityEngine.UIElements
                 lhs.filter == rhs.filter &&
                 lhs.textOverflow == rhs.textOverflow &&
                 lhs.unityBackgroundImageTintColor == rhs.unityBackgroundImageTintColor &&
+                lhs.unityCurvature == rhs.unityCurvature &&
                 lhs.unityOverflowClipBox == rhs.unityOverflowClipBox &&
                 lhs.unitySliceBottom == rhs.unitySliceBottom &&
                 lhs.unitySliceLeft == rhs.unitySliceLeft &&
@@ -477,6 +481,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ filter.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)textOverflow;
                 hashCode = (hashCode * 397) ^ unityBackgroundImageTintColor.GetHashCode();
+                hashCode = (hashCode * 397) ^ unityCurvature.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityOverflowClipBox;
                 hashCode = (hashCode * 397) ^ unitySliceBottom;
                 hashCode = (hashCode * 397) ^ unitySliceLeft;

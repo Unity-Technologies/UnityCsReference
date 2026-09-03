@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class ResumeDownloadAction : PackageAction
@@ -39,17 +37,16 @@ internal class ResumeDownloadAction : PackageAction
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
         if (isInProgress)
-            return L10n.Tr("The resume request has been sent. Please wait for the download to resume.");
-        return string.Format(L10n.Tr("Click to resume the download of this {0}."), version.GetDescriptor());
+            return L10n.Tr("The resume request has been sent. Please wait for the download to resume.", null);
+        return string.Format(L10n.Tr("Click to resume the download of this {0}.", null), version.GetDescriptor());
     }
 
-    public override string GetText(IPackageVersion version, bool isInProgress) => L10n.Tr("Resume");
+    public override string GetText(IPackageVersion version, bool isInProgress) => L10n.Tr("Resume", null);
 
     public override bool IsInProgress(IPackageVersion version) => m_AssetStoreDownloadManager.GetDownloadOperation(version.package.product?.id)?.state == DownloadState.ResumeRequested;
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfNoNetwork(m_Application);
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfNoNetwork(m_Application),
+        new DisableIfCompiling(m_Application)
+    );
 }

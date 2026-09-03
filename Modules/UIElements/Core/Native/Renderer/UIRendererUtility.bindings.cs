@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Runtime.InteropServices;
@@ -103,11 +102,15 @@ namespace UnityEngine.UIElements.UIR
             SetVectorArray(shaderPropertySheet, nameID, vector4s, vector4s.Length);
         }
 
+        // Subscribed once from UIRRepaintUpdater's static constructor, which never re-runs after a
+        // code reload; clearing this event would permanently drop the device-recreate handler. The
+        // handler is a static method of this never-reloaded module, so persisting it can't pin a
+        // reloadable assembly.
         [NoAutoStaticsCleanup]
         public static event Action<bool> GraphicsResourcesRecreate;
-        [NoAutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action EngineUpdate;
-        [NoAutoStaticsCleanup]
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action FlushPendingResources;
 
         [RequiredByNativeCode]
@@ -173,4 +176,3 @@ namespace UnityEngine.UIElements.UIR
         [NativeMethod(IsThreadSafe = true)] public extern static bool DebugIsMainThread(); // For debug code only
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

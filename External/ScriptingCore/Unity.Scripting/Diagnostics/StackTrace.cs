@@ -1,7 +1,7 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: ScriptingRuntime not yet converted
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Scripting;
 
@@ -11,6 +11,8 @@ internal static class StackTrace
     const string k_InteropNamespace = "Unity.Private.Scripting.Interop";
     const string k_InvokeWrapperPrefix = "runtime_invoke_wrapper";
 
+    // Host-installed project base path, set once at initialization; not tied to any scope.
+    [NoAutoStaticsCleanup]
     static string s_BasePath = string.Empty;
 
     internal static string BasePath
@@ -28,6 +30,8 @@ internal static class StackTrace
     // This code is shared between Mono and CoreCLR, so we cannot conditionally compile the frame format.
     // We use by default the Mono format as long as it's supported. This value is overridden on CoreCLR
     // initialization. To be removed once Mono support is fully removed.
+    // Host-installed backend trace format, set once at initialization; not tied to any scope.
+    [NoAutoStaticsCleanup]
     internal static bool UseMonoFormat { get; set; } = true;
 
     [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
@@ -265,4 +269,3 @@ internal static class StackTrace
         return false;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -39,7 +40,7 @@ namespace Unity.UIToolkit.Editor
             m_TextElement.AddToClassList(TextUssClassName);
             visualInput.Add(m_TextElement);
 
-            var button = new Button(ShowSelector) { text = L10n.Tr("Select Type...") };
+            var button = new Button(ShowSelector) { text = L10n.Tr("Select Type...", null) };
             button.AddToClassList(ButtonUssClassName);
             visualInput.Add(button);
 
@@ -79,7 +80,7 @@ namespace Unity.UIToolkit.Editor
         void UpdateLabel()
         {
             if (string.IsNullOrEmpty(value))
-                m_TextElement.text = L10n.Tr("None");
+                m_TextElement.text = L10n.Tr("None", null);
             else
                 m_TextElement.text = value;
         }
@@ -236,3 +237,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

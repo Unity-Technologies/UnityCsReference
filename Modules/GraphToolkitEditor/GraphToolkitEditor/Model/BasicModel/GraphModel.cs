@@ -1097,6 +1097,9 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="model">The model.</param>
         protected virtual void UnregisterElement(GraphElementModel model)
         {
+            if (model == null)
+                return;
+
             GetElementsByGuid().Remove(model.Guid);
 
             foreach (var subModel in model.DependentModels)
@@ -1858,6 +1861,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var allowMultipleDataOutputInstances = AllowMultipleDataOutputInstances != AllowMultipleDataOutputInstances.Disallow;
             return allowMultipleDataOutputInstances
+                || variable.DataType == TypeHandle.Untyped
                 || variable.DataType.Resolve() == typeof(Untyped)
                 || variable.Modifiers != ModifierFlags.Write
                 || graphModel.FindReferencesInGraph<VariableNodeModel>(variable).Count == 0;
@@ -4370,7 +4374,8 @@ namespace Unity.GraphToolkit.Editor
             }
 
             // Add new placeholders using managed references with missing types.
-            foreach (var referenceWithMissingType in SerializationUtility.GetManagedReferencesWithMissingTypes(GraphObject))
+            var referencesWithMissingTypes = SerializationUtility.GetManagedReferencesWithMissingTypes(GraphObject);
+            foreach (var referenceWithMissingType in referencesWithMissingTypes)
             {
                 if (YamlParsingHelper.TryParseGUID(referenceWithMissingType.serializedData, hashGuidFieldName, obsoleteGuidFieldName, 0, out var guid))
                 {
@@ -4447,14 +4452,24 @@ namespace Unity.GraphToolkit.Editor
 
             foreach (var context in contextWithNullBlocks)
             {
-                for (var i = 0; i < context.BlockCount; ++i)
+                var everyBlockGuidResolvesToABlock = true;
+                for (var i = 0; i < context.BlockGuids.Count; ++i)
                 {
-                    var block = context.GetBlock(i);
+                    var blockGuid = context.BlockGuids[i];
+
+                    if (TryGetModelFromGuid(blockGuid, out var blockModel) && blockModel is not IPlaceholder)
+                        continue;
+
+                    everyBlockGuidResolvesToABlock = false;
 
                     // Create placeholders for null models for which the data is not serialized anymore.
-                    if (block == null && context.BlockPlaceholders.TrueForAll(t => t.Guid != context.BlockGuids[i]))
-                        CreateBlockNodePlaceholder(PlaceholderModelHelper.missingTypeWontBeRestored, context.BlockGuids[i], context);
+                    if (context.BlockPlaceholders.TrueForAll(t => t.Guid != blockGuid))
+                        CreateBlockNodePlaceholder(PlaceholderModelHelper.missingTypeWontBeRestored, blockGuid, context);
                 }
+
+                // A null block slot only has to be kept while a missing type or a guid without a block owns the property path of that slot.
+                if (everyBlockGuidResolvesToABlock && referencesWithMissingTypes.Length == 0)
+                    context.RemoveNullBlocks();
             }
         }
 

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphicsDebuggingTools not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -20,6 +21,8 @@ namespace UnityEditor
 {
     internal partial class FrameDebuggerWindow : EditorWindow
     {
+        internal FrameDebuggerWindow() { }
+
         // Serialized
         [SerializeField] private float m_TreeWidth = FrameDebuggerStyles.Window.k_MinTreeWidth;
         [SerializeField] private TreeViewState m_TreeViewState;
@@ -540,3 +543,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

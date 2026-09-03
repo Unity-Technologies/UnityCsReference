@@ -249,23 +249,23 @@ namespace UnityEditor
             public GUIContent scale = EditorGUIUtility.TrTextContent("Scale", "Scale the emission shape.");
             public GUIContent sceneTools = EditorGUIUtility.TrTextContent("Scene Tools");
 
-            public readonly string undoSphereThickness = L10n.Tr("Sphere Thickness Handle Change");
-            public readonly string undoSphere = L10n.Tr("Sphere Handle Change");
-            public readonly string undoCircleThickness = L10n.Tr("Circle Thickness Handle Change");
-            public readonly string undoCircle = L10n.Tr("Circle Handle Change");
-            public readonly string undoHemisphereThickness = L10n.Tr("Hemisphere Thickness Handle Change");
-            public readonly string undoHemisphere = L10n.Tr("Hemisphere Handle Change");
-            public readonly string undoConeThickness = L10n.Tr("Cone Thickness Handle Change");
-            public readonly string undoCone = L10n.Tr("Cone Handle Change");
-            public readonly string undoConeVolumeThickness = L10n.Tr("Cone Volume Thickness Handle Change");
-            public readonly string undoConeVolume = L10n.Tr("Cone Volume Handle Change");
-            public readonly string undoBox = L10n.Tr("Box Handle Change");
-            public readonly string undoDonut = L10n.Tr("Donut Handle Change");
-            public readonly string undoDonutRadiusThickness = L10n.Tr("Donut Radius Thickness Handle Change");
-            public readonly string undoDonutRadius = L10n.Tr("Donut Radius Handle Change");
-            public readonly string undoEdge = L10n.Tr("Edge Handle Change");
-            public readonly string undoRectangle = L10n.Tr("Rectangle Handle Change");
-            public readonly string undoTransform = L10n.Tr("Shape Transform Change");
+            public readonly string undoSphereThickness = L10n.Tr("Sphere Thickness Handle Change", null);
+            public readonly string undoSphere = L10n.Tr("Sphere Handle Change", null);
+            public readonly string undoCircleThickness = L10n.Tr("Circle Thickness Handle Change", null);
+            public readonly string undoCircle = L10n.Tr("Circle Handle Change", null);
+            public readonly string undoHemisphereThickness = L10n.Tr("Hemisphere Thickness Handle Change", null);
+            public readonly string undoHemisphere = L10n.Tr("Hemisphere Handle Change", null);
+            public readonly string undoConeThickness = L10n.Tr("Cone Thickness Handle Change", null);
+            public readonly string undoCone = L10n.Tr("Cone Handle Change", null);
+            public readonly string undoConeVolumeThickness = L10n.Tr("Cone Volume Thickness Handle Change", null);
+            public readonly string undoConeVolume = L10n.Tr("Cone Volume Handle Change", null);
+            public readonly string undoBox = L10n.Tr("Box Handle Change", null);
+            public readonly string undoDonut = L10n.Tr("Donut Handle Change", null);
+            public readonly string undoDonutRadiusThickness = L10n.Tr("Donut Radius Thickness Handle Change", null);
+            public readonly string undoDonutRadius = L10n.Tr("Donut Radius Handle Change", null);
+            public readonly string undoEdge = L10n.Tr("Edge Handle Change", null);
+            public readonly string undoRectangle = L10n.Tr("Rectangle Handle Change", null);
+            public readonly string undoTransform = L10n.Tr("Shape Transform Change", null);
 
             public GUIContent[] shapeTypes = new GUIContent[]
             {

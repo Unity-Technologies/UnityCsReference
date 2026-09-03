@@ -108,10 +108,10 @@ namespace Unity.UIToolkit.Editor
             for (int i = 0; i < suffixes.Count; i++)
             {
                 var suffix = suffixes[i];
-                // Empty suffix => single-channel property; pass null so BuildStyleKeyPropertyName
+                // Empty suffix => single-channel property; pass null so BuildPropertyName
                 // skips the suffix join entirely (no trailing dot).
                 var trimmed = string.IsNullOrEmpty(suffix) ? null : suffix;
-                var path = AnimationRecordingStyleBridge.BuildStyleKeyPropertyName(elementPath, propName, trimmed);
+                var path = UIAnimationPath.BuildPropertyName(elementPath, propName, trimmed);
                 list[i] = new PropertyModification
                 {
                     target = target,

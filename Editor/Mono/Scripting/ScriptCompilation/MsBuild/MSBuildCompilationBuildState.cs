@@ -32,6 +32,13 @@ class MSBuildCompilationBuildState
 
     public ConcurrentQueue<BuildProgressEvent> ProgressEvents { get; } = new();
 
+    private readonly System.Diagnostics.Stopwatch _elapsed = new();
+
+    public TimeSpan Elapsed => _elapsed.Elapsed;
+
+    /// <summary>The last thing the host said it was doing; reported when a build fails to complete.</summary>
+    public string LastProgressText { get; private set; } = "starting build";
+
     private int ProgressId { get; set; }
 
     public Task<BuildResultMessage> BuildAsync(bool restore, bool generateBinLog, string configuration, bool useNugetRestore)
@@ -47,8 +54,7 @@ class MSBuildCompilationBuildState
         {
             BuildResultMessage? result = null;
             using (new ProgressScope(ProgressId)){
-                var sw = new System.Diagnostics.Stopwatch();
-                sw.Start();
+                _elapsed.Restart();
 
                 await using var asyncStream = _compilerClient.BuildStream(GetBuildParameters(configuration, useNugetRestore, generateBinLog), CancellationTokenSource.Token);
 
@@ -56,11 +62,12 @@ class MSBuildCompilationBuildState
                 {
                     if (response.StreamEvent != null)
                     {
-                        Progress.SetDescription(ProgressId, $"{response.StreamEvent.Project} {response.StreamEvent.Text}");
+                        LastProgressText = $"{response.StreamEvent.Project} {response.StreamEvent.Text}";
+                        Progress.SetDescription(ProgressId, LastProgressText);
 
                         ProgressEvents.Enqueue(new BuildProgressEvent
                         {
-                            Text = $"{response.StreamEvent.Project} {response.StreamEvent.Text}",
+                            Text = LastProgressText,
                         });
                     }
                     else if (response.Result != null)
@@ -69,12 +76,21 @@ class MSBuildCompilationBuildState
                     }
                 }
 
-                sw.Stop();
-                Console.WriteLine($"Done Building configuration '{configuration}' ({sw.Elapsed.TotalSeconds}s)");
+                _elapsed.Stop();
+                Console.WriteLine($"Done Building configuration '{configuration}' ({_elapsed.Elapsed.TotalSeconds}s)");
 
             }
 
-            return result!;
+            // The result is the last message on the stream, so reaching the end without one means the
+            // host went away. Fail loudly rather than returning a null that NREs further downstream.
+            if (result == null)
+            {
+                throw new InvalidOperationException(
+                    $"The MSBuild build host closed the connection without reporting a build result "
+                    + $"(last activity: '{LastProgressText}' after {_elapsed.Elapsed:hh\\:mm\\:ss}).");
+            }
+
+            return result;
         }, CancellationTokenSource.Token);
 
         return ActiveBuildTask;

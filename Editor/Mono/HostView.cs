@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: EditorWindowManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -27,6 +28,10 @@ namespace UnityEditor
             public const float iconMargin = 1f;
 
             public static readonly GUIStyle background = new GUIStyle("hostview");
+
+            // The view content needs a styled layout group around it: the root GUIStyle.none group drops its children's margins.
+            public static readonly GUIStyle contentLayout = new GUIStyle();
+
             public static readonly GUIStyle overlay = "dockareaoverlay";
             public static readonly GUIStyle menuButton = "WindowMenuButton";
             public static readonly GUIStyle tabWindowBackground = "TabWindowBackground";
@@ -35,13 +40,13 @@ namespace UnityEditor
             {
                 public const float switchButtonWidth = 16.0f;
 
-                static readonly string k_AutomaticAuthoringString = L10n.Tr("Automatic (Authoring)");
-                static readonly string k_AutomaticMixedString = L10n.Tr("Automatic (Mixed)");
-                static readonly string k_AutomaticRuntimeString = L10n.Tr("Automatic (Runtime)");
-                static readonly string k_AuthoringString = L10n.Tr("Authoring");
-                static readonly string k_MixedString = L10n.Tr("Mixed");
-                static readonly string k_RuntimeString = L10n.Tr("Runtime");
-                static readonly string k_DisabledString = L10n.Tr("Disabled");
+                static readonly string k_AutomaticAuthoringString = L10n.Tr("Automatic (Authoring)", null);
+                static readonly string k_AutomaticMixedString = L10n.Tr("Automatic (Mixed)", null);
+                static readonly string k_AutomaticRuntimeString = L10n.Tr("Automatic (Runtime)", null);
+                static readonly string k_AuthoringString = L10n.Tr("Authoring", null);
+                static readonly string k_MixedString = L10n.Tr("Mixed", null);
+                static readonly string k_RuntimeString = L10n.Tr("Runtime", null);
+                static readonly string k_DisabledString = L10n.Tr("Disabled", null);
 
                 // Auto data mode icons
                 static readonly Texture2D k_AuthoringModeIcon = EditorGUIUtility.LoadIcon("DataMode.Authoring");
@@ -80,6 +85,10 @@ namespace UnityEditor
                 // Fix annoying GUILayout issue: When using GUILayout in Utility windows there
                 // was always padded 10 px at the top! Todo: Fix this in EditorResources
                 background.padding.top = 0;
+
+                contentLayout.padding = background.padding;
+                contentLayout.stretchWidth = background.stretchWidth;
+                contentLayout.stretchHeight = background.stretchHeight;
             }
         }
 
@@ -327,15 +336,18 @@ namespace UnityEditor
             if (actualView)
                 actualView.m_Pos = screenPosition;
 
-            try
+            using (new GUILayout.VerticalScope(Styles.contentLayout))
             {
-                HandleSplitView();
-                m_OnGUI?.Invoke();
-            }
-            finally
-            {
-                CheckNotificationStatus();
-                EditorGUI.ShowRepaints();
+                try
+                {
+                    HandleSplitView();
+                    m_OnGUI?.Invoke();
+                }
+                finally
+                {
+                    CheckNotificationStatus();
+                    EditorGUI.ShowRepaints();
+                }
             }
         }
 
@@ -852,8 +864,8 @@ namespace UnityEditor
         void PopulateDataModeDropdown(DataModeController clientDataModeController, GenericMenu menu)
         {
             var autoLabel = !clientDataModeController.isAutomatic
-                ? L10n.Tr($"Automatic ({clientDataModeController.preferredDataMode})")
-                : L10n.Tr($"Automatic ({clientDataModeController.dataMode})");
+                ? L10n.Tr($"Automatic ({clientDataModeController.preferredDataMode})", null)
+                : L10n.Tr($"Automatic ({clientDataModeController.dataMode})", null);
 
             menu.AddItem(new GUIContent(autoLabel),
                 clientDataModeController.isAutomatic,
@@ -1014,3 +1026,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

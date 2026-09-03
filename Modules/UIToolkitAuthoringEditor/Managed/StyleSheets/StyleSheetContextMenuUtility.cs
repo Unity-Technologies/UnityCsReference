@@ -11,16 +11,16 @@ namespace Unity.UIToolkit.Editor;
 
 internal static class StyleSheetContextMenuUtility
 {
-    internal static readonly string k_EditFolderName = L10n.Tr("Edit");
-    internal static readonly string k_Copy = L10n.Tr("Copy");
-    internal static readonly string k_Paste = L10n.Tr("Paste");
-    internal static readonly string k_Rename = L10n.Tr("Rename");
-    internal static readonly string k_Duplicate = L10n.Tr("Duplicate");
-    internal static readonly string k_Delete = L10n.Tr("Delete");
-    internal static readonly string k_CreateNewUss = L10n.Tr("Create new USS");
-    internal static readonly string k_AddExistingUss = L10n.Tr("Add Existing USS");
-    internal static readonly string k_RemoveUss = L10n.Tr("Remove USS");
-    internal static readonly string k_SetActiveUss = L10n.Tr("Set as Active USS");
+    internal static readonly string k_EditFolderName = L10n.Tr("Edit", null);
+    internal static readonly string k_Copy = L10n.Tr("Copy", null);
+    internal static readonly string k_Paste = L10n.Tr("Paste", null);
+    internal static readonly string k_Rename = L10n.Tr("Rename", null);
+    internal static readonly string k_Duplicate = L10n.Tr("Duplicate", null);
+    internal static readonly string k_Delete = L10n.Tr("Delete", null);
+    internal static readonly string k_CreateNewUss = L10n.Tr("Create new USS", null);
+    internal static readonly string k_AddExistingUss = L10n.Tr("Add Existing USS", null);
+    internal static readonly string k_RemoveUss = L10n.Tr("Remove USS", null);
+    internal static readonly string k_SetActiveUss = L10n.Tr("Set as Active USS", null);
 
     public static void PopulateMenu(HierarchyView view, in HierarchyNode node, DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
     {
@@ -32,6 +32,9 @@ internal static class StyleSheetContextMenuUtility
 
         var isStyleSheet = styleSheetHandler.IsStyleSheet(node);
         var isReadOnly = styleSheetHandler.IsReadOnly(node);
+        // Document-level authoring needs an editable document: a UI Stage, or a scene document while Main
+        // Stage authoring is enabled.
+        var canEdit = styleSheetHandler.Window is { IsReadOnly: false };
 
         var copyMenu = k_EditFolderName + "/" + k_Copy;
         AppendAction(menu, k_Copy, Menu.GetHotkey(copyMenu), view.OnCopy, handler.CanCopy(view));
@@ -50,16 +53,12 @@ internal static class StyleSheetContextMenuUtility
 
         menu.AppendSeparator();
 
-        var canCreateNewUss = Menu.GetHotkey(k_CreateNewUss);
-        AppendAction(menu, k_CreateNewUss, Menu.GetHotkey(canCreateNewUss), styleSheetHandler.Window.CreateStyleSheet);
-        var canAddExistingUss = Menu.GetHotkey(k_AddExistingUss);
-        AppendAction(menu, k_AddExistingUss, Menu.GetHotkey(canAddExistingUss), styleSheetHandler.Window.AddStyleSheet);
-        var canRemoveUss = Menu.GetHotkey(k_RemoveUss);
-        AppendAction(menu, k_RemoveUss, Menu.GetHotkey(canRemoveUss), () => styleSheetHandler.Window.RemoveStyleSheet(n), isStyleSheet && !isReadOnly);
+        AppendAction(menu, k_CreateNewUss, Menu.GetHotkey(k_CreateNewUss), styleSheetHandler.Window.CreateStyleSheet, canEdit);
+        AppendAction(menu, k_AddExistingUss, Menu.GetHotkey(k_AddExistingUss), styleSheetHandler.Window.AddStyleSheet, canEdit);
+        AppendAction(menu, k_RemoveUss, Menu.GetHotkey(k_RemoveUss), () => styleSheetHandler.Window.RemoveStyleSheet(n), isStyleSheet && !isReadOnly);
 
         menu.AppendSeparator();
-        var canSetActiveUss = Menu.GetHotkey(k_SetActiveUss);
-        AppendAction(menu, k_SetActiveUss, Menu.GetHotkey(canSetActiveUss),  () => styleSheetHandler.Window.SetActiveStyleSheet(n), isStyleSheet && !isReadOnly);
+        AppendAction(menu, k_SetActiveUss, Menu.GetHotkey(k_SetActiveUss),  () => styleSheetHandler.Window.SetActiveStyleSheet(n), isStyleSheet && !isReadOnly);
     }
 
     static void AppendAction(DropdownMenu menu, string name, string hotkey, Action action, bool enabled = true)

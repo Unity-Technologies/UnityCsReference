@@ -157,7 +157,7 @@ namespace UnityEditorInternal
             if (state.selection.isReadOnly)
                 return;
 
-            string undoLabel = L10n.Tr("Add Key");
+            string undoLabel = L10n.Tr("Add Key", null);
             state.SaveKeySelection(undoLabel);
             state.ClearKeySelections();
 
@@ -180,7 +180,7 @@ namespace UnityEditorInternal
             if (state.selection.isReadOnly)
                 return;
 
-            string undoLabel = L10n.Tr("Remove Key");
+            string undoLabel = L10n.Tr("Remove Key", null);
             state.SaveKeySelection(undoLabel);
 
             foreach (AnimationWindowCurve curve in curves)
@@ -562,10 +562,10 @@ namespace UnityEditorInternal
             return false;
         }
 
-        private static readonly string k_PositionDisplayName = L10n.Tr("Position");
-        private static readonly string k_ScaleDisplayName = L10n.Tr("Scale");
-        private static readonly string k_RotationDisplayName = L10n.Tr("Rotation");
-        private static readonly string k_MaterialReferenceDisplayName = L10n.Tr("Material Reference");
+        private static readonly string k_PositionDisplayName = L10n.Tr("Position", null);
+        private static readonly string k_ScaleDisplayName = L10n.Tr("Scale", null);
+        private static readonly string k_RotationDisplayName = L10n.Tr("Rotation", null);
+        private static readonly string k_MaterialReferenceDisplayName = L10n.Tr("Material Reference", null);
 
         private const string k_ComponentPathSeparator = "  :  ";
 

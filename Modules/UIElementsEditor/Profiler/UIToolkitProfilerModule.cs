@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using UnityEngine;
 
 using System;
@@ -56,13 +55,13 @@ namespace UnityEditor.UIElements
         /// </summary>
         internal static readonly string[] k_ColumnDisplayTitles = new string[]
         {
-            L10n.Tr("Pick All"),
-            L10n.Tr("Runtime Bindings"),
-            L10n.Tr("Update Style"),
-            L10n.Tr("Update Layout"),
-            L10n.Tr("Update Animation"),
-            L10n.Tr("Prepare Render"),
-            L10n.Tr("Render Panels"),
+            L10n.Tr("Pick All", null),
+            L10n.Tr("Runtime Bindings", null),
+            L10n.Tr("Update Style", null),
+            L10n.Tr("Update Layout", null),
+            L10n.Tr("Update Animation", null),
+            L10n.Tr("Prepare Render", null),
+            L10n.Tr("Render Panels", null),
         };
 
         public UIToolkitProfilerModule() : base(k_ChartCounters, ProfilerModuleChartType.StackedTimeArea, autoEnabledCategoryNames: k_AutoEnabledCategoryNames) { }
@@ -73,4 +72,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -2,15 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Timeline.Foundation.Time
 {
     class DiscreteTimeComparer : IComparer<DiscreteTime>, IEqualityComparer<DiscreteTime>
     {
+        [NoAutoStaticsCleanup] // stateless comparer singleton; holds no data and behaves identically across code reloads
         public static readonly DiscreteTimeComparer instance = new DiscreteTimeComparer();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,4 +35,3 @@ namespace Unity.Timeline.Foundation.Time
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -149,7 +149,7 @@ By default, Windows will combine these under a single taskbar item.");
         class ColorsProperties
         {
             public static readonly GUIContent userDefaults = EditorGUIUtility.TrTextContent("Reset All to Default");
-            public static readonly string lazyLoadingInfo = L10n.Tr("Some colors may not be available until you open their associated tool or window at least once.");
+            public static readonly string lazyLoadingInfo = L10n.Tr("Some colors may not be available until you open their associated tool or window at least once.", null);
         }
 
         class GICacheProperties
@@ -279,7 +279,7 @@ By default, Windows will combine these under a single taskbar item.");
             "Unfortunately Visual Studio Express does not allow itself to be controlled by external applications. " +
             "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
             "\n(This does work with Visual Studio Pro)"
-        );
+        , null);
 
         private const int kRecentAppsCount = 10;
 
@@ -747,7 +747,7 @@ By default, Windows will combine these under a single taskbar item.");
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.LabelField(GeneralProperties.resetAllDialogBoxes, GUILayout.Width(EditorGUIUtility.labelWidth));
-                if (GUILayout.Button(L10n.Tr("Reset to defaults")))
+                if (GUILayout.Button(L10n.Tr("Reset to defaults", null)))
                 {
                     EditorDialog.ResetAllOptOuts();
                 }
@@ -960,59 +960,67 @@ By default, Windows will combine these under a single taskbar item.");
 
             // some pref colors are very long, and changing them would mean invalidating any user-defined colors.
             // as a compromise, we'll clip the label with an ellipses and show the full text in a tooltip.
+            // We have to restore the original clipping in a finally block because sub-methods may throw
+            // an exception (e.g. ExitGUI when opening the color picker), which would otherwise leak the
+            // mutated shared style to the rest of the editor.
             var clipping = EditorStyles.label.clipping;
             EditorStyles.label.clipping = TextClipping.Ellipsis;
-
-            foreach (KeyValuePair<string, List<KeyValuePair<string, PrefColor>>> category in s_CachedColors)
+            try
             {
-                // Default to collapsed (false) if not yet in dictionary
-                s_ColorCategoryFoldouts.TryGetValue(category.Key, out bool expanded);
-                expanded = EditorGUILayout.Foldout(expanded, category.Key, true);
-                s_ColorCategoryFoldouts[category.Key] = expanded;
-
-                if (expanded)
+                foreach (KeyValuePair<string, List<KeyValuePair<string, PrefColor>>> category in s_CachedColors)
                 {
-                    EditorGUI.indentLevel++;
-                    foreach (KeyValuePair<string, PrefColor> kvp in category.Value)
+                    // Default to collapsed (false) if not yet in dictionary
+                    s_ColorCategoryFoldouts.TryGetValue(category.Key, out bool expanded);
+                    expanded = EditorGUILayout.Foldout(expanded, category.Key, true);
+                    s_ColorCategoryFoldouts[category.Key] = expanded;
+
+                    if (expanded)
                     {
-                        var displayName = ObjectNames.NicifyVariableName(kvp.Key);
-                        EditorGUILayout.BeginHorizontal();
-
-                        EditorGUI.BeginChangeCheck();
-                        Color c = EditorGUILayout.ColorField(EditorGUIUtility.TempContent(displayName, $"Custom overlay color for windows of {displayName} type"), kvp.Value.Color);
-                        if (EditorGUI.EndChangeCheck())
+                        EditorGUI.indentLevel++;
+                        foreach (KeyValuePair<string, PrefColor> kvp in category.Value)
                         {
-                            kvp.Value.Color = c;
-                            PrefSettings.Set(kvp.Value.Name, kvp.Value);
-                            changedColor = true;
-                        }
+                            var displayName = ObjectNames.NicifyVariableName(kvp.Key);
+                            EditorGUILayout.BeginHorizontal();
 
-                        if (GUILayout.Button("Reset to Default", GUILayout.Width(120)))
-                        {
-                            if (kvp.Value.Name.StartsWith("Overlays Background/"))
+                            EditorGUI.BeginChangeCheck();
+                            Color c = EditorGUILayout.ColorField(EditorGUIUtility.TempContent(displayName, $"Custom overlay color for windows of {displayName} type"), kvp.Value.Color);
+                            if (EditorGUI.EndChangeCheck())
                             {
-                                var windowType = System.Type.GetType($"UnityEditor.{kvp.Key}, UnityEditor");
-                                if (windowType != null)
-                                {
-                                    OverlayPrefs.RevertToDefaultColor(windowType);
-                                    OverlayPrefs.DeleteOverlayKey(windowType);
-                                }
-                            }
-                            else
-                            {
-                                kvp.Value.ResetToDefault();
+                                kvp.Value.Color = c;
                                 PrefSettings.Set(kvp.Value.Name, kvp.Value);
+                                changedColor = true;
                             }
-                            s_CachedColors = null;
-                            changedColor = true;
-                        }
 
-                        EditorGUILayout.EndHorizontal();
+                            if (GUILayout.Button("Reset to Default", GUILayout.Width(120)))
+                            {
+                                if (kvp.Value.Name.StartsWith("Overlays Background/"))
+                                {
+                                    var windowType = System.Type.GetType($"UnityEditor.{kvp.Key}, UnityEditor");
+                                    if (windowType != null)
+                                    {
+                                        OverlayPrefs.RevertToDefaultColor(windowType);
+                                        OverlayPrefs.DeleteOverlayKey(windowType);
+                                    }
+                                }
+                                else
+                                {
+                                    kvp.Value.ResetToDefault();
+                                    PrefSettings.Set(kvp.Value.Name, kvp.Value);
+                                }
+                                s_CachedColors = null;
+                                changedColor = true;
+                            }
+
+                            EditorGUILayout.EndHorizontal();
+                        }
+                        EditorGUI.indentLevel--;
                     }
-                    EditorGUI.indentLevel--;
                 }
             }
-            EditorStyles.label.clipping = clipping;
+            finally
+            {
+                EditorStyles.label.clipping = clipping;
+            }
 
             GUILayout.Space(5f);
 
@@ -1416,7 +1424,7 @@ By default, Windows will combine these under a single taskbar item.");
             //BuildFriendlyAppNameList(m_ScriptApps, foundScriptEditorPaths, "Open by file extension");
 
             m_ImageAppDisplayNames = BuildFriendlyAppNameList(m_ImageApps, null,
-                L10n.Tr("Open by file extension"));
+                L10n.Tr("Open by file extension", null));
 
             m_DiffTools = InternalEditorUtility.GetAvailableDiffTools();
 
@@ -1542,7 +1550,7 @@ By default, Windows will combine these under a single taskbar item.");
         void AppsListClickRuntimePlatformExtension(object userData, string[] options, int selected)
         {
             AppsListUserData ud = (AppsListUserData)userData;
-            if (options[selected] == L10n.Tr("Browse..."))
+            if (options[selected] == L10n.Tr("Browse...", null))
             {
                 string path = EditorUtility.OpenFilePanel("Browse for application", "", InternalEditorUtility.GetApplicationExtensionForRuntimePlatform(Application.platform));
                 if (path.Length != 0)
@@ -1568,7 +1576,7 @@ By default, Windows will combine these under a single taskbar item.");
         void AppsListClickNoRuntimePlatformExtension(object userData, string[] options, int selected)
         {
             AppsListUserData ud = (AppsListUserData)userData;
-            if (options[selected] == L10n.Tr("Browse..."))
+            if (options[selected] == L10n.Tr("Browse...", null))
             {
                 string path = EditorUtility.OpenFilePanel("Browse for application", "", "");
                 if (path.Length != 0)

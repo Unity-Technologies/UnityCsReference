@@ -26,9 +26,9 @@ internal class ImportUpdateAction : ImportActionBase
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
-        var result = string.Format(L10n.Tr("Click to import updates from the {0} into your project."), version.GetDescriptor());
+        var result = string.Format(L10n.Tr("Click to import updates from the {0} into your project.", null), version.GetDescriptor());
         if (IsAdaptedPackageUpdate(version.package.versions.importAvailable, version.package.versions.imported))
-            result += L10n.Tr("\n*This package update has been adapted for this current version of Unity.");
+            result += L10n.Tr("\n*This package update has been adapted for this current version of Unity.", null);
         return result;
     }
 
@@ -36,8 +36,8 @@ internal class ImportUpdateAction : ImportActionBase
     {
         var importAvailable = version.package.versions.importAvailable;
         if (string.IsNullOrEmpty(importAvailable?.versionString))
-            return L10n.Tr("Import update");
-        return string.Format(IsAdaptedPackageUpdate(importAvailable, version.package.versions.imported) ? L10n.Tr("Import update {0}* to project") : L10n.Tr("Import update {0} to project"), importAvailable.versionString);
+            return L10n.Tr("Import update", null);
+        return string.Format(IsAdaptedPackageUpdate(importAvailable, version.package.versions.imported) ? L10n.Tr("Import update {0}* to project", null) : L10n.Tr("Import update {0} to project", null), importAvailable.versionString);
     }
 
     // Adapted package update refers to the edge case where a publisher can publish different packages for different unity versions, resulting us

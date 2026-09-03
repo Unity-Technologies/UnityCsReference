@@ -22,14 +22,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return value switch
             {
-                PageFilterStatus.None => L10n.Tr("Any"),
-                PageFilterStatus.Unlabeled => L10n.Tr("Unlabeled"),
-                PageFilterStatus.Downloaded => L10n.Tr("Downloaded"),
-                PageFilterStatus.Imported => L10n.Tr("Imported"),
-                PageFilterStatus.UpdateAvailable => L10n.Tr("Update available"),
-                PageFilterStatus.Hidden => L10n.Tr("Hidden"),
-                PageFilterStatus.Deprecated => L10n.Tr("Deprecated"),
-                PageFilterStatus.SubscriptionBased => L10n.Tr("Subscription based"),
+                PageFilterStatus.None => L10n.Tr("Any", null),
+                PageFilterStatus.Unlabeled => L10n.Tr("Unlabeled", null),
+                PageFilterStatus.Downloaded => L10n.Tr("Downloaded", null),
+                PageFilterStatus.Imported => L10n.Tr("Imported", null),
+                PageFilterStatus.UpdateAvailable => L10n.Tr("Update available", null),
+                PageFilterStatus.Hidden => L10n.Tr("Hidden", null),
+                PageFilterStatus.Deprecated => L10n.Tr("Deprecated", null),
+                PageFilterStatus.SubscriptionBased => L10n.Tr("Subscription based", null),
                 _ => string.Empty
             };
         }

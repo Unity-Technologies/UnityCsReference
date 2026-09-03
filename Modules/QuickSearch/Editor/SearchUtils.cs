@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1394,7 +1395,7 @@ namespace UnityEditor.Search
             var providers = context.providers.ToList();
 #pragma warning restore UAC2001
             if (providers.Count == 0)
-                return L10n.Tr("There is no activated search provider");
+                return L10n.Tr("There is no activated search provider", null);
 
             var msg = "Searching ";
             if (providers.Count > 1)
@@ -2122,3 +2123,4 @@ namespace UnityEditor.Search
     }
 }
 
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

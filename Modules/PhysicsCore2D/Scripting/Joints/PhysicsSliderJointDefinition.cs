@@ -16,7 +16,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public struct PhysicsSliderJointDefinition
+    public record struct PhysicsSliderJointDefinition
     {
         /// <summary>
         /// Create a default <see cref="PhysicsSliderJoint"/> definition.
@@ -71,6 +71,16 @@ namespace Unity.U2D.Physics
         /// It is applied at create only; the authored <see cref="localAnchorB"/> is ignored while this is set.
         /// </remarks>
         public bool autoAnchorB { readonly get => m_AutoAnchorB; set => m_AutoAnchorB = value; }
+
+        /// <summary>
+        /// When set, both local anchor frame rotations are recomputed at create so the slide axis is the direction from anchor A to anchor B, preserving the bodies' relative rotation.
+        /// </summary>
+        /// <remarks>
+        /// It is measured after any <see cref="autoAnchorA"/>/<see cref="autoAnchorB"/> resolution, so it reflects the anchors actually used.
+        /// It is applied at create only; the authored anchor rotations are ignored while this is set.
+        /// Anchors that coincide in world space (an auto anchor places them together) have no direction, so the world X axis is used.
+        /// </remarks>
+        public bool autoAxis { readonly get => m_AutoAxis; set => m_AutoAxis = value; }
 
         /// <summary>
         /// Enable/Disable a spring along the slider joint axis.
@@ -173,6 +183,7 @@ namespace Unity.U2D.Physics
         [SerializeField] internal PhysicsTransform m_LocalAnchorB;
         [SerializeField] internal bool m_AutoAnchorA;
         [SerializeField] internal bool m_AutoAnchorB;
+        [SerializeField] internal bool m_AutoAxis;
         [SerializeField] internal bool m_EnableSpring;
         [SerializeField] internal float m_SpringTargetTranslation;
         [SerializeField] [Min(0.0f)] internal float m_SpringFrequency;

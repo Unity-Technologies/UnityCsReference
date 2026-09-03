@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Unity.BuildService;
 using UnityEngine;
 
@@ -12,6 +13,31 @@ namespace UnityEditor.Scripting.ScriptCompilation.MsBuild;
 
 class UnityMSBuildLogger
 {
+    public static void LogBuildFailedWithoutResult(Exception exception, TimeSpan elapsed, string lastProgressText, string configuration, bool generateBinLog)
+    {
+        var binLog = generateBinLog
+            ? GetPublishBinLogPath(configuration)
+            : "not enabled (Preferences > Diagnostics > ScriptCompilationMsBuildBinlog, or -generate-binlog)";
+
+        // A faulted Task wraps everything in an AggregateException; the inner one explains the failure.
+        var cause = exception is AggregateException aggregate && aggregate.InnerExceptions.Count == 1
+            ? aggregate.InnerExceptions[0]
+            : exception;
+
+        Debug.LogError($@"Script compilation failed: the MSBuild build host did not report a build result.
+
+  Ran for {elapsed:hh\:mm\:ss}, last activity: {lastProgressText}
+  Build host logs: {Path.Combine(Path.GetTempPath(), "Unity.BuildService.Host")}
+  MSBuild binary log: {binLog}
+
+{cause}");
+    }
+
+    // Mirrors BuildManagerParameters, which names the log "{buildPhase}-{configuration}.binlog"
+    // under <project>/Logs. Publish is the phase that produces the assemblies.
+    internal static string GetPublishBinLogPath(string configuration) =>
+        Path.GetFullPath(Path.Combine("Logs", $"Publish-{configuration}.binlog"));
+
     public static void LogProjectBuildManagerMessages(BuildResultMessage buildResultMessage)
     {
         Console.WriteLine($"[PBM]: {buildResultMessage.GetPbmLogMessages().Count} messages");

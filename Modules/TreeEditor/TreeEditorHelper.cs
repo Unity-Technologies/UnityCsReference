@@ -2,16 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TreeEditor not yet converted
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using UnityEngine.Events;
+using Unity.Scripting.LifecycleManagement;
 
 namespace TreeEditor
 {
-    public class TreeEditorHelper
+    public partial class TreeEditorHelper
     {
         public enum NodeType { BarkNode, LeafNode }
 
@@ -35,6 +35,7 @@ namespace TreeEditor
         internal static Shader DefaultOptimizedBarkShader { get { return Shader.Find(kDefaultOptimizedBarkShaderName); } }
         internal static Shader DefaultOptimizedLeafShader { get { return Shader.Find(kDefaultOptimizedLeafShaderName); } }
 
+        [AutoStaticsCleanupOnCodeReload]
         static readonly Dictionary<string, GUIContent> s_Dictionary = new Dictionary<string, GUIContent>();
 
         internal void SetAnimsCallback(UnityAction callback)
@@ -425,4 +426,3 @@ namespace TreeEditor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using HelpBox = UnityEngine.UIElements.HelpBox;
 using Object = UnityEngine.Object;
 
 namespace Unity.UIToolkit.Editor
@@ -32,7 +33,7 @@ namespace Unity.UIToolkit.Editor
             Add(m_VariablesListView);
 
             m_VariablesListView.makeNoneElement = () =>
-                new Label(L10n.Tr(k_EmptyListText)).WithClassList(k_EmptyListClassName);
+                new Label(L10n.Tr(k_EmptyListText, null)).WithClassList(k_EmptyListClassName);
             m_VariablesListView.makeItem = () => CreateListItem();
             m_VariablesListView.bindItem = BindItem;
             m_VariablesListView.unbindItem = UnbindItem;
@@ -167,7 +168,22 @@ namespace Unity.UIToolkit.Editor
             RefreshVariablesList();
         }
 
-        public virtual void ExtractToGlobalVariable() { }
+        /// <summary>
+        /// Returns a list of (StyleSheet, display label) pairs available for the current inspector.
+        /// </summary>
+        protected virtual IReadOnlyList<(StyleSheet sheet, string label)> GetAvailableStyleSheets()
+            => Array.Empty<(StyleSheet, string)>();
+
+        /// <summary>
+        /// Whether this inspector supports creating a new stylesheet as part of the extract flow.
+        /// </summary>
+        protected virtual bool supportsCreateNewStyleSheet => false;
+
+        /// <summary>
+        /// Extracts the selected variables into the :root selector of the given target stylesheet.
+        /// Pass null to create a new stylesheet (only supported when <see cref="supportsCreateNewStyleSheet"/> is true).
+        /// </summary>
+        public virtual void ExtractVariableToRootSelector(StyleSheet targetStyleSheet = null) { }
 
         void BindItem(VisualElement e, int i)
         {
@@ -593,36 +609,35 @@ namespace Unity.UIToolkit.Editor
             var isRoot = GetRootRule(styleRule) != null;
             var multipleSelected = m_VariablesListView.selectedIndicesList.Count > 1;
 
-            menu.AppendAction("Extract to Global variable", _ =>
-            {
-                ExtractToGlobalVariable();
-            }, _ => isRoot ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+            var availableStyleSheets = GetAvailableStyleSheets();
+            var extractMenuStatus = isRoot ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal;
+            var extractMenuRootLabel = VariablesContextMenuUtility.k_ExtractToRootSelector;
 
-            menu.AppendAction("Delete", _ =>
+            if (supportsCreateNewStyleSheet || availableStyleSheets.Count > 0)
             {
-                DeleteVariable(m_VariablesListView);
-            });
+                // Submenu: "New Stylesheet..." first, then each attached stylesheet.
+                if (supportsCreateNewStyleSheet)
+                    menu.AppendAction($"{extractMenuRootLabel}/{VariablesContextMenuUtility.k_NewStyleSheet}",
+                        _ => ExtractVariableToRootSelector(), extractMenuStatus);
 
-            menu.AppendAction("Duplicate", _ =>
-            {
-                DuplicateVariable();
-            });
-
-            menu.AppendAction("Move Up", _ =>
+                foreach (var (sheet, label) in availableStyleSheets)
                 {
-                    MoveVariable(index, -1);
-                },
+                    var capturedSheet = sheet;
+                    menu.AppendAction($"{extractMenuRootLabel}/{label}",
+                        _ => ExtractVariableToRootSelector(capturedSheet), extractMenuStatus);
+                }
+            }
+
+            menu.AppendAction(VariablesContextMenuUtility.k_Delete,     _ => DeleteVariable(m_VariablesListView));
+            menu.AppendAction(VariablesContextMenuUtility.k_Duplicate,   _ => DuplicateVariable());
+
+            menu.AppendAction(VariablesContextMenuUtility.k_MoveUp,   _ => MoveVariable(index, -1),
                 _ => index > 0 && !multipleSelected
-                    ? DropdownMenuAction.Status.Normal
-                    : DropdownMenuAction.Status.Disabled);
+                    ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
-            menu.AppendAction("Move Down", _ =>
-                {
-                    MoveVariable(index, 1);
-                },
+            menu.AppendAction(VariablesContextMenuUtility.k_MoveDown, _ => MoveVariable(index, 1),
                 _ => index < m_VariablesItemsSource.Count - 1 && !multipleSelected
-                    ? DropdownMenuAction.Status.Normal
-                    : DropdownMenuAction.Status.Disabled);
+                    ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
 
         void ValidateName(KeyUpEvent evt)
@@ -645,7 +660,7 @@ namespace Unity.UIToolkit.Editor
             if (enabled && nameWarningHelpBox == null)
             {
                 nameWarningHelpBox =
-                    new HelpBox(L10n.Tr(message), HelpBoxMessageType.Warning) { name = k_WarningBoxUssClassName };
+                    new HelpBox(L10n.Tr(message, null), HelpBoxMessageType.Warning) { name = k_WarningBoxUssClassName };
                 item.Add(nameWarningHelpBox);
             }
 

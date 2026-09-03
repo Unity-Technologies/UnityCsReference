@@ -14,9 +14,9 @@ namespace UnityEditor.Overlays
         public const string className = "unity-overlay-actions";
         public const string toolbarToggleName = "ToolbarModeToggle";
         public const string minimizedToggleName = "MinimizedModeToggle";
-        public readonly string togglePanelTooltip = L10n.Tr("Expand as dynamic panel");
-        public readonly string toggleToolbarTooltip = L10n.Tr("Show as toolbar");
-        public readonly string toggleMinimizeTooltip = L10n.Tr("Minimize");
+        public readonly string togglePanelTooltip = L10n.Tr("Expand as dynamic panel", null);
+        public readonly string toggleToolbarTooltip = L10n.Tr("Show as toolbar", null);
+        public readonly string toggleMinimizeTooltip = L10n.Tr("Minimize", null);
 
         public event Action<State> stateChanged;
 

@@ -72,8 +72,8 @@ namespace UnityEditor
                 {
                     var scriptClassName = behaviour.GetScriptClassName();
                     if (scriptClassName == "InvalidStateMachineBehaviour")
-                        return behaviour.name + L10n.Tr(" (Script)");
-                    return scriptClassName + L10n.Tr(" (Script)");
+                        return behaviour.name + L10n.Tr(" (Script)", null);
+                    return scriptClassName + L10n.Tr(" (Script)", null);
                 }
 
                 var meshfilter = o as MeshFilter;
@@ -83,7 +83,7 @@ namespace UnityEditor
                         return "MeshFilter";
 
                     var mesh = meshfilter.sharedMesh;
-                    return (mesh ? mesh.name : L10n.Tr("[none]")) + " (MeshFilter)";
+                    return (mesh ? mesh.name : L10n.Tr("[none]", null)) + " (MeshFilter)";
                 }
 
                 return o.GetType().Name;
@@ -103,7 +103,7 @@ namespace UnityEditor
                 {
                     var script = MonoScript.FromScriptedObject(o);
                     if (script != null)
-                        return script.GetClass().Name + L10n.Tr(" (Script)");
+                        return script.GetClass().Name + L10n.Tr(" (Script)", null);
                 }
 
                 return o.GetType().Name;
@@ -116,17 +116,17 @@ namespace UnityEditor
         {
             // Note: The following condition is true when the native MonoBehaviour/ScriptableObject is destroyed but not its managed counterpart
             if (obj == null && (object)obj != null && (obj is MonoBehaviour || obj is ScriptableObject))
-                return L10n.Tr(" (Script)");
+                return L10n.Tr(" (Script)", null);
 
             if (obj == null)
-                return L10n.Tr("Nothing Selected");
+                return L10n.Tr("Nothing Selected", null);
 
             string title;
             if (!InspectorTitles.TryGet(obj.GetType(), out title))
                 title = NicifyVariableName(GetObjectTypeName(obj, multiObjectEditing));
 
             if (Attribute.IsDefined(obj.GetType(), typeof(ObsoleteAttribute)))
-                title += L10n.Tr(" (Deprecated)");
+                title += L10n.Tr(" (Deprecated)", null);
 
             return title;
         }

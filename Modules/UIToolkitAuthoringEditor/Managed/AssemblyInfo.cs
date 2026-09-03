@@ -3,6 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Runtime.CompilerServices;
+using UnityEngine.UIElements;
+
+[assembly: UILibraryVisibility(LibraryVisibility.Hidden)]
 
 [assembly:InternalsVisibleTo("UnityEditor.UIBuilderModule")]
 [assembly:InternalsVisibleTo("Unity.UI.Builder.EditorTests")]

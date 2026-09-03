@@ -86,6 +86,50 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Adds a self transition rule on a state, reusing the state's self transition support of the same type if
+        /// there is one.
+        /// </summary>
+        /// <param name="stateModel">The state on which to add the self transition.</param>
+        /// <param name="transitionSupportType">The type of transition to create. Must derive from <see cref="SelfTransitionModel"/>.</param>
+        /// <returns>The transition support the rule was added to, either an existing one or a newly created one.</returns>
+        /// <remarks>
+        /// A state holds at most one self transition support per transition type: when the state already has a self
+        /// transition of <paramref name="transitionSupportType"/>, a new rule is added to it instead of creating a
+        /// second support. Otherwise a new support is created, seeded with a single rule by
+        /// <see cref="CreateTransitionSupport"/>.
+        /// </remarks>
+        public TransitionSupportModel CreateOrExtendSelfTransitionSupport(StateModel stateModel, Type transitionSupportType)
+        {
+            var existingSupport = FindSelfTransitionSupport(stateModel, transitionSupportType);
+            if (existingSupport == null)
+                return CreateSelfTransitionSupport(stateModel, transitionSupportType);
+
+            existingSupport.AddTransition(existingSupport.CreateTransition());
+            return existingSupport;
+        }
+
+        /// <summary>
+        /// Returns the self transition support of the given type on a state, if there is one.
+        /// </summary>
+        /// <param name="stateModel">The state to look on.</param>
+        /// <param name="transitionSupportType">The <see cref="TransitionSupportModel.TransitionSupportType"/> to look for.</param>
+        /// <returns>The matching self transition support, or null if the state has none.</returns>
+        public static TransitionSupportModel FindSelfTransitionSupport(StateModel stateModel, Type transitionSupportType)
+        {
+            foreach (var wire in stateModel.GetInPort().GetConnectedWires())
+            {
+                if (wire is TransitionSupportModel { IsSelfTransition: true } support
+                    && support is not IGhostWireModel
+                    && support.TransitionSupportType == transitionSupportType)
+                {
+                    return support;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Reconciles the value of every <see cref="VariableConditionModel"/> that references the given variable,
         /// recreating it when the variable's type changed. Called when a variable's type changes.
         /// </summary>

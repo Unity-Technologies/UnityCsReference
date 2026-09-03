@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private const long k_SearchFieldDelayTicks = TimeSpan.TicksPerSecond / 3;
         private const int k_SearchFieldTextLimit = 500;
-        public static readonly string k_SearchPlaceholderText = L10n.Tr("Search {0}");
+        public static readonly string k_SearchPlaceholderText = L10n.Tr("Search {0}", null);
 
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IPageManager m_PageManager;

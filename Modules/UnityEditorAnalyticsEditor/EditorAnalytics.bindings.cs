@@ -22,12 +22,8 @@ namespace UnityEditor
     [NativeHeader("Modules/UnityEditorAnalyticsEditor/UnityEditorAnalyticsManager.h")]
     public static class EditorAnalytics
     {
-       
-        [RequiredByNativeCode]
-        internal static void SendAnalyticsToEditor(string analytics)
-        {
-            DebuggerEventListHandler.AddAnalytic(analytics);
-        }
+
+        internal extern static string DrainDebuggerRecords();
 
         internal static AnalyticsResult SendEventRefreshAccess(object parameters)
         {

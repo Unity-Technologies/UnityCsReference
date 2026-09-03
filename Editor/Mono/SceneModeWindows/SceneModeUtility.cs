@@ -306,7 +306,7 @@ namespace UnityEditor
 
             if (GameObjectUtility.HasChildren(gameObjects))
             {
-                includeChildren = GameObjectUtility.DisplayUpdateChildrenDialog(L10n.Tr("Change Layer"), string.Format(L10n.Tr("Do you want to set layer to {0} for all child objects as well?"), InternalEditorUtility.GetLayerName(layer)));
+                includeChildren = GameObjectUtility.DisplayUpdateChildrenDialog(L10n.Tr("Change Layer", null), string.Format(L10n.Tr("Do you want to set layer to {0} for all child objects as well?", null), InternalEditorUtility.GetLayerName(layer)));
                 if (includeChildren == GameObjectUtility.ShouldIncludeChildren.Cancel)
                     return false;
             }

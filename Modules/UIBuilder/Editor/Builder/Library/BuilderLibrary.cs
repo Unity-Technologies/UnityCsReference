@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -96,7 +97,9 @@ namespace Unity.UI.Builder
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.LibraryUssPathNoExt + ".uxml");
             template.CloneTree(this);
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_EditorExtensionMode = paneWindow.document.fileSettings.editorExtensionMode;
+            #pragma warning restore UAL0015
             m_LibraryContentContainer = this.Q<VisualElement>(k_ContentContainerName);
 
             m_HeaderButtonStrip = this.Q<ToggleButtonGroup>();
@@ -120,7 +123,9 @@ namespace Unity.UI.Builder
             });
 
             AddFocusable(m_HeaderButtonStrip);
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             BuilderLibraryContent.RegenerateLibraryContent(true);
+            #pragma warning restore UAL0015
 
             RegisterCallback<AttachToPanelEvent>(AttachToPanelCallback);
             RegisterCallback<DetachFromPanelEvent>(DetachFromPanelCallback);
@@ -254,7 +259,9 @@ namespace Unity.UI.Builder
                     ? BuilderLibraryContent.standardControlsTree
                     : BuilderLibraryContent.standardControlsTreeNoEditor;
 
+                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 m_ControlsTreeView = new BuilderLibraryTreeView(controlsTree);
+                #pragma warning restore UAL0018
                 SetUpLibraryView(m_ControlsTreeView);
 
                 return m_ControlsTreeView;
@@ -272,7 +279,9 @@ namespace Unity.UI.Builder
                     ? BuilderLibraryContent.projectContentTree
                     : BuilderLibraryContent.projectContentTreeNoPackages;
 
+                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 m_ProjectTreeView = new BuilderLibraryTreeView(projectContentTree);
+                #pragma warning restore UAL0018
                 m_ProjectTreeView.viewDataKey = "unity-ui-builder-library-project-view";
                 SetUpLibraryView(m_ProjectTreeView);
 
@@ -291,7 +300,9 @@ namespace Unity.UI.Builder
                     ? BuilderLibraryContent.standardControlsTree
                     : BuilderLibraryContent.standardControlsTreeNoEditor;
 
+                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 m_ControlsPlainView = new BuilderLibraryPlainView(controlsTree);
+                #pragma warning restore UAL0018
                 m_ControlsPlainView.viewDataKey = "unity-ui-builder-library-controls-plane";
                 SetUpLibraryView(m_ControlsPlainView);
 
@@ -409,3 +420,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -174,7 +174,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private string m_ReadMoreText = L10n.Tr("Learn More");
+        private string m_ReadMoreText = L10n.Tr("Learn More", null);
 
         [UxmlAttribute, MultilineTextField]
         public string readMoreText
@@ -182,7 +182,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             get => m_ReadMoreText;
             set
             {
-                var newValue = value ?? L10n.Tr("Learn More");
+                var newValue = value ?? L10n.Tr("Learn More", null);
                 if ((m_ReadMoreText ?? string.Empty) == newValue)
                     return;
                 m_ReadMoreText = newValue;

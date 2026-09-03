@@ -21,11 +21,11 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         struct Content
         {
-            public static readonly GUIContent k_InitializeOnStart = new GUIContent(L10n.Tr("Initialize Adaptive Performance on Startup"));
-            public static readonly GUIContent k_DocText = new GUIContent(L10n.Tr("View documentation"));
+            public static readonly GUIContent k_InitializeOnStart = new GUIContent(L10n.Tr("Initialize Adaptive Performance on Startup", null));
+            public static readonly GUIContent k_DocText = new GUIContent(L10n.Tr("View documentation", null));
             public static readonly Uri k_DocUri = new Uri("https://docs.unity3d.com/Manual/adaptive-performance/adaptive-performance.html");
-            public static readonly GUIContent k_ExplanatoryText = new GUIContent(L10n.Tr("Selecting an Adaptive Performance provider below enables that provider for the corresponding build target. Unity will download and install the provider package if it is not already present. Disabling a provider will not automatically uninstall packages that are already installed. To uninstall a provider package, use the Package Manager."));
-            public static readonly GUIContent k_FrameTimingExplanatoryText = new GUIContent(L10n.Tr("Please enable Frame Timing Stats in the Player Settings. Adaptive Performance requires precise frame time information."));
+            public static readonly GUIContent k_ExplanatoryText = new GUIContent(L10n.Tr("Selecting an Adaptive Performance provider below enables that provider for the corresponding build target. Unity will download and install the provider package if it is not already present. Disabling a provider will not automatically uninstall packages that are already installed. To uninstall a provider package, use the Package Manager.", null));
+            public static readonly GUIContent k_FrameTimingExplanatoryText = new GUIContent(L10n.Tr("Please enable Frame Timing Stats in the Player Settings. Adaptive Performance requires precise frame time information.", null));
         }
 
         internal static readonly string s_SettingsRootTitle = $"Project/{AdaptivePerformanceConstants.kAdaptivePerformanceProviderManagement}";
@@ -329,9 +329,9 @@ namespace UnityEditor.AdaptivePerformance.Editor
             bool preValue = s_EnableAdaptivePerformance;
 
             if (EditorApplication.isPlayingOrWillChangePlaymode)
-                EditorGUILayout.HelpBox(L10n.Tr(k_WarningPlaymodePopup), MessageType.Warning);
+                EditorGUILayout.HelpBox(L10n.Tr(k_WarningPlaymodePopup, null), MessageType.Warning);
             else if (EditorUtilities.IsPackageOperationInProgress)
-                EditorGUILayout.HelpBox(L10n.Tr(k_WarningPackageOperationPopup), MessageType.Info);
+                EditorGUILayout.HelpBox(L10n.Tr(k_WarningPackageOperationPopup, null), MessageType.Info);
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode || EditorUtilities.IsPackageOperationInProgress))
             {
                 s_EnableAdaptivePerformance = EditorGUILayout.Toggle("Enable Adaptive Performance", s_EnableAdaptivePerformance);

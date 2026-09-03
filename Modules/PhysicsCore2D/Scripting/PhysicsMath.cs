@@ -15,7 +15,7 @@ namespace Unity.U2D.Physics
     /// These operations do not form a fully comprehensive mathematics library, they simply provide operations that are usually required when interacting with physics.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly struct PhysicsMath
+    public readonly record struct PhysicsMath
     {
         /// <summary>
         /// Get the value of PI used internally by the physics system. Using this will help with determinism.

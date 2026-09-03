@@ -35,6 +35,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             if (SpawnFlags.HasFlag(SpawnFlags.Orphan))
                 return true;
+            if (Node == null || PlaceholderModelHelper.IsMissingTypeModel(context))
+                return false;
             var blockNodeAttribute = Node.GetType().GetCustomAttribute<UseWithContextAttribute>();
 
             if (blockNodeAttribute == null)

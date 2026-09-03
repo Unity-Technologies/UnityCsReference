@@ -310,27 +310,27 @@ namespace Unity.Hierarchy.Editor
 
         void BuildSubSceneContextMenu(HierarchyView view, in HierarchyNode node, DropdownMenu menu)
         {
-            menu.AppendAction(L10n.Tr("Cut"), _ => ClipboardUtility.CutGO());
-            menu.AppendAction(L10n.Tr("Paste"), _ => ClipboardUtility.PasteGO(null),
+            menu.AppendAction(L10n.Tr("Cut", null), _ => ClipboardUtility.CutGO());
+            menu.AppendAction(L10n.Tr("Paste", null), _ => ClipboardUtility.PasteGO(null),
                 CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard()
                     ? DropdownMenuAction.Status.Normal
                     : DropdownMenuAction.Status.Disabled);
-            menu.AppendAction(L10n.Tr("Paste As Child"), _ => ClipboardUtility.PasteGOAsChild(),
+            menu.AppendAction(L10n.Tr("Paste As Child", null), _ => ClipboardUtility.PasteGOAsChild(),
                 ClipboardUtility.CanPasteAsChild()
                     ? DropdownMenuAction.Status.Normal
                     : DropdownMenuAction.Status.Disabled);
-            menu.AppendAction(L10n.Tr("Delete"), _ => Unsupported.DeleteGameObjectSelection());
+            menu.AppendAction(L10n.Tr("Delete", null), _ => Unsupported.DeleteGameObjectSelection());
 
             menu.AppendSeparator();
 
-            menu.AppendAction(L10n.Tr("Reimport"), _ => InvokeForSelectedSubScenes(ReimportSubScene));
+            menu.AppendAction(L10n.Tr("Reimport", null), _ => InvokeForSelectedSubScenes(ReimportSubScene));
 
             var go = GetGameObject(in node);
             var isOpen = IsSubSceneOpen?.Invoke(go) ?? false;
             if (isOpen)
-                menu.AppendAction(L10n.Tr("Close"), _ => InvokeForSelectedSubScenes(CloseSubScene));
+                menu.AppendAction(L10n.Tr("Close", null), _ => InvokeForSelectedSubScenes(CloseSubScene));
             else
-                menu.AppendAction(L10n.Tr("Open"), _ => InvokeForSelectedSubScenes(OpenSubScene));
+                menu.AppendAction(L10n.Tr("Open", null), _ => InvokeForSelectedSubScenes(OpenSubScene));
         }
 
         static void InvokeForSelectedSubScenes(Action<GameObject> action)

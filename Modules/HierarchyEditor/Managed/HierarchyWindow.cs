@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -58,20 +59,20 @@ namespace Unity.Hierarchy.Editor
         internal static string s_ProjectLocalSettingsPath = $"{s_ProjectLocalSettingsFolder}/HierarchyWindow.settings";
 
         static readonly string s_HierarchyToolbarUssClassName = "hierarchy-toolbar";
-        static readonly string s_CreateButtonTooltip = L10n.Tr("Create new GameObject");
+        static readonly string s_CreateButtonTooltip = L10n.Tr("Create new GameObject", null);
         static readonly string s_HierarchyToolbarButton = "hierarchy-toolbar-button";
         static readonly string s_HierarchyToolbarCreateButtonUssClassName = ToolbarButton.ussClassName + "-add";
         static readonly string s_HierarchyToolbarGoToSearchButtonName = "HierarchyGotoSearchButton";
         static readonly string s_JumpButton = "SearchJump Icon";
-        static readonly string s_JumpButtonTooltip = L10n.Tr("Open query in Search Window");
+        static readonly string s_JumpButtonTooltip = L10n.Tr("Open query in Search Window", null);
         [AutoStaticsCleanupOnCodeReload]
         static List<HierarchyWindow> s_HierarchyWindows = [];
         [AutoStaticsCleanupOnCodeReload]
         static HierarchyWindow s_LastInteractedHierarchy;
 
         const string k_HierarchyStatusBarStyleName = "hierarchy__status-bar";
-        internal static readonly string s_StatusSingleNode = L10n.Tr("Path: {0}");
-        internal static readonly string s_StatusMultiNode = L10n.Tr("{0} items selected");
+        internal static readonly string s_StatusSingleNode = L10n.Tr("Path: {0}", null);
+        internal static readonly string s_StatusMultiNode = L10n.Tr("{0} items selected", null);
         static readonly GUIContent s_RenamingEnabledContent = EditorGUIUtility.TrTextContent("Rename New Objects");
         static readonly GUIContent s_SyncSearchWithSceneViewContent = EditorGUIUtility.TrTextContent("Synchronize search in scene view");
         static readonly GUIContent s_NameColumnStretchableContent = EditorGUIUtility.TrTextContent("Auto stretch Name Column");
@@ -212,7 +213,9 @@ namespace Unity.Hierarchy.Editor
         /// <summary>
         /// Creates a new <see cref="HierarchyWindow"/>.
         /// </summary>
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         public HierarchyWindow()
+        #pragma warning restore UAL0015
         {
             HierarchyLogging.Log($"HierarchyWindow({GetHashCode():X}).New()");
             titleContent = new GUIContent("Hierarchy");
@@ -1345,6 +1348,7 @@ namespace Unity.Hierarchy.Editor
             SearchableEditorWindow[] windows;
             if ((windows = Resources.FindObjectsOfTypeAll<SearchableEditorWindow>()) != null && windows.Length > 0)
             {
+                var searching = !string.IsNullOrEmpty(query);
                 if (!UnityEditor.SearchService.SceneSearch.HasEngineOverride())
                 {
                     var queryDesc = m_HierarchyView.ViewModel.QueryParser.ParseQuery(query);
@@ -1354,6 +1358,8 @@ namespace Unity.Hierarchy.Editor
                 {
                     if (sw.m_HierarchyType != HierarchyType.Assets)
                     {
+                        if (sw is SceneView sceneView)
+                            sceneView.SetSceneViewFilteringForSearch(searching);
                         sw.SetSearchFilter(query, SearchMode.All, false, true);
                     }
                 }
@@ -1657,3 +1663,4 @@ namespace Unity.Hierarchy.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

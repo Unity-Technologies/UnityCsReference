@@ -9,23 +9,28 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UIToolkit.Editor
 {
-    // Suspends the live-reload system on a panel for the duration of a transform drag.
-    // The transform tool will modify the inline style sheet of the selected element(s), possibly adding
-    // a new inline rule, which would trigger a reload by the live-reload system that would invalidate
-    // VE references mid-frame.
+    // Suspends the document tracker of a panel's live-reload system, so authoring edits to the assets it shows
+    // no longer rebuild (and thus invalidate every VisualElement of) its live tree. Used for the duration of a
+    // transform drag — the transform tool modifies the inline style sheet of the selected element(s), possibly
+    // adding a new inline rule, which would invalidate VE references mid-frame — and for as long as Main Stage
+    // authoring is enabled (see UIAssetRegistrySceneTracking.LiveReload).
     internal sealed class LiveReloadSuspension
     {
         ILiveReloadSystem m_LiveReloadSystem;
         LiveReloadTrackers m_PreviousTrackers;
 
         public void Suspend(IPanelComponent panelComponent)
+            => Suspend(panelComponent?.GetRootVisualElement()?.panel as BaseVisualElementPanel);
+
+        public void Suspend(BaseVisualElementPanel panel)
         {
             if (m_LiveReloadSystem != null)
                 return;
-            if (panelComponent?.GetRootVisualElement()?.panel is not BaseVisualElementPanel panel)
+            if (panel?.liveReloadSystem == null)
                 return;
             m_LiveReloadSystem = panel.liveReloadSystem;
             m_PreviousTrackers = m_LiveReloadSystem.enabledTrackers;
@@ -45,8 +50,65 @@ namespace Unity.UIToolkit.Editor
         // Prevent scientific notation values for UXML/USS serialization
         const float k_CleanFloatEpsilon = 1e-4f;
 
-        public static bool IsAuthoringStageActive()
-            => StageUtility.GetCurrentStage() is VisualElementEditingStage;
+        // Transform gizmos operate wherever the element's document is editable: in the authoring
+        // stage, and in a scene stage when in-scene authoring is enabled.
+        public static bool CanUseTransformTools()
+            => StageUtility.GetCurrentStage() switch
+            {
+                VisualElementEditingStage => true,
+                MainStage or PrefabStage => UIToolkitStageUtility.IsAuthoringEnabledInMainStage,
+                _ => false,
+            };
+
+        // In a scene stage only world-space panels give their elements a meaningful 3D transform.
+        public static bool IsGizmoTarget(IPanelComponent panelComponent)
+            => StageUtility.GetCurrentStage() is not (MainStage or PrefabStage)
+               || (panelComponent?.panelSettings != null
+                   && panelComponent.panelSettings.renderMode == PanelRenderMode.WorldSpace);
+
+        public static IPanelComponent FindHostPanel(VisualElement element, IPanelComponent fallback = null)
+            => element != null
+                ? VisualElementSceneViewOverlay.FindPanelComponentForElement(element) ?? fallback
+                : fallback;
+
+        // A scene selection can span documents hosted by different panels, while the transform math runs
+        // through a single panel: the elements the gizmo cannot express are dropped from the operation.
+        public static VisualElement[] FilterByHostPanel(IReadOnlyList<VisualElement> elements, IPanelComponent panelComponent)
+        {
+            if (elements == null || elements.Count == 0 || panelComponent == null)
+                return Array.Empty<VisualElement>();
+
+            var result = new List<VisualElement>(elements.Count);
+            foreach (var element in elements)
+            {
+                if (ReferenceEquals(FindHostPanel(element), panelComponent))
+                    result.Add(element);
+            }
+            return result.ToArray();
+        }
+
+        // While the Animation Window records, a style edit belongs in the clip, not in the document: the
+        // inline write is what the recording replaces.
+        public static void WriteStyleProperty<T>(
+            VisualElement element,
+            StylePropertyId stylePropertyId,
+            Action<StyleProperty, StyleSheet, T> valueSetter,
+            T value)
+        {
+            if (AnimationMode.InAnimationRecording())
+            {
+                AnimationRecordingStyleBridge.TryRecordStylePropertyChange(element, stylePropertyId, false, in value, in value);
+                return;
+            }
+
+            // A clip-driven property overrides any inline value, so the write would never be visible.
+            // Same rule the inspector applies to its fields, see FieldAffordanceSourceInfoTypeExtensions.ShouldDisableInlineEdit.
+            if (FieldAffordanceController.TryProbeAnimationDriven(element, stylePropertyId, out var animationState)
+                && animationState.ShouldDisableInlineEdit())
+                return;
+
+            SetInlineStylePropertyCommand<T>.Execute(CommandSources.Scene, element, stylePropertyId, valueSetter, value);
+        }
 
         public static float CleanFloat(float v)
         {

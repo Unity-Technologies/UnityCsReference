@@ -975,10 +975,10 @@ namespace UnityEditor
                     {
                         m_ScriptCompilationPipelineChangeDialogDisplayed = true;
                         bool doRestart = EditorUtility.DisplayDialog(
-                            L10n.Tr("Modifying scripting compilation pipeline"),
-                            L10n.Tr("Script compilation pipeline changed. This requires a restart of the Editor."),
-                            L10n.Tr("Restart Now"),
-                            L10n.Tr("Restart Later"));
+                            L10n.Tr("Modifying scripting compilation pipeline", null),
+                            L10n.Tr("Script compilation pipeline changed. This requires a restart of the Editor.", null),
+                            L10n.Tr("Restart Now", null),
+                            L10n.Tr("Restart Later", null));
                         if (doRestart)
                             EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
                     }
@@ -988,7 +988,7 @@ namespace UnityEditor
             if (forcedByCommandLine)
             {
                 EditorGUILayout.HelpBox(
-                    L10n.Tr("MSBuild compilation is forced on by the '-enable-msbuild' command-line argument. The project setting is ignored for this session."),
+                    L10n.Tr("MSBuild compilation is forced on by the '-enable-msbuild' command-line argument. The project setting is ignored for this session.", null),
                     MessageType.Info);
             }
         }

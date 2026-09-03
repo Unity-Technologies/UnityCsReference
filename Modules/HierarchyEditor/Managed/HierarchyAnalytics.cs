@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -12,7 +13,6 @@ using UnityEngine.UIElements;
 
 namespace Unity.Hierarchy.Editor
 {
-    [InitializeOnLoad]
     static partial class HierarchyAnalytics
     {
         const string k_VendorKey = "unity.hierarchy";
@@ -108,11 +108,12 @@ namespace Unity.Hierarchy.Editor
         [AutoStaticsCleanupOnCodeReload]
         static int s_WindowCount = 0;
 
-        static HierarchyAnalytics()
+        [OnCodeLoaded]
+        static void RegisterCallbacks()
         {
             // Make sure events aren't sent during assembly reload to not spam send lifecycle related events
             AssemblyReloadEvents.afterAssemblyReload += Initialize;
-            AssemblyReloadEvents.beforeAssemblyReload += () => s_ShouldSendEvents = false;
+            AssemblyReloadEvents.beforeAssemblyReload += DisableEventsBeforeReload;
 
             EditorSettings.useLegacyHierarchyChanged += SendImplementationChanged;
 
@@ -123,6 +124,21 @@ namespace Unity.Hierarchy.Editor
 
             HierarchyPreferences.AllowAlphaNumericHierarchy.valueChanged += SendHierarchyV1SortChanged;
         }
+
+        [OnCodeUnloading]
+        static void UnregisterCallbacks()
+        {
+            EditorSettings.useLegacyHierarchyChanged -= SendImplementationChanged;
+
+            HierarchyPreferences.UseQueryBuilder.valueChanged -= RequestPreferenceChangeEvent;
+            HierarchyPreferences.AlternatingRowBackground.valueChanged -= RequestPreferenceChangeEvent;
+            HierarchyPreferences.GameObjectIconMode.valueChanged -= RequestPreferenceChangeEvent;
+            HierarchyPreferences.RenameNewObjects.valueChanged -= RequestPreferenceChangeEvent;
+
+            HierarchyPreferences.AllowAlphaNumericHierarchy.valueChanged -= SendHierarchyV1SortChanged;
+        }
+
+        static void DisableEventsBeforeReload() => s_ShouldSendEvents = false;
 
         public static void AddWindow(HierarchyWindow window)
         {
@@ -246,3 +262,4 @@ namespace Unity.Hierarchy.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class UIError
     {
-        private static readonly string k_CantValidateSignatureErrorMessage = L10n.Tr("Package signature could not be validated.");
+        private static readonly string k_CantValidateSignatureErrorMessage = L10n.Tr("Package signature could not be validated.", null);
         public static readonly UIError k_CantValidateSignatureError = new UIError(UIErrorCode.UpmError_Unknown, k_CantValidateSignatureErrorMessage);
 
         [SerializeField]

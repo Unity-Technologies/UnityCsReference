@@ -18,7 +18,7 @@ internal sealed class PanelInputConfigurationEditor : Editor
         var processWorldSpaceInput = new PropertyField(processWorldSpaceInputProperty);
         root.Add(processWorldSpaceInput);
 
-        var worldFoldout = new Foldout { text = L10n.Tr("World Space Options") };
+        var worldFoldout = new Foldout { text = L10n.Tr("World Space Options", null) };
         root.Add(worldFoldout);
         worldFoldout.Add(new PropertyField(settings.FindPropertyRelative(nameof(PanelInputSettings.m_InteractionLayers))));
         worldFoldout.Add(new PropertyField(settings.FindPropertyRelative(nameof(PanelInputSettings.m_MaxInteractionDistance))));
@@ -29,11 +29,11 @@ internal sealed class PanelInputConfigurationEditor : Editor
         var eventCameras = new PropertyField(eventCamerasProperty);
         worldFoldout.Add(eventCameras);
         var eventCamerasWarning = new HelpBox(
-            L10n.Tr("Some Cameras in the camera list are not listed with the same priority as their depth property. The order in which events will be processed may not match with the camera list."),
+            L10n.Tr("Some Cameras in the camera list are not listed with the same priority as their depth property. The order in which events will be processed may not match with the camera list.", null),
             HelpBoxMessageType.Warning);
         worldFoldout.Add(eventCamerasWarning);
 
-        var uguiFoldout = new Foldout { text = L10n.Tr("Event System Interaction") };
+        var uguiFoldout = new Foldout { text = L10n.Tr("Event System Interaction", null) };
         root.Add(uguiFoldout);
         var panelInputRedirectionProperty = settings.FindPropertyRelative(nameof(PanelInputSettings.m_PanelInputRedirection));
         var panelInputRedirection = new PropertyField(panelInputRedirectionProperty);
@@ -42,7 +42,7 @@ internal sealed class PanelInputConfigurationEditor : Editor
         var createPanelComponents = new PropertyField(createPanelComponentsProperty);
         uguiFoldout.Add(createPanelComponents);
         var createPanelComponentsWarning = new HelpBox(
-            L10n.Tr("Panel components are required to receive Event System events on UI Toolkit panels. To enable events on UI Toolkit panels, ensure that each panel has a PanelRaycaster and PanelEventHandler component associated to it and that each world space event camera has a WorldDocumentRaycaster component associated to it. Enable the Auto Create Panel Components option to automatically create and configure the required components."),
+            L10n.Tr("Panel components are required to receive Event System events on UI Toolkit panels. To enable events on UI Toolkit panels, ensure that each panel has a PanelRaycaster and PanelEventHandler component associated to it and that each world space event camera has a WorldDocumentRaycaster component associated to it. Enable the Auto Create Panel Components option to automatically create and configure the required components.", null),
             HelpBoxMessageType.Info);
         uguiFoldout.Add(createPanelComponentsWarning);
 

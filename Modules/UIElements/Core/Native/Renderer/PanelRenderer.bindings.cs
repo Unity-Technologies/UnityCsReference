@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -294,6 +295,42 @@ namespace UnityEngine.UIElements
         void IPanelComponent.SetComponentEnabled(bool enabled) => this.enabled = enabled;
         bool IPanelComponent.GetComponentEnabled() => this.enabled;
 
+        extern private bool nativeGenerateAccessibilityHierarchy { get; set; }
+
+        // Shadows the natively serialized gate so OnPanelRendererCheckConsistency can detect
+        // writes that bypassed the property setter (Undo/Redo, revert, paste). The initializer
+        // matches the native default.
+        private bool m_OldGenerateAccessibilityHierarchy = true;
+
+        /// <summary>
+        /// Whether this renderer's content is included in the automatically generated accessibility
+        /// hierarchy. The default value is @@true@@.
+        /// </summary>
+        /// <remarks>
+        /// This property only takes effect while the experimental **Generate Accessibility
+        /// Hierarchies for Runtime Panels** setting is enabled in **Project Settings &gt; UI
+        /// Toolkit**. An opted-out renderer contributes nothing to the generated hierarchy,
+        /// including the content of any nested Panel Renderers. Changing the value on a live
+        /// renderer adds or removes its content in place, without rebuilding the rest of the
+        /// generated hierarchy.
+        /// </remarks>
+        public bool generateAccessibilityHierarchy
+        {
+            get => nativeGenerateAccessibilityHierarchy;
+            set
+            {
+                if (nativeGenerateAccessibilityHierarchy == value)
+                    return;
+
+                nativeGenerateAccessibilityHierarchy = value;
+                m_OldGenerateAccessibilityHierarchy = value;
+                UITKAccessibilityBridge.OnPanelComponentGateChanged(this);
+            }
+        }
+
+        void IPanelComponent.SetAccessibilityEnabled(bool enabled) => generateAccessibilityHierarchy = enabled;
+        bool IPanelComponent.GetAccessibilityEnabled() => generateAccessibilityHierarchy;
+
         Vector3 IPanelComponent.GetPanelPosition(IEventHandler pickedElement, Ray worldRay)
         {
             return PanelComponentUtils.GetPanelPosition(gameObject, pickedElement, worldRay);
@@ -492,8 +529,7 @@ namespace UnityEngine.UIElements
             }
             if (rootVisualElement != null)
             {
-                rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
-                rootVisualElement.ReleaseResources();
+                ReleaseRootVisualElement();
                 rootVisualElement = null;
             }
         }
@@ -519,6 +555,16 @@ namespace UnityEngine.UIElements
         {
             // Called from ApplyModifiedProperties, so our assets are probably dirty
             SetAllDirty();
+
+            // Undo/Redo, revert and paste write the native gate directly, bypassing the property
+            // setter; without the resync the bridge keeps the stale registration. The bridge's
+            // own feature gate makes this a no-op in edit mode.
+            var currentGenerateAccessibilityHierarchy = nativeGenerateAccessibilityHierarchy;
+            if (m_OldGenerateAccessibilityHierarchy != currentGenerateAccessibilityHierarchy)
+            {
+                m_OldGenerateAccessibilityHierarchy = currentGenerateAccessibilityHierarchy;
+                UITKAccessibilityBridge.OnPanelComponentGateChanged(this);
+            }
         }
 
         void SetAllDirty()
@@ -548,17 +594,19 @@ namespace UnityEngine.UIElements
 
         void InitRootVisualElement(bool visualTreeAssetChanged = false)
         {
-            if (rootVisualElement != null && visualTreeAssetChanged)
+            // UUM-148452: a parent rebuild may have released this root out from under us; it can't be reused.
+            bool rootReleased = rootVisualElement is { resourcesReleased: true };
+
+            if (rootVisualElement != null && (visualTreeAssetChanged || rootReleased))
                 panelSettings?.DetachPanelComponent(this);
 
-            if (visualTreeAssetChanged || rootVisualElement == null)
+            if (visualTreeAssetChanged || rootVisualElement == null || rootReleased)
             {
                 if (rootVisualElement != null)
                 {
                     RemoveVisualTreeAssetTracker();
                     referenceProvider.UnloadReferences();
-                    rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
-                    rootVisualElement.ReleaseResources();
+                    ReleaseRootVisualElement();
                 }
 
                 if (visualTreeAsset == null)
@@ -604,10 +652,16 @@ namespace UnityEngine.UIElements
 
         internal void SetupFromHierarchy()
         {
-            if (parentUI != null)
-                parentUI.RemoveChild(this);
+            var previousParentUI = parentUI;
+
+            if (previousParentUI != null)
+                previousParentUI.RemoveChild(this);
 
             parentUI = FindParentPanelRenderer();
+
+            // Losing and gaining a parent both move our root, so only a renderer that stays unparented keeps its place.
+            if (previousParentUI != null || parentUI != null)
+                requiresReinsertion = true;
         }
 
         private PanelRenderer FindParentPanelRenderer()
@@ -690,6 +744,41 @@ namespace UnityEngine.UIElements
         void RemoveChild(PanelRenderer child)
         {
             m_ChildrenContent?.RemoveFromListAndFromVisualTree(child);
+        }
+
+        void ReleaseRootVisualElement()
+        {
+            if (rootVisualElement.resourcesReleased)
+                return;
+
+            DetachChildRootsAndMarkForReinsertion();
+            rootVisualElement.Clear(VisualElementClearOptions.RecursiveReleaseResources);
+            rootVisualElement.ReleaseResources();
+        }
+
+        // UUM-148452: nested child PanelRenderers parent their roots into this tree, but those roots are
+        // owned by the child components. Detach them before the recursive release and flag them to
+        // re-insert into the new root, otherwise they'd be left holding released elements.
+        void DetachChildRootsAndMarkForReinsertion()
+        {
+            if (m_ChildrenContent == null)
+                return;
+
+            bool detachedAny = false;
+            foreach (var child in m_ChildrenContent.m_AttachedPanelComponents)
+            {
+                if (child is not PanelRenderer childRenderer || childRenderer == null)
+                    continue;
+
+                childRenderer.rootVisualElement?.RemoveFromHierarchy();
+                // Not the requiresReinsertion setter: it mutates s_DirtyPanelRenderers, which
+                // PreUpdatePanelRenderers may be enumerating when this runs.
+                childRenderer.m_RequiresReinsertion = true;
+                detachedAny = true;
+            }
+
+            if (detachedAny)
+                shouldCheckForRequiredReinsertions = true;
         }
 
         internal void SetupPosition()
@@ -1033,3 +1122,4 @@ namespace UnityEngine.UIElements
         public IntPtr stencilStatePtr;
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

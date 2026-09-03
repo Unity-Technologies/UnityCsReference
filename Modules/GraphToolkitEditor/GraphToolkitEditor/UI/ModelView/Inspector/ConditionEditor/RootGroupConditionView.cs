@@ -69,7 +69,7 @@ namespace Unity.GraphToolkit.Editor
             m_TitleContainer.Add(m_AddButton);
             CreateAddDropDownMenu();
 
-            m_EmptyLabel.text = L10n.Tr("There are no conditions in this transition.");
+            m_EmptyLabel.text = L10n.Tr("There are no conditions in this transition.", null);
         }
 
         /// <inheritdoc />
@@ -105,7 +105,7 @@ namespace Unity.GraphToolkit.Editor
                     int insertIndex = -1;
                     if (selectedItem != selectedGroup)
                     {
-                        insertIndex = selectedItem.ConditionModel.IndexInParent + 1;
+                        insertIndex = selectedItem.ConditionModel.Parent.IndexOf(selectedItem.ConditionModel) + 1;
                     }
 
                     RootView.Dispatch(new AddConditionCommand(selectedGroup.GroupConditionModel, newCondition, insertIndex));

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
@@ -115,6 +114,7 @@ namespace UnityEngine.UIElements
         SelectorAccelerationCache,
         StyleClassList,
         NativeTextBufferReclaimer,
+        ComponentManager,
         Count
     }
 
@@ -262,6 +262,11 @@ namespace UnityEngine.UIElements
                 LayoutManager.SharedManager.Collect();
             }
 
+            if (ComponentManager.IsSharedManagerCreated)
+            {
+                ComponentManager.SharedManager.Collect();
+            }
+			
             NativeTextBufferReclaimer.Collect();
 
             // Since updating schedulers jumps into user code, the panels list might change while we're iterating,
@@ -444,4 +449,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

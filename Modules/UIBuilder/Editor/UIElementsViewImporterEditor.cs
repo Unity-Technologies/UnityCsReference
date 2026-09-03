@@ -17,9 +17,9 @@ namespace UnityEditor.UIElements
         protected override bool needsApplyRevert => false;
 
         internal const string k_ApplyUpgradesButtonName = "apply-upgrades";
-        static readonly string k_UpgradeWarning = L10n.Tr("Applying upgrades will replace the entire UXML file.\n<b>Custom comments and formatting may be lost.</b>");
-        static readonly string k_ApplyUpgradesButtonLabel = L10n.Tr("Apply Upgrades (Overwrites File)");
-        static readonly string k_ApplyUpgradesButtonLabelMultiple = L10n.Tr("Apply Upgrades (Overwrites Files)");
+        static readonly string k_UpgradeWarning = L10n.Tr("Applying upgrades will replace the entire UXML file.\n<b>Custom comments and formatting may be lost.</b>", null);
+        static readonly string k_ApplyUpgradesButtonLabel = L10n.Tr("Apply Upgrades (Overwrites File)", null);
+        static readonly string k_ApplyUpgradesButtonLabelMultiple = L10n.Tr("Apply Upgrades (Overwrites Files)", null);
 
         [AutoStaticsCleanupOnCodeReload]
         static UxmlUpgradeService s_UpgradeService = new UxmlUpgradeService();
@@ -50,16 +50,16 @@ namespace UnityEditor.UIElements
 
             var section = new Foldout 
             { 
-                text = L10n.Tr("UXML Upgrades"), 
+                text = L10n.Tr("UXML Upgrades", null), 
                 viewDataKey = "uxml-upgrades",
             };
-            section.toggle.tooltip = L10n.Tr("Apply upgrades to maintain or modernize UXML assets.");
+            section.toggle.tooltip = L10n.Tr("Apply upgrades to maintain or modernize UXML assets.", null);
 
             // Show informational message about upgrades
             section.Add(new HelpBox(L10n.Tr(
                 "Selected UXML assets may contain patterns that can be upgraded.\n" +
                 "Some upgrades detect issues ahead of time, while others report changes after running. " +
-                "Use the options below to review and apply upgrades based on your target version and use cases."),
+                "Use the options below to review and apply upgrades based on your target version and use cases.", null),
                 HelpBoxMessageType.Info));
 
             // Check if any assets have broken URL references
@@ -67,7 +67,7 @@ namespace UnityEditor.UIElements
             {
                 if (vta.importerWithUpdatedUrls)
                 {
-                    section.Add(new HelpBox(L10n.Tr("Broken URL references detected in some selected assets. Apply URL Fixes to resolve file references and prevent import warnings."),
+                    section.Add(new HelpBox(L10n.Tr("Broken URL references detected in some selected assets. Apply URL Fixes to resolve file references and prevent import warnings.", null),
                     HelpBoxMessageType.Warning));
                     break;
                 }
@@ -77,14 +77,14 @@ namespace UnityEditor.UIElements
             var nameColumn = new Column
             {
                 name = "name",
-                title = L10n.Tr("Upgrader"),
+                title = L10n.Tr("Upgrader", null),
                 stretchable = true,
                 sortable = false
             };
             var enabledColumn = new Column
             {
                 name = "enabled",
-                title = L10n.Tr("Enabled"),
+                title = L10n.Tr("Enabled", null),
                 width = 80,
                 stretchable = false,
                 sortable = false

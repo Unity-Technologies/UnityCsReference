@@ -2,15 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
-    class ServiceToken
+    partial class ServiceToken
     {
         readonly ITokenExchange m_TokenExchange;
         readonly IGenesisAndServiceTokenCaching m_GenesisAndServiceTokenCaching;
@@ -18,7 +18,8 @@ namespace UnityEditor.Connect
 
         internal static ServiceToken Instance => k_LazyInstance.Value;
 
-        static readonly Lazy<ServiceToken> k_LazyInstance = new Lazy<ServiceToken>(() =>
+        [AutoStaticsCleanupOnCodeReload]
+        static Lazy<ServiceToken> k_LazyInstance = new Lazy<ServiceToken>(() =>
         {
             var tokenExchange = new TokenExchange();
             var tokenCaching = new GenesisAndServiceTokenCaching();
@@ -70,4 +71,3 @@ namespace UnityEditor.Connect
 }
 
 
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

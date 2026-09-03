@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private long m_Total;
         private long m_NumberOfPackagesShown;
-        private static readonly string k_All = L10n.Tr("All");
+        private static readonly string k_All = L10n.Tr("All", null);
 
         private long m_LoadMore;
         private string m_LoadedText;
@@ -116,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void AddDropdownItem(DropdownMenu menu, int value)
         {
             var textValue = value == (int)AssetsToLoad.All ? k_All : value.ToString();
-            textValue = L10n.Tr(textValue);
+            textValue = L10n.Tr(textValue, null);
             menu.AppendAction(textValue, a =>
             {
                 loadAssetsDropdown.text = textValue;
@@ -199,7 +199,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Total <= m_NumberOfPackagesShown)
             {
                 m_ShowLoadMoreButton = false;
-                m_LoadedText = m_Total == 1 ? L10n.Tr("One package shown") : string.Format(L10n.Tr("All {0} packages shown"), m_NumberOfPackagesShown);
+                m_LoadedText = m_Total == 1 ? L10n.Tr("One package shown", null) : string.Format(L10n.Tr("All {0} packages shown", null), m_NumberOfPackagesShown);
             }
             else
             {
@@ -216,7 +216,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_LoadAllDiff = true;
                     m_LoadMore = diff;
                 }
-                m_LoadedText = string.Format(L10n.Tr("{0} of {1}"), m_NumberOfPackagesShown, m_Total);
+                m_LoadedText = string.Format(L10n.Tr("{0} of {1}", null), m_NumberOfPackagesShown, m_Total);
             }
             SetLabels();
         }

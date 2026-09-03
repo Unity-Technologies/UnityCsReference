@@ -166,8 +166,8 @@ namespace UnityEngine.Accessibility
         /// <para>
         /// Your callback should scroll the content of the scroll view containing the visual element represented by the
         /// node by an appropriate amount based on the direction provided. For example, if the scrolling direction is
-        /// <see cref="AccessibilityScrollDirection.Forward"/>, scroll the content up or to the left (depending on the
-        /// scroll view's orientation) by one page.
+        /// <see cref="AccessibilityScrollDirection.Forward"/>, reveal the next page of content (for a vertical scroll
+        /// view, the content below the visible region).
         /// </para>
         /// <para>
         /// If the scrolling succeeds for the specified direction, return @@true@@ and call

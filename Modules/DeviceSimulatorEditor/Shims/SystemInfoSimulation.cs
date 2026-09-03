@@ -118,6 +118,7 @@ namespace UnityEditor.DeviceSimulation
         public override int supportsMultisampledTextures  =>  m_GraphicsSystemInfoFields.Contains("supportsMultisampledTextures") ? m_GraphicsSystemInfo.supportsMultisampledTextures : base.supportsMultisampledTextures;
         public override bool supportsMultisampleAutoResolve  =>  m_GraphicsSystemInfoFields.Contains("supportsMultisampleAutoResolve") ? m_GraphicsSystemInfo.supportsMultisampleAutoResolve : base.supportsMultisampleAutoResolve;
         public override bool supportsMultisampledShaderResolve => m_GraphicsSystemInfoFields.Contains("supportsMultisampledShaderResolve") ? m_GraphicsSystemInfo.supportsMultisampledShaderResolve : base.supportsMultisampledShaderResolve;
+        public override bool supportsSwapChainPreTransform  =>  m_GraphicsSystemInfoFields.Contains("supportsSwapChainPreTransform") ? m_GraphicsSystemInfo.supportsSwapChainPreTransform : base.supportsSwapChainPreTransform;
         public override int supportsTextureWrapMirrorOnce  =>  m_GraphicsSystemInfoFields.Contains("supportsTextureWrapMirrorOnce") ? m_GraphicsSystemInfo.supportsTextureWrapMirrorOnce : base.supportsTextureWrapMirrorOnce;
         public override bool usesReversedZBuffer  =>  m_GraphicsSystemInfoFields.Contains("usesReversedZBuffer") ? m_GraphicsSystemInfo.usesReversedZBuffer : base.usesReversedZBuffer;
         public override NPOTSupport npotSupport  =>  m_GraphicsSystemInfoFields.Contains("npotSupport") ? m_GraphicsSystemInfo.npotSupport : base.npotSupport;

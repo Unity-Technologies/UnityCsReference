@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using Unity.PlayMode.Editor;
 using UnityEditor.Build.Profile;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEngine;
 
@@ -40,16 +40,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private string m_ButtonCallToActionStartText;
         private string m_ButtonCallToActionStopText;
 
-        // List of Mode states to be shown in Run Mode dropdown controls.
-        private readonly List<RunModeState> k_DropdownStates = new List<RunModeState>()
-        {
-            RunModeState.ScenarioControl,
-            RunModeState.ManualControl
-        };
-
         private Instance m_Instance;
-        private PopupField<RunModeState> m_DropDown;
+        private PopupField<string> m_DropDown;
         private Image m_DropdownRunModeImage = null;
+        private bool m_IsRunModeBound;
         private Button m_FreeRunButton;
         private HelpBox m_DisabledFreeRunButtonHelpbox;
 
@@ -64,6 +58,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 isVirtualInstance ? k_InstanceButtonCloneDeactivateText : k_InstanceButtonStopText;
         }
 
+        private RunModeState GetRunMode() => m_Instance?.RunMode ?? RunModeState.ScenarioControl;
+
+        private static bool IsScenarioExecuting()
+            => PlayModeScenarioManager.State is PlayModeScenarioState.Starting
+                or PlayModeScenarioState.Running
+                or PlayModeScenarioState.Stopping;
+
         internal void BindRunModeDropDownElement(
             VisualElement instanceContainer,
             VisualElement statusContainer,
@@ -76,15 +77,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
             instanceContainer.Add(runLabel);
 
             // Create and bind Running Mode Dropdown menu
-            m_DropDown = new PopupField<RunModeState>() { name = k_MultiplayerRunningModeName };
-            m_DropDown.choices = k_DropdownStates;
-            m_DropDown.formatListItemCallback = FormatRunningModeDropDownText;
-            m_DropDown.formatSelectedValueCallback = FormatRunningModeDropDownText;
+            m_DropDown = new PopupField<string>() { name = k_MultiplayerRunningModeName };
             m_DropDown.tooltip = k_MultiplayerRunningModeTooltipText;
-            m_DropDown.SetValueWithoutNotify(m_Instance.RunModeState);
             m_DropDown.AddToClassList(k_RunModeDropDownMenuClassName);
             ExtendDropDownUI();
             statusContainer.Add(m_DropDown);
+
+            var runModeProperty = m_Instance?.GetDecorator<RunModeDecorator>()
+                ?.GetSettingsSerializedProperty()
+                ?.FindPropertyRelative(RunModeDecorator.DecoratorSettings.k_RunModePropertyName);
+            m_IsRunModeBound = runModeProperty != null;
+            if (m_IsRunModeBound)
+                m_DropDown.BindProperty(runModeProperty);
 
             // Create and bind the Free Running Activate / Deactivate Button
             var instanceActionButton = new Button(){ name = k_InstanceButtonName };
@@ -143,11 +147,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             UpdateUI();
         }
 
-        private void OnSetFreeRunningModeSelected(ChangeEvent<RunModeState> evt)
+        private void OnSetFreeRunningModeSelected(ChangeEvent<string> evt)
         {
-            // If a runtime instance is already available, update its mode.
-            if (m_Instance != null)
-                m_Instance.RunModeState = evt.newValue;
             UpdateUI();
         }
 
@@ -174,23 +175,10 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 popupContainer.Add(child);
         }
 
-        private string FormatRunningModeDropDownText(RunModeState state)
-        {
-            switch (state)
-            {
-                case RunModeState.ScenarioControl:
-                    return k_DropDownScenarioControlText;
-                case RunModeState.ManualControl:
-                    return k_DropDownManualControlText;
-            }
-
-            throw new Exception($"Unsupported Run mode state for Instance: {state}");
-        }
-
         private void UpdateUI()
         {
             // Only show the call-to-action button if we are in Manual Mode state.
-            bool isManualModeControlled = m_Instance.RunModeState == RunModeState.ManualControl;
+            bool isManualModeControlled = GetRunMode() == RunModeState.ManualControl;
             m_FreeRunButton.style.display = isManualModeControlled ? DisplayStyle.Flex : DisplayStyle.None;
 
             // Update call-to-action button text as needed
@@ -198,16 +186,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
             UpdateFreeRunButtonText(isInstanceRunning);
             UpdateButtonActiveState();
 
-            // Disable Dropdown if scenario is running
-            if (ScenarioRunner.instance.ActiveScenario != null)
-            {
-                var enabledDropdown = !ScenarioRunner.instance.ActiveScenario.StatusData.IsExecuting();
-                m_DropDown.SetEnabled(enabledDropdown && !isInstanceRunning);
-            }
+            // Disable the dropdown while the scenario is running.
+            m_DropDown.SetEnabled(m_IsRunModeBound && !IsScenarioExecuting() && !isInstanceRunning);
 
             // Update Running Mode Icon if it has not changed.
             if (m_DropdownRunModeImage != null)
-                m_DropdownRunModeImage.SetRunModeIcon(m_Instance.RunModeState);
+                m_DropdownRunModeImage.SetRunModeIcon(GetRunMode());
         }
 
         private void UpdateFreeRunButtonText(bool isActive)
@@ -231,7 +215,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         private void UpdateButtonActiveState()
         {
-            var isScenarioRunning = ScenarioRunner.instance.IsRunning;
+            var isScenarioRunning = IsScenarioExecuting();
             var isInstanceRunning = IsInstanceRunning();
             var isEditorInstance = m_Instance != null && m_Instance.Controller is CloneEditorController;
             var isLocalInstance = m_Instance != null && m_Instance.Controller is LocalPlayerController;
@@ -291,7 +275,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private void ToggleActivateCloneInstance(bool shouldActivate)
         {
             // Sanity check, don't toggle when in invalid modes
-            if (m_Instance.RunModeState == RunModeState.ScenarioControl)
+            if (GetRunMode() == RunModeState.ScenarioControl)
             {
                 Debug.LogWarning("Cannot Activate an instance while it is in Scenario Control mode.");
                 return;

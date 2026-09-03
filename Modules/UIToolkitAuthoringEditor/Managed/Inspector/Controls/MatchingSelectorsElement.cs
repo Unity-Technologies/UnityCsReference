@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -10,6 +9,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -18,6 +18,7 @@ sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementCha
 {
     sealed class MatchingSelectorElement : Foldout
     {
+        [NoAutoStaticsCleanup] // text-field pool, safe to persist
         static UnityEngine.Pool.ObjectPool<TextField> s_PropertyPool = new(CreateTextField, null, OnReleaseTextField);
 
         internal const string ClassName = "unity-matching-selector-element";
@@ -121,6 +122,7 @@ sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementCha
         }
     }
 
+    [NoAutoStaticsCleanup] // selector-element pool, safe to persist
     static UnityEngine.Pool.ObjectPool<MatchingSelectorElement> s_MatchingSelectorPool = new(CreateMatchingSelector, null, OnReleaseMatchingSelector);
 
     static MatchingSelectorElement CreateMatchingSelector() => new ();
@@ -294,4 +296,3 @@ sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementCha
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

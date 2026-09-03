@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Materials not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,12 +38,12 @@ namespace UnityEditor
             public static readonly int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeIndirectEmission, (int)MaterialGlobalIlluminationFlags.BakedEmission, (int)MaterialGlobalIlluminationFlags.None };
             public static readonly string propBlockInfo = EditorGUIUtility.TrTextContent("MaterialPropertyBlock is used to modify these values").text;
 
-            public static readonly string builtInDeprecated = L10n.Tr("Built-in (Deprecated)/");
-            public static readonly string notSupported = L10n.Tr("\"Not supported/\"");
-            public static readonly string failedToCompile = L10n.Tr("Failed to compile/");
+            public static readonly string builtInDeprecated = L10n.Tr("Built-in (Deprecated)/", null);
+            public static readonly string notSupported = L10n.Tr("\"Not supported/\"", null);
+            public static readonly string failedToCompile = L10n.Tr("Failed to compile/", null);
 
-            public static readonly string infoBuiltInBuiltinDeprecated = L10n.Tr("Some built-in shaders are deprecated.\nMigrate your project to the Universal Render Pipeline instead.");
-            public static readonly string warningUsingSRPBuiltinDeprecated = L10n.Tr("A Scriptable Render Pipeline is active. Built-in shaders are deprecated.");
+            public static readonly string infoBuiltInBuiltinDeprecated = L10n.Tr("Some built-in shaders are deprecated.\nMigrate your project to the Universal Render Pipeline instead.", null);
+            public static readonly string warningUsingSRPBuiltinDeprecated = L10n.Tr("A Scriptable Render Pipeline is active. Built-in shaders are deprecated.", null);
 
             public const int kNewShaderQueueValue = -1;
             public const int kCustomQueueIndex = 4;
@@ -2094,8 +2095,10 @@ namespace UnityEditor
 
             var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
 
+#pragma warning disable 618
             MaterialGlobalIlluminationFlags defaultEnabled = settings.realtimeGI ? MaterialGlobalIlluminationFlags.RealtimeIndirectEmission
                 : (settings.bakedGI ? MaterialGlobalIlluminationFlags.BakedEmission : MaterialGlobalIlluminationFlags.None);
+#pragma warning restore 618
 
             // Calculate isMixed
             bool enabled = materials[0].globalIlluminationFlags != MaterialGlobalIlluminationFlags.EmissiveIsBlack;
@@ -3160,7 +3163,9 @@ namespace UnityEditor
                 }
 
                 if (!hasRevert)
+                    #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                     s_previousDraggedUponRenderer.sharedMaterials = s_previousMaterialValue;
+                    #pragma warning restore UAL0018
             }
 
             if (s_previousDraggedUponTerrain != null)
@@ -3175,7 +3180,9 @@ namespace UnityEditor
                 }
 
                 if (!hasRevert)
+                    #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                     s_previousDraggedUponTerrain.materialTemplate = s_previousTerrainMaterialTemplate;
+                    #pragma warning restore UAL0018
             }
 
             MaterialEditorForCanvasRendererUtility.RevertCanvasRendererDragChanges();
@@ -3514,3 +3521,4 @@ namespace UnityEditor
         }
     }
 } // namespace UnityEditor
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

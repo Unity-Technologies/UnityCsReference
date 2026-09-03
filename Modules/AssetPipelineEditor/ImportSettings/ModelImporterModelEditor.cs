@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AssetImporters not yet converted
 using System;
 using UnityEngine;
 using UnityEditor.AssetImporters;
@@ -326,14 +327,14 @@ namespace UnityEditor
                         {
                             GUIContent content = m_FileScaleUnit.hasMultipleDifferentValues
                                 ? EditorGUI.mixedValueContent
-                                : GUIContent.Temp(string.Format(L10n.Tr("1{0} (File) to {1}m (Unity)"), m_FileScaleUnit.stringValue, m_FileScaleFactor.floatValue));
+                                : GUIContent.Temp(string.Format(L10n.Tr("1{0} (File) to {1}m (Unity)", null), m_FileScaleUnit.stringValue, m_FileScaleFactor.floatValue));
                             EditorGUILayout.LabelField(content, GUILayout.ExpandWidth(true));
                         }
                         else
                         {
                             GUIContent content = m_FileScaleUnit.hasMultipleDifferentValues
                                 ? EditorGUI.mixedValueContent
-                                : GUIContent.Temp(string.Format(L10n.Tr("1 unit (File) to {0}m (Unity)"), m_FileScale.floatValue));
+                                : GUIContent.Temp(string.Format(L10n.Tr("1 unit (File) to {0}m (Unity)", null), m_FileScale.floatValue));
                             EditorGUILayout.LabelField(content);
                         }
                     }
@@ -582,3 +583,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

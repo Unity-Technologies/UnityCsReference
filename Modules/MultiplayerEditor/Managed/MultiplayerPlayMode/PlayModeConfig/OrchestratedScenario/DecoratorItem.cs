@@ -14,13 +14,13 @@ interface IDecoratorItem
     TSettings GetSettings<TSettings>();
     Type GetDecoratorType();
     Type GetSettingsType();
-    InstanceControllerDecorator CreateController(IInstanceItem instanceItem, OrchestratedScenario owner);
+    PlayModeControllerDecorator CreateController(IPlayModeControllerItem instanceItem, OrchestratedScenario owner);
 
     IDecoratorItem WithSettings<TSettings>(TSettings settings);
 
     static IDecoratorItem Create(Type decoratorType)
     {
-        var settingsType = InstanceControllerDecorator.GetSettingsType(decoratorType);
+        var settingsType = PlayModeControllerDecorator.GetSettingsType(decoratorType);
         var decoratorItemType = typeof(DecoratorItem<,>).MakeGenericType(decoratorType, settingsType);
         var newDecoratorItem = (IDecoratorItem)Activator.CreateInstance(decoratorItemType);
         return newDecoratorItem;
@@ -29,7 +29,7 @@ interface IDecoratorItem
 
 [Serializable]
 struct DecoratorItem<TDecorator, TSettings> : IDecoratorItem
-    where TDecorator : InstanceControllerDecorator<TSettings>
+    where TDecorator : PlayModeControllerDecorator<TSettings>
     where TSettings : struct
 {
     [SerializeField] TSettings m_Settings;
@@ -64,8 +64,8 @@ struct DecoratorItem<TDecorator, TSettings> : IDecoratorItem
         return copy;
     }
 
-    public InstanceControllerDecorator CreateController(IInstanceItem instanceItem, OrchestratedScenario owner)
+    public PlayModeControllerDecorator CreateController(IPlayModeControllerItem instanceItem, OrchestratedScenario owner)
     {
-        return InstanceControllerDecorator<TSettings>.CreateInstance<TDecorator>(instanceItem, owner);
+        return PlayModeControllerDecorator<TSettings>.CreateInstance<TDecorator>(instanceItem, owner);
     }
 }

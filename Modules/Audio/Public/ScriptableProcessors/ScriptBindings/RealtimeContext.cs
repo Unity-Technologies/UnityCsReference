@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Audio;
+using Unity.Burst;
 
 namespace UnityEngine.Audio
 {
@@ -77,6 +78,83 @@ namespace UnityEngine.Audio
                     return processArguments.Result;
                 }
             }
+        }
+
+        /// <summary>
+        /// Send a message with a piece of data to be immediately evaluated by the <see cref="ProcessorInstance.IRealtime.OnMessage"/>
+        /// on the real-time side.
+        /// </summary>
+        /// <remarks>
+        /// This is the real-time counterpart of <see cref="ControlContext.SendMessage"/>: it dispatches synchronously to the
+        /// <paramref name="processorInstance"/>'s <see cref="ProcessorInstance.IRealtime"/> implementation from within this
+        /// <see cref="RealtimeContext"/>.
+        /// The <paramref name="message"/> is passed by reference, so the <paramref name="processorInstance"/> can modify it.
+        /// </remarks>
+        /// <returns>
+        /// <see cref="ProcessorInstance.Response.Handled"/> if <paramref name="processorInstance"/> acknowledged and processed the message,
+        /// <see cref="ProcessorInstance.Response.Unhandled"/> if not or ignored.
+        /// </returns>
+        public readonly ProcessorInstance.Response SendMessage<T>(ProcessorInstance processorInstance, ref T message)
+            where T : unmanaged
+        {
+            ScriptableProcessorBindings.ValidateCanProcess(processorInstance.Handle, this);
+
+            fixed (T* pT = &message)
+            {
+                ProcessorInstance.Message transport = new ProcessorInstance.Message
+                {
+                    TypeHash = BurstRuntime.GetHashCode64<T>(),
+                    Data = pT,
+                    ManagedHandle = default
+                };
+
+                RealtimeMessageArguments args = new RealtimeMessageArguments
+                {
+                    Access = Access,
+                    MessageData = &transport,
+                    Self = processorInstance.Handle
+                };
+
+                ScriptableProcessorBindings.InvokeRealtimeMessage(ref args);
+
+                return args.StatusReturn;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The context passed to <see cref="ProcessorInstance.IRealtime.OnMessage"/> when a message is delivered on the
+    /// real-time side via <see cref="RealtimeContext.SendMessage"/>.
+    /// </summary>
+    /// <remarks>
+    /// Like <see cref="RealtimeContext"/>, this exposes cross-thread data communication together with a
+    /// <see cref="ProcessorInstance.Pipe"/>. Unlike <see cref="RealtimeContext"/>, it
+    /// deliberately cannot drive nested processing (there is no <c>Process</c> method): handling a message is a
+    /// communication operation, not a rendering one.
+    /// </remarks>
+    /// <seealso cref="RealtimeContext.SendMessage"/>
+    /// <seealso cref="ProcessorInstance.IRealtime.OnMessage"/>
+    public unsafe struct RealtimeMessageContext : ProcessorInstance.IContext
+    {
+        /// <summary>
+        /// True if this context was ever created.
+        /// </summary>
+        public readonly bool isCreated => Access.IsCreated;
+
+        internal RealtimeAccess Access;
+
+        ProcessorInstance.AvailableData ProcessorInstance.IContext.GetAvailableData(DualThreadHandle handle)
+            => new(ScriptableProcessorBindings.GetAvailableDataForRealtime(Access, handle));
+
+        bool ProcessorInstance.IContext.SendData(DualThreadHandle handle, void* data, int size, int align, long typehash)
+        {
+            ScriptableProcessorBindings.ReturnDataFromProcessor(Access, handle, data, size, align, typehash);
+            return true;
+        }
+
+        internal RealtimeMessageContext(in RealtimeAccess access)
+        {
+            Access = access;
         }
     }
 }

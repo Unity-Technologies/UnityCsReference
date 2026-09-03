@@ -2,15 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.IO;
 using Unity.Properties;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -32,8 +34,11 @@ partial class VisualElementHeader : UISelectionObjectHeader
     private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
     private const string k_NoAssetPath = "<none>.uxml";
 
+    [AutoStaticsCleanupOnCodeReload]
     static StyleSheet s_StyleSheet;
+    [AutoStaticsCleanupOnCodeReload]
     static StyleSheet s_ThemedStyleSheet;
+    [AutoStaticsCleanupOnCodeReload]
     static bool s_ThemedStyleSheetIsProSkin;
 
     private VisualElement m_Element;
@@ -147,7 +152,7 @@ partial class VisualElementHeader : UISelectionObjectHeader
             openInContextButton.SetEnabled(canOpenInContext);
             openInContextButton.tooltip = canOpenInContext
                 ? string.Empty
-                : L10n.Tr("Not available: this element is the currently edited template container.");
+                : L10n.Tr("Not available: this element is the currently edited template container.", null);
         }
     }
 
@@ -206,13 +211,13 @@ partial class VisualElementHeader : UISelectionObjectHeader
 
     void OnAttachToPanel(AttachToPanelEvent evt)
     {
-        UIToolkitAuthoringSettings.EnableZIndexChanged += RefreshStackingIndicator;
+        UIToolkitProjectSettings.onEnableZIndexChanged += RefreshStackingIndicator;
         UICommandQueue.RegisterHandlerForCategory(CommandCategory.Styling, OnStylingChange);
     }
 
     void OnDetachFromPanel(DetachFromPanelEvent evt)
     {
-        UIToolkitAuthoringSettings.EnableZIndexChanged -= RefreshStackingIndicator;
+        UIToolkitProjectSettings.onEnableZIndexChanged -= RefreshStackingIndicator;
         UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Styling, OnStylingChange);
     }
 
@@ -222,7 +227,7 @@ partial class VisualElementHeader : UISelectionObjectHeader
     {
         m_StackingContextRoot = null;
 
-        if (!UIToolkitAuthoringSettings.EnableZIndex || m_Element == null)
+        if (!UIToolkitProjectSettings.enableZIndex || m_Element == null)
         {
             m_StackingIndicator.style.display = DisplayStyle.None;
             return;
@@ -240,7 +245,7 @@ partial class VisualElementHeader : UISelectionObjectHeader
 
         m_StackingContextRoot = root;
         var rootName = !string.IsNullOrEmpty(root.name) ? root.name : TypeUtility.GetTypeDisplayName(root.GetType());
-        m_StackingIndicator.tooltip = string.Format(L10n.Tr("Inside a stacking context established by {0}. Click to select it."), rootName);
+        m_StackingIndicator.tooltip = string.Format(L10n.Tr("Inside a stacking context established by {0}. Click to select it.", null), rootName);
         m_StackingIndicator.style.display = DisplayStyle.Flex;
     }
 
@@ -251,4 +256,4 @@ partial class VisualElementHeader : UISelectionObjectHeader
             Selection.activeEntityId = entityId.Value;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

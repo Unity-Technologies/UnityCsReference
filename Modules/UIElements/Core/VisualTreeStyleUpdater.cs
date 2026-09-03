@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -202,6 +201,18 @@ namespace UnityEngine.UIElements
         // element state untouched.
         public readonly bool applyPseudoMasks;
         public AncestorFilter ancestorFilter = new AncestorFilter();
+
+        // Grow-only scratch for the native matcher's matched-descriptor indices. A descriptor
+        // can match at most once per element x sheet call, so a sheet's descriptor count bounds
+        // the output. Matching is single-threaded per context, so the buffer is reused per call.
+        int[] m_MatchedIndicesScratch;
+
+        internal int[] GetMatchedIndicesScratch(int minLength)
+        {
+            if (m_MatchedIndicesScratch == null || m_MatchedIndicesScratch.Length < minLength)
+                m_MatchedIndicesScratch = new int[Mathf.NextPowerOfTwo(minLength)];
+            return m_MatchedIndicesScratch;
+        }
 
         public StyleMatchingContext(bool applyPseudoMasks)
         {
@@ -461,6 +472,8 @@ namespace UnityEngine.UIElements
             // Need to send the custom styles event after the inheritance is resolved because an element
             // may want to read standard styles too (TextInputFieldBase callback depends on it).
             // Accumulate elements that need the event; dispatch at the end to support future native code path.
+            // The count gate applies to component [StyleProperty] handlers like everyone else: they only
+            // sync when the element's computed style has (or had) custom properties to read.
             if (isDirty && (originalCustomStyleCount > 0 || element.computedStyle.customPropertiesCount > 0) &&
                 element.HasSelfEventInterests(CustomStyleResolvedEvent.EventCategory))
             {
@@ -613,8 +626,6 @@ namespace UnityEngine.UIElements
                     resolvedStyles.ApplyProperties(m_StylePropertyReader, ref parentStyle);
                 }
 
-                resolvedStyles.FinalizeApply(ref parentStyle);
-
                 StyleCache.SetValue(matchingRulesHash, ref resolvedStyles);
             }
 
@@ -638,4 +649,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

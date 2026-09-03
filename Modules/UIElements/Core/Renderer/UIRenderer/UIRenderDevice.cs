@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using Unity.Collections;
@@ -108,14 +107,24 @@ namespace UnityEngine.UIElements.UIR
 
         readonly UIRRenderDeviceProfiler m_Profiler = new();
 
-        [NoAutoStaticsCleanup]
+        // Reset on code reload by s_CodeReloadCleanup, not field-level [AutoStaticsCleanupOnCodeReload]:
+        // zeroing the fields would leak the queued devices' GPU resources and the native UIR callback.
+        [NoAutoStaticsCleanup] // reset by s_CodeReloadCleanup
         static LinkedList<DeviceToFree> m_DeviceFreeQueue = new LinkedList<DeviceToFree>();   // Not thread safe for now
-        [NoAutoStaticsCleanup] // tracks active devices; instances persist across reload
+        [NoAutoStaticsCleanup] // reset by s_CodeReloadCleanup
         static int m_ActiveDeviceCount = 0; // Not thread safe for now
-        [NoAutoStaticsCleanup] // subscription guard; prevents double-subscription
+        [NoAutoStaticsCleanup] // reset by s_CodeReloadCleanup
         static bool m_SubscribedToNotifications; // Not thread safe for now
-        [NoAutoStaticsCleanup] // set on domain unload/app quit; irreversible
-        static bool m_SynchronousFree; // This is set on domain unload or app quit, so it is irreversible
+        [NoAutoStaticsCleanup] // reset by s_CodeReloadCleanup
+        static bool m_SynchronousFree; // Set during domain unload/app quit; reset for new domain
+
+        // Registered lazily (only if UIRenderDevice is used) via this initializer. An
+        // [OnCodeLoaded]/[OnCodeUnloading] method would instead be registered eagerly by module
+        // initialization, which roots this type for the linker even in UGUI-only player builds
+        // (code reload only happens in the editor, but that registration ships in players too).
+        [NoAutoStaticsCleanup] // persists; LifecycleController owns the per-reload invocation
+        static readonly DelegateAutoCleanup s_CodeReloadCleanup = new DelegateAutoCleanup(
+            OnCodeReloadCleanup, typeof(CodeLoadedScope), ScopeTransitionType.Exiting, nameof(UIRenderDevice));
 
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
@@ -126,6 +135,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly int s_TextCorePagePosID = Shader.PropertyToID("_TextCorePagePos");
         static readonly int s_ElementInfoPagePosID = Shader.PropertyToID("_ElementInfoPagePos");
         static readonly int s_SkipGammaConversionID = Shader.PropertyToID("_SkipGammaConversion");
+        static readonly int s_PageTablesID = Shader.PropertyToID("UIE_PageTables");
 
         static readonly ProfilerMarker s_MarkerFree = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.Free");
         static readonly ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker(ProfilerCategory.UIToolkit, "UIR.AdvanceFrame");
@@ -140,12 +150,6 @@ namespace UnityEngine.UIElements.UIR
         // (nested render trees do not use command lists)
         internal uint frameIndex => m_FrameIndex;
 
-        static UIRenderDevice()
-        {
-            UIR.Utility.EngineUpdate += OnEngineUpdateGlobal;
-            UIR.Utility.FlushPendingResources += OnFlushPendingResources;
-        }
-
         public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool forceGammaRendering = false, ExtraVertexChannels extraVertexChannels = ExtraVertexChannels.None)
         {
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
@@ -154,6 +158,12 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (!m_SubscribedToNotifications)
                 {
+                    // Subscribe lazily (not via eager [OnCodeLoaded]) so these handlers stay unreachable
+                    // in UGUI-only builds, letting the linker strip the UIElements module.
+#pragma warning disable UAL0015 // self-healing: the reload clear of these events is the unsubscription; OnCodeReloadCleanup resets m_SubscribedToNotifications and the next construction re-subscribes
+                    UIR.Utility.EngineUpdate += OnEngineUpdateGlobal;
+                    UIR.Utility.FlushPendingResources += OnFlushPendingResources;
+#pragma warning restore UAL0015
                     Utility.NotifyOfUIREvents(true);
                     m_SubscribedToNotifications = true;
                 }
@@ -720,9 +730,9 @@ namespace UnityEngine.UIElements.UIR
 
             var drawParams = m_DrawParams;
             drawParams.Reset();
-            drawParams.drawBounds = drawBounds;
+            drawParams.SetProjection(drawBounds, pixelsPerPoint);
 
-            RenderChainCommand.PushScissor(drawParams, scissor ?? DrawParams.k_UnlimitedRect, pixelsPerPoint);
+            RenderChainCommand.PushScissor(drawParams, scissor ?? DrawParams.k_UnlimitedRect);
 
             m_TextureSlotManager.Reset();
             m_TextureSlotManager.StartNewBatch((int)defaultTextureSlotCount);
@@ -976,7 +986,7 @@ namespace UnityEngine.UIElements.UIR
                             m_DrawStats.immediateDraws++;
                         }
 
-                        head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
+                        head.ExecuteNonDrawMesh(drawParams, ref immediateException);
                         if ((head.type & (CommandType.AnyImmediate | CommandType.AnyDefaultMaterial)) != 0)
                         {
                             st.material = null; // A value that is unique to force material reset on next draw command
@@ -1028,7 +1038,7 @@ namespace UnityEngine.UIElements.UIR
 
             Debug.Assert(disableCounter == 0, "Rendering disabled counter is not 0, indicating a mismatch of commands");
 
-            RenderChainCommand.PopScissor(drawParams, pixelsPerPoint);
+            RenderChainCommand.PopScissor(drawParams);
 
             UpdateFenceValue(); // TODO: Replace by GPU fence.
 
@@ -1084,12 +1094,22 @@ namespace UnityEngine.UIElements.UIR
                 if (shaderInfo != null)
                     constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
 
-                constantProps.SetVectorArray(s_XformPagePosID,    shaderInfoAllocator.transformPagePositions);
-                constantProps.SetVectorArray(s_ClipPagePosID,     shaderInfoAllocator.clipRectPagePositions);
-                constantProps.SetVectorArray(s_OpacityPagePosID,  shaderInfoAllocator.opacityPagePositions);
-                constantProps.SetVectorArray(s_ColorPagePosID,    shaderInfoAllocator.colorPagePositions);
-                constantProps.SetVectorArray(s_TextCorePagePosID, shaderInfoAllocator.textCorePagePositions);
-                constantProps.SetVectorArray(s_ElementInfoPagePosID, shaderInfoAllocator.elementInfoPagePositions);
+                if (shaderInfoAllocator.usePageTableConstantBuffer)
+                {
+                    GraphicsBuffer pageTables = shaderInfoAllocator.GetPageTableConstantBuffer();
+                    constantProps.SetConstantBuffer(s_PageTablesID, pageTables, 0, ShaderInfoAllocator.kPageTableSizeBytes);
+                }
+                else
+                {
+                    // Less efficient: the tables must be copied out of their native storage, and the arrays stored
+                    // in the property block can be uploaded many times (e.g. once per root PanelRenderer in world-space)
+                    constantProps.SetVectorArray(s_XformPagePosID,    shaderInfoAllocator.CopyTransformPagePositions());
+                    constantProps.SetVectorArray(s_ClipPagePosID,     shaderInfoAllocator.CopyClipRectPagePositions());
+                    constantProps.SetVectorArray(s_OpacityPagePosID,  shaderInfoAllocator.CopyOpacityPagePositions());
+                    constantProps.SetVectorArray(s_ColorPagePosID,    shaderInfoAllocator.CopyColorPagePositions());
+                    constantProps.SetVectorArray(s_TextCorePagePosID, shaderInfoAllocator.CopyTextCorePagePositions());
+                    constantProps.SetVectorArray(s_ElementInfoPagePosID, shaderInfoAllocator.CopyElementInfoPagePositions());
+                }
             }
         }
 
@@ -1324,7 +1344,22 @@ namespace UnityEngine.UIElements.UIR
             ProcessDeviceFreeQueue();
         }
 
+        // Real teardown on code reload (not just zeroing the statics): synchronously free the queued
+        // devices to release their GPU resources, and unregister the native UIR callback.
+        static void OnCodeReloadCleanup()
+        {
+            m_SynchronousFree = true;
+            ProcessDeviceFreeQueue();
+            m_SynchronousFree = false;
+
+            if (m_SubscribedToNotifications)
+            {
+                Utility.NotifyOfUIREvents(false);
+                m_SubscribedToNotifications = false;
+            }
+            m_ActiveDeviceCount = 0;
+        }
+
         #endregion // Internals
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

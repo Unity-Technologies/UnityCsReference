@@ -24,7 +24,7 @@ internal partial class BindingDataSourceView : BindableElement
     const string k_DataSourceObjectTabStatusIndicatorName = "DataSourceAsObjTabStatusIndicator";
     const string k_DataSourceTypeTabStatusIndicatorName = "DataSourceAsTypeTabStatusIndicator";
     const string k_IsFieldConfiguredPropertyId = "__BindingDataSourceView_FieldConfigured";
-    static readonly string k_DataSourceLabel = L10n.Tr("Data Source");
+    static readonly string k_DataSourceLabel = L10n.Tr("Data Source", null);
 
     internal const string k_DataSourceUnityObjectPropertyId = nameof(dataSourceUnityObject);
     internal const string k_DataSourcePathPropertyId = nameof(dataSourcePathString);

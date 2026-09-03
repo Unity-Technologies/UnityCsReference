@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal class SampleImporter : BaseService<ISampleImporter>, ISampleImporter
     {
-        private static readonly string k_CopySamplesFilesTitle = L10n.Tr("Copying samples files");
+        private static readonly string k_CopySamplesFilesTitle = L10n.Tr("Copying samples files", null);
 
         private readonly IIOProxy m_IOProxy;
         private readonly IAssetDatabaseProxy m_AssetDatabase;
@@ -42,7 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (Exception e)
             {
-                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unexpected error importing sample {0}: {1}"),
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unexpected error importing sample {0}: {1}", null),
                     sample.displayName, e.Message));
                 return false;
             }
@@ -74,7 +74,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (Exception e)
             {
-                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unexpected error importing samples: {0}"),
+                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unexpected error importing samples: {0}", null),
                     e.Message));
             }
             finally
@@ -98,7 +98,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         return false;
                     foreach (var v in prevImports)
                     {
-                        EditorUtility.DisplayProgressBar(k_CopySamplesFilesTitle, L10n.Tr("Cleaning previous import..."),
+                        EditorUtility.DisplayProgressBar(k_CopySamplesFilesTitle, L10n.Tr("Cleaning previous import...", null),
                             0);
                         m_IOProxy.RemovePathAndMeta(v, true);
                     }
@@ -119,7 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             catch (IOException e)
             {
-                Debug.Log(string.Format(L10n.Tr("[Package Manager Window] Cannot import sample {0}: {1}"),
+                Debug.Log(string.Format(L10n.Tr("[Package Manager Window] Cannot import sample {0}: {1}", null),
                     sample.displayName, e.Message));
                 return false;
             }

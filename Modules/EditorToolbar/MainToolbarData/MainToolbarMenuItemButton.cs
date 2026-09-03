@@ -9,7 +9,7 @@ namespace UnityEditor.Toolbars
 {
     sealed class MainToolbarMenuItemButton : MainToolbarElement
     {
-        static readonly string k_TooltipStart = L10n.Tr("Triggers menu item ");
+        static readonly string k_TooltipStart = L10n.Tr("Triggers menu item ", null);
 
         readonly string m_MenuPath;
 

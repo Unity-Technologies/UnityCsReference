@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements
         const string k_InspectorShownWarningMessageClassName = "unity-uxml-attribute__negative-warning--shown";
         const string k_InspectorHiddenWarningMessageClassName = "unity-uxml-attribute__negative-warning--hidden";
         const string k_FixedItemHeightClassName = "unity-uxml-attribute__fixed-item-height";
-        static readonly string k_HeightIntFieldValueCannotBeNegativeMessage = L10n.Tr("Please enter a positive number. Non-positive numbers will default to 1.");
+        static readonly string k_HeightIntFieldValueCannotBeNegativeMessage = L10n.Tr("Please enter a positive number. Non-positive numbers will default to 1.", null);
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {

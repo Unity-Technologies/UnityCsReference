@@ -43,22 +43,33 @@ namespace UnityEngine.UIElements
             public void AddItems(int itemCount)
             {
                 var previousCount = GetItemsCount();
+                var previousArraySize = serializedObjectList.arraySize;
                 serializedObjectList.arraySize += itemCount;
                 serializedObjectList.ApplyChanges();
 
-                var indices = ListPool<int>.Get();
-                try
+                // The serialized array can refuse the resize (e.g. when it would exceed the maximum
+                // serialized object size), so raise only the items actually added rather than the
+                // requested itemCount - otherwise we would iterate and allocate an index list for an
+                // absurd count and run out of memory even though the resize was rejected. Use arraySize,
+                // which reflects the resize immediately, rather than GetItemsCount, whose cached view can
+                // still report the previous size right after ApplyChanges. (UUM-134407)
+                var addedCount = serializedObjectList.arraySize - previousArraySize;
+                if (addedCount > 0)
                 {
-                    for (var i = 0; i < itemCount; i++)
+                    var indices = ListPool<int>.Get();
+                    try
                     {
-                        indices.Add(previousCount + i);
-                    }
+                        for (var i = 0; i < addedCount; i++)
+                        {
+                            indices.Add(previousCount + i);
+                        }
 
-                    m_BaseListViewController.RaiseItemsAdded(indices);
-                }
-                finally
-                {
-                    ListPool<int>.Release(indices);
+                        m_BaseListViewController.RaiseItemsAdded(indices);
+                    }
+                    finally
+                    {
+                        ListPool<int>.Release(indices);
+                    }
                 }
 
                 m_BaseListViewController.RaiseOnSizeChanged();
@@ -212,6 +223,10 @@ namespace UnityEngine.UIElements
         {
             return true;
         }
+
+        // Whether the collection can grow to newItemCount. Controllers backed by a source with a
+        // maximum size (e.g. serialized arrays) override this to validate and notify the user.
+        internal virtual bool ValidateItemCountChange(int newItemCount) => true;
 
         /// <summary>
         /// Adds a certain amount of items at the end of the collection.

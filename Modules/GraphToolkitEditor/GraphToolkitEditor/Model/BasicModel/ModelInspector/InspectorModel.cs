@@ -61,15 +61,18 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public virtual IReadOnlyList<InspectorSectionModel> Sections => m_SectionModels;
 
+        List<Model> m_InspectedModels;
         /// <summary>
         /// The models that will be inspected.
         /// </summary>
         public List<Model> InspectedModels
         {
+            get => m_InspectedModels;
             set
             {
                 SetTitleFromModels(value);
                 SetSectionsFromModels(value);
+                m_InspectedModels = value;
             }
         }
 
@@ -108,12 +111,14 @@ namespace Unity.GraphToolkit.Editor
                         {
                             Title = k_VariablePropertiesTitle,
                             Collapsed = false,
+                            Collapsible = true,
                             SectionType = SectionType.Properties
                         });
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
                             Title = k_AdvancedNodePropertiesTitle,
                             Collapsed = false,
+                            Collapsible = true,
                             SectionType = SectionType.Advanced
                         });
                         break;
@@ -128,12 +133,14 @@ namespace Unity.GraphToolkit.Editor
                         {
                             Title = k_NodePropertiesTitle,
                             Collapsed = false,
+                            Collapsible = true,
                             SectionType = SectionType.Properties
                         });
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
                             Title = k_AdvancedNodePropertiesTitle,
                             Collapsed = false,
+                            Collapsible = true,
                             SectionType = SectionType.Advanced
                         });
 
@@ -143,6 +150,7 @@ namespace Unity.GraphToolkit.Editor
                             {
                                 Title = k_TransitionsPropertiesTitle,
                                 Collapsed = false,
+                                Collapsible = true,
                                 SectionType = SectionType.StateTransitions
                             });
                         }
@@ -151,13 +159,14 @@ namespace Unity.GraphToolkit.Editor
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
                             Title = k_VariablePropertiesTitle,
-                            Collapsible = false,
+                            Collapsible = true,
                             SectionType = SectionType.Properties
                         });
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
                             Title = k_AdvancedVariablePropertiesTitle,
                             Collapsed = false,
+                            Collapsible = true,
                             SectionType = SectionType.Advanced
                         });
                         break;
@@ -173,7 +182,7 @@ namespace Unity.GraphToolkit.Editor
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
                             Title = k_StickyNoteInspectorTitle,
-                            Collapsible = false,
+                            Collapsible = true,
                             SectionType = SectionType.Properties
                         });
                         break;
@@ -188,12 +197,14 @@ namespace Unity.GraphToolkit.Editor
                         {
                             Title = k_WirePropertiesTitle,
                             Collapsed = false,
-                            SectionType = SectionType.Properties
+                            SectionType = SectionType.Properties,
+                            Collapsible = inspectedModel is not TransitionSupportModel
                         });
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
                             Title = k_AdvancedWirePropertiesTitle,
                             Collapsed = false,
+                            Collapsible = true,
                             SectionType = SectionType.Advanced
                         });
                         break;
@@ -202,6 +213,7 @@ namespace Unity.GraphToolkit.Editor
                         {
                             Title = k_PlacematPropertiesTitle,
                             Collapsed = false,
+                            Collapsible = true,
                             SectionType = SectionType.Options
                         });
                         break;
@@ -210,12 +222,14 @@ namespace Unity.GraphToolkit.Editor
                         {
                             Title = k_GraphSettingsTitle,
                             Collapsed = false,
+                            Collapsible = true,
                             SectionType = SectionType.Options
                         });
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
                             Title = k_AdvancedGraphSettingsTitle,
                             Collapsed = true,
+                            Collapsible = true,
                             SectionType = SectionType.Advanced
                         });
                         break;
@@ -229,13 +243,14 @@ namespace Unity.GraphToolkit.Editor
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
                         Title = k_VariablePropertiesTitle,
-                        Collapsible = false,
+                        Collapsible = true,
                         SectionType = SectionType.Properties
                     });
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
                         Title = k_AdvancedVariablePropertiesTitle,
                         Collapsed = false,
+                        Collapsible = true,
                         SectionType = SectionType.Advanced
                     });
                 }
@@ -251,12 +266,14 @@ namespace Unity.GraphToolkit.Editor
                     {
                         Title = k_NodePropertiesTitle,
                         Collapsed = false,
+                        Collapsible = true,
                         SectionType = SectionType.Properties
                     });
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
                         Title = k_AdvancedNodePropertiesTitle,
                         Collapsed = false,
+                        Collapsible = true,
                         SectionType = SectionType.Advanced
                     });
                 }
@@ -265,13 +282,14 @@ namespace Unity.GraphToolkit.Editor
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
                         Title = k_VariablePropertiesTitle,
-                        Collapsible = false,
+                        Collapsible = true,
                         SectionType = SectionType.Properties
                     });
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
                         Title = k_AdvancedVariablePropertiesTitle,
                         Collapsed = false,
+                        Collapsible = true,
                         SectionType = SectionType.Advanced
                     });
                 }
@@ -296,12 +314,14 @@ namespace Unity.GraphToolkit.Editor
                     {
                         Title = k_WirePropertiesTitle,
                         Collapsed = false,
-                        SectionType = SectionType.Properties
+                        SectionType = SectionType.Properties,
+                        Collapsible = !typeof(TransitionSupportModel).IsAssignableFrom(type)
                     });
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
                         Title = k_AdvancedWirePropertiesTitle,
                         Collapsed = true,
+                        Collapsible = true,
                         SectionType = SectionType.Advanced
                     });
                 }
@@ -311,6 +331,7 @@ namespace Unity.GraphToolkit.Editor
                     {
                         Title = k_PlacematPropertiesTitle,
                         Collapsed = false,
+                        Collapsible = true,
                         SectionType = SectionType.Options
                     });
                 }
@@ -320,12 +341,14 @@ namespace Unity.GraphToolkit.Editor
                     {
                         Title = k_GraphSettingsTitle,
                         Collapsed = false,
+                        Collapsible = true,
                         SectionType = SectionType.Options
                     });
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
                         Title = k_AdvancedGraphSettingsTitle,
                         Collapsed = true,
+                        Collapsible = true,
                         SectionType = SectionType.Advanced
                     });
                 }

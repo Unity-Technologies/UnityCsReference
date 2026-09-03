@@ -285,7 +285,7 @@ namespace Unity.U2D.Physics
         /// A transformation applied to the transform write if <see cref="PhysicsWorld.transformPlane"/> is set to <see cref="PhysicsWorld.TransformPlane.Custom"/>.
         /// </summary>
         [Serializable]
-        public struct TransformPlaneCustom : ISerializationCallbackReceiver
+        public record struct TransformPlaneCustom : ISerializationCallbackReceiver
         {
             /// <summary>
             /// Create a transform plane custom as identity.
@@ -895,9 +895,14 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Restore this world to the state captured in <paramref name="snapshot"/>, in place.
         /// The world keeps the same handles, so any <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/> and <see cref="PhysicsJoint"/> you already hold remain valid.
+        /// Applying a snapshot taken from a different world means existing handles for this world may alias objects restored from the snapshot or report invalid.
+        /// The snapshot image is fully validated before the world is touched, so a rejected snapshot leaves the world unchanged.
         /// </summary>
+        /// <remarks>
+        /// Validating and applying a snapshot processes the whole image, so this is not intended to be called at high frequency.
+        /// </remarks>
         /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/> on a compatible world.</param>
-        /// <returns>Whether the world was restored. Returns false if the snapshot or world is invalid, or the image is rejected.</returns>
+        /// <returns>Whether the world was restored. Returns false if the snapshot or world is invalid, or the image is rejected, in which case the world is unchanged.</returns>
         public readonly bool ApplySnapshot(Snapshot snapshot)
         {
             if (!snapshot.IsCreated)
@@ -914,16 +919,24 @@ namespace Unity.U2D.Physics
         /// <see cref="PhysicsWorldDefinition.gravity"/>, <see cref="PhysicsWorldDefinition.bounceThreshold"/>, <see cref="PhysicsWorldDefinition.contactHitEventThreshold"/>, <see cref="PhysicsWorldDefinition.contactFrequency"/>, <see cref="PhysicsWorldDefinition.contactDamping"/>, <see cref="PhysicsWorldDefinition.contactSpeed"/>, <see cref="PhysicsWorldDefinition.contactRecycleDistance"/>, <see cref="PhysicsWorldDefinition.maximumLinearSpeed"/>, <see cref="PhysicsWorldDefinition.sleepingAllowed"/>, <see cref="PhysicsWorldDefinition.continuousAllowed"/>, <see cref="PhysicsWorldDefinition.eventGroupingAllowed"/> and <see cref="PhysicsWorldDefinition.capacity"/>.
         /// All other <paramref name="definition"/> properties are applied normally, for example <see cref="PhysicsWorldDefinition.simulationWorkers"/> and <see cref="PhysicsWorldDefinition.simulationSubSteps"/>.
         /// To use a value other than the snapshot's, set the matching property on the returned world after this call.
+        /// Creating and restoring a world processes the whole image, so this is not intended to be called at high frequency.
         /// </remarks>
         /// <param name="snapshot">A snapshot produced by <see cref="CreateSnapshot"/>.</param>
         /// <param name="definition">The world definition supplying the settings the snapshot does not store.</param>
-        /// <returns>The created world, restored to the snapshot state.</returns>
+        /// <returns>The created world restored to the snapshot state, or an invalid world if the snapshot was rejected or no world could be created.</returns>
         public static PhysicsWorld Create(Snapshot snapshot, PhysicsWorldDefinition definition)
         {
             // Create returns an invalid world when no world slots remain (a finite resource, see allocatedWorldCapacity); skip the restore in that case.
             var world = Create(definition);
-            if (world.isValid)
-                world.ApplySnapshot(snapshot);
+            if (!world.isValid)
+                return default;
+
+            // A rejected snapshot leaves the fresh world empty rather than restored, so hand back an invalid world instead of a silently empty one.
+            if (!world.ApplySnapshot(snapshot))
+            {
+                world.Destroy();
+                return default;
+            }
 
             return world;
         }
@@ -1338,7 +1351,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct ExplosionDefinition
+        public record struct ExplosionDefinition
         {
             /// <summary>
             /// Create a default explode definition.
@@ -1371,11 +1384,18 @@ namespace Unity.U2D.Physics
             public float falloff { readonly get => m_Falloff; set => m_Falloff = Mathf.Max(0f, value); }
 
             /// <summary>
+            /// The maximum magnitude allowed for <see cref="impulsePerLength"/>.
+            /// Larger magnitudes have no useful effect because body speeds are capped each simulation step, so values are clamped into this range.
+            /// </summary>
+            public const float MaxImpulse = 100000f;
+
+            /// <summary>
             /// Impulse per unit length. This applies an impulse according to the shape perimeter that is facing the explosion.
             /// Explosions only apply to circles, capsules, and polygons.
             /// This may be negative for implosions.
+            /// The magnitude is clamped to <see cref="MaxImpulse"/>.
             /// </summary>
-            public float impulsePerLength { readonly get => m_ImpulsePerLength; set => m_ImpulsePerLength = value; }
+            public float impulsePerLength { readonly get => m_ImpulsePerLength; set => m_ImpulsePerLength = Mathf.Clamp(value, -MaxImpulse, MaxImpulse); }
 
             #region Internal
 
@@ -2248,7 +2268,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public unsafe partial struct WorldCounters
+        public partial record struct WorldCounters
         {
             /// <summary>
             /// The number of all body types.
@@ -2362,6 +2382,47 @@ namespace Unity.U2D.Physics
                 };
             }
 
+            /// <summary>
+            /// The per-color solver counts that end the native counters, which are not exposed here.
+            /// The buffer must still be present so the managed layout matches the native one when the counters are copied across.
+            /// It lives in its own plain struct because a record cannot hold a fixed buffer directly, while a struct-typed field containing one is fine.
+            /// </summary>
+            [StructLayout(LayoutKind.Sequential)]
+            private unsafe struct ColorCounts : IEquatable<ColorCounts>
+            {
+                internal fixed int m_Counts[PhysicsConstants.SolverGraphColorCount];
+
+                /// <summary>
+                /// Typed equality so the containing record compares this field without the boxing fallback.
+                /// </summary>
+                /// <param name="other">The other color counts to compare with.</param>
+                /// <returns>Whether every count is equal.</returns>
+                public bool Equals(ColorCounts other)
+                {
+                    for (var i = 0; i < PhysicsConstants.SolverGraphColorCount; ++i)
+                    {
+                        if (m_Counts[i] != other.m_Counts[i])
+                            return false;
+                    }
+
+                    return true;
+                }
+
+                /// <undoc/>
+                public override bool Equals(object obj) => obj is ColorCounts other && Equals(other);
+
+                /// <undoc/>
+                public override int GetHashCode()
+                {
+                    var hash = new HashCode();
+
+                    for (var i = 0; i < PhysicsConstants.SolverGraphColorCount; ++i)
+                        hash.Add(m_Counts[i]);
+
+                    return hash.ToHashCode();
+                }
+            }
+
             #region Internal
 
             [SerializeField, FormerlySerializedAs("m_MemoryUsed")] long m_UsedMemory;
@@ -2376,7 +2437,7 @@ namespace Unity.U2D.Physics
             [SerializeField] int m_StaticBroadphaseHeight;
             [SerializeField] int m_BroadphaseHeight;
             [SerializeField] int m_TaskCount;
-            fixed int m_ColorCounts[PhysicsConstants.SolverGraphColorCount];
+            private ColorCounts m_ColorCounts;
 
             #endregion
         }
@@ -2384,44 +2445,58 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Describes the expected world capacities used to presize internal allocations when a <see cref="PhysicsWorld"/> is created.
         /// All counts default to zero, in which case the engine uses its own minimum defaults.
-        /// See <see cref="PhysicsWorldDefinition.capacity"/> and <see cref="PhysicsWorld.capacity"/>.
+        /// Every count is in the range zero to <see cref="MaxCapacity"/> and any value outside that range is clamped into it.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorldDefinition.capacity"/> and <see cref="PhysicsWorld.capacity"/>.
+        /// </remarks>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct WorldCapacity
+        public record struct WorldCapacity
         {
             /// <summary>
-            /// The expected number of static shapes.
+            /// The maximum value allowed for each of the counts.
+            /// Each count presizes an internal allocation, so this ceiling keeps the memory a single world can reserve up-front to a sane amount.
             /// </summary>
-            public int staticShapeCount { readonly get => m_StaticShapeCount; set => m_StaticShapeCount = Mathf.Max(0, value); }
+            public const int MaxCapacity = ushort.MaxValue;
 
             /// <summary>
-            /// The expected number of dynamic and kinematic shapes.
+            /// The expected number of static shapes, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
             /// </summary>
-            public int dynamicShapeCount { readonly get => m_DynamicShapeCount; set => m_DynamicShapeCount = Mathf.Max(0, value); }
+            public int staticShapeCount { readonly get => m_StaticShapeCount; set => m_StaticShapeCount = Mathf.Clamp(value, 0, MaxCapacity); }
 
             /// <summary>
-            /// The expected number of static bodies.
+            /// The expected number of dynamic and kinematic shapes, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
             /// </summary>
-            public int staticBodyCount { readonly get => m_StaticBodyCount; set => m_StaticBodyCount = Mathf.Max(0, value); }
+            public int dynamicShapeCount { readonly get => m_DynamicShapeCount; set => m_DynamicShapeCount = Mathf.Clamp(value, 0, MaxCapacity); }
 
             /// <summary>
-            /// The expected number of dynamic and kinematic bodies.
+            /// The expected number of static bodies, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
             /// </summary>
-            public int dynamicBodyCount { readonly get => m_DynamicBodyCount; set => m_DynamicBodyCount = Mathf.Max(0, value); }
+            public int staticBodyCount { readonly get => m_StaticBodyCount; set => m_StaticBodyCount = Mathf.Clamp(value, 0, MaxCapacity); }
 
             /// <summary>
-            /// The expected number of contacts.
+            /// The expected number of dynamic and kinematic bodies, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
             /// </summary>
-            public int contactCount { readonly get => m_ContactCount; set => m_ContactCount = Mathf.Max(0, value); }
+            public int dynamicBodyCount { readonly get => m_DynamicBodyCount; set => m_DynamicBodyCount = Mathf.Clamp(value, 0, MaxCapacity); }
+
+            /// <summary>
+            /// The expected number of contacts, in the range zero to <see cref="MaxCapacity"/>.
+            /// Values outside that range are clamped into it.
+            /// </summary>
+            public int contactCount { readonly get => m_ContactCount; set => m_ContactCount = Mathf.Clamp(value, 0, MaxCapacity); }
 
             #region Internal
 
-            [SerializeField] [Min(0)] int m_StaticShapeCount;
-            [SerializeField] [Min(0)] int m_DynamicShapeCount;
-            [SerializeField] [Min(0)] int m_StaticBodyCount;
-            [SerializeField] [Min(0)] int m_DynamicBodyCount;
-            [SerializeField] [Min(0)] int m_ContactCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_StaticShapeCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_DynamicShapeCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_StaticBodyCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_DynamicBodyCount;
+            [SerializeField] [Range(0, MaxCapacity)] int m_ContactCount;
 
             #endregion
         }
@@ -2431,7 +2506,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public unsafe partial struct WorldProfile
+        public unsafe partial record struct WorldProfile
         {
             /// <summary>
             /// Time spent stepping the simulation forward.
@@ -2691,8 +2766,11 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Get the current world capacities reached since the world was created.
         /// This reflects the peak object counts and can be used to presize a <see cref="PhysicsWorldDefinition.capacity"/> for similar worlds.
-        /// See <see cref="PhysicsWorldDefinition.capacity"/>.
+        /// Peaks are not capped, so a peak above <see cref="WorldCapacity.MaxCapacity"/> is clamped to it when used to presize another world.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorldDefinition.capacity"/>.
+        /// </remarks>
         public readonly WorldCapacity capacity => PhysicsWorld_GetMaxCapacity(this);
 
         #endregion
@@ -2711,23 +2789,39 @@ namespace Unity.U2D.Physics
             Off = 0,
 
             /// <summary>
-            /// Draw the selected bodies.
+            /// Draw the bodies that have selected drawing enabled.
             /// </summary>
+            /// <remarks>
+            /// Enable selected drawing per body with <see cref="PhysicsBody.selectedDrawing"/>.
+            /// This option only controls whether those bodies are drawn. It never changes the property itself.
+            /// </remarks>
             SelectedBodies = 1 << 0,
 
             /// <summary>
-            /// Draw the selected shapes.
+            /// Draw the shapes that have selected drawing enabled.
             /// </summary>
+            /// <remarks>
+            /// Enable selected drawing per shape with <see cref="PhysicsShape.selectedDrawing"/>.
+            /// This option only controls whether those shapes are drawn. It never changes the property itself.
+            /// </remarks>
             SelectedShapes = 1 << 1,
 
             /// <summary>
-            /// Draw the selected shape bounds.
+            /// Draw the bounds of the shapes that have selected drawing enabled.
             /// </summary>
+            /// <remarks>
+            /// Enable selected drawing per shape with <see cref="PhysicsShape.selectedDrawing"/>.
+            /// This option only controls whether those shapes' bounds are drawn. It never changes the property itself.
+            /// </remarks>
             SelectedShapeBounds = 1 << 2,
 
             /// <summary>
-            /// Draw the selected joints.
+            /// Draw the joints that have selected drawing enabled.
             /// </summary>
+            /// <remarks>
+            /// Enable selected drawing per joint with <see cref="PhysicsJoint.selectedDrawing"/>.
+            /// This option only controls whether those joints are drawn. It never changes the property itself.
+            /// </remarks>
             SelectedJoints = 1 << 3,
 
             /// <summary>
@@ -2836,7 +2930,7 @@ namespace Unity.U2D.Physics
         /// You must immediately extract what information you need and not directly reference the returned data as it will be cleared immediately after being provided.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct DrawResults
+        public readonly record struct DrawResults
         {
             internal readonly PhysicsBuffer m_PolygonGeometryElements;
             internal readonly PhysicsBuffer m_CircleGeometryElements;
@@ -2861,7 +2955,7 @@ namespace Unity.U2D.Physics
             /// A Polygon Geometry Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly struct PolygonGeometryElement
+            public readonly record struct PolygonGeometryElement
             {
                 /// <summary>
                 /// The transform of the polygon element.
@@ -2955,7 +3049,7 @@ namespace Unity.U2D.Physics
             /// A Circle Geometry Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly struct CircleGeometryElement
+            public readonly record struct CircleGeometryElement
             {
                 /// <summary>
                 /// The transform of the circle element.
@@ -3002,7 +3096,7 @@ namespace Unity.U2D.Physics
             /// A Capsule Geometry Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly struct CapsuleGeometryElement
+            public readonly record struct CapsuleGeometryElement
             {
                 /// <summary>
                 /// The transform of the capsule element.
@@ -3055,7 +3149,7 @@ namespace Unity.U2D.Physics
             /// A Line Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly struct LineElement
+            public readonly record struct LineElement
             {
                 /// <summary>
                 /// The transform of the line element.
@@ -3095,7 +3189,7 @@ namespace Unity.U2D.Physics
             /// A Point Element.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly struct PointElement
+            public readonly record struct PointElement
             {
                 /// <summary>
                 /// The position of the point element.
@@ -3207,7 +3301,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct DrawColors
+        public record struct DrawColors
         {
             /// <summary>
             /// The X component of the Transform axis.
@@ -3278,6 +3372,21 @@ namespace Unity.U2D.Physics
             /// The shape bounds.
             /// </summary>
             public Color shapeBounds;
+
+            /// <summary>
+            /// The line connecting the anchors of a joint.
+            /// </summary>
+            public Color jointLine;
+
+            /// <summary>
+            /// The anchor points of a joint.
+            /// </summary>
+            public Color jointAnchor;
+
+            /// <summary>
+            /// The spring target of a joint.
+            /// </summary>
+            public Color jointSpring;
 
             /// <summary>
             /// A contact that is speculative.
@@ -3533,6 +3642,15 @@ namespace Unity.U2D.Physics
         public readonly void ClearDraw() => PhysicsWorld_ClearDraw(this, clearWorldDraw: false, clearCustomDraw: true, clearTimedDraw: true);
 
         /// <summary>
+        /// Clear the selected drawing state on every body, shape and joint in the world.
+        /// </summary>
+        /// <remarks>
+        /// This clears every selected drawing state in the world regardless of who set it.
+        /// See <see cref="PhysicsBody.selectedDrawing"/>, <see cref="PhysicsShape.selectedDrawing"/> and <see cref="PhysicsJoint.selectedDrawing"/>.
+        /// </remarks>
+        public readonly void ClearDrawSelected() => PhysicsWorld_ClearDrawSelected(this);
+
+        /// <summary>
         /// Draw the specified Circle Geometry.
         /// </summary>
         /// <param name="geometry">The geometry to draw.</param>
@@ -3712,11 +3830,12 @@ namespace Unity.U2D.Physics
         public readonly void DrawTransformAxis(PhysicsTransform transform, float scale, float lifetime = 0.0f) => PhysicsWorld_DrawTransformAxis(this, transform, scale, lifetime);
 
         /// <summary>
-        /// Draw a batch of shapes, each drawn into the world it belongs to.
+        /// Draw a batch of shapes once, as custom drawing, each drawn into the world it belongs to.
         /// </summary>
         /// <remarks>
         /// The shapes can belong to different worlds; the world of each shape is locked only when it changes across the batch, so shapes should be ordered by world for the fewest locks.
         /// Any invalid shape in the batch is ignored.
+        /// Unlike <see cref="PhysicsShape.selectedDrawing"/>, this does not persist: it draws once and is gone once every Scene/Game view has painted.
         /// See <see cref="PhysicsShape.Draw"/> for drawing a single shape.
         /// </remarks>
         /// <param name="shapes">The shapes to draw.</param>

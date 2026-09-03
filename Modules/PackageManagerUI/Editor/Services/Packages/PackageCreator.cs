@@ -32,13 +32,13 @@ internal class PackageCreator : BaseService<IPackageCreator>, IPackageCreator
     private const string k_DefaultOrgTechnicalName = "undefined";
     private const string k_DefaultTechnicalNameWithoutOrg = "newpackage";
 
-    public static readonly string k_GeneralExceptionErrorMessage = L10n.Tr("An error occurred while trying to create the new package.");
-    public static readonly string k_TempAndPackagesFolderAreReadOnlyErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The project contains read-only folders ('Temp' and 'Packages'). Change the permissions to read and write and try again.");
-    public static readonly string k_TempFolderIsReadOnlyErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The 'Temp' folder in the project is a read-only folder. Change the permissions to read and write and try again.");
-    public static readonly string k_PackagesFolderIsReadOnlyErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The 'Packages' folder in the project is a read-only folder. Change the permissions to read and write and try again.");
-    public static readonly string k_PermissionDeniedGeneralErrorMessage = L10n.Tr("An error occurred while trying to create the new package. You might not have permissions to write to the 'Temp' or 'Packages' folders. This error can happen when you don't open the Unity Editor in administrator mode. Close the Editor, then open it in administrator mode and try again. Error: ");
-    public static readonly string k_PathIsTooLongErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The path to your project might be too long. Move your project to another location with a shorter path, then try again.");
-    public static readonly string k_NameIsTooLongErrorMessage = L10n.Tr("The package display name is too long.");
+    public static readonly string k_GeneralExceptionErrorMessage = L10n.Tr("An error occurred while trying to create the new package.", null);
+    public static readonly string k_TempAndPackagesFolderAreReadOnlyErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The project contains read-only folders ('Temp' and 'Packages'). Change the permissions to read and write and try again.", null);
+    public static readonly string k_TempFolderIsReadOnlyErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The 'Temp' folder in the project is a read-only folder. Change the permissions to read and write and try again.", null);
+    public static readonly string k_PackagesFolderIsReadOnlyErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The 'Packages' folder in the project is a read-only folder. Change the permissions to read and write and try again.", null);
+    public static readonly string k_PermissionDeniedGeneralErrorMessage = L10n.Tr("An error occurred while trying to create the new package. You might not have permissions to write to the 'Temp' or 'Packages' folders. This error can happen when you don't open the Unity Editor in administrator mode. Close the Editor, then open it in administrator mode and try again. Error: ", null);
+    public static readonly string k_PathIsTooLongErrorMessage = L10n.Tr("An error occurred while trying to create the new package. The path to your project might be too long. Move your project to another location with a shorter path, then try again.", null);
+    public static readonly string k_NameIsTooLongErrorMessage = L10n.Tr("The package display name is too long.", null);
 
     private readonly IUnityConnectProxy m_UnityConnectProxy;
     private readonly IUpmCache m_UpmCache;

@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ApplicationProxy = applicationProxy;
 
             name = k_CopyIconName;
-            tooltip = L10n.Tr("Copy to clipboard");
+            tooltip = L10n.Tr("Copy to clipboard", null);
 
             RegisterCallback<MouseDownEvent>(OnMouseDown);
         }

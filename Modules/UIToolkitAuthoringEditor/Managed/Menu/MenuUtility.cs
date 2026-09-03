@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
@@ -12,7 +11,6 @@ using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
@@ -58,9 +56,18 @@ static class MenuUtility
     {
         if (StageUtility.GetCurrentStage() is VisualElementEditingStage activeStage)
         {
-            if (!TryResolveStageParent(activeStage, Selection.activeObject as VisualElementSelection, addAsSibling, out var parentVea))
+            if (!TryResolveStageParent(activeStage, Selection.activeObject as VisualElementSelection, addAsSibling,
+                    out var parentVea, out var parentElement))
                 return;
-            ExecuteAdd(activeStage, request, parentVea);
+            ExecuteAdd(activeStage, request, parentVea, parentElement);
+            return;
+        }
+
+        // Main Stage authoring edits the scene documents where they are, so the element is added in place.
+        // There is no stage to enter, and therefore nothing to ask the user about either.
+        if (UIToolkitStageUtility.IsAuthoringEnabledInMainStage)
+        {
+            AddInMainStage(request, addAsSibling, parentNewGameObjectUnderSelection);
             return;
         }
 
@@ -93,6 +100,143 @@ static class MenuUtility
         }
 
         AddInAppropriatePanelRendererComponent(Selection.activeGameObject, request, parentNewGameObjectUnderSelection);
+    }
+
+    /// <summary>
+    /// Adds without leaving the Main Stage, where the scene documents are authored in place: the element goes
+    /// straight into the document the selection points at.
+    /// </summary>
+    static void AddInMainStage(AddRequest request, bool addAsSibling, bool parentNewGameObjectUnderSelection)
+    {
+        switch (Selection.activeObject)
+        {
+            // The `Foo.uxml` row stands for the document itself, which takes the element at its root.
+            case VisualTreeAssetSelection vtaSelection:
+            {
+                if (!(Component)vtaSelection.PanelComponent || !vtaSelection.PanelComponent.visualTreeAsset)
+                    return;
+
+                AddToPanelComponent(vtaSelection.PanelComponent, request);
+                return;
+            }
+            case VisualElementSelection ves:
+            {
+                if (ves.Element == null)
+                    return;
+
+                // A selection naming an element we cannot author into — one that cannot take children, or one
+                // belonging to no scene document at all — is not a reason to go and add somewhere else.
+                if (TryResolveMainStageTarget(ves.Element, addAsSibling, out var target))
+                    ExecuteMainStageAdd(in target, request);
+                return;
+            }
+        }
+
+        if (TryResolveTargetPanelComponent(Selection.activeGameObject, parentNewGameObjectUnderSelection, out var component))
+            AddToPanelComponent(component, request);
+    }
+
+    // Dropping a UI Library element on empty Main Stage Hierarchy space, where the root holds GameObjects and
+    // no document, creates a GameObject with a PanelRenderer, a new document and the element.
+    internal static bool CreatePanelWithElement(Type elementType, string variantName)
+    {
+        if (!TryCreatePanelRendererAndAsset(null, reusableComponent: null, out var component))
+            return false;
+
+        AddToPanelComponent(component, AddRequest.ForType(elementType, variantName));
+        return true;
+    }
+
+    static void AddToPanelComponent(IPanelComponent component, AddRequest request)
+    {
+        var document = component.visualTreeAsset;
+        if (document == null)
+            return;
+
+        // A document that was only just created has no live tree yet; its panel clones it, new element
+        // included, on its next update.
+        var target = new MainStageAddTarget(document.visualTree, component.GetRootVisualElement());
+        ExecuteMainStageAdd(in target, request);
+    }
+
+    /// <summary>
+    /// Resolves where an add aimed at <paramref name="element"/> has to land in the Main Stage.
+    /// </summary>
+    /// <remarks>
+    /// The selection can point at an element that is not authored — a control's internals, the content container
+    /// of a <see cref="ScrollView"/> — so the add is aimed at the closest ancestor that is. The document that
+    /// ends up changed is the one owning the resolved asset, which for content cloned from a template is the
+    /// template's own document rather than the scene document instantiating it.
+    /// </remarks>
+    static bool TryResolveMainStageTarget(VisualElement element, bool addAsSibling, out MainStageAddTarget target)
+    {
+        target = default;
+
+        var authored = element;
+        while (authored != null
+               && authored is not IPanelComponentRootElement
+               && !UIToolkitStageUtility.GetMainStageEditFlags(authored).IsFullyEditable())
+        {
+            authored = authored.hierarchy.parent;
+        }
+
+        if (authored == null)
+            return false;
+
+        // A document root has no asset of its own; the document it hosts takes the children instead.
+        if (authored is IPanelComponentRootElement rootElement)
+        {
+            var document = rootElement.panelComponent?.visualTreeAsset;
+            if (document == null)
+                return false;
+
+            target = new MainStageAddTarget(document.visualTree, authored);
+            return true;
+        }
+
+        if (addAsSibling)
+        {
+            if (authored.visualElementAsset.parentAsset is not VisualElementAsset parentAsset)
+                return false;
+
+            // A sibling is a child of the selection's own parent, which is the element the result hangs from.
+            target = new MainStageAddTarget(parentAsset, authored.parent ?? authored);
+            return true;
+        }
+
+        if (!VisualElementUtility.CanReceiveChildren(authored))
+            return false;
+
+        target = new MainStageAddTarget(authored.visualElementAsset, authored);
+        return true;
+    }
+
+    static void ExecuteMainStageAdd(in MainStageAddTarget target, AddRequest request)
+    {
+        var document = target.ParentAsset.visualTreeAsset;
+
+        if (request.IsTemplate)
+        {
+            if (VisualElementEditingUtility.WillCauseCircularDependency(document, target.ParentElement, request.Template))
+            {
+                Debug.LogWarning($"Cannot add '{request.Template.name}' here because it would create a circular reference.");
+                return;
+            }
+
+            AddTemplatesToElementCommand.Execute(CommandSources.Menus, target.ParentAsset, -1, new[] { request.Template });
+        }
+        else
+        {
+            AddElementCommand.Execute(CommandSources.Menus, request.ElementType, document, target.ParentAsset, -1, request.VariantName);
+        }
+
+        // Both commands filed their selection request by asset alone; narrow it to the instance the selection
+        // is in.
+        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(target.ParentElement);
+
+        // The commands only write to the authoring assets, and a scene panel does not show an in-memory change
+        // to the document it renders until it clones it again.
+        UIAssetRegistrySceneTracking.ReloadDocumentOf(target.ParentElement);
     }
 
     static bool TryResolveNewVisualTreeAssetPath(out string assetPath)
@@ -129,52 +273,71 @@ static class MenuUtility
 
     static void AddInAppropriatePanelRendererComponent(GameObject selectedGo, AddRequest request, bool parentNewGameObjectUnderSelection)
     {
-        var existingPanel = (IPanelComponent)selectedGo?.GetComponent<PanelRenderer>()
-                            ?? selectedGo?.GetComponent<UIDocument>();
-        var existingPanelAsComponent = (Component)existingPanel;
+        if (!TryResolveTargetPanelComponent(selectedGo, parentNewGameObjectUnderSelection, out var component))
+            return;
 
-        if (existingPanelAsComponent)
-        {
-            if (existingPanel?.visualTreeAsset != null)
-            {
-                var ctx = new VisualTreeAssetEditingContext(existingPanel.visualTreeAsset, existingPanel.panelSettings);
-                EnterStageAndAdd(ctx, request, parentVea: null);
-                return;
-            }
-
-            // No usable VTA on the GameObject. Reuse the existing component if there is one (so we
-            // don't leave an empty Panel sitting next to the new one); otherwise create a new
-            // GameObject - parented under the selection only when explicitly requested.
-            if (TryCreatePanelRendererAndAsset(null, existingPanel, out var newContext))
-                EnterStageAndAdd(newContext, request, parentVea: null);
-        }
-        else if (parentNewGameObjectUnderSelection)
-        {
-            if (TryCreatePanelRendererAndAsset(selectedGo, null, out var newContext))
-                EnterStageAndAdd(newContext, request, parentVea: null);
-        }
-        else
-        {
-            var panelComponent = FindFirstScenePanelComponent();
-            if (panelComponent != null)
-            {
-                var sceneContext = new VisualTreeAssetEditingContext(panelComponent.visualTreeAsset, panelComponent.panelSettings);
-                EnterStageAndAdd(sceneContext, request, parentVea: null);
-                return;
-            }
-
-            if (TryCreatePanelRendererAndAsset(null, reusableComponent: null, out var newContext))
-                EnterStageAndAdd(newContext, request, parentVea: null);
-        }
+        var context = new VisualTreeAssetEditingContext(component.visualTreeAsset, component.panelSettings);
+        EnterStageAndAdd(context, request, parentVea: null);
     }
 
-    static bool TryResolveStageParent(VisualElementEditingStage stage, VisualElementSelection selection, bool addAsSibling, out VisualElementAsset parentVea)
+    /// <summary>
+    /// The panel component an add lands in when the selection names no document of its own: the one on the
+    /// selected GameObject, or a new one — created along with the document it renders.
+    /// </summary>
+    /// <returns>
+    /// <see langword="false"/> when none could be resolved, which includes the user declining to create a new
+    /// document.
+    /// </returns>
+    static bool TryResolveTargetPanelComponent(GameObject selectedGo, bool parentNewGameObjectUnderSelection,
+        out IPanelComponent component)
+    {
+        var existingPanel = (IPanelComponent)selectedGo?.GetComponent<PanelRenderer>()
+                            ?? selectedGo?.GetComponent<UIDocument>();
+
+        if ((Component)existingPanel)
+        {
+            if (existingPanel.visualTreeAsset != null)
+            {
+                component = existingPanel;
+                return true;
+            }
+
+            // No usable VTA on the GameObject. Reuse the existing component (so we don't leave an empty Panel
+            // sitting next to the new one) rather than creating another one beside it.
+            return TryCreatePanelRendererAndAsset(null, existingPanel, out component);
+        }
+
+        // No panel on the selection: create a new one rather than adopting another that happens to be in the
+        // scene. It hangs under the selected GameObject when the add asked to parent there.
+        return TryCreatePanelRendererAndAsset(parentNewGameObjectUnderSelection ? selectedGo : null, null, out component);
+    }
+
+    /// <summary>
+    /// Resolves where an add aimed at <paramref name="selection"/> has to land in the UI Stage. Both outputs are
+    /// left <see langword="null"/> when there is nothing selected to resolve them from, which means the root of
+    /// the document being edited.
+    /// </summary>
+    /// <param name="parentElement">
+    /// The live element the new content becomes a child of. It tells apart two instances of one document, which
+    /// the asset alone cannot, so the result is selected in the instance the selection is in.
+    /// </param>
+    /// <returns><see langword="false"/> when the selection resolves to an element that cannot take children.</returns>
+    static bool TryResolveStageParent(VisualElementEditingStage stage, VisualElementSelection selection,
+        bool addAsSibling, out VisualElementAsset parentVea, out VisualElement parentElement)
     {
         parentVea = null;
+        parentElement = null;
 
         var element = selection?.Element;
         if (element == null)
+        {
+            // No selection: the add lands at the root of the document being edited, which is what a null
+            // parentVea resolves to. The live parent is still named, though — editing a sub-document in context
+            // means that root is one template instance among several, and the request has nothing else to tell
+            // it from the other clones of the same document.
+            parentElement = stage.ResolveLocalRoot();
             return true;
+        }
 
         if (stage.Context.GetElementEditFlags(element) != VisualElementEditFlags.FullyEditable)
         {
@@ -182,6 +345,7 @@ static class MenuUtility
             if (addAsSibling)
             {
                 parentVea = (VisualElementAsset)suitable?.visualElementAsset?.parentAsset;
+                parentElement = suitable?.parent;
                 return true;
             }
 
@@ -189,12 +353,14 @@ static class MenuUtility
                 return false;
 
             parentVea = suitable?.visualElementAsset;
+            parentElement = suitable;
             return true;
         }
 
         if (addAsSibling)
         {
             parentVea = (VisualElementAsset)element.visualElementAsset?.parentAsset;
+            parentElement = element.parent;
             return true;
         }
 
@@ -202,6 +368,7 @@ static class MenuUtility
             return false;
 
         parentVea = element.visualElementAsset;
+        parentElement = element;
         return true;
     }
 
@@ -250,54 +417,9 @@ static class MenuUtility
         return false;
     }
 
-    static IPanelComponent FindFirstScenePanelComponent()
+    static bool TryCreatePanelRendererAndAsset(GameObject parent, IPanelComponent reusableComponent, out IPanelComponent component)
     {
-        foreach (var scene in EnumerateScenesInPriorityOrder())
-        {
-            var renderer = FindFirstUsablePanelComponentInScene(scene);
-            if (renderer != null)
-                return renderer;
-        }
-        return null;
-    }
-
-    static IEnumerable<Scene> EnumerateScenesInPriorityOrder()
-    {
-        var active = SceneManager.GetActiveScene();
-        if (active.IsValid() && active.isLoaded)
-            yield return active;
-
-        for (var i = 0; i < SceneManager.sceneCount; i++)
-        {
-            var scene = SceneManager.GetSceneAt(i);
-            if (scene == active || !scene.IsValid() || !scene.isLoaded)
-                continue;
-            yield return scene;
-        }
-    }
-
-    static IPanelComponent FindFirstUsablePanelComponentInScene(Scene scene)
-    {
-        using var rootHandle = ListPool<GameObject>.Get(out var roots);
-        scene.GetRootGameObjects(roots);
-
-        using var componentHandle = ListPool<IPanelComponent>.Get(out var components);
-        foreach (var root in roots)
-        {
-            components.Clear();
-            root.GetComponentsInChildren(true, components);
-            foreach (var component in components)
-            {
-                if (component.visualTreeAsset != null)
-                    return component;
-            }
-        }
-        return null;
-    }
-
-    static bool TryCreatePanelRendererAndAsset(GameObject parent, IPanelComponent reusableComponent, out VisualTreeAssetEditingContext context)
-    {
-        context = default;
+        component = null;
 
         if (!TryResolveNewVisualTreeAssetPath(out var assetPath))
             return false;
@@ -321,7 +443,7 @@ static class MenuUtility
             reusableComponent.visualTreeAsset = newVta;
             if (reusableComponent.panelSettings == null)
                 reusableComponent.panelSettings = defaultPanelSettings;
-            context = new VisualTreeAssetEditingContext(newVta, reusableComponent.panelSettings);
+            component = reusableComponent;
             return true;
         }
 
@@ -344,17 +466,21 @@ static class MenuUtility
         }
 
         Selection.activeGameObject = go;
-        context = new VisualTreeAssetEditingContext(newVta, defaultPanelSettings);
+        component = panelRenderer;
         return true;
     }
 
     static void EnterStageAndAdd(VisualTreeAssetEditingContext context, AddRequest request, VisualElementAsset parentVea)
     {
         var stage = VisualElementEditingStage.GoToStage(context, BreadcrumbBar.SeparatorStyle.Arrow);
-        ExecuteAdd(stage, request, parentVea);
+
+        // The stage was only just entered, so it has cloned nothing yet and there is no live parent to name; the
+        // add lands at the root of the document it opened on, which exists only once.
+        ExecuteAdd(stage, request, parentVea, parentElement: null);
     }
 
-    static void ExecuteAdd(VisualElementEditingStage stage, AddRequest request, VisualElementAsset parentVea)
+    static void ExecuteAdd(VisualElementEditingStage stage, AddRequest request, VisualElementAsset parentVea,
+        VisualElement parentElement)
     {
         if (request.IsTemplate)
         {
@@ -372,7 +498,25 @@ static class MenuUtility
             AddElementCommand.Execute(CommandSources.Menus, request.ElementType, stage.EditedVisualTreeAsset, parentVea, -1, request.VariantName);
         }
 
-        stage.RequestRefresh();
+        // Both commands asked for what they created by asset alone. A staged document can instantiate the same
+        // template twice as well, so point the request at the instance the selection is in.
+        UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parentElement);
+    }
+
+    /// <summary>
+    /// Where a Main Stage add lands: the asset the new element is parented to, and the live element it becomes a
+    /// child of — which is also the document to re-clone, and the instance to select the result in.
+    /// </summary>
+    readonly struct MainStageAddTarget
+    {
+        public readonly VisualElementAsset ParentAsset;
+        public readonly VisualElement ParentElement;
+
+        public MainStageAddTarget(VisualElementAsset parentAsset, VisualElement parentElement)
+        {
+            ParentAsset = parentAsset;
+            ParentElement = parentElement;
+        }
     }
 
     readonly struct AddRequest

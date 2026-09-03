@@ -269,9 +269,9 @@ namespace UnityEditor.SceneTemplate
 
         internal static MonoScript CreateNewSceneTemplatePipeline(string folder)
         {
-            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Create new Scene Template Pipeline"),
+            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Create new Scene Template Pipeline", null),
                 "NewSceneTemplatePipeline", "cs",
-                L10n.Tr("Please enter a file name for the new Scene Template Pipeline."),
+                L10n.Tr("Please enter a file name for the new Scene Template Pipeline.", null),
                 folder);
             return CreateNewSceneTemplatePipelineAtPath(path);
         }
@@ -610,7 +610,7 @@ namespace UnityEditor.SceneTemplate
             var currentScenePath = SceneManager.GetActiveScene().path;
             if (string.IsNullOrEmpty(currentScenePath))
             {
-                var suggestedScenePath = SceneTemplateUtils.SaveFilePanelUniqueName(L10n.Tr("Save scene"), "Assets", "newscene", "unity");
+                var suggestedScenePath = SceneTemplateUtils.SaveFilePanelUniqueName(L10n.Tr("Save scene", null), "Assets", "newscene", "unity");
                 if (string.IsNullOrEmpty(suggestedScenePath) || !EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), suggestedScenePath))
                     return;
 
@@ -618,7 +618,7 @@ namespace UnityEditor.SceneTemplate
                 currentScenePath = SceneManager.GetActiveScene().path;
             }
 
-            var sceneTemplateFile = SceneTemplateUtils.SaveFilePanelUniqueName(L10n.Tr("Save scene"), Path.GetDirectoryName(currentScenePath), Path.GetFileNameWithoutExtension(currentScenePath), SceneTemplateAsset.extension);
+            var sceneTemplateFile = SceneTemplateUtils.SaveFilePanelUniqueName(L10n.Tr("Save scene", null), Path.GetDirectoryName(currentScenePath), Path.GetFileNameWithoutExtension(currentScenePath), SceneTemplateAsset.extension);
             if (string.IsNullOrEmpty(sceneTemplateFile))
                 return;
 

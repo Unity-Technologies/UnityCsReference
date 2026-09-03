@@ -35,6 +35,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IModalManager m_ModalManager;
 
+        private readonly DisableConditionList<IPackageVersion> m_DisableConditions;
+
         public PackageToolbar() : this(
             ServicesContainer.instance.Resolve<IResourceLoader>(),
             ServicesContainer.instance.Resolve<IApplicationProxy>(),
@@ -70,6 +72,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = pageManager;
             m_UnityConnect = unityConnect;
             m_ModalManager = modalManager;
+
+            m_DisableConditions = new(
+                new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
+                new DisableIfCompiling(m_Application));
 
             m_MainContainer = new VisualElement { name = "toolbarMainContainer" };
             Add(m_MainContainer);
@@ -206,16 +212,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshExtensionItems()
         {
-            var activeDisableCondition = GetDisableConditions().FirstMatch(c => c.active);
+            var activeDisableCondition = m_DisableConditions.GetActiveCondition(m_Version, out var tooltip);
             foreach (var item in extensions.Children())
                 item.SetEnabled(activeDisableCondition == null);
-            extensions.tooltip = activeDisableCondition?.tooltip ?? string.Empty;
-        }
-
-        private IEnumerable<DisableCondition> GetDisableConditions()
-        {
-            yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
-            yield return new DisableIfCompiling(m_Application);
+            extensions.tooltip = tooltip ?? string.Empty;
         }
 
         private void OnDownloadProgress(IOperation operation)

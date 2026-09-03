@@ -153,6 +153,10 @@ namespace UnityEngine.UIElements
         static StyleKeyword ConvertTranslateToStyleKeyword(ref StyleTranslate value) => value.keyword;
         static StyleTranslate ConvertTranslateToStyleTranslate(ref Translate value) => value;
         static StyleTranslate ConvertStyleKeywordToStyleTranslate(ref StyleKeyword value) => value;
+        static Curvature ConvertStyleCurvatureToCurvature(ref StyleCurvature value) => value.value;
+        static StyleKeyword ConvertCurvatureToStyleKeyword(ref StyleCurvature value) => value.keyword;
+        static StyleCurvature ConvertCurvatureToStyleCurvature(ref Curvature value) => value;
+        static StyleCurvature ConvertStyleKeywordToStyleCurvature(ref StyleKeyword value) => value;
         static EditorTextRenderingMode ConvertStyleEditorTextRenderingModeEnumToEditorTextRenderingMode(ref StyleEnum<EditorTextRenderingMode> value) => value.value;
         static StyleKeyword ConvertEditorTextRenderingModeToStyleKeyword(ref StyleEnum<EditorTextRenderingMode> value) => value.keyword;
         static StyleEnum<EditorTextRenderingMode> ConvertEditorTextRenderingModeToStyleEditorTextRenderingModeEnum(ref EditorTextRenderingMode value) => value;
@@ -348,6 +352,10 @@ namespace UnityEngine.UIElements
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleTranslate), typeof(StyleKeyword), () => (TypeConverter<StyleTranslate, StyleKeyword>)ConvertTranslateToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(Translate), typeof(StyleTranslate), () => (TypeConverter<Translate, StyleTranslate>)ConvertTranslateToStyleTranslate);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleTranslate), () => (TypeConverter<StyleKeyword, StyleTranslate>)ConvertStyleKeywordToStyleTranslate);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleCurvature), typeof(Curvature), () => (TypeConverter<StyleCurvature, Curvature>)ConvertStyleCurvatureToCurvature);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleCurvature), typeof(StyleKeyword), () => (TypeConverter<StyleCurvature, StyleKeyword>)ConvertCurvatureToStyleKeyword);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(Curvature), typeof(StyleCurvature), () => (TypeConverter<Curvature, StyleCurvature>)ConvertCurvatureToStyleCurvature);
+            ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleKeyword), typeof(StyleCurvature), () => (TypeConverter<StyleKeyword, StyleCurvature>)ConvertStyleKeywordToStyleCurvature);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<EditorTextRenderingMode>), typeof(EditorTextRenderingMode), () => (TypeConverter<StyleEnum<EditorTextRenderingMode>, EditorTextRenderingMode>)ConvertStyleEditorTextRenderingModeEnumToEditorTextRenderingMode);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(StyleEnum<EditorTextRenderingMode>), typeof(StyleKeyword), () => (TypeConverter<StyleEnum<EditorTextRenderingMode>, StyleKeyword>)ConvertEditorTextRenderingModeToStyleKeyword);
             ConverterGroups.Unsafe.LazyRegisterGlobal(typeof(EditorTextRenderingMode), typeof(StyleEnum<EditorTextRenderingMode>), () => (TypeConverter<EditorTextRenderingMode, StyleEnum<EditorTextRenderingMode>>)ConvertEditorTextRenderingModeToStyleEditorTextRenderingModeEnum);

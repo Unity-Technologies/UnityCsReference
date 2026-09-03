@@ -41,6 +41,9 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <inheritdoc />
+        public ITransition Transition => TransitionSupportModel?.AsPublicTransition();
+
+        /// <inheritdoc />
         public override IEnumerable<GraphElementModel> DependentModels => GetGraphElementModels();
 
         /// <inheritdoc />
@@ -58,6 +61,7 @@ namespace Unity.GraphToolkit.Editor
                     m_ConditionModel = new GroupConditionModel();
                     GraphModel?.RegisterCondition(m_ConditionModel);
                     m_ConditionModel.GraphModel = GraphModel;
+                    m_ConditionModel.Transition = this;
                 }
                 return m_ConditionModel;
             }
@@ -73,6 +77,7 @@ namespace Unity.GraphToolkit.Editor
         public void CloneConditionModel(GroupConditionModel original)
         {
             m_ConditionModel = original.Clone();
+            m_ConditionModel.Transition = this;
         }
 
         /// <summary>

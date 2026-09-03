@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SRPFoundation not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -240,9 +241,9 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly string revertMultiText = L10n.Tr("Revert on {0} Material(s)");
-            public static readonly string applyToMaterialText = L10n.Tr("Apply to Material '{0}'");
-            public static readonly string applyToVariantText = L10n.Tr("Apply as Override in Variant '{0}'");
+            public static readonly string revertMultiText = L10n.Tr("Revert on {0} Material(s)", null);
+            public static readonly string applyToMaterialText = L10n.Tr("Apply to Material '{0}'", null);
+            public static readonly string applyToVariantText = L10n.Tr("Apply as Override in Variant '{0}'", null);
 
             static readonly Color overrideLineColor_l = new Color32(0x09, 0x09, 0x09, 0xFF);
             static readonly Color overrideLineColor_d = new Color32(0xC4, 0xC4, 0xC4, 0xFF);
@@ -841,3 +842,4 @@ namespace UnityEditor
         }
     }
 } // namespace UnityEngine.Rendering
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

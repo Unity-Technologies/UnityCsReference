@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -105,16 +106,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var primary = m_Version.package.versions.primary;
             if (m_Version == primary && m_Version.isInstalled)
-                versionHistoryItemState.text = m_Version.isDirectDependency ? L10n.Tr("Installed") : L10n.Tr("Installed as dependency");
+                versionHistoryItemState.text = m_Version.isDirectDependency ? L10n.Tr("Installed", null) : L10n.Tr("Installed as dependency", null);
             else if (m_Version != primary && primary.versionInManifest == m_Version.versionString)
-                versionHistoryItemState.text = L10n.Tr("Requested");
+                versionHistoryItemState.text = L10n.Tr("Requested", null);
             else if (m_Version == m_Version.package.versions.recommended)
             {
-                versionHistoryItemState.text = L10n.Tr("Recommended");
-                versionHistoryItemState.tooltip = L10n.Tr("Recommended for this Unity release");
+                versionHistoryItemState.text = L10n.Tr("Recommended", null);
+                versionHistoryItemState.tooltip = L10n.Tr("Recommended for this Unity release", null);
             }
             else if (m_Version == m_Version.package.versions.latest)
-                versionHistoryItemState.text = L10n.Tr("Latest");
+                versionHistoryItemState.text = L10n.Tr("Latest", null);
         }
 
         private void RefreshContent()
@@ -147,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var showVersionDeprecation = m_Version.HasTag(PackageTag.Deprecated);
             UIUtils.SetElementDisplay(deprecatedVersionErrorInfoBox, showVersionDeprecation);
             if (showVersionDeprecation)
-                deprecatedVersionErrorInfoBox.text = L10n.Tr("This version is deprecated. ") + L10n.Tr(m_Version.deprecationMessage);
+                deprecatedVersionErrorInfoBox.text = L10n.Tr("This version is deprecated. ", null) + L10n.Tr(m_Version.deprecationMessage, null);
         }
 
         private void RefreshReleaseDate()
@@ -188,12 +189,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             var hasDependencies = m_Version?.dependencies?.Length > 0;
             if (!hasDependencies)
             {
-                versionHistoryItemDependenciesLabel.text = L10n.Tr("No dependencies");
+                versionHistoryItemDependenciesLabel.text = L10n.Tr("No dependencies", null);
                 UIUtils.SetElementDisplay(versionHistoryItemDependenciesList, false);
             }
             else
             {
-                versionHistoryItemDependenciesLabel.text = $"<b>{L10n.Tr("Is using")}</b>";
+                versionHistoryItemDependenciesLabel.text = $"<b>{L10n.Tr("Is using", null)}</b>";
                 versionHistoryItemDependenciesNames.Clear();
                 versionHistoryItemDependenciesVersions.Clear();
                 versionHistoryItemDependenciesStatuses.Clear();
@@ -244,13 +245,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (hasDisplayNameChange || hasDescriptionChange || hasAuthorChange)
             {
                 UIUtils.SetElementDisplay(versionHistoryItemMetaDataTitle, hasDisplayNameChange);
-                versionHistoryItemMetaDataTitle.text = $"<b>{L10n.Tr("Title")}:</b> {m_Version.displayName}";
+                versionHistoryItemMetaDataTitle.text = $"<b>{L10n.Tr("Title", null)}:</b> {m_Version.displayName}";
 
                 UIUtils.SetElementDisplay(versionHistoryItemMetaDataAuthor, hasAuthorChange);
-                versionHistoryItemMetaDataAuthor.text = $"<b>{L10n.Tr("Author")}:</b> {m_Version.author?.name}";
+                versionHistoryItemMetaDataAuthor.text = $"<b>{L10n.Tr("Author", null)}:</b> {m_Version.author?.name}";
 
                 UIUtils.SetElementDisplay(versionHistoryItemMetaDataDescription, hasDescriptionChange);
-                versionHistoryItemMetaDataDescription.text = $"<b>{L10n.Tr("Description")}:</b>\n{m_Version.description}";
+                versionHistoryItemMetaDataDescription.text = $"<b>{L10n.Tr("Description", null)}:</b>\n{m_Version.description}";
             }
         }
 
@@ -307,3 +308,4 @@ namespace UnityEditor.PackageManager.UI.Internal
         private LoadingSpinner versionHistoryItemToggleSpinner => m_Cache.Get<LoadingSpinner>("versionHistoryItemToggleSpinner");
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

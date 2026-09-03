@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class OriginalUnityVersionInfoCard : PackageInformationCard
 {
-    protected override string titleText => L10n.Tr("Original Unity Version");
+    protected override string titleText => L10n.Tr("Original Unity Version", null);
     protected override InformationCardSize cardSize => InformationCardSize.Small;
 
     public override void Refresh(IPackageVersion version)
@@ -18,7 +18,7 @@ internal class OriginalUnityVersionInfoCard : PackageInformationCard
         if (!isVisible)
             return;
 
-        contentText = string.Format(L10n.Tr("Unity {0}"), supportedVersion);
+        contentText = string.Format(L10n.Tr("Unity {0}", null), supportedVersion);
 
         var tooltipText = supportedVersion.ToString();
         if (hasManySupportedVersions)
@@ -29,9 +29,9 @@ internal class OriginalUnityVersionInfoCard : PackageInformationCard
 
             tooltipText = versions.Length == 1
                 ? versions[0]
-                : string.Format(L10n.Tr("{0} and {1} to improve compatibility with the range of these versions of Unity"),
+                : string.Format(L10n.Tr("{0} and {1} to improve compatibility with the range of these versions of Unity", null),
                     string.Join(", ", versions, 0, versions.Length - 1), versions[^1]);
         }
-        contentTooltip = string.Format(L10n.Tr("Package has been submitted using Unity {0}"), tooltipText);
+        contentTooltip = string.Format(L10n.Tr("Package has been submitted using Unity {0}", null), tooltipText);
     }
 }

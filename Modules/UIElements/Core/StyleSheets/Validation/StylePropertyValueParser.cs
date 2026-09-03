@@ -37,10 +37,12 @@ namespace UnityEngine.UIElements.StyleSheets
                     switch (c)
                     {
                         case ',':
-                            EatSpace();
                             AddValuePart();
-                            // comma is considered a literal value
                             m_ValueList.Add(",");
+                            break;
+                        case '/':
+                            AddValuePart();
+                            m_ValueList.Add("/");
                             break;
                         case '(':
                             AppendFunction();
@@ -53,9 +55,7 @@ namespace UnityEngine.UIElements.StyleSheets
                 ++m_ParseIndex;
             }
 
-            var lastPart = m_StringBuilder.ToString();
-            if (!string.IsNullOrEmpty(lastPart))
-                m_ValueList.Add(lastPart);
+            AddValuePart();
 
             return m_ValueList.ToArray();
         }
@@ -64,7 +64,8 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             var part = m_StringBuilder.ToString();
             m_StringBuilder.Remove(0, m_StringBuilder.Length);
-            m_ValueList.Add(part);
+            if (part.Length > 0)
+                m_ValueList.Add(part);
         }
 
         private void AppendFunction()

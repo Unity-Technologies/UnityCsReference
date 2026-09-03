@@ -250,6 +250,21 @@ namespace UnityEngine.U2D
             SetBatchBoneTransformIndexAndLocalAABBArray(spriteRenderers, boneTransformIndices.GetUnsafeReadOnlyPtr(), bounds.GetUnsafeReadOnlyPtr(), count);
         }
 
+        /// <summary>
+        /// Performs a batch update of unifiedOffsetIndex and AABB for the specified SpriteRenderers.
+        /// </summary>
+        internal static unsafe void SetBatchUnifiedDeformedVertexOffsetArray(SpriteRenderer[] spriteRenderers, NativeArray<int> unifiedOffsetIndices, NativeArray<Bounds> bounds)
+        {
+            int count = spriteRenderers.Length;
+            if (count != unifiedOffsetIndices.Length
+                || count != bounds.Length)
+            {
+                throw new ArgumentException("Input array sizes are not the same.");
+            }
+
+            SetBatchUnifiedDeformedVertexOffsetArray(spriteRenderers, unifiedOffsetIndices.GetUnsafeReadOnlyPtr(), bounds.GetUnsafeReadOnlyPtr(), count);
+        }
+
         internal unsafe static bool IsUsingDeformableBuffer(this SpriteRenderer spriteRenderer, IntPtr buffer)
         {
             return IsUsingDeformableBuffer(spriteRenderer, (void*)buffer);
@@ -271,6 +286,8 @@ namespace UnityEngine.U2D
         extern private unsafe static bool IsUsingDeformableBuffer([NotNull] SpriteRenderer spriteRenderer, void* buffer);
 
         extern private unsafe static void SetBatchBoneTransformIndexAndLocalAABBArray(SpriteRenderer[] spriteRenderers, void* boneTransformIndices, void* bounds, int count);
+
+        extern private unsafe static void SetBatchUnifiedDeformedVertexOffsetArray(SpriteRenderer[] spriteRenderers, void* unifiedOffsetIndices, void* bounds, int count);
 
         extern internal unsafe static void SetupMaterialProperties([NotNull] SpriteRenderer spriteRenderer);
 

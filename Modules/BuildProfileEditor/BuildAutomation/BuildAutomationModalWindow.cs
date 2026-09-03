@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,13 +17,13 @@ namespace UnityEditor.Build.Profile
         const string k_PackageId = "com.unity.services.cloud-build";
         const string k_Uxml = "BuildProfile/UXML/BuildAutomationModalWindow.uxml";
 
-        static readonly string s_Label_Install = L10n.Tr("Cloud Builds require the Build Automation package. Clicking install will add the package to your project. It will also add a Build Automation section to your Build Profile so you can customize the way your Cloud Builds are run.");
-        static readonly string s_Label_Settings = L10n.Tr("Cloud Builds require Build Automation settings to be added to the selected Build Profile.");
-        static readonly string s_Button_Install = L10n.Tr("Install");
-        static readonly string s_Button_Settings = L10n.Tr("Add Settings");
-        static readonly string s_Modal_Title = L10n.Tr("Build Automation");
+        static readonly string s_Label_Install = L10n.Tr("Cloud Builds require the Build Automation package. Clicking install will add the package to your project. It will also add a Build Automation section to your Build Profile so you can customize the way your Cloud Builds are run.", null);
+        static readonly string s_Label_Settings = L10n.Tr("Cloud Builds require Build Automation settings to be added to the selected Build Profile.", null);
+        static readonly string s_Button_Install = L10n.Tr("Install", null);
+        static readonly string s_Button_Settings = L10n.Tr("Add Settings", null);
+        static readonly string s_Modal_Title = L10n.Tr("Build Automation", null);
 
-        static readonly string s_Helpbox = L10n.Tr("Build Automation is a pay-as-you-go service provided by Unity. You can start using it for free without a credit card on file, and we will notify you when you reach the limits of the free tier.");
+        static readonly string s_Helpbox = L10n.Tr("Build Automation is a pay-as-you-go service provided by Unity. You can start using it for free without a credit card on file, and we will notify you when you reach the limits of the free tier.", null);
 
         BuildProfileWindow m_ParentWindow;
         BuildProfile m_TargetProfile;
@@ -138,3 +139,4 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

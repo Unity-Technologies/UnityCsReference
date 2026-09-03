@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System.Collections.Generic;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Widgets;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,6 +14,7 @@ namespace Unity.Timeline.Foundation.View.Internals
     class TimeTooltipContainer : CanvasOverlay, ITimeTooltipOverlayPositionHandler
     {
         const string k_Style = "tooltipContainer";
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<bool> k_CenteredStyleProperty = new("--centered");
 
         readonly List<TimeTooltipOverlay> m_Tooltips = new();
@@ -87,4 +88,3 @@ namespace Unity.Timeline.Foundation.View.Internals
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

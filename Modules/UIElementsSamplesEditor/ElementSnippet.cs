@@ -49,6 +49,26 @@ namespace UnityEditor.UIElements.Samples
         {
         }
 
+        // Sizes the demo area to its own content. The demos author their root as
+        // width:100%/height:100% (some position:absolute inset:0) for a full-window
+        // runtime panel; inside the samples window we let the root hug its content
+        // so the container is never taller or shorter than the demo needs.
+        private static void FitDemoHeight(VisualElement container)
+        {
+            var root = container.Q(className: "demo-root") ?? container.Q("root");
+            if (root == null)
+                return;
+
+            root.style.position = Position.Relative;
+            root.style.left = 0;
+            root.style.top = 0;
+            root.style.right = StyleKeyword.Null;
+            root.style.bottom = StyleKeyword.Null;
+            root.style.height = StyleKeyword.Auto;
+            root.style.minHeight = StyleKeyword.Null;
+            root.style.overflow = Overflow.Visible;
+        }
+
         private static string ProcessCSharp(string text)
         {
             const string badEndLine = "\r\n";
@@ -197,19 +217,21 @@ namespace UnityEditor.UIElements.Samples
                 visualTree.CloneTree(container);
             }
 
+            FitDemoHeight(container);
             snippet.Apply(container);
 
-            var scrollView = new ScrollView();
-            scrollView.AddToClassList(s_SnippetsContainer);
-            scrollView.Add(csSnippet);
-            scrollView.Add(ussSnippet);
+            var snippets = new VisualElement();
+            snippets.AddToClassList(s_SnippetsContainer);
+            snippets.Add(csSnippet);
+            snippets.Add(ussSnippet);
 
             if (uxmlSnippet != null)
-                scrollView.Add(uxmlSnippet);
+                snippets.Add(uxmlSnippet);
 
-            var panel = new VisualElement();
+            var panel = new ScrollView();
+            panel.style.flexGrow = 1;
             panel.Add(container);
-            panel.Add(scrollView);
+            panel.Add(snippets);
 
             return panel;
         }
@@ -316,7 +338,7 @@ namespace UnityEditor.UIElements.Samples
             code = Regex.Replace(code, @"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()", m =>
             {
                 var name = m.Groups[1].Value;
-                if (!types.Contains(name) && !keywords.Contains(name))
+                if (System.Array.IndexOf(types, name) < 0 && System.Array.IndexOf(keywords, name) < 0)
                     return $"<color={methodColor}>{name}</color>";
                 else
                     return name;

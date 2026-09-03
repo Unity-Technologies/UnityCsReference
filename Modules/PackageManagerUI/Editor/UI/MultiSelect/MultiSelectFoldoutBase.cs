@@ -55,7 +55,7 @@ internal abstract class MultiSelectFoldoutBase<SingleType, BulkType> : VisualEle
     {
         if (string.IsNullOrEmpty(headerTextTemplate))
             return;
-        var numItemsText = string.Format(m_Items.Count > 1 ? L10n.Tr("{0} items") : L10n.Tr("{0} item"), m_Items.Count);
+        var numItemsText = string.Format(m_Items.Count > 1 ? L10n.Tr("{0} items", null) : L10n.Tr("{0} item", null), m_Items.Count);
         m_Toggle.text = string.Format(headerTextTemplate, numItemsText);
     }
 

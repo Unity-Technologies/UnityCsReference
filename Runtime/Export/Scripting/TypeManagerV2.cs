@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ScriptingRuntime not yet converted
 #nullable enable
 using System;
 using System.Collections.Generic;
@@ -25,6 +26,14 @@ namespace UnityEngine
             // Native owns persistent-id assignment. For hybrid types the caller passes the
             // hardcoded IMPLEMENT_REGISTER_CLASS id; for pure-managed types unique hashes are generated
             var runtimeTypeIndex = RegisterInstantiationFunctionManaged(typeName, factoryPtr, hardcodedPersistentId);
+            s_TypeHandleToRuntimeIndex[typeHandle] = runtimeTypeIndex;
+        }
+
+        // Metadata only, a value-type factory would box. hardcodedPersistentId binds a hybrid to native's RTTI.
+        public static void RegisterType(RuntimeTypeHandle typeHandle, string typeName,
+                                        int hardcodedPersistentId = 0)
+        {
+            var runtimeTypeIndex = RegisterInstantiationFunctionManaged(typeName, IntPtr.Zero, hardcodedPersistentId);
             s_TypeHandleToRuntimeIndex[typeHandle] = runtimeTypeIndex;
         }
 
@@ -73,3 +82,4 @@ namespace UnityEngine
         extern static void ClearManagedFactoriesForUnload();
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

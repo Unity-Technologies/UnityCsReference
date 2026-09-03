@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System.Collections.Generic;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
@@ -10,6 +10,7 @@ using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -26,8 +27,10 @@ namespace Unity.UIToolkit.Editor
         // them. The defaults match the legacy values we used to read from "Scene/RectTransform
         // Wire" (white) and Handles.UIColliderHandleColor (uGUI's soft green).
         const string k_SceneViewCategory = "Scene View";
+        [NoAutoStaticsCleanup] // editor pref-color, safe to persist
         static readonly UIPrefColor s_PanelSelectionColor =
             new(k_SceneViewCategory, "Panel Selection", new Color(1f, 1f, 1f, 1f));
+        [NoAutoStaticsCleanup] // editor pref-color, safe to persist
         static readonly UIPrefColor s_VisualElementSelectionColor =
             new(k_SceneViewCategory, "VisualElement Selection", new Color(145f / 255f, 244f / 255f, 139f / 255f, 210f / 255f));
 
@@ -112,7 +115,9 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
+        [NoAutoStaticsCleanup] // per-frame scratch list, safe to persist
         static readonly List<VisualElement> s_SelectedElements = new();
+        [NoAutoStaticsCleanup] // per-frame scratch set, safe to persist
         static readonly HashSet<IPanelComponent> s_PanelsDrawnThisFrame = new();
 
         public static Bounds GetElementWorldBounds(VisualElement element, IPanelComponent panelComponent)
@@ -484,4 +489,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,11 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.Time;
 
@@ -14,8 +14,10 @@ namespace Unity.Timeline.Foundation.Model
 {
     class MarkerList : IReadOnlyList<Marker>
     {
+        [NoAutoStaticsCleanup] // shared zero-capacity list backing empty MarkerLists; MarkerList never mutates its backing list after construction
         static readonly List<Marker> k_EmptyMarkerList = new(0);
 
+        [NoAutoStaticsCleanup] // immutable empty-sentinel; wraps the shared empty list and is never mutated
         public static readonly MarkerList Empty = new();
 
         readonly List<Marker> m_SortedMarkers;
@@ -75,4 +77,3 @@ namespace Unity.Timeline.Foundation.Model
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

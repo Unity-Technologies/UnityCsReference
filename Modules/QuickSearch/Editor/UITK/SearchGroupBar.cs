@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -120,14 +121,14 @@ namespace UnityEditor.Search
         public static readonly string syncSearchButtonClassName = ussClassName.WithUssElement("sync-search-button");
 
         private static bool s_IsDarkTheme => EditorGUIUtility.isProSkin;
-        private readonly string m_SortButtonTooltip = L10n.Tr("Sort current group results");
-        private readonly string m_VisibilityFiltersTooltip = L10n.Tr("Determine which items should be shown.");
-        private readonly string m_MoreProviderFiltersTooltip = L10n.Tr("Manage search view appearance.");
-        private readonly string m_SyncSearchButtonTooltip = L10n.Tr("Synchronize search fields (Ctrl + K)");
-        private readonly string m_SyncSearchOnButtonTooltip = L10n.Tr("Synchronize search fields (Ctrl + K)");
-        private readonly string m_SyncSearchAllGroupTabTooltip = L10n.Tr("Choose a specific search tab (eg. Project) to enable synchronization.");
-        private readonly string m_SyncSearchProviderNotSupportedTooltip = L10n.Tr("Search provider doesn't support synchronization");
-        private readonly string m_SyncSearchViewNotEnabledTooltip = L10n.Tr("Search provider uses a search engine\nthat cannot be synchronized.\nSee Preferences -> Search.");
+        private readonly string m_SortButtonTooltip = L10n.Tr("Sort current group results", null);
+        private readonly string m_VisibilityFiltersTooltip = L10n.Tr("Determine which items should be shown.", null);
+        private readonly string m_MoreProviderFiltersTooltip = L10n.Tr("Manage search view appearance.", null);
+        private readonly string m_SyncSearchButtonTooltip = L10n.Tr("Synchronize search fields (Ctrl + K)", null);
+        private readonly string m_SyncSearchOnButtonTooltip = L10n.Tr("Synchronize search fields (Ctrl + K)", null);
+        private readonly string m_SyncSearchAllGroupTabTooltip = L10n.Tr("Choose a specific search tab (eg. Project) to enable synchronization.", null);
+        private readonly string m_SyncSearchProviderNotSupportedTooltip = L10n.Tr("Search provider doesn't support synchronization", null);
+        private readonly string m_SyncSearchViewNotEnabledTooltip = L10n.Tr("Search provider uses a search engine\nthat cannot be synchronized.\nSee Preferences -> Search.", null);
         private readonly string m_TabCountTextColorFormat = s_IsDarkTheme ? "<color=#7B7B7B>{0}</color>" : "<color=#6A6A6A>{0}</color>";
 
         public event Action<ISearchListComparer> SortingChanged;
@@ -501,9 +502,9 @@ namespace UnityEditor.Search
         {
             var filterMenu = new GenericMenu();
 
-            var wantsMoreContent = new GUIContent(L10n.Tr($"Show more results"));
+            var wantsMoreContent = new GUIContent(L10n.Tr($"Show more results", null));
 
-            filterMenu.AddItem(new GUIContent(L10n.Tr($"Show Packages results")), context.options.HasAny(SearchFlags.Packages), TogglePackages);
+            filterMenu.AddItem(new GUIContent(L10n.Tr($"Show Packages results", null)), context.options.HasAny(SearchFlags.Packages), TogglePackages);
             filterMenu.AddItem(wantsMoreContent, context?.wantsMore ?? false, ToggleWantsMore);
 
             if (!m_ViewModel.state.isSimplePicker)
@@ -621,3 +622,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

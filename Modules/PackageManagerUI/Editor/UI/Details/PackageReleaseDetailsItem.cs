@@ -27,15 +27,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             versionAndReleaseContainer.Add(new Label
             {
                 name = "current",
-                text = isCurrent ? L10n.Tr("Current") : string.Empty
+                text = isCurrent ? L10n.Tr("Current", null) : string.Empty
             });
 
             versionAndReleaseContainer.Add(new SelectableLabel
             {
                 name = "releaseDate",
                 focusable = true,
-                text = publishedDate?.ToString(L10n.Tr("MMMM dd, yyyy"), CultureInfo.CreateSpecificCulture("en-US")) != null ?
-                    string.Format(L10n.Tr("released on {0}"), publishedDate?.ToString(L10n.Tr("MMMM dd, yyyy"), CultureInfo.CreateSpecificCulture("en-US"))) :
+                text = publishedDate?.ToString(L10n.Tr("MMMM dd, yyyy", null), CultureInfo.CreateSpecificCulture("en-US")) != null ?
+                    string.Format(L10n.Tr("released on {0}", null), publishedDate?.ToString(L10n.Tr("MMMM dd, yyyy", null), CultureInfo.CreateSpecificCulture("en-US"))) :
                     string.Empty
             });
 

@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class RemoveCustomAction : PackageAction
@@ -20,7 +18,7 @@ internal class RemoveCustomAction : PackageAction
     {
         if (version.HasTag(PackageTag.Custom))
         {
-            if (!m_Application.DisplayDialog("removeEmbeddedPackage", L10n.Tr("Removing package in development"), L10n.Tr("You will lose all your changes (if any) if you delete a package in development. Are you sure?"), L10n.Tr("Yes"), L10n.Tr("No")))
+            if (!m_Application.DisplayDialog("removeEmbeddedPackage", L10n.Tr("Removing package in development", null), L10n.Tr("You will lose all your changes (if any) if you delete a package in development. Are you sure?", null), L10n.Tr("Yes", null), L10n.Tr("No", null)))
                 return false;
 
             m_OperationDispatcher.RemoveEmbedded(version.package);
@@ -44,24 +42,22 @@ internal class RemoveCustomAction : PackageAction
     {
         if (isInProgress)
             return k_InProgressGenericTooltip;
-        return string.Format(L10n.Tr("Click to remove this {0} from your project."), version.GetDescriptor());
+        return string.Format(L10n.Tr("Click to remove this {0} from your project.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return isInProgress ? L10n.Tr("Removing") : L10n.Tr("Remove");
+        return isInProgress ? L10n.Tr("Removing", null) : L10n.Tr("Remove", null);
     }
 
     public override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsUninstallInProgress(version.package);
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfExportingInProgress(version.package);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfExportingInProgress()
+    );
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
+        new DisableIfCompiling(m_Application)
+    );
 }

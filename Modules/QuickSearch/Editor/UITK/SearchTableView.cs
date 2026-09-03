@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -41,8 +42,8 @@ namespace UnityEditor.Search
         public static readonly string addColumnButtonClassName = ussClassName.WithUssElement("add-column-button");
         public static readonly string resetColumnsButtonClassName = ussClassName.WithUssElement("reset-columns-button");
 
-        public static readonly string addMoreColumnsTooltip = L10n.Tr("Add column...");
-        public static readonly string resetSearchColumnsTooltip = L10n.Tr("Reset search result columns.");
+        public static readonly string addMoreColumnsTooltip = L10n.Tr("Add column...", null);
+        public static readonly string resetSearchColumnsTooltip = L10n.Tr("Reset search result columns.", null);
 
         private Action m_DeferredSortColumnOff;
 
@@ -1315,3 +1316,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

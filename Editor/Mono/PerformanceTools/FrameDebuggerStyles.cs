@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphicsDebuggingTools not yet converted
 using UnityEditor;
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
@@ -71,8 +72,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         // Top Toolbar
         internal struct TopToolbar
         {
-            internal static readonly GUIContent s_RecordButtonEnable = EditorGUIUtility.TrTextContent(L10n.Tr("Enable"));
-            internal static readonly GUIContent s_RecordButtonDisable = EditorGUIUtility.TrTextContent(L10n.Tr("Disable"));
+            internal static readonly GUIContent s_RecordButtonEnable = EditorGUIUtility.TrTextContent(L10n.Tr("Enable", null));
+            internal static readonly GUIContent s_RecordButtonDisable = EditorGUIUtility.TrTextContent(L10n.Tr("Disable", null));
             internal static readonly GUIContent s_PrevFrame = EditorGUIUtility.TrIconContent("Profiler.PrevFrame", "Go back one frame");
             internal static readonly GUIContent s_NextFrame = EditorGUIUtility.TrIconContent("Profiler.NextFrame", "Go one frame forwards");
             internal static readonly GUIContent s_LevelsHeader = EditorGUIUtility.TrTextContent("Levels", "Render target display black/white intensity levels");
@@ -400,3 +401,4 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

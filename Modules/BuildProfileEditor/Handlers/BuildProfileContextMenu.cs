@@ -13,21 +13,21 @@ namespace UnityEditor.Build.Profile.Handlers
 {
     internal class BuildProfileContextMenu
     {
-        static readonly string k_Duplicate = L10n.Tr("Duplicate");
-        static readonly string k_CopyToNewProfile = L10n.Tr("Copy To New Profile");
-        static readonly string k_DuplicateTo = L10n.Tr("Duplicate to {0}");
-        static readonly string k_Rename = L10n.Tr("Rename");
-        static readonly string k_Delete = L10n.Tr("Delete");
+        static readonly string k_Duplicate = L10n.Tr("Duplicate", null);
+        static readonly string k_CopyToNewProfile = L10n.Tr("Copy To New Profile", null);
+        static readonly string k_DuplicateTo = L10n.Tr("Duplicate to {0}", null);
+        static readonly string k_Rename = L10n.Tr("Rename", null);
+        static readonly string k_Delete = L10n.Tr("Delete", null);
 
-        static readonly string k_DeleteContinue = L10n.Tr("Continue");
-        static readonly string k_DeleteCancel = L10n.Tr("Cancel");
-        static readonly string k_DeleteActiveProfileTitle = L10n.Tr("Delete Active Build Profile");
-        static readonly string k_DeleteActiveProfileMessage = L10n.Tr("This will delete your active build profile and activate the respective platform build profile. This cannot be undone.");
-        static readonly string k_DeleteProfileTitle = L10n.Tr("Delete Selected Build Profile");
-        static readonly string k_DeleteProfileMessage = L10n.Tr("This will delete the selected build profile. This cannot be undone.");
-        static readonly string k_DeleteMultipleProfilesTitle = L10n.Tr("Delete Selected Build Profiles");
-        static readonly string k_DeleteActiveAndOtherProfilesMessage = L10n.Tr("This will delete the selected build profiles, including your active build profile, and activate the respective platform build profile. This cannot be undone.");
-        static readonly string k_DeleteMultipleProfilesMessage = L10n.Tr("This will delete the selected build profiles. This cannot be undone.");
+        static readonly string k_DeleteContinue = L10n.Tr("Continue", null);
+        static readonly string k_DeleteCancel = L10n.Tr("Cancel", null);
+        static readonly string k_DeleteActiveProfileTitle = L10n.Tr("Delete Active Build Profile", null);
+        static readonly string k_DeleteActiveProfileMessage = L10n.Tr("This will delete your active build profile and activate the respective platform build profile. This cannot be undone.", null);
+        static readonly string k_DeleteProfileTitle = L10n.Tr("Delete Selected Build Profile", null);
+        static readonly string k_DeleteProfileMessage = L10n.Tr("This will delete the selected build profile. This cannot be undone.", null);
+        static readonly string k_DeleteMultipleProfilesTitle = L10n.Tr("Delete Selected Build Profiles", null);
+        static readonly string k_DeleteActiveAndOtherProfilesMessage = L10n.Tr("This will delete the selected build profiles, including your active build profile, and activate the respective platform build profile. This cannot be undone.", null);
+        static readonly string k_DeleteMultipleProfilesMessage = L10n.Tr("This will delete the selected build profiles. This cannot be undone.", null);
 
         readonly BuildProfileWindowSelection m_ProfileSelection;
         readonly BuildProfileDataSource m_ProfileDataSource;

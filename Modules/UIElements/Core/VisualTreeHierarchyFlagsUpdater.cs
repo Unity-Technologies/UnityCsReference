@@ -140,6 +140,12 @@ namespace UnityEngine.UIElements
             if ((versionChangeType & AnythingChanged) == 0)
                 return;
 
+            // Sticky panel-level curvature gate: -unity-curvature versions with Transform, so every element
+            // becoming curved passes through here. Elements moving in with curvature already applied are caught
+            // by the Needs3DBounds check in SetPanelBatched.
+            if ((versionChangeType & BoundingBoxChanged) != 0 && ve.hasCurvature)
+                panel.mayHaveCurvedElements = true;
+
             if ((versionChangeType & ChildrenChanged) != 0)
             {
                 DirtyChildrenHierarchy(ve, GetChildrenMustDirtyFlags(ve, versionChangeType));
@@ -149,6 +155,20 @@ namespace UnityEngine.UIElements
             {
                 DirtyBoundingBoxHierarchy(ve);
             }
+        }
+
+        // Curved UI: a curved element conforms its WHOLE subtree onto its surface, so every descendant
+        // is bent and must use the 3D (curved) pick path + 3D picking bounds. Needs3DBounds only propagates UP on
+        // its own (via GetParentMustDirtyFlags), so push it DOWN across the subtree from the curved element here.
+        // Pushing it slightly past an explicit-0deg flat barrier is harmless — those elements have CountChain == 0
+        // and fall back to the flat pick regardless — so the barrier is not special-cased.
+        private new static (VisualElementFlags, VisualElementTransformFlags) GetChildrenMustDirtyFlags(
+            VisualElement ve, VersionChangeType versionChangeType)
+        {
+            var (flags, transformFlags) = VisualTreeHierarchyFlagsUpdater.GetChildrenMustDirtyFlags(ve, versionChangeType);
+            if (ve.hasCurvature)
+                transformFlags |= VisualElementTransformFlags.Needs3DBounds;
+            return (flags, transformFlags);
         }
 
         private new const VisualElementTransformFlags BoundingBoxDirtyFlags =
@@ -161,7 +181,10 @@ namespace UnityEngine.UIElements
         {
             var mustDirty = BoundingBoxDirtyFlags;
 
-            if (ve.has3DTransform)
+            // A 3D transform or a non-flat -unity-curvature (Curved UI) gives the element real depth, so
+            // it and its ancestors need 3D picking bounds. Curvature's downward propagation to the conformed
+            // subtree is handled by GetChildrenMustDirtyFlags.
+            if (ve.has3DTransform || ve.hasCurvature)
                 mustDirty |= VisualElementTransformFlags.Needs3DBounds;
 
             return mustDirty;

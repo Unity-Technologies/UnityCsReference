@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using System;
 using UnityEngine;
 using UnityEditor;
@@ -570,13 +571,13 @@ namespace UnityEditorInternal
 
             AnimationKeyTime mouseKeyTime = AnimationKeyTime.Time(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToFrame), state.frameRate);
 
-            string str = L10n.Tr("Add Key");
+            string str = L10n.Tr("Add Key", null);
             if (isEditable && hoveringKeys.Count == 0)
                 menu.AddItem(new GUIContent(str), false, AddKeyToDopeline, new AddKeyToDopelineContext {dopeline = dopeline, time = mouseKeyTime});
             else
                 menu.AddDisabledItem(new GUIContent(str));
 
-            str = state.selectedKeys.Count > 1 ? L10n.Tr("Delete Keys") : L10n.Tr("Delete Key");
+            str = state.selectedKeys.Count > 1 ? L10n.Tr("Delete Keys", null) : L10n.Tr("Delete Key", null);
             if (isEditable && (state.selectedKeys.Count > 0 || hoveringKeys.Count > 0))
                 menu.AddItem(new GUIContent(str), false, DeleteKeys, state.selectedKeys.Count > 0 ? state.selectedKeys : hoveringKeys);
             else
@@ -891,11 +892,14 @@ namespace UnityEditorInternal
 
         private void SelectTypeForCreatingNewPptrDopeline(object userData, string[] options, int selected)
         {
+            if (selected < 0)
+                return;
+
             List<object> userDataList = userData as List<object>;
             var clip = userDataList[0] as IAnimationWindowClip;
-            List<EditorCurveBinding> bindings = userDataList[1] as List<EditorCurveBinding>;
+            var bindings = userDataList[1] as EditorCurveBinding[];
 
-            if (bindings.Count > selected)
+            if (bindings.Length > selected)
                 DoSpriteDropAfterGeneratingNewDopeline(clip, bindings[selected]);
         }
 
@@ -1253,7 +1257,7 @@ namespace UnityEditorInternal
             if (objectReferences.Length == 0)
                 return;
 
-            string undoLabel = L10n.Tr("Drop Key");
+            string undoLabel = L10n.Tr("Drop Key", null);
             state.SaveKeySelection(undoLabel);
 
             state.ClearSelections();
@@ -1537,3 +1541,4 @@ namespace UnityEditorInternal
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

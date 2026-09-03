@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -115,28 +114,28 @@ namespace UnityEditor.UIElements
             //   batchOnly: true              → panel rows show "—" (per-batch only).
             // Keep panel-row sums in sync with the batch-row source in ReloadData when adding/removing alwaysShown columns.
             columns.Add(MakeNameColumn());
-            columns.Add(MakeUIntColumn("batches", L10n.Tr("Batches"), r => r.batchCount, alwaysShown: false, panelOnly: true,
-                tooltip: L10n.Tr("Number of batches emitted by this panel during EvaluateChain. Each batch is one row of the children below.")));
-            columns.Add(MakeUIntColumn("drawCalls", L10n.Tr("Draw Calls"), r => r.drawCallCount, alwaysShown: true,
-                tooltip: L10n.Tr("Number of Draw commands processed. Panel rows show the sum across all batches; batch rows show the count for that batch only.")));
-            columns.Add(MakeUIntColumn("vertices", L10n.Tr("Vertices"), r => r.vertexCount, alwaysShown: true,
-                tooltip: L10n.Tr("Total vertices referenced by Draw commands. Sum across batches on panel rows; per-batch on batch rows.")));
-            columns.Add(MakeUIntColumn("indices", L10n.Tr("Indices"), r => r.indexCount, alwaysShown: true,
-                tooltip: L10n.Tr("Total indices submitted by Draw commands. Sum across batches on panel rows; per-batch on batch rows.")));
-            columns.Add(MakeUIntColumn("immediateDraws", L10n.Tr("Imm Draws"), r => r.immediateDraws, alwaysShown: true,
-                tooltip: L10n.Tr("Immediate-mode draws (Immediate / ImmediateCull commands). Panel rows show the sum across all batches; batch rows show the count for that batch only. Each one breaks batching.")));
-            columns.Add(MakeUIntColumn("drawRanges", L10n.Tr("Draw Ranges"), r => r.drawRangeCount, alwaysShown: true,
-                tooltip: L10n.Tr("Number of contiguous draw ranges stashed before each batch was broken. Sum across batches on panel rows; per-batch on batch rows. Many small ranges per batch can indicate fragmentation.")));
+            columns.Add(MakeUIntColumn("batches", L10n.Tr("Batches", null), r => r.batchCount, alwaysShown: false, panelOnly: true,
+                tooltip: L10n.Tr("Number of batches emitted by this panel during EvaluateChain. Each batch is one row of the children below.", null)));
+            columns.Add(MakeUIntColumn("drawCalls", L10n.Tr("Draw Calls", null), r => r.drawCallCount, alwaysShown: true,
+                tooltip: L10n.Tr("Number of Draw commands processed. Panel rows show the sum across all batches; batch rows show the count for that batch only.", null)));
+            columns.Add(MakeUIntColumn("vertices", L10n.Tr("Vertices", null), r => r.vertexCount, alwaysShown: true,
+                tooltip: L10n.Tr("Total vertices referenced by Draw commands. Sum across batches on panel rows; per-batch on batch rows.", null)));
+            columns.Add(MakeUIntColumn("indices", L10n.Tr("Indices", null), r => r.indexCount, alwaysShown: true,
+                tooltip: L10n.Tr("Total indices submitted by Draw commands. Sum across batches on panel rows; per-batch on batch rows.", null)));
+            columns.Add(MakeUIntColumn("immediateDraws", L10n.Tr("Imm Draws", null), r => r.immediateDraws, alwaysShown: true,
+                tooltip: L10n.Tr("Immediate-mode draws (Immediate / ImmediateCull commands). Panel rows show the sum across all batches; batch rows show the count for that batch only. Each one breaks batching.", null)));
+            columns.Add(MakeUIntColumn("drawRanges", L10n.Tr("Draw Ranges", null), r => r.drawRangeCount, alwaysShown: true,
+                tooltip: L10n.Tr("Number of contiguous draw ranges stashed before each batch was broken. Sum across batches on panel rows; per-batch on batch rows. Many small ranges per batch can indicate fragmentation.", null)));
             columns.Add(MakeBreakingReasonColumn());
             columns.Add(MakeOwnerColumn());
-            columns.Add(MakeUIntColumn("hierarchyChanges", L10n.Tr("Hierarchy Changes"), r => r.hierarchyVersionChanges, alwaysShown: false, panelOnly: true,
-                tooltip: L10n.Tr("Number of hierarchy version changes (add/remove/reparent of VisualElements) since the previous frame.")));
-            columns.Add(MakeUIntColumn("repaintChanges", L10n.Tr("Repaint Changes"), r => r.repaintVersionChanges, alwaysShown: false, panelOnly: true,
-                tooltip: L10n.Tr("Number of repaint version changes since the previous frame. High values indicate elements are being marked dirty frequently.")));
-            columns.Add(MakeIntColumn("veCount", L10n.Tr("VE Count"), r => r.visualElementCount, panelOnly: true,
-                tooltip: L10n.Tr("Total number of VisualElements in this panel's hierarchy.")));
-            columns.Add(MakeIntColumn("events", L10n.Tr("Events"), r => r.eventCount, panelOnly: true,
-                tooltip: L10n.Tr("Number of events dispatched on this panel during the frame (pointer, keyboard, navigation, and others). Click the row to see the per-event list in the right pane.")));
+            columns.Add(MakeUIntColumn("hierarchyChanges", L10n.Tr("Hierarchy Changes", null), r => r.hierarchyVersionChanges, alwaysShown: false, panelOnly: true,
+                tooltip: L10n.Tr("Number of hierarchy version changes (add/remove/reparent of VisualElements) since the previous frame.", null)));
+            columns.Add(MakeUIntColumn("repaintChanges", L10n.Tr("Repaint Changes", null), r => r.repaintVersionChanges, alwaysShown: false, panelOnly: true,
+                tooltip: L10n.Tr("Number of repaint version changes since the previous frame. High values indicate elements are being marked dirty frequently.", null)));
+            columns.Add(MakeIntColumn("veCount", L10n.Tr("VE Count", null), r => r.visualElementCount, panelOnly: true,
+                tooltip: L10n.Tr("Total number of VisualElements in this panel's hierarchy.", null)));
+            columns.Add(MakeIntColumn("events", L10n.Tr("Events", null), r => r.eventCount, panelOnly: true,
+                tooltip: L10n.Tr("Number of events dispatched on this panel during the frame (pointer, keyboard, navigation, and others). Click the row to see the per-event list in the right pane.", null)));
 
             m_TreeView = new MultiColumnTreeViewWithTotal(columns)
             {
@@ -158,7 +157,7 @@ namespace UnityEditor.UIElements
             var treeStack = UIToolkitProfilerToolbarHelpers.WrapWithEmptyOverlay(
                 m_TreeView,
                 "uitoolkit-details-module-tree-stack",
-                L10n.Tr("No data to show. Start profiling UI Toolkit content to see details."),
+                L10n.Tr("No data to show. Start profiling UI Toolkit content to see details.", null),
                 out m_EmptyOverlay);
 
             var splitView = m_PanelComponentsPane.WireUp(treeStack, toolbar);
@@ -323,7 +322,7 @@ namespace UnityEditor.UIElements
             var column = new Column
             {
                 name = "name",
-                title = L10n.Tr("Panel / Batch"),
+                title = L10n.Tr("Panel / Batch", null),
                 minWidth = 180,
                 optional = false,
                 width = 220,
@@ -333,8 +332,8 @@ namespace UnityEditor.UIElements
                     var label = (Label)element;
                     label.text = data.isBatch
                         ? (data.isRenderingNestedTreeRT
-                            ? string.Format(L10n.Tr("Batch #{0} (nested RT)"), data.passIndex)
-                            : string.Format(L10n.Tr("Batch #{0}"), data.passIndex))
+                            ? string.Format(L10n.Tr("Batch #{0} (nested RT)", null), data.passIndex)
+                            : string.Format(L10n.Tr("Batch #{0}", null), data.passIndex))
                         : data.panelName;
                 },
                 comparison = (a, b) =>
@@ -346,7 +345,7 @@ namespace UnityEditor.UIElements
                     return string.CompareOrdinal(da.panelName ?? string.Empty, db.panelName ?? string.Empty);
                 },
             };
-            AttachHeaderTooltip(column, L10n.Tr("Panel root rows aggregate all of the panel's batches for the selected frame. Each child row is one batch inside that panel's render pass."));
+            AttachHeaderTooltip(column, L10n.Tr("Panel root rows aggregate all of the panel's batches for the selected frame. Each child row is one batch inside that panel's render pass.", null));
             return column;
         }
 
@@ -404,7 +403,7 @@ namespace UnityEditor.UIElements
             var column = new Column
             {
                 name = "owner",
-                title = L10n.Tr("Owner"),
+                title = L10n.Tr("Owner", null),
                 minWidth = 100,
                 width = 160,
                 bindCell = (element, index) =>
@@ -419,7 +418,7 @@ namespace UnityEditor.UIElements
                     m_TreeView.GetItemDataForIndex<TreeRowData>(a).ownerName ?? string.Empty,
                     m_TreeView.GetItemDataForIndex<TreeRowData>(b).ownerName ?? string.Empty),
             };
-            AttachHeaderTooltip(column, L10n.Tr("IPanelComponent that owned the render chain when this batch was broken. '—' for flat panels and for batches that ran before any CutRenderChain switched the owner. The full panel-component list is shown in the right pane when a panel row is selected."));
+            AttachHeaderTooltip(column, L10n.Tr("IPanelComponent that owned the render chain when this batch was broken. '—' for flat panels and for batches that ran before any CutRenderChain switched the owner. The full panel-component list is shown in the right pane when a panel row is selected.", null));
             return column;
         }
 
@@ -428,7 +427,7 @@ namespace UnityEditor.UIElements
             var column = new Column
             {
                 name = "breakingReason",
-                title = L10n.Tr("Breaking Reason"),
+                title = L10n.Tr("Breaking Reason", null),
                 minWidth = 100,
                 width = 160,
                 bindCell = (element, index) =>
@@ -440,7 +439,7 @@ namespace UnityEditor.UIElements
                 comparison = (a, b) => m_TreeView.GetItemDataForIndex<TreeRowData>(a).kickRangesReason
                     .CompareTo(m_TreeView.GetItemDataForIndex<TreeRowData>(b).kickRangesReason),
             };
-            AttachHeaderTooltip(column, L10n.Tr("Why the renderer broke this batch instead of continuing to grow it. Lower counts mean better batching."));
+            AttachHeaderTooltip(column, L10n.Tr("Why the renderer broke this batch instead of continuing to grow it. Lower counts mean better batching.", null));
             return column;
         }
 
@@ -468,7 +467,7 @@ namespace UnityEditor.UIElements
         static (string Heading, string Details) FormatBatchReasonForHelpBox(uint kickReason)
         {
             if (kickReason == 0)
-                return (L10n.Tr("Batch rendered without breaks."), null);
+                return (L10n.Tr("Batch rendered without breaks.", null), null);
 
             // Format: "<Name>: <Explanation>". The colon (rather than an em-dash) reads more
             // naturally as a name → description connector. Bullet glyph is retained here because
@@ -479,8 +478,8 @@ namespace UnityEditor.UIElements
             string body = index < 0 || index >= k_BreakingReasons.Length
                 // Out-of-range — surface it instead of silently dropping (likely a forgotten enum addition).
                 ? $"0x{kickReason:X}"
-                : k_BreakingReasons[index].Name + ": " + L10n.Tr(k_BreakingReasons[index].Explanation);
-            return (L10n.Tr("Batch breaking reason:"), body);
+                : k_BreakingReasons[index].Name + ": " + L10n.Tr(k_BreakingReasons[index].Explanation, null);
+            return (L10n.Tr("Batch breaking reason:", null), body);
         }
 
         // Roll-up for the panel-row selection: counts broken batches and per-reason occurrences
@@ -529,12 +528,12 @@ namespace UnityEditor.UIElements
             if (brokenBatches == 0)
             {
                 var clean = totalBatches == 1
-                    ? L10n.Tr("This batch rendered without breaks.")
-                    : string.Format(L10n.Tr("All {0} batches rendered without breaks."), totalBatches);
+                    ? L10n.Tr("This batch rendered without breaks.", null)
+                    : string.Format(L10n.Tr("All {0} batches rendered without breaks.", null), totalBatches);
                 return (clean, null, null);
             }
 
-            var heading = string.Format(L10n.Tr("{0} of {1} batches broke this frame:"), brokenBatches, totalBatches);
+            var heading = string.Format(L10n.Tr("{0} of {1} batches broke this frame:", null), brokenBatches, totalBatches);
 
             // Per-reason tally, only listing reasons that actually fired this frame so the HelpBox
             // body stays short and scannable. Formatting "<reason> × <count>" (× = multiplication
@@ -556,18 +555,18 @@ namespace UnityEditor.UIElements
             {
                 if (details.Length > 0)
                     details.Append(", ");
-                details.Append(L10n.Tr("Unknown"));
+                details.Append(L10n.Tr("Unknown", null));
                 details.Append(" × ");
                 details.Append(unknownReasonCount);
             }
 
-            return (heading, details.ToString(), L10n.Tr("Select a batch row to see details."));
+            return (heading, details.ToString(), L10n.Tr("Select a batch row to see details.", null));
         }
 
         static string FormatBreakingReason(uint kickReason)
         {
             if (kickReason == 0)
-                return L10n.Tr("None");
+                return L10n.Tr("None", null);
             int index = (int)kickReason - 1;
             if (index < 0 || index >= k_BreakingReasons.Length)
                 // Out-of-range — surface it instead of silently dropping (likely a forgotten enum addition).
@@ -779,7 +778,7 @@ namespace UnityEditor.UIElements
                 eventCount += p.eventCount;
             }
 
-            m_TreeView.SetTotalCell("name", L10n.Tr("Total"));
+            m_TreeView.SetTotalCell("name", L10n.Tr("Total", null));
             m_TreeView.SetTotalCell("batches", batches.ToString("N0"));
             m_TreeView.SetTotalCell("drawCalls", drawCalls.ToString("N0"));
             m_TreeView.SetTotalCell("vertices", vertices.ToString("N0"));
@@ -828,4 +827,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -52,7 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var versionString = productInfo?.versionString ?? packageData?.installedInfo?.version ?? packageData?.mainSearchInfo?.version ?? string.Empty;
                 var displayName = productInfo?.displayName ?? packageData?.installedInfo?.displayName ?? packageData?.mainSearchInfo?.displayName ?? string.Empty;
                 var errorMessage = L10n.Tr(
-                    "This package is not accessible due to scope conflict with the \"{0}\" scoped registry. Please remove the conflicting entry in your Project Settings to restore access to this package on Asset Store.");
+                    "This package is not accessible due to scope conflict with the \"{0}\" scoped registry. Please remove the conflicting entry in your Project Settings to restore access to this package on Asset Store.", null);
                 var error = new UIError(UIErrorCode.AssetStorePackageError, string.Format(errorMessage, registry.name));
                 var version = new PlaceholderPackageVersion($"{packageName}@{versionString}", displayName, versionString, PackageTag.UpmFormat, error);
                 return CreatePackage(packageName, new PlaceholderVersionList(version), new Product(productId, purchaseInfo, productInfo));
@@ -82,7 +82,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // This is not really supposed to happen - this happening would mean there's an issue with data from the backend
                     // Right now there isn't any recommended actions we can suggest the users to take, so we'll just add a message here
                     // to expose it if it ever happens (rather than letting it pass silently)
-                    var errorMessage = L10n.Tr("Product Id mismatch between product details and package details. Please try to refresh in a few minutes or report the issue.");
+                    var errorMessage = L10n.Tr("Product Id mismatch between product details and package details. Please try to refresh in a few minutes or report the issue.", null);
                     AddError(package, new UIError(UIErrorCode.AssetStorePackageError, errorMessage, UIError.Attribute.Warning));
                 }
             }

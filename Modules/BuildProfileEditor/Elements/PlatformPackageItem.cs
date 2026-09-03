@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using UnityEngine.UIElements;
 using PlatformPackageList = UnityEditor.BuildTargetDiscovery.PlatformPackageList;
@@ -19,6 +20,7 @@ namespace UnityEditor.Build.Profile
         readonly Label m_DisplayName;
         readonly Label m_RequiredIndicator;
         readonly Label m_DeprecatedIndicator;
+        readonly Label m_EntitledIndicator;
         readonly Label m_InstalledIndicator;
         readonly Label m_Description;
         readonly Label m_Publisher;
@@ -47,6 +49,9 @@ namespace UnityEditor.Build.Profile
             m_RequiredIndicator.text = TrText.required;
             m_DeprecatedIndicator = this.Q<Label>("package-list-label-deprecated");
             m_DeprecatedIndicator.text = TrText.deprecated;
+            m_EntitledIndicator = this.Q<Label>("package-list-label-entitled");
+            m_EntitledIndicator.text = TrText.entitled;
+            m_EntitledIndicator.tooltip = TrText.entitledTooltip;
             m_InstalledIndicator = this.Q<Label>("package-list-label-installed");
             m_InstalledIndicator.tooltip = TrText.packageInstalled;
             m_Description = this.Q<Label>("package-list-description");
@@ -72,6 +77,7 @@ namespace UnityEditor.Build.Profile
                     SetRequiredIndicator(false);
                     SetDeprecatedIndicator(false);
                     m_DeprecatedIndicator.tooltip = string.Empty;
+                    SetEntitledIndicator(false);
                     m_ShouldInstallToggle.SetEnabled(false);
 
                     if (!entry.hasThumbnail)
@@ -90,6 +96,7 @@ namespace UnityEditor.Build.Profile
                     SetRequiredIndicator(entry.required);
                     SetDeprecatedIndicator(entry.deprecated);
                     m_DeprecatedIndicator.tooltip = entry.deprecationTooltip;
+                    SetEntitledIndicator(entry.entitled);
                     m_ShouldInstallToggle.SetValueWithoutNotify(entry.shouldInstalled || entry.isInstalled);
                     m_ShouldInstallToggle.SetEnabled(!entry.required && !entry.isInstalled);
                     m_Description.text = entry.description;
@@ -165,6 +172,14 @@ namespace UnityEditor.Build.Profile
                 m_RequiredIndicator.Hide();
         }
 
+        void SetEntitledIndicator(bool active)
+        {
+            if (active)
+                m_EntitledIndicator.Show();
+            else
+                m_EntitledIndicator.Hide();
+        }
+
         void SetDeprecatedIndicator(bool active)
         {
             if (active)
@@ -206,3 +221,4 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

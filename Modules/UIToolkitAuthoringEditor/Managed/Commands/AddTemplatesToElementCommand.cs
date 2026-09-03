@@ -4,6 +4,7 @@
 
 using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -67,6 +68,9 @@ internal sealed class AddTemplatesToElementCommand : Command<AddTemplatesToEleme
     public override CommandExecutionStatus Execute()
     {
         var visualTreeAsset = ParentAsset.visualTreeAsset;
+
+        using var toSelectHandle = ListPool<VisualElementAsset>.Get(out var toSelectAssets);
+
         for (var i = 0; i < Templates.Length; ++i)
         {
             var index = Index + i;
@@ -81,7 +85,13 @@ internal sealed class AddTemplatesToElementCommand : Command<AddTemplatesToEleme
             var uxmlValue = new TemplateContainer.TemplateUXML { templateId = ParentAsset.visualTreeAsset.GetTemplateNameFromPath(assetPath) };
             attribute.SetSerializedValue(templateAsset.serializedData, uxmlValue, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
             visualTreeAsset.ReparentElementInDocument(templateAsset, ParentAsset, index);
+            toSelectAssets.Add(templateAsset);
         }
+
+        // Asked for by asset, like every other authoring command: the instances only come into being when the
+        // documents are cloned again. A caller with a live parent to name narrows this to the instance it added
+        // into (see ScopePendingSelectionRequestsTo).
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelectAssets);
 
         return CommandExecutionStatus.Success;
     }

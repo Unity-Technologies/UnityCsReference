@@ -181,6 +181,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
             yield return ProcessAnimatorControllers(context, progress);
             yield return ProcessAnimationClips(context, analyzers, progress);
+            yield return ProcessTimelineAssets(context, analyzers, progress);
             yield return ProcessAvatars(context, progress);
             yield return ProcessAvatarMasks(context, progress);
 
@@ -235,6 +236,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
         {
             var issues = new List<ReportItem>();
             var assetPaths = GetAssetPathsByFilter("t:animationclip, a:assets", context);
+            var clipAnalyzers = GatherAnalyzers<AnimationClipAnalyzer>(analyzers);
 
             AsyncProgressState progressState = progress?.Start("Analyzing Animation Clips", assetPaths.Length);
 
@@ -245,46 +247,74 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
                     break;
 
-                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
-                if (clip == null)
+                var foundClip = false;
+                foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
                 {
-                    Debug.LogError(assetPath + " is not an Animation Clip.");
-                    continue;
+                    var clip = asset as AnimationClip;
+                    if (clip == null)
+                        continue;
+
+                    foundClip = true;
+
+                    if (IsPreviewClip(clip))
+                        continue;
+
+                    AddAnimationClipInsight(context, issues, clip, assetPath);
+
+                    var animationClipAnalysisContext = new AnimationClipAnalysisContext
+                    {
+                        Clip = clip,
+                        AssetPath = assetPath,
+                        Params = context.Params
+                    };
+
+                    foreach (var analyzer in clipAnalyzers)
+                        issues.AddRange(analyzer.Analyze(animationClipAnalysisContext));
                 }
 
-                // TODO: the size returned by the profiler may not be the exact size on the target platform. Needs to be fixed.
-                var size = Profiler.GetRuntimeMemorySizeLong(clip);
+                if (!foundClip)
+                    Debug.LogError(assetPath + " is not an Animation Clip.");
 
-                issues.Add(context.CreateInsight(k_AnimationClipLayout.Category, clip.name)
-                    .WithCustomProperties(
-                    [
-                        clip.empty,
-                        clip.events.Length,
-                        Formatting.FormatFramerate(clip.frameRate),
-                        Formatting.FormatLengthInSeconds(clip.length),
-                        clip.wrapMode,
-                        clip.isLooping,
-                        clip.hasGenericRootTransform,
-                        clip.hasMotionCurves,
-                        clip.hasMotionFloatCurves,
-                        clip.hasRootCurves,
-                        clip.humanMotion,
-                        clip.legacy,
-                        size
-                    ])
-                    .WithLocation(assetPath)
-                );
+                yield return null;
+            }
 
-                var animationClipAnalysisContext = new AnimationClipAnalysisContext
+            if (issues.Count > 0)
+                context.Params.OnIncomingIssues(issues);
+
+            progress?.Clear(progressState);
+        }
+
+        IEnumerator ProcessTimelineAssets(AnalysisContext context, AnimationModuleAnalyzer[] analyzers, IProgress progress)
+        {
+            var issues = new List<ReportItem>();
+            var assetPaths = GetAssetPathsByFilter("t:timelineasset, a:assets", context);
+            var clipAnalyzers = GatherAnalyzers<AnimationClipAnalyzer>(analyzers);
+
+            AsyncProgressState progressState = progress?.Start("Analyzing Timeline Assets", assetPaths.Length);
+
+            yield return null;
+
+            foreach (var assetPath in assetPaths)
+            {
+                if (AdvanceAsyncProgress(progress, progressState, Path.GetFileName(assetPath)) == false)
+                    break;
+
+                foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
                 {
-                    Clip = clip,
-                    AssetPath = assetPath,
-                    Params = context.Params
-                };
+                    var clip = asset as AnimationClip;
+                    if (clip == null || IsPreviewClip(clip))
+                        continue;
 
-                foreach (var analyzer in analyzers)
-                {
-                    if (analyzer is AnimationClipAnalyzer clipAnalyzer)
+                    AddAnimationClipInsight(context, issues, clip, assetPath);
+
+                    var animationClipAnalysisContext = new AnimationClipAnalysisContext
+                    {
+                        Clip = clip,
+                        AssetPath = assetPath,
+                        Params = context.Params
+                    };
+
+                    foreach (var clipAnalyzer in clipAnalyzers)
                         issues.AddRange(clipAnalyzer.Analyze(animationClipAnalysisContext));
                 }
 
@@ -392,6 +422,50 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 context.Params.OnIncomingIssues(issues);
 
             progress?.Clear(progressState);
+        }
+
+        static List<T> GatherAnalyzers<T>(AnimationModuleAnalyzer[] analyzers) where T : AnimationModuleAnalyzer
+        {
+            var result = new List<T>();
+
+            foreach (var analyzer in analyzers)
+            {
+                if (analyzer is T analyzerOfType)
+                    result.Add(analyzerOfType);
+            }
+
+            return result;
+        }
+
+        static bool IsPreviewClip(AnimationClip clip)
+        {
+            const string k_PreviewClipPrefix = "__preview__";   // The model importer prefixes preview clips.
+            return clip.name.StartsWith(k_PreviewClipPrefix, StringComparison.Ordinal);
+        }
+
+        static void AddAnimationClipInsight(AnalysisContext context, List<ReportItem> issues, AnimationClip clip, string assetPath)
+        {
+            // TODO: the size returned by the profiler may not be the exact size on the target platform. Needs to be fixed.
+            var size = Profiler.GetRuntimeMemorySizeLong(clip);
+
+            issues.Add(context.CreateInsight(k_AnimationClipLayout.Category, clip.name)
+                .WithCustomProperties(
+                [
+                    clip.empty,
+                    clip.events.Length,
+                    Formatting.FormatFramerate(clip.frameRate),
+                    Formatting.FormatLengthInSeconds(clip.length),
+                    clip.wrapMode,
+                    clip.isLooping,
+                    clip.hasGenericRootTransform,
+                    clip.hasMotionCurves,
+                    clip.hasMotionFloatCurves,
+                    clip.hasRootCurves,
+                    clip.humanMotion,
+                    clip.legacy,
+                    size
+                ])
+                .WithLocation(assetPath));
         }
     }
 }

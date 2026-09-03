@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -27,7 +28,7 @@ namespace UnityEditor
         // The Dictionary is tracking the active Reflection Probe. It is also keeping a counter (int) to track active editor instances as multiple intances
         // could be created simultaneously. We want to remove the ReflectionProbe from that Dictionary only when the last reference has been destroyed.
         [AutoStaticsCleanupOnCodeReload]
-        static Dictionary<ReflectionProbe,int> s_CurrentlyEditedProbes = new Dictionary<ReflectionProbe, int>();
+        static Dictionary<ReflectionProbe, int> s_CurrentlyEditedProbes = new Dictionary<ReflectionProbe, int>();
 
         SerializedProperty m_Mode;
         SerializedProperty m_RefreshMode;
@@ -43,6 +44,7 @@ namespace UnityEditor
         SerializedProperty m_HDR;
         SerializedProperty m_BoxProjection;
         SerializedProperty m_IntensityMultiplier;
+        SerializedProperty m_ExposureValue;
         SerializedProperty m_BlendDistance;
         SerializedProperty m_CustomBakedTexture;
         SerializedProperty m_RenderDynamicObjects;
@@ -105,6 +107,8 @@ namespace UnityEditor
             public static readonly GUIContent backgroundColorText = EditorGUIUtility.TrTextContent("Background Color", "Camera clears the screen to this color before rendering.");
             public static readonly GUIContent clearFlagsText = EditorGUIUtility.TrTextContent("Clear Flags", "Specify how to fill empty areas of the cubemap.");
             public static readonly GUIContent intensityText = EditorGUIUtility.TrTextContent("Intensity", "The intensity modifier the Editor applies to this probe's texture in its shader.");
+            public static readonly GUIContent exposureText = EditorGUIUtility.TrTextContent("Exposure", "The exposure value at capture time. When the scene's exposure differs from this value, the probe's contribution is re-exposed to match.");
+            public static readonly string exposureHelpText = "Exposure setting only available for custom probes. It is set by realtime and baked probes when rendering.";
             public static readonly GUIContent resolutionText = EditorGUIUtility.TrTextContent("Resolution", "The resolution of the cubemap.");
             public static readonly GUIContent captureCubemapHeader = EditorGUIUtility.TrTextContent("Cubemap Capture Settings", "Settings that determine how to render this probe's cubemap.");
             public static readonly GUIContent boxProjectionText = EditorGUIUtility.TrTextContent("Box Projection", "When enabled, Unity assumes that the reflected light is originating from the inside of the probe's box, rather than from infinitely far away. This is useful for box-shaped indoor environments.");
@@ -204,6 +208,7 @@ namespace UnityEditor
             m_HDR = serializedObject.FindProperty("m_HDR");
             m_BoxProjection = serializedObject.FindProperty("m_BoxProjection");
             m_IntensityMultiplier = serializedObject.FindProperty("m_IntensityMultiplier");
+            m_ExposureValue = serializedObject.FindProperty("m_ExposureValue");
             m_BlendDistance = serializedObject.FindProperty("m_BlendDistance");
             m_CustomBakedTexture = serializedObject.FindProperty("m_CustomBakedTexture");
             m_RenderDynamicObjects = serializedObject.FindProperty("m_RenderDynamicObjects");
@@ -229,7 +234,7 @@ namespace UnityEditor
             for (int i = 0; i < targets.Length; ++i)
             {
                 var reflectionProbe = (ReflectionProbe)targets[i];
-                if (!s_CurrentlyEditedProbes.TryAdd(reflectionProbe,1))
+                if (!s_CurrentlyEditedProbes.TryAdd(reflectionProbe, 1))
                     s_CurrentlyEditedProbes[reflectionProbe] += 1;
             }
         }
@@ -250,7 +255,7 @@ namespace UnityEditor
                 var reflectionProbe = (ReflectionProbe)targets[i];
                 if (s_CurrentlyEditedProbes.TryGetValue(reflectionProbe, out int instanceCount))
                 {
-                    if(instanceCount <= 1)
+                    if (instanceCount <= 1)
                         s_CurrentlyEditedProbes.Remove(reflectionProbe);
                     else
                         s_CurrentlyEditedProbes[reflectionProbe] -= 1;
@@ -487,6 +492,14 @@ namespace UnityEditor
             if (m_ShowRuntimeSettings.value)
             {
                 EditorGUI.indentLevel++;
+
+                var disableExposureSetting = (ReflectionProbeMode)m_Mode.intValue != ReflectionProbeMode.Custom;
+                if (disableExposureSetting)
+                    EditorGUILayout.HelpBox(Styles.exposureHelpText, MessageType.Info);
+                using (new EditorGUI.DisabledScope(disableExposureSetting))
+                {
+                    EditorGUILayout.PropertyField(m_ExposureValue, Styles.exposureText);
+                }
 
                 EditorGUILayout.PropertyField(m_Importance, Styles.importanceText);
                 EditorGUILayout.PropertyField(m_IntensityMultiplier, Styles.intensityText);
@@ -928,3 +941,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

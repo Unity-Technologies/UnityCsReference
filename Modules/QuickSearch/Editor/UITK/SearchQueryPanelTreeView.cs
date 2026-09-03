@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -179,8 +180,8 @@ namespace UnityEditor.Search
         internal static readonly string IconClassName = UssClassName.WithUssElement("icon");
         internal static readonly string IconClickableClassName = IconClassName.WithUssModifier("clickable");
 
-        static readonly string k_FilterSearchButtonTooltip = L10n.Tr("Filter Searches");
-        static readonly string k_SearchesLabel = L10n.Tr("Searches");
+        static readonly string k_FilterSearchButtonTooltip = L10n.Tr("Filter Searches", null);
+        static readonly string k_SearchesLabel = L10n.Tr("Searches", null);
 
         VisualElement m_Header;
         ToolbarSearchField m_SearchField;
@@ -578,3 +579,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

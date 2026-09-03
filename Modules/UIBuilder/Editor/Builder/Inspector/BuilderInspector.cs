@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.IO;
 using UnityEngine.UIElements;
@@ -32,6 +33,7 @@ namespace Unity.UI.Builder
             LocalStyles = 1 << 7,
             VisualTreeAsset = 1 << 8,
             MultiSelection = 1 << 9,
+            ElementComponents = 1 << 10,
         }
 
         // View Data
@@ -93,6 +95,7 @@ namespace Unity.UI.Builder
         // Sections
         BuilderInspectorCanvas m_CanvasSection;
         BuilderInspectorAttributes m_AttributesSection;
+        BuilderInspectorComponents m_ComponentsSection;
         BuilderInspectorInheritedStyles m_InheritedStyleSection;
         BuilderInspectorLocalStyles m_LocalStylesSection;
         BuilderInspectorStyleSheet m_StyleSheetSection;
@@ -255,7 +258,9 @@ namespace Unity.UI.Builder
             m_PaneWindow = paneWindow;
 
             // Controllers
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             batchedChangesController = new UxmlBatchedChangesController(this);
+            #pragma warning restore UAL0015
 
             // Load Template
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
@@ -263,6 +268,8 @@ namespace Unity.UI.Builder
             template.CloneTree(this);
 
             BindAdvancedTextUI();
+            m_CurvatureStyleRow = this.Query<BuilderStyleRow>()
+                .Where(r => r.bindingPath == "-unity-curvature").First();
             BindFontUI();
 
             // Get the scroll view.
@@ -293,7 +300,9 @@ namespace Unity.UI.Builder
             m_Sections = new List<VisualElement>();
 
             // Header Section
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_HeaderSection = new BuilderInspectorHeader(this);
+            #pragma warning restore UAL0015
             m_Sections.Add(m_HeaderSection.header);
 
             // Nothing Selected Section
@@ -315,7 +324,9 @@ namespace Unity.UI.Builder
             m_Sections.Add(m_MultiSelectionSection);
 
             // Canvas Section
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             m_CanvasSection = new BuilderInspectorCanvas(this);
+            #pragma warning restore UAL0015
             m_Sections.Add(m_CanvasSection.root);
 
             // StyleSheet Section
@@ -330,12 +341,20 @@ namespace Unity.UI.Builder
             m_AttributesSection = new BuilderInspectorAttributes(this);
             m_Sections.Add(m_AttributesSection.root);
 
+            // Components Section
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+            m_ComponentsSection = new BuilderInspectorComponents(this);
+            #pragma warning restore UAL0015
+            m_Sections.Add(m_ComponentsSection.root);
+
             // Inherited Styles Section
             m_InheritedStyleSection = new BuilderInspectorInheritedStyles(this, m_MatchingSelectors);
             m_Sections.Add(m_InheritedStyleSection.root);
 
             // Local Styles Section
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_LocalStylesSection = new BuilderInspectorLocalStyles(this, m_StyleFields);
+            #pragma warning restore UAL0015
             m_Sections.Add(m_LocalStylesSection.root);
 
             m_SplitView = this.Q<TwoPaneSplitView>("inspector-content");
@@ -353,7 +372,9 @@ namespace Unity.UI.Builder
             RegisterDraglineInteraction();
 
             // This will take into account the current selection and then call RefreshUI().
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             SelectionChanged();
+            #pragma warning restore UAL0015
 
             // Forward focus to the panel header.
             this.Query().Where(e => e.focusable).ForEach((e) => AddFocusable(e));
@@ -434,6 +455,7 @@ namespace Unity.UI.Builder
         {
             m_LocalStylesSection.Dispose();
             m_AttributesSection.Dispose();
+            m_ComponentsSection.Dispose();
             m_HeaderSection.Dispose();
             m_PreviewWindow?.Close();
             batchedChangesController.Dispose();
@@ -610,6 +632,17 @@ namespace Unity.UI.Builder
             base.AddFocusable(focusable);
         }
 
+        // Experimental -unity-curvature row (queried once in the constructor, like the warning rows above):
+        // hidden until enabled in Project Settings > UI Toolkit; re-checked on every refresh so toggling the
+        // setting applies live.
+        BuilderStyleRow m_CurvatureStyleRow;
+        void UpdateCurvatureRowVisibility()
+        {
+            if (m_CurvatureStyleRow != null)
+                m_CurvatureStyleRow.style.display =
+                    UIToolkitProjectSettings.enableCurvedUI ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
         void RefreshAfterFirstInit(GeometryChangedEvent evt)
         {
             currentVisualElement?.UnregisterCallback<GeometryChangedEvent>(RefreshAfterFirstInit);
@@ -638,6 +671,7 @@ namespace Unity.UI.Builder
         {
             m_HeaderSection.Enable();
             m_AttributesSection.Enable();
+            m_ComponentsSection.Enable();
             m_InheritedStyleSection.Enable();
             m_LocalStylesSection.Enable();
         }
@@ -646,6 +680,7 @@ namespace Unity.UI.Builder
         {
             m_HeaderSection.Disable();
             m_AttributesSection.Disable();
+            m_ComponentsSection.Disable();
             m_InheritedStyleSection.Disable();
             m_LocalStylesSection.Disable();
         }
@@ -662,6 +697,8 @@ namespace Unity.UI.Builder
                 EnableSection(m_VariablesSection.root);
             if (section.HasFlag(Section.ElementAttributes))
                 EnableSection(m_AttributesSection.root);
+            if (section.HasFlag(Section.ElementComponents))
+                EnableSection(m_ComponentsSection.root);
             if (section.HasFlag(Section.ElementInheritedStyles))
                 EnableSection(m_InheritedStyleSection.root);
             if (section.HasFlag(Section.LocalStyles))
@@ -1027,7 +1064,7 @@ namespace Unity.UI.Builder
                     binding is not DataBinding dataBinding)
                     return BuilderConstants.FieldStatusIndicatorUnresolvedBindingTooltip;
 
-                var notDefinedString = L10n.Tr(BuilderConstants.BindingNotDefinedAttributeString);
+                var notDefinedString = L10n.Tr(BuilderConstants.BindingNotDefinedAttributeString, null);
                 var currentElementDataSource =
                     BuilderBindingUtility.GetBindingDataSourceOrRelativeHierarchicalDataSource(currentVisualElement,
                         property);
@@ -1130,7 +1167,7 @@ namespace Unity.UI.Builder
         {
             if (string.IsNullOrEmpty(convertersToSource) && string.IsNullOrEmpty(convertersToUI))
             {
-                return L10n.Tr(BuilderConstants.EmptyConvertersString);
+                return L10n.Tr(BuilderConstants.EmptyConvertersString, null);
             }
             if (string.IsNullOrEmpty(convertersToSource))
             {
@@ -1297,6 +1334,8 @@ namespace Unity.UI.Builder
         {
             using var marker = k_RefreshUIMarker.Auto();
 
+            UpdateCurvatureRowVisibility();
+
             // On the first RefreshUI, if an element is already selected, we need to make sure it
             // has a valid style. If not, we need to delay our UI building until it is properly initialized.
             if (currentVisualElement != null &&
@@ -1363,6 +1402,7 @@ namespace Unity.UI.Builder
                     EnableSections(
                         Section.Header |
                         Section.ElementAttributes |
+                        Section.ElementComponents |
                         Section.ElementInheritedStyles |
                         Section.LocalStyles |
                         Section.Variables);
@@ -1399,6 +1439,8 @@ namespace Unity.UI.Builder
             // Get all shared style selectors and draw their fields.
             m_MatchingSelectors.GetElementMatchers();
             m_InheritedStyleSection.Refresh();
+
+            m_ComponentsSection.Refresh();
 
             // Create the fields for the overridable styles.
             m_LocalStylesSection.Refresh();
@@ -2019,3 +2061,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -16,11 +16,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private const int k_RotationSpeed = 360; // Euler degrees per second
         private const double k_PaintInterval = 0.125f; // Time interval to repaint
-        [NoAutoStaticsCleanup]
+        [NoAutoStaticsCleanup] // animation phase only; carrying it over just continues the rotation
         private static int s_Rotation;
-        [NoAutoStaticsCleanup]
+        [NoAutoStaticsCleanup] // timestamp is re-seeded from timeSinceStartup on the next Start()
         private static double s_LastRotationTime;
-        [AutoStaticsCleanupOnCodeReload]
+        [NoAutoStaticsCleanup] // emptied by [OnCodeUnloading] ClearAllSpinners, so no stale spinner is carried over a code reload
         private static List<LoadingSpinner> s_CurrentSpinners = new List<LoadingSpinner>();
         public LoadingSpinner()
         {
@@ -81,6 +81,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 EditorApplication.update -= UpdateProgress;
         }
 
+        // Also runs on code reload: this module is not reloaded, but the Package Manager UI tree owning
+        // these elements is rebuilt and EditorApplication.update is cleared, so the spinners left behind
+        // are detached and must be dropped for Start() to re-subscribe UpdateProgress.
+        [OnCodeUnloading]
         public static void ClearAllSpinners()
         {
             if (s_CurrentSpinners.Count == 0)

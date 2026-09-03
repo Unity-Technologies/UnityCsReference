@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -1933,13 +1932,20 @@ namespace UnityEngine.UIElements
             return directedPhase * clipLength;
         }
 
+        private readonly BaseVisualElementPanel m_OwnerPanel;
         private readonly Panel m_Panel;
         // Every player on an element shares its single UIAnimationBinder.
         private Dictionary<VisualElement, List<ClipPlayer>> m_ElementClipAnimations;
 
+        // Last observed value, for flip detection only; playbackSuspended is the live source of truth.
+        private bool m_PlaybackSuspended;
+
+        private bool playbackSuspended => m_OwnerPanel?.animationPlaybackSuspended ?? false;
+
         public StylePropertyAnimationSystem(BaseVisualElementPanel p)
         {
             m_CurrentTime = p.TimeSinceStartupSeconds();
+            m_OwnerPanel = p;
             m_Panel = p as Panel;
         }
 
@@ -1954,6 +1960,10 @@ namespace UnityEngine.UIElements
         private bool StartTransition<T>(VisualElement owner, StylePropertyId prop, T startValue, T endValue,
             int durationMs, int delayMs, Func<float, float> easingCurve, Values<T> values)
         {
+            // Suspended: the property jumps to its end value, and no run/start/end events are emitted.
+            if (playbackSuspended)
+                return false;
+
             m_PropertyToValues[prop] = values;
             var result = values.StartTransition(owner, prop, startValue, endValue, durationMs/1000.0f, delayMs/1000.0f, easingCurve, CurrentTimeSeconds());
             UpdateTracking(values);
@@ -2294,11 +2304,27 @@ namespace UnityEngine.UIElements
         public void Update(double updateTime)
         {
             m_CurrentTime = updateTime;
+            var suspended = playbackSuspended;
+
+            // Runs while suspended: nothing can be transitioning, but this is the only drain for their
+            // pooled event queue, and draining before the flip keeps cancel events last.
             var count = m_AllValues.Count;
             for (int i = 0; i < count; i++)
             {
                 m_AllValues[i].Update(m_CurrentTime);
             }
+
+            if (suspended != m_PlaybackSuspended)
+            {
+                m_PlaybackSuspended = suspended;
+                if (suspended)
+                    CancelAllAnimations();   // transitions settle on their end value
+                else
+                    ResumePlayback();
+            }
+
+            if (suspended)
+                return;
 
             if (m_ElementClipAnimations != null && m_ElementClipAnimations.Count > 0)
             {
@@ -2308,6 +2334,25 @@ namespace UnityEngine.UIElements
                     // Sample in list order so a later clip animating the same property wins.
                     for (int i = 0; i < players.Count; i++)
                         players[i].Sample(m_CurrentTime);
+                }
+            }
+        }
+
+        // Without this rebase the stale startTime makes clips jump to wherever the wall clock landed.
+        void ResumePlayback()
+        {
+            if (m_ElementClipAnimations == null)
+                return;
+
+            foreach (var kvp in m_ElementClipAnimations)
+            {
+                var players = kvp.Value;
+                for (int i = 0; i < players.Count; i++)
+                {
+                    var player = players[i];
+                    player.startTime = m_CurrentTime;
+                    player.pausedElapsed = 0f;
+                    players[i] = player;
                 }
             }
         }
@@ -2470,4 +2515,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -47,17 +47,17 @@ namespace UnityEditor.AI
             if (!isPackageInstalled)
             {
                 if (EditorUtility.DisplayDialog(
-                        L10n.Tr("AI Navigation Package Not Installed"),
-                        L10n.Tr("Agent types cannot be configured, because the AI Navigation package is not installed. Would you like to install it?"),
-                        L10n.Tr("Install"),
-                        L10n.Tr("Cancel")
+                        L10n.Tr("AI Navigation Package Not Installed", null),
+                        L10n.Tr("Agent types cannot be configured, because the AI Navigation package is not installed. Would you like to install it?", null),
+                        L10n.Tr("Install", null),
+                        L10n.Tr("Cancel", null)
                     ))
                 {
                     PackageManager.Client.Add("com.unity.ai.navigation");
                     SessionState.SetBool(k_OpenAgentSettings, true);
                 }
                 else
-                    Debug.LogWarning(L10n.Tr("Unable to open Agent settings because the Navigation window is not available. Please install the AI Navigation package to add that window."));
+                    Debug.LogWarning(L10n.Tr("Unable to open Agent settings because the Navigation window is not available. Please install the AI Navigation package to add that window.", null));
             }
 
             if (agentTypeSettingsClicked != null)
@@ -67,7 +67,7 @@ namespace UnityEditor.AI
         public static void OpenAreaSettings()
         {
             if (!isPackageInstalled)
-                Debug.LogWarning(L10n.Tr("Unable to open Area settings because the Navigation window is not available. Please install the AI Navigation package to add that window."));
+                Debug.LogWarning(L10n.Tr("Unable to open Area settings because the Navigation window is not available. Please install the AI Navigation package to add that window.", null));
 
             if (areaSettingsClicked != null)
                 areaSettingsClicked();

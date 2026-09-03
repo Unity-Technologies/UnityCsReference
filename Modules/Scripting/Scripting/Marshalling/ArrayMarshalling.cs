@@ -270,6 +270,11 @@ namespace UnityEngine.Bindings
                 case DataOwner.Null:
                     collectionAccessor.SetNull();
                     break;
+                case DataOwner.OutNullCollection:
+                case DataOwner.OutWithSize:
+                case DataOwner.OutWithCapacity:
+                    // Native call threw before executing; the out collection was never written
+                    break;
                 default:
                     ThrowUnimplementedDataOwnerCase(dataOwner);
                     break;
@@ -300,6 +305,11 @@ namespace UnityEngine.Bindings
                 case DataOwner.Null:
                     collectionAccessor.SetNull();
                     return default;
+                case DataOwner.OutNullCollection:
+                case DataOwner.OutWithSize:
+                case DataOwner.OutWithCapacity:
+                    // Native call threw before executing; the out collection was never written
+                    return default;
                 default:
                     ThrowUnimplementedDataOwnerCase(dataOwner);
                     return default;
@@ -315,6 +325,10 @@ namespace UnityEngine.Bindings
                 case DataOwner.Empty:
                 case DataOwner.Null:
                 case DataOwner.PinnedBuffer:
+                // Native call threw before executing; any buffer present is pinned or externally owned
+                case DataOwner.OutNullCollection:
+                case DataOwner.OutWithSize:
+                case DataOwner.OutWithCapacity:
                     break;
                 case DataOwner.TempAllocated:
                 case DataOwner.TempAllocatedCleanupRequired:

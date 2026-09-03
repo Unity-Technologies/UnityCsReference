@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
@@ -11,6 +11,7 @@ using UnityEditor.UIElements;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -170,6 +171,7 @@ internal partial class StyleTransitionListView : StyleLonghandListView<StyleTran
     internal static readonly string timingFunctionOverriddenUssClassName = ussClassName + "__transition-timing-function--overridden";
     internal static readonly string delayOverriddenUssClassName = ussClassName + "__transition-delay--overridden";
 
+    [NoAutoStaticsCleanup] // precomputed dropdown content, safe to persist
     static readonly CategoryDropdownContent AnimatableProperties = GenerateTransitionPropertiesContent();
 
     const string k_TransitionListViewName = "transition-list-view";
@@ -265,4 +267,4 @@ internal partial class StyleTransitionListView : StyleLonghandListView<StyleTran
         return content;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

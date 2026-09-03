@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -46,7 +47,9 @@ namespace UnityEditor
                 m_Callback = callback;
 
                 if (m_Callback != null)
+                    #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                     EditorGUIUtility.beginProperty += callback;
+                    #pragma warning restore UAL0015
             }
 
             public void Dispose()
@@ -137,6 +140,27 @@ namespace UnityEditor
         static Hashtable s_TextGUIContents = new Hashtable();
         [NoAutoStaticsCleanup] // GUIContent cache; re-populated on demand after reload
         static Hashtable s_GUIContents = new Hashtable();
+        // Named groups get their own tables. The ungrouped ones are keyed on caller-supplied strings,
+        // including raw icon names and tooltips, so no prefix scheme can be proven not to collide.
+        [NoAutoStaticsCleanup] // GUIContent cache; re-populated on demand after reload
+        static Dictionary<(string group, string key), GUIContent> s_GroupGUIContents = new Dictionary<(string, string), GUIContent>();
+        [NoAutoStaticsCleanup] // GUIContent cache; re-populated on demand after reload
+        static Dictionary<(string group, string key), GUIContent> s_GroupIconGUIContents = new Dictionary<(string, string), GUIContent>();
+
+        static GUIContent GetCachedContent(Hashtable ungrouped, Dictionary<(string, string), GUIContent> grouped, string groupName, string key)
+        {
+            if (groupName == null)
+                return key == null ? null : (GUIContent)ungrouped[key];
+            return grouped.TryGetValue((groupName, key), out var gc) ? gc : null;
+        }
+
+        static void SetCachedContent(Hashtable ungrouped, Dictionary<(string, string), GUIContent> grouped, string groupName, string key, GUIContent gc)
+        {
+            if (groupName == null)
+                ungrouped[key] = gc;
+            else
+                grouped[(groupName, key)] = gc;
+        }
         [NoAutoStaticsCleanup] // GUIContent icon cache; re-populated on demand after reload
         static Hashtable s_IconGUIContents = new Hashtable();
         [NoAutoStaticsCleanup] // skinned icon cache; re-populated on demand after reload
@@ -562,19 +586,24 @@ namespace UnityEditor
 
         public static GUIContent TrTextContent(string key, string text, string tooltip, Texture icon)
         {
-            GUIContent gc = (GUIContent)s_GUIContents[key];
+            return TrTextContent(key, text, tooltip, icon, null);
+        }
+
+        public static GUIContent TrTextContent(string key, string text, string tooltip, Texture icon, string groupName)
+        {
+            GUIContent gc = GetCachedContent(s_GUIContents, s_GroupGUIContents, groupName, key);
             if (gc == null)
             {
-                gc = new GUIContent(L10n.Tr(text));
+                gc = new GUIContent(L10n.Tr(text, groupName));
                 if (tooltip != null)
                 {
-                    gc.tooltip = L10n.Tr(tooltip);
+                    gc.tooltip = L10n.Tr(tooltip, groupName);
                 }
                 if (icon != null)
                 {
                     gc.image = icon;
                 }
-                s_GUIContents[key] = gc;
+                SetCachedContent(s_GUIContents, s_GroupGUIContents, groupName, key, gc);
             }
             return gc;
         }
@@ -582,14 +611,24 @@ namespace UnityEditor
         public static GUIContent TrTextContent(string text, string tooltip = null, Texture icon = null)
         {
             string key = string.Format("{0}|{1}", text ?? "", tooltip ?? "");
-            return TrTextContent(key, text, tooltip, icon);
+            return TrTextContent(key, text, tooltip, icon, null);
+        }
+
+        // The ungrouped keys have never included the texture, so two icons sharing a tooltip return
+        // each other's content. That is long standing, and changing it would move behaviour callers
+        // may rely on, so it stays. The grouped tables are new and do not inherit it.
+        static string WithIconIdentity(string groupName, string key, Texture icon)
+        {
+            if (groupName == null || icon == null)
+                return key;
+            return string.Format("{0}|{1}", key, icon.GetEntityId());
         }
 
         public static GUIContent TrTextContent(string text, string tooltip, string iconName)
         {
             string key = iconName == null ? string.Format("{0}|{1}", text ?? "", tooltip ?? "") :
                 string.Format("{0}|{1}|{2}|{3}", text ?? "", tooltip ?? "", iconName, pixelsPerPoint);
-            return TrTextContent(key, text, tooltip, LoadIconRequired(iconName));
+            return TrTextContent(key, text, tooltip, LoadIconRequired(iconName), null);
         }
 
         public static GUIContent TrTextContent(string text, Texture icon)
@@ -597,19 +636,38 @@ namespace UnityEditor
             return TrTextContent(text, null, icon);
         }
 
+        public static GUIContent TrTextContent(string text, Texture icon, string groupName)
+        {
+            string tooltip = null;
+            string key = string.Format("{0}|{1}", text ?? "", tooltip ?? "");
+            return TrTextContent(WithIconIdentity(groupName, key, icon), text, tooltip, icon, groupName);
+        }
+
         public static GUIContent TrTextContentWithIcon(string text, Texture icon)
         {
             return TrTextContent(text, null, icon);
         }
 
+        public static GUIContent TrTextContentWithIcon(string text, Texture icon, string groupName)
+        {
+            return TrTextContent(text, icon, groupName);
+        }
+
         public static GUIContent TrTextContentWithIcon(string text, string iconName)
         {
-            return TrTextContent(text, null, iconName);
+            return TrTextContentWithIcon(text, null, iconName, null);
         }
 
         public static GUIContent TrTextContentWithIcon(string text, string tooltip, string iconName)
         {
-            return TrTextContent(text, tooltip, iconName);
+            return TrTextContentWithIcon(text, tooltip, iconName, null);
+        }
+
+        public static GUIContent TrTextContentWithIcon(string text, string tooltip, string iconName, string groupName)
+        {
+            string key = iconName == null ? string.Format("{0}|{1}", text ?? "", tooltip ?? "") :
+                string.Format("{0}|{1}|{2}|{3}", text ?? "", tooltip ?? "", iconName, pixelsPerPoint);
+            return TrTextContent(key, text, tooltip, LoadIconRequired(iconName), groupName);
         }
 
         public static GUIContent TrTextContentWithIcon(string text, string tooltip, Texture icon)
@@ -617,14 +675,30 @@ namespace UnityEditor
             return TrTextContent(text, tooltip, icon);
         }
 
+        public static GUIContent TrTextContentWithIcon(string text, string tooltip, Texture icon, string groupName)
+        {
+            string key = string.Format("{0}|{1}", text ?? "", tooltip ?? "");
+            return TrTextContent(WithIconIdentity(groupName, key, icon), text, tooltip, icon, groupName);
+        }
+
         public static GUIContent TrTextContentWithIcon(string text, string tooltip, MessageType messageType)
         {
             return TrTextContent(text, tooltip, GetHelpIcon(messageType));
         }
 
+        public static GUIContent TrTextContentWithIcon(string text, string tooltip, MessageType messageType, string groupName)
+        {
+            return TrTextContentWithIcon(text, tooltip, GetHelpIcon(messageType), groupName);
+        }
+
         public static GUIContent TrTextContentWithIcon(string text, MessageType messageType)
         {
             return TrTextContentWithIcon(text, null, messageType);
+        }
+
+        public static GUIContent TrTextContentWithIcon(string text, MessageType messageType, string groupName)
+        {
+            return TrTextContentWithIcon(text, null, messageType, groupName);
         }
 
         internal static Texture2D LightenTexture(Texture2D texture)
@@ -658,11 +732,21 @@ namespace UnityEditor
             return TrIconContent(iconName, tooltip, false);
         }
 
+        public static GUIContent TrIconContent(string iconName, string tooltip, string groupName)
+        {
+            return TrIconContent(iconName, tooltip, false, groupName);
+        }
+
         internal static GUIContent TrIconContent(string iconName, string tooltip, bool lightenTexture)
+        {
+            return TrIconContent(iconName, tooltip, lightenTexture, null);
+        }
+
+        internal static GUIContent TrIconContent(string iconName, string tooltip, bool lightenTexture, string groupName)
         {
             string key = tooltip == null ? string.Format("{0}|{1}", iconName, pixelsPerPoint) :
                 string.Format("{0}|{1}|{2}", iconName, tooltip, pixelsPerPoint);
-            GUIContent gc = (GUIContent)s_IconGUIContents[key];
+            GUIContent gc = GetCachedContent(s_IconGUIContents, s_GroupIconGUIContents, groupName, key);
             if (gc != null)
             {
                 return gc;
@@ -671,18 +755,24 @@ namespace UnityEditor
 
             if (tooltip != null)
             {
-                gc.tooltip = L10n.Tr(tooltip);
+                gc.tooltip = L10n.Tr(tooltip, groupName);
             }
             gc.image = LoadIconRequired(iconName);
             if (lightenTexture && gc.image is Texture2D tex2D)
                 gc.image = LightenTexture(tex2D);
-            s_IconGUIContents[key] = gc;
+            SetCachedContent(s_IconGUIContents, s_GroupIconGUIContents, groupName, key, gc);
             return gc;
         }
 
         public static GUIContent TrIconContent(Texture icon, string tooltip = null)
         {
-            GUIContent gc = (tooltip != null) ? (GUIContent)s_IconGUIContents[tooltip] : null;
+            return TrIconContent(icon, tooltip, null);
+        }
+
+        public static GUIContent TrIconContent(Texture icon, string tooltip, string groupName)
+        {
+            string key = tooltip == null ? null : WithIconIdentity(groupName, tooltip, icon);
+            GUIContent gc = GetCachedContent(s_IconGUIContents, s_GroupIconGUIContents, groupName, key);
             if (gc != null)
             {
                 return gc;
@@ -690,8 +780,8 @@ namespace UnityEditor
             gc = new GUIContent { image = icon };
             if (tooltip != null)
             {
-                gc.tooltip = L10n.Tr(tooltip);
-                s_IconGUIContents[tooltip] = gc;
+                gc.tooltip = L10n.Tr(tooltip, groupName);
+                SetCachedContent(s_IconGUIContents, s_GroupIconGUIContents, groupName, key, gc);
             }
 
             return gc;
@@ -700,24 +790,42 @@ namespace UnityEditor
         [ExcludeFromDocs]
         public static GUIContent TrTempContent(string t)
         {
-            return TempContent(L10n.Tr(t));
+            return TrTempContent(t, null);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent TrTempContent(string t, string groupName)
+        {
+            return TempContent(L10n.Tr(t, groupName));
         }
 
         [ExcludeFromDocs]
         public static GUIContent[] TrTempContent(string[] texts)
         {
+            return TrTempContent(texts, (string)null);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent[] TrTempContent(string[] texts, string groupName)
+        {
             GUIContent[] retval = new GUIContent[texts.Length];
             for (int i = 0; i < texts.Length; i++)
-                retval[i] = new GUIContent(L10n.Tr(texts[i]));
+                retval[i] = new GUIContent(L10n.Tr(texts[i], groupName));
             return retval;
         }
 
         [ExcludeFromDocs]
         public static GUIContent[] TrTempContent(string[] texts, string[] tooltips)
         {
+            return TrTempContent(texts, tooltips, null);
+        }
+
+        [ExcludeFromDocs]
+        public static GUIContent[] TrTempContent(string[] texts, string[] tooltips, string groupName)
+        {
             GUIContent[] retval = new GUIContent[texts.Length];
             for (int i = 0; i < texts.Length; i++)
-                retval[i] = new GUIContent(L10n.Tr(texts[i]), L10n.Tr(tooltips[i]));
+                retval[i] = new GUIContent(L10n.Tr(texts[i], groupName), L10n.Tr(tooltips[i], groupName));
             return retval;
         }
 
@@ -897,7 +1005,7 @@ namespace UnityEditor
             return tex;
         }
 
-        [Unity.Scripting.LifecycleManagement.AutoStaticsCleanupOnCodeReload]
+        [NoAutoStaticsCleanup] // pure deterministic name+skinIndex -> prefixed-name string transform; no user-code or ALC references
         private static readonly Dictionary<(string, int), string> s_IconNamePerSkinCache = new(32);
 
         internal static string GetIconNameForSkin(string name, int in_SkinIndex)
@@ -1321,6 +1429,8 @@ namespace UnityEditor
             s_TextGUIContents = new Hashtable();
             s_GUIContents = new Hashtable();
             s_IconGUIContents = new Hashtable();
+            s_GroupGUIContents.Clear();
+            s_GroupIconGUIContents.Clear();
             L10n.ClearCache();
             EditorUtility.Internal_UpdateMenuTitleForLanguage(newLanguage);
             LocalizationDatabase.currentEditorLanguage = newLanguage;

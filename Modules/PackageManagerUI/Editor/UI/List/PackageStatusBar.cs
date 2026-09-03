@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal partial class PackageStatusBar : VisualElement
     {
         // The internal modifier is used (instead of private) to give our test project access to these properties/methods
-        internal static readonly string k_OfflineErrorMessage = L10n.Tr("You seem to be offline");
+        internal static readonly string k_OfflineErrorMessage = L10n.Tr("You seem to be offline", null);
 
         private enum StatusType { Normal, Loading, Error }
 
@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var dropdownButton = new DropdownButton();
             dropdownButton.name = "refreshButton";
             dropdownButton.SetIcon(Icon.Refresh);
-            dropdownButton.mainButton.tooltip = L10n.Tr("Refresh list");
+            dropdownButton.mainButton.tooltip = L10n.Tr("Refresh list", null);
             dropdownButton.clicked += () =>
             {
                 m_LicenceProxy.UpdateLicense();
@@ -147,13 +147,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             var page = m_PageManager.activePage;
             if (m_PageRefreshHandler.IsRefreshInProgress(page))
             {
-                SetStatusMessage(StatusType.Loading, L10n.Tr("Refreshing list..."));
+                SetStatusMessage(StatusType.Loading, L10n.Tr("Refreshing list...", null));
                 return;
             }
 
             if (page.id == MyAssetsPage.k_Id && m_BackgroundFetchHandler.isCheckUpdateInProgress)
             {
-                SetStatusMessage(StatusType.Loading, L10n.Tr("Checking for updates..."));
+                SetStatusMessage(StatusType.Loading, L10n.Tr("Checking for updates...", null));
                 return;
             }
 
@@ -166,8 +166,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var seeDetailInConsole = (UIError.Attribute.DetailInConsole & refreshError.attribute) != 0;
                 errorMessage = seeDetailInConsole
-                    ? L10n.Tr("Refresh error, see Console window")
-                    : L10n.Tr("Refresh error");
+                    ? L10n.Tr("Refresh error, see Console window", null)
+                    : L10n.Tr("Refresh error", null);
             }
 
             if (!string.IsNullOrEmpty(errorMessage))
@@ -202,7 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var timestamp = m_PageRefreshHandler.GetRefreshTimestamp(page);
             var dt = new DateTime(timestamp);
             var dateAndTime = dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"));
-            var label = timestamp == 0 ? string.Empty : string.Format(L10n.Tr("Last refresh {0}"), dateAndTime);
+            var label = timestamp == 0 ? string.Empty : string.Format(L10n.Tr("Last refresh {0}", null), dateAndTime);
             SetStatusMessage(StatusType.Normal, label);
         }
 
@@ -220,7 +220,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (page.id == MyAssetsPage.k_Id)
             {
                 var menu = new DropdownMenu();
-                menu.AppendAction(L10n.Tr("Check for updates"),
+                menu.AppendAction(L10n.Tr("Check for updates", null),
                     _ =>
                     {
                         m_BackgroundFetchHandler.ForceCheckUpdateAllCachedAndImportedPackages();

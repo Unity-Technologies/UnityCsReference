@@ -176,7 +176,7 @@ namespace UnityEditor.AnimationWindowBuiltin
                 oldCurvesBindings.Add(removeCurve);
             }
 
-            Undo.RegisterCompleteObjectUndo(clip, L10n.Tr("Rotation Interpolation"));
+            Undo.RegisterCompleteObjectUndo(clip, L10n.Tr("Rotation Interpolation", null));
 
             foreach (EditorCurveBinding binding in oldCurvesBindings)
                 AnimationUtility.SetEditorCurve(clip, binding, null);

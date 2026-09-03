@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -31,7 +30,8 @@ struct FlattenedSelectorPart
     public StyleSelectorType type;   // Class, ID, Type, Wildcard, PseudoClass
 }
 
-// Flattened selector - middle level. Resolve via SelectorAccelerationCacheEntry.PartsFor.
+// Flattened selector - middle level. Parts resolve via (partsStart, partCount) into the
+// entry's allParts region.
 // Layout must remain in sync with the C++ mirror in
 // Modules/UIElements/Core/Native/StyleSheets/FlattenedSelectorStructs.h
 struct FlattenedSelector
@@ -70,10 +70,36 @@ unsafe struct SelectorRangeDescriptor
 }
 
 // Range into the owning entry's allDescriptors buffer. Resolve via SelectorAccelerationCacheEntry.DescriptorsFor.
+// Layout must remain in sync with the C++ mirror in
+// Modules/UIElements/Core/Native/StyleSheets/FlattenedSelectorStructs.h
 struct DescriptorRange
 {
     public int start;
     public int count;
+}
+
+// One distinct table key and the descriptor range it maps to. The entry's key index holds
+// these sorted by (tableType, key) so a table's block is binary-searchable by key — the
+// compact 12-byte stride keeps the search cache-friendly, unlike probing the 52-byte
+// descriptors directly. Layout must remain in sync with the C++ mirror in
+// Modules/UIElements/Core/Native/StyleSheets/FlattenedSelectorStructs.h
+struct SelectorKeyIndexEntry
+{
+    public int key;               // UniqueStyleString.id
+    public DescriptorRange range; // descriptors for this key, in allDescriptors
+}
+
+// Argument block for the native per-sheet matcher (NativeSelectorMatcher.MatchSheetFlat).
+// The table regions are ranges into the entry's key index; the root/wildcard ranges index
+// allDescriptors directly. Layout must remain in sync with the C++ mirror in
+// Modules/UIElements/Core/Native/StyleSheets/FlattenedSelectorStructs.h
+struct SelectorMatcherRanges
+{
+    public DescriptorRange nameTableRegion;
+    public DescriptorRange typeTableRegion;
+    public DescriptorRange classTableRegion;
+    public DescriptorRange rootSelectorRange;
+    public DescriptorRange wildCardSelectorRange;
 }
 
 // Owns a single tracked native allocation. Not IDisposable on purpose: entries are
@@ -98,6 +124,10 @@ unsafe struct SelectorAccelerationCacheEntry
     internal int m_AllSelectorsCount;
     internal SelectorRangeDescriptor* m_AllDescriptorsPtr;
     internal int m_AllDescriptorsCount;
+    // Sized for one entry per descriptor (the exact distinct-key count is only known after
+    // the sort); m_KeyIndexCount is the filled length, set by the builder.
+    internal SelectorKeyIndexEntry* m_KeyIndexPtr;
+    internal int m_KeyIndexCount;
 
     public readonly ReadOnlySpan<FlattenedSelectorPart> allParts => new(m_AllPartsPtr, m_AllPartsCount);
     public readonly ReadOnlySpan<FlattenedSelector> allSelectors => new(m_AllSelectorsPtr, m_AllSelectorsCount);
@@ -109,37 +139,106 @@ unsafe struct SelectorAccelerationCacheEntry
     internal readonly Span<FlattenedSelector> allSelectorsWritable => new(m_AllSelectorsPtr, m_AllSelectorsCount);
     internal readonly Span<SelectorRangeDescriptor> allDescriptorsWritable => new(m_AllDescriptorsPtr, m_AllDescriptorsCount);
 
-    // Resolve a child range stored as (start, count) on FlattenedSelector / SelectorRangeDescriptor /
+    // Resolve a child range stored as (start, count) on SelectorRangeDescriptor /
     // DescriptorRange against the matching base region of this entry.
-    public readonly ReadOnlySpan<FlattenedSelectorPart> PartsFor(in FlattenedSelector selector)
-        => new(m_AllPartsPtr + selector.partsStart, selector.partCount);
     public readonly ReadOnlySpan<FlattenedSelector> SelectorsFor(in SelectorRangeDescriptor descriptor)
         => new(m_AllSelectorsPtr + descriptor.selectorsStart, descriptor.selectorCount);
     public readonly ReadOnlySpan<SelectorRangeDescriptor> DescriptorsFor(in DescriptorRange range)
         => new(m_AllDescriptorsPtr + range.start, range.count);
 
-    // Range-based acceleration tables (store ranges into allDescriptors)
-    public Dictionary<int, DescriptorRange> nameTable;   // UniqueStyleString.id → range in allDescriptors
-    public Dictionary<int, DescriptorRange> typeTable;
-    public Dictionary<int, DescriptorRange> classTable;
-
-    public readonly Dictionary<int, DescriptorRange> GetTable(int index)
+    // Reverse lookup: descriptor → the authoring StyleComplexSelector it was flattened from.
+    public readonly StyleComplexSelector GetComplexSelector(in SelectorRangeDescriptor descriptor)
     {
-        switch((SelectorAccelerationTableType)index)
-        {
-            case SelectorAccelerationTableType.Name:
-                return nameTable;
-            case SelectorAccelerationTableType.Type:
-                return typeTable;
-            case SelectorAccelerationTableType.Class:
-                return classTable;
-        }
-        return null;
+        var styleSheet = descriptor.importedStyleSheetIndex == -1
+            ? ownerStyleSheet
+            : ownerStyleSheet.flattenedRecursiveImports[descriptor.importedStyleSheetIndex];
+
+        return styleSheet.rules[descriptor.ruleIndex].complexSelectors[descriptor.selectorIndexInRule];
     }
 
-    // Special selectors (also as ranges in sorted allDescriptors)
-    public DescriptorRange rootSelectorRange;      // :root pseudo-class descriptors
-    public DescriptorRange wildCardSelectorRange;  // * and standalone pseudo-classes
+    // Compact key index: one SelectorKeyIndexEntry per distinct (tableType, tableKey) pair,
+    // in the same order the sorted allDescriptors buffer introduces them, so each table is
+    // one key-sorted block — a key lookup is a binary search over 12-byte entries
+    // (TryGetDescriptorRange in C#, FindKeyRange in C++). Replaces per-key dictionaries:
+    // native- and managed-readable, and lives in the entry's single tracked allocation.
+    // The table regions are ranges into this index, NOT into allDescriptors. All five
+    // ranges are stored as the native matcher's argument block so matching passes it
+    // straight through instead of rebuilding it per call.
+    internal SelectorMatcherRanges m_MatcherRanges;
+
+    public DescriptorRange nameTableRegion   // keys are UniqueStyleString.ids
+    {
+        readonly get => m_MatcherRanges.nameTableRegion;
+        set => m_MatcherRanges.nameTableRegion = value;
+    }
+    public DescriptorRange typeTableRegion
+    {
+        readonly get => m_MatcherRanges.typeTableRegion;
+        set => m_MatcherRanges.typeTableRegion = value;
+    }
+    public DescriptorRange classTableRegion
+    {
+        readonly get => m_MatcherRanges.classTableRegion;
+        set => m_MatcherRanges.classTableRegion = value;
+    }
+
+    // Test helper: the matcher reads the index through m_KeyIndexPtr directly.
+    internal readonly ReadOnlySpan<SelectorKeyIndexEntry> keyIndex => new(m_KeyIndexPtr, m_KeyIndexCount);
+
+    public readonly DescriptorRange GetTableRegion(SelectorAccelerationTableType type)
+    {
+        switch (type)
+        {
+            case SelectorAccelerationTableType.Name:
+                return nameTableRegion;
+            case SelectorAccelerationTableType.Type:
+                return typeTableRegion;
+            case SelectorAccelerationTableType.Class:
+                return classTableRegion;
+        }
+        return default;
+    }
+
+    // Binary-searches a table's block of the key index for tableKey. Returns false when the
+    // key has no selectors in this sheet.
+    public readonly bool TryGetDescriptorRange(SelectorAccelerationTableType tableType, int tableKey, out DescriptorRange range)
+    {
+        var region = GetTableRegion(tableType);
+        int lo = region.start;
+        int hi = region.start + region.count;
+        while (lo < hi)
+        {
+            int mid = (int)(((uint)lo + (uint)hi) >> 1);
+            if (m_KeyIndexPtr[mid].key < tableKey)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+
+        if (lo == region.start + region.count || m_KeyIndexPtr[lo].key != tableKey)
+        {
+            range = default;
+            return false;
+        }
+
+        range = m_KeyIndexPtr[lo].range;
+        return true;
+    }
+
+    // Test helper: number of distinct keys in a table's block.
+    internal readonly int GetTableKeyCount(SelectorAccelerationTableType type) => GetTableRegion(type).count;
+
+    // Special selectors (direct ranges in sorted allDescriptors)
+    public DescriptorRange rootSelectorRange       // :root pseudo-class descriptors
+    {
+        readonly get => m_MatcherRanges.rootSelectorRange;
+        set => m_MatcherRanges.rootSelectorRange = value;
+    }
+    public DescriptorRange wildCardSelectorRange   // * and standalone pseudo-classes
+    {
+        readonly get => m_MatcherRanges.wildCardSelectorRange;
+        set => m_MatcherRanges.wildCardSelectorRange = value;
+    }
 
     // For reverse lookup
     internal StyleSheet ownerStyleSheet;
@@ -156,9 +255,11 @@ unsafe struct SelectorAccelerationCacheEntry
             m_AllPartsPtr = null;
             m_AllSelectorsPtr = null;
             m_AllDescriptorsPtr = null;
+            m_KeyIndexPtr = null;
             m_AllPartsCount = 0;
             m_AllSelectorsCount = 0;
             m_AllDescriptorsCount = 0;
+            m_KeyIndexCount = 0;
         }
     }
 
@@ -167,18 +268,21 @@ unsafe struct SelectorAccelerationCacheEntry
     [NoAutoStaticsCleanup] // monotonic counter; safe to persist
     static long s_NextBuildId;
 
-    // Lay the three regions out contiguously in one tracked allocation. Order matches the
-    // matcher's access funnel (descriptors → selectors → parts in StyleSelectorHelper):
-    // descriptors are the most-touched region and live at offset 0; selectors and parts
-    // follow. 8-byte alignment between regions covers the pointer fields inside
-    // SelectorRangeDescriptor / FlattenedSelector.
-    public static SelectorAccelerationCacheEntry Allocate(int totalParts, int totalSelectors, int totalDescriptors)
+    // Lay the four regions out contiguously in one tracked allocation. Order matches the
+    // matcher's access funnel (descriptors → key index → selectors → parts in the native
+    // matcher): descriptors are the most-touched region and live at offset 0; the key
+    // index, selectors and parts follow. 8-byte alignment between regions covers the
+    // pointer fields inside SelectorRangeDescriptor / FlattenedSelector.
+    public static SelectorAccelerationCacheEntry Allocate(int totalParts, int totalSelectors, int totalDescriptors, int totalKeyIndexEntries)
     {
         const int kAlign = 8;
         long descriptorsBytes = AlignUp((long)totalDescriptors * sizeof(SelectorRangeDescriptor), kAlign);
+        // Exact capacity: the builder pre-counts distinct (tableType, tableKey) pairs; the
+        // filled length (m_KeyIndexCount) is set by BuildRangeTables after sorting.
+        long keyIndexBytes    = AlignUp((long)totalKeyIndexEntries * sizeof(SelectorKeyIndexEntry), kAlign);
         long selectorsBytes   = AlignUp((long)totalSelectors   * sizeof(FlattenedSelector),       kAlign);
         long partsBytes       = (long)totalParts               * sizeof(FlattenedSelectorPart);
-        long totalBytes       = descriptorsBytes + selectorsBytes + partsBytes;
+        long totalBytes       = descriptorsBytes + keyIndexBytes + selectorsBytes + partsBytes;
 
         byte* basePtr = (byte*)UnsafeUtility.MallocTracked(totalBytes, kAlign, SelectorAccelerationCache.s_MemoryLabel, 0);
         UnsafeUtility.MemClear(basePtr, totalBytes);
@@ -189,9 +293,10 @@ unsafe struct SelectorAccelerationCacheEntry
             m_BackingBuffer       = basePtr,
             m_AllDescriptorsPtr   = (SelectorRangeDescriptor*)basePtr,
             m_AllDescriptorsCount = totalDescriptors,
-            m_AllSelectorsPtr     = (FlattenedSelector*)(basePtr + descriptorsBytes),
+            m_KeyIndexPtr         = (SelectorKeyIndexEntry*)(basePtr + descriptorsBytes),
+            m_AllSelectorsPtr     = (FlattenedSelector*)(basePtr + descriptorsBytes + keyIndexBytes),
             m_AllSelectorsCount   = totalSelectors,
-            m_AllPartsPtr         = (FlattenedSelectorPart*)(basePtr + descriptorsBytes + selectorsBytes),
+            m_AllPartsPtr         = (FlattenedSelectorPart*)(basePtr + descriptorsBytes + keyIndexBytes + selectorsBytes),
             m_AllPartsCount       = totalParts,
         };
 
@@ -414,4 +519,3 @@ class SelectorAccelerationCache
         return entry;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

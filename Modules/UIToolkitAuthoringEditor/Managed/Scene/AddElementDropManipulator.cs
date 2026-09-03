@@ -30,6 +30,13 @@ sealed class AddElementDropManipulator : Manipulator
 
         public bool IsEdgeDrop => NearLeft || NearRight || NearTop || NearBottom;
 
+        /// <summary>
+        /// The live element the dropped content becomes a child of: the hovered element when the drop lands on
+        /// it, its parent for an edge drop, which inserts beside it instead. It is what tells one instance of a
+        /// repeated document from another, which <see cref="ParentVea"/> alone cannot.
+        /// </summary>
+        public VisualElement ParentElement => IsEdgeDrop ? HoveredElement?.parent : HoveredElement;
+
         public Placement(VisualElementAsset parentVea, int index, VisualElement hoveredElement,
             bool nearLeft, bool nearRight, bool nearTop, bool nearBottom, bool canDrop = true)
         {
@@ -76,6 +83,11 @@ sealed class AddElementDropManipulator : Manipulator
 
     void OnDragUpdated(DragUpdatedEvent evt)
     {
+        // Nothing to author into: leave the drag to whoever else wants it rather than answer it with a copy
+        // cursor that would drop nothing.
+        if (EditedVisualTreeAsset == null)
+            return;
+
         if (DragAndDrop.GetGenericData(LibraryItem.DragDataKey) is not LibraryItem
             && !IsValidUxmlDrop())
             return;
@@ -116,6 +128,9 @@ sealed class AddElementDropManipulator : Manipulator
 
             AddElementCommand.Execute(CommandSources.Scene, libraryItem.libraryType.type, EditedVisualTreeAsset, placement.ParentVea, placement.Index, libraryItem.libraryType.variantName);
 
+            // The command filed its selection request by asset alone; narrow it to the instance dropped into.
+            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(placement.ParentElement);
+
             RequestRefresh?.Invoke();
             evt.StopPropagation();
             return;
@@ -138,17 +153,10 @@ sealed class AddElementDropManipulator : Manipulator
 
             AddTemplatesToElementCommand.Execute(CommandSources.Viewport, parentAsset, placement.Index, vtas);
 
-            using var toSelectHandle = ListPool<VisualElementAsset>.Get(out var toSelect);
-            for (var i = 0; i < vtas.Length; i++)
-            {
-                var insertIdx = placement.Index < 0
-                    ? parentAsset.childCount - vtas.Length + i
-                    : placement.Index + i;
-                if (insertIdx >= 0 && insertIdx < parentAsset.childCount
-                    && parentAsset[insertIdx] is VisualElementAsset newVea)
-                    toSelect.Add(newVea);
-            }
-            UIToolkitStageUtility.RequestSelectionOnNextUpdate(toSelect);
+            // Same for the templates just added: the command's request names the assets it created, not the
+            // instance they landed in. It is the command's own list rather than one rebuilt from the insert
+            // index here, which does not survive a multi-document drop landing anywhere but the end.
+            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(placement.ParentElement);
 
             RequestRefresh?.Invoke();
             evt.StopPropagation();

@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class GitUpdateAction : PackageAction
@@ -36,19 +34,18 @@ internal class GitUpdateAction : PackageAction
     {
         if (isInProgress)
             return k_InProgressGenericTooltip;
-        return L10n.Tr("Click to check for updates and update to latest version");
+        return L10n.Tr("Click to check for updates and update to latest version", null);
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Update");
+        return L10n.Tr("Update", null);
     }
 
     public override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsInstallInProgress(version);
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
+        new DisableIfCompiling(m_Application)
+    );
 }

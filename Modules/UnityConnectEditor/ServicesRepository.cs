@@ -2,11 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -14,23 +15,40 @@ using UnityEngine.Networking;
 namespace UnityEditor.Connect
 {
     [InitializeOnLoad]
-    internal class ServicesRepository
+    internal partial class ServicesRepository
     {
-        static readonly ServicesRepository k_Instance;
+        [AutoStaticsCleanupOnCodeReload]
+        static ServicesRepository k_Instance;
 
-        public static ServicesRepository instance => k_Instance;
+        public static ServicesRepository instance
+        {
+            get
+            {
+                EnsureInstanceInitialized();
+                return k_Instance;
+            }
+        }
 
+        [AutoStaticsCleanupOnCodeReload]
         static readonly Dictionary<string, SingleService> k_Services = new Dictionary<string, SingleService>();
 
-        static List<string> s_InitializedServices = new List<string>();
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly List<string> s_InitializedServices = new List<string>();
 
         const string k_serviceFlagsKey = "service_flags";
 
         const string k_NotInitializedMsg = "Service {0} was not initialized. See the console for more details.";
 
-        static ServicesRepository()
+        // [OnCodeLoaded] recreates the repository after a reload so services re-register;
+        // the null check in `instance` covers consumers that reach us before it has run
+        // (ordering across classes is not guaranteed).
+        [OnCodeLoaded]
+        static void EnsureInstanceInitialized()
         {
-            k_Instance = new ServicesRepository();
+            if (k_Instance == null)
+            {
+                k_Instance = new ServicesRepository();
+            }
         }
 
         ServicesRepository()
@@ -54,7 +72,7 @@ namespace UnityEditor.Connect
                         }
                         catch (Exception ex)
                         {
-                            NotificationManager.instance.Publish(service.notificationTopic, Notification.Severity.Error, string.Format(L10n.Tr(k_NotInitializedMsg), L10n.Tr(service.title)));
+                            NotificationManager.instance.Publish(service.notificationTopic, Notification.Severity.Error, string.Format(L10n.Tr(k_NotInitializedMsg, null), L10n.Tr(service.title, null)));
                             Debug.LogException(ex);
                         }
                     }
@@ -116,4 +134,4 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -68,7 +68,12 @@ namespace Unity.UIToolkit.Editor
         /// Indicates that the value of the underlying VisualElement style property is being driven by an animation and
         /// has a pending candidate edit.
         /// </summary>
-        AnimationCandidate
+        AnimationCandidate,
+        /// <summary>
+        /// Indicates that the value of the underlying VisualElement property is driven by an Attribute Override
+        /// declared on an ancestor UXML instance.
+        /// </summary>
+        AncestorAttributeOverride,
     }
 
     internal static class FieldAffordanceSourceInfoTypeExtensions
@@ -232,6 +237,24 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
+        VisualTreeAsset m_DefiningDocument;
+
+        /// <summary>
+        /// The document declaring the Attribute Override that drives the field's value.
+        /// </summary>
+        public VisualTreeAsset definingDocument
+        {
+            get => m_DefiningDocument;
+            set
+            {
+                if (m_DefiningDocument == value)
+                    return;
+
+                m_DefiningDocument = value;
+                Notify();
+            }
+        }
+
         private void Notify([CallerMemberName] string name = null)
         {
             propertyChanged?.Invoke(this, new BindablePropertyChangedEventArgs(name));
@@ -249,6 +272,7 @@ namespace Unity.UIToolkit.Editor
             selector = default;
             inlineValue = null;
             variableSheet = null;
+            definingDocument = null;
         }
     }
 }

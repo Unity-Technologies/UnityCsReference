@@ -409,25 +409,19 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override bool Overlaps(Rect rectangle)
         {
-            if (SizeElement != null)
-            {
-                if (SizeElement.Overlaps(this.ChangeCoordinatesTo(SizeElement, rectangle)))
-                    return true;
-            }
+            if (SizeElement == null)
+                return base.Overlaps(rectangle);
 
-            return base.Overlaps(rectangle);
+            return SizeElement.Overlaps(this.ChangeCoordinatesTo(SizeElement, rectangle));
         }
 
         /// <inheritdoc />
         public override bool ContainsPoint(Vector2 localPoint)
         {
-            if (SizeElement != null)
-            {
-                if (SizeElement.ContainsPoint(this.ChangeCoordinatesTo(SizeElement, localPoint)))
-                    return true;
-            }
+            if (SizeElement == null)
+                return base.ContainsPoint(localPoint);
 
-            return base.ContainsPoint(localPoint);
+            return SizeElement.ContainsPoint(this.ChangeCoordinatesTo(SizeElement, localPoint));
         }
 
         /// <inheritdoc/>

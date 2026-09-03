@@ -272,6 +272,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.translate;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return computedStyle.unityBackgroundImageTintColor;
+                case StylePropertyId.UnityCurvature:
+                    return computedStyle.unityCurvature;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return computedStyle.unityEditorTextRenderingMode;
                 case StylePropertyId.UnityFont:
@@ -502,6 +504,8 @@ namespace UnityEngine.UIElements
                     return typeof(Translate);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return typeof(Color);
+                case StylePropertyId.UnityCurvature:
+                    return typeof(Curvature);
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return typeof(EditorTextRenderingMode);
                 case StylePropertyId.UnityFont:
@@ -764,6 +768,8 @@ namespace UnityEngine.UIElements
                     return style.translate;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return style.unityBackgroundImageTintColor;
+                case StylePropertyId.UnityCurvature:
+                    return style.unityCurvature;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return style.unityEditorTextRenderingMode;
                 case StylePropertyId.UnityFont:
@@ -1078,6 +1084,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     style.unityBackgroundImageTintColor = (StyleColor)value;
+                    break;
+                case StylePropertyId.UnityCurvature:
+                    style.unityCurvature = (StyleCurvature)value;
                     break;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     style.unityEditorTextRenderingMode = (StyleEnum<EditorTextRenderingMode>)value;
@@ -1415,6 +1424,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     style.unityBackgroundImageTintColor = keyword;
+                    break;
+                case StylePropertyId.UnityCurvature:
+                    style.unityCurvature = keyword;
                     break;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     style.unityEditorTextRenderingMode = keyword;
@@ -1875,6 +1887,11 @@ namespace UnityEngine.UIElements
                     return new()
                     {
                     };
+                case StylePropertyId.UnityCurvature:
+                    return new()
+                    {
+                        StyleKeyword.None
+                    };
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return new()
                     {
@@ -2154,6 +2171,8 @@ namespace UnityEngine.UIElements
                     return (StyleTranslate)(Translate)value;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return (StyleColor)(Color)value;
+                case StylePropertyId.UnityCurvature:
+                    return (StyleCurvature)(Curvature)value;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return (StyleEnum<EditorTextRenderingMode>)(EditorTextRenderingMode)value;
                 case StylePropertyId.UnityFont:
@@ -2384,6 +2403,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleTranslate);
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return typeof(StyleColor);
+                case StylePropertyId.UnityCurvature:
+                    return typeof(StyleCurvature);
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return typeof(StyleEnum<EditorTextRenderingMode>);
                 case StylePropertyId.UnityFont:
@@ -2734,6 +2755,17 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.WhiteSpace:
                     return true;
                 case StylePropertyId.WordSpacing:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static bool IsResolveToFloatProperty(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.FontSize:
                     return true;
                 default:
                     return false;

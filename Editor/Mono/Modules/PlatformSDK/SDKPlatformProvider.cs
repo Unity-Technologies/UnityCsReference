@@ -48,14 +48,16 @@ class SDKPlatformProvider
     const string k_OnMultiTargetPlatformBuildProfileCreated = "OnMultiTargetPlatformBuildProfileCreated";
     const string k_OnDerivedPlatformBuildProfileCreated = "OnDerivedPlatformBuildProfileCreated";
 
-    static readonly string k_CompatibilityError = L10n.Tr("{0} is not a compatible platform provider: {1}");
-    static readonly string k_InvalidPlatformTypeError = L10n.Tr("{0} has an invalid platform type: {1}");
-    static readonly string k_MultiTargetPlatformCompatibilityError = L10n.Tr("{0} is not compatible as a multi-target platform provider: {1}");
-    static readonly string k_MultiTargetVariantMissingGuidError = L10n.Tr("{0} has a preconfigured settings variant '{1}' without a platformGuid.");
-    static readonly string k_DerivedPlatformCompatibilityError = L10n.Tr("{0} is not compatible as a derived platform provider: {1}");
-    static readonly string k_UnrecognizedVersionError = L10n.Tr("unrecognized version {0}.");
-    static readonly string k_RequiredPropertyError = L10n.Tr("required property '{0}' is missing.");
-    static readonly string k_PropertyTypeError = L10n.Tr("property '{0}' must be of type {1}.");
+    static readonly string k_CompatibilityError = L10n.Tr("{0} is not a compatible platform provider: {1}", null);
+    static readonly string k_InvalidPlatformTypeError = L10n.Tr("{0} has an invalid platform type: {1}", null);
+    static readonly string k_MultiTargetPlatformCompatibilityError = L10n.Tr("{0} is not compatible as a multi-target platform provider: {1}", null);
+    static readonly string k_DerivedPlatformCompatibilityError = L10n.Tr("{0} is not compatible as a derived platform provider: {1}", null);
+    static readonly string k_UnrecognizedVersionError = L10n.Tr("unrecognized version {0}.", null);
+    static readonly string k_RequiredPropertyError = L10n.Tr("required property '{0}' is missing.", null);
+    static readonly string k_PropertyTypeError = L10n.Tr("property '{0}' must be of type {1}.", null);
+    static readonly string k_DuplicatePreconfiguredSettingsVariantsError = L10n.Tr(
+        "{0} declares preconfigured settings variants while SDK platform '{1}' also declares them in its manifest. " +
+        "The manifest variants are used; remove the '{2}' property from the provider.", null);
 
     SDKPlatformProvider(IPlatformProvider provider, SDKPlatformType platformType)
     {
@@ -89,16 +91,25 @@ class SDKPlatformProvider
         requiredComponents = GetProp(k_RequiredComponents, Array.Empty<Type>());
         customFooterActions = GetProp(k_FooterActions, Array.Empty<Type>());
 
+        preconfiguredSettingsVariants = BuildTargetDiscovery.BuildPlatformPreconfiguredSettingsVariants(guid);
         var extractedVariants = GetProp(k_PreconfiguredSettingsVariants, Array.Empty<SDKPreconfiguredSettingsVariant>());
-        var variantList = new List<PreconfiguredSettingsVariant>();
-        foreach (var variant in extractedVariants)
+        if (preconfiguredSettingsVariants.Length > 0)
         {
-            if (variant == null)
-                continue;
-            var newVariant = new PreconfiguredSettingsVariant(variant.displayName, variant.selectedInitially, variant.description, variant.tooltip, variant.platformGuid);
-            variantList.Add(newVariant);
+            if (extractedVariants.Length > 0)
+                Debug.LogError(string.Format(k_DuplicatePreconfiguredSettingsVariantsError, providerType.FullName, guid, k_PreconfiguredSettingsVariants));
         }
-        preconfiguredSettingsVariants = variantList.ToArray();
+        else
+        {
+            var variantList = new List<PreconfiguredSettingsVariant>();
+            foreach (var variant in extractedVariants)
+            {
+                if (variant == null)
+                    continue;
+                var newVariant = new PreconfiguredSettingsVariant(variant.displayName, variant.selectedInitially, variant.description, variant.tooltip, variant.platformGuid);
+                variantList.Add(newVariant);
+            }
+            preconfiguredSettingsVariants = variantList.ToArray();
+        }
 
         T GetProp<T>(string propName, T defaultValue)
         {
@@ -197,14 +208,7 @@ class SDKPlatformProvider
         switch (provider.version)
         {
             case 1:
-                if (!HasRequiredCoreProperties(provider.GetType(), out error))
-                    return false;
-                if (!HasRequiredProperty(provider.GetType(), k_PreconfiguredSettingsVariants,
-                        typeof(SDKPreconfiguredSettingsVariant[]), out error))
-                    return false;
-                if (!AllVariantsHavePlatformGuid(provider, out error))
-                    return false;
-                return true;
+                return HasRequiredCoreProperties(provider.GetType(), out error);
             default:
                 error = FormatUnrecognizedVersionError(provider.version);
                 return false;
@@ -248,31 +252,6 @@ class SDKPlatformProvider
         {
             error = FormatPropertyTypeError(propertyName, propertyType);
             return false;
-        }
-
-        error = null;
-        return true;
-    }
-
-    static bool AllVariantsHavePlatformGuid(IPlatformProvider provider, out string error)
-    {
-        var providerType = provider.GetType();
-        var variants = (SDKPreconfiguredSettingsVariant[])providerType.GetProperty(k_PreconfiguredSettingsVariants).GetValue(provider);
-        if (variants == null)
-        {
-            error = FormatRequiredPropertyError(k_PreconfiguredSettingsVariants);
-            return false;
-        }
-
-        foreach (var variant in variants)
-        {
-            if (variant == null)
-                continue;
-            if (variant.platformGuid.Empty())
-            {
-                error = string.Format(k_MultiTargetVariantMissingGuidError, providerType.FullName, variant.displayName);
-                return false;
-            }
         }
 
         error = null;

@@ -1076,7 +1076,7 @@ namespace Unity.Burst.Intrinsics
             [DebuggerStepThrough]
             public static v128 mm256_cvttpd_epi32(v256 a)
             {
-                return new v128((int)a.Double0, (int)a.Double1, (int)a.Double2, (int)a.Double3);
+                return new v128(ConvertToInt32(Math.Truncate(a.Double0)), ConvertToInt32(Math.Truncate(a.Double1)), ConvertToInt32(Math.Truncate(a.Double2)), ConvertToInt32(Math.Truncate(a.Double3)));
             }
 
             /// <summary>

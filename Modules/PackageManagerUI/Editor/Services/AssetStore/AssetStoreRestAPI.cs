@@ -33,7 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const int k_ClientErrorResponseCode = 400;
         private const int k_ServerErrorResponseCode = 500;
 
-        private static readonly string k_ErrorMessage = L10n.Tr("Something went wrong. Please try again later.");
+        private static readonly string k_ErrorMessage = L10n.Tr("Something went wrong. Please try again later.", null);
 
         private const int k_GeneralServerError = 599;
         private const int k_GeneralClientError = 499;
@@ -93,21 +93,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ListLabels(Action<List<string>> successCallback, Action<UIError> errorCallback)
         {
-            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseLabels, L10n.Tr("Error parsing labels."), successCallback, errorCallback);
+            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseLabels, L10n.Tr("Error parsing labels.", null), successCallback, errorCallback);
             HandleHttpRequest(k_TaggingsUri, parseDictionary, errorCallback, tag: "GetTaggings", abortPreviousRequest: true);
         }
 
         public void GetProductDetail(long productId, Action<AssetStoreProductInfo> successCallback, Action<UIError> errorCallback)
         {
             AssetStoreProductInfo ParseProductInfo(Dictionary<string, object> result) => m_JsonParser.ParseProductInfo(assetStoreUrl, productId, result);
-            var parseDictionary = CreateParseDictionaryCallback(ParseProductInfo, L10n.Tr("Error parsing product details."), successCallback, errorCallback);
+            var parseDictionary = CreateParseDictionaryCallback(ParseProductInfo, L10n.Tr("Error parsing product details.", null), successCallback, errorCallback);
             HandleHttpRequest($"{k_ProductInfoUri}/{productId}", parseDictionary, errorCallback, tag: $"GetProductDetail{productId}", abortPreviousRequest: true);
         }
 
         public void GetUpdateDetail(CheckUpdateInfoArgs args, Action<List<AssetStoreUpdateInfo>> successCallback = null, Action<UIError> errorCallback = null)
         {
             var queryString = args.ToString();
-            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseUpdateInfos, L10n.Tr("Error parsing update details."), successCallback, errorCallback);
+            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseUpdateInfos, L10n.Tr("Error parsing update details.", null), successCallback, errorCallback);
             HandleHttpRequest($"{k_UpdateInfoUri}{queryString}", parseDictionary, errorCallback, tag: $"GetUpdateDetail{queryString}");
         }
 
@@ -120,7 +120,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void GetPurchases(PurchasesQueryArgs query, Action<AssetStorePurchases> successCallback, Action<UIError> errorCallback)
         {
             var queryString = query.ToString();
-            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParsePurchases, L10n.Tr("Error parsing purchase list."), successCallback, errorCallback);
+            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParsePurchases, L10n.Tr("Error parsing purchase list.", null), successCallback, errorCallback);
             HandleHttpRequest($"{k_PurchasesUri}{queryString ?? string.Empty}", parseDictionary, errorCallback, tag: $"GetPurchases{queryString}");
         }
 
@@ -131,7 +131,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void GetDownloadDetail(long productId, Action<AssetStoreDownloadInfo> successCallback, Action<UIError> errorCallback)
         {
-            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseDownloadInfo, L10n.Tr("Error parsing download details."), successCallback, errorCallback);
+            var parseDictionary = CreateParseDictionaryCallback(m_JsonParser.ParseDownloadInfo, L10n.Tr("Error parsing download details.", null), successCallback, errorCallback);
             HandleHttpRequest($"{k_DownloadInfoUri}/{productId}", parseDictionary, errorCallback, tag: $"GetDownloadDetail{productId}", abortPreviousRequest: true);
         }
 
@@ -157,8 +157,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_UnityConnect.isUserInfoReady && !m_UnityConnect.isUserLoggedIn)
             {
-                var errorMessage = L10n.Tr("You need to be signed in.");
-                errorCallback?.Invoke(new UIError(UIErrorCode.UserNotSignedIn, L10n.Tr(errorMessage), UIError.Attribute.HiddenFromUI));
+                var errorMessage = L10n.Tr("You need to be signed in.", null);
+                errorCallback?.Invoke(new UIError(UIErrorCode.UserNotSignedIn, L10n.Tr(errorMessage, null), UIError.Attribute.HiddenFromUI));
                 return;
             }
 
@@ -186,7 +186,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             var responseCode = request.responseCode;
                             if (responseCode == 0)
                             {
-                                var errorMessage = string.Format(L10n.Tr("[Error {0}] {1} (URL: {2})"), responseCode, k_ErrorMessage, fullUrl);
+                                var errorMessage = string.Format(L10n.Tr("[Error {0}] {1} (URL: {2})", null), responseCode, k_ErrorMessage, fullUrl);
                                 errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, errorMessage, operationErrorCode: responseCode));
                                 return;
                             }
@@ -201,7 +201,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             {
                                 if (!k_KnownErrors.TryGetValue(request.responseCode, out var errorCodeMessage))
                                     errorCodeMessage = k_KnownErrors[k_GeneralClientError];
-                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, string.Format(L10n.Tr("[Error {0}] {1}. {2} (URL: {3})"), responseCode, errorCodeMessage, k_ErrorMessage, fullUrl), operationErrorCode: responseCode));
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, string.Format(L10n.Tr("[Error {0}] {1}. {2} (URL: {3})", null), responseCode, errorCodeMessage, k_ErrorMessage, fullUrl), operationErrorCode: responseCode));
                                 return;
                             }
 
@@ -215,8 +215,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                                     var operationErrorCode = parsedResult.ContainsKey("errorCode") ? int.Parse(parsedResult.GetString("errorCode")) : -1;
                                     var parsedErrorMessage = parsedResult.GetString("errorMessage");
                                     var finalErrorMessage = operationErrorCode != -1
-                                        ? string.Format(L10n.Tr("[Error {0}] {1} (URL: {2})"), operationErrorCode, parsedErrorMessage, fullUrl)
-                                        : string.Format(L10n.Tr("{0} (URL: {1})"), parsedErrorMessage, fullUrl);
+                                        ? string.Format(L10n.Tr("[Error {0}] {1} (URL: {2})", null), operationErrorCode, parsedErrorMessage, fullUrl)
+                                        : string.Format(L10n.Tr("{0} (URL: {1})", null), parsedErrorMessage, fullUrl);
                                     errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, finalErrorMessage, operationErrorCode: operationErrorCode));
                                 }
                                 else
@@ -238,13 +238,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                             {
                                 if (!k_KnownErrors.TryGetValue(lastResponseCode, out var errorCodeMessage))
                                     errorCodeMessage = k_KnownErrors[k_GeneralServerError];
-                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, string.Format(L10n.Tr("[Error {0}] {1}. {2} (URL: {3})"), lastResponseCode, errorCodeMessage, k_ErrorMessage, fullUrl), operationErrorCode: lastResponseCode));
+                                errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, string.Format(L10n.Tr("[Error {0}] {1}. {2} (URL: {3})", null), lastResponseCode, errorCodeMessage, k_ErrorMessage, fullUrl), operationErrorCode: lastResponseCode));
                             }
                             else
                             {
                                 var finalErrorMessage = lastResponseCode != -1
-                                    ? string.Format(L10n.Tr("[Error {0}] {1} (URL: {2})"), lastResponseCode, k_ErrorMessage, fullUrl)
-                                    : string.Format(L10n.Tr("{0} (URL: {1})"), k_ErrorMessage, fullUrl);
+                                    ? string.Format(L10n.Tr("[Error {0}] {1} (URL: {2})", null), lastResponseCode, k_ErrorMessage, fullUrl)
+                                    : string.Format(L10n.Tr("{0} (URL: {1})", null), k_ErrorMessage, fullUrl);
                                 errorCallback?.Invoke(new UIError(UIErrorCode.AssetStoreRestApiError, finalErrorMessage, operationErrorCode: lastResponseCode));
                             }
                         }

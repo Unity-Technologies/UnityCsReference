@@ -2,11 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: Director not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -15,7 +15,7 @@ namespace UnityEngine.Playables
 {
     [NativeHeader("Modules/Director/ScriptBindings/PlayableSystems.bindings.h")]
     [StaticAccessor("PlayableSystemsBindings", StaticAccessorType.DoubleColon)]
-    internal static class PlayableSystems
+    internal static partial class PlayableSystems
     {
         public delegate void PlayableSystemDelegate(IReadOnlyList<DataPlayableOutput> outputs);
 
@@ -173,16 +173,11 @@ namespace UnityEngine.Playables
         [NativeMethod(IsThreadSafe = true)]
         private extern static int RegisterStreamStage(System.Type streamType, int stage);
 
-        static PlayableSystems()
-        {
-            s_Delegates = new Dictionary<int, PlayableSystemDelegate>();
-            s_SystemTypes = new Dictionary<int, Type>();
-            s_RWLock = new ReaderWriterLockSlim();
-        }
-
-        static Dictionary<int, Type> s_SystemTypes;
-        static Dictionary<int, PlayableSystemDelegate> s_Delegates;
-        static ReaderWriterLockSlim s_RWLock;
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly Dictionary<int, Type> s_SystemTypes = new();
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly Dictionary<int, PlayableSystemDelegate> s_Delegates = new();
+        [NoAutoStaticsCleanup] // synchronization primitive only; holds no registrations and stays valid across reloads
+        static readonly ReaderWriterLockSlim s_RWLock = new();
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -1,13 +1,16 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: ScriptingRuntime not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Scripting
 {
     // *** TODO (code reload): this interface is in LifecycleManagement assembly temporarily until we find out how we want to organize the ScriptingCore functionality
     internal static class Debug
     {
+        // Host-installed logging dependency, set once from native initialization; process-level state that no
+        // scope transition should replace.
+        [NoAutoStaticsCleanup]
         private static IScriptingCoreDebug _scriptingCoreDebug = new DefaultScriptingCoreDebug();
         public static IScriptingCoreDebug ScriptingCoreDebug
         {
@@ -44,4 +47,3 @@ namespace Unity.Scripting
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

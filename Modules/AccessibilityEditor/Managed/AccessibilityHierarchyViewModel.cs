@@ -152,8 +152,8 @@ namespace UnityEditor.Accessibility
                 if (isRoot)
                 {
                     if (m_Model.accessibilityHierarchy != null)
-                        return m_Model.accessibilityHierarchy == AssistiveSupport.activeHierarchy ? L10n.Tr("Active Hierarchy") : L10n.Tr("Inactive Hierarchy");
-                    return L10n.Tr("No Active Hierarchy");
+                        return m_Model.accessibilityHierarchy == AssistiveSupport.activeHierarchy ? L10n.Tr("Active Hierarchy", null) : L10n.Tr("Inactive Hierarchy", null);
+                    return L10n.Tr("No Active Hierarchy", null);
                 }
                 return m_Node?.label;
             }

@@ -33,13 +33,13 @@ namespace Unity.Profiling.Editor
 
         static class Content
         {
-            public static readonly string DefaultUnkownRowName = L10n.Tr("Unknown");
-            public static readonly string UnknownkSizeLabel = L10n.Tr("Unknown");
-            public static readonly string TotalFormatString = L10n.Tr("Total: {0}");
-            public static readonly string TotalLabelTooltip = L10n.Tr("The Total memory usage.");
-            public static readonly string TotalAndMaxFormatString = L10n.Tr("Total: {0} | Max: {1}");
-            public static readonly string TotalAndMaxLabelTooltip = L10n.Tr("The bar is scaled in relation to the frame with the highest total memory usage (Max).");
-            public static readonly string TotalAndMaxLabelTooltipForMaxValue = L10n.Tr("This is one of the frames with the highest total memory usage (Max).");
+            public static readonly string DefaultUnkownRowName = L10n.Tr("Unknown", null);
+            public static readonly string UnknownkSizeLabel = L10n.Tr("Unknown", null);
+            public static readonly string TotalFormatString = L10n.Tr("Total: {0}", null);
+            public static readonly string TotalLabelTooltip = L10n.Tr("The Total memory usage.", null);
+            public static readonly string TotalAndMaxFormatString = L10n.Tr("Total: {0} | Max: {1}", null);
+            public static readonly string TotalAndMaxLabelTooltip = L10n.Tr("The bar is scaled in relation to the frame with the highest total memory usage (Max).", null);
+            public static readonly string TotalAndMaxLabelTooltipForMaxValue = L10n.Tr("This is one of the frames with the highest total memory usage (Max).", null);
         }
 
         string m_HeaderText;

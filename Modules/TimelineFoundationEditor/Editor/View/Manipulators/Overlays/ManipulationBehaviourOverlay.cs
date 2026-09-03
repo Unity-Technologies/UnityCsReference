@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.ViewModel;
 using Unity.Timeline.Foundation.Widgets;
@@ -19,8 +19,11 @@ namespace Unity.Timeline.Foundation.View
     {
         const string k_Style = "editModeOverlay";
 
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<float> k_IndicatorHeightRatioProperty = new CustomStyleProperty<float>("--indicator-height-ratio");
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<float> k_IndicatorsWidthProperty = new CustomStyleProperty<float>("--indicator-width");
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<Color> k_IndicatorsColorProperty = new CustomStyleProperty<Color>("--indicator-color");
 
         public Action<Cursor> cursorChanged;
@@ -116,4 +119,3 @@ namespace Unity.Timeline.Foundation.View
         void OnDetachFromPanel(DetachFromPanelEvent evt) => sequenceTreeView = null;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -7,7 +7,7 @@ using UnityEditor;
 namespace Unity.U2D.Physics.Editor
 {
     /// <summary>
-    /// The slider joint definition: nothing of its own outside the groups, so it opens straight into them.
+    /// The slider joint definition: the auto-axis flag, then the spring, motor and limit blocks.
     /// </summary>
     [CustomPropertyDrawer(typeof(PhysicsSliderJointDefinition))]
     sealed class PhysicsSliderJointDefinitionPropertyDrawer : PhysicsJointDefinitionPropertyDrawer
@@ -19,6 +19,7 @@ namespace Unity.U2D.Physics.Editor
                 if (m_Groups == null)
                 {
                     m_Groups = Order(
+                        new Group(null, null, k_AutoAxis),
                         new Group(null, null, k_CollideConnected),
                         Group.Anchors(k_LocalAnchorA, k_LocalAnchorB),
                         new Group(k_SpringTitle, k_EnableSpring, k_SpringTargetTranslation, k_SpringFrequency, k_SpringDamping),
@@ -38,6 +39,13 @@ namespace Unity.U2D.Physics.Editor
             get { return (k_LocalAnchorA, k_AutoAnchorA, k_LocalAnchorB, k_AutoAnchorB); }
         }
 
+        // The slider bakes the auto axis into both frame rotations (anchor B's is the held relative-rotation reference), so both rotation rows hide while it is set.
+        protected override (string autoAxisField, bool usesRotationB)? axisFields
+        {
+            get { return (k_AutoAxis, true); }
+        }
+
+        const string k_AutoAxis = nameof(PhysicsSliderJointDefinition.m_AutoAxis);
         const string k_CollideConnected = nameof(PhysicsSliderJointDefinition.m_CollideConnected);
         const string k_LocalAnchorA = nameof(PhysicsSliderJointDefinition.m_LocalAnchorA);
         const string k_LocalAnchorB = nameof(PhysicsSliderJointDefinition.m_LocalAnchorB);

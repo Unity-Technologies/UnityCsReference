@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -591,20 +592,20 @@ namespace UnityEditor
             }
             else if (action == InteractionMode.UserAction)
             {
-                var message = L10n.Tr("Overriden properties cannot be applied or reverted when in Animation Mode.\n\nDisable Animation Mode and try again.");
+                var message = L10n.Tr("Overriden properties cannot be applied or reverted when in Animation Mode.\n\nDisable Animation Mode and try again.", null);
                 switch (overrideOperation)
                 {
                     case OverrideOperation.Apply:
                         EditorUtility.DisplayDialog(
-                            L10n.Tr("Cannot apply property override to Prefab"),
+                            L10n.Tr("Cannot apply property override to Prefab", null),
                             message,
-                            L10n.Tr("OK"));
+                            L10n.Tr("OK", null));
                         break;
                     case OverrideOperation.Revert:
                         EditorUtility.DisplayDialog(
-                            L10n.Tr("Cannot revert property override"),
+                            L10n.Tr("Cannot revert property override", null),
                             message,
-                            L10n.Tr("OK"));
+                            L10n.Tr("OK", null));
                         break;
                 }
             }
@@ -712,9 +713,9 @@ namespace UnityEditor
                         Debug.LogWarning("Cannot apply reference to scene object that is not part of apply target prefab.");
                     else
                         EditorUtility.DisplayDialog(
-                            L10n.Tr("Cannot apply reference to object in scene"),
-                            L10n.Tr("A reference to an object in the scene cannot be applied to the Prefab asset."),
-                            L10n.Tr("OK"));
+                            L10n.Tr("Cannot apply reference to object in scene", null),
+                            L10n.Tr("A reference to an object in the scene cannot be applied to the Prefab asset.", null),
+                            L10n.Tr("OK", null));
                     return;
                 }
             }
@@ -999,15 +1000,15 @@ namespace UnityEditor
                 bool applyingNotPossible = instanceProperty.managedReferencePropertyPath != sourceProperty.managedReferencePropertyPath;
                 if (applyingNotPossible)
                 {
-                    string title = L10n.Tr("Mismatching Objects");
-                    string errorMsg = L10n.Tr("Cannot apply SerializeReference field since the Prefab instance is referencing a new object compared to the Prefab Asset.\n\nThis means that the changes from the Prefab Asset cannot be merged back to the Prefab instance.\n\nYou can apply the root of the field or the entire component");
+                    string title = L10n.Tr("Mismatching Objects", null);
+                    string errorMsg = L10n.Tr("Cannot apply SerializeReference field since the Prefab instance is referencing a new object compared to the Prefab Asset.\n\nThis means that the changes from the Prefab Asset cannot be merged back to the Prefab instance.\n\nYou can apply the root of the field or the entire component", null);
                     if (action == InteractionMode.AutomatedAction)
                         throw new InvalidOperationException(title + ": " + errorMsg + $"(instance property { instanceProperty.managedReferencePropertyPath}, asset property { sourceProperty.managedReferencePropertyPath})");
                     else
                         EditorUtility.DisplayDialog(
                             title,
                             errorMsg,
-                            L10n.Tr("OK"));
+                            L10n.Tr("OK", null));
                     return true;
                 }
             }
@@ -1018,15 +1019,15 @@ namespace UnityEditor
                 // propertyPath on the Prefab Asset, tell the user that this is not supported.
                 if (!string.IsNullOrEmpty(instanceProperty.managedReferencePropertyPath))
                 {
-                    string title = L10n.Tr("Mismatching Types");
-                    string errorMsg = L10n.Tr("Cannot apply a SerializeReference sub field when the type from the Prefab instance is different from the Prefab Asset.\n\nYou can apply the root of the field or the entire component");
+                    string title = L10n.Tr("Mismatching Types", null);
+                    string errorMsg = L10n.Tr("Cannot apply a SerializeReference sub field when the type from the Prefab instance is different from the Prefab Asset.\n\nYou can apply the root of the field or the entire component", null);
                     if (action == InteractionMode.AutomatedAction)
                         throw new InvalidOperationException(title + ": " + errorMsg);
                     else
                         EditorUtility.DisplayDialog(
                             title,
                             errorMsg,
-                            L10n.Tr("OK"));
+                            L10n.Tr("OK", null));
 
                     return true;
                 }
@@ -1053,15 +1054,15 @@ namespace UnityEditor
                 bool revertingNotPossible = instanceProperty.managedReferencePropertyPath != sourceProperty.managedReferencePropertyPath;
                 if (revertingNotPossible)
                 {
-                    title = L10n.Tr("Mismatching Objects");
-                    errorMsg = L10n.Tr("Cannot revert a single SerializeReference field since the Prefab instance is referencing a new object compared to the Prefab Asset.\n\nThis means that the entire object is considered an override, cannot revert parts of it.\n\nYou can revert the root of the serialized reference or the entire component.");
+                    title = L10n.Tr("Mismatching Objects", null);
+                    errorMsg = L10n.Tr("Cannot revert a single SerializeReference field since the Prefab instance is referencing a new object compared to the Prefab Asset.\n\nThis means that the entire object is considered an override, cannot revert parts of it.\n\nYou can revert the root of the serialized reference or the entire component.", null);
                 }
             }
             else
             {
                 // Type mismatch:
-                title = L10n.Tr("Mismatching Types");
-                errorMsg = L10n.Tr("Cannot revert a parts of a SerializeReference property since the Prefab instance is referencing a different type compared to the Prefab Asset.\n\nYou can revert the root of the serialized reference or the entire component.");
+                title = L10n.Tr("Mismatching Types", null);
+                errorMsg = L10n.Tr("Cannot revert a parts of a SerializeReference property since the Prefab instance is referencing a different type compared to the Prefab Asset.\n\nYou can revert the root of the serialized reference or the entire component.", null);
             }
 
             bool warnUser = !string.IsNullOrEmpty(errorMsg);
@@ -1073,7 +1074,7 @@ namespace UnityEditor
                 }
                 else if (action == InteractionMode.UserAction)
                 {
-                    EditorUtility.DisplayDialog(title, errorMsg, L10n.Tr("OK"));
+                    EditorUtility.DisplayDialog(title, errorMsg, L10n.Tr("OK", null));
                 }
             }
 
@@ -1191,10 +1192,10 @@ namespace UnityEditor
                     if (!string.IsNullOrEmpty(dependentComponents))
                     {
                         string error = String.Format(
-                            L10n.Tr("Can't apply added component {0} because it depends on {1}."),
+                            L10n.Tr("Can't apply added component {0} because it depends on {1}.", null),
                             ObjectNames.GetInspectorTitle(component),
                             dependentComponents);
-                        EditorUtility.DisplayDialog(L10n.Tr("Can't apply added component"), error, L10n.Tr("OK"));
+                        EditorUtility.DisplayDialog(L10n.Tr("Can't apply added component", null), error, L10n.Tr("OK", null));
                         return;
                     }
 
@@ -1222,7 +1223,7 @@ namespace UnityEditor
                     bool orderChanged = DidComponentOrderChange(originalComponentOrder, postApplyComponentOrder);
                     if (orderChanged)
                     {
-                        EditorUtility.DisplayDialog(L10n.Tr("Notice!"), L10n.Tr("Some component(s) changed position because of other added components in the variant/nesting chain."), L10n.Tr("OK"));
+                        EditorUtility.DisplayDialog(L10n.Tr("Notice!", null), L10n.Tr("Some component(s) changed position because of other added components in the variant/nesting chain.", null), L10n.Tr("OK", null));
                     }
                 }
 
@@ -1233,9 +1234,9 @@ namespace UnityEditor
                 if (action == InteractionMode.UserAction)
                 {
                     EditorUtility.DisplayDialog(
-                        L10n.Tr("Can't add component"),
+                        L10n.Tr("Can't add component", null),
                         exception.Message,
-                        L10n.Tr("OK"));
+                        L10n.Tr("OK", null));
                     Undo.RevertAllInCurrentGroup();
                 }
                 else
@@ -1276,10 +1277,10 @@ namespace UnityEditor
                 if (!string.IsNullOrEmpty(dependentComponents))
                 {
                     string error = String.Format(
-                        L10n.Tr("Can't revert added component {0} because {1} depends on it."),
+                        L10n.Tr("Can't revert added component {0} because {1} depends on it.", null),
                         ObjectNames.GetInspectorTitle(component),
                         dependentComponents);
-                    EditorUtility.DisplayDialog(L10n.Tr("Can't revert added component"), error, L10n.Tr("OK"));
+                    EditorUtility.DisplayDialog(L10n.Tr("Can't revert added component", null), error, L10n.Tr("OK", null));
                     return;
                 }
 
@@ -1372,10 +1373,10 @@ namespace UnityEditor
                 if (!string.IsNullOrEmpty(dependentComponents))
                 {
                     string error = String.Format(
-                        L10n.Tr("Can't apply removed component {0} because {1} component in the Prefab Asset depends on it."),
+                        L10n.Tr("Can't apply removed component {0} because {1} component in the Prefab Asset depends on it.", null),
                         ObjectNames.GetInspectorTitle(assetComponent),
                         dependentComponents);
-                    EditorUtility.DisplayDialog(L10n.Tr("Can't apply removed component"), error, L10n.Tr("OK"));
+                    EditorUtility.DisplayDialog(L10n.Tr("Can't apply removed component", null), error, L10n.Tr("OK", null));
                     return;
                 }
             }
@@ -1492,12 +1493,12 @@ namespace UnityEditor
             if (!string.IsNullOrEmpty(dependentComponents))
             {
                 string error = String.Format(
-                    L10n.Tr("Can't revert removed component {0} because it depends on {1}."),
+                    L10n.Tr("Can't revert removed component {0} because it depends on {1}.", null),
                     ObjectNames.GetInspectorTitle(assetComponent),
                     dependentComponents);
                 if (action == InteractionMode.UserAction)
                 {
-                    EditorUtility.DisplayDialog(L10n.Tr("Can't revert removed component"), error, L10n.Tr("OK"));
+                    EditorUtility.DisplayDialog(L10n.Tr("Can't revert removed component", null), error, L10n.Tr("OK", null));
                 }
                 else
                 {
@@ -1877,9 +1878,9 @@ namespace UnityEditor
                 Object source = applyTargets[i];
                 GameObject sourceRoot = GetRootGameObject(source);
 
-                var translatedText = L10n.Tr("Apply as Override in Prefab '{0}'");
+                var translatedText = L10n.Tr("Apply as Override in Prefab '{0}'", null);
                 if (i == applyTargets.Count - 1)
-                    translatedText = L10n.Tr("Apply to Prefab '{0}'");
+                    translatedText = L10n.Tr("Apply to Prefab '{0}'", null);
                 GUIContent applyContent = new GUIContent(thingThatChanged + String.Format(translatedText, sourceRoot.name));
                 addApplyMenuItemAction(applyContent, source, instanceOrAssetObject);
             }
@@ -1896,7 +1897,7 @@ namespace UnityEditor
             if (thingThatChanged != String.Empty)
                 thingThatChanged += "/";
 
-            GUIContent revertContent = new GUIContent(thingThatChanged + L10n.Tr("Revert"));
+            GUIContent revertContent = new GUIContent(thingThatChanged + L10n.Tr("Revert", null));
             addRevertMenuItemAction(revertContent);
         }
 
@@ -2705,13 +2706,13 @@ namespace UnityEditor
             // They are included like this instead of being created programatically
             // in order for localization strings to have sufficient context.
 
-            string prefabNoun = assetPaths.Length > 1 ? L10n.Tr("Prefabs") : L10n.Tr("Prefab");
+            string prefabNoun = assetPaths.Length > 1 ? L10n.Tr("Prefabs", null) : L10n.Tr("Prefab", null);
             bool result = AssetDatabase.MakeEditable(
                 assetPaths,
                 string.Format(
                     saveVerb == SaveVerb.Save ?
-                    L10n.Tr("The version control requires you to check out the {0} before saving changes.") :
-                    L10n.Tr("The version control requires you to check out the {0} before applying changes."),
+                    L10n.Tr("The version control requires you to check out the {0} before saving changes.", null) :
+                    L10n.Tr("The version control requires you to check out the {0} before applying changes.", null),
                     prefabNoun
                 )
             );
@@ -2720,15 +2721,15 @@ namespace UnityEditor
                 EditorUtility.DisplayDialog(
                     String.Format(
                         saveVerb == SaveVerb.Save ?
-                        L10n.Tr("Could not save {0}") :
-                        L10n.Tr("Could not apply to {0}"),
+                        L10n.Tr("Could not save {0}", null) :
+                        L10n.Tr("Could not apply to {0}", null),
                         prefabNoun),
                     String.Format(
                         saveVerb == SaveVerb.Save ?
-                        L10n.Tr("It was not possible to check out the {0} so the save operation has been canceled.") :
-                        L10n.Tr("It was not possible to check out the {0} so the apply operation has been canceled."),
+                        L10n.Tr("It was not possible to check out the {0} so the save operation has been canceled.", null) :
+                        L10n.Tr("It was not possible to check out the {0} so the apply operation has been canceled.", null),
                         prefabNoun),
-                    L10n.Tr("OK"));
+                    L10n.Tr("OK", null));
 
             return result;
         }
@@ -3328,7 +3329,7 @@ namespace UnityEditor
                         // The dependency direction is different for apply versus revert AND for added versus removed components.
                         bool dependsOnOther = (singleOverride is AddedComponent) ^ (operation == PrefabUtility.OverrideOperation.Revert);
                         dependenciesString += "\n" + string.Format(
-                            dependsOnOther ? L10n.Tr("{0} depends on {1}") : L10n.Tr("{0} is depended on by {1}"),
+                            dependsOnOther ? L10n.Tr("{0} depends on {1}", null) : L10n.Tr("{0} is depended on by {1}", null),
                             ObjectNames.GetInspectorTitle(singleOverride.GetObject()),
                             ObjectNames.GetInspectorTitle(dep));
                     }
@@ -3338,18 +3339,18 @@ namespace UnityEditor
                 string dialogTitle = null;
                 if (operation == PrefabUtility.OverrideOperation.Apply)
                 {
-                    dialogTitle = L10n.Tr("Can't apply selected overrides");
-                    error = L10n.Tr("Can't apply selected overrides due to dependencies with non-selected overrides:") + dependenciesString;
+                    dialogTitle = L10n.Tr("Can't apply selected overrides", null);
+                    error = L10n.Tr("Can't apply selected overrides due to dependencies with non-selected overrides:", null) + dependenciesString;
                 }
                 else
                 {
-                    dialogTitle = L10n.Tr("Can't revert selected overrides");
-                    error = L10n.Tr("Can't revert selected overrides due to dependencies with non-selected overrides.") + dependenciesString;
+                    dialogTitle = L10n.Tr("Can't revert selected overrides", null);
+                    error = L10n.Tr("Can't revert selected overrides due to dependencies with non-selected overrides.", null) + dependenciesString;
                 }
 
                 if (mode == InteractionMode.UserAction)
                 {
-                    EditorUtility.DisplayDialog(dialogTitle, error, L10n.Tr("OK"));
+                    EditorUtility.DisplayDialog(dialogTitle, error, L10n.Tr("OK", null));
                 }
                 else
                 {
@@ -3568,7 +3569,7 @@ namespace UnityEditor
             {
                 title = titleCheckForUnusedOverrides;
                 message = msgNoOverridesWereFound;
-                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK", null));
                 return false;
             }
 
@@ -3636,14 +3637,14 @@ namespace UnityEditor
             {
                 title = titleRemoveUnusedOverrides;
                 message += "\n\n" + msgDetailsWrittenToTheLog;
-                if (EditorUtility.DisplayDialog(title, message, L10n.Tr("Remove"), L10n.Tr("Cancel")))
+                if (EditorUtility.DisplayDialog(title, message, L10n.Tr("Remove", null), L10n.Tr("Cancel", null)))
                     return true;
             }
             else
             {
                 title = titleCheckForUnusedOverrides;
                 message = msgNoOverridesWereFound;
-                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK", null));
                 return false;
             }
 
@@ -3981,3 +3982,4 @@ namespace UnityEditor
         internal static bool HasPrefabExtension(string assetPath) => assetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase);
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

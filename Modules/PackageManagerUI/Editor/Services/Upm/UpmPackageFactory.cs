@@ -67,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackageCreated(string packageName)
         {
-            HandleSpecialInstall(packageName, L10n.Tr("Creating a new package"), PackageTag.Custom);
+            HandleSpecialInstall(packageName, L10n.Tr("Creating a new package", null), PackageTag.Custom);
         }
 
         private void OnPackagesReadyToReevaluate(IReadOnlyCollection<string> packageNames)
@@ -93,7 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // Special handling for installing a package that's not already in the database. This case is most likely to happen
             // when a user adds a git or local package through the special add package UI.
-            HandleSpecialInstall(packageIdOrName, L10n.Tr("Installing a new package"));
+            HandleSpecialInstall(packageIdOrName, L10n.Tr("Installing a new package", null));
         }
 
         private void OnSpecialInstallFinalize(string packageIdOrName, string finalPackageId)

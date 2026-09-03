@@ -118,6 +118,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.transitionData.Write().transitionTimingFunction.CopyFrom(new List<EasingFunction> { EasingMode.Ease });
             s_InitialStyle.transformData.Write().translate = StyleKeyword.None.ToTranslate();
             s_InitialStyle.rareData.Write().unityBackgroundImageTintColor = Color.white;
+            s_InitialStyle.rareData.Write().unityCurvature = StyleKeyword.None.ToCurvature();
             s_InitialStyle.inheritedData.Write().unityEditorTextRenderingMode = EditorTextRenderingMode.SDF;
             s_InitialStyle.inheritedData.Write().unityFont = default;
             s_InitialStyle.inheritedData.Write().unityFontDefinition = default;
@@ -189,7 +190,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static float flexGrow => s_InitialStyle.layoutData.Read().flexGrow;
         public static float flexShrink => s_InitialStyle.layoutData.Read().flexShrink;
         public static Wrap flexWrap => s_InitialStyle.layoutData.Read().flexWrap;
-        public static Length fontSize => s_InitialStyle.inheritedData.Read().fontSize;
+        public static float fontSize => s_InitialStyle.inheritedData.Read().fontSize;
         public static ReadOnlySpan<GridTrackSize> gridAutoColumns => s_InitialStyle.gridData.Read().gridAutoColumns;
         public static GridAutoFlow gridAutoFlow => s_InitialStyle.gridData.Read().gridAutoFlow;
         public static ReadOnlySpan<GridTrackSize> gridAutoRows => s_InitialStyle.gridData.Read().gridAutoRows;
@@ -234,6 +235,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static ReadOnlySpan<EasingFunction> transitionTimingFunction => s_InitialStyle.transitionData.Read().transitionTimingFunction;
         public static Translate translate => s_InitialStyle.transformData.Read().translate;
         public static Color unityBackgroundImageTintColor => s_InitialStyle.rareData.Read().unityBackgroundImageTintColor;
+        public static Curvature unityCurvature => s_InitialStyle.rareData.Read().unityCurvature;
         public static EditorTextRenderingMode unityEditorTextRenderingMode => s_InitialStyle.inheritedData.Read().unityEditorTextRenderingMode;
         public static EntityId unityFont => s_InitialStyle.inheritedData.Read().unityFont;
         public static EntityId unityFontDefinition => s_InitialStyle.inheritedData.Read().unityFontDefinition;

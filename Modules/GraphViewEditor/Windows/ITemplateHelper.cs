@@ -5,7 +5,6 @@
 using System;
 
 using UnityEditor.Search;
-using UnityEditor.PackageManager.UI;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -72,8 +71,6 @@ namespace UnityEditor.Experimental.GraphView
         /// It is abstracted in this interface to easily mock it for automatic tests.
         /// </summary>
         GraphViewTemplateWindow.ISaveFileDialogHelper saveFileDialogHelper { get; set; }
-
-        void RaiseImportSampleDependencies(PackageManager.PackageInfo packageInfo, Sample sample);
 
         /// <summary>
         /// This method is called each time a template is used.

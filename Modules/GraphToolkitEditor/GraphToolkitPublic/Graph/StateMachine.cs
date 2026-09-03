@@ -326,17 +326,21 @@ namespace Unity.GraphToolkit.Editor
         /// </remarks>
         public virtual void OnDisable() { }
 
-        // TODO: Make this method public once work for the StateMachineLogger is complete: https://jira.unity3d.com/browse/GTF-2540
         /// <summary>
         /// Called after the state machine has changed.
         /// </summary>
-        /// <param name="graphLogger">The <see cref="GraphLogger"/> that receives any errors or warnings related to the graph.</param>
+        /// <param name="stateMachineLogger">The <see cref="StateMachineLogger"/> that receives any errors or warnings related to the state machine,
+        /// and provides access to information about what changes (added/deleted/modified states).</param>
         /// <remarks>
-        /// Unity calls this method after any change to the graph. Override it to validate the graph's integrity
-        /// and report issues using the provided <see cref="GraphLogger"/>.
-        /// Do not modify the graph within this method, as it may cause instability or recursive updates.
+        /// Unity calls this method after any change to the state machine. Override it to validate the state machine's
+        /// integrity and report issues using the provided <see cref="StateMachineLogger"/>,  or react to specific changes via
+        /// <see cref="StateMachineLogger.StateMachineChanges"/>.
+        /// Use this method to detect invalid configurations, highlight issues in the editor, or provide user feedback.
+        /// You can iterate the changed states efficiently without checking all states in the graph.
+        ///
+        /// Do not modify the state machine within this method, as it may cause instability or recursive updates.
         /// </remarks>
-        internal virtual void OnStateMachineChanged(GraphLogger graphLogger) { }
+        public virtual void OnStateMachineChanged(StateMachineLogger stateMachineLogger) { }
 
         /// <summary>
         /// Signals the beginning of an undoable operation.
@@ -353,6 +357,75 @@ namespace Unity.GraphToolkit.Editor
         {
             CheckImplementation();
             m_Implementation.UndoBeginRecordGraph(actionName);
+        }
+
+        /// <summary>
+        /// Signals the beginning of an undoable operation and opts specific conditions into full serialized-state
+        /// capture.
+        /// </summary>
+        /// <param name="actionName">The name of the operation, which is displayed in the undo menu.</param>
+        /// <param name="conditionsToRecord">
+        /// The conditions whose serialized state you plan to mutate inside this scope. Each condition must belong to
+        /// this state machine.
+        /// </param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if an undo operation has already been registered to the state machine.
+        /// </exception>
+        /// <remarks>
+        /// Use this overload when your custom <see cref="Condition"/> subclasses expose serialized fields that you
+        /// mutate directly, for example from a <see cref="ConditionView{T}"/> callback, rather than through the
+        /// built-in editing controls.
+        ///
+        /// Passing conditions here has two effects at <see cref="UndoEndRecordStateMachine"/> time:
+        /// <list type="bullet">
+        /// <item><description>
+        /// Unity's undo system captures the full serialized state of the containing state machine asset, so undo
+        /// restores the previous values of your serialized fields.
+        /// </description></item>
+        /// <item><description>
+        /// The conditions are reported as changed and the state machine asset is marked dirty.
+        /// </description></item>
+        /// </list>
+        ///
+        /// <para>
+        /// The change-notification side effects run only when the state machine is currently displayed in a graph
+        /// window. From an editor script with no open window, undo capture still occurs and undo restores your
+        /// serialized values as expected, but the asset is not automatically marked dirty. To persist your changes in
+        /// that case, call <see cref="StateMachineDatabase.SaveStateMachine"/> explicitly.
+        /// </para>
+        ///
+        /// Throws <see cref="InvalidOperationException"/> when an undo operation has already been registered to the
+        /// state machine. If you only call the built-in modification methods, use the
+        /// <see cref="UndoBeginRecordStateMachine(string)"/> overload instead.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// class HealthConditionView : ConditionView<HealthCondition>
+        /// {
+        ///     protected override bool DisplayValueField => false;
+        ///
+        ///     public override void OnViewBuilt()
+        ///     {
+        ///         var slider = new Slider(0f, 100f) { value = Condition.Value };
+        ///         slider.RegisterValueChangedCallback(evt =>
+        ///         {
+        ///             // Record the write so it is undoable and marks the asset dirty.
+        ///             var stateMachine = Condition.StateMachine;
+        ///             stateMachine.UndoBeginRecordStateMachine("Change health threshold", Condition);
+        ///             Condition.Value = evt.newValue;
+        ///             stateMachine.UndoEndRecordStateMachine();
+        ///         });
+        ///         View.Root.Add(slider);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public void UndoBeginRecordStateMachine(string actionName, params Condition[] conditionsToRecord)
+        {
+            CheckImplementation();
+            m_Implementation.UndoBeginRecordGraph(actionName, conditionsToRecord);
         }
 
         /// <summary>
@@ -393,8 +466,109 @@ namespace Unity.GraphToolkit.Editor
             return m_Implementation.GetTransitions(fromState, toState);
         }
 
-        // TODO: Add the following methods
-        // Connect(fromState, toState)
-        // Disconnect(fromState, toState)
+        /// <summary>
+        /// Creates a transition from one state to another.
+        /// </summary>
+        /// <param name="fromState">The state the transition originates from. Must belong to this state machine.</param>
+        /// <param name="toState">The state the transition goes to. Must belong to this state machine.</param>
+        /// <returns>The <see cref="ITransition"/> the connection was made on. If <paramref name="fromState"/> and
+        /// <paramref name="toState"/> are the same state, the returned transition is a self transition
+        /// (an <see cref="ISelfTransition"/>), and it is the state's existing self transition when it already has
+        /// one.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="fromState"/> or <paramref name="toState"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">Thrown if either state does not belong to this state machine.</exception>
+        /// <remarks>
+        /// This is the state machine equivalent of connecting two ports with a wire. Between two different states, a
+        /// new transition is created on every call, so calling this method twice on the same pair of states produces
+        /// two distinct transitions, each seeded with a single empty rule.
+        ///
+        /// A state holds a single self transition, so when <paramref name="fromState"/> and <paramref name="toState"/>
+        /// are the same state and that state already has a self transition, no second transition is created: a new
+        /// rule is added to the existing self transition, which is returned. To retrieve the rule that was added, read the last
+        /// rule of the returned transition. Use <see cref="ITransition.GetRules"/> to inspect the rules of a
+        /// transition.
+        ///
+        /// Enclose this method with <see cref="UndoBeginRecordStateMachine"/> and <see cref="UndoEndRecordStateMachine"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// Throws <see cref="ArgumentNullException"/> when <paramref name="fromState"/> or <paramref name="toState"/> is <c>null</c>.
+        /// Throws <see cref="ArgumentException"/> when either state does not belong to this state machine.
+        /// </remarks>
+        /// <example>
+        /// The following example connects two states, then gives the second state a self transition with two rules.
+        /// <code>
+        /// <![CDATA[
+        /// void BuildTransitions(StateMachine stateMachine, IState idle, IState patrol)
+        /// {
+        ///     stateMachine.UndoBeginRecordStateMachine("Build transitions");
+        ///
+        ///     // Idle -> Patrol, a new transition holding one rule.
+        ///     stateMachine.Connect(idle, patrol);
+        ///
+        ///     // Patrol -> Patrol, a self transition holding one rule.
+        ///     var patrolLoop = stateMachine.Connect(patrol, patrol);
+        ///
+        ///     // Patrol already has a self transition, so this adds a second rule to it rather than
+        ///     // creating another transition: it returns patrolLoop, whose RuleCount is now 2.
+        ///     stateMachine.Connect(patrol, patrol);
+        ///
+        ///     stateMachine.UndoEndRecordStateMachine();
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="GetTransitions"/>
+        /// <seealso cref="Disconnect"/>
+        public ITransition Connect(IState fromState, IState toState)
+        {
+            CheckImplementation();
+            return m_Implementation.Connect(fromState, toState);
+        }
+
+        /// <summary>
+        /// Removes all transitions that go from one state to another.
+        /// </summary>
+        /// <param name="fromState">The state the transitions originate from. Must belong to this state machine.</param>
+        /// <param name="toState">The state the transitions go to. Must belong to this state machine.</param>
+        /// <returns><c>true</c> if at least one transition existed and was removed; otherwise <c>false</c>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="fromState"/> or <paramref name="toState"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">Thrown if either state does not belong to this state machine.</exception>
+        /// <remarks>
+        /// Only transitions that leave <paramref name="fromState"/> and enter <paramref name="toState"/> are removed;
+        /// transitions in the opposite direction are left untouched. When <paramref name="fromState"/> and
+        /// <paramref name="toState"/> are the same state, self transitions on that state are removed, together with
+        /// all the rules they hold. To remove a single rule and keep the transition, use
+        /// <see cref="ITransition.RemoveRule"/> instead.
+        /// Enclose this method with <see cref="UndoBeginRecordStateMachine"/> and <see cref="UndoEndRecordStateMachine"/> to
+        /// add this operation to the undo stack and to update the graph view with the changes.
+        /// Throws <see cref="ArgumentNullException"/> when <paramref name="fromState"/> or <paramref name="toState"/> is <c>null</c>.
+        /// Throws <see cref="ArgumentException"/> when either state does not belong to this state machine.
+        /// </remarks>
+        /// <example>
+        /// The following example removes every transition that goes from one state to another.
+        /// <code>
+        /// <![CDATA[
+        /// void ClearTransitions(StateMachine stateMachine, IState idle, IState patrol)
+        /// {
+        ///     stateMachine.UndoBeginRecordStateMachine("Clear transitions");
+        ///
+        ///     // Removes all Idle -> Patrol transitions, and returns true if there was at least one.
+        ///     // Patrol -> Idle transitions are left untouched.
+        ///     stateMachine.Disconnect(idle, patrol);
+        ///
+        ///     // Removes the self transition on Patrol, with all the rules it holds.
+        ///     stateMachine.Disconnect(patrol, patrol);
+        ///
+        ///     stateMachine.UndoEndRecordStateMachine();
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="GetTransitions"/>
+        /// <seealso cref="Connect"/>
+        public bool Disconnect(IState fromState, IState toState)
+        {
+            CheckImplementation();
+            return m_Implementation.Disconnect(fromState, toState);
+        }
     }
 }

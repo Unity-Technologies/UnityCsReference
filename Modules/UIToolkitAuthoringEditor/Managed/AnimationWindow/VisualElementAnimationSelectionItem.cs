@@ -23,10 +23,10 @@ namespace Unity.UIToolkit.Editor
     /// </summary>
     internal sealed class VisualElementAnimationSelectionItem : UIToolkitAnimationSelectionItemBase
     {
-        static readonly string k_OnboardingLabelUnnamedSubject = L10n.Tr("this VisualElement");
+        static readonly string k_OnboardingLabelUnnamedSubject = L10n.Tr("this VisualElement", null);
 
         readonly PanelRenderer m_PanelRenderer;
-        readonly VisualElement m_ClipOwner;
+        VisualElement m_ClipOwner;
 
         VisualElementAnimationSelectionItem(
             AnimationWindow window,
@@ -38,8 +38,6 @@ namespace Unity.UIToolkit.Editor
             m_PanelRenderer = panelRenderer;
             m_ClipOwner = clipOwner;
             SetUIClip(uiClip);
-
-            AnimationUtility.onCurveWasModified += CurveWasModified;
         }
 
         internal static VisualElementAnimationSelectionItem Create(
@@ -174,6 +172,8 @@ namespace Unity.UIToolkit.Editor
 
         public override void Synchronize()
         {
+            HealDetachedClipOwner();
+
             // Treat a released or detached owner as "no clips" - reading resolvedStyle on a recycled
             // layout node throws from LayoutDataAccess. The responder picks up a fresh selection on
             // the next selection-change event (Animator-deletion behavior).
@@ -184,6 +184,45 @@ namespace Unity.UIToolkit.Editor
             }
 
             ReconcileClips(m_ClipOwner.resolvedStyle.animationNames);
+        }
+
+        // A staging-panel rebuild - an undo touching the edited asset, for one - replaces the tree while
+        // this item keeps the element it was created around: detached, refusing a binder, unstyleable.
+        // The authoring asset id survives the rebuild, so the live counterpart can be adopted in place.
+        void HealDetachedClipOwner()
+        {
+            if (m_ClipOwner == null || m_ClipOwner.panel != null)
+                return;
+
+            var asset = m_ClipOwner.visualElementAsset;
+            var root = (StageUtility.GetCurrentStage() as VisualElementEditingStage)?.GetAuthoringPanel()?.visualTree;
+            if (asset == null || root == null)
+                return;
+
+            var live = FindByAssetId(root, asset.id);
+            if (live == null)
+                return;
+
+            m_ClipOwner = live;
+
+            // The resolution cache pairs this selection with the binder of the element it replaced;
+            // released, the next query pairs it with the adopted element's binder.
+            UIAnimationBindingResolution.Release(this);
+        }
+
+        static VisualElement FindByAssetId(VisualElement element, int assetId)
+        {
+            if (element.visualElementAsset is { } asset && asset.id == assetId)
+                return element;
+
+            for (var i = 0; i < element.hierarchy.childCount; i++)
+            {
+                var match = FindByAssetId(element.hierarchy[i], assetId);
+                if (match != null)
+                    return match;
+            }
+
+            return null;
         }
 
         public override bool IsCompatibleWith(UnityEngine.Object selectedObject)
@@ -201,38 +240,19 @@ namespace Unity.UIToolkit.Editor
         public override EditorCurveBinding[] GetAnimatableBindings()
             => m_ClipOwner == null ? Array.Empty<EditorCurveBinding>() : GetAnimatableBindingsFromBinder(GetOrCreateElementBinder());
 
-        // UI refresh hook, mirroring AnimationWindowSelectionItem.CurveWasModified. The per-element
-        // deltas (binder housekeeping) replace what DrivenPropertyManager pruning does automatically
-        // for GameObject paths.
-        void CurveWasModified(AnimationClip clip, EditorCurveBinding binding, AnimationUtility.CurveModifiedType type)
+        // Per-element deltas replace what DrivenPropertyManager pruning does automatically for GameObjects.
+        protected override void OnClipCurvesChanged(AnimationUtility.CurveModifiedType type)
         {
-            if (clip == null || m_UIClip == null || clip != m_UIClip.animationClip)
-                return;
-
             var binder = GetOrCreateElementBinder();
-            if (binder != null)
-            {
-                // Drop stale entries for removed curves so binder.IsBound - the inspector affordance
-                // signal - reflects the clip's current curves; the next sample re-populates surviving bindings.
-                if (type != AnimationUtility.CurveModifiedType.CurveModified)
-                    binder.ClearBindings();
-                binder.IncrementBoundElementsStyleVersion();
-            }
-
-            if (m_Window == null)
+            if (binder == null)
                 return;
 
-            if (type == AnimationUtility.CurveModifiedType.CurveModified)
-                m_Window.RefreshCurve(binding);
-            else
-                m_Window.RefreshClip();
-            m_Window.Repaint();
-        }
+            // Drop stale entries for removed curves so binder.IsBound - the inspector affordance
+            // signal - reflects the clip's current curves; the next sample re-populates surviving bindings.
+            if (type != AnimationUtility.CurveModifiedType.CurveModified)
+                binder.ClearBindings();
 
-        public override void Dispose()
-        {
-            AnimationUtility.onCurveWasModified -= CurveWasModified;
-            base.Dispose();
+            binder.IncrementBoundElementsStyleVersion();
         }
     }
 }

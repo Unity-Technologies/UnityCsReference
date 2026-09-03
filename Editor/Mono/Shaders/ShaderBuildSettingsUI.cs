@@ -38,6 +38,7 @@ namespace UnityEditor.Shaders
         private HelpBox m_DebugSymbolsWarningHelpBox;
         private HelpBox m_OptimizationLevelWarningHelpBox;
         private ShaderBuildSettings.ShaderOptimizationLevel m_OptLevelBeforeDebugForced = ShaderBuildSettings.ShaderOptimizationLevel.Default;
+        private string m_DebugSymbolsBaseTooltip = string.Empty;
         private List<GraphicsDeviceType> m_LastWarnedEnabledApis;
         private BuildTarget? m_LastLoadedDebugOptTarget = null;
         private static readonly ShaderBuildSettings.ShaderOptimizationLevel[] s_OptimizationLevels =
@@ -50,12 +51,21 @@ namespace UnityEditor.Shaders
         {
             switch (compiler)
             {
-                case ShaderBuildSettings.ShaderCompilerToolchain.FXC: return L10n.Tr("Effect-Compiler Tool (FXC)");
-                case ShaderBuildSettings.ShaderCompilerToolchain.DXC: return L10n.Tr("DirectX Shader Compiler (DXC)");
-                case ShaderBuildSettings.ShaderCompilerToolchain.Default: return L10n.Tr("Default");
+                case ShaderBuildSettings.ShaderCompilerToolchain.FXC: return L10n.Tr("Effect-Compiler Tool (FXC)", null);
+                case ShaderBuildSettings.ShaderCompilerToolchain.DXC: return L10n.Tr("DirectX Shader Compiler (DXC)", null);
+                case ShaderBuildSettings.ShaderCompilerToolchain.Default: return L10n.Tr("Default", null);
                 default: return compiler.ToString();
             }
         }
+
+        private static string PlatformOrShared(string platformText, string sharedText)
+            => string.IsNullOrEmpty(platformText) ? sharedText : platformText;
+
+        private static string CompilerDisplayNameFor(GraphicsDeviceType api, ShaderBuildSettings.ShaderCompilerToolchain compiler)
+            => PlatformOrShared(ShaderBuildSettings.GetCompilerDisplayNameForAPI(api, compiler), CompilerDisplayName(compiler));
+
+        private static string CompilerTooltipFor(GraphicsDeviceType api, ShaderBuildSettings.ShaderCompilerToolchain compiler)
+            => PlatformOrShared(ShaderBuildSettings.GetCompilerTooltipForAPI(api, compiler), CompilerTooltip(compiler));
 
         private static string CompilerTooltip(ShaderBuildSettings.ShaderCompilerToolchain compiler)
         {
@@ -63,10 +73,10 @@ namespace UnityEditor.Shaders
             {
                 case ShaderBuildSettings.ShaderCompilerToolchain.FXC:
                 case ShaderBuildSettings.ShaderCompilerToolchain.DXC:
-                    return L10n.Tr("Compiler used for shaders targeting the selected graphics API. Per-shader '#pragma use_dxc' / '#pragma never_use_dxc' directives override this project setting.");
+                    return L10n.Tr("Compiler used for shaders targeting the selected graphics API. Per-shader '#pragma use_dxc' / '#pragma never_use_dxc' directives override this project setting.", null);
                 case ShaderBuildSettings.ShaderCompilerToolchain.Default:
                 default:
-                    return L10n.Tr("Compiler used for shaders targeting the selected graphics API.");
+                    return L10n.Tr("Compiler used for shaders targeting the selected graphics API.", null);
             }
         }
 
@@ -126,7 +136,7 @@ namespace UnityEditor.Shaders
                 m_CompilerBackendListView.overridingAddButtonBehavior = AddCompilerBackendRow;
 
                 m_CompilerBackendEmptyApisHelpBox = new HelpBox(
-                    L10n.Tr("Shader compiler toolchain selection is not available for this build target. Unity will use the default toolchain."),
+                    L10n.Tr("Shader compiler toolchain selection is not available for this build target. Unity will use the default toolchain.", null),
                     HelpBoxMessageType.Info);
                 m_CompilerBackendEmptyApisHelpBox.style.display = DisplayStyle.None;
                 compilerBackendFoldout?.Insert(0, m_CompilerBackendEmptyApisHelpBox);
@@ -137,7 +147,7 @@ namespace UnityEditor.Shaders
                 if (listView != null)
                     listView.style.display = DisplayStyle.None;
                 var helpBox = new HelpBox(
-                    L10n.Tr("Shader compiler toolchain selection is configured per Build Profile."),
+                    L10n.Tr("Shader compiler toolchain selection is configured per Build Profile.", null),
                     HelpBoxMessageType.Info);
                 compilerBackendFoldout.Insert(0, helpBox);
             }
@@ -312,14 +322,14 @@ namespace UnityEditor.Shaders
                 return;
 
             string message = string.IsNullOrEmpty(buildProfileName)
-                ? L10n.Tr("Shader Build Settings have been modified.\nDo you want to apply changes?")
-                : string.Format(L10n.Tr("Shader Build Settings have been modified in build profile \"{0}\".\nDo you want to apply changes?"), buildProfileName);
+                ? L10n.Tr("Shader Build Settings have been modified.\nDo you want to apply changes?", null)
+                : string.Format(L10n.Tr("Shader Build Settings have been modified in build profile \"{0}\".\nDo you want to apply changes?", null), buildProfileName);
 
             if (EditorUtility.DisplayDialog(
-                L10n.Tr("Unapplied Changes"),
+                L10n.Tr("Unapplied Changes", null),
                 message,
-                L10n.Tr("Apply"),
-                L10n.Tr("Revert")))
+                L10n.Tr("Apply", null),
+                L10n.Tr("Revert", null)))
             {
                 ApplySettings();
             }
@@ -683,14 +693,19 @@ namespace UnityEditor.Shaders
 
             apiPopup.choices = apiChoices;
             apiPopup.SetValueWithoutNotify(row.graphicsAPI);
-            apiPopup.tooltip = L10n.Tr("Select the graphics API this compiler choice applies to.");
+            apiPopup.tooltip = L10n.Tr("Select the graphics API this compiler choice applies to.", null);
 
             var supportedCompilers = ShaderBuildSettings.GetSupportedCompilerToolchainsForAPI(row.graphicsAPI)
                 ?? new[] { ShaderBuildSettings.ShaderCompilerToolchain.Default };
             compilerPopup.choices = new List<ShaderBuildSettings.ShaderCompilerToolchain>(supportedCompilers);
             compilerPopup.SetValueWithoutNotify(row.compilerToolchainOverride);
             compilerPopup.SetEnabled(supportedCompilers.Length > 1);
-            compilerPopup.tooltip = CompilerTooltip(row.compilerToolchainOverride);
+            compilerPopup.tooltip = CompilerTooltipFor(row.graphicsAPI, row.compilerToolchainOverride);
+
+            var rowApi = row.graphicsAPI;
+            Func<ShaderBuildSettings.ShaderCompilerToolchain, string> displayNameForRow = c => CompilerDisplayNameFor(rowApi, c);
+            compilerPopup.formatListItemCallback = displayNameForRow;
+            compilerPopup.formatSelectedValueCallback = displayNameForRow;
 
             // Callbacks are registered once in MakeCompilerBackendItem; userData carries the row index they read.
             apiPopup.userData = index;
@@ -742,7 +757,7 @@ namespace UnityEditor.Shaders
             row.compilerToolchainOverride = compiler;
             m_CompilerBackendSettings[rowIndex] = row;
             if (evt.target is VisualElement el)
-                el.tooltip = CompilerTooltip(compiler);
+                el.tooltip = CompilerTooltipFor(row.graphicsAPI, compiler);
             SettingsChanged();
         }
 
@@ -820,13 +835,15 @@ namespace UnityEditor.Shaders
                 return;
 
             m_EnableDebugSymbolsToggle = shaderBuildSettingsUI.Q<Toggle>("EnableDebugSymbolsToggle");
+            if (m_EnableDebugSymbolsToggle != null)
+                m_DebugSymbolsBaseTooltip = m_EnableDebugSymbolsToggle.tooltip ?? string.Empty;
 
             m_OptimizationLevelDropdown = FillSlotWithPopup<ShaderBuildSettings.ShaderOptimizationLevel>(
                 shaderBuildSettingsUI, "OptimizationLevelDropdown", "optimization-level-dropdown",
                 OptimizationLevelDisplayName, OnOptimizationLevelChanged);
             if (m_OptimizationLevelDropdown != null)
             {
-                m_OptimizationLevelDropdown.label = L10n.Tr("Optimisation Level");
+                m_OptimizationLevelDropdown.label = L10n.Tr("Optimisation Level", null);
                 m_OptimizationLevelDropdown.choices = new List<ShaderBuildSettings.ShaderOptimizationLevel>(s_OptimizationLevels);
                 m_OptimizationLevelDropdown.AddToClassList(BaseField<ShaderBuildSettings.ShaderOptimizationLevel>.alignedFieldUssClassName);
             }
@@ -857,7 +874,7 @@ namespace UnityEditor.Shaders
             if (ReloadDebugOptIfBuildTargetChanged())
                 return;
 
-            RefreshCapabilityWarningsIfApisChanged();
+            RefreshApiDependentUIIfApisChanged();
         }
 
         private bool ReloadDebugOptIfBuildTargetChanged()
@@ -879,13 +896,13 @@ namespace UnityEditor.Shaders
                     m_OptimizationLevelDropdown.SetValueWithoutNotify(m_OptLevelBeforeDebugForced);
             }
             UpdateOptimizationLevelEnabledState();
-            RefreshCapabilityWarnings(GetEnabledApisForCurrentTarget());
+            RefreshApiDependentUI(GetEnabledApisForCurrentTarget());
             SettingsChanged();
         }
 
         private void OnOptimizationLevelChanged(ChangeEvent<ShaderBuildSettings.ShaderOptimizationLevel> evt)
         {
-            RefreshCapabilityWarnings(GetEnabledApisForCurrentTarget());
+            RefreshApiDependentUI(GetEnabledApisForCurrentTarget());
             SettingsChanged();
         }
 
@@ -900,34 +917,37 @@ namespace UnityEditor.Shaders
                 m_OptimizationLevelDropdown.SetValueWithoutNotify(ShaderBuildSettings.ShaderOptimizationLevel.Disabled);
             m_OptimizationLevelDropdown.SetEnabled(!debugOn);
             m_OptimizationLevelDropdown.tooltip = debugOn
-                ? L10n.Tr("Optimisation is disabled while debug symbols are enabled.")
-                : L10n.Tr("Optimisation level is applied to shaders for graphics APIs that support it.");
+                ? L10n.Tr("Optimisation is disabled while debug symbols are enabled.", null)
+                : L10n.Tr("Optimisation level is applied to shaders for graphics APIs that support it.", null);
         }
 
         private static string OptimizationLevelDisplayName(ShaderBuildSettings.ShaderOptimizationLevel level)
         {
             switch (level)
             {
-                case ShaderBuildSettings.ShaderOptimizationLevel.Default: return L10n.Tr("Default");
-                case ShaderBuildSettings.ShaderOptimizationLevel.Disabled: return L10n.Tr("Disabled");
-                case ShaderBuildSettings.ShaderOptimizationLevel.Low: return L10n.Tr("Low");
-                case ShaderBuildSettings.ShaderOptimizationLevel.Medium: return L10n.Tr("Medium");
-                case ShaderBuildSettings.ShaderOptimizationLevel.High: return L10n.Tr("High");
+                case ShaderBuildSettings.ShaderOptimizationLevel.Default: return L10n.Tr("Default", null);
+                case ShaderBuildSettings.ShaderOptimizationLevel.Disabled: return L10n.Tr("Disabled", null);
+                case ShaderBuildSettings.ShaderOptimizationLevel.Low: return L10n.Tr("Low", null);
+                case ShaderBuildSettings.ShaderOptimizationLevel.Medium: return L10n.Tr("Medium", null);
+                case ShaderBuildSettings.ShaderOptimizationLevel.High: return L10n.Tr("High", null);
                 default: return level.ToString();
             }
         }
+
+        private static string ApiDisplayNameFor(GraphicsDeviceType api)
+            => PlatformOrShared(ShaderBuildSettings.GetDisplayNameForAPI(api), ApiDisplayName(api));
 
         private static string ApiDisplayName(GraphicsDeviceType api)
         {
             switch (api)
             {
-                case GraphicsDeviceType.Direct3D11: return L10n.Tr("DirectX 11 (FXC)");
-                case GraphicsDeviceType.Direct3D12: return L10n.Tr("DirectX 12 (DXC)");
-                case GraphicsDeviceType.Vulkan: return L10n.Tr("Vulkan");
-                case GraphicsDeviceType.Metal: return L10n.Tr("Metal");
-                case GraphicsDeviceType.OpenGLCore: return L10n.Tr("OpenGL (GLSL)");
-                case GraphicsDeviceType.OpenGLES3: return L10n.Tr("OpenGL ES (GLSL)");
-                case GraphicsDeviceType.WebGPU: return L10n.Tr("WebGPU");
+                case GraphicsDeviceType.Direct3D11: return L10n.Tr("DirectX 11 (FXC)", null);
+                case GraphicsDeviceType.Direct3D12: return L10n.Tr("DirectX 12 (DXC)", null);
+                case GraphicsDeviceType.Vulkan: return L10n.Tr("Vulkan", null);
+                case GraphicsDeviceType.Metal: return L10n.Tr("Metal", null);
+                case GraphicsDeviceType.OpenGLCore: return L10n.Tr("OpenGL (GLSL)", null);
+                case GraphicsDeviceType.OpenGLES3: return L10n.Tr("OpenGL ES (GLSL)", null);
+                case GraphicsDeviceType.WebGPU: return L10n.Tr("WebGPU", null);
                 default: return api.ToString();
             }
         }
@@ -983,15 +1003,41 @@ namespace UnityEditor.Shaders
 
             SetCapabilityWarning(m_DebugSymbolsWarningHelpBox, debugUnsupported, isDebug: true);
             SetCapabilityWarning(m_OptimizationLevelWarningHelpBox, optUnsupported, isDebug: false);
+        }
+
+        private void RefreshApiDependentUI(List<GraphicsDeviceType> enabledApis)
+        {
+            RefreshCapabilityWarnings(enabledApis);
+            UpdateDebugSymbolsTooltip(enabledApis);
             m_LastWarnedEnabledApis = enabledApis;
         }
 
+        private void UpdateDebugSymbolsTooltip(List<GraphicsDeviceType> enabledApis)
+        {
+            if (m_EnableDebugSymbolsToggle == null)
+                return;
+
+            m_EnableDebugSymbolsToggle.tooltip = PlatformOrShared(FindPlatformDebugSymbolsTooltip(enabledApis), m_DebugSymbolsBaseTooltip);
+        }
+
+        private static string FindPlatformDebugSymbolsTooltip(List<GraphicsDeviceType> enabledApis)
+        {
+            foreach (var api in enabledApis)
+            {
+                var platformTooltip = ShaderBuildSettings.GetDebugSymbolsTooltipForAPI(api);
+                if (!string.IsNullOrEmpty(platformTooltip))
+                    return platformTooltip;
+            }
+
+            return null;
+        }
+
         // The enabled-API list can change from another inspector, so refresh only when the set actually differs.
-        private void RefreshCapabilityWarningsIfApisChanged()
+        private void RefreshApiDependentUIIfApisChanged()
         {
             var enabledApis = GetEnabledApisForCurrentTarget();
             if (!EnabledApisEqual(enabledApis, m_LastWarnedEnabledApis))
-                RefreshCapabilityWarnings(enabledApis);
+                RefreshApiDependentUI(enabledApis);
         }
 
         private static bool EnabledApisEqual(List<GraphicsDeviceType> a, List<GraphicsDeviceType> b)
@@ -1016,16 +1062,16 @@ namespace UnityEditor.Shaders
                 return;
             }
 
-            var names = string.Join(", ", unsupported.ConvertAll(ApiDisplayName));
+            var names = string.Join(", ", unsupported.ConvertAll(ApiDisplayNameFor));
             string msg;
             if (unsupported.Count == 1)
                 msg = isDebug
-                    ? string.Format(L10n.Tr("{0} doesn't support debug symbols and will skip this setting."), names)
-                    : string.Format(L10n.Tr("{0} doesn't support the selected optimisation level and will use its default optimisation level."), names);
+                    ? string.Format(L10n.Tr("{0} doesn't support debug symbols and will skip this setting.", null), names)
+                    : string.Format(L10n.Tr("{0} doesn't support the selected optimisation level and will use its default optimisation level.", null), names);
             else
                 msg = isDebug
-                    ? string.Format(L10n.Tr("Some Graphics APIs don't support debug symbols and will skip this setting: {0}."), names)
-                    : string.Format(L10n.Tr("Some Graphics APIs don't support the selected optimisation level and will use their default optimisation level: {0}."), names);
+                    ? string.Format(L10n.Tr("Some Graphics APIs don't support debug symbols and will skip this setting: {0}.", null), names)
+                    : string.Format(L10n.Tr("Some Graphics APIs don't support the selected optimisation level and will use their default optimisation level: {0}.", null), names);
 
             box.text = msg;
             box.style.display = DisplayStyle.Flex;
@@ -1081,7 +1127,7 @@ namespace UnityEditor.Shaders
             m_EnableDebugSymbolsToggle?.SetValueWithoutNotify(debug);
             m_OptimizationLevelDropdown?.SetValueWithoutNotify(level);
             UpdateOptimizationLevelEnabledState();
-            RefreshCapabilityWarnings(enabledApis);
+            RefreshApiDependentUI(enabledApis);
         }
 
         private ShaderBuildSettings.ShaderCompilerSettings[] BuildMergedCompilerSettings()

@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using UnityEditor.UIElements.Experimental.Debugger;
 using UnityEditor.UIElements.Experimental.UILayoutDebugger;
@@ -26,6 +26,15 @@ namespace UnityEditor.UIElements
         const string k_EnableEventDebugger = "UIToolkit.EnableEventDebugger";
         const string k_EnableLayoutDebugger = "UIToolkit.EnableLayoutDebugger";
         const string k_EnableUSStatsWindow = "UIToolkit.EnableUSSStatsWindow";
+        const string k_EnableZIndex = "UIAuthoring.EnableZIndex";
+        const string k_EnableFilterShaderGraph = "UIToolkit.EnableFilterShaderGraph";
+        const string k_EnableCurvedUI = "UIToolkit.EnableCurvedUI";
+        const string k_EnableMultiWindowBuilder = "UIBuilder.EnableMultiWindow";
+
+        // Must match BuilderConstants.BuilderMenuEntry + " (New Window)" in the UI Builder module (which this
+        // module cannot reference). The Menu API is only reachable here, so the experimental menu item is
+        // registered/removed here and routed to the Builder through openNewBuilderWindowMenuCommand.
+        const string k_MultiWindowBuilderMenuPath = "Window/UI Toolkit/UI Builder (New Window)";
 
         [SerializeField] LazyLoadReference<ThemeStyleSheet> m_DefaultRuntimeTheme;
         [SerializeField] LazyLoadReference<ThemeStyleSheet> m_DefaultEditorTheme;
@@ -111,6 +120,10 @@ namespace UnityEditor.UIElements
         private bool m_EnablePanelRendererAnimation = false;
 
         [SerializeField]
+        private bool m_EnableUIComponents = false;
+
+		
+        [SerializeField]
         private bool m_EnableGridLayout = false;
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIElementsSamplesModule")]
@@ -133,6 +146,22 @@ namespace UnityEditor.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIElementsSamplesModule")]
+        internal static Action onEnableZIndexChanged;
+
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIElementsSamplesModule")]
+        internal static bool enableZIndex
+        {
+            get => GetBool(k_EnableZIndex);
+            set
+            {
+                if (GetBool(k_EnableZIndex) == value)
+                    return;
+                SetBool(k_EnableZIndex, value);
+                onEnableZIndexChanged?.Invoke();
+            }
+        }
+
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
         [NoAutoStaticsCleanup]
         internal static bool s_EnablePanelRendererAnimationAtBoot;
@@ -150,11 +179,34 @@ namespace UnityEditor.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
+        internal static bool enableUIComponents
+        {
+            get => instance.m_EnableUIComponents;
+            set
+            {
+                if (instance.m_EnableUIComponents == value)
+                    return;
+                instance.m_EnableUIComponents = value;
+                instance.Save();
+            }
+        }
+
         internal static bool isAnimationSettingDirty => enablePanelRendererAnimation != s_EnablePanelRendererAnimationAtBoot;
 
         internal static void CaptureBootValues()
         {
             s_EnablePanelRendererAnimationAtBoot = enablePanelRendererAnimation;
+        }
+
+        // Curved UI (-unity-curvature) authoring gate, off by default: hides the curvature rows in the
+        // UI Builder and VisualElement inspectors. The runtime feature is always on (like background
+        // gradients); the inspectors re-check this on refresh, so toggling applies live.
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
+        internal static bool enableCurvedUI
+        {
+            get => GetBool(k_EnableCurvedUI);
+            set => SetBool(k_EnableCurvedUI, value);
         }
 
         internal static bool EnableLowLevelDebugger
@@ -292,6 +344,65 @@ namespace UnityEditor.UIElements
             }
         }
 
+        // Set by the UI Builder module; invoked by the "UI Builder (New Window)" menu item.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static Action openNewBuilderWindowMenuCommand;
+
+        // Experimental: surfaces the menu entry that opens additional UI Builder windows. Off by default.
+        // Only the entry's visibility is gated; the multi-instance code itself always runs.
+        public static bool enableMultiWindowBuilder
+        {
+            get => GetBool(k_EnableMultiWindowBuilder);
+            set
+            {
+                if (GetBool(k_EnableMultiWindowBuilder) == value)
+                    return;
+
+                SetBool(k_EnableMultiWindowBuilder, value);
+                if (value)
+                    AddMultiWindowBuilderMenuItem();
+                else
+                    EditorApplication.CallDelayed(RemoveMultiWindowBuilderMenuItem);
+            }
+        }
+
+        [InitializeOnLoadMethod]
+        static void RegisterMultiWindowBuilderMenuAtStartup()
+        {
+            // The menu is not built yet at load time; add the item once it is (mirrors the debuggers above).
+            Menu.menuChanged += AddMultiWindowBuilderMenuItemOnce;
+        }
+
+        static void AddMultiWindowBuilderMenuItemOnce()
+        {
+            Menu.menuChanged -= AddMultiWindowBuilderMenuItemOnce;
+            if (enableMultiWindowBuilder)
+                AddMultiWindowBuilderMenuItem();
+        }
+
+        static void AddMultiWindowBuilderMenuItem()
+        {
+            // Priority 1001 sits directly under the "UI Builder" entry (priority 1000), no separator.
+            Menu.AddMenuItem(k_MultiWindowBuilderMenuPath, "", false, 1001,
+                () => openNewBuilderWindowMenuCommand?.Invoke(), null);
+        }
+
+        static void RemoveMultiWindowBuilderMenuItem()
+        {
+            if (Menu.GetMenuItems(k_MultiWindowBuilderMenuPath, false, false) != null)
+            {
+                Menu.RemoveMenuItem(k_MultiWindowBuilderMenuPath);
+                Menu.RebuildAllMenus();
+            }
+        }
+
+        // Gates the ShaderGraph "Filter" subtarget via SubTarget.isHidden. Off by default.
+        internal static bool enableFilterShaderGraph
+        {
+            get => GetBool(k_EnableFilterShaderGraph);
+            set => SetBool(k_EnableFilterShaderGraph, value);
+        }
+
         static bool GetBool(string name)
         {
             var value = EditorUserSettings.GetConfigValue(name);
@@ -313,6 +424,7 @@ namespace UnityEditor.UIElements
             defaultRuntimeCanvasTheme = CanvasTheme.ProjectSettings;
             defaultEditorCanvasTheme = CanvasTheme.ProjectSettings;
             m_EnablePanelRendererAnimation = false;
+            m_EnableUIComponents = false;
         }
 
 
@@ -324,8 +436,9 @@ namespace UnityEditor.UIElements
             EditorUserSettings.SetConfigValue(k_DisableMouseWheelZooming, null);
             EditorUserSettings.SetConfigValue(k_EnableAbsolutePositionPlacement, null);
             EditorUserSettings.SetConfigValue(k_EnableEventDebugger, null);
+            EditorUserSettings.SetConfigValue(k_EnableCurvedUI, null);
         }
     }
 }
 
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

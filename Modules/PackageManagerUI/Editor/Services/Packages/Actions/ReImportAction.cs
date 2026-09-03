@@ -23,14 +23,14 @@ internal class ReImportAction : ImportActionBase
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
-        return string.Format(L10n.Tr("Click to re-import assets from the {0} into your project."), version.GetDescriptor());
+        return string.Format(L10n.Tr("Click to re-import assets from the {0} into your project.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
         var importAvailableVersionString = version.package.versions.importAvailable?.versionString;
         if (string.IsNullOrEmpty(importAvailableVersionString))
-            return L10n.Tr("Re-import");
-        return string.Format(importAvailableVersionString == version.versionString ? L10n.Tr("Re-import {0}") : L10n.Tr("Import {0}"), importAvailableVersionString);
+            return L10n.Tr("Re-import", null);
+        return string.Format(importAvailableVersionString == version.versionString ? L10n.Tr("Re-import {0}", null) : L10n.Tr("Import {0}", null), importAvailableVersionString);
     }
 }

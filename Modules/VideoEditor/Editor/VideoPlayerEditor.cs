@@ -92,8 +92,8 @@ namespace UnityEditor
             // FIXME: Array should come from the player.
             public readonly string[] selectMovieFileFilter =
             {
-                L10n.Tr("Movie files"), "asf,avi,dv,m4v,mp4,mov,mpg,mpeg,m4v,ogv,vp8,webm,wmv",
-                L10n.Tr("All files"), "*"
+                L10n.Tr("Movie files", null), "asf,avi,dv,m4v,mp4,mov,mpg,mpeg,m4v,ogv,vp8,webm,wmv",
+                L10n.Tr("All files", null), "*"
             };
             public readonly string selectMovieFileRecentPath = "VideoPlayerSelectMovieFileRecentPath";
             public readonly string audioControlsNotEditableHelp =

@@ -6,7 +6,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class SignatureInfoCard : PackageInformationCard
 {
-    protected override string titleText => L10n.Tr("Signature");
+    protected override string titleText => L10n.Tr("Signature", null);
     protected override InformationCardSize cardSize => InformationCardSize.Small;
 
     public override void Refresh(IPackageVersion version)
@@ -21,12 +21,12 @@ internal class SignatureInfoCard : PackageInformationCard
             case TrustAndSignature.FullTrustValidSignature:
             case TrustAndSignature.FullTrustBuiltInPackage:
                 // The org name for a unity signed package is not always set, so we always hardcode it here to make the value consistent
-                var orgName = version.trustAndSignature == TrustAndSignature.FullTrustValidSignature ? version.signatureOrgName : L10n.Tr("Unity Technologies");
+                var orgName = version.trustAndSignature == TrustAndSignature.FullTrustValidSignature ? version.signatureOrgName : L10n.Tr("Unity Technologies", null);
                 if (!string.IsNullOrEmpty(orgName))
                 {
                     signatureText = orgName;
                     icon = Icon.Verified;
-                    var fullTrustTooltip = L10n.Tr("Unity has verified the identity of this publisher.");
+                    var fullTrustTooltip = L10n.Tr("Unity has verified the identity of this publisher.", null);
                     iconTooltip = fullTrustTooltip;
                     contentTooltip = fullTrustTooltip;
                 }
@@ -39,14 +39,14 @@ internal class SignatureInfoCard : PackageInformationCard
                 contentTooltip = limitedTrustTooltip;
                 break;
             case TrustAndSignature.UntrustedNoSignature:
-                signatureText = L10n.Tr("Missing");
+                signatureText = L10n.Tr("Missing", null);
                 icon = Icon.Warning;
                 var unsignedTooltip = PackageSignatureHelpBox.GetUnsignedMessage(version.meetsTrustPolicy);
                 iconTooltip = unsignedTooltip;
                 contentTooltip = unsignedTooltip;
                 break;
             case TrustAndSignature.UntrustedInvalidSignature:
-                signatureText = L10n.Tr("Invalid");
+                signatureText = L10n.Tr("Invalid", null);
                 icon = Icon.Error;
                 var invalidSignatureTooltip = PackageSignatureHelpBox.GetInvalidSignatureMessage(version.meetsTrustPolicy);
                 iconTooltip = invalidSignatureTooltip;

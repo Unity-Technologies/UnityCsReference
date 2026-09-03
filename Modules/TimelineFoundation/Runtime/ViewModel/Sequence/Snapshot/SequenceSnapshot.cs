@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.Model;
 using UnityEngine;
@@ -15,7 +15,8 @@ namespace Unity.Timeline.Foundation.ViewModel.Internals
     {
         struct ItemComparer : IComparer<Item>
         {
-            public static IComparer<Item> Instance = new ItemComparer();
+            [NoAutoStaticsCleanup] // stateless comparer singleton; holds no data and behaves identically across code reloads
+            public static readonly IComparer<Item> Instance = new ItemComparer();
 
             public int Compare(Item x, Item y)
             {
@@ -182,4 +183,3 @@ namespace Unity.Timeline.Foundation.ViewModel.Internals
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

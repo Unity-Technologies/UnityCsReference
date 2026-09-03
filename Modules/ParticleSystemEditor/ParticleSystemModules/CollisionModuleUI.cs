@@ -46,7 +46,7 @@ namespace UnityEditor
         static bool s_VisualizeBounds = false;
         internal static readonly PrefColor s_CollisionBoundsColor = new PrefColor("Particle System/Collision Bounds", 0.0f, 1.0f, 0.0f, 1.0f);
 
-        static readonly string s_UndoCollisionPlaneString = L10n.Tr("Modified Collision Plane Transform");
+        static readonly string s_UndoCollisionPlaneString = L10n.Tr("Modified Collision Plane Transform", null);
 
         class Texts
         {

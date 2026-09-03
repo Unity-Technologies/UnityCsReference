@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap")]
 [assembly: InternalsVisibleTo("Unity.2D.Tilemaps")]
+[assembly: InternalsVisibleTo("Unity.2D.Tilemap.Runtime")]
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.Experimental")]
 
 

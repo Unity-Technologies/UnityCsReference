@@ -8,7 +8,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Burst;
-using static Unity.Collections.LowLevel.Unsafe.BurstLike;
 
 namespace UnityEngine.ParticleSystemJobs
 {
@@ -207,7 +206,7 @@ namespace UnityEngine.ParticleSystemJobs
 
     internal struct ParticleSystemJobStruct<T> where T : struct, IJobParticleSystem
     {
-        public static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<ParticleSystemJobStruct<T>>();
+        public static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<ParticleSystemJobStruct<T>>();
 
         [BurstDiscard]
         public static void Initialize()
@@ -233,7 +232,7 @@ namespace UnityEngine.ParticleSystemJobs
 
     internal struct ParticleSystemParallelForJobStruct<T> where T : struct, IJobParticleSystemParallelFor
     {
-        public static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<ParticleSystemParallelForJobStruct<T>>();
+        public static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<ParticleSystemParallelForJobStruct<T>>();
 
         [BurstDiscard]
         public static void Initialize()
@@ -271,7 +270,7 @@ namespace UnityEngine.ParticleSystemJobs
 
     internal struct ParticleSystemParallelForBatchJobStruct<T> where T : struct, IJobParticleSystemParallelForBatch
     {
-        public static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<ParticleSystemParallelForBatchJobStruct<T>>();
+        public static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<ParticleSystemParallelForBatchJobStruct<T>>();
 
         [BurstDiscard]
         public static void Initialize()

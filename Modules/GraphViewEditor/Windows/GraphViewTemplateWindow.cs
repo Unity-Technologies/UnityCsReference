@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphView not yet converted
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -210,6 +211,10 @@ namespace UnityEditor.Experimental.GraphView
 
     internal class GraphViewTemplateWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        public GraphViewTemplateWindow() { }
+        #pragma warning restore UAL0015
+
         private const string k_FavoriteUssClass = "favorite";
         private const string k_TemplateItemUssClass = "template-item";
         private const string k_TemplateSectionUssClass = "template-section";
@@ -243,9 +248,14 @@ namespace UnityEditor.Experimental.GraphView
 
         [NoAutoStaticsCleanup] // session UI state; strings don't pin ALC
         private static readonly List<string> s_HideInstallSampleButtonByTool = new ();
+        // Must not be auto-cleaned: with domain reload disabled the window survives a play mode
+        // transition, and clearing would drop the registration of a window that is still open.
+        [NoAutoStaticsCleanup] // session UI state; entries removed on window destroy
+        private static readonly Dictionary<string, GraphViewTemplateWindow> s_OpenWindowsByTool = new ();
         private readonly List<TreeViewItemData<ITemplateDescriptor>> m_TemplatesTree = new ();
 
         private TreeView m_ListOfTemplates;
+        private ScrollView m_ScrollView;
         private Texture2D m_CustomTemplateIcon;
         private VisualElement m_DetailsScreenshot;
         private Label m_DetailsTitle;
@@ -322,15 +332,20 @@ namespace UnityEditor.Experimental.GraphView
 
         private static void ShowInternal(CreateMode mode, ITemplateHelper templateHelper, Action<string, string> callback, string hiddenSearchQuery, string initialSearchQuery, bool adbOnly)
         {
-            if (EditorWindow.HasOpenInstances<GraphViewTemplateWindow>())
+            // Only block re-opening the *same* tool's window; a different tool gets its own instance.
+            if (s_OpenWindowsByTool.TryGetValue(templateHelper.toolKey, out var existingWindow) && existingWindow != null)
             {
-                Debug.LogWarning("A template window is already open, close it before opening a new one.");
+                existingWindow.Focus();
+                Debug.LogWarning($"A template window is already open for '{templateHelper.toolKey}', close it before opening a new one.");
                 return;
             }
 
-            var templateWindow = EditorWindow.GetWindow<GraphViewTemplateWindow>(true, string.Empty, false);
+            // GetWindow<T> is singleton-per-type; create a dedicated instance so each tool has its own.
+            var templateWindow = ScriptableObject.CreateInstance<GraphViewTemplateWindow>();
             templateWindow.titleContent = new GUIContent(mode == CreateMode.Insert ? templateHelper.insertTemplateTitle : templateHelper.createNewAssetTitle);
+            templateWindow.ShowUtility();
             templateWindow.Setup(mode, templateHelper, callback, hiddenSearchQuery, initialSearchQuery, adbOnly);
+            s_OpenWindowsByTool[templateHelper.toolKey] = templateWindow;
         }
 
         private void Setup(CreateMode mode, ITemplateHelper templateHelper, Action<string, string> callback, string hiddenSearchQuery, string initialSearchQuery, bool adbOnly)
@@ -425,13 +440,24 @@ namespace UnityEditor.Experimental.GraphView
             helpImage.image = EditorGUIUtility.LoadIcon(EditorResources.iconsPath + "_Help.png");
 
             m_ListOfTemplates = rootVisualElement.Q<TreeView>("ListOfTemplates");
-            m_ListOfTemplates.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+            // Fixed-height rows; keep 30f in sync with the row height in TemplateWindow.uss.
+            m_ListOfTemplates.virtualizationMethod = CollectionVirtualizationMethod.FixedHeight;
+            m_ListOfTemplates.fixedItemHeight = 30f;
             m_ListOfTemplates.SetViewController(new TemplateTreeController(() => m_TemplatesTree.Count > 1));
 
             m_ListOfTemplates.makeItem = CreateTemplateItem;
             m_ListOfTemplates.bindItem = BindTemplateItem;
             m_ListOfTemplates.unbindItem = UnbindTemplateItem;
             m_ListOfTemplates.selectionChanged += OnSelectionChanged;
+            m_ListOfTemplates.itemExpandedChanged += OnItemExpandedChanged;
+
+            // Keep the scrollbars out of the Tab ring so the list stays a single Tab stop.
+            m_ScrollView = m_ListOfTemplates.Q<ScrollView>();
+            if (m_ScrollView != null)
+            {
+                RemoveFromTabRing(m_ScrollView.verticalScroller);
+                RemoveFromTabRing(m_ScrollView.horizontalScroller);
+            }
 
             Dispatcher.On(SearchEvent.ItemFavoriteStateChanged, OnFavoriteStateChanged, SearchEventManager.GetSearchEventHandlerHashCode(OnFavoriteStateChanged));
         }
@@ -473,10 +499,24 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnDestroy()
         {
+            UnregisterOpenWindow();
             Dispatcher.Off(SearchEvent.ItemFavoriteStateChanged, SearchEventManager.GetSearchEventHandlerHashCode(OnFavoriteStateChanged));
             Dispatcher.Off(SearchEvent.SearchIndexReady, OnSearchIndexReady);
             this.m_templateWindowPrefs.LastUsedTemplateGuid = m_SelectedTemplate.assetGuid;
             this.m_templateWindowPrefs?.SavePrefs(this.m_TemplateHelper.toolKey);
+        }
+
+        private void UnregisterOpenWindow()
+        {
+            // Remove by value so a stale key is never left behind, even if setup didn't complete.
+            foreach (var kvp in s_OpenWindowsByTool)
+            {
+                if (kvp.Value == this)
+                {
+                    s_OpenWindowsByTool.Remove(kvp.Key);
+                    break;
+                }
+            }
         }
 
         private void HidePackageIndexingBanner()
@@ -565,10 +605,8 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnInstall()
         {
-            if (TryFindSample(m_TemplateHelper.learningSampleName, out var packageInfo, out var samplePackage))
+            if (TryFindSample(m_TemplateHelper.learningSampleName, out _, out var samplePackage))
             {
-                // Workaround for UUM-63664
-                m_TemplateHelper.RaiseImportSampleDependencies(packageInfo, samplePackage);
                 m_InstallButton.enabledSelf = !samplePackage.Import(Sample.ImportOptions.HideImportWindow | Sample.ImportOptions.OverridePreviousImports);
             }
         }
@@ -584,6 +622,16 @@ namespace UnityEditor.Experimental.GraphView
             if (!string.IsNullOrEmpty(m_SelectedTemplate.assetGuid))
             {
                 m_LastSelectedTemplatePath = AssetDatabase.GUIDToAssetPath(m_SelectedTemplate.assetGuid);
+
+                // Skip creation if the template asset was deleted while the window was open; refresh the
+                // list instead of failing deep in the graph loader with confusing errors.
+                if (string.IsNullOrEmpty(m_LastSelectedTemplatePath) || !AssetDatabase.AssetPathExists(m_LastSelectedTemplatePath))
+                {
+                    Debug.LogWarning("The selected template could not be found. It may have been deleted; refreshing the template list.");
+                    CollectTemplates(true);
+                    return;
+                }
+
                 m_AssetCreationCallback?.Invoke(m_LastSelectedTemplatePath);
                 m_TemplateHelper.RaiseTemplateUsed(m_SelectedTemplate);
                 m_AssetCreationCallback = null;
@@ -658,7 +706,6 @@ namespace UnityEditor.Experimental.GraphView
             // We expect only one item to be selected
             foreach (var item in newSelection)
             {
-                VisualElement rootElement = null;
                 if (item is GraphViewTemplateDescriptor template)
                 {
                     m_SelectedTemplate = template;
@@ -678,22 +725,38 @@ namespace UnityEditor.Experimental.GraphView
 
                     m_TitleAndDoc.style.display = DisplayStyle.Flex;
                     m_CreateButton.SetEnabled(true);
-
-                    if (TryFindTemplateItem(t => t.assetGuid == template.assetGuid, out var treeviewItem))
-                    {
-                        rootElement = m_ListOfTemplates.GetRootElementForId(treeviewItem.id);
-                    }
                 }
                 else if (item is ITemplateDescriptor descriptor)
                 {
                     m_templateWindowPrefs.LastUsedTemplateGuid = descriptor.header;
-                    var treeviewItem = m_TemplatesTree.Find(x => x.data == item);
-                    rootElement = m_ListOfTemplates.GetRootElementForId(treeviewItem.id);
                 }
 
-                rootElement?.Focus();
+                // Only take focus for a list-driven selection, not a programmatic search/sort refresh.
+                if (!IsFocusOnOtherWindowControl())
+                    m_ListOfTemplates.Focus();
                 break;
             }
+        }
+
+        private bool IsFocusOnOtherWindowControl()
+        {
+            if (rootVisualElement.focusController?.focusedElement is not VisualElement focused)
+                return false;
+
+            if (focused == m_ListOfTemplates || m_ListOfTemplates.Contains(focused))
+                return false;
+
+            return rootVisualElement.Contains(focused);
+        }
+
+        // Take an element and its descendants out of the Tab focus ring.
+        private static void RemoveFromTabRing(VisualElement root)
+        {
+            if (root == null)
+                return;
+
+            root.focusable = false;
+            root.Query<VisualElement>().ForEach(e => e.focusable = false);
         }
 
         private void BindTemplateItem(VisualElement item, int index)
@@ -707,14 +770,16 @@ namespace UnityEditor.Experimental.GraphView
             var isFavorite = false;
             var parent = item.GetFirstAncestorWithClass("unity-tree-view__item");
 
-            var indexToSelect = -1;
+            // Foldout toggles keep delegated focus even when hidden, so drop the whole subtree.
+            var toggle = item.parent?.parent?.Q<Toggle>();
+            RemoveFromTabRing(toggle);
+
             if (data is GraphViewTemplateDescriptor template)
             {
                 userData = GetGlobalId(template);
                 isFavorite = IsFavorite(userData);
 
                 item.Q<Image>("TemplateIcon").image = template.icon != null ? template.icon : m_CustomTemplateIcon;
-                indexToSelect = template.assetGuid == m_templateWindowPrefs.LastUsedTemplateGuid ? index : -1;
                 ussClass = k_TemplateItemUssClass;
 
                 item.RegisterCallback<ClickEvent>(OnClickItem);
@@ -724,22 +789,19 @@ namespace UnityEditor.Experimental.GraphView
             }
             else
             {
-                indexToSelect = data.header == m_templateWindowPrefs.LastUsedTemplateGuid ? index : -1;
                 // This is a hack to put the expand/collapse button above the item so that we can interact with it
-                var toggle = item.parent.parent.Q<Toggle>();
-                toggle.BringToFront();
-                toggle.RegisterCallback<ChangeEvent<bool>, ITemplateDescriptor>(OnToggleExpandCategory, data);
+                if (toggle != null)
+                {
+                    toggle.BringToFront();
+                    toggle.RegisterCallback<ChangeEvent<bool>, ITemplateDescriptor>(OnToggleExpandCategory, data);
+                    // A category click only drives the foldout; swallow the press so it never selects the row.
+                    toggle.RegisterCallback<PointerDownEvent>(OnCategoryPointerDown);
+                }
                 ussClass = k_TemplateSectionUssClass;
-            }
-
-            if (indexToSelect >= 0)
-            {
-                m_ListOfTemplates.schedule.Execute(() => m_ListOfTemplates.SetSelection(indexToSelect));
             }
 
             if (parent != null)
             {
-                parent.focusable = true;
                 parent.AddToClassList(ussClass);
                 parent.userData = userData;
                 ToggleFavorite(parent, isFavorite);
@@ -750,9 +812,58 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (evt.target is Toggle toggle)
             {
-                toggle.parent.Focus();
+                m_ListOfTemplates.Focus();
                 m_templateWindowPrefs.SetCategoryCollapsedState(m_TemplateHelper.toolKey, item.header, !toggle.value);
             }
+        }
+
+        // Clicking a category only toggles its foldout; stop the press from reaching the list's selection handler.
+        private static void OnCategoryPointerDown(PointerDownEvent evt) => evt.StopPropagation();
+
+        private void OnItemExpandedChanged(TreeViewExpansionChangedArgs args)
+        {
+            // Scroll the first child into view so a bottom category doesn't look empty.
+            if (!args.isExpanded || args.id < 0)
+                return;
+
+            var firstChildId = -1;
+            foreach (var category in m_TemplatesTree)
+            {
+                if (category.id != args.id)
+                    continue;
+                foreach (var child in category.children)
+                {
+                    firstChildId = child.id;
+                    break;
+                }
+                break;
+            }
+
+            if (firstChildId < 0)
+                return;
+
+            // Scroll after the content resizes, else a bottom category clamps to the stale scroll max.
+            var content = m_ScrollView?.contentContainer;
+            if (content == null)
+            {
+                ScrollToItemByIdIfResolved(firstChildId);
+                return;
+            }
+
+            EventCallback<GeometryChangedEvent> scrollOnce = null;
+            scrollOnce = _ =>
+            {
+                content.UnregisterCallback(scrollOnce);
+                ScrollToItemByIdIfResolved(firstChildId);
+            };
+            content.RegisterCallback(scrollOnce);
+        }
+
+        // deferred scroll requires a guard
+        private void ScrollToItemByIdIfResolved(int id)
+        {
+            if (m_ListOfTemplates.viewController.GetIndexForId(id) >= 0)
+                m_ListOfTemplates.ScrollToItemById(id);
         }
 
         private void OnFavorite(ClickEvent evt)
@@ -816,6 +927,7 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     var toggle = item.parent.parent.Q<Toggle>();
                     toggle.UnregisterCallback<ChangeEvent<bool>, ITemplateDescriptor>(OnToggleExpandCategory);
+                    toggle.UnregisterCallback<PointerDownEvent>(OnCategoryPointerDown);
                 }
                 parent.RemoveFromClassList(k_TemplateItemUssClass);
                 parent.RemoveFromClassList(k_TemplateSectionUssClass);
@@ -947,7 +1059,10 @@ namespace UnityEditor.Experimental.GraphView
             var id = 0;
             var lastSelectedTemplateFound = false;
             var fallBackTemplateAssetGuid = (string)null;
-            var indexToSelect = 2;
+            // Restore by TreeView item id so selection/scroll survive collapsed categories and re-sorts.
+            var idToSelect = -1;
+            var fallbackId = -1;
+            var fallbackCategory = (string)null;
             foreach (var group in templates)
             {
                 var groupId = id++;
@@ -955,19 +1070,23 @@ namespace UnityEditor.Experimental.GraphView
                 if (category == m_templateWindowPrefs.LastUsedTemplateGuid)
                 {
                     lastSelectedTemplateFound = true;
-                    indexToSelect = groupId;
+                    idToSelect = groupId;
                 }
                 var section = new TemplateSection(category);
                 var children = new List<TreeViewItemData<ITemplateDescriptor>>(group.Count);
                 group.Sort(this.m_TemplateSorter);
                 foreach (var child in group)
                 {
-                    // Save the asset guid of the very first displayed template
-                    fallBackTemplateAssetGuid ??= child.assetGuid;
+                    if (fallBackTemplateAssetGuid == null)
+                    {
+                        fallBackTemplateAssetGuid = child.assetGuid;
+                        fallbackId = id;
+                        fallbackCategory = section.header;
+                    }
                     if (child.assetGuid == m_templateWindowPrefs.LastUsedTemplateGuid)
                     {
                         lastSelectedTemplateFound = true;
-                        indexToSelect = id;
+                        idToSelect = id;
                         // Force the category containing the last used template to be expanded
                         m_templateWindowPrefs.SetCategoryCollapsedState(m_TemplateHelper.toolKey, section.header, false);
                     }
@@ -979,9 +1098,14 @@ namespace UnityEditor.Experimental.GraphView
             m_ListOfTemplates.SetRootItems(m_TemplatesTree);
             if (isSearchCompleted)
             {
-                if (!lastSelectedTemplateFound)
+                var hasActiveSearchQuery = !string.IsNullOrEmpty(m_SearchField?.searchTextInput?.value);
+                if (!lastSelectedTemplateFound && !hasActiveSearchQuery)
                 {
                     m_templateWindowPrefs.LastUsedTemplateGuid = fallBackTemplateAssetGuid;
+                    idToSelect = fallbackId;
+                    // Expand the fallback's category too, otherwise a persisted collapse could hide it.
+                    if (fallbackCategory != null)
+                        m_templateWindowPrefs.SetCategoryCollapsedState(m_TemplateHelper.toolKey, fallbackCategory, false);
                 }
                 m_ListOfTemplates.RefreshItems();
 
@@ -1001,24 +1125,34 @@ namespace UnityEditor.Experimental.GraphView
                     SynchronizeExpandState();
                 }
 
-                // Let the layout pass complete before trying to scroll to freshly filled treeview
-                EditorApplication.delayCall += () => m_ListOfTemplates.ScrollToItem(indexToSelect);
+                if (idToSelect >= 0)
+                {
+                    m_ListOfTemplates.SetSelectionById(idToSelect);
+
+                    // Defer so the layout pass completes before scrolling; the window may close first.
+                    var scrollId = idToSelect;
+                    EditorApplication.delayCall += () =>
+                    {
+                        if (m_ListOfTemplates?.panel != null)
+                            ScrollToItemByIdIfResolved(scrollId);
+                    };
+                }
             }
         }
 
         private void SynchronizeExpandState()
         {
+            var ids = new List<int>(m_ListOfTemplates.viewController.GetAllItemIds());
+
             bool needRefresh = false;
-            foreach(var id in m_ListOfTemplates.viewController.GetAllItemIds())
+            foreach (var id in ids)
             {
                 var item = m_ListOfTemplates.GetItemDataForId<ITemplateDescriptor>(id);
-                if (item is TemplateSection section)
+                if (item is TemplateSection section
+                    && m_templateWindowPrefs.GetCategoryCollapsedState(m_TemplateHelper.toolKey, section.header))
                 {
-                    if (m_templateWindowPrefs.GetCategoryCollapsedState(m_TemplateHelper.toolKey, section.header))
-                    {
-                        m_ListOfTemplates.viewController.CollapseItem(id, false);
-                        needRefresh = true;
-                    }
+                    m_ListOfTemplates.viewController.CollapseItem(id, false, refresh: false);
+                    needRefresh = true;
                 }
             }
 
@@ -1066,5 +1200,24 @@ namespace UnityEditor.Experimental.GraphView
         {
             return SearchSettings.searchItemFavorites.Contains(globalId);
         }
+
+        internal class TestAccess
+        {
+            readonly GraphViewTemplateWindow m_Window;
+
+            public TestAccess(GraphViewTemplateWindow window)
+            {
+                m_Window = window;
+            }
+
+            public GraphViewTemplateDescriptor SelectedTemplate
+            {
+                get => m_Window.m_SelectedTemplate;
+                set => m_Window.m_SelectedTemplate = value;
+            }
+
+            public void OnCreate() => m_Window.OnCreate();
+        }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

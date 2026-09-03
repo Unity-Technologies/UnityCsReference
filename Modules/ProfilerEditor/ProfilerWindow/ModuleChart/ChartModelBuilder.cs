@@ -197,7 +197,7 @@ namespace Unity.Profiling.Editor
                 var length = chart.yValues.Length;
                 if (m_Model.overlays[i] == null || m_Model.overlays[i].yValues.Length != length)
                 {
-                    m_Model.overlays[i] = new ChartSeriesViewData(chart.name, chart.description, chart.category, length, chart.color);
+                    m_Model.overlays[i] = new ChartSeriesViewData(chart.name, chart.description, chart.category, chart.displayName, length, chart.color);
                 }
                 ProfilerDriver.GetCounterValuesBatch(ProfilerArea.CPU, string.Format("Selected{0}", chart.name), firstEmptyFrame, 1.0f, m_Model.overlays[i].yValues, out float maxValue);
                 m_Model.overlays[i].yScale = m_DataScale;
@@ -266,7 +266,7 @@ namespace Unity.Profiling.Editor
             {
                 var counter = counters[i];
                 var category = counter.CategoryName;
-                m_Series[i] = new ChartSeriesViewData(counter.Name, counter.Description, category, historySize, chartAreaColors[i % chartAreaColors.Length]);
+                m_Series[i] = new ChartSeriesViewData(counter.Name, counter.Description, category, counter.DisplayName,historySize, chartAreaColors[i % chartAreaColors.Length]);
             }
 
             // Allocate dataAvailable array for chart.

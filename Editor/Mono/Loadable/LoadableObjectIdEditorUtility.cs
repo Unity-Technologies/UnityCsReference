@@ -31,7 +31,7 @@ namespace UnityEditor
     [VisibleToOtherModules]
     public static class LoadableObjectIdEditorUtility
     {
-        static readonly string kLoadableObjectIdTooltip = L10n.Tr("References an object that will be included in the Content Directory build and can be loaded asynchronously on demand.");
+        static readonly string kLoadableObjectIdTooltip = L10n.Tr("References an object that will be included in the Content Directory build and can be loaded asynchronously on demand.", null);
         internal static string GetLoadableObjectIdTooltip()
         {
             return kLoadableObjectIdTooltip;
@@ -180,13 +180,13 @@ namespace UnityEditor
             {
                 var newRef = CreateLoadableObjectId(newObj);
                 if (newObj != null && !newRef.IsValid)
-                    Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableObjectId."), newObj);
+                    Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableObjectId.", null), newObj);
                 else
                     property.loadableObjectIdValue = newRef;
             }
             catch (ArgumentException e)
             {
-                Debug.LogWarning(string.Format(L10n.Tr("The selected object cannot be used as a LoadableObjectId: {0}"), e.Message), newObj);
+                Debug.LogWarning(string.Format(L10n.Tr("The selected object cannot be used as a LoadableObjectId: {0}", null), e.Message), newObj);
             }
         }
 

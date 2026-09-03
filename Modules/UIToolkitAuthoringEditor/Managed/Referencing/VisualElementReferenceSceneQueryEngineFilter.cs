@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Globalization;
 using UnityEditor;
@@ -10,6 +9,7 @@ using UnityEditor.Search.Providers;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements;
 
@@ -41,7 +41,9 @@ static class VisualElementReferenceSceneQueryEngineFilter
     static readonly int k_MinTypeLen = k_ReferenceTypeName.Length;
     static readonly int k_MaxTypeLen = k_ReferenceTypeGenericName.Length;
 
+    [NoAutoStaticsCleanup] // cached previous query, safe to persist
     static string s_PreviousQuery;
+    [NoAutoStaticsCleanup] // cached query result, safe to persist
     static int[] s_CurrentValue;
 
     [System.ComponentModel.Description("Find visual element references")]
@@ -240,4 +242,3 @@ static class VisualElementReferenceSceneQueryEngineFilter
         return s_CurrentValue;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -20,7 +20,7 @@ namespace UnityEngine.Pool
     /// and casts to the target type, reducing pool fragmentation. Supports both pooled and stack-allocated backing storage.
     /// </remarks>
     /// <typeparam name="T">The unmanaged element type.</typeparam>
-    [VisibleToOtherModules]
+    [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.HierarchyModule", "UnityEditor.HierarchyModule", "UnityEditor.QuickSearchModule", "UnityEngine.UIElementsModule")]
     readonly ref struct RentSpanUnmanaged<T> where T : unmanaged
     {
         readonly byte[] m_Array;

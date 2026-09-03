@@ -230,28 +230,32 @@ namespace UnityEngine.Networking
         public bool disposeUploadHandlerOnDispose { get; set; }
 
         ///<summary>Clears stored cookies from the cache.</summary>
-        ///<remarks>The cookie cache exists only in the current game session and will clear the next time the game is launched, except when the below exceptions apply.
+        ///<remarks>Unity holds the cookie cache in memory for the lifetime of the application process and discards it when the process ends, unless one of the following exceptions applies.
         ///
         ///This method allows you to remove cookies from the cache. If you don't specify an argument, the method removes all cookies in the cache. If you do specify a string argument, the method only removes the cookies that apply to the given URL.
+        ///
+        ///In the Unity Editor, the cache belongs to the Editor process rather than to Play mode. Cookies that a request stores during Play mode remain in the cache after you exit Play mode, and the next Play mode session reuses them. To remove them, call this method or restart the Editor.
         ///
         ///Exceptions:
         ///
         ///- iOS has a built-in cookie cache provided by the system, which persists across game sessions. This method removes cookies from that built-in cache.
-        ///- On the Web Platform, cookies are managed by the browser and can't be removed, so this method doesn't do anything.</remarks>
+        ///- On the Web platform, the browser manages cookies and this method can't remove them, so it does nothing.</remarks>
         public static void ClearCookieCache()
         {
             ClearCookieCache(null, null);
         }
 
         ///<summary>Clears stored cookies from the cache.</summary>
-        ///<remarks>The cookie cache exists only in the current game session and will clear the next time the game is launched, except when the below exceptions apply.
+        ///<remarks>Unity holds the cookie cache in memory for the lifetime of the application process and discards it when the process ends, unless one of the following exceptions applies.
         ///
         ///This method allows you to remove cookies from the cache. If you don't specify an argument, the method removes all cookies in the cache. If you do specify a string argument, the method only removes the cookies that apply to the given URL.
+        ///
+        ///In the Unity Editor, the cache belongs to the Editor process rather than to Play mode. Cookies that a request stores during Play mode remain in the cache after you exit Play mode, and the next Play mode session reuses them. To remove them, call this method or restart the Editor.
         ///
         ///Exceptions:
         ///
         ///- iOS has a built-in cookie cache provided by the system, which persists across game sessions. This method removes cookies from that built-in cache.
-        ///- On the Web Platform, cookies are managed by the browser and can't be removed, so this method doesn't do anything.</remarks>
+        ///- On the Web platform, the browser manages cookies and this method can't remove them, so it does nothing.</remarks>
         ///<param name="uri">An optional URL to define which cookies are removed. Only cookies that apply to this URL are removed from the cache.</param>
         public static void ClearCookieCache(Uri uri)
         {
@@ -967,6 +971,12 @@ namespace UnityEngine.Networking
             }
         }
 
+        // Lets UnityHttpMessageHandler attribute its requests to the .NET HttpClient API in the
+        // profiler. UnityHttpMessageHandler builds a UnityWebRequest internally, so the two are
+        // otherwise indistinguishable to the native capture. Values are WebRequestProfilerSource in
+        // Modules/UnityWebRequest/Profiler/WebRequestProfilerCapture.h.
+        internal extern byte profilerSource { get; set; }
+
         private extern bool use100Continue { get; set; }
 
         ///<summary>Determines whether this UnityWebRequest will include <c>Expect: 100-Continue</c> in its outgoing request headers. (Default: <c>true</c>).</summary>
@@ -1197,8 +1207,8 @@ namespace UnityEngine.Networking
         [NativeMethod("SetRequestHeader")]
         internal extern UnityWebRequestError InternalSetRequestHeader(string name, string value);
 
-        ///<summary>Set a HTTP request header to a custom value.</summary>
-        ///<remarks>Header keys and values must be valid according to HTTP protocol specification. Neither string may contain certain illegal characters, such as control characters. Both strings must be non-null and contain a minimum of 1 character. For more information, see &lt;a href="https://www.w3.orgProtocols"&gt;HTTP specifications&lt;/a&gt;.
+        ///<summary>Sets an HTTP request header to a custom value.</summary>
+        ///<remarks>Header keys and values must be valid according to HTTP protocol specification. Neither string may contain certain illegal characters, such as control characters. Both strings must be non-null, and <c>name</c> must contain at least one character. An empty <c>value</c> is valid for headers that allow one, such as <c>Accept-Encoding</c>. For more information, refer to &lt;a href="https://www.w3.org/Protocols/"&gt;HTTP specifications&lt;/a&gt;.
         ///
         ///This method can't be called after <see cref="SendWebRequest" /> is called.
         ///
@@ -1207,13 +1217,13 @@ namespace UnityEngine.Networking
         ///
         ///The <c>Accept-Encoding</c> header is automatically set to supported encodings. Use of a different value is ignored or might cause request to fail. For more information, refer to the [Mozilla docs](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding) on Accept-Encoding.
         ///
-        ///The <c>Content-Length</c> header is automatically populated based on the contents of the attached <see cref="DownloadHandler" /> if any, and can't be set to a custom value.
+        ///The <c>Content-Length</c> header is automatically populated based on the contents of the attached <see cref="UploadHandler" /> if any, and can't be set to a custom value.
         ///
         ///The <c>X-Unity-Version</c> header is automatically set by Unity and might not be set to a custom value.
         ///
         ///The <c>User-Agent</c> header is automatically set by Unity and it's not recommended to set it to a custom value.
         ///
-        ///The <c>Cookie</c> and <c>Cookie2</c> headers are automatically managed by the underlying cookie engine. While the exact behavior is dependant on the platform used, typically, setting cookies via this header appends them to those set by engine. .
+        ///The underlying cookie engine manages the <c>Cookie</c> and <c>Cookie2</c> headers. The exact behavior depends on the platform, but setting cookies through these headers typically appends them to the ones the engine sets.
         ///
         ///In addition, the following headers are filled by the Web browser on the **Web** platform, and therefore might not have any custom values set: <c>Cookie</c>, <c>Cookie2</c>, <c>User-Agent</c>.</remarks>
         ///<param name="name">The key of the header to be set. Case-sensitive.</param>

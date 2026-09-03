@@ -210,7 +210,7 @@ namespace UnityEngine.UIElements.StyleSheets
             },
                         {
                 "font-size",
-                "<length>"
+                "<length-percentage>"
             },
                         {
                 "gap",
@@ -419,6 +419,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 "-unity-background-scale-mode",
                 "stretch-to-fill | scale-and-crop | scale-to-fit"
+            },
+                        {
+                "-unity-curvature",
+                "none | <angle>{1,2}"
             },
                         {
                 "-unity-editor-text-rendering-mode",

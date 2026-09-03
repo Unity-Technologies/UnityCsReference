@@ -21,6 +21,8 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal partial class ModelInspectorView : RootView, IHasItemLibrary
     {
+        const string k_MultipleSelectionText = "Multiple selection";
+
         /// <summary>
         /// Determines if a field should be displayed in the node options section of a node.
         /// </summary>
@@ -395,7 +397,7 @@ namespace Unity.GraphToolkit.Editor
             if (inspectorModel != null)
             {
                 if (m_Title != null)
-                    m_Title.text = inspectorModel.Title;
+                    UpdateTitle(inspectorModel);
 
                 bool isFirst = true;
                 ModelView sectionUI = null;
@@ -482,7 +484,8 @@ namespace Unity.GraphToolkit.Editor
             }
             else if (ModelInspectorViewModel.ModelInspectorState.InspectedModels.Count > 1 && m_Title != null)
             {
-                m_Title.text = "Multiple selection";
+                m_Title.text = k_MultipleSelectionText;
+                m_Title.style.display = DisplayStyle.Flex;
             }
 
             if (m_TitleField == null && m_Title == null)
@@ -541,7 +544,7 @@ namespace Unity.GraphToolkit.Editor
                         var inspectorModel = ModelInspectorViewModel.ModelInspectorState.GetInspectorModel();
                         if (inspectorModel != null)
                         {
-                            m_Title.text = inspectorModel.Title;
+                            UpdateTitle(inspectorModel);
 
                             var changeSet = ModelInspectorViewModel.ModelInspectorState.GetAggregatedChangeset(inspectorStateObservation.LastObservedVersion);
                             if (changeSet != null)
@@ -586,6 +589,17 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
             UpdateCollapsible();
+        }
+
+        static bool ShouldDisplayTitle(InspectorModel inspectorModel)
+        {
+            foreach (var model in inspectorModel.InspectedModels)
+            {
+                if (model is WireModel)
+                    return false;
+            }
+
+            return true;
         }
 
         protected virtual void PartialUpdate(GraphModelStateComponent.Changeset changeset)
@@ -717,12 +731,16 @@ namespace Unity.GraphToolkit.Editor
             if (inspectorModel != null)
             {
                 if (m_TitleField != null)
-                {
                     m_TitleField.UpdateDisplayedValue();
-                }
                 else
-                    m_Title.text = inspectorModel.Title;
+                    UpdateTitle(inspectorModel);
             }
+        }
+
+        void UpdateTitle(InspectorModel inspectorModel)
+        {
+            m_Title.style.display = ShouldDisplayTitle(inspectorModel) ? DisplayStyle.Flex : DisplayStyle.None;
+            m_Title.text = inspectorModel.Title;
         }
 
         protected virtual bool IsChangedModelVisible(Hash128 guid)

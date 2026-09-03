@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public const string k_Id = "MyAssets";
 
         public override string id => k_Id;
-        public override string displayName => L10n.Tr("My Assets");
+        public override string displayName => L10n.Tr("My Assets", null);
         public override Icon icon => Icon.MyAssetsPage;
 
         public override RefreshOptions refreshOptions => RefreshOptions.Purchased | RefreshOptions.ImportedAssets | RefreshOptions.LocalInfo;
@@ -122,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_AssetStoreRestAPI.ListLabels(
                 labels => UpdateSupportedLabels(labels, true),
-                error => Debug.LogWarning(string.Format(L10n.Tr("[Package Manager Window] Error while fetching labels: {0}"), error.message)));
+                error => Debug.LogWarning(string.Format(L10n.Tr("[Package Manager Window] Error while fetching labels: {0}", null), error.message)));
         }
 
         protected override void RefreshListOnSearchTextChange()

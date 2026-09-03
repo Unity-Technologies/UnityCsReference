@@ -25,7 +25,7 @@ namespace Unity.GraphToolkit.Editor
     /// <br/>
     /// The logger also provides read-only access to what changed in the graph via <see cref="GraphChanges"/>.
     /// </remarks>
-    public class GraphLogger
+    public class GraphLogger : ILogger
     {
         internal ErrorsAndWarningsImp errorsAndWarnings { get; set; }
 

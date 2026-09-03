@@ -92,13 +92,13 @@ namespace Unity.ProjectAuditor.Editor.UI
         // Whether an issue should be counted in this summary's Issue Breakdown.
         protected abstract bool MatchesSummaryFilter(ReportItem issue);
 
-        // True if the issue is flagged with the Upgrade area.
-        protected static bool HasUpgradeArea(ReportItem issue)
+        // True if the issue is flagged with the specific areas.
+        protected static bool HasAnyAreas(ReportItem issue, Areas areas)
         {
             if (!issue.Id.IsValid())
                 return false;
 
-            return (issue.Id.GetDescriptor().Areas & Areas.Upgrade) != 0;
+            return (issue.Id.GetDescriptor().Areas & areas) != 0;
         }
 
         protected override void DrawInfo()

@@ -105,10 +105,18 @@ namespace UnityEditor
                 if (string.IsNullOrEmpty(displayText))
                     displayText = "Result";
 
+                // Restore the original clipping in a finally block so an exception cannot leak the
+                // mutated shared style to the rest of the editor.
                 var clipping = EditorStyles.label.clipping;
                 EditorStyles.label.clipping = TextClipping.Ellipsis;
-                GUILayout.Label(GUIContent.Temp(displayText), EditorStyles.label, GUILayout.MaxWidth(cropWidth));
-                EditorStyles.label.clipping = clipping;
+                try
+                {
+                    GUILayout.Label(GUIContent.Temp(displayText), EditorStyles.label, GUILayout.MaxWidth(cropWidth));
+                }
+                finally
+                {
+                    EditorStyles.label.clipping = clipping;
+                }
             }
             GUILayout.FlexibleSpace();
             GUILayout.Space(margin);

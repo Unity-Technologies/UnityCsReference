@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var message = version.deprecationMessage;
-            text = string.IsNullOrEmpty(message) ? L10n.Tr("This installed version of the package is deprecated.") : message;
+            text = string.IsNullOrEmpty(message) ? L10n.Tr("This installed version of the package is deprecated.", null) : message;
         }
     }
 }

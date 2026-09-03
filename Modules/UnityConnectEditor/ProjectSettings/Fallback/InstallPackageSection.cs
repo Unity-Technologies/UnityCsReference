@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -124,18 +125,18 @@ namespace UnityEditor.Connect.Fallback
             public static string GetFormattedTooltip(Choice choice, string serviceTitle)
             {
                 var tooltip = string.Empty;
-                var translatedServiceTitle = L10n.Tr(serviceTitle);
+                var translatedServiceTitle = L10n.Tr(serviceTitle, null);
                 var translatedTooltipText = string.Empty;
                 switch (choice)
                 {
                     case Choice.InternetUnreachable:
-                        translatedTooltipText = L10n.Tr(k_InternetUnreachable);
+                        translatedTooltipText = L10n.Tr(k_InternetUnreachable, null);
                         break;
                     case Choice.SearchingForPackage:
-                        translatedTooltipText = L10n.Tr(k_SearchingForPackage);
+                        translatedTooltipText = L10n.Tr(k_SearchingForPackage, null);
                         break;
                     case Choice.CannotFindPackage:
-                        translatedTooltipText = L10n.Tr(k_CannotFindPackage);
+                        translatedTooltipText = L10n.Tr(k_CannotFindPackage, null);
                         break;
                 }
 
@@ -149,3 +150,4 @@ namespace UnityEditor.Connect.Fallback
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

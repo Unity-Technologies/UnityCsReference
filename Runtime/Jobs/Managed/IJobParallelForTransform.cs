@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-using static Unity.Collections.LowLevel.Unsafe.BurstLike;
 using Unity.Burst;
 using System.Diagnostics;
 
@@ -25,7 +24,7 @@ namespace UnityEngine.Jobs
     {
         internal struct TransformParallelForLoopStruct<T> where T : struct, IJobParallelForTransform
         {
-            internal static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<TransformParallelForLoopStruct<T>>();
+            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<TransformParallelForLoopStruct<T>>();
 
             [BurstDiscard]
             internal static unsafe void Initialize()

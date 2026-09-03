@@ -13,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public override RefreshOptions refreshOptions => isOfflineMode ? RefreshOptions.UpmSearchOffline : RefreshOptions.UpmSearch;
 
-        protected override string operationErrorMessage => isOfflineMode ? L10n.Tr("Error searching for packages offline.") : L10n.Tr("Error searching for packages.");
+        protected override string operationErrorMessage => isOfflineMode ? L10n.Tr("Error searching for packages offline.", null) : L10n.Tr("Error searching for packages.", null);
 
         public void SearchAll()
         {

@@ -278,6 +278,7 @@ namespace UnityEditor
         // Path to the directory containing BuildPipeline support used by the Unity editor (RO)
         internal static extern string applicationBuildPipelinePath
         {
+            [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
             [FreeFunction("GetApplicationBuildPipelinePath", IsThreadSafe = true)]
             get;
         }

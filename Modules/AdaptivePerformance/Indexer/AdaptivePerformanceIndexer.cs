@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AdaptivePerformance not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -224,35 +225,31 @@ namespace UnityEngine.AdaptivePerformance
         private float m_LastAverageGpuFrameTime;
         private float m_LastAverageCpuFrameTime;
         private bool m_IsApplied;
-        private IAdaptivePerformance m_AP;
-
-        public AdaptivePerformanceScalerEfficiencyTracker()
-        {
-            m_AP = Holder.Instance;
-        }
 
         public bool IsRunning { get => m_Scaler != null; }
 
         public void Start(AdaptivePerformanceScaler scaler, bool isApply)
         {
             Debug.Assert(!IsRunning, "AdaptivePerformanceScalerEfficiencyTracker is already running");
-            if (m_AP == null)
+            var ap = Holder.Instance;
+            if (ap == null)
                 return;
             m_Scaler = scaler;
-            m_LastAverageGpuFrameTime = m_AP.PerformanceStatus.FrameTiming.AverageGpuFrameTime;
-            m_LastAverageCpuFrameTime = m_AP.PerformanceStatus.FrameTiming.AverageCpuFrameTime;
+            m_LastAverageGpuFrameTime = ap.PerformanceStatus.FrameTiming.AverageGpuFrameTime;
+            m_LastAverageCpuFrameTime = ap.PerformanceStatus.FrameTiming.AverageCpuFrameTime;
             m_IsApplied = true;
         }
 
         public void Stop()
         {
-            if (m_AP == null)
+            var ap = Holder.Instance;
+            if (ap == null)
             {
                 m_Scaler = null;
                 return;
             }
-            var gpu = m_AP.PerformanceStatus.FrameTiming.AverageGpuFrameTime - m_LastAverageGpuFrameTime;
-            var cpu = m_AP.PerformanceStatus.FrameTiming.AverageCpuFrameTime - m_LastAverageCpuFrameTime;
+            var gpu = ap.PerformanceStatus.FrameTiming.AverageGpuFrameTime - m_LastAverageGpuFrameTime;
+            var cpu = ap.PerformanceStatus.FrameTiming.AverageCpuFrameTime - m_LastAverageCpuFrameTime;
             var sign = m_IsApplied ? 1 : -1;
             m_Scaler.GpuImpact = sign * (int)(gpu * 1000);
             m_Scaler.CpuImpact = sign * (int)(cpu * 1000);
@@ -807,3 +804,4 @@ namespace UnityEngine.AdaptivePerformance
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

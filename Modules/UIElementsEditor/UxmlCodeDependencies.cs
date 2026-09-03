@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
@@ -38,6 +37,10 @@ namespace UnityEditor.UIElements
         {
             AssetDatabase.UnregisterCustomDependencyPrefixFilter(k_UxmlSerializedDataDependencyPrefix);
 
+            // This runs on every code load; start from an empty set so dependencies of
+            // removed or renamed user types don't accumulate across reloads.
+            m_Set.Clear();
+
             using var _ = s_UxmlSerializationRegisterMarker.Auto();
 
             foreach (var typeName in serializedDataTypes.Keys)
@@ -69,4 +72,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

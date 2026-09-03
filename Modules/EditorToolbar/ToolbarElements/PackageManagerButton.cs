@@ -52,32 +52,32 @@ namespace UnityEditor.Toolbars
             {
                 case PackageInUseState.NonCompliant:
                     icon = EditorGUIUtility.LoadIcon(k_ErrorIconPath);
-                    tooltip = L10n.Tr("Restricted Packages In Use");
+                    tooltip = L10n.Tr("Restricted Packages In Use", null);
                     clickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectNonCompliancePage.k_Id);
                     break;
 
                 case PackageInUseState.Error:
                     icon = EditorGUIUtility.LoadIcon(k_ErrorIconPath);
-                    tooltip = L10n.Tr("Project contains packages with errors");
+                    tooltip = L10n.Tr("Project contains packages with errors", null);
                     clickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectErrorsAndWarningsPage.k_Id);
                     break;
 
                 case PackageInUseState.Warning:
                     icon = EditorGUIUtility.LoadIcon(k_WarningIconPath);
-                    tooltip = L10n.Tr("Project contains packages with warnings");
+                    tooltip = L10n.Tr("Project contains packages with warnings", null);
                     clickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectErrorsAndWarningsPage.k_Id);
                     break;
 
                 case PackageInUseState.Experimental:
                     icon = EditorGUIUtility.LoadIcon(k_WarningIconPath);
-                    tooltip = L10n.Tr("Experimental Packages In Use");
+                    tooltip = L10n.Tr("Experimental Packages In Use", null);
                     clickAction = () => PackageManagerWindow.OpenAndSelectPage(InProjectPage.k_Id, "experimental");
                     break;
 
                 case PackageInUseState.None:
                 default:
                     icon = EditorGUIUtility.LoadIcon(k_DefaultIconPath);
-                    tooltip = L10n.Tr("Package Manager");
+                    tooltip = L10n.Tr("Package Manager", null);
                     clickAction = () => PackageManagerWindow.OpenAndSelectPackage(null);
                     break;
             }

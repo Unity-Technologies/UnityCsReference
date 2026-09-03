@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -281,6 +280,18 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            // A "${component:TypeName}.field" path targets a component's data on the element, not the element
+            // itself; redirect the write there (converters and TValue preserved). Every other binding
+            // falls through to the normal element path below.
+            if (ComponentBinding.TryResolve(target, context.bindingId, out var componentHandle, out var componentSubPath))
+            {
+                if (ComponentBinding.SetUI(sourceToUiConverters, target, componentHandle, componentSubPath, value, out var componentReturnCode))
+                    return default;
+
+                var componentMessage = GetSetValueErrorString(componentReturnCode, context.dataSource, context.dataSourcePath, target, context.bindingId, value);
+                return new BindingResult(BindingStatus.Failure, componentMessage);
+            }
+
             var succeeded = sourceToUiConverters.TrySetValue(ref target, context.bindingId, value, out var returnCode);
             if (succeeded)
                 return default;
@@ -351,4 +362,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

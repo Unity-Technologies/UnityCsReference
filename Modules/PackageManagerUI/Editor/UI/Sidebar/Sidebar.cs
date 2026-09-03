@@ -41,20 +41,20 @@ internal partial class Sidebar : ScrollView
         if (m_FoldoutsCreated)
             return;
 
-        var projectFoldout = CreateAndAddFoldout(L10n.Tr("Project"));
+        var projectFoldout = CreateAndAddFoldout(L10n.Tr("Project", null));
         projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectPage.k_Id)));
         projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectUpdatesPage.k_Id)));
         projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(SamplesPage.k_Id)));
         projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectNonCompliancePage.k_Id)));
         projectFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id)));
 
-        var sourcesFoldout = CreateAndAddFoldout(L10n.Tr("Sources"));
+        var sourcesFoldout = CreateAndAddFoldout(L10n.Tr("Sources", null));
         sourcesFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(MyAssetsPage.k_Id)));
         sourcesFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(UnityRegistryPage.k_Id)));
         sourcesFoldout.Add(CreateSidebarRow(m_PageManager.GetPage(BuiltInPage.k_Id)));
 
-        m_CloudFoldout = CreateAndAddFoldout(L10n.Tr("Cloud"));
-        m_RegistriesFoldout = CreateAndAddFoldout(L10n.Tr("My Registries"));
+        m_CloudFoldout = CreateAndAddFoldout(L10n.Tr("Cloud", null));
+        m_RegistriesFoldout = CreateAndAddFoldout(L10n.Tr("My Registries", null));
 
         m_FoldoutsCreated = true;
     }

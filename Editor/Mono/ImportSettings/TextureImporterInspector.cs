@@ -1345,7 +1345,7 @@ namespace UnityEditor
                 using (new EditorGUI.IndentLevelScope())
                 {
                     List<string> options = new List<string>();
-                    options.Add(L10n.Tr("None (Use Global Mipmap Limit)"));
+                    options.Add(L10n.Tr("None (Use Global Mipmap Limit)", null));
 
                     // Add all known groups
                     var groupNames = TextureMipmapLimitGroups.GetGroups();

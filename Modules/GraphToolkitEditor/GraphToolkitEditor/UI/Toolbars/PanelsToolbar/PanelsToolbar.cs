@@ -14,7 +14,7 @@ namespace Unity.GraphToolkit.Editor
     [Overlay(typeof(GraphViewEditorWindow), toolbarId, "Panel Toggles", ussName = "PanelToggles",
         defaultDisplay = true, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Bottom,
         defaultDockIndex = 1, defaultLayout = Layout.HorizontalToolbar)]
-    [Icon("Icons/GraphToolkit/PanelsToolbar/Panels.png")]
+    [Icon("GraphToolkit/Icons/PanelsToolbar/Panels.png")]
     [UnityRestricted]
     internal sealed class PanelsToolbar : Toolbar
     {

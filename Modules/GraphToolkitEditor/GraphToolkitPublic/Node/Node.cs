@@ -27,16 +27,13 @@ namespace Unity.GraphToolkit.Editor
     ///
     /// This class is used in combination with other types like <see cref="INode"/>, <see cref="IPort"/>, and <see cref="Graph"/>
     /// to construct and manage node-based workflows.
-    ///
-    /// See also:
-    ///
-    ///- <see cref="INode"/> for the interface this class implements
-    ///- <see cref="ContextNode"/> and <see cref="BlockNode"/> for composition patterns
-    ///- <see cref="IVariableNode"/> for how to work with variable-based nodes
-    ///- <see cref="ISubgraphNode"/> for how to work with subgraph-based nodes
-    ///- <see cref="NodeView{T}"/> for customizing the node's UI
-    ///
     /// </remarks>
+    /// <seealso cref="INode"/>
+    /// <seealso cref="ContextNode"/>
+    /// <seealso cref="BlockNode"/>
+    /// <seealso cref="IVariableNode"/>
+    /// <seealso cref="ISubgraphNode"/>
+    /// <seealso cref="NodeView{T}"/>
     [Serializable]
     public abstract partial class Node : INode
     {
@@ -116,7 +113,7 @@ namespace Unity.GraphToolkit.Editor
             /// <c>portName</c> is used to identify the port. It must be unique among input ports and node options on the node. This name is used as the ID when calling <see cref="GetInputPortByName(string)"/>.
             /// If <see cref="IPortBuilder{T}.WithDisplayName(string)"/> is not used, this name is also used as the port's display label.
             ///
-            /// <b>Warning:</b> Changing a port's name will break any existing connections, as the name is used as the port's unique ID.
+            /// **Warning**: Changing a port's name breaks any existing connections, because the name is used as the port's unique ID.
             ///
             /// Use the returned builder to configure port properties and then call <see cref="IPortBuilder{T}.Build"/> to create the port.
             /// </remarks>
@@ -142,7 +139,7 @@ namespace Unity.GraphToolkit.Editor
             /// <c>portName</c> is used to identify the port. It must be unique among output ports on the node. This name is used as the ID when calling <see cref="GetOutputPortByName(string)"/>.
             /// If <see cref="IPortBuilder{T}.WithDisplayName(string)"/> is not used, this name is also used as the port's display label.
             ///
-            /// <b>Warning:</b> Changing a port's name will break any existing connections, as the name is used as the port's unique ID.
+            /// **Warning**: Changing a port's name breaks any existing connections, because the name is used as the port's unique ID.
             ///
             /// Use the returned builder to configure port properties and then call <see cref="IPortBuilder{T}.Build"/> to create the port.
             /// </remarks>
@@ -169,7 +166,7 @@ namespace Unity.GraphToolkit.Editor
             /// <c>portName</c> is used to identify the port. It must be unique among input ports on the node. This name is used as the ID when calling <see cref="GetInputPortByName(string)"/>.
             /// If <see cref="IPortBuilder{T}.WithDisplayName(string)"/> is not used, this name is also used as the port's display label.
             ///
-            /// <b>Warning:</b> Changing a port's name will break any existing connections, as the name is used as the port's unique ID.
+            /// **Warning**: Changing a port's name breaks any existing connections, because the name is used as the port's unique ID.
             ///
             /// Use the returned builder to configure port properties and then call <see cref="IPortBuilder{T}.Build"/> to create the port.
             /// </remarks>
@@ -198,7 +195,7 @@ namespace Unity.GraphToolkit.Editor
             /// <c>portName</c> is used to identify the port. It must be unique among output ports on the node. This name is used as the ID when calling <see cref="GetOutputPortByName(string)"/>.
             /// If <see cref="IPortBuilder{T}.WithDisplayName(string)"/> is not used, this name is also used as the port's display label.
             ///
-            /// <b>Warning:</b> Changing a port's name will break any existing connections, as the name is used as the port's unique ID.
+            /// **Warning**: Changing a port's name breaks any existing connections, because the name is used as the port's unique ID.
             ///
             /// Use the returned builder to configure port properties and then call <see cref="IPortBuilder{T}.Build"/> to create the port.
             /// </remarks>
@@ -218,7 +215,7 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// The Graph that contains this node.
+        /// The <see cref="Graph"/> that contains this node.
         /// </summary>
         public Graph Graph => (m_Implementation?.GraphModel as GraphModelImp)?.Graph as Graph;
 

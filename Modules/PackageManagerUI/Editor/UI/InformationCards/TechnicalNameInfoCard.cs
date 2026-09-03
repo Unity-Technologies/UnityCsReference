@@ -11,7 +11,7 @@ internal class TechnicalNameInfoCard : PackageInformationCard
     [SerializeField]
     private CopyIconButton m_CopyIcon;
 
-    protected override string titleText => L10n.Tr("Technical Name");
+    protected override string titleText => L10n.Tr("Technical Name", null);
     protected override InformationCardSize cardSize => InformationCardSize.Medium;
 
     public TechnicalNameInfoCard(IApplicationProxy applicationProxy)

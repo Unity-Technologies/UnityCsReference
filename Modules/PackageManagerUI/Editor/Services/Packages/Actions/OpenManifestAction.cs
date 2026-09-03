@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class OpenManifestAction : PackageAction
@@ -29,18 +27,17 @@ internal class OpenManifestAction : PackageAction
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Select manifest in project browser and open inspector.");
+        return L10n.Tr("Select manifest in project browser and open inspector.", null);
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return version.HasTag(PackageTag.Custom | PackageTag.Local) ? L10n.Tr("Edit Manifest") : L10n.Tr("Open Manifest");
+        return version.HasTag(PackageTag.Custom | PackageTag.Local) ? L10n.Tr("Edit Manifest", null) : L10n.Tr("Open Manifest", null);
     }
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfPackageIsInInvalidLocation(version);
-        yield return new DisableIfEntitlementsError(version);
-        yield return new DisableIfPackageIsNotLoaded(version);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfPackageIsInInvalidLocation(),
+        new DisableIfEntitlementsError(),
+        new DisableIfPackageIsNotLoaded()
+    );
 }

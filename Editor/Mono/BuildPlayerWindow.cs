@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: BuildSettingsWindow not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -49,13 +49,13 @@ namespace UnityEditor
             public GUIContent scenesInBuild = EditorGUIUtility.TrTextContent("Scenes In Build", "Which scenes to include in the build");
             public GUIContent checkOut = EditorGUIUtility.TrTextContent("Check out");
             public GUIContent addOpenSource = EditorGUIUtility.TrTextContent("Add Open Scenes");
-            public string noModuleLoaded = L10n.Tr("No {0} module loaded.");
+            public string noModuleLoaded = L10n.Tr("No {0} module loaded.", null);
             public GUIContent openDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
             public GUIContent installModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
-            public string EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules");
-            public string infoText = L10n.Tr("{0} is not included in your Unity Pro license. Your {0} build will include a Unity Personal Edition splash screen.\n\nYou must be eligible to use Unity Personal Edition to use this build option. Please refer to our EULA for further information.");
+            public string EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules", null);
+            public string infoText = L10n.Tr("{0} is not included in your Unity Pro license. Your {0} build will include a Unity Personal Edition splash screen.\n\nYou must be eligible to use Unity Personal Edition to use this build option. Please refer to our EULA for further information.", null);
             public GUIContent eula = EditorGUIUtility.TrTextContent("Eula");
-            public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license");
+            public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license", null);
             public GUIContent installInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
 
             public Texture2D activePlatformIcon = EditorGUIUtility.IconContent("BuildSettings.SelectedIcon").image as Texture2D;
@@ -201,10 +201,10 @@ namespace UnityEditor
             if (EditorSettings.hideBuildProfileClassicPlatforms && BuildProfileContext.activeProfile == null)
             {
                 if (EditorUtility.DisplayDialog(
-                    L10n.Tr("Active Build Profile Required"),
-                    L10n.Tr("To build players, you must first create and activate a Build Profile.\n\nWould you like to open the Build Profile window now?"),
-                    L10n.Tr("Open Build Profile Window"),
-                    L10n.Tr("Cancel")))
+                    L10n.Tr("Active Build Profile Required", null),
+                    L10n.Tr("To build players, you must first create and activate a Build Profile.\n\nWould you like to open the Build Profile window now?", null),
+                    L10n.Tr("Open Build Profile Window", null),
+                    L10n.Tr("Cancel", null)))
                 {
                     BuildPipeline.ShowBuildProfileWindowAndRequireActiveProfile();
                     return;
@@ -625,7 +625,7 @@ namespace UnityEditor
             return string.Format("https://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}{7}", prefix, suffix, revision, folder, downloadLinkName, architectureLabel, shortVersion, extension);
         }
 
-        internal static string GetUnityHubModuleDownloadURL(GUID platformGuid)
+        internal static string GetUnityHubModuleDownloadURL(params GUID[] platformGuids)
         {
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
             string revision = "";
@@ -639,9 +639,19 @@ namespace UnityEditor
             if (versionMatch.Groups["revision"].Success)
                 revision = versionMatch.Groups["revision"].Value;
 
-            var downloadLinkName = BuildTargetDiscovery.BuildPlatformDownloadLinkName(platformGuid);
+            var downloadLinkNames = new List<string>(platformGuids.Length);
+            foreach (var platformGuid in platformGuids)
+            {
+                var downloadLinkName = BuildTargetDiscovery.BuildPlatformDownloadLinkName(platformGuid).ToLower();
 
-            return string.Format("unityhub://{0}/{1}/module={2}", shortVersion, revision, downloadLinkName.ToLower());
+                if (string.IsNullOrEmpty(downloadLinkName))
+                    continue;
+
+                if (!downloadLinkNames.Contains(downloadLinkName))
+                    downloadLinkNames.Add(downloadLinkName);
+            }
+
+            return string.Format("unityhub://{0}/{1}/module={2}", shortVersion, revision, string.Join("&module=", downloadLinkNames));
         }
 
         internal static bool IsModuleNotInstalled(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
@@ -747,8 +757,8 @@ namespace UnityEditor
 
                 GUIContent[] notLicensedMessage =
                 {
-                    EditorGUIUtility.TextContent(string.Format(L10n.Tr(licenseMsg), niceName)),
-                    EditorGUIUtility.TextContent(L10n.Tr(buttonMsg)),
+                    EditorGUIUtility.TextContent(string.Format(L10n.Tr(licenseMsg, null), niceName)),
+                    EditorGUIUtility.TextContent(L10n.Tr(buttonMsg, null)),
                     new GUIContent(licenseURL)
                 };
 
@@ -917,7 +927,7 @@ namespace UnityEditor
 
                 GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
 
-                GUILayout.Label(string.Format(L10n.Tr("{0} is not supported in this build.\nDownload a build that supports it."), BuildPipeline.GetBuildTargetGroupDisplayName(namedBuildTarget.ToBuildTargetGroup())));
+                GUILayout.Label(string.Format(L10n.Tr("{0} is not supported in this build.\nDownload a build that supports it.", null), BuildPipeline.GetBuildTargetGroupDisplayName(namedBuildTarget.ToBuildTargetGroup())));
 
                 GUILayout.EndVertical();
                 GUILayout.FlexibleSpace();
@@ -1113,4 +1123,4 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

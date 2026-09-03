@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: BuildSettingsWindow not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -22,22 +22,22 @@ namespace UnityEditor.Build.Profile
         [NoAutoStaticsCleanup] // static dropdown labels, allocated once, only localized string literals
         static readonly List<string> k_MaxTextureSizeLabels = new()
         {
-            L10n.Tr("No Override", "Use maximum texture size as specified in per-texture import settings."),
-            L10n.Tr("Max 2048", "Make imported textures never exceed 2048 pixels in width or height."),
-            L10n.Tr("Max 1024", "Make imported textures never exceed 1024 pixels in width or height."),
-            L10n.Tr("Max 512", "Make imported textures never exceed 512 pixels in width or height."),
-            L10n.Tr("Max 256", "Make imported textures never exceed 256 pixels in width or height."),
-            L10n.Tr("Max 128", "Make imported textures never exceed 128 pixels in width or height."),
-            L10n.Tr("Max 64", "Make imported textures never exceed 64 pixels in width or height."),
+            L10n.Tr("No Override", null),
+            L10n.Tr("Max 2048", null),
+            L10n.Tr("Max 1024", null),
+            L10n.Tr("Max 512", null),
+            L10n.Tr("Max 256", null),
+            L10n.Tr("Max 128", null),
+            L10n.Tr("Max 64", null),
         };
 
         [NoAutoStaticsCleanup] // static dropdown labels, allocated once, only localized string literals
         static readonly List<string> k_TextureCompressionLabels = new()
         {
-            L10n.Tr("No Override", "Do not modify texture import compression settings."),
-            L10n.Tr("Force Fast Compressor", "Use a faster but lower quality texture compression mode for all compressed textures. Turn off Crunch compression."),
-            L10n.Tr("Force Uncompressed", "Do not compress textures."),
-            L10n.Tr("Force No Crunch", "Disable crunch compression on textures.")
+            L10n.Tr("No Override", null),
+            L10n.Tr("Force Fast Compressor", null),
+            L10n.Tr("Force Uncompressed", null),
+            L10n.Tr("Force No Crunch", null)
         };
 
         [NoAutoStaticsCleanup] // static dropdown values, allocated once, only int literals
@@ -174,4 +174,4 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

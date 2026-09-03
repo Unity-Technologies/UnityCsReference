@@ -45,7 +45,7 @@ namespace UnityEditor.AdaptivePerformance
         VisualElement m_Scalers;
         VisualTreeAsset m_ScalerTree;
         StyleSheet m_ScalerStyle;
-        Label m_EmptyScalerLabel = new  Label(L10n.Tr("No Scaler data"));
+        Label m_EmptyScalerLabel = new  Label(L10n.Tr("No Scaler data", null));
         readonly List<ScalerElement> m_ScalerElements = new List<ScalerElement>();
         UsageDial m_UsageDial;
         Label m_BottleneckLabel;

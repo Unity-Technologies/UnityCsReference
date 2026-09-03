@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -108,7 +109,7 @@ namespace UnityEditor.Search
         internal void OnEnable()
         {
             titleContent.image = Icons.quicksearch;
-            titleContent.text = L10n.Tr("Search Index Manager");
+            titleContent.text = L10n.Tr("Search Index Manager", null);
 
             Utils.AddStyleSheet(rootVisualElement, "IndexManager.uss");
             Utils.AddStyleSheet(rootVisualElement, EditorGUIUtility.isProSkin ? "IndexManager_Dark.uss" : "IndexManager_Light.uss");
@@ -131,7 +132,7 @@ namespace UnityEditor.Search
             if (m_IndexSettings.Count > 0)
                 CreateIndexDetailsElement();
 
-            var showPackagesToggle = new Toggle(L10n.Tr("Show package indexes")) { name = "show-package-indexes-toggle", value = SearchSettings.showPackageIndexes };
+            var showPackagesToggle = new Toggle(L10n.Tr("Show package indexes", null)) { name = "show-package-indexes-toggle", value = SearchSettings.showPackageIndexes };
             showPackagesToggle.Q<Label>().style.marginRight = 10;
             showPackagesToggle.style.marginBottom = 6;
             showPackagesToggle.style.marginLeft = 8;
@@ -331,35 +332,35 @@ namespace UnityEditor.Search
             buttonsContainer.Add(leftSpaceButtons);
             buttonsContainer.Add(m_SaveButton = new Button(UpdateIndexSettings) { name = "SaveButton" });
             UpdateSaveButtonDisplay();
-            buttonsContainer.Add(m_CreateButton = new Button(CreateIndexSettings) { text = L10n.Tr("Create"), name = "CreateButton" });
+            buttonsContainer.Add(m_CreateButton = new Button(CreateIndexSettings) { text = L10n.Tr("Create", null), name = "CreateButton" });
 
-            m_IndexDetailsElementScrollView.Add(m_IndexFilePathTextField = new TextField(L10n.Tr("File Path")) {
+            m_IndexDetailsElementScrollView.Add(m_IndexFilePathTextField = new TextField(L10n.Tr("File Path", null)) {
                 name = "FilePathTextField",
-                tooltip = L10n.Tr("The path to this index in the Project"),
+                tooltip = L10n.Tr("The path to this index in the Project", null),
                 value = selectedItemPath
             });
             m_IndexFilePathTextField.SetEnabled(false);
 
-            m_IndexDetailsElementScrollView.Add(m_IndexNameTextField = new TextField(L10n.Tr("Name")) {
+            m_IndexDetailsElementScrollView.Add(m_IndexNameTextField = new TextField(L10n.Tr("Name", null)) {
                 name = "NameTextField",
-                tooltip = L10n.Tr("The name of this index (can be different than the file)"),
+                tooltip = L10n.Tr("The name of this index (can be different than the file)", null),
                 value = selectedItem.name
             });
             m_IndexNameTextField.RegisterValueChangedCallback(evt => { selectedItem.name = evt.newValue; UpdateUnsavedChanges(true); });
 
-            m_IndexScore = new IntegerField(L10n.Tr("Score"))
+            m_IndexScore = new IntegerField(L10n.Tr("Score", null))
             {
                 name = "IndexScore",
-                tooltip = L10n.Tr("When the Project has multiple indexes, those with higher scores take priority over those with lower scores"),
+                tooltip = L10n.Tr("When the Project has multiple indexes, those with higher scores take priority over those with lower scores", null),
                 value = selectedItem.score
             };
             m_IndexScore.RegisterValueChangedCallback(evt => { selectedItem.score = evt.newValue; UpdateUnsavedChanges(true); });
             m_IndexDetailsElementScrollView.Add(m_IndexScore);
 
-            m_HasPackagesRoot = new Toggle(L10n.Tr("Packages"))
+            m_HasPackagesRoot = new Toggle(L10n.Tr("Packages", null))
             {
                 value = selectedItem.hasPackagesRoot,
-                tooltip = L10n.Tr("If checked, all packages content will be indexed.")
+                tooltip = L10n.Tr("If checked, all packages content will be indexed.", null)
             };
             m_HasPackagesRoot.style.maxWidth = k_ToggleMaxWidth;
 
@@ -369,21 +370,21 @@ namespace UnityEditor.Search
                 UpdateUnsavedChanges(true);
             });
 
-            m_RootsFoldout = CreateFoldout(L10n.Tr("Roots"));
-            m_RootsFoldout.tooltip = L10n.Tr("List of root folders to start indexing from.");
+            m_RootsFoldout = CreateFoldout(L10n.Tr("Roots", null));
+            m_RootsFoldout.tooltip = L10n.Tr("List of root folders to start indexing from.", null);
             m_ListViewRoots = new ListViewIndexSettings(selectedItem.roots, MakeRootPathItem, BindRootPathItem, AddRootElement, RemoveRootElement, this, false);
             m_RootsFoldout.Add(m_HasPackagesRoot);
             m_RootsFoldout.Add(m_ListViewRoots);
             m_IndexDetailsElementScrollView.Add(m_RootsFoldout);
 
-            m_IncludesFoldout = CreateFoldout(L10n.Tr("Includes"));
-            m_IncludesFoldout.tooltip = L10n.Tr("A list of files, folders, and/or file types (by extension) that this index must include");
+            m_IncludesFoldout = CreateFoldout(L10n.Tr("Includes", null));
+            m_IncludesFoldout.tooltip = L10n.Tr("A list of files, folders, and/or file types (by extension) that this index must include", null);
             m_ListViewIncludes = new ListViewIndexSettings(selectedItem.includes, MakeIncludeItem, BindIncludeItem, AddIncludeElement, RemoveIncludeElement, this);
             m_IncludesFoldout.Add(m_ListViewIncludes);
             m_IndexDetailsElementScrollView.Add(m_IncludesFoldout);
 
-            m_ExcludesFoldout = CreateFoldout(L10n.Tr("Excludes"));
-            m_ExcludesFoldout.tooltip = L10n.Tr("A list of files, folders, and/or file types (by extension) that this index must exclude");
+            m_ExcludesFoldout = CreateFoldout(L10n.Tr("Excludes", null));
+            m_ExcludesFoldout.tooltip = L10n.Tr("A list of files, folders, and/or file types (by extension) that this index must exclude", null);
             m_ListViewExcludes = new ListViewIndexSettings(selectedItem.excludes, MakeExcludeItem, BindExcludeItem, AddExcludeElement, RemoveExcludeElement, this);
             m_ExcludesFoldout.Add(m_ListViewExcludes);
             m_IndexDetailsElementScrollView.Add(m_ExcludesFoldout);
@@ -393,7 +394,7 @@ namespace UnityEditor.Search
 
             CreateOptionsVisualElements();
 
-            m_SavedIndexDataNotLoadedYet = new Label(L10n.Tr("Loading the index...")) { name = "SavedIndexDataNotLoadedYet" };
+            m_SavedIndexDataNotLoadedYet = new Label(L10n.Tr("Loading the index...", null)) { name = "SavedIndexDataNotLoadedYet" };
             m_IndexDetailsElementScrollView.Add(m_SavedIndexDataNotLoadedYet);
             m_SavedIndexDataNotLoadedYet.style.display = DisplayStyle.None;
             m_SavedIndexData = new VisualElement() { name = "SavedIndexData" };
@@ -470,22 +471,22 @@ namespace UnityEditor.Search
                 switch (field.Name)
                 {
                     case "disabled":
-                        toggle.tooltip = L10n.Tr("Toggles this index off so search does not use it");
+                        toggle.tooltip = L10n.Tr("Toggles this index off so search does not use it", null);
                         toggle.RegisterValueChangedCallback(evt => m_ListViewIndexSettings.ListView.Rebuild());
                         break;
                     case "types":
-                        toggle.tooltip = L10n.Tr("Include object type information in this index");
+                        toggle.tooltip = L10n.Tr("Include object type information in this index", null);
                         break;
                     case "properties":
-                        toggle.tooltip = L10n.Tr("Include objects' serialized properties in this index");
+                        toggle.tooltip = L10n.Tr("Include objects' serialized properties in this index", null);
                         break;
                     case "extended":
-                        toggle.label = L10n.Tr("Sub objects");
-                        toggle.tooltip = L10n.Tr("Include all sub objects (all Scene objects for a Unity scene, and all sub-assets for an FBX)");
+                        toggle.label = L10n.Tr("Sub objects", null);
+                        toggle.tooltip = L10n.Tr("Include all sub objects (all Scene objects for a Unity scene, and all sub-assets for an FBX)", null);
                         toggle.enabledSelf = selectedItem.type == SearchDatabase.IndexType.asset;
                         break;
                     case "dependencies":
-                        toggle.tooltip = L10n.Tr("Include information about objects' direct dependencies in this index");
+                        toggle.tooltip = L10n.Tr("Include information about objects' direct dependencies in this index", null);
                         break;
                 }
             }
@@ -658,7 +659,7 @@ namespace UnityEditor.Search
 
         private void CreateIndexSettings()
         {
-            var message = L10n.Tr("Please enter a file name for the new Index Settings.");
+            var message = L10n.Tr("Please enter a file name for the new Index Settings.", null);
             var path = EditorUtility.SaveFilePanel(message, Application.dataPath, selectedItem.name, k_IndexExtension);
             if (string.IsNullOrEmpty(path))
                 return;
@@ -746,8 +747,8 @@ namespace UnityEditor.Search
                         SendSaveIndexEvent(m_IndexSettings[i]);
                         if (!m_IndexSettingsExists[i])
                         {
-                            var message = L10n.Tr("Please enter a file name for the new Index Settings.");
-                            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Save Index Settings"), selectedItem.name, k_IndexExtension, message, Application.dataPath);
+                            var message = L10n.Tr("Please enter a file name for the new Index Settings.", null);
+                            var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Save Index Settings", null), selectedItem.name, k_IndexExtension, message, Application.dataPath);
                             if (!string.IsNullOrEmpty(path))
                             {
                                 SaveNewIndexSettingsFile(path, i);
@@ -834,7 +835,7 @@ namespace UnityEditor.Search
         private void UpdateSaveButtonDisplay()
         {
             if (selectedItem.hasUnsavedChanges)
-                m_SaveButton.text = L10n.Tr("Save");
+                m_SaveButton.text = L10n.Tr("Save", null);
             else
                 m_SaveButton.text = k_BuildText;
         }
@@ -898,7 +899,7 @@ namespace UnityEditor.Search
             else if (m_IndexSettingsFilePaths.Count == 1)
                 warningMessage = "If you delete all indexes, search functionality is limited to file names only. Continue?";
 
-            if (EditorDialog.DisplayDecisionDialog(L10n.Tr("Delete selected index?"), L10n.Tr(warningMessage), default, default))
+            if (EditorDialog.DisplayDecisionDialog(L10n.Tr("Delete selected index?", null), L10n.Tr(warningMessage, null), default, default))
                 DeleteSelectedIndexSetting();
         }
 
@@ -969,7 +970,7 @@ namespace UnityEditor.Search
             if ((SearchDatabase.IndexType)Enum.Parse(typeof(SearchDatabase.IndexType), template.type) == SearchDatabase.IndexType.asset)
             {
                 if (EditorDialog.DisplayDecisionDialog(
-                    titleText: L10n.Tr("Create non-asset index?"),
+                    titleText: L10n.Tr("Create non-asset index?", null),
                     messageText: $"You are about to create a {template.type} index, this type of index will do a deep indexing that will be longer and take more space than a standard asset index, are you sure?",
                     default, default))
                 {
@@ -1069,7 +1070,7 @@ namespace UnityEditor.Search
             }
             else
             {
-                var text = L10n.Tr("Index settings not saved yet");
+                var text = L10n.Tr("Index settings not saved yet", null);
                 icon.style.backgroundImage = new StyleBackground(EditorGUIUtility.IconContent("console.warnicon").image as Texture2D);
                 icon.tooltip = text;
                 element.Q<Label>("IndexName").text = text;
@@ -1324,11 +1325,11 @@ namespace UnityEditor.Search
                     case FilePattern.Folder:
                         m_SuffixTextField.style.display = DisplayStyle.Flex;
                         m_ExplorerButton.style.display = DisplayStyle.Flex;
-                        m_ExplorerButton.text = L10n.Tr("Choose folder");
+                        m_ExplorerButton.text = L10n.Tr("Choose folder", null);
                         break;
                     case FilePattern.File:
                         m_ExplorerButton.style.display = DisplayStyle.Flex;
-                        m_ExplorerButton.text = L10n.Tr("Choose file");
+                        m_ExplorerButton.text = L10n.Tr("Choose file", null);
                         break;
                 }
                 UpdateAndGetPath();
@@ -1533,7 +1534,7 @@ namespace UnityEditor.Search
             var container = new VisualElement() { name = "ListViewIndexSettingsContent" };
             Add(container);
             container.Add(ListView);
-            container.Add(m_EmptyListViewLabel = new Label(L10n.Tr("List is empty")));
+            container.Add(m_EmptyListViewLabel = new Label(L10n.Tr("List is empty", null)));
             Add(AddRemoveButtons(addButtonAction, removeButtonAction));
 
             ListView.selectionType = SelectionType.Single;
@@ -1614,3 +1615,4 @@ namespace UnityEditor.Search
         internal void SetSelectionWithoutNotify(int index) => ListView.SetSelectionWithoutNotify(stackalloc int[1] { index });
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

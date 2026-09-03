@@ -34,19 +34,19 @@ namespace Unity.Profiling.Editor.UI
         static class Content
         {
             // Column titles and tooltips
-            public static readonly string k_ColumnTitle_Name = L10n.Tr("Object");
-            public static readonly string k_ColumnTitle_ThreadName = L10n.Tr("Thread");
-            public static readonly string k_ColumnTitle_Time = L10n.Tr("Time, ms");
-            public static readonly string k_ColumnTitle_TotalPercent = L10n.Tr("Total %");
-            public static readonly string k_ColumnTitle_GcAlloc = L10n.Tr("GC Alloc");
-            public static readonly string k_ColumnTitle_GcAllocPercent = L10n.Tr("GC Alloc %");
+            public static readonly string k_ColumnTitle_Name = L10n.Tr("Object", null);
+            public static readonly string k_ColumnTitle_ThreadName = L10n.Tr("Thread", null);
+            public static readonly string k_ColumnTitle_Time = L10n.Tr("Time, ms", null);
+            public static readonly string k_ColumnTitle_TotalPercent = L10n.Tr("Total %", null);
+            public static readonly string k_ColumnTitle_GcAlloc = L10n.Tr("GC Alloc", null);
+            public static readonly string k_ColumnTitle_GcAllocPercent = L10n.Tr("GC Alloc %", null);
 
-            public static readonly string k_ColumnTooltip_Name = L10n.Tr("Name of the object associated with the marker instance");
-            public static readonly string k_ColumnTooltip_ThreadName = L10n.Tr("Name of the thread where the marker instance executed");
-            public static readonly string k_ColumnTooltip_Time = L10n.Tr("Total time spent in this marker instance");
-            public static readonly string k_ColumnTooltip_TotalPercent = L10n.Tr("Percentage of the total frame time spent in this marker instance");
-            public static readonly string k_ColumnTooltip_GcAlloc = L10n.Tr("Total GC memory allocated by this marker instance excluding child allocations");
-            public static readonly string k_ColumnTooltip_GcAllocPercent = L10n.Tr("Percentage of total frame GC allocations by this marker instance");
+            public static readonly string k_ColumnTooltip_Name = L10n.Tr("Name of the object associated with the marker instance", null);
+            public static readonly string k_ColumnTooltip_ThreadName = L10n.Tr("Name of the thread where the marker instance executed", null);
+            public static readonly string k_ColumnTooltip_Time = L10n.Tr("Total time spent in this marker instance", null);
+            public static readonly string k_ColumnTooltip_TotalPercent = L10n.Tr("Percentage of the total frame time spent in this marker instance", null);
+            public static readonly string k_ColumnTooltip_GcAlloc = L10n.Tr("Total GC memory allocated by this marker instance excluding child allocations", null);
+            public static readonly string k_ColumnTooltip_GcAllocPercent = L10n.Tr("Percentage of total frame GC allocations by this marker instance", null);
         }
 
         // Model

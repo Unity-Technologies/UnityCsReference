@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Commands.Selection;
 using Unity.Timeline.Foundation.Commands.Sequence;
 using Unity.Timeline.Foundation.Model;
@@ -23,6 +23,7 @@ namespace Unity.Timeline.Foundation.ViewModel
             public readonly TimeRange initialRange;
             public readonly TimeRange validTrimRange;
 
+            [NoAutoStaticsCleanup] // immutable default-value sentinel; all members stay null/zero for its whole lifetime
             public static readonly Context Invalid = default;
 
             public Context(CutList trimmedItem, CutList destination, TimeRange initialRange, TimeRange validTrimRange)
@@ -244,4 +245,3 @@ namespace Unity.Timeline.Foundation.ViewModel
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

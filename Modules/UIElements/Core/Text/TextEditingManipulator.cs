@@ -69,7 +69,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private bool touchScreenCanBeUsed => (editingUtilities?.TouchScreenKeyboardCanBeUsed() ?? false) && !m_TextElement.edition.hideSoftKeyboard;
+        private bool touchScreenCanBeUsed => editingUtilities != null && TextEditingUtilities.TouchScreenKeyboardCanBeUsed() && !m_TextElement.edition.hideSoftKeyboard;
         private bool keyboardCanBeUsed => m_TextElement.edition.hideSoftKeyboard || (editingUtilities?.PhysicalKeyboardCanBeUsed() ?? true);
 
         private void UpdateTextEditorEventHandler()

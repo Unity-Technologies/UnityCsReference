@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor;
@@ -208,12 +209,12 @@ namespace UnityEditor
         CurveWrapper[] m_AnimationCurves;
 
         static readonly int s_SelectKeyHash = "SelectKeys".GetHashCode();
-        private static readonly string k_DeleteKeys = L10n.Tr("Delete Keys");
-        private static readonly string k_DeleteKey = L10n.Tr("Delete Key");
-        private static readonly string k_EditKeys = L10n.Tr("Edit Keys...");
-        private static readonly string k_EditKey = L10n.Tr("Edit Key...");
-        private static readonly string k_EditCurve = L10n.Tr("Edit Curve");
-        private static readonly string k_AddKey = L10n.Tr("Add Key");
+        private static readonly string k_DeleteKeys = L10n.Tr("Delete Keys", null);
+        private static readonly string k_DeleteKey = L10n.Tr("Delete Key", null);
+        private static readonly string k_EditKeys = L10n.Tr("Edit Keys...", null);
+        private static readonly string k_EditKey = L10n.Tr("Edit Key...", null);
+        private static readonly string k_EditCurve = L10n.Tr("Edit Curve", null);
+        private static readonly string k_AddKey = L10n.Tr("Add Key", null);
 
         public delegate void CallbackFunction();
 
@@ -4224,3 +4225,4 @@ namespace UnityEditor
         }
     }
 } // namespace
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

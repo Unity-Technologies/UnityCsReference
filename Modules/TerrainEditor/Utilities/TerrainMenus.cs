@@ -10,6 +10,9 @@ namespace UnityEditor
 {
     internal class TerrainMenus
     {
+        [MenuItem("GameObject/3D Object/Terrain", true, 3000)]
+        static bool CreateTerrainValidate() => TerrainEditorUtility.IsEditable();
+
         [MenuItem("GameObject/3D Object/Terrain", false, 3000)]
         static void CreateTerrain(MenuCommand menuCommand)
         {

@@ -10,8 +10,8 @@ using InstanceSettings = Unity.Multiplayer.PlayMode.Editor.MainEditorController.
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
-[CustomPropertyDrawer(typeof(InstanceItem<MainEditorController, InstanceSettings>))]
-class MainEditorItemDrawer : InstanceItemDrawer
+[CustomPropertyDrawer(typeof(PlayModeControllerItem<MainEditorController, InstanceSettings>))]
+class MainEditorItemDrawer : PlayModeControllerItemDrawer
 {
     protected override VisualElement CreateNameField(SerializedProperty property) => null;
 }

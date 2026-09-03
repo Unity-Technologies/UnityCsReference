@@ -19,11 +19,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return value switch
             {
-                PageSortOption.NameAsc => L10n.Tr("Name (asc)"),
-                PageSortOption.NameDesc => L10n.Tr("Name (desc)"),
-                PageSortOption.PublishedDateDesc => L10n.Tr("Published date"),
-                PageSortOption.UpdateDateDesc => L10n.Tr("Recently updated"),
-                PageSortOption.PurchasedDateDesc => L10n.Tr("Purchased date"),
+                PageSortOption.NameAsc => L10n.Tr("Name (asc)", null),
+                PageSortOption.NameDesc => L10n.Tr("Name (desc)", null),
+                PageSortOption.PublishedDateDesc => L10n.Tr("Published date", null),
+                PageSortOption.UpdateDateDesc => L10n.Tr("Recently updated", null),
+                PageSortOption.PurchasedDateDesc => L10n.Tr("Purchased date", null),
                 _ => string.Empty
             };
         }

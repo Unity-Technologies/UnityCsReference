@@ -2,13 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -27,9 +28,13 @@ partial class StyleRuleHeader : UISelectionObjectHeader
     private const string k_StyleSheetDark = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorDark.uss";
     private const string k_StyleSheetLight = "UIToolkitAuthoring/Inspector/UIToolkitAuthoringInspectorLight.uss";
 
+    [NoAutoStaticsCleanup] // stateless exporter, safe to persist
     static readonly StyleSheetNodeTypeHandler.StyleSheetEditorExporter s_Exporter = new();
+    [AutoStaticsCleanupOnCodeReload]
     static StyleSheet s_StyleSheet;
+    [AutoStaticsCleanupOnCodeReload]
     static StyleSheet s_ThemedStyleSheet;
+    [AutoStaticsCleanupOnCodeReload]
     static bool s_ThemedStyleSheetIsProSkin;
 
     private TextField m_RuleName;
@@ -163,4 +168,4 @@ partial class StyleRuleHeader : UISelectionObjectHeader
         RenameStyleRuleCommand.Execute(CommandSources.Inspector, selectorStrings, Rule);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -186,6 +186,37 @@ internal static unsafe partial class SerializationBackendManagedCommands
         pos = nestedStart + nestedBytes;
     }
 
+    private static unsafe void ConsumeLinearCollectionManagedReferenceArray(
+        NativeBufferContext* ctx, int count, ref BufferDataStager bufferDataStager)
+    {
+        Unsafe.WriteUnaligned(bufferDataStager.Reserve(4), count);
+
+        if (count == 0)
+        {
+            // Still cross: the icall marks the registry active, as the native command's Activate<>() does.
+            WriteManagedReferencesToBuffer(ctx->transferState, IntPtr.Zero, 0);
+            return;
+        }
+
+        const int kRefIdSize = 8;
+
+        int left = count;
+        while (left > 0)
+        {
+            if (bufferDataStager.StagingRoom < kRefIdSize)
+                bufferDataStager.FlushStaged(kManagedBlockMaxPayloadSize);
+
+            int batch = bufferDataStager.StagingRoom / kRefIdSize;
+            if (batch > left)
+                batch = left;
+
+            WriteManagedReferencesToBuffer(ctx->transferState, (IntPtr)bufferDataStager.StagingPtr, batch);
+
+            bufferDataStager.Stage(batch * kRefIdSize);
+            left -= batch;
+        }
+    }
+
     // UUM-143556 marker the read path stamps on a type-mismatched fake-null reference. This is the
     // managed write path's own source of truth (the serialization backend is moving to managed; the
     // native path — and its own kTypeMismatchReferenceError in TransferPPtrToMonoObject.cpp — is legacy
@@ -444,7 +475,10 @@ internal static unsafe partial class SerializationBackendManagedCommands
     }
 
     // Cache elementType -> List<elementType> so the expensive MakeGenericType runs once
-    // per element type, not on every null-List allocation during read.
+    // per element type, not on every null-List allocation during read. Keyed/valued by
+    // Type, which can pin a user-script ALC after reload; clear it there. Players never
+    // code-reload, and the native-test-resources stub doesn't reference Unity.Scripting.
+    [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Type>
         s_ListTypeCache = new System.Collections.Concurrent.ConcurrentDictionary<Type, Type>();
 
@@ -489,12 +523,18 @@ internal static unsafe partial class SerializationBackendManagedCommands
         }
         else
         {
-            object listObj = RuntimeHelpers.GetUninitializedObject(GetCachedListType(elementType));
-            ListLayout layout = Unsafe.As<ListLayout>(listObj);
+            // Refill in place, allocating only when the field is null: a read must not
+            // replace the List instance the field holds.
+            ref byte fieldSlot = ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset);
+            ListLayout layout = Unsafe.As<byte, ListLayout>(ref fieldSlot);
+            if (layout == null)
+            {
+                layout = Unsafe.As<ListLayout>(
+                    RuntimeHelpers.GetUninitializedObject(GetCachedListType(elementType)));
+                Unsafe.As<byte, ListLayout>(ref fieldSlot) = layout;
+            }
             layout._items = dataAsBytes;
             layout._size  = count;
-            Unsafe.As<byte, ListLayout>(
-                ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset)) = layout;
         }
     }
 

@@ -153,7 +153,7 @@ namespace UnityEngine.TextCore.Text
                 if (m_AtlasPopulationMode is AtlasPopulationMode.Static or AtlasPopulationMode.DynamicOS)
                     m_SourceFontFile = null;
                 else
-                    m_SourceFontFile = m_SourceFontFile_EditorRef;
+                    m_SourceFontFile = ResolveDynamicSourceFont?.Invoke(this) ?? m_SourceFontFile_EditorRef;
 
                 if (m_NativeFontAsset != IntPtr.Zero)
                     UpdateFontEditorRef();
@@ -208,7 +208,7 @@ namespace UnityEngine.TextCore.Text
                 if (m_AtlasPopulationMode == AtlasPopulationMode.Static || m_AtlasPopulationMode == AtlasPopulationMode.DynamicOS)
                     m_SourceFontFile = null;
                 else if (m_AtlasPopulationMode == AtlasPopulationMode.Dynamic)
-                    m_SourceFontFile = m_SourceFontFile_EditorRef;
+                    m_SourceFontFile = ResolveDynamicSourceFont?.Invoke(this) ?? m_SourceFontFile_EditorRef;
             }
         }
         [SerializeField]
@@ -815,6 +815,9 @@ namespace UnityEngine.TextCore.Text
         internal static Func<Font, string> SetSourceFontGUID;
         [AutoStaticsCleanupOnCodeReload]
         internal static Func<bool> EditorApplicationIsUpdating;
+        // Returns the font m_SourceFontFile should target in Dynamic mode: an active subset sub-asset, else the editor ref.
+        [AutoStaticsCleanupOnCodeReload]
+        internal static Func<FontAsset, Font> ResolveDynamicSourceFont;
 
         /// <summary>
         /// Weak reference to all <see cref="FontAsset"/> instances.

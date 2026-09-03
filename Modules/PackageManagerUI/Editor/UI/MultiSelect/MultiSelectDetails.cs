@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.UIElements;
@@ -80,7 +81,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            lockedPackagesInfoBox.buttonText = L10n.Tr("Deselect all locked packages");
+            lockedPackagesInfoBox.buttonText = L10n.Tr("Deselect all locked packages", null);
             lockedPackagesInfoBox.onButtonClicked += OnDeselectLockedSelectionsClicked;
 
             InitializeFoldouts();
@@ -204,7 +205,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void Refresh(PageSelection selections)
         {
-            title.text = string.Format(L10n.Tr("{0} {1} selected"), selections.Count, selections.Count > 1 ? L10n.Tr("items") : L10n.Tr("item"));
+            title.text = string.Format(L10n.Tr("{0} {1} selected", null), selections.Count, selections.Count > 1 ? L10n.Tr("items", null) : L10n.Tr("item", null));
 
             ClearAllFoldouts();
 
@@ -310,3 +311,4 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement foldoutsContainer => cache.Get<VisualElement>("multiSelectFoldoutsContainer");
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -72,8 +72,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
         List<INode> m_Nodes;
 
         // Maps a deleted port's guid to its owning node's guid (captured before the port is unregistered).
+        // Only cleared by CollectChangeData, so every override must clear it or it grows for the model's lifetime.
         [NonSerialized]
-        Dictionary<Hash128, Hash128> m_DeletedPortToNodeGuid = new Dictionary<Hash128, Hash128>();
+        protected Dictionary<Hash128, Hash128> m_DeletedPortToNodeGuid = new Dictionary<Hash128, Hash128>();
 
         // Typed as the internal IGraphInternal contract so this can hold either a Graph or a StateMachine (which are
         // independent public types). Use `Graph as Graph` / `Graph as StateMachine` to get the concrete wrapper.
@@ -107,7 +108,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
             foreach (var variable in VariableDeclarations)
             {
-                if (VariableDeclarationRequiresInitialization(variable) && variable.InitializationModel == null)
+                if (variable != null && VariableDeclarationRequiresInitialization(variable) && variable.InitializationModel == null)
                 {
                     variable.CreateInitializationValue();
                 }
@@ -251,6 +252,31 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 }
             }
 
+            BeginRecordScope(actionName);
+        }
+
+        public void UndoBeginRecordGraph(string actionName, Condition[] conditionsToRecord)
+        {
+            CheckModificationLock();
+
+            // Same ownership filter as the node overload. m_Implementation is read directly instead of
+            // GetImplementation() so a loose condition doesn't get an implementation created just to be rejected.
+            m_ScopePendingModels.Clear();
+            if (conditionsToRecord != null)
+            {
+                for (var i = 0; i < conditionsToRecord.Length; i++)
+                {
+                    var condition = conditionsToRecord[i];
+                    if (condition?.m_Implementation != null && condition.m_Implementation.GraphModel == this)
+                        m_ScopePendingModels.Add(condition.m_Implementation);
+                }
+            }
+
+            BeginRecordScope(actionName);
+        }
+
+        void BeginRecordScope(string actionName)
+        {
             var pendingCount = m_ScopePendingModels.Count;
 
             // Decide whether this scope continues a coalescing chain established by a prior
@@ -384,10 +410,12 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             base.CreateGraphProcessors();
 
-            var changedMethodName = Graph is StateMachine
+            var isStateMachine = Graph is StateMachine;
+            var changedMethodName = isStateMachine
                 ? nameof(GraphToolkit.Editor.StateMachine.OnStateMachineChanged)
                 : nameof(GraphToolkit.Editor.Graph.OnGraphChanged);
-            var declaringType = Graph?.GetType().GetMethod(changedMethodName, new[] { typeof(GraphLogger) })?.DeclaringType;
+            var loggerType = isStateMachine ? typeof(StateMachineLogger) : typeof(GraphLogger);
+            var declaringType = Graph?.GetType().GetMethod(changedMethodName, new[] { loggerType })?.DeclaringType;
             var overridden = declaringType != null && declaringType != typeof(Graph) && declaringType != typeof(StateMachine);
 
             if (overridden)
@@ -1337,15 +1365,16 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             var result = new ErrorsAndWarningsImp(this);
 
-            var graphLogger = new GraphLogger();
-            graphLogger.errorsAndWarnings = result;
+            ILogger logger = Graph is StateMachine
+                ? new StateMachineLogger { errorsAndWarnings = result }
+                : new GraphLogger { errorsAndWarnings = result };
 
-            CollectChangeData(changes, graphLogger);
+            CollectChangeData(changes, logger);
 
             LockForModification = true;
             try
             {
-                Graph.OnGraphChanged(graphLogger);
+                Graph.OnGraphChanged(logger);
                 for (var i = 0; i < NodeModels.Count; i++)
                 {
                     if (NodeModels[i] is NodeModel nodeModel)

@@ -12,11 +12,12 @@ namespace UnityEditor.AddComponent
 {
     internal class AddComponentDataSource : AdvancedDropdownDataSource
     {
-        private static readonly string kSearchHeader = L10n.Tr("Search");
+        private static readonly string kSearchHeader = L10n.Tr("Search", null);
         AdvancedDropdownState m_State;
         UnityEngine.GameObject[] m_Targets;
 
         internal static readonly string kScriptHeader = "Component/Scripts/";
+        internal static readonly string kNewScriptGroupName = "New script";
 
         public AddComponentDataSource(AdvancedDropdownState state, UnityEngine.GameObject[] targets)
         {
@@ -61,7 +62,7 @@ namespace UnityEditor.AddComponent
 
                     if (j == paths.Length - 1)
                     {
-                        var element = new ComponentDropdownItem(path, L10n.Tr(path), menu.path, menu.command, menu.isLegacy);
+                        var element = new ComponentDropdownItem(path, L10n.Tr(path, null), menu.path, menu.command, menu.isLegacy);
                         parent.AddChild(element);
                         m_SearchableElements.Add(element);
                         continue;
@@ -79,18 +80,28 @@ namespace UnityEditor.AddComponent
 #pragma warning restore UAC2001
                     if (group == null)
                     {
-                        group = new ComponentDropdownItem(path, L10n.Tr(path));
+                        group = new ComponentDropdownItem(path, L10n.Tr(path, null));
                         parent.AddChild(group);
                     }
                     parent = group;
                 }
             }
             root = root.childList.Single();
-            var newScript = new ComponentDropdownItem("New script", L10n.Tr("New script"));
-            newScript.AddChild(new NewScriptDropdownItem());
-            root.AddChild(newScript);
+            AddNewScriptGroup(root);
             DictionaryPool<KeyValuePair<string, int>, int>.Release(pathHashCodeMap);
             return root;
+        }
+
+        void AddNewScriptGroup(AdvancedDropdownItem parent, string className = null)
+        {
+            var newScriptGroup = new ComponentDropdownItem(kNewScriptGroupName, L10n.Tr("New script", null));
+            var newScript = new NewScriptDropdownItem();
+            if (className != null)
+                newScript.className = className;
+            newScriptGroup.AddChild(newScript);
+            parent.AddChild(newScriptGroup);
+            // Seed after AddChild: AddChild assigns the group's final id and the state is keyed by id.
+            m_State.SetSelectedIndex(newScriptGroup, 0);
         }
 
         static List<MenuItemData> GetSortedMenuItems(UnityEngine.GameObject[] targets)
@@ -184,15 +195,7 @@ namespace UnityEditor.AddComponent
             {
                 searchTree.AddChild(element);
             }
-            if (searchTree != null)
-            {
-                var addNewScriptGroup = new ComponentDropdownItem("New script", L10n.Tr("New script"));
-                m_State.SetSelectedIndex(addNewScriptGroup, 0);
-                var addNewScript = new NewScriptDropdownItem();
-                addNewScript.className = searchString;
-                addNewScriptGroup.AddChild(addNewScript);
-                searchTree.AddChild(addNewScriptGroup);
-            }
+            AddNewScriptGroup(searchTree, searchString);
             return searchTree;
         }
     }

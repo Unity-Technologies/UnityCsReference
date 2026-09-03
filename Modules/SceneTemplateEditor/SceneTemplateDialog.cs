@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTemplate not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,6 +55,10 @@ namespace UnityEditor.SceneTemplate
 
     internal class SceneTemplateDialog : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal SceneTemplateDialog() {}
+        #pragma warning restore UAL0015
+
         private List<SceneTemplateInfo> m_SceneTemplateInfos;
         private static readonly GUIContent k_WindowTitle = new GUIContent("New Scene");
 
@@ -69,8 +74,8 @@ namespace UnityEditor.SceneTemplate
         private const string k_SceneTemplateEditTemplateButtonName = "scene-template-edit-template-button";
         private const string k_SceneTemplateCreateAdditiveButtonName = "scene-template-create-additive-button";
 
-        private static readonly string k_LoadAdditivelyToolTip = L10n.Tr("Load the scene alongside the current one.");
-        private static readonly string k_LoadAdditivelyToolTipDisabledHasUnsavedUntitled = L10n.Tr("Cannot load the scene additively. You can only have one unsaved untitled scene at a time.");
+        private static readonly string k_LoadAdditivelyToolTip = L10n.Tr("Load the scene alongside the current one.", null);
+        private static readonly string k_LoadAdditivelyToolTipDisabledHasUnsavedUntitled = L10n.Tr("Cannot load the scene additively. You can only have one unsaved untitled scene at a time.", null);
 
         private SceneTemplateInfo m_LastSelectedTemplate;
 
@@ -226,7 +231,7 @@ namespace UnityEditor.SceneTemplate
                     offsetContainer.Add(buttonRow);
                     buttonRow.style.flexDirection = FlexDirection.Row;
 
-                    var loadAdditiveToggle = new Toggle() { name = k_SceneTemplateCreateAdditiveButtonName, text = L10n.Tr("Load additively"), tooltip = k_LoadAdditivelyToolTip };
+                    var loadAdditiveToggle = new Toggle() { name = k_SceneTemplateCreateAdditiveButtonName, text = L10n.Tr("Load additively", null), tooltip = k_LoadAdditivelyToolTip };
                     if (SceneTemplateUtils.HasSceneUntitled())
                     {
                         loadAdditiveToggle.SetEnabled(false);
@@ -246,9 +251,9 @@ namespace UnityEditor.SceneTemplate
                                 return;
                             OnCreateNewScene(m_LastSelectedTemplate);
                         })
-                        { text = L10n.Tr("Create"), tooltip = L10n.Tr("Instantiate a new scene from a template") };
+                        { text = L10n.Tr("Create", null), tooltip = L10n.Tr("Instantiate a new scene from a template", null) };
                         createSceneButton.AddToClassList(Styles.classButton);
-                        var cancelButton = new Button(Close) { text = L10n.Tr("Cancel"), tooltip = L10n.Tr("Close scene template dialog without instantiating a new scene.") };
+                        var cancelButton = new Button(Close) { text = L10n.Tr("Cancel", null), tooltip = L10n.Tr("Close scene template dialog without instantiating a new scene.", null) };
                         cancelButton.AddToClassList(Styles.classButton);
                         buttonSection.Add(cancelButton);
                         buttonSection.Add(createSceneButton);
@@ -337,7 +342,7 @@ namespace UnityEditor.SceneTemplate
                 return;
 
             var templateItems = CreateGridViewItems();
-            m_GridView = new GridView(templateItems, L10n.Tr("Scene Templates in Project"), k_ListViewRowHeight, k_MinTileSize, k_MaxTileSize, k_ShowThumbnailTileSizeThreshold, m_DefaultThumbnail, 4f / 3f);
+            m_GridView = new GridView(templateItems, L10n.Tr("Scene Templates in Project", null), k_ListViewRowHeight, k_MinTileSize, k_MaxTileSize, k_ShowThumbnailTileSizeThreshold, m_DefaultThumbnail, 4f / 3f);
             m_GridView.wrapAroundKeyboardNavigation = true;
             m_GridView.sizeLevel = EditorPrefs.GetFloat(GetKeyName(nameof(m_GridView.sizeLevel)), 128);
             rootContainer.Add(m_GridView);
@@ -373,7 +378,7 @@ namespace UnityEditor.SceneTemplate
 #pragma warning restore UAC2010
             }
 
-            m_NoUserTemplateHelpBox = new HelpBox(L10n.Tr("To begin using a template, create a template from an existing scene in your project. Click to see Scene template documentation."), HelpBoxMessageType.Info);
+            m_NoUserTemplateHelpBox = new HelpBox(L10n.Tr("To begin using a template, create a template from an existing scene in your project. Click to see Scene template documentation.", null), HelpBoxMessageType.Info);
             m_NoUserTemplateHelpBox.AddToClassList(Styles.sceneTemplateHelpBox);
             m_NoUserTemplateHelpBox.RegisterCallback<MouseDownEvent>(e =>
             {
@@ -411,7 +416,7 @@ namespace UnityEditor.SceneTemplate
             rootContainer.style.flexDirection = FlexDirection.Column;
 
             // Thumbnail container
-            m_PreviewArea = new SceneTemplatePreviewArea(k_SceneTemplateThumbnailName, m_LastSelectedTemplate?.thumbnail, m_LastSelectedTemplate?.badge, L10n.Tr("No preview thumbnail available"));
+            m_PreviewArea = new SceneTemplatePreviewArea(k_SceneTemplateThumbnailName, m_LastSelectedTemplate?.thumbnail, m_LastSelectedTemplate?.badge, L10n.Tr("No preview thumbnail available", null));
             var thumbnailElement = m_PreviewArea.Element;
             rootContainer.Add(thumbnailElement);
 
@@ -440,7 +445,7 @@ namespace UnityEditor.SceneTemplate
                 editLocateRow.style.flexDirection = FlexDirection.Row;
                 {
                     var scenePathLocate = new Label();
-                    scenePathLocate.text = L10n.Tr("Locate");
+                    scenePathLocate.text = L10n.Tr("Locate", null);
                     scenePathLocate.AddToClassList(Styles.classTextLink);
                     scenePathLocate.RegisterCallback<MouseDownEvent>(e =>
                     {
@@ -463,7 +468,7 @@ namespace UnityEditor.SceneTemplate
 
                     var scenePathEdit = new Label();
                     scenePathEdit.name = k_SceneTemplateEditTemplateButtonName;
-                    scenePathEdit.text = L10n.Tr("Edit");
+                    scenePathEdit.text = L10n.Tr("Edit", null);
                     scenePathEdit.AddToClassList(Styles.classTextLink);
                     scenePathEdit.RegisterCallback<MouseDownEvent>(e =>
                     {
@@ -481,7 +486,7 @@ namespace UnityEditor.SceneTemplate
             {
                 var descriptionLabel = new Label();
                 descriptionLabel.AddToClassList(Styles.classHeaderLabel);
-                descriptionLabel.text = L10n.Tr("Description");
+                descriptionLabel.text = L10n.Tr("Description", null);
                 descriptionSection.Add(descriptionLabel);
 
                 var sceneDescriptionLabel = new Label();
@@ -494,7 +499,7 @@ namespace UnityEditor.SceneTemplate
             var deprecationHelpBox =
                 new HelpBox(
                     L10n.Tr(
-                        "The Built-In Render Pipeline is deprecated. Migrate to the Universal Render Pipeline instead."),
+                        "The Built-In Render Pipeline is deprecated. Migrate to the Universal Render Pipeline instead.", null),
                     HelpBoxMessageType.Info);
             deprecationHelpBox.AddToClassList(Styles.sceneTemplateHelpBox);
             deprecationHelpBox.name = k_SceneTemplateDeprecatedHelpBoxName;
@@ -694,3 +699,4 @@ namespace UnityEditor.SceneTemplate
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

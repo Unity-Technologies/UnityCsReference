@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: EditorWindowManagement not yet converted
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 using System.Linq;
@@ -108,6 +109,7 @@ namespace UnityEditor
         private bool m_RequestedViewDataSave;
 
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Invoked then immediately reassigned on every call to UpdateWindowMenuListing(); self-healing, never observed stale across a code reload.")]
         private static Action s_UpdateWindowMenuListingOff;
 
         internal SerializableJsonDictionary viewDataDictionary
@@ -586,9 +588,11 @@ namespace UnityEditor
             // If we already have modal window up we don't need to setup another modal message loop
             if (ContainerWindow.s_Modal) return;
 
+            int dialogEventId = -1;
             try
             {
                 ContainerWindow.s_Modal = true;
+                dialogEventId = EditorDialogEvents.RaiseManagedWillShow(titleContent.text ?? GetType().Name);
 
                 SavedGUIState guiState = SavedGUIState.Create();
                 // TODO need to promote this outside of UIE
@@ -601,6 +605,8 @@ namespace UnityEditor
             }
             finally
             {
+                if (dialogEventId >= 0)
+                    EditorDialogEvents.RaiseManagedDismissed(dialogEventId);
                 ContainerWindow.s_Modal = false;
             }
         }
@@ -1327,7 +1333,9 @@ namespace UnityEditor
             titleContent.text = GetType().ToString();
             saveChangesMessage = $"{GetType()} has unsaved changes.";
 
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             UpdateWindowMenuListing();
+            #pragma warning restore UAL0015
         }
 
         void InitializeOverlayCanvas()
@@ -1342,10 +1350,19 @@ namespace UnityEditor
                 if (this is ISupportsOverlaysWithFilter filterRef)
                     filter = filterRef.IsOverlaySupported;
 
-                overlayCanvas.Initialize(this, mode, filter);
-                var ve = overlayCanvas.rootVisualElement;
-                baseRootVisualElement.Add(ve);
+                // Set before Initialize since Overlay content callbacks run inside it and may reenter this method
                 m_OverlaysInitialized = true;
+                try
+                {
+                    overlayCanvas.Initialize(this, mode, filter);
+                    var ve = overlayCanvas.rootVisualElement;
+                    baseRootVisualElement.Add(ve);
+                }
+                catch
+                {
+                    m_OverlaysInitialized = false;
+                    throw;
+                }
             }
         }
 
@@ -1699,3 +1716,4 @@ namespace UnityEditor
         }
     }
 } //namespace
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -25,11 +25,11 @@ internal class DownloadUpdateAction : DownloadActionBase
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
         if (isInProgress)
-            return L10n.Tr("The download request has been sent. Please wait for the download to start.");
+            return L10n.Tr("The download request has been sent. Please wait for the download to start.", null);
 
-        var result = string.Format(L10n.Tr("Click to download the recommended version of this {0}."), version.GetDescriptor());
+        var result = string.Format(L10n.Tr("Click to download the recommended version of this {0}.", null), version.GetDescriptor());
         if (IsAdaptedPackageUpdate(version.package.versions?.suggestedUpdate, version.package.versions?.importAvailable))
-            result += L10n.Tr("\n*This package update has been adapted for this current version of Unity.");
+            result += L10n.Tr("\n*This package update has been adapted for this current version of Unity.", null);
         return result;
     }
 
@@ -37,13 +37,13 @@ internal class DownloadUpdateAction : DownloadActionBase
     {
         var suggestedUpdate = version.package.versions.suggestedUpdate;
         if (string.IsNullOrEmpty(suggestedUpdate?.versionString))
-            return L10n.Tr("Download update");
-        return string.Format(IsAdaptedPackageUpdate(suggestedUpdate, version.package.versions.importAvailable) ? L10n.Tr("Download update {0}*") : L10n.Tr("Download update {0}"), suggestedUpdate.versionString);
+            return L10n.Tr("Download update", null);
+        return string.Format(IsAdaptedPackageUpdate(suggestedUpdate, version.package.versions.importAvailable) ? L10n.Tr("Download update {0}*", null) : L10n.Tr("Download update {0}", null), suggestedUpdate.versionString);
     }
 
     public override string GetMultiSelectText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Update");
+        return L10n.Tr("Update", null);
     }
 
     public override bool IsInProgress(IPackageVersion version)

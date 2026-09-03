@@ -16,18 +16,10 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule", "UnityEditor.QuickSearchModule")] //Search uses GetCursorPositionFromStringIndexUsingLineHeight
     internal partial class TextHandle
     {
-#pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
-        ~TextHandle()
-        {
-            RemoveFromTemporaryCache();
-            RemoveFromPermanentCache();
-        }
-#pragma warning restore UA5000
-
-        [NoAutoStaticsCleanup] // Singleton cache infrastructure; entries are removed via TextHandle finalizers, the cache object itself persists safely across reload.
+        [NoAutoStaticsCleanup] // Singleton cache infrastructure; the cache object itself persists safely across reload.
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static TextHandleTemporaryCache s_TemporaryCache = new TextHandleTemporaryCache();
-        [NoAutoStaticsCleanup] // Singleton cache infrastructure; entries are removed via TextHandle finalizers, the cache object itself persists safely across reload.
+        [NoAutoStaticsCleanup] // Singleton cache infrastructure; the cache object itself persists safely across reload.
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static TextHandlePermanentCache s_PermanentCache = new TextHandlePermanentCache();
 
@@ -301,6 +293,12 @@ namespace UnityEngine.TextCore.Text
         }
 
         public virtual void RemoveFromPermanentCacheATG()
+        {
+            DestroyPermanentCachedGenerationInfo();
+        }
+
+        // Finalizer-safe: TextGenerationInfo.Destroy is thread-safe, unlike the overrides above, which also free NativeArray-backed buffers.
+        protected void DestroyPermanentCachedGenerationInfo()
         {
             if (IsCachedPermanentATG)
             {

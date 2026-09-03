@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using UnityEngine;
 using System.Linq;
 using UnityEngine.Rendering;
@@ -17,7 +18,9 @@ namespace UnityEditor
         private static class Styles
         {
             public static readonly GUIContent[] ProjectionStrings = { EditorGUIUtility.TrTextContent("Infinite"), EditorGUIUtility.TrTextContent("Box") };
-            public static readonly GUIContent[] LightmapEmissiveStrings = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked") };
+            // The two arrays below needs to match
+            public static readonly string[] EmissionOptions = { L10n.Tr("Realtime", null), L10n.Tr("Baked", null) };
+            public static readonly MaterialGlobalIlluminationFlags[] EmissionOptionsInternal = { MaterialGlobalIlluminationFlags.RealtimeIndirectEmission, MaterialGlobalIlluminationFlags.BakedEmission };
             public static readonly GUIContent Name = EditorGUIUtility.TrTextContent("Name");
             public static readonly GUIContent Enabled = EditorGUIUtility.TrTextContent("Enabled");
             public static readonly GUIContent Type = EditorGUIUtility.TrTextContent("Type");
@@ -80,7 +83,14 @@ namespace UnityEditor
 
         protected static bool IsEditable(Object target)
         {
-            return ((target.hideFlags & HideFlags.NotEditable) == 0);
+            if ((target.hideFlags & HideFlags.NotEditable) != 0)
+                return false;
+
+            // Persistent objects can also be read-only through the asset database, e.g. assets in immutable packages or version control.
+            if (EditorUtility.IsPersistent(target) && !AssetDatabase.IsOpenForEdit(target, StatusQueryOptions.UseCachedIfPossible))
+                return false;
+
+            return true;
         }
 
         protected static System.Collections.Generic.IEnumerable<T> GetObjectsForLightingExplorer<T>() where T : UnityEngine.Component
@@ -460,6 +470,18 @@ namespace UnityEditor
 
         protected virtual LightingExplorerTableColumn[] GetEmissivesColumns()
         {
+            var nameColumn = new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, "m_Name", 200, (r, prop, dep) =>
+            {
+                var target = prop.serializedObject.targetObject;
+
+                // Gray out the name of read-only materials, e.g. materials in immutable packages.
+                using (new EditorGUI.DisabledScope(!IsEditable(target)))
+                {
+                    EditorGUI.LabelField(r, target.name);
+                }
+            });
+            nameColumn.internalColumn.allowToggleVisibility = false;
+
             return new[]
             {
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Custom, Styles.SelectObjects, "m_LightmapFlags", 20, (r, prop, dep) =>
@@ -469,7 +491,7 @@ namespace UnityEditor
                         SearchForReferences(prop);
                     }
                 }),     // 0: Icon
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, null, 200), // 1: Name
+                nameColumn, // 1: Name
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Int, Styles.GlobalIllumination, "m_LightmapFlags", 120, (r, prop, dep) =>
                 {
                     if (!prop.serializedObject.targetObject.GetType().Equals(typeof(Material)))
@@ -477,27 +499,70 @@ namespace UnityEditor
 
                     using (new EditorGUI.DisabledScope(!IsEditable(prop.serializedObject.targetObject)))
                     {
-                        MaterialGlobalIlluminationFlags giFlags = ((prop.intValue & (int)MaterialGlobalIlluminationFlags.BakedEmission) != 0) ? MaterialGlobalIlluminationFlags.BakedEmission : MaterialGlobalIlluminationFlags.RealtimeIndirectEmission;
+                        Material material = (Material)prop.serializedObject.targetObject;
 
-                        int[] lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeIndirectEmission, (int)MaterialGlobalIlluminationFlags.BakedEmission };
+                        int flags = 0;
+                        for (int i = 0; i < Styles.EmissionOptionsInternal.Length; i++)
+                        {
+                            if ((material.globalIlluminationFlags & Styles.EmissionOptionsInternal[i]) != MaterialGlobalIlluminationFlags.None)
+                                flags |= 1 << i;
+                        }
 
                         EditorGUI.BeginProperty(r, GUIContent.none, prop);
                         EditorGUI.BeginChangeCheck();
 
-                        giFlags = (MaterialGlobalIlluminationFlags)EditorGUI.IntPopup(r, (int)giFlags, Styles.LightmapEmissiveStrings, lightmapEmissiveValues);
+                        flags = EditorGUI.MaskField(r, flags, Styles.EmissionOptions);
 
                         if (EditorGUI.EndChangeCheck())
                         {
-                            Material material = (Material)prop.serializedObject.targetObject;
+                            // Only touch the emission flags, so other flags like EmissiveIsBlack are preserved.
+                            MaterialGlobalIlluminationFlags giFlags = material.globalIlluminationFlags;
+                            for (int i = 0; i < Styles.EmissionOptionsInternal.Length; i++)
+                            {
+                                if ((flags & 1 << i) != 0)
+                                    giFlags |= Styles.EmissionOptionsInternal[i];
+                                else
+                                    giFlags &= ~Styles.EmissionOptionsInternal[i];
+                            }
+
                             Undo.RecordObject(material, $"Modify Emission Flags of {material.name}");
                             material.globalIlluminationFlags = giFlags;
                             EditorUtility.SetDirty(material);
+
+                            // Let the shader GUI react to the changed flags, e.g. to update the material's keywords.
+                            ShaderGUIUtility.ValidateMaterial(material);
 
                             prop.serializedObject.Update();
                         }
                         EditorGUI.EndProperty();
                     }
-                }),     // 2: GI
+                }, copyDelegate: (target, source) =>
+                    {
+                        Material targetMaterial = (Material)target.serializedObject.targetObject;
+                        if (!IsEditable(targetMaterial))
+                            return;
+
+                        Material sourceMaterial = (Material)source.serializedObject.targetObject;
+
+                        // Only copy the emission flags exposed in the UI, so flags like EmissiveIsBlack stay derived from the target's own state.
+                        MaterialGlobalIlluminationFlags giFlags = targetMaterial.globalIlluminationFlags;
+                        for (int i = 0; i < Styles.EmissionOptionsInternal.Length; i++)
+                        {
+                            if ((sourceMaterial.globalIlluminationFlags & Styles.EmissionOptionsInternal[i]) != MaterialGlobalIlluminationFlags.None)
+                                giFlags |= Styles.EmissionOptionsInternal[i];
+                            else
+                                giFlags &= ~Styles.EmissionOptionsInternal[i];
+                        }
+
+                        Undo.RecordObject(targetMaterial, $"Modify Emission Flags of {targetMaterial.name}");
+                        targetMaterial.globalIlluminationFlags = giFlags;
+                        EditorUtility.SetDirty(targetMaterial);
+
+                        // Let the shader GUI react to the changed flags, e.g. to update the material's keywords.
+                        ShaderGUIUtility.ValidateMaterial(targetMaterial);
+
+                        target.serializedObject.Update();
+                    }),     // 2: GI
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Custom, Styles.Color, "m_Shader", 120, (r, prop, dep) =>
                 {
                     if (!prop.serializedObject.targetObject.GetType().Equals(typeof(Material)))
@@ -515,9 +580,12 @@ namespace UnityEditor
 
                         if (EditorGUI.EndChangeCheck())
                         {
-                            Undo.RecordObject(material, $"Modify Emission Flags of {material.name}");
+                            Undo.RecordObject(material, $"Modify Emission Color of {material.name}");
                             material.SetColor("_EmissionColor", newValue);
                             EditorUtility.SetDirty(material);
+
+                            // Let the shader GUI react to the changed color, e.g. to update the material's flags and keywords.
+                            ShaderGUIUtility.ValidateMaterial(material);
                         }
                         EditorGUI.EndProperty();
                     }
@@ -529,13 +597,19 @@ namespace UnityEditor
                         return lv.CompareTo(rv);
                     }, (target, source) =>
                     {
+                        Material targetMaterial = (Material)target.serializedObject.targetObject;
+                        if (!IsEditable(targetMaterial))
+                            return;
+
                         Material sourceMaterial = (Material)source.serializedObject.targetObject;
                         Color color = sourceMaterial.GetColor("_EmissionColor");
 
-                        Material targetMaterial = (Material)target.serializedObject.targetObject;
-                        Undo.RecordObject(targetMaterial, $"Modify Emission Flags of {targetMaterial.name}");
+                        Undo.RecordObject(targetMaterial, $"Modify Emission Color of {targetMaterial.name}");
                         targetMaterial.SetColor("_EmissionColor", color);
                         EditorUtility.SetDirty(targetMaterial);
+
+                        // Let the shader GUI react to the changed color, e.g. to update the material's flags and keywords.
+                        ShaderGUIUtility.ValidateMaterial(targetMaterial);
                     }) // 3: Color
             };
         }
@@ -545,3 +619,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

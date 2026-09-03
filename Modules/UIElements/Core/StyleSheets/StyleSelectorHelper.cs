@@ -2,14 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Pool;
 using Unity.Profiling;
-using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 using Unity.IL2CPP.CompilerServices;
 
@@ -94,154 +91,88 @@ namespace UnityEngine.UIElements.StyleSheets
     {
         // This internal flag can be enabled to validate that the Bloom filter never rejects cases where
         // the exhaustive search returns a valid match. This is disabled by default, and is enabled from
-        // styling unit tests. Not readonly: the styling unit tests assign it.
-        [NoAutoStaticsCleanup] // test-only diagnostic toggle; harmless to persist across reload
-        internal static bool s_VerifyBloomIntegrity = false;
-
-        // Reverse lookup: Get StyleComplexSelector from descriptor
-        static StyleComplexSelector GetComplexSelector(in SelectorRangeDescriptor descriptor, in SelectorAccelerationCacheEntry cacheEntry)
+        // styling unit tests. The check itself runs inside the native matcher, so the flag forwards to
+        // it and the native path stays in use while verifying.
+        internal static bool s_VerifyBloomIntegrity
         {
-            var styleSheet = descriptor.importedStyleSheetIndex == -1
-                ? cacheEntry.ownerStyleSheet
-                : cacheEntry.ownerStyleSheet.flattenedRecursiveImports[descriptor.importedStyleSheetIndex];
-
-            return styleSheet.rules[descriptor.ruleIndex].complexSelectors[descriptor.selectorIndexInRule];
+            get => NativeSelectorMatcher.verifyBloomIntegrity;
+            set => NativeSelectorMatcher.verifyBloomIntegrity = value;
         }
 
-        // Bloom filter check using descriptor hashes
-        static unsafe bool IsDescriptorCandidate(in SelectorRangeDescriptor descriptor, AncestorFilter ancestorFilter)
-        {
-            fixed (SelectorRangeDescriptor* pDesc = &descriptor)
-            {
-                return ancestorFilter.IsCandidate(pDesc->ancestorHashes);
-            }
-        }
-
-        // Match right-to-left using flattened data (StyleSheet selectors only).
-        // Native implementation lives in Modules/UIElements/Core/Native/StyleSheets/NativeSelectorMatcher.cpp
-        // and reads matcher state from the VisualElementSelectorData component (kept in sync by
-        // VisualElement mutators). Pseudo-state trigger/dependency masks are accumulated directly
-        // into the visited components.
-        static unsafe bool MatchRightToLeftFlat(
-            ref VisualElementSelectorData selectorData,
-            in SelectorAccelerationCacheEntry cacheEntry,
-            ReadOnlySpan<FlattenedSelector> descriptorSelectors,
-            bool applyPseudoMasks)
-        {
-            fixed (FlattenedSelector* pSelectors = descriptorSelectors)
-            fixed (VisualElementSelectorData* elementPtr = &selectorData)
-            {
-                return NativeSelectorMatcher.MatchRightToLeftFlat(
-                    elementPtr,
-                    pSelectors,
-                    descriptorSelectors.Length,
-                    cacheEntry.m_AllPartsPtr,
-                    applyPseudoMasks);
-            }
-        }
-
-        // Test range of descriptors in sorted allDescriptors array
-        static unsafe void TestSelectorListFlat(
-            ReadOnlySpan<SelectorRangeDescriptor> descriptors,
+        // Match one style sheet against the current element — one binding crossing per
+        // element x sheet. The native matcher derives the work items from the element's
+        // VisualElementSelectorData (type, name, class ids), binary-searches the descriptor
+        // table blocks, runs the Bloom prefilter and right-to-left matcher, and covers the
+        // :root/wildcard ranges. Only the matched descriptor indices come back; this shim
+        // materializes the StyleSelectorMatch records. While profiling (editor-only), the
+        // profiler supplies a per-descriptor stats buffer the native loop fills in the same
+        // pass, and the Begin/EndSelectorMatching bracket keeps matching time (stats-collection
+        // overhead included) out of the profiler's sheet self time — the bracket closes right
+        // after the call so match materialization below is attributed to the sheet.
+        static unsafe void MatchSheetNative(
             in SelectorAccelerationCacheEntry cacheEntry,
             List<StyleSelectorMatch> matchedSelectors,
             StyleMatchingContext context,
-            int currentStyleSheetIndexInStack)
+            int currentStyleSheetIndexInStack,
+            bool testRootRange)
         {
+            int descriptorCount = cacheEntry.m_AllDescriptorsCount;
+            if (descriptorCount == 0)
+                return;
+
+            var ranges = cacheEntry.m_MatcherRanges;
+
+            // NoOp returns null with no side effects, so the JIT folds the profiler branches
+            // below out of the unprofiled matcher.
             ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
+            SelectorMatchStatsInfo[] statsBuffer = profiler.BeginSelectorMatching(in cacheEntry);
 
-            // Extract selectorData ref once to avoid repeated lookups in hot loop
-            ref var selectorData = ref *context.currentElement.selectorDataPtr;
-
-
-            for (int i = 0; i < descriptors.Length; i++)
+            // A descriptor belongs to exactly one (tableType, tableKey) bucket and one call
+            // touches disjoint buckets, so it can match at most once: the sheet's descriptor
+            // count bounds the output and the context's grow-only scratch holds it.
+            var matchedIndices = context.GetMatchedIndicesScratch(descriptorCount);
+            int matchedCount;
+            fixed (CountingBloomFilter* pAncestorFilter = &context.ancestorFilter.filter)
+            fixed (int* pMatchedIndices = matchedIndices)
+            fixed (SelectorMatchStatsInfo* pStats = statsBuffer) // null buffer pins to null
             {
-                // ref readonly avoids copying the 52B descriptor per iteration on the matcher hot path.
-                ref readonly var descriptor = ref descriptors[i];
-                StyleComplexSelector currentComplexSelector = default;
-
-                // For profiling, we need the actual StyleComplexSelector
-                currentComplexSelector = GetComplexSelector(descriptor, cacheEntry);
-                profiler.BeginMatchingSelector(currentComplexSelector);
-
-                bool isCandidate = true;
-                bool isMatchRightToLeft = false;
-
-                // Bloom prefilter only matters for complex selectors (with ancestor relationships).
-                // Single-selector descriptors are equivalent to the legacy isSimple == true case.
-                if (descriptor.selectorCount > 1)
-                {
-                    isCandidate = IsDescriptorCandidate(descriptor, context.ancestorFilter);
-                }
-
-                if (isCandidate || s_VerifyBloomIntegrity)
-                {
-                    isMatchRightToLeft = MatchRightToLeftFlat(
-                        ref selectorData,
-                        in cacheEntry,
-                        cacheEntry.SelectorsFor(descriptor),
-                        context.applyPseudoMasks);
-                }
-
-                if (s_VerifyBloomIntegrity)
-                {
-                    Assert.IsTrue(isCandidate || !isMatchRightToLeft, "The Bloom filter returned a false negative match.");
-                }
-
-                if (isMatchRightToLeft)
-                {
-                    // Only do reverse lookup when we have a match (if not already done for profiling)
-                    if (currentComplexSelector == default)
-                        currentComplexSelector = GetComplexSelector(descriptor, cacheEntry);
-
-                    if (descriptor.importedStyleSheetIndex > -1)
-                    {
-                        var sheet = context.GetStyleSheetAt(currentStyleSheetIndexInStack);
-                        Debug.Assert(sheet.flattenedRecursiveImports[descriptor.importedStyleSheetIndex] == currentComplexSelector.rule.styleSheet,
-                            "StyleRangeDescriptor is not consistent");
-                    }
-                    matchedSelectors.Add(new StyleSelectorMatch(
-                        currentComplexSelector.rule.styleSheet,
-                        currentStyleSheetIndexInStack,
-                        descriptor.importedStyleSheetIndex,
-                        currentComplexSelector
-                    ));
-                }
-
-                profiler.EndMatchingSelector(currentComplexSelector, isMatchRightToLeft, isCandidate);
+                matchedCount = NativeSelectorMatcher.MatchSheetFlat(
+                    context.currentElement.selectorDataPtr,
+                    cacheEntry.m_AllDescriptorsPtr,
+                    descriptorCount,
+                    cacheEntry.m_KeyIndexPtr,
+                    cacheEntry.m_AllSelectorsPtr,
+                    cacheEntry.m_AllPartsPtr,
+                    pAncestorFilter,
+                    &ranges,
+                    context.applyPseudoMasks,
+                    testRootRange,
+                    pMatchedIndices,
+                    pStats);
             }
-        }
 
-        // Fast lookup using int key in range-based table
-        static void FastLookupFlat(
-            Dictionary<int, DescriptorRange> table,
-            in SelectorAccelerationCacheEntry cacheEntry,
-            List<StyleSelectorMatch> matchedSelectors,
-            StyleMatchingContext context,
-            int uniqueStringId,
-            int currentStyleSheetIndexInStack)
-        {
-            if (table != null && table.TryGetValue(uniqueStringId, out var range))
+            if (statsBuffer != null)
+                profiler.EndSelectorMatching();
+
+            var allDescriptors = cacheEntry.allDescriptors;
+            for (int i = 0; i < matchedCount; i++)
             {
-                TestSelectorListFlat(
-                    cacheEntry.DescriptorsFor(range),
-                    in cacheEntry,
-                    matchedSelectors,
-                    context,
-                    currentStyleSheetIndexInStack);
+                ref readonly var descriptor = ref allDescriptors[matchedIndices[i]];
+                var complexSelector = cacheEntry.GetComplexSelector(in descriptor);
+
+                if (descriptor.importedStyleSheetIndex > -1)
+                {
+                    var sheet = context.GetStyleSheetAt(currentStyleSheetIndexInStack);
+                    Debug.Assert(sheet.flattenedRecursiveImports[descriptor.importedStyleSheetIndex] == complexSelector.rule.styleSheet,
+                        "StyleRangeDescriptor is not consistent");
+                }
+                matchedSelectors.Add(new StyleSelectorMatch(
+                    complexSelector.rule.styleSheet,
+                    currentStyleSheetIndexInStack,
+                    descriptor.importedStyleSheetIndex,
+                    complexSelector
+                ));
             }
-        }
-
-        // Helper to get the appropriate table by type
-        static Dictionary<int, DescriptorRange> GetFlatTableByType(in SelectorAccelerationCacheEntry cacheEntry, SelectorAccelerationTableType type)
-        {
-            return type switch
-            {
-                SelectorAccelerationTableType.Name => cacheEntry.nameTable,
-                SelectorAccelerationTableType.Type => cacheEntry.typeTable,
-                SelectorAccelerationTableType.Class => cacheEntry.classTable,
-                _ => null
-            };
         }
 
         public static void FindMatches(StyleMatchingContext context, List<StyleSelectorMatch> matchedSelectors)
@@ -267,59 +198,20 @@ namespace UnityEngine.UIElements.StyleSheets
             FindMatches(context, matchedSelectors, parentSheetIndex);
         }
 
-        struct SelectorWorkItem
-        {
-            public SelectorAccelerationTableType type;
-            public int uniqueStringId;
-
-            public SelectorWorkItem(SelectorAccelerationTableType type, int uniqueStringId)
-            {
-                this.type = type;
-                this.uniqueStringId = uniqueStringId;
-            }
-        }
-
         public static void FindMatches(StyleMatchingContext context, List<StyleSelectorMatch> matchedSelectors, int parentSheetIndex)
         {
             Debug.Assert(matchedSelectors.Count == 0);
             Debug.Assert(context.currentElement != null, "context.currentElement != null");
 
+
             ref TProfilerType profiler = ref StyleProfilerStorage<TProfilerType>.InstanceByRef;
             profiler.BeginMatchingElement(context.currentElement);
             var toggleRoot = false;
             var processedStyleSheets = HashSetPool<StyleSheet>.Get();
-            SelectorWorkItem[] rentedArray = null;
 
             try
             {
                 var element = context.currentElement;
-                var classList = element.GetClassesForIteration();
-                var classIds = classList.GetClassIds();
-
-                // Build work items with UniqueStyleString IDs
-                // Size = classIds.Length + 1 (type) + 1 (name, if the element has a non-empty name)
-                bool hasName = !UniqueStyleString.IsNullOrEmpty(element.nameId);
-                int workItemsCount = classIds.Length + 1 + (hasName ? 1 : 0);
-
-                // Use stackalloc for small counts, ArrayPool for large counts to prevent stack overflow
-                const int StackAllocThreshold = 64;
-                Span<SelectorWorkItem> workItems = workItemsCount <= StackAllocThreshold
-                    ? stackalloc SelectorWorkItem[workItemsCount]
-                    : (rentedArray = ArrayPool<SelectorWorkItem>.Shared.Rent(workItemsCount)).AsSpan(0, workItemsCount);
-
-                int idx = 0;
-                // Use cached typeNameId from VisualElement
-                workItems[idx++] = new SelectorWorkItem(SelectorAccelerationTableType.Type, element.typeNameId);
-
-                if (hasName)
-                {
-                    workItems[idx++] = new SelectorWorkItem(SelectorAccelerationTableType.Name, element.nameId);
-                }
-
-                for (int i = 0; i < classIds.Length; i++)
-                {
-                    workItems[idx++] = new SelectorWorkItem(SelectorAccelerationTableType.Class, classIds[i]);
-                }
 
                 for (var i = context.styleSheetCount - 1; i >= 0; --i)
                 {
@@ -343,38 +235,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     else
                         element.pseudoStates &= ~PseudoStates.Root;
 
-                    for (int j = 0; j < workItemsCount; j++)
-                    {
-                        var item = workItems[j];
-
-                        if ((accelerationCacheEntry.nonEmptyTablesMask & (1 << (int)item.type)) == 0)
-                            continue;
-
-                        var table = GetFlatTableByType(in accelerationCacheEntry, item.type);
-                        FastLookupFlat(table, in accelerationCacheEntry, matchedSelectors, context, item.uniqueStringId, i);
-                    }
-
-                    // Handle :root selectors
-                    if (toggleRoot && accelerationCacheEntry.rootSelectorRange.count > 0)
-                    {
-                        TestSelectorListFlat(
-                            accelerationCacheEntry.DescriptorsFor(accelerationCacheEntry.rootSelectorRange),
-                            in accelerationCacheEntry,
-                            matchedSelectors,
-                            context,
-                            i);
-                    }
-
-                    // Handle wildcard selectors
-                    if (accelerationCacheEntry.wildCardSelectorRange.count > 0)
-                    {
-                        TestSelectorListFlat(
-                            accelerationCacheEntry.DescriptorsFor(accelerationCacheEntry.wildCardSelectorRange),
-                            in accelerationCacheEntry,
-                            matchedSelectors,
-                            context,
-                            i);
-                    }
+                    MatchSheetNative(in accelerationCacheEntry, matchedSelectors, context, i, toggleRoot);
 
                     profiler.EndMatchingStyleSheet(styleSheet);
                 }
@@ -385,8 +246,6 @@ namespace UnityEngine.UIElements.StyleSheets
             finally
             {
                 HashSetPool<StyleSheet>.Release(processedStyleSheets);
-                if (rentedArray != null)
-                    ArrayPool<SelectorWorkItem>.Shared.Return(rentedArray);
             }
         }
 
@@ -394,4 +253,3 @@ namespace UnityEngine.UIElements.StyleSheets
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     class StyleSelectorHelper : StyleSelectorHelper<NoOpStyleProfiler> { }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

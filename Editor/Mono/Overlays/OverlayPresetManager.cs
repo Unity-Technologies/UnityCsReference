@@ -109,7 +109,7 @@ namespace UnityEditor.Overlays
         {
             if (IsReservedName(presetName))
             {
-                EditorUtility.DisplayDialog(L10n.Tr("Invalid Preset Name"), string.Format(L10n.Tr("Trying to create a preset with the reserved name [{0}]."), presetName), L10n.Tr("Ok"));
+                EditorUtility.DisplayDialog(L10n.Tr("Invalid Preset Name", null), string.Format(L10n.Tr("Trying to create a preset with the reserved name [{0}].", null), presetName), L10n.Tr("Ok", null));
                 return false;
             }
 
@@ -337,7 +337,7 @@ namespace UnityEditor.Overlays
             if (Path.GetExtension(path) != "." + presetTypeExtension)
             {
                 var presetTypeName = presetTypeExtension.Equals(k_OverlayPresetExtension) ? "Overlay" : "Toolbar";
-                Debug.LogFormat(L10n.Tr("{0} preset files must have the {1} extension to be valid."), presetTypeName, presetTypeExtension);
+                Debug.LogFormat(L10n.Tr("{0} preset files must have the {1} extension to be valid.", null), presetTypeName, presetTypeExtension);
                 return null;
             }
             var rawPresets = InternalEditorUtility.LoadSerializedFileAndForget(path);
@@ -363,7 +363,7 @@ namespace UnityEditor.Overlays
             {
                 if (IsReservedName(name))
                 {
-                    return string.Format(L10n.Tr("Preset Name is reserved"), name);
+                    return string.Format(L10n.Tr("Preset Name is reserved", null), name);
                 }
 
                 return null;
@@ -372,21 +372,21 @@ namespace UnityEditor.Overlays
 
         static void ShowSavePresetWindow(EditorWindow window, Action<OverlayPreset> onCreated, Action onFailed = null)
         {
-            PromptWindow.Show(L10n.Tr("Create Preset"),
-                L10n.Tr("Create a preset"),
-                L10n.Tr("Enter the name of the preset you want to create"),
-                L10n.Tr("Preset Name"),
+            PromptWindow.Show(L10n.Tr("Create Preset", null),
+                L10n.Tr("Create a preset", null),
+                L10n.Tr("Enter the name of the preset you want to create", null),
+                L10n.Tr("Preset Name", null),
                 window.overlayCanvas.lastAppliedPresetName,
-                L10n.Tr("Create"),
+                L10n.Tr("Create", null),
                 window,
                 CanCreatePreset,
                 (name) =>
                 {
                     if (Exists(window.GetType(), name) &&
                         !EditorUtility.DisplayDialog(
-                            L10n.Tr("Overwrite Preset?"),
-                            string.Format(L10n.Tr("Do you want to overwrite '{0}' preset?"), name),
-                            L10n.Tr("Overwrite"), L10n.Tr("Cancel")))
+                            L10n.Tr("Overwrite Preset?", null),
+                            string.Format(L10n.Tr("Do you want to overwrite '{0}' preset?", null), name),
+                            L10n.Tr("Overwrite", null), L10n.Tr("Cancel", null)))
                     {
                         onFailed?.Invoke();
                         return;
@@ -420,11 +420,11 @@ namespace UnityEditor.Overlays
             }
 
             var result = EditorDialog.DisplayComplexDecisionDialogWithOptOut(
-                    L10n.Tr("Unsaved Changes"),
-                    L10n.Tr("Your current toolbar preset has unsaved changes that will be overriden by your current action."),
-                    L10n.Tr("Save changes..."),
-                    L10n.Tr("Continue without saving"),
-                    L10n.Tr("Cancel"),
+                    L10n.Tr("Unsaved Changes", null),
+                    L10n.Tr("Your current toolbar preset has unsaved changes that will be overriden by your current action.", null),
+                    L10n.Tr("Save changes...", null),
+                    L10n.Tr("Continue without saving", null),
+                    L10n.Tr("Cancel", null),
                     DialogOptOutDecisionType.ForThisUser,
                     "overlays.presetDirtyWarningOptOut");
 
@@ -478,7 +478,7 @@ namespace UnityEditor.Overlays
 
             menu.AddSeparator(pathPrefix);
 
-            menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset..."), false, () =>
+            menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset...", null), false, () =>
             {
                 ShowSavePresetWindow(window, preset =>
                 {
@@ -486,7 +486,7 @@ namespace UnityEditor.Overlays
                 });
             });
 
-            menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset To File..."), false, () =>
+            menu.AddItem(L10n.Tr($"{pathPrefix}Save Preset To File...", null), false, () =>
             {
                 string path = EditorUtility.SaveFilePanel("Save window preset to disk...", "", $"New{overlayTargetType}Preset", presetExtension);
                 if (!string.IsNullOrEmpty(path))
@@ -496,7 +496,7 @@ namespace UnityEditor.Overlays
                 }
             });
 
-            menu.AddItem(L10n.Tr($"{pathPrefix}Load Preset From File..."), false, () =>
+            menu.AddItem(L10n.Tr($"{pathPrefix}Load Preset From File...", null), false, () =>
             {
                 CheckUnsavedChanges(window.overlayCanvas, canvasChangeCheck, () =>
                 {
@@ -508,18 +508,18 @@ namespace UnityEditor.Overlays
                         if (preset == null)
                         {
                             EditorUtility.DisplayDialog(
-                                L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
-                                string.Format(L10n.Tr("Failed to load the chosen preset. The file may not be a .{0} or it was corrupted."), presetExtension),
-                                L10n.Tr("OK"));
+                                L10n.Tr($"Load {overlayTargetType} Preset From Disk", null),
+                                string.Format(L10n.Tr("Failed to load the chosen preset. The file may not be a .{0} or it was corrupted.", null), presetExtension),
+                                L10n.Tr("OK", null));
                             failed = true;
                         }
                         else if (!preset.CanApplyToWindow(window.GetType()))
                         {
                             EditorUtility.DisplayDialog(
-                                L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
-                                string.Format(L10n.Tr("Trying to load an {0} preset with the name {1}. This preset targets the window type {1}, which isn't valid for {2} window."), 
+                                L10n.Tr($"Load {overlayTargetType} Preset From Disk", null),
+                                string.Format(L10n.Tr("Trying to load an {0} preset with the name {1}. This preset targets the window type {1}, which isn't valid for {2} window.", null), 
                                     overlayTargetType.ToLower(), preset.targetWindowType, window.GetType()),
-                                L10n.Tr("OK"));
+                                L10n.Tr("OK", null));
                             failed = true;
                         }
 
@@ -531,9 +531,9 @@ namespace UnityEditor.Overlays
                         if (!failed && Exists(preset.targetWindowType, preset.name))
                         {
                             if (!EditorUtility.DisplayDialog(
-                                L10n.Tr($"Load {overlayTargetType} Preset From Disk"),
-                                string.Format(L10n.Tr("Trying to load an {0} preset with the name {1}. This name is already in use in the window. Do you want to overwrite it?"), overlayTargetType.ToLower(), preset.name),
-                                L10n.Tr("Yes"), L10n.Tr("No")))
+                                L10n.Tr($"Load {overlayTargetType} Preset From Disk", null),
+                                string.Format(L10n.Tr("Trying to load an {0} preset with the name {1}. This name is already in use in the window. Do you want to overwrite it?", null), overlayTargetType.ToLower(), preset.name),
+                                L10n.Tr("Yes", null), L10n.Tr("No", null)))
                             {
                                 failed = true;
                             }
@@ -557,7 +557,7 @@ namespace UnityEditor.Overlays
                 // Only add the ability to delete asset presets and not the ones created from code
                 if (rawPreset is OverlayPreset preset)
                 {
-                    menu.AddItem(L10n.Tr($"{pathPrefix}Delete Preset/{preset.name}"), false, () =>
+                    menu.AddItem(L10n.Tr($"{pathPrefix}Delete Preset/{preset.name}", null), false, () =>
                     {
 	                    DeletePreset(preset);
 	                    window.overlayCanvas.SetLastAppliedPresetName(OverlayCanvas.k_DefaultPresetName);
@@ -566,12 +566,12 @@ namespace UnityEditor.Overlays
                 }
             }
 
-            menu.AddItem(L10n.Tr($"{pathPrefix}Revert All Saved Presets"), false, () =>
+            menu.AddItem(L10n.Tr($"{pathPrefix}Revert All Saved Presets", null), false, () =>
             {
                 if (EditorUtility.DisplayDialog(
-                    L10n.Tr("Revert All Saved Presets"),
-                    L10n.Tr($"Unity is about to delete all {overlayTargetType.ToLower()} presets that are not loaded from files in project and restore default settings."),
-                    L10n.Tr("Continue"), L10n.Tr("Cancel")))
+                    L10n.Tr("Revert All Saved Presets", null),
+                    L10n.Tr($"Unity is about to delete all {overlayTargetType.ToLower()} presets that are not loaded from files in project and restore default settings.", null),
+                    L10n.Tr("Continue", null), L10n.Tr("Cancel", null)))
                 {
                     RevertPreferencesPresetsToDefault();
                     ReloadAllPresets();

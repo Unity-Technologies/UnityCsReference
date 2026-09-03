@@ -217,10 +217,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string GetDescriptor(bool isFirstLetterCapitalized = false)
         {
             if (HasTag(PackageTag.Feature))
-                return isFirstLetterCapitalized ? L10n.Tr("Feature") : L10n.Tr("feature");
+                return isFirstLetterCapitalized ? L10n.Tr("Feature", null) : L10n.Tr("feature", null);
             if (HasTag(PackageTag.BuiltIn))
-                return isFirstLetterCapitalized ? L10n.Tr("Built-in package") : L10n.Tr("built-in package");
-            return isFirstLetterCapitalized ? L10n.Tr("Package") : L10n.Tr("package");
+                return isFirstLetterCapitalized ? L10n.Tr("Built-in package", null) : L10n.Tr("built-in package", null);
+            return isFirstLetterCapitalized ? L10n.Tr("Package", null) : L10n.Tr("package", null);
         }
 
         private static long GetPublishDateTicks(PackageInfo info)
@@ -263,13 +263,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var linkId = "view-product-in-asset-store-from-entitlement-error";
                     var linkUrl = $"https://assetstore.unity.com/packages/package/{productId}";
                     message = string.Format(
-                        L10n.Tr("Your account does not have the required Asset Store entitlement for {0}. Visit the <link id=\"{1}\" url=\"{2}\">Asset Store product page</link> to acquire the entitlement."),
+                        L10n.Tr("Your account does not have the required Asset Store entitlement for {0}. Visit the <link id=\"{1}\" url=\"{2}\">Asset Store product page</link> to acquire the entitlement.", null),
                         name, linkId, linkUrl);
                     readMoreUrl = string.Empty;
                 }
                 else
                 {
-                    message = L10n.Tr("An error occurred: This package isn't available because its license isn't registered to your user account. Contact your administrator to assign a seat for this license. Then, go to Unity Hub > Licenses and click Refresh.");
+                    message = L10n.Tr("An error occurred: This package isn't available because its license isn't registered to your user account. Contact your administrator to assign a seat for this license. Then, go to Unity Hub > Licenses and click Refresh.", null);
                     readMoreUrl = "https://docs.unity.com/en-us/cloud/organizations/manage-seats";
                 }
 
@@ -289,14 +289,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (IsInvalidLocation(sourcePath, ioProxy))
             {
                 var invalidLocationError = new UIError(UIErrorCode.UpmError_InvalidSourcePath,
-                    L10n.Tr("This package is installed in an invalid location. Move it outside of your Assets, Library, ProjectSettings, or UserSettings folders."));
+                    L10n.Tr("This package is installed in an invalid location. Move it outside of your Assets, Library, ProjectSettings, or UserSettings folders.", null));
                 m_Errors.Add(invalidLocationError);
             }
 
             if (processLoadingError && isInstalled && !applicationProxy.ObjectExistsInAssetDatabase(info.assetPath))
             {
                 var packageNotLoadedError = new UIError(UIErrorCode.UpmError_PackageNotLoaded,
-                    L10n.Tr("This package failed to load in your project. Check the Console window for more details."));
+                    L10n.Tr("This package failed to load in your project. Check the Console window for more details.", null));
                 m_Errors.Add(packageNotLoadedError);
             }
         }

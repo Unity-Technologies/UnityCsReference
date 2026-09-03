@@ -14,18 +14,18 @@ namespace UnityEditor.ShortcutManagement
 {
     class ShortcutManagerWindowViewController : IShortcutManagerWindowViewController, IKeyBindingStateProvider
     {
-        internal static readonly string k_AllUnityCommands = L10n.Tr("All Unity Commands");
-        internal static readonly string k_CommandsWithConflicts = L10n.Tr("Binding Conflicts");
-        internal static readonly string k_MainMenu = L10n.Tr("Main Menu");
+        internal static readonly string k_AllUnityCommands = L10n.Tr("All Unity Commands", null);
+        internal static readonly string k_CommandsWithConflicts = L10n.Tr("Binding Conflicts", null);
+        internal static readonly string k_MainMenu = L10n.Tr("Main Menu", null);
 
         //internals are used in tests
-        static readonly string k_ProfileNameEmpty = L10n.Tr("Profile Name is empty");
-        internal static readonly string k_ProfileNameUnsupported = L10n.Tr("Profile Name is unsupported");
-        internal static readonly string k_ProfileNameTooLong = L10n.Tr($"Profile Name exceeds maximum length ({ShortcutProfileStore.k_MaxProfileIdSize})");
-        internal static readonly string k_ProfileNameWithUnsupportedCharacters = L10n.Tr("Profile Name has unsupported characters");
-        internal static readonly string k_ProfileExists = L10n.Tr("Profile already exists");
-        internal static readonly string k_DefaultRename = L10n.Tr("Default profile cannot be renamed");
-        internal static readonly string k_ProfileNotFound = L10n.Tr("Couldn't find active profile");
+        static readonly string k_ProfileNameEmpty = L10n.Tr("Profile Name is empty", null);
+        internal static readonly string k_ProfileNameUnsupported = L10n.Tr("Profile Name is unsupported", null);
+        internal static readonly string k_ProfileNameTooLong = L10n.Tr($"Profile Name exceeds maximum length ({ShortcutProfileStore.k_MaxProfileIdSize})", null);
+        internal static readonly string k_ProfileNameWithUnsupportedCharacters = L10n.Tr("Profile Name has unsupported characters", null);
+        internal static readonly string k_ProfileExists = L10n.Tr("Profile already exists", null);
+        internal static readonly string k_DefaultRename = L10n.Tr("Default profile cannot be renamed", null);
+        internal static readonly string k_ProfileNotFound = L10n.Tr("Couldn't find active profile", null);
 
         const int k_AllUnityCommandsIndex = 0;
         const int k_ConflictsIndex = 1;
@@ -738,18 +738,18 @@ namespace UnityEditor.ShortcutManagement
                 var ctxModifiersStr = new StringBuilder();
                 KeyCombination.VisualizeModifiers(ctxReservedModifiers, ctxModifiersStr);
 
-                var title = L10n.Tr("Attempt to bind Reserved Modifier");
+                var title = L10n.Tr("Attempt to bind Reserved Modifier", null);
                 var altBindingStr = KeyCombination.SequenceToString(altBinding);
                 var message = string.Format(
                     L10n.Tr("You can't bind \"{0}\" to {1}, because {1} contains {3} which is a reserved modifier in the \"{2}\" shortcut context.\n\n" +
-                            "You can choose to bind just \"{4}\" instead. If you do, \"{4}\" will also work with the reserved modifier {3}."),
+                            "You can choose to bind just \"{4}\" instead. If you do, \"{4}\" will also work with the reserved modifier {3}.", null),
                     selectedEntry.displayName,
                     KeyCombination.SequenceToString(binding),
                     ObjectNames.NicifyVariableName(selectedEntry.context.Name),
                     ctxModifiersStr,
                     altBindingStr);
-                var okLabel = string.Format(L10n.Tr("Bind \'{0}\' instead"), altBindingStr);
-                var cancelLabel = L10n.Tr("Cancel");
+                var okLabel = string.Format(L10n.Tr("Bind \'{0}\' instead", null), altBindingStr);
+                var cancelLabel = L10n.Tr("Cancel", null);
 
                 if (EditorUtility.DisplayDialog(title, message, okLabel, cancelLabel))
                     return altBinding;
@@ -928,9 +928,9 @@ namespace UnityEditor.ShortcutManagement
             letUserDecide = letUserDecide && InternalEditorUtility.isHumanControllingUs && !InternalEditorUtility.inBatchMode;
 
             if (m_ShortcutProfileManager.GetProfileById(profileId) != null
-                && (!letUserDecide || !EditorUtility.DisplayDialog(L10n.Tr("Profile already exists"),
-                L10n.Tr($"A profile with the \"{profileId}\" id already exists.\nDo you want to overwrite the existing profile with values from the selected file?"),
-                L10n.Tr("Yes"), L10n.Tr("No"))))
+                && (!letUserDecide || !EditorUtility.DisplayDialog(L10n.Tr("Profile already exists", null),
+                L10n.Tr($"A profile with the \"{profileId}\" id already exists.\nDo you want to overwrite the existing profile with values from the selected file?", null),
+                L10n.Tr("Yes", null), L10n.Tr("No", null))))
                 return false;
 
             return true;

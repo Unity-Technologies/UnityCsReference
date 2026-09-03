@@ -539,14 +539,12 @@ namespace Unity.UI.Builder
             return Path.GetFileName(assetPath) + (hasUnsavedChanges ? BuilderConstants.ToolbarUnsavedFileSuffix : "");
         }
 
-        public static TemplateContainer GetVisualElementRootTemplate(VisualElement visualElement)
+        public static TemplateContainer GetVisualElementRootTemplate(VisualElement visualElement, BuilderDocument document)
         {
-            var builder = Builder.ActiveWindow;
-
-            if (builder == null)
+            if (document == null)
                 return null;
 
-            var editedVisualTree = builder.document.visualTreeAsset;
+            var editedVisualTree = document.visualTreeAsset;
             return UxmlAssetUtilities.GetRootTemplateContainerInEditedVisualTree(editedVisualTree, visualElement);
         }
 
@@ -573,9 +571,9 @@ namespace Unity.UI.Builder
             return false;
         }
 
-        public static bool HasAttributeOverrideInRootTemplate(VisualElement visualElement, string attributeName)
+        public static bool HasAttributeOverrideInRootTemplate(VisualElement visualElement, string attributeName, BuilderDocument document)
         {
-            var templateContainer = GetVisualElementRootTemplate(visualElement);
+            var templateContainer = GetVisualElementRootTemplate(visualElement, document);
             var templateAsset = templateContainer?.GetVisualElementAsset() as TemplateAsset;
             #pragma warning disable UAC2001 // Avoid Linq
             var pathToTemplateAsset = templateAsset.GetPathToTemplateAsset(visualElement).ToList();

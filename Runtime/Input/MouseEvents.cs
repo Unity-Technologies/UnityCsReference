@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Input not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -178,7 +179,9 @@ namespace UnityEngine
                         eventPosition = mousePosition;
                         if (Display.activeEditorGameViewTarget  != displayIndex)
                             continue;
+#pragma warning disable UAL0018 // captured into eventPosition, a local Vector3 that dies with this method's stack frame; cannot outlive a reload
                         eventPosition.z = Display.activeEditorGameViewTarget ;
+#pragma warning restore UAL0018
                     }
 
                     // Is the mouse inside the cameras viewport?
@@ -296,3 +299,4 @@ namespace UnityEngine
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

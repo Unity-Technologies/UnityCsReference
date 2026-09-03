@@ -66,6 +66,11 @@ class UxmlAttributeChangeHandler
 
             bool isTemplateInstance = Context.isInTemplateInstance;
 
+            // Components are not backed by a UxmlAsset; their values stay in the component serialized data
+            // and the exporter rebuilds the node from it. So we neither materialize UXML object assets nor
+            // mirror the value onto an owner UxmlAsset (which would mis-place it on the owner element node).
+            bool mirrorToUxmlAsset = Context.mirrorsAttributesToUxmlAsset;
+
             foreach (var change in m_Changes)
             {
                 var vta = change.visualTreeAsset;
@@ -85,7 +90,7 @@ class UxmlAttributeChangeHandler
                         change.editedUxmlSerializedData,
                         change.editedElementAsset,
                         change.serializedBasePath, property.propertyPath,
-                        true,
+                        mirrorToUxmlAsset,
                         Context.element,
                         null,
                         isTemplateInstance);
@@ -93,7 +98,7 @@ class UxmlAttributeChangeHandler
                     if (!syncPathResults.success)
                         continue;
 
-                    var uxmlAsset = isTemplateInstance ? null : syncPathResults.uxmlAsset;
+                    var uxmlAsset = (isTemplateInstance || !mirrorToUxmlAsset) ? null : syncPathResults.uxmlAsset;
                     var value = property.boxedValue;
 
                     var serializedData = syncPathResults.serializedData as UxmlSerializedData;
@@ -117,8 +122,10 @@ class UxmlAttributeChangeHandler
 
                     SetAttributeCommand.Execute(CommandSources.Inspector, vta, uxmlAsset, serializedData, syncPathResults.attributeDescription, value);
 
+                    // At a template instance the edit also persists as an override on the root template. The
+                    // context routes it to the right storage (element attribute override vs component override).
                     if (isTemplateInstance)
-                        SetAttributeOverrideCommand.Execute(CommandSources.Inspector, Context.editedVisualTreeAsset, syncPathResults.attributeDescription, Context.element, value);
+                        Context.WriteTemplateAttributeOverride(syncPathResults.attributeDescription, value);
                 }
 
                 try

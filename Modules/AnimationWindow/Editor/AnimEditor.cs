@@ -676,11 +676,11 @@ namespace UnityEditor
             const int kCancel = 1;
             const int kRevert = 2;
 
-            var option = EditorUtility.DisplayDialogComplex((string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected"),
+            var option = EditorUtility.DisplayDialogComplex((string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected", null),
                 saveMessage,
-                L10n.Tr("Save"),
-                L10n.Tr("Cancel"),
-                L10n.Tr("Revert"));
+                L10n.Tr("Save", null),
+                L10n.Tr("Cancel", null),
+                L10n.Tr("Revert", null));
 
             try
             {
@@ -703,9 +703,9 @@ namespace UnityEditor
             }
             catch (Exception ex)
             {
-                EditorUtility.DisplayDialog(L10n.Tr("Save Changes Failed"),
+                EditorUtility.DisplayDialog(L10n.Tr("Save Changes Failed", null),
                     ex.Message,
-                    L10n.Tr("OK"));
+                    L10n.Tr("OK", null));
 
                 return false;
             }

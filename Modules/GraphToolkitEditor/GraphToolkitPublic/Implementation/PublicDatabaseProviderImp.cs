@@ -56,6 +56,9 @@ namespace Unity.GraphToolkit.Editor.Implementation
         {
             if (container is UserContextNodeModelImp imp)
             {
+                if (imp.Node == null)
+                    return null;
+
                 if (!m_ContextDatabases.TryGetValue(imp.Node.GetType(), out var dbs))
                 {
                     dbs = new ItemLibraryDatabaseBase[1];

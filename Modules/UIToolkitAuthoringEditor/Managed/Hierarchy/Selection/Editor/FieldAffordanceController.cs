@@ -81,7 +81,7 @@ internal static class FieldAffordanceController
     }
 
     // True when the property is currently driven
-    static bool TryProbeAnimationDriven(VisualElement element, StylePropertyId stylePropertyId, out FieldAffordanceSourceInfoType subState)
+    internal static bool TryProbeAnimationDriven(VisualElement element, StylePropertyId stylePropertyId, out FieldAffordanceSourceInfoType subState)
     {
         subState = default;
         if (element == null || stylePropertyId == StylePropertyId.Unknown)

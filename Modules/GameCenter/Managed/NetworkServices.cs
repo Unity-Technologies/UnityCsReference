@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: GameCenter not yet converted
 using System;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine
 {
@@ -315,8 +315,9 @@ namespace UnityEngine.SocialPlatforms
     // The state of the current active social implementation
 
     [Obsolete("ActivePlatform is deprecated and will be removed in a future release.", false)]
-    internal static class ActivePlatform
+    internal static partial class ActivePlatform
     {
+        [AutoStaticsCleanupOnCodeReload]
         private static ISocialPlatform _active;
 
         internal static ISocialPlatform Instance
@@ -664,4 +665,3 @@ namespace UnityEngine.SocialPlatforms
         string title { get; }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEngine;
 
 namespace UnityEditor
@@ -151,9 +152,12 @@ namespace UnityEditor
                 return null;
 
             if (brush.m_Mask == null)
+                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 brush.m_Mask = Brush.DefaultMask();
+                #pragma warning restore UAL0018
             PreviewHelpers.AdjustWidthAndHeightForStaticPreview(brush.m_Mask.width, brush.m_Mask.height, ref width, ref height);
             return Brush.GenerateBrushTexture(brush.m_Mask, brush.m_Falloff, brush.m_RadiusScale, brush.m_BlackWhiteRemapMin, brush.m_BlackWhiteRemapMax, brush.m_InvertRemapRange, width, height, true);
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

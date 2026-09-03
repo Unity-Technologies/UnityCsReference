@@ -411,6 +411,11 @@ namespace UnityEngine
             get { return SupportsMemorylessTextures(); }
         }
 
+        public static bool supportsBackbufferDepthMemoryless
+        {
+            get { return SupportsBackbufferDepthMemoryless(); }
+        }
+
         public static bool supportsMultisampleAutoResolve
         {
             get { return SupportsMultisampleAutoResolve(); }
@@ -419,6 +424,11 @@ namespace UnityEngine
         public static bool supportsMultisampledShaderResolve
         {
             get { return SupportsMultisampledShaderResolve(); }
+        }
+
+        public static bool supportsSwapChainPreTransform
+        {
+            get { return SupportsSwapChainPreTransform(); }
         }
 
         public static int supportsTextureWrapMirrorOnce
@@ -984,11 +994,17 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::SupportsMemorylessTextures")]
         static extern bool SupportsMemorylessTextures();
 
+        [FreeFunction("ScriptingGraphicsCaps::SupportsBackbufferDepthMemoryless")]
+        static extern bool SupportsBackbufferDepthMemoryless();
+
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleAutoResolve")]
         static extern bool SupportsMultisampleAutoResolve();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampledShaderResolve")]
         static extern bool SupportsMultisampledShaderResolve();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsSwapChainPreTransform")]
+        static extern bool SupportsSwapChainPreTransform();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsTextureWrapMirrorOnce")]
         static extern int SupportsTextureWrapMirrorOnce();

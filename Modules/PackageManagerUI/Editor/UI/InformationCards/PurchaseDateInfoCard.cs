@@ -8,7 +8,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class PurchaseDateInfoCard : PackageInformationCard
 {
-    protected override string titleText => L10n.Tr("Purchase Date");
+    protected override string titleText => L10n.Tr("Purchase Date", null);
     protected override InformationCardSize cardSize => InformationCardSize.Small;
 
     public override void Refresh(IPackageVersion version)

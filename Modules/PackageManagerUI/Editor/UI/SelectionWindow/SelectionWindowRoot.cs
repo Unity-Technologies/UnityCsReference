@@ -99,9 +99,9 @@ internal class SelectionWindowRoot : VisualElement
 
     private void OnAction()
     {
-        if (!m_ApplicationProxy.DisplayDialog("removeImported", L10n.Tr("Removing imported assets"),
-                L10n.Tr("Remove the selected assets?\nAny changes you made to the assets will be lost."),
-                L10n.Tr("Remove"), L10n.Tr("Cancel")))
+        if (!m_ApplicationProxy.DisplayDialog("removeImported", L10n.Tr("Removing imported assets", null),
+                L10n.Tr("Remove the selected assets?\nAny changes you made to the assets will be lost.", null),
+                L10n.Tr("Remove", null), L10n.Tr("Cancel", null)))
             return;
         onSelectionCompleted?.Invoke(m_WindowData.selectedAssets);
         AssetSelectionWindowAnalytics.SendEvent(m_WindowData, "remove");

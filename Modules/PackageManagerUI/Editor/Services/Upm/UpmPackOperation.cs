@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
-        protected override string operationErrorMessage => string.Format(L10n.Tr("Error exporting package: {0}."), m_PackageFolder);
+        protected override string operationErrorMessage => string.Format(L10n.Tr("Error exporting package: {0}.", null), m_PackageFolder);
 
         public void Pack(string packageName, string packageFolder, string exportPath, string orgId)
         {

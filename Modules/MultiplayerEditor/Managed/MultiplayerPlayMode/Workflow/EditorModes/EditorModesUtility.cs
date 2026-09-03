@@ -83,36 +83,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
         [OnCodeLoaded]
         static void InitializeOnLoad()
         {
+            if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
+                return;
+
             s_FileSystemDelegates = FileSystem.Delegates;
             s_ParsingSystemDelegates = ParsingSystem.Delegates;
 
             if (s_FileSystemDelegates.ExistsDirectoryFunc(k_LayoutProxyDir))
                 s_FileSystemDelegates.DeleteDirectoryFunc(k_LayoutProxyDir);
             s_FileSystemDelegates.CreateDirectoryFunc(k_LayoutProxyDir);
-
-            if (!VirtualProjectsEditor.IsClone)
-                return;
-
-            var flagsFile = VirtualProjectWorkflow.WorkflowCloneContext.CloneDataFile;
-            CloneDataFile.LoadFromFile(flagsFile);
-        }
-
-        private static void Initialize(FileSystemDelegates fileSystemDelegates,
-                                       ParsingSystemDelegates parsingSystemDelegates)
-        {
-            s_FileSystemDelegates = fileSystemDelegates;
-            s_ParsingSystemDelegates = parsingSystemDelegates;
-
-            // Always refresh the layout proxy directory on init
-            if (s_FileSystemDelegates.ExistsDirectoryFunc(k_LayoutProxyDir))
-            {
-                s_FileSystemDelegates.DeleteDirectoryFunc(k_LayoutProxyDir);
-            }
-            s_FileSystemDelegates.CreateDirectoryFunc(k_LayoutProxyDir);
-
-            // Initialize the underlying layout flags if it hasn't been set
-            var flagsFile = VirtualProjectWorkflow.WorkflowCloneContext.CloneDataFile;
-            CloneDataFile.LoadFromFile(flagsFile);
         }
 
         internal static void SaveCurrentWindow()

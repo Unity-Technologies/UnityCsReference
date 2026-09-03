@@ -26,6 +26,27 @@ namespace UnityEditor.UIElements.Bindings
             return m_SerializedObjectListControllerImpl.GetItemsMinCount();
         }
 
+        internal override bool ValidateItemCountChange(int newItemCount)
+        {
+            var list = itemsSource as SerializedObjectList;
+            if (list == null)
+                return true;
+
+            // Growing past this would exceed the maximum serialized object size, and the underlying
+            // resize would be rejected; refuse the change up front and let the user know.
+            var max = list.maxArraySize;
+            if (newItemCount > max)
+            {
+                EditorUtility.DisplayDialog(
+                    L10n.Tr("Invalid array size", null),
+                    string.Format(L10n.Tr("The array cannot exceed {0:N0} elements. The value was not applied.", null), max),
+                    L10n.Tr("OK", null));
+                return false;
+            }
+
+            return true;
+        }
+
         public override void AddItems(int itemCount)
         {
             m_SerializedObjectListControllerImpl.AddItems(itemCount);

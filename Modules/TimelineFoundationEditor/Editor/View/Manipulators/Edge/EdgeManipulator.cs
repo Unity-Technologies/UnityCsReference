@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System.Collections.Generic;
 using Unity.IntegerTime;
 using Unity.Profiling;
@@ -26,7 +25,7 @@ namespace Unity.Timeline.Foundation.View.Internals
         };
 
         const float k_EdgeAttractionInPixels = 10.0f;
-        static ProfilerMarker s_TrimMarker = new($"ManipulatorTrimMarker");
+        static readonly ProfilerMarker s_TrimMarker = new($"ManipulatorTrimMarker");
         public bool edgeSnap { get; set; }
         public bool enabled { get; set; } = true;
 
@@ -233,4 +232,3 @@ namespace Unity.Timeline.Foundation.View.Internals
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

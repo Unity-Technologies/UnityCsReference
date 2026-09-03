@@ -2,9 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: IMGUIFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIFramework not yet converted
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngineInternal;
@@ -12,7 +13,7 @@ using UnityEngineInternal;
 namespace UnityEditor
 {
     [NativeHeader("Editor/Mono/SavedGUIState.bindings.h")]
-    internal struct SavedGUIState
+    internal partial struct SavedGUIState
     {
         private GUILayoutUtility.LayoutCacheState layoutCache;
         private IntPtr guiState;
@@ -74,6 +75,7 @@ namespace UnityEditor
         }
 
         // UUM-145914: managed-only backup used by the native re-entrancy path (GUIView::OnInputEvent).
+        [AutoStaticsCleanupOnCodeReload] // cleared on reload so no captured layout state survives a domain reload
         static readonly Stack<SavedGUIState> s_ReentrantLayoutStates = new Stack<SavedGUIState>();
 
         internal static void PushReentrantLayoutState()
@@ -90,4 +92,4 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

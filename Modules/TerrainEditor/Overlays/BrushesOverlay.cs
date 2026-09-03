@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEditor.PackageManager;
@@ -85,6 +86,8 @@ namespace UnityEditor.TerrainTools
         {
             get
             {
+                if (!TerrainEditorUtility.IsEditable())
+                    return false;
                 var currTool = TerrainInspector.GetActiveTerrainTool() as ITerrainPaintToolWithOverlays;
                 if (currTool == null)
                     return false;
@@ -124,7 +127,9 @@ namespace UnityEditor.TerrainTools
             {
                 // adjust brush mask width here to force brush mask sizes
                 EditorGUIUtility.currentViewWidth = 430;
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 BrushesOverlay.OnGUI(BrushGUIEditFlags.SelectAndInspect);
+                #pragma warning restore UAL0015
             };
             m_RootElement.Add(img);
             Add(m_RootElement);
@@ -132,3 +137,4 @@ namespace UnityEditor.TerrainTools
     }
 
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

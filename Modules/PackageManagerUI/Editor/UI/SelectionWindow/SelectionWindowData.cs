@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 [Serializable]
 internal class SelectionWindowData : ISerializationCallbackReceiver
 {
-    private static readonly string k_RemoveText = L10n.Tr("Remove");
+    private static readonly string k_RemoveText = L10n.Tr("Remove", null);
 
     [Serializable]
     internal class Node

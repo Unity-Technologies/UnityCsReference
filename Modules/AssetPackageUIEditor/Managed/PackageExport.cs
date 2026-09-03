@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -86,10 +87,14 @@ namespace UnityEditor
             public static readonly GUIContent header = EditorGUIUtility.TrTextContent("Items to Export");
         }
 
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         public PackageExport()
+        #pragma warning restore UAL0015
         {
             // Initial pos and minsize
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             position = new Rect(100, 100, 400, 300);
+            #pragma warning restore UAL0015
             minSize = new Vector2(350, 350);
 
             m_UtilityAdapter = dependencyContainer.Resolve<IUtilityAdapter>();
@@ -253,7 +258,7 @@ namespace UnityEditor
 
             var displayText = isOrgSelected
                 ? m_OrganizationInfos[m_SelectedOrgIndex].name
-                : L10n.Tr("Choose organization");
+                : L10n.Tr("Choose organization", null);
 
             var dropdownRect = new Rect(
                 dropdownX,
@@ -354,7 +359,7 @@ namespace UnityEditor
 #pragma warning disable UAC2001 // Avoid Linq
                 var selectedItemWithInvalidChar = m_ExportPackageItems.FirstOrDefault(item => Path.GetFileNameWithoutExtension(item.assetPath).IndexOfAny(invalidChars.ToCharArray()) != -1 && item.enabledStatus > 0);
 #pragma warning restore UAC2001
-                if (selectedItemWithInvalidChar != null && !m_EditorUtilityAdapter.DisplayDialog(L10n.Tr("Cross platform incompatibility"), L10n.Tr($"The asset “{Path.GetFileNameWithoutExtension(selectedItemWithInvalidChar.assetPath)}” contains one or more characters that are not compatible across platforms: {invalidChars}"), L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                if (selectedItemWithInvalidChar != null && !m_EditorUtilityAdapter.DisplayDialog(L10n.Tr("Cross platform incompatibility", null), L10n.Tr($"The asset “{Path.GetFileNameWithoutExtension(selectedItemWithInvalidChar.assetPath)}” contains one or more characters that are not compatible across platforms: {invalidChars}", null), L10n.Tr("I understand", null), L10n.Tr("Cancel", null)))
                 {
                     GUIUtility.ExitGUI();
                     SendAnalyticsEvent("exportErrorInvalidCharInAssetName");
@@ -427,7 +432,7 @@ namespace UnityEditor
             {
                 if (!isOrgSelected)
                 {
-                    Debug.Log(L10n.Tr("Package export failed because of an incorrect organization name. Please try again."));
+                    Debug.Log(L10n.Tr("Package export failed because of an incorrect organization name. Please try again.", null));
                     return false;
                 }
                 m_UtilityAdapter.ExportPackageWithGUIDs(guids, fileName, m_OrganizationInfos[m_SelectedOrgIndex].foreignKey);
@@ -526,3 +531,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

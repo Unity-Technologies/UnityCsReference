@@ -18,7 +18,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public struct PhysicsMask : IEnumerable<int>
+    public record struct PhysicsMask : IEnumerable<int>
     {
         /// <summary>
         /// Create a PhysicsMask by specifying multiple bits to set (1).

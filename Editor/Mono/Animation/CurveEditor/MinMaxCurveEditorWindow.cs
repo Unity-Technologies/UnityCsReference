@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using System;
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
@@ -10,6 +11,10 @@ namespace UnityEditor
 {
     internal partial class MinMaxCurveEditorWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal MinMaxCurveEditorWindow() {}
+        #pragma warning restore UAL0015
+
         const int k_PresetsHeight = 46;
         const float k_WindowMinSize = 240;
         const float k_WindowMaxSize = 10000;
@@ -74,7 +79,9 @@ namespace UnityEditor
             m_CurveEditor.settings.rectangleToolFlags = CurveEditorSettings.RectangleToolFlags.MiniRectangleTool;
             m_CurveEditor.settings.undoRedoSelection = true;
             m_CurveEditor.settings.showWrapperPopups = true;
+            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_CurveEditor.settings.xAxisLabel = xAxisLabel;
+            #pragma warning restore UAL0018
             UpdateRegionDomain();
 
             // For each of horizontal and vertical axis, if we have a finite range for that axis, use that range,
@@ -417,3 +424,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

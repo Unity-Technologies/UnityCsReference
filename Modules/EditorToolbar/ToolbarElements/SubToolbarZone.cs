@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System.Collections.Generic;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Toolbars
 { 
@@ -30,8 +32,7 @@ namespace UnityEditor.Toolbars
     }
 
 #pragma warning disable CS0618 // Type or member is obsolete
-    [InitializeOnLoad]
-    static class DeprecatedElementsToolbar
+    static partial class DeprecatedElementsToolbar
     {
         sealed class AccountDropdown : EditorToolbarDropdown { }
         sealed class StoreButton : EditorToolbarButton { }
@@ -45,9 +46,16 @@ namespace UnityEditor.Toolbars
         sealed class MultiplayerRoleDropdown : EditorToolbarDropdown { }
         sealed class CloudButton : EditorToolbarButton { }
 
-        static DeprecatedElementsToolbar()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             Toolbar.populateFakeToolbar += PopulateFakeToolbar;
+        }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            Toolbar.populateFakeToolbar -= PopulateFakeToolbar;
         }
 
         static void PopulateFakeToolbar(MainToolbarDockPosition zone, VisualElement root)
@@ -117,3 +125,4 @@ namespace UnityEditor.Toolbars
 #pragma warning restore CS0618 // Type or member is obsolete
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

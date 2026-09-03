@@ -14,6 +14,11 @@ namespace Unity.GraphToolkit.Editor
             return typeof(IList).IsAssignableFrom(type);
         }
 
+        internal static bool IsDictionary(this Type type)
+        {
+            return typeof(IDictionary).IsAssignableFrom(type);
+        }
+
         internal static Type GetCollectionElementType(this Type listType)
         {
             if (listType.IsArray)

@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using Object = System.Object;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -62,7 +63,9 @@ namespace Unity.UIToolkit.Editor
         public const string BindingConvertersToSourceFieldName = "BindingConvertersToSourceField";
         public const string BindingUpdateTriggerFieldName = "BindingUpdateTriggerField";
 
+        [NoAutoStaticsCleanup] // binding-type list built once, safe to persist
         private static readonly BindingType[] k_UxmlBindingTypes;
+        [NoAutoStaticsCleanup] // display-names list, safe to persist
         private static readonly List<string> k_UxmlBindingTypeDisplayNames = new();
 
         VisualElement m_Element;
@@ -166,6 +169,9 @@ namespace Unity.UIToolkit.Editor
             asset.CloneTree(this);
 
             m_AttributesView = this.Q<UxmlAttributesView>(AttributesViewName);
+
+            // The binding editor edits binding data; ancestor Attribute Overrides never apply here.
+            m_AttributesView.Context.suppressAncestorOverrides = true;
 
             m_RootPropertyField = this.Q<PropertyField>(RootPropertyFieldName);
             m_RootPropertyField.reset += OnPropertyFieldReset;
@@ -538,7 +544,11 @@ namespace Unity.UIToolkit.Editor
 
             if (m_TargetPropertyTypeName != null)
             {
-                var propertyType = BindableProperty?.DeclaredValueType();
+                // A component target (${component:<Type>}.<field>) is not a property of the element, so its type
+                // comes from the component's serialized data; element targets resolve through the property bag.
+                var propertyType = SerializedPropertyExtensions.TryGetComponentAttributeType(BindingPropertyName, out var componentFieldType)
+                    ? componentFieldType
+                    : BindableProperty?.DeclaredValueType();
 
                 m_TargetPropertyTypeName.text = propertyType != null ? TypeUtility.GetTypeDisplayName(propertyType) : string.Empty;
                 m_TargetPropertyTypeName.tooltip = propertyType?.GetDisplayFullName();
@@ -583,4 +593,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -1,4 +1,3 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 /*
 ** SGI FREE SOFTWARE LICENSE B (Version 2.0, Sept. 18, 2008) 
 ** Copyright (C) 2011 Silicon Graphics, Inc.
@@ -35,6 +34,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Scripting.LifecycleManagement;
 
 using Real = System.Single;
 namespace LibTessDotNet
@@ -112,6 +112,9 @@ namespace LibTessDotNet
 
         public abstract class Pooled<T> where T : Pooled<T>, new()
         {
+            // Scratch pool of assembly-internal tess objects reused across tessellation runs;
+            // holds no user or cross-assembly references, so it is safe to persist across code reload.
+            [NoAutoStaticsCleanup]
             private static Stack<T> _stack;
 
             public abstract void Reset();
@@ -460,4 +463,3 @@ namespace LibTessDotNet
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

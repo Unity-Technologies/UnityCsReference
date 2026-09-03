@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using Unity.IntegerTime;
 using UnityEngine;
@@ -14,8 +13,8 @@ namespace Unity.Timeline.Foundation.Time
     [VisibleToOtherModules("UnityEditor.TimelineFoundationModule")]
     internal readonly struct TimeRange : IEquatable<TimeRange>
     {
-        public static TimeRange Empty = new TimeRange(DiscreteTime.Zero, DiscreteTime.Zero);
-        public static TimeRange MaxRange = new TimeRange(DiscreteTime.MinValue, DiscreteTime.MaxValue);
+        public static readonly TimeRange Empty = new TimeRange(DiscreteTime.Zero, DiscreteTime.Zero);
+        public static readonly TimeRange MaxRange = new TimeRange(DiscreteTime.MinValue, DiscreteTime.MaxValue);
 
         public TimeRange(DiscreteTime start, DiscreteTime end)
         {
@@ -192,4 +191,3 @@ namespace Unity.Timeline.Foundation.Time
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

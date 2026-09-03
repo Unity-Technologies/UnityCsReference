@@ -28,7 +28,7 @@ namespace Unity.GraphToolkit.Editor
         public static ModelView CreateSection(this ElementBuilder elementBuilder, InspectorSectionModel model)
         {
             ModelView ui;
-            if (model.Collapsible || !string.IsNullOrEmpty(model.Title))
+            if (model.Collapsible)
             {
                 ui = new CollapsibleSection();
             }

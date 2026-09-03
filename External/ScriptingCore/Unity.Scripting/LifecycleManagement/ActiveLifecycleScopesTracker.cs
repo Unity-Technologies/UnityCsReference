@@ -400,7 +400,10 @@ namespace Unity.Scripting.LifecycleManagement
                 if (_autoCleanups.TryGetValue(lifecycleScopeType, out var innerDict)
                     && innerDict.TryGetValue(scopeTransitionType, out var autoCleanups))
                 {
-                    foreach (var autoCleanup in autoCleanups)
+                    // Snapshot: a cleanup may lazily register another cleanup, re-entering this lock
+                    // and mutating the list. The newly-registered one runs on the next transition.
+                    var snapshot = autoCleanups.ToArray();
+                    foreach (var autoCleanup in snapshot)
                     {
                         try
                         {
@@ -438,14 +441,15 @@ namespace Unity.Scripting.LifecycleManagement
             activeScope.OnEnter(_scopeTransitionHelper);
         }
 
-        private void CollectNestedScopesToExit(string scopeName, List<ActiveLifecycleScopeBase> nestedActiveScopesInOrder)
+        private void CollectNestedScopesToExit(string scopeName, ref List<ActiveLifecycleScopeBase>? nestedActiveScopesInOrder)
         {
             foreach (var activeScope in _activeScopes.Values)
             {
                 if (activeScope.Scope.MustBeNestedInsideScope(scopeName))
                 {
                     var activeScopeName = activeScope.Scope.Name;
-                    CollectNestedScopesToExit(activeScopeName, nestedActiveScopesInOrder);
+                    CollectNestedScopesToExit(activeScopeName, ref nestedActiveScopesInOrder);
+                    nestedActiveScopesInOrder ??= new List<ActiveLifecycleScopeBase>();
                     nestedActiveScopesInOrder.Add(activeScope);
                 }
             }
@@ -459,7 +463,7 @@ namespace Unity.Scripting.LifecycleManagement
                 return false;
             }
 
-            var nestedActiveScopesInOrder = new List<ActiveLifecycleScopeBase>();
+            List<ActiveLifecycleScopeBase>? nestedActiveScopesInOrder = null;
 
             int numActiveInstancesOfOuterScope = 0;
             foreach (var activeScope in _activeScopes.Values)
@@ -472,10 +476,10 @@ namespace Unity.Scripting.LifecycleManagement
             // We only exit nested scopes if we are exiting the last remaining active instance of the outer scope
             if (numActiveInstancesOfOuterScope == 1)
             {
-                CollectNestedScopesToExit(lifecycleScope.Name, nestedActiveScopesInOrder);
+                CollectNestedScopesToExit(lifecycleScope.Name, ref nestedActiveScopesInOrder);
             }
 
-            if (nestedActiveScopesInOrder.Count > 0)
+            if (nestedActiveScopesInOrder != null)
             {
                 if (!alsoExitNestedScopes)
                 {
@@ -489,7 +493,8 @@ namespace Unity.Scripting.LifecycleManagement
 
                 foreach (var nestedScope in nestedActiveScopesInOrder)
                 {
-                    DebugLifecycle.Log($"Lifecycle : Exiting nested scope '{nestedScope.Scope.Name}' due to exiting scope '{lifecycleScope.Name}'");
+                    if (DebugLifecycle.LoggingEnabled)
+                        DebugLifecycle.Log($"Lifecycle : Exiting nested scope '{nestedScope.Scope.Name}' due to exiting scope '{lifecycleScope.Name}'");
                     nestedScope.OnExit(_scopeTransitionHelper);
                     RaiseAutoCleanups(nestedScope.Scope.GetType(), ScopeTransitionType.ExitScope);
                     _activeScopes.Remove(nestedScope.ScopeKey);
@@ -507,7 +512,7 @@ namespace Unity.Scripting.LifecycleManagement
                 return false;
             }
 
-            var nestedActiveScopesInOrder = new List<ActiveLifecycleScopeBase>();
+            List<ActiveLifecycleScopeBase>? nestedActiveScopesInOrder = null;
             int numActiveInstancesOfOuterScope = 0;
             foreach (var activeScope in _activeScopes.Values)
             {
@@ -519,10 +524,10 @@ namespace Unity.Scripting.LifecycleManagement
             // We only exit nested scopes if we are exiting the last remaining active instance of the outer scope
             if (numActiveInstancesOfOuterScope == 1)
             {
-                CollectNestedScopesToExit(lifecycleScope.Name, nestedActiveScopesInOrder);
+                CollectNestedScopesToExit(lifecycleScope.Name, ref nestedActiveScopesInOrder);
             }
 
-            if (nestedActiveScopesInOrder.Count > 0)
+            if (nestedActiveScopesInOrder != null)
             {
                 if (!alsoExitNestedScopes)
                 {
@@ -536,7 +541,8 @@ namespace Unity.Scripting.LifecycleManagement
 
                 foreach (var nestedScope in nestedActiveScopesInOrder)
                 {
-                    DebugLifecycle.Log($"Lifecycle : Exiting nested scope '{nestedScope.Scope.Name}' due to exiting scope '{lifecycleScope.Name}'");
+                    if (DebugLifecycle.LoggingEnabled)
+                        DebugLifecycle.Log($"Lifecycle : Exiting nested scope '{nestedScope.Scope.Name}' due to exiting scope '{lifecycleScope.Name}'");
                     nestedScope.OnExit(_scopeTransitionHelper);
                     RaiseAutoCleanups(nestedScope.Scope.GetType(), ScopeTransitionType.ExitScope);
                     _activeScopes.Remove(nestedScope.ScopeKey);
@@ -600,7 +606,8 @@ namespace Unity.Scripting.LifecycleManagement
             _transitionRequestQueue.Enqueue(newRequest);
             if (!transitionRequestQueueWasEmpty)
             {
-                DebugLifecycle.Log($"Lifecycle : Scope Transition request has been queued up for '{newRequest.Scope.Name}'");
+                if (DebugLifecycle.LoggingEnabled)
+                    DebugLifecycle.Log($"Lifecycle : Scope Transition request has been queued up for '{newRequest.Scope.Name}'");
                 // If there's older transition request in the queue, then we should process the new or other request right now, as they are being handled lower in the stack (or potentially in another thread).
                 return;
             }
@@ -625,7 +632,8 @@ namespace Unity.Scripting.LifecycleManagement
             _transitionRequestQueue.Enqueue(newRequest);
             if (!transitionRequestQueueWasEmpty)
             {
-                DebugLifecycle.Log($"Lifecycle : Scope Transition request has been queued up for '{newRequest.Scope.Name}'");
+                if (DebugLifecycle.LoggingEnabled)
+                    DebugLifecycle.Log($"Lifecycle : Scope Transition request has been queued up for '{newRequest.Scope.Name}'");
                 // If there's older transition request in the queue, then we should process the new or other request right now, as they are being handled lower in the stack (or potentially in another thread).
                 return;
             }

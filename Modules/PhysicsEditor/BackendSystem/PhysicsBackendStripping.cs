@@ -2,25 +2,33 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _3DPhysics not yet converted
 using UnityEditor.Build;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.PhysicsEditor;
 
-[InitializeOnLoad]
 [NativeHeader("Modules/Physics/PhysicsBackendSystem.h")]
-internal class PhysicsBackendStripping
+internal partial class PhysicsBackendStripping
 {
     const string k_PhysicsModuleName = "Physics";
     const string k_PhysicsManagerAssetPath = "ProjectSettings/DynamicsManager.asset";
     const uint k_FallbackIntegrationId = 0xDECAFBAD;
 
-    static PhysicsBackendStripping()
+    [OnCodeLoaded]
+    static void Initialize()
     {
         AssemblyStripper.onCollectIncludedModules += AddPhysicsBackendModule;
+    }
+
+    [OnCodeUnloading]
+    static void Teardown()
+    {
+        AssemblyStripper.onCollectIncludedModules -= AddPhysicsBackendModule;
     }
 
     [FreeFunction("Physics::BackendSystem::GetIntegrationUnityModuleName")]
@@ -49,3 +57,4 @@ internal class PhysicsBackendStripping
         adder.AddModule(currentBackendModuleName);
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

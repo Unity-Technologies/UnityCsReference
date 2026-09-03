@@ -2,16 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
     // Registry of the USS rule the Animation Window currently drives, so AnimationRecordingStyleBridge
     // can route rule-inspector edits to its clip. Rule-level analog of PerElementAnimationContext.
-    internal static class StyleRuleAnimationContext
+    internal static partial class StyleRuleAnimationContext
     {
+        [AutoStaticsCleanupOnCodeReload]
         static StyleRule s_ActiveRule;
+        [AutoStaticsCleanupOnCodeReload]
         static UIAnimationClip s_ActiveClip;
 
         internal static StyleRule activeRule => s_ActiveRule;
@@ -45,4 +47,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

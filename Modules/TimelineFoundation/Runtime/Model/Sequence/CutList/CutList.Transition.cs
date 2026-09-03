@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.Time;
 
@@ -14,6 +14,7 @@ namespace Unity.Timeline.Foundation.Model
     {
         internal readonly struct Transition : IEquatable<Transition>
         {
+            [NoAutoStaticsCleanup] // immutable invalid-sentinel; holds no content reference (null) and only value-type IDs/ranges
             public static readonly Transition Invalid = new Transition(UniqueID.Invalid, TimeRange.Empty, null);
 
             readonly UniqueID m_Id;
@@ -76,4 +77,3 @@ namespace Unity.Timeline.Foundation.Model
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

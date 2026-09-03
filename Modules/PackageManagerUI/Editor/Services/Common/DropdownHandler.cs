@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.UIElements;
@@ -23,6 +24,10 @@ internal partial class DropdownHandler : BaseService<IDropdownHandler>, IDropdow
 {
     internal partial class DropdownWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal DropdownWindow() {}
+        #pragma warning restore UAL0015
+
         [AutoStaticsCleanupOnCodeReload]
         private static List<DropdownWindow> s_OpenedWindows = new List<DropdownWindow>();
 
@@ -100,7 +105,7 @@ internal partial class DropdownHandler : BaseService<IDropdownHandler>, IDropdow
 
     public void ShowAddPackageByNameDropdown(VisualElement anchorElement, string packageName = null, string packageVersion = null)
     {
-        var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_CustomDisplayDialog)
+        var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_CustomDisplayDialog, m_Application)
         {
             packageNameInitialValue = packageName,
             packageVersionInitialValue = packageVersion
@@ -124,3 +129,4 @@ internal partial class DropdownHandler : BaseService<IDropdownHandler>, IDropdow
         DropdownWindow.ShowDropdown(anchorElement, dropdown);
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

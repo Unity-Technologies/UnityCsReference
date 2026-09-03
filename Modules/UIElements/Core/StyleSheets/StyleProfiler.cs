@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Runtime.InteropServices;
@@ -15,9 +14,19 @@ internal interface IStyleProfiler
 {
     void BeginMatchingStyleSheet(StyleSheet styleSheet, SelectorAccelerationCacheEntry accelerationCacheEntry);
     void BeginMatchingElement(VisualElement element);
-    void BeginMatchingSelector(StyleComplexSelector complexSelector);
-    void EndMatchingSelector(StyleComplexSelector complexSelector, bool match, bool passedAncestorFilter);
     void EndMatchingStyleSheet(StyleSheet styleSheet);
+
+    // Brackets one native matching call, tightly: the bracket closes as soon as the native
+    // loop returns. Begin returns the per-descriptor stats buffer for this sheet's cache entry
+    // (length >= its allDescriptors count) while a capture is active, or null to skip
+    // collection — a null return must be side-effect free (it also folds the profiler branches
+    // out of the matcher for NoOpStyleProfiler), and EndSelectorMatching is only called after
+    // a non-null Begin. The profiler is expected to pause its sheet-self-time measurement
+    // between the two calls, so matching time — including the stats-collection overhead — is
+    // attributed per selector via the buffer, while everything outside the bracket (match
+    // materialization included) lands in sheet self time.
+    SelectorMatchStatsInfo[] BeginSelectorMatching(in SelectorAccelerationCacheEntry accelerationCacheEntry);
+    void EndSelectorMatching();
 }
 
 static class StyleProfilerStorage<TProfilerType> where TProfilerType : struct, IStyleProfiler
@@ -40,16 +49,13 @@ struct NoOpStyleProfiler : IStyleProfiler
     {
     }
 
-    public void BeginMatchingSelector(StyleComplexSelector complexSelector)
-    {
-    }
-
-    public void EndMatchingSelector(StyleComplexSelector complexSelector, bool match, bool passedAncestorFilter)
-    {
-    }
-
     public void EndMatchingStyleSheet(StyleSheet styleSheet)
     {
     }
+
+    public SelectorMatchStatsInfo[] BeginSelectorMatching(in SelectorAccelerationCacheEntry accelerationCacheEntry) => null;
+
+    public void EndSelectorMatching()
+    {
+    }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

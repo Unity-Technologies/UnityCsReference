@@ -56,7 +56,7 @@ namespace UnityEngine.UIElements
         public float flexGrow => ve.computedStyle.flexGrow;
         public float flexShrink => ve.computedStyle.flexShrink;
         public Wrap flexWrap => ve.computedStyle.flexWrap;
-        public float fontSize => ve.computedStyle.fontSize.value;
+        public float fontSize => ve.computedStyle.fontSize;
         public GridAutoFlow gridAutoFlow => ve.computedStyle.gridAutoFlow;
         public GridLine gridColumnEnd => ve.computedStyle.gridColumnEnd;
         public GridLine gridColumnStart => ve.computedStyle.gridColumnStart;
@@ -96,6 +96,7 @@ namespace UnityEngine.UIElements
         public IEnumerable<EasingFunction> transitionTimingFunction => ve.computedStyle.transitionTimingFunction.ToArray();
         public Vector3 translate => ve.ResolveTranslate();
         public Color unityBackgroundImageTintColor => ve.computedStyle.unityBackgroundImageTintColor;
+        public Curvature unityCurvature => ve.computedStyle.unityCurvature;
         public EditorTextRenderingMode unityEditorTextRenderingMode => ve.computedStyle.unityEditorTextRenderingMode;
         public Font unityFont => (Font)Resources.EntityIdToObject(ve.computedStyle.unityFont);
         public FontDefinition unityFontDefinition => FontDefinition.From(ve.computedStyle.unityFontDefinition);
@@ -279,6 +280,8 @@ namespace UnityEngine.UIElements
         Vector3 IResolvedStyle.translate => resolvedStyle.translate;
 
         Color IResolvedStyle.unityBackgroundImageTintColor => resolvedStyle.unityBackgroundImageTintColor;
+
+        Curvature IResolvedStyle.unityCurvature => resolvedStyle.unityCurvature;
 
         EditorTextRenderingMode IResolvedStyle.unityEditorTextRenderingMode => resolvedStyle.unityEditorTextRenderingMode;
 

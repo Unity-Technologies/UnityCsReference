@@ -14,7 +14,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor.Utils
 {
-    [VisibleToOtherModules("UnityEditor.BurstModule")]
+    [VisibleToOtherModules("UnityEditor.BurstModule", "UnityEditor.ProjectAuditorModule")]
     internal class Program : IDisposable
     {
         private ProcessOutputStreamReader _stdout;

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -471,6 +470,9 @@ internal partial class ATGTextJobSystem
             //Debug.Assert((meshInfo.textElementInfos.Length & 0b11) == 0); // Quads only
             int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
 
+            bool isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
+            Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
+
             for (int j = 0; j < atlasCount; ++j)
             {
                 var textElementInfoInAtlas = textElementIndicesByMesh[meshInfoIndex][j];
@@ -504,27 +506,27 @@ internal partial class ATGTextJobSystem
 
                     alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
+                    UIRUtility.ConvertSlicesToSpans(vertices, indices, out var vertexSpan, out var indexSpan);
+
                     var pos = (visualElement).contentRect.min;
                     for (int vDst = 0, k = 0; vDst < vertexCount; vDst += 4, vSrc += 1, k += 6)
                     {
-                        var isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
-                        Span<NativeTextElementInfo> textElementInfosSpan = meshInfo.textElementInfos;
                         int teiIndex = textElementInfoInAtlas[vSrc];
-                        var tei = textElementInfosSpan[teiIndex];
+                        ref var tei = ref textElementInfosSpan[teiIndex]; // by ref: the struct is 4 vertices wide
 
                         uirQuadMap?.Record(teiIndex, verticesArray.Count, vDst);
 
-                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomLeft, pos, inverseScale, isDynamicColor, isColorFont);
-                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topLeft, pos, inverseScale, isDynamicColor, isColorFont);
-                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topRight, pos, inverseScale, isDynamicColor, isColorFont);
-                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomRight, pos, inverseScale, isDynamicColor, isColorFont);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 0], ref tei.bottomLeft, pos, inverseScale, isDynamicColor, isColorFont);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 1], ref tei.topLeft, pos, inverseScale, isDynamicColor, isColorFont);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 2], ref tei.topRight, pos, inverseScale, isDynamicColor, isColorFont);
+                        MeshGenerator.ConvertTextVertexToUIRVertex(out vertexSpan[vDst + 3], ref tei.bottomRight, pos, inverseScale, isDynamicColor, isColorFont);
 
-                        indices[k + 0] = (ushort)(vDst + 0);
-                        indices[k + 1] = (ushort)(vDst + 1);
-                        indices[k + 2] = (ushort)(vDst + 2);
-                        indices[k + 3] = (ushort)(vDst + 2);
-                        indices[k + 4] = (ushort)(vDst + 3);
-                        indices[k + 5] = (ushort)(vDst + 0);
+                        indexSpan[k + 0] = (ushort)(vDst + 0);
+                        indexSpan[k + 1] = (ushort)(vDst + 1);
+                        indexSpan[k + 2] = (ushort)(vDst + 2);
+                        indexSpan[k + 3] = (ushort)(vDst + 2);
+                        indexSpan[k + 4] = (ushort)(vDst + 3);
+                        indexSpan[k + 5] = (ushort)(vDst + 0);
                     }
 
                     verticesArray.Add(vertices);
@@ -538,4 +540,3 @@ internal partial class ATGTextJobSystem
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

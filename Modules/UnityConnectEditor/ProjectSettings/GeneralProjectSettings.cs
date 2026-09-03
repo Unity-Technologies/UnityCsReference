@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
@@ -54,12 +55,12 @@ namespace UnityEditor.Connect
         {
             return new GeneralProjectSettings(k_ProjectSettingsPath, SettingsScope.Project, new List<string>()
             {
-                L10n.Tr(k_KeywordOrganization),
-                L10n.Tr(k_KeywordProject),
-                L10n.Tr(k_KeywordUnlink),
-                L10n.Tr(k_KeywordMembers),
-                L10n.Tr(k_KeywordDashboard),
-                L10n.Tr(k_KeywordId)
+                L10n.Tr(k_KeywordOrganization, null),
+                L10n.Tr(k_KeywordProject, null),
+                L10n.Tr(k_KeywordUnlink, null),
+                L10n.Tr(k_KeywordMembers, null),
+                L10n.Tr(k_KeywordDashboard, null),
+                L10n.Tr(k_KeywordId, null)
             });
         }
 
@@ -148,7 +149,7 @@ namespace UnityEditor.Connect
                 exceptionCallback = (compliance, exception) =>
                 {
                     NotificationManager.instance.Publish(Notification.Topic.CoppaCompliance, Notification.Severity.Error,
-                        L10n.Tr(exception.Message));
+                        L10n.Tr(exception.Message, null));
                 }
             };
             var coppaContainer = rootVisualElement.Q(CoppaManager.coppaContainerName);
@@ -207,8 +208,8 @@ namespace UnityEditor.Connect
         void UnbindProject()
         {
             if (EditorDialog.DisplayDecisionDialog(
-                titleText: L10n.Tr(k_UnlinkProjectDialogTitle),
-                messageText: L10n.Tr(k_UnlinkProjectDialogMessage),
+                titleText: L10n.Tr(k_UnlinkProjectDialogTitle, null),
+                messageText: L10n.Tr(k_UnlinkProjectDialogMessage, null),
                 yesButtonText: default,
                 noButtonText: default))
             {
@@ -217,9 +218,10 @@ namespace UnityEditor.Connect
                 string cachedProjectName = UnityConnect.instance.projectInfo.projectName;
                 UnityConnect.instance.UnbindProject();
                 EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindManager.ProjectBindState() { bound = false, projectName = cachedProjectName });
-                NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectUnlinkSuccessMessage));
+                NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectUnlinkSuccessMessage, null));
                 ReinitializeSettings();
             }
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

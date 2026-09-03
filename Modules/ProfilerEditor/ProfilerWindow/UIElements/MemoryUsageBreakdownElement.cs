@@ -23,11 +23,11 @@ namespace Unity.Profiling.Editor
 
         static class Content
         {
-            public static readonly string SelectedFormatStringPartOfTooltip = L10n.Tr("\nSelected: {0}\n({1:0.0}% of {2})");
-            public static readonly string Reserved = L10n.Tr("Reserved");
-            public static readonly string UsedFormatStringPartOfTooltip = L10n.Tr(" Used: {0}\n({1:0.0}% of {2})");
-            public static readonly string ReservedFormatStringPartOfTooltip = L10n.Tr("{0}: {1}\n({2:0.0}% of {3})");
-            public static readonly string ReservedClarificationForReservedPartOfTooltip = L10n.Tr("\nReserved");
+            public static readonly string SelectedFormatStringPartOfTooltip = L10n.Tr("\nSelected: {0}\n({1:0.0}% of {2})", null);
+            public static readonly string Reserved = L10n.Tr("Reserved", null);
+            public static readonly string UsedFormatStringPartOfTooltip = L10n.Tr(" Used: {0}\n({1:0.0}% of {2})", null);
+            public static readonly string ReservedFormatStringPartOfTooltip = L10n.Tr("{0}: {1}\n({2:0.0}% of {3})", null);
+            public static readonly string ReservedClarificationForReservedPartOfTooltip = L10n.Tr("\nReserved", null);
         }
 
         [UxmlAttribute]

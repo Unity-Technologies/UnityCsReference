@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneView not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
@@ -82,7 +83,7 @@ namespace UnityEditor
         List<MonoScript> m_MonoScriptIconsChanged;
 
         const int maxShowRecent = 5;
-        readonly string textGizmoVisible = L10n.Tr("Show/Hide Gizmo");
+        readonly string textGizmoVisible = L10n.Tr("Show/Hide Gizmo", null);
         GUIContent generalContent = EditorGUIUtility.TrTextContent("General");
         GUIContent iconToggleContent = EditorGUIUtility.TrTextContent("", "Show/Hide Icon");
         GUIContent iconSelectContent = EditorGUIUtility.TrTextContent("", "Select Icon");
@@ -466,9 +467,9 @@ namespace UnityEditor
             bool headerDrawn = false;
             bool searchDrawn = false;
 
-            curY = DrawListSection(curY, L10n.Tr("Recently Changed"),    m_RecentAnnotations,    doDraw, listElementWidth, startY, endY, ref even, true,  ref headerDrawn, ref searchDrawn);
-            curY = DrawListSection(curY, L10n.Tr("Scripts"),             m_ScriptAnnotations,    doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn, ref searchDrawn);
-            curY = DrawListSection(curY, L10n.Tr("Built-in Components"), m_BuiltinAnnotations,   doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn, ref searchDrawn);
+            curY = DrawListSection(curY, L10n.Tr("Recently Changed", null),    m_RecentAnnotations,    doDraw, listElementWidth, startY, endY, ref even, true,  ref headerDrawn, ref searchDrawn);
+            curY = DrawListSection(curY, L10n.Tr("Scripts", null),             m_ScriptAnnotations,    doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn, ref searchDrawn);
+            curY = DrawListSection(curY, L10n.Tr("Built-in Components", null), m_BuiltinAnnotations,   doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn, ref searchDrawn);
 
             return curY;
         }
@@ -785,3 +786,4 @@ namespace UnityEditor
 
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

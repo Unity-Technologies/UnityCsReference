@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -162,6 +161,9 @@ namespace UnityEngine.UIElements
         private bool m_HasInlineScale;
         private StyleScale m_InlineScale;
 
+        private bool m_HasInlineCurvature;
+        private StyleCurvature m_InlineCurvature;
+
         private bool m_HasInlineBackgroundSize;
         public StyleBackgroundSize m_InlineBackgroundSize;
 
@@ -229,6 +231,8 @@ namespace UnityEngine.UIElements
                     return m_HasInlineScale;
                 case StylePropertyId.BackgroundSize:
                     return m_HasInlineBackgroundSize;
+                case StylePropertyId.UnityCurvature:
+                    return m_HasInlineCurvature;
                 default:
                     return false;
             }
@@ -299,6 +303,11 @@ namespace UnityEngine.UIElements
             if (m_HasInlineBackgroundSize)
             {
                 computedStyle.ApplyStyleBackgroundSize(ve.style.backgroundSize.value);
+            }
+
+            if (m_HasInlineCurvature)
+            {
+                computedStyle.ApplyStyleCurvature(ve.style.unityCurvature.value);
             }
         }
 
@@ -475,6 +484,24 @@ namespace UnityEngine.UIElements
                 if (SetInlineRotate(value))
                 {
                     ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Rotate]);
+                }
+            }
+        }
+
+        StyleCurvature IStyle.unityCurvature
+        {
+            get
+            {
+                var inlineCurvature = new StyleCurvature();
+                if (TryGetInlineCurvature(ref inlineCurvature))
+                    return inlineCurvature;
+                return StyleKeyword.Null;
+            }
+            set
+            {
+                if (SetInlineCurvature(value))
+                {
+                    ve.IncrementVersion(StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityCurvature]);
                 }
             }
         }
@@ -1076,6 +1103,38 @@ namespace UnityEngine.UIElements
             ve.computedStyle.ApplyStyleRotate(rotate.value);
         }
 
+        private bool SetInlineCurvature(StyleCurvature inlineValue)
+        {
+            var styleCurvature = new StyleCurvature();
+            if (TryGetInlineCurvature(ref styleCurvature))
+            {
+                if (styleCurvature.value == inlineValue.value && styleCurvature.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                m_HasInlineCurvature = false;
+                return RemoveInlineStyle(StylePropertyId.UnityCurvature);
+            }
+
+            m_InlineCurvature = inlineValue;
+            m_HasInlineCurvature = true;
+            ApplyStyleCurvature(inlineValue);
+
+            return true;
+        }
+
+        private void ApplyStyleCurvature(StyleCurvature curvature)
+        {
+            // Curvature is non-animatable, so no inline transition handling (unlike rotate/scale).
+            ve.computedStyle.ApplyStyleCurvature(curvature.value);
+        }
+
         private bool SetInlineBackgroundSize(StyleBackgroundSize inlineValue)
         {
             var styleBackgroundSize = new StyleBackgroundSize();
@@ -1230,6 +1289,8 @@ namespace UnityEngine.UIElements
                 changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.Scale];
             if (SetInlineBackgroundSize(StyleKeyword.Null))
                 changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.BackgroundSize];
+            if (SetInlineCurvature(StyleKeyword.Null))
+                changes |= StylePropertyUtil.s_PropertyToChangeType[(int)StylePropertyId.UnityCurvature];
 
             // Clear all inline style collections
             m_Values.Clear();
@@ -1332,6 +1393,16 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        public bool TryGetInlineCurvature(ref StyleCurvature value)
+        {
+            if (m_HasInlineCurvature)
+            {
+                value = m_InlineCurvature;
+                return true;
+            }
+            return false;
+        }
+
         public bool TryGetInlineScale(ref StyleScale value)
         {
             if (m_HasInlineScale)
@@ -1370,4 +1441,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

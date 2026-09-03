@@ -85,6 +85,11 @@ namespace UnityEngine.UIElements
             public List<int> m_ElementIdsPath;
             [SerializeReference]
             public UxmlSerializedData m_SerializedData;
+
+            // Per-component attribute overrides on the same element (one entry per overridden component
+            // type). Empty for legacy assets and element-only overrides.
+            [SerializeReference]
+            public List<UxmlComponentSerializedData> m_ComponentOverrides;
         }
 
         [SerializeField]
@@ -93,6 +98,48 @@ namespace UnityEngine.UIElements
         {
             get => m_SerializedDataOverride;
             set => m_SerializedDataOverride = value;
+        }
+
+        // A component override authored inside <AttributeOverrides>: a component UxmlSerializedData
+        // targeting the element identified by m_NamesPath. Import-time staging; the data is folded into
+        // serializedDataOverrides (m_ComponentOverrides) by CreateSerializedDataOverrides.
+        [Serializable]
+        public struct ComponentAttributeOverride
+        {
+            public string[] m_NamesPath;
+            [SerializeReference] public UxmlComponentSerializedData m_ComponentData;
+
+            public bool NamesPathMatchesElementNamesPath(IList<string> elementNamesPath)
+            {
+                if (elementNamesPath == null || m_NamesPath == null
+                                             || elementNamesPath.Count == 0 || m_NamesPath.Length == 0)
+                    return false;
+
+                if (m_NamesPath.Length == 1)
+                    return m_NamesPath[0] == elementNamesPath[^1];
+
+                if (m_NamesPath.Length != elementNamesPath.Count)
+                    return false;
+
+                for (var i = elementNamesPath.Count - 1; i >= 0; --i)
+                {
+                    if (elementNamesPath[i] != m_NamesPath[i])
+                        return false;
+                }
+
+                return true;
+            }
+        }
+
+        [SerializeField]
+        List<ComponentAttributeOverride> m_ComponentAttributeOverrides;
+        public List<ComponentAttributeOverride> componentAttributeOverrides => m_ComponentAttributeOverrides;
+        public bool hasComponentAttributeOverride => m_ComponentAttributeOverrides is { Count: > 0 };
+
+        public void AddComponentAttributeOverride(string[] namesPath, UxmlComponentSerializedData componentData)
+        {
+            m_ComponentAttributeOverrides ??= new List<ComponentAttributeOverride>();
+            m_ComponentAttributeOverrides.Add(new ComponentAttributeOverride { m_NamesPath = namesPath, m_ComponentData = componentData });
         }
 
         internal override VisualElement Instantiate(CreationContext cc, VisualElementAssetReferenceTable.DocumentNode parentAuthoringNode)

@@ -240,7 +240,7 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// The narrowphase cast results.
         /// </summary>
-        public readonly struct CastResult : IEquatable<CastResult>
+        public readonly record struct CastResult
         {
             /// <summary>
             /// Create a narrowphase result.
@@ -266,29 +266,10 @@ namespace Unity.U2D.Physics
             /// <undoc/>
             public override readonly string ToString() => $"CastResult(proxy=({m_ProxyResult}), cast={m_CastResult})";
 
-            #region Equality
-
-            /// <undoc/>
-            public override bool Equals(object obj) => obj is CastResult other && Equals(other);
-
-            /// <undoc/>
-            public bool Equals(CastResult other) { return m_ProxyResult == other.m_ProxyResult && m_CastResult == other.m_CastResult; }
-
-            /// <undoc/>
-            public static bool operator ==(CastResult lhs, CastResult rhs) => lhs.Equals(rhs);
-
-            /// <undoc/>
-            public static bool operator !=(CastResult lhs, CastResult rhs) => !(lhs == rhs);
-
-            /// <undoc/>
-            public override int GetHashCode() { return HashCode.Combine(m_ProxyResult, m_CastResult); }
-
-            #endregion
-
             /// <summary>
             /// Ascending distance sort comparer.
             /// </summary>
-            public readonly struct SortAscendingOrder : IComparer<CastResult>
+            public readonly record struct SortAscendingOrder : IComparer<CastResult>
             {
                 /// <undoc/>
                 public int Compare(CastResult x, CastResult y) => x.castResult.fraction.CompareTo(y.castResult.fraction);
@@ -306,7 +287,7 @@ namespace Unity.U2D.Physics
         /// A space result from <see cref="PhysicsSpace.OverlapAABB(PhysicsAABB, PhysicsMask, Allocator)"/>, <see cref="PhysicsSpace.CastRay(PhysicsQuery.CastRayInput, PhysicsMask, Allocator)"/> or <see cref="PhysicsSpace.CastShape(PhysicsQuery.CastShapeInput, PhysicsMask, Allocator)"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct ProxyResult : IEquatable<ProxyResult>
+        public readonly record struct ProxyResult
         {
             /// <summary>
             /// The proxy handle.
@@ -321,25 +302,6 @@ namespace Unity.U2D.Physics
             /// <undoc/>
             public override readonly string ToString() => $"proxyHandle=({m_ProxyHandle}), userHandle={m_UserHandle}";
 
-            #region Equality
-
-            /// <undoc/>
-            public override bool Equals(object obj) => obj is ProxyResult other && Equals(other);
-
-            /// <undoc/>
-            public bool Equals(ProxyResult other) { return m_ProxyHandle == other.m_ProxyHandle && m_UserHandle == other.m_UserHandle; }
-
-            /// <undoc/>
-            public static bool operator ==(ProxyResult lhs, ProxyResult rhs) => lhs.Equals(rhs);
-
-            /// <undoc/>
-            public static bool operator !=(ProxyResult lhs, ProxyResult rhs) => !(lhs == rhs);
-
-            /// <undoc/>
-            public override int GetHashCode() { return HashCode.Combine(m_ProxyHandle, m_UserHandle); }
-
-            #endregion
-
             #region Internal
 
             readonly ProxyHandle m_ProxyHandle;
@@ -352,7 +314,7 @@ namespace Unity.U2D.Physics
         /// A proxy identity added to the space.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct ProxyHandle : IEquatable<ProxyHandle>
+        public readonly record struct ProxyHandle
         {
             /// <summary>
             /// The Id of the proxy.
@@ -370,25 +332,6 @@ namespace Unity.U2D.Physics
 
             /// <undoc/>
             public override readonly string ToString() => isValid ? $"Id={m_Index1}, generation={m_Generation}, space={m_Space0}" : "<INVALID>";
-
-            #region Equality
-
-            /// <undoc/>
-            public override bool Equals(object obj) => obj is ProxyHandle other && Equals(other);
-
-            /// <undoc/>
-            public bool Equals(ProxyHandle other) { return m_Index1 == other.m_Index1 && m_Generation == other.m_Generation && m_Space0 == other.m_Space0; }
-
-            /// <undoc/>
-            public static bool operator ==(ProxyHandle lhs, ProxyHandle rhs) => lhs.Equals(rhs);
-
-            /// <undoc/>
-            public static bool operator !=(ProxyHandle lhs, ProxyHandle rhs) => !(lhs == rhs);
-
-            /// <undoc/>
-            public override int GetHashCode() { return HashCode.Combine(m_Index1, m_Generation, m_Space0); }
-
-            #endregion
 
             #region Internal
 

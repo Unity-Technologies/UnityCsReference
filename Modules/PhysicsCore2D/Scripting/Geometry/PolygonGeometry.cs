@@ -22,7 +22,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public struct PolygonGeometry
+    public record struct PolygonGeometry
     {
         /// <summary>
         /// Create a default Polygon.
@@ -510,7 +510,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct ConvexHull
+        public record struct ConvexHull
         {
             /// <summary>
             /// The geometry vertices stored in a <see cref="PhysicsShape.ShapeArray"/>.

@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: Profiling not yet converted
 using System.Collections.Generic;
 using UnityEditor.Rendering;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -21,7 +21,7 @@ namespace UnityEditorInternal.Profiling
     // (see GRDProfilerCounterNamesTests). If you add or rename a counter, update BOTH files
     // and the test will pass.
     // ============================================================================================
-    static class GRDCounterNames
+    static partial class GRDCounterNames
     {
         internal const string k_CategoryName = "GPU Resident Drawer";
 
@@ -150,9 +150,11 @@ namespace UnityEditorInternal.Profiling
         // Exclusion Reason Display Labels — Editor-only UI text; no runtime equivalent.
         // Text source of truth is UnityEditor.Rendering.GRDExclusionReasonText(shared with the Frame Debugger).
         // Edit copy there, not here.
-        internal static readonly Dictionary<string, string> k_ExclusionReasonDisplayLabels = BuildReasonTextMap(GRDExclusionReasonText.k_Labels);
+        // Rebuilt from the localized source arrays on code reload so an editor-language change takes effect.
+        [AutoStaticsCleanupOnCodeReload]
+        internal static Dictionary<string, string> k_ExclusionReasonDisplayLabels = BuildReasonTextMap(GRDExclusionReasonText.k_Labels);
 
-        internal static readonly Dictionary<string, string> k_ExclusionReasonTooltips = BuildReasonTextMap(GRDExclusionReasonText.k_Tooltips);
+        [AutoStaticsCleanupOnCodeReload]
+        internal static Dictionary<string, string> k_ExclusionReasonTooltips = BuildReasonTextMap(GRDExclusionReasonText.k_Tooltips);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

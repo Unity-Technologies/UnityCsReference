@@ -83,7 +83,7 @@ namespace UnityEditor.Search
             {
                 m_ResultView.Refresh();
             });
-            refreshButton.text = L10n.Tr("Refresh");
+            refreshButton.text = L10n.Tr("Refresh", null);
             searchTextElement.Add(refreshButton);
 
             m_HeaderElement.Add(searchTextElement);

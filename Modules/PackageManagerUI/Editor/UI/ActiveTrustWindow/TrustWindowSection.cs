@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var signerNameColumn = packageMultiColumnListView.columns["orgName"];
             signerNameColumn.bindCell = (label, i) => ((Label)label).text = rows[i].signerName;
             if (!sectionData.isOrgKnown)
-                signerNameColumn.title = L10n.Tr("Author");
+                signerNameColumn.title = L10n.Tr("Author", null);
 
             packageMultiColumnListView.columns["source"].bindCell = (label, i) => ((Label)label).text = rows[i].source;
             packageMultiColumnListView.columns["version"].bindCell = (e, i) => BindVersionCell(rows[i], e as Label);
@@ -53,11 +53,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             switch (row.versionTag)
             {
                 case PackageTag.Experimental:
-                    packageTag = new PackageSimpleTagLabel(PackageTag.Experimental, L10n.Tr("Exp"));
+                    packageTag = new PackageSimpleTagLabel(PackageTag.Experimental, L10n.Tr("Exp", null));
                     packageTag.AddToClassList("Experimental");
                     break;
                 case PackageTag.PreRelease:
-                    packageTag = new PackageSimpleTagLabel(PackageTag.PreRelease, L10n.Tr("Pre"));
+                    packageTag = new PackageSimpleTagLabel(PackageTag.PreRelease, L10n.Tr("Pre", null));
                     packageTag.AddToClassList("PreRelease");
                     break;
             }

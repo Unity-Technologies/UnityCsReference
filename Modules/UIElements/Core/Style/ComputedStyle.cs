@@ -27,15 +27,12 @@ namespace UnityEngine.UIElements
             matchingRulesHash = -1;
         }
 
-        public void FinalizeApply(ref ComputedStyle parentStyle)
+        // Curved UI: -unity-curvature is a struct property handled by non-generated code
+        // (like rotate/scale/translate), so its inline application writes the rare-group field directly.
+        // Non-animatable, so no transition handling.
+        internal void ApplyStyleCurvature(Curvature value)
         {
-            // Calculate pixel font size
-            if (fontSize.unit == LengthUnit.Percent)
-            {
-                float parentSize = parentStyle.fontSize.value;
-                float computedSize = parentSize * fontSize.value / 100;
-                inheritedData.Write().fontSize = new Length(computedSize);
-            }
+            rareData.Write().unityCurvature = value;
         }
 
         private bool ApplyGlobalKeyword(StylePropertyReader reader, ref ComputedStyle parentStyle)

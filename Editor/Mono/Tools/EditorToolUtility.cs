@@ -543,7 +543,7 @@ namespace UnityEditor.EditorTools
                 {
                     string path = SanitizeToolPath(attrib.displayName);
                     if (!string.IsNullOrEmpty(path))
-                        return L10n.Tr(path);
+                        return L10n.Tr(path, null);
                 }
             }
             else if (typeof(EditorToolContext).IsAssignableFrom(tool))
@@ -553,10 +553,10 @@ namespace UnityEditor.EditorTools
                 {
                     string path = SanitizeToolPath(attrib.displayName);
                     if (!string.IsNullOrEmpty(path))
-                        return L10n.Tr(path);
+                        return L10n.Tr(path, null);
                 }
             }
-            return L10n.Tr(ObjectNames.NicifyVariableName(tool.Name.Replace("ToolContext", string.Empty)));
+            return L10n.Tr(ObjectNames.NicifyVariableName(tool.Name.Replace("ToolContext", string.Empty)), null);
         }
 
         internal static string GetToolMenuPath(EditorTool tool)

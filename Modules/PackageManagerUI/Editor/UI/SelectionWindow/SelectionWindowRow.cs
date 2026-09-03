@@ -16,10 +16,10 @@ internal class SelectionWindowRow : VisualElement
     [NoAutoStaticsCleanup]
     internal static readonly Texture2D s_FolderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
 
-    private static readonly string k_RemoveIconTooltip = L10n.Tr("Remove");
+    private static readonly string k_RemoveIconTooltip = L10n.Tr("Remove", null);
     // The internal modifier is used (instead of private) to give our test project access to these properties/methods
-    internal static readonly string k_InfoLabel = L10n.Tr("moved");
-    internal static readonly string k_InfoLabelTooltip = L10n.Tr("This asset was moved. The original location is {0}.");
+    internal static readonly string k_InfoLabel = L10n.Tr("moved", null);
+    internal static readonly string k_InfoLabelTooltip = L10n.Tr("This asset was moved. The original location is {0}.", null);
 
     private readonly Label m_RemoveIcon;
     private readonly Label m_InfoLabel;

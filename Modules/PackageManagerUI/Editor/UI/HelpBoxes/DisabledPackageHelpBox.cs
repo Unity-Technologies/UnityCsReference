@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public DisabledPackageHelpBox(IApplicationProxy application) : base(application)
         {
-            text = L10n.Tr("Unfortunately, this package is no longer available.");
+            text = L10n.Tr("Unfortunately, this package is no longer available.", null);
             messageType = HelpBoxMessageType.Warning;
             readMoreAnalyticsId = "disabled-package-help-box";
         }

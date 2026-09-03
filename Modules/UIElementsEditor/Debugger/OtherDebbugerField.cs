@@ -347,6 +347,50 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
+    internal class CurvatureField : BaseField<Curvature>
+    {
+        AngleField m_XField = new("X");
+        AngleField m_YField = new("Y");
+
+        public CurvatureField() : this(null) { }
+        public CurvatureField(string label) : this(label, Curvature.None()) { }
+
+        public CurvatureField(string label, Curvature curvature) : base(label)
+        {
+            style.flexBasis = StyleKeyword.Auto;
+            style.flexShrink = 0;
+            m_XField.style.flexGrow = 1;
+            m_YField.style.flexGrow = 1;
+
+            VisualElement content = new() { style = { flexDirection = FlexDirection.Row, flexShrink = 0 } };
+            content.Add(m_XField);
+            content.Add(m_YField);
+            visualInput = content;
+            content.Query<Label>().ForEach(l => l.style.minWidth = StyleKeyword.Initial);
+
+            m_XField.RegisterValueChangedCallback(e =>
+            {
+                if (e.newValue != value.x)
+                    value = new Curvature(e.newValue, value.y);
+            });
+
+            m_YField.RegisterValueChangedCallback(e =>
+            {
+                if (e.newValue != value.y)
+                    value = new Curvature(value.x, e.newValue);
+            });
+
+            SetValueWithoutNotify(curvature);
+        }
+
+        public override void SetValueWithoutNotify(Curvature curvature)
+        {
+            base.SetValueWithoutNotify(curvature);
+            m_XField.SetValueWithoutNotify(value.x);
+            m_YField.SetValueWithoutNotify(value.y);
+        }
+    }
+
     internal class TextAutoSizeField : BaseField<TextAutoSize>
     {
         EnumField mode = new EnumField("Mode");

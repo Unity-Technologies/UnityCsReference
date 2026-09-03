@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -11,12 +10,14 @@ using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using StyleSheetExtensions = UnityEditor.UIElements.StyleSheetExtensions;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
 [UxmlElement]
 sealed partial class ClassListElement : VisualElement, IVisualElementChangeProcessor
 {
+    [NoAutoStaticsCleanup] // pill pool, safe to persist
     static UnityEngine.Pool.ObjectPool<ClassPill> s_PillPool = new(CreatePill, null, OnReleasePill);
 
     static ClassPill CreatePill()
@@ -551,4 +552,3 @@ sealed partial class ClassListElement : VisualElement, IVisualElementChangeProce
         evt.StopPropagation();
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

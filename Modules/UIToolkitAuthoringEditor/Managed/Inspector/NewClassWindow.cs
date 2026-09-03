@@ -2,22 +2,24 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-sealed class NewClassWindow : EditorWindow
+sealed partial class NewClassWindow : EditorWindow
 {
     const string k_WindowTitle = "Add Class";
     const float k_Width = 285f;
     const float k_Height = 110f;
 
+    [AutoStaticsCleanupOnCodeReload]
     static NewClassWindow s_Window;
 
     TextField m_ClassField;
@@ -60,15 +62,15 @@ sealed class NewClassWindow : EditorWindow
         container.style.paddingLeft = 8;
         container.style.paddingRight = 8;
 
-        m_ClassField = new TextField(L10n.Tr("Class Name:"));
+        m_ClassField = new TextField(L10n.Tr("Class Name:", null));
         container.Add(m_ClassField);
 
         var buttonRow = new VisualElement();
         buttonRow.style.flexDirection = FlexDirection.RowReverse;
         buttonRow.style.marginTop = 8;
 
-        var okButton = new Button(OnSubmit) { text = L10n.Tr("OK") };
-        var cancelButton = new Button(Close) { text = L10n.Tr("Cancel") };
+        var okButton = new Button(OnSubmit) { text = L10n.Tr("OK", null) };
+        var cancelButton = new Button(Close) { text = L10n.Tr("Cancel", null) };
         buttonRow.Add(okButton);
         buttonRow.Add(cancelButton);
         container.Add(buttonRow);
@@ -114,4 +116,4 @@ sealed class NewClassWindow : EditorWindow
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

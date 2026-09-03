@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
     /// A LayerField editor. For more information, refer to [[wiki:UIE-uxml-element-LayerField|UXML element LayerField]].
     /// </summary>
     [Icon("UIToolkit/Icons/LayerField.png")]
-    [UxmlElement(visibility = LibraryVisibility.Visible)]
+    [UxmlElement]
     public partial class LayerField : PopupField<int>
     {
         [UxmlAttribute("value"), LayerDecorator]
@@ -48,7 +48,7 @@ namespace UnityEditor.UIElements
             {
                 if (value != null)
                 {
-                    Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the selected value."));
+                    Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the selected value.", null));
                 }
 
                 m_FormatSelectedValueCallback = null;
@@ -65,7 +65,7 @@ namespace UnityEditor.UIElements
             {
                 if (value != null)
                 {
-                    Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the list items."));
+                    Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the list items.", null));
                 }
 
                 m_FormatListItemCallback = null;
@@ -163,7 +163,7 @@ namespace UnityEditor.UIElements
                 menu.AddItem(item, isSelected, () => ChangeValueFromMenu(menuItemIndex));
             }
             menu.AddSeparator(String.Empty);
-            menu.AddItem(L10n.Tr("Add Layer..."), false, OpenLayerInspector);
+            menu.AddItem(L10n.Tr("Add Layer...", null), false, OpenLayerInspector);
         }
 
         void ChangeValueFromMenu(int menuItemIndex)

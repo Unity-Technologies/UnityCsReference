@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -127,7 +128,9 @@ namespace UnityEditor.Overlays
             m_TargetRect = targetRect;
             m_Horizontal = horizontal;
             m_UseMargins = includeMargins;
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             Overlay.treeAsset.CloneTree(this);
+            #pragma warning restore UAL0015
 
             this.Q(Overlay.k_CollapsedContent)?.RemoveFromHierarchy();
             this.Q(null, Overlay.k_Header)?.RemoveFromHierarchy();
@@ -137,7 +140,9 @@ namespace UnityEditor.Overlays
             AddToClassList(Overlay.ussClassName);
             style.position = Position.Absolute;
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             Refresh();
+            #pragma warning restore UAL0015
 
             RegisterCallback<MouseEnterEvent>(evt => m_CursorIsOverPopup = true);
             RegisterCallback<MouseLeaveEvent>(evt => m_CursorIsOverPopup = false);
@@ -216,3 +221,4 @@ namespace UnityEditor.Overlays
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

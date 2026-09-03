@@ -32,7 +32,7 @@ namespace UnityEditor
             var selections = Selection.transforms;
             if (selections != null && selections.Length > 0)
             {
-                Undo.RecordObjects(selections, L10n.Tr("Snap to Grid"));
+                Undo.RecordObjects(selections, L10n.Tr("Snap to Grid", null));
                 Handles.SnapToGrid(selections, axis);
             }
         }
@@ -42,7 +42,7 @@ namespace UnityEditor
             var selections = Selection.transforms;
             if (selections != null && selections.Length > 0)
             {
-                Undo.RecordObjects(selections, L10n.Tr("Align to Grid"));
+                Undo.RecordObjects(selections, L10n.Tr("Align to Grid", null));
                 Handles.AlignToGrid(selections);
             }
         }

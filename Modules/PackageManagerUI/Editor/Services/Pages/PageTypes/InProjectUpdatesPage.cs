@@ -12,7 +12,7 @@ internal class InProjectUpdatesPage : InProjectPage
     public new const string k_Id = "Updates";
 
     public override string id => k_Id;
-    public override string displayName => L10n.Tr("Updates");
+    public override string displayName => L10n.Tr("Updates", null);
     public override Icon icon => Icon.UpdatesPage;
 
     public InProjectUpdatesPage(IPackageDatabase packageDatabase) : base(packageDatabase) {}

@@ -39,7 +39,7 @@ namespace UnityEditor
         static GUIContent s_LoopIcon;
 
         static private readonly string s_PreviewDisabledMessage = "AudioClip preview not available when Unity Audio is disabled in Project Settings";
-        static private readonly string s_TrPreviewDisabledMessage = L10n.Tr(s_PreviewDisabledMessage);
+        static private readonly string s_TrPreviewDisabledMessage = L10n.Tr(s_PreviewDisabledMessage, null);
 
         [NoAutoStaticsCleanup] // lazily-loaded icon Texture2D, asset survives reload; re-initialised on next access
         static Texture2D s_DefaultIcon;

@@ -10,8 +10,8 @@ using InstanceSettings = Unity.Multiplayer.PlayMode.Editor.CloneEditorController
 
 namespace Unity.Multiplayer.PlayMode.Editor;
 
-[CustomPropertyDrawer(typeof(InstanceItem<CloneEditorController, InstanceSettings>))]
-class CloneEditorItemDrawer : InstanceItemDrawer
+[CustomPropertyDrawer(typeof(PlayModeControllerItem<CloneEditorController, InstanceSettings>))]
+class CloneEditorItemDrawer : PlayModeControllerItemDrawer
 {
     public CloneEditorItemDrawer()
     {

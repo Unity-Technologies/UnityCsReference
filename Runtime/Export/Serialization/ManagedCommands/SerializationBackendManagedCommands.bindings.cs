@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Serialization not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -99,7 +100,6 @@ internal unsafe struct NativeReadBufferContext
 [NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/ReadManagedReferenceFromBuffer.h")]
 [NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/GatherDictionaryEntries.h")]
 [NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/DictionaryFieldUniqueIdentifierStack.h")]
-[Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
 internal static unsafe partial class SerializationBackendManagedCommands
 {
     // IsThreadSafe disables the default serialization-thread guard (the icall
@@ -130,6 +130,14 @@ internal static unsafe partial class SerializationBackendManagedCommands
     private static extern void WriteManagedReferenceToBuffer(
         IntPtr transferState,
         IntPtr outputPtr);
+
+    // Batched sibling for the RttiDataType.ManagedReferenceArray opcode ([SerializeReference] collection).
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
+    private static extern void WriteManagedReferencesToBuffer(
+        IntPtr transferState,
+        IntPtr outputPtr,
+        int    count);
 
     // Gather-pass dictionary enumeration. Returns the dictionary's merged
     // SerializedKeyValue<K,V>[] (live + preserved-duplicate rows) via the native
@@ -184,8 +192,10 @@ internal static unsafe partial class SerializationBackendManagedCommands
     // SimpleNativeType), so they are fetched once at type init and live here instead of
     // on the per-block NativeBufferContext. Clone / EntityId.None still pack inline
     // (PackEntityIdIntoLsoi) with no native call at all.
+    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<ulong, IntPtr, IntPtr, int, void> s_writeEntityIdToBuffer =
         (delegate* unmanaged[Cdecl]<ulong, IntPtr, IntPtr, int, void>)(void*)GetWriteEntityIdToBufferFunctionPointer();
+    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, ulong> s_readEntityIdFromBuffer =
         (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int, ulong>)(void*)GetReadEntityIdFromBufferFunctionPointer();
 
@@ -205,12 +215,14 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetWriteEntityIdsArrayToBufferFunctionPointer();
+    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, void> s_writeEntityIdsArrayToBuffer =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, void>)(void*)GetWriteEntityIdsArrayToBufferFunctionPointer();
 
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetWriteEntityIdsToBufferFunctionPointer();
+    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, int, void> s_writeEntityIdsToBuffer =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, int, void>)(void*)GetWriteEntityIdsToBufferFunctionPointer();
 
@@ -219,6 +231,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetWriteUnityObjectEntityIdsToBufferFunctionPointer();
+    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, int, void> s_writeUnityObjectEntityIdsToBuffer =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, int, void>)(void*)GetWriteUnityObjectEntityIdsToBufferFunctionPointer();
 
@@ -226,6 +239,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetReadUnityObjectsIntoFieldsFunctionPointer();
+    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, IntPtr, int, void> s_readUnityObjectsIntoFields =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, IntPtr, int, void>)(void*)GetReadUnityObjectsIntoFieldsFunctionPointer();
 
@@ -233,6 +247,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetReadUnityObjectsArrayIntoElementsFunctionPointer();
+    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, IntPtr, IntPtr, IntPtr, void> s_readUnityObjectsArrayIntoElements =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, IntPtr, IntPtr, IntPtr, void>)(void*)GetReadUnityObjectsArrayIntoElementsFunctionPointer();
 
@@ -240,6 +255,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetReadEntityIdsArrayIntoElementsFunctionPointer();
+    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, void> s_readEntityIdsArrayIntoElements =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, int, long, IntPtr, void>)(void*)GetReadEntityIdsArrayIntoElementsFunctionPointer();
 
@@ -247,6 +263,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
     [MethodImpl(MethodImplOptions.InternalCall)]
     [NativeMethod(IsFreeFunction = true, IsThreadSafe = true)]
     private static extern IntPtr GetReadEntityIdsIntoFieldsFunctionPointer();
+    [NoAutoStaticsCleanup] // native function pointer resolved once from a native getter, no managed references
     private static readonly delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, int, void> s_readEntityIdsIntoFields =
         (delegate* unmanaged[Cdecl]<IntPtr, int, IntPtr, IntPtr, IntPtr, int, void>)(void*)GetReadEntityIdsIntoFieldsFunctionPointer();
 
@@ -390,11 +407,8 @@ internal static unsafe partial class SerializationBackendManagedCommands
     // Mono's RuntimeTypeHandle is a single-IntPtr struct, so the reinterpret
     // is correct there with no BCL help.
     //
-    // Lazy resolve (vs. static ctor) keeps this class beforefieldinit. The cache
-    // field is covered by the class-level [NoAutoStaticsCleanup]; if it is cleared
-    // by an auto-cleanup pass anyway, the next call falls through to
-    // ResolveRuntimeTypeHandleFromIntPtr and re-binds against the same BCL method
-    // — idempotent.
+    // Lazy resolve (vs. static ctor) keeps this class beforefieldinit. Re-binding
+    // against the same BCL method after cleanup is idempotent either way.
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static Type UnmarshalSystemType(IntPtr handlePtr)
@@ -549,3 +563,4 @@ internal static unsafe partial class SerializationBackendManagedCommands
     }
 
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

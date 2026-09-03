@@ -140,6 +140,7 @@ namespace UnityEngine.UIElements
                 hideFlags = HideFlags.HideAndDontSave,
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear,
+                anisoLevel = 0, // LUT: aniso taps would blend unrelated ramp positions
                 name = "BackgroundGradientAtlas",
             };
             var pixels = atlas.GetRawTextureData<Color32>();

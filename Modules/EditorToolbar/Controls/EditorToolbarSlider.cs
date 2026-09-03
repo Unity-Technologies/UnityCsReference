@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,9 +15,9 @@ namespace UnityEditor.Toolbars
         internal const string contentClassName = ussClassName + "__content";
         internal const string valueIndicatorClassName = ussClassName + "__value-indicator";
         internal const string editModeClassName = ussClassName + "--edit-mode";
-        static readonly string k_MenuCopy = L10n.Tr("Copy");
-        static readonly string k_MenuPaste = L10n.Tr("Paste");
-        static readonly string k_MenuEdit = L10n.Tr("Edit");
+        static readonly string k_MenuCopy = L10n.Tr("Copy", null);
+        static readonly string k_MenuPaste = L10n.Tr("Paste", null);
+        static readonly string k_MenuEdit = L10n.Tr("Edit", null);
         float m_PreviousValue;
 
         EditorToolbarContent m_Content;
@@ -51,10 +52,12 @@ namespace UnityEditor.Toolbars
             }
         }
 
+        #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
         public EditorToolbarSlider() : this("", 0, 1) {}
         public EditorToolbarSlider(string text, float start, float end) : this(text, null, start, end) {}
         public EditorToolbarSlider(Texture2D icon, float start, float end) : this("", icon, start, end) { }
         public EditorToolbarSlider(string text, Texture2D icon, float start, float end) : this(text, new EditorToolbarIcon(icon), start, end) { }
+        #pragma warning restore UAL0015
 
         internal EditorToolbarSlider(string text, EditorToolbarIcon icon, float start, float end) : base(start, end)
         {
@@ -78,7 +81,9 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<PropertyChangedEvent>(OnPropertyChanged);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             this.AddManipulator(m_MenuManipulator = new ContextualMenuManipulator((evt) => PopulateContextMenu(evt.menu)));
+            #pragma warning restore UAL0015
             dragContainer.RegisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
         }
 
@@ -208,3 +213,4 @@ namespace UnityEditor.Toolbars
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

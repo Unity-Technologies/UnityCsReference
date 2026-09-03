@@ -147,11 +147,11 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
 
         if (invalidSignaturePackage != null)
         {
-            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Invalid Signature"),"invalidSignatureInProject", L10n.Tr("Open Package Manager"), L10n.Tr("Close"), new Vector2(340f, 150f))
+            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Invalid Signature", null),"invalidSignatureInProject", L10n.Tr("Open Package Manager", null), L10n.Tr("Close", null), new Vector2(340f, 150f))
             {
                 headerIcon = Icon.PackageErrorLarge,
-                headerMainText = L10n.Tr("This project contains one or more packages with invalid signatures."),
-                bodyText = L10n.Tr("This might indicate they are unsafe or malicious. Would you like to open the Package Manager to review these packages?"),
+                headerMainText = L10n.Tr("This project contains one or more packages with invalid signatures.", null),
+                bodyText = L10n.Tr("This might indicate they are unsafe or malicious. Would you like to open the Package Manager to review these packages?", null),
                 readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-errors.html#pkg-invalid-sig",
                 readMoreClickedAnalyticsId = "invalid-signature-in-project-read-more",
                 headerColor = HeaderColor.Red
@@ -169,11 +169,11 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
         }
         else if (unsignedPackage != null)
         {
-            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Missing Signature"), "unsignedPackageInProject", L10n.Tr("Open Package Manager"), L10n.Tr("Close"), new Vector2(340f, 150f))
+            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Missing Signature", null), "unsignedPackageInProject", L10n.Tr("Open Package Manager", null), L10n.Tr("Close", null), new Vector2(340f, 150f))
             {
                 headerIcon = Icon.PackageWarningLarge,
-                headerMainText = L10n.Tr("This project contains one or more unsigned packages."),
-                bodyText = L10n.Tr("This could indicate they are potentially unsafe. Would you like to open the Package Manager to review these packages?"),
+                headerMainText = L10n.Tr("This project contains one or more unsigned packages.", null),
+                bodyText = L10n.Tr("This could indicate they are potentially unsafe. Would you like to open the Package Manager to review these packages?", null),
                 readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-signature.html",
                 readMoreClickedAnalyticsId = "unsigned-package-in-project-read-more"
             };
@@ -195,15 +195,16 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
         if (!m_CheckStartupPackageErrors)
             return;
 
-        if (!m_PackageDatabase.allPackages.AnyMatches(p => p.state == PackageState.Error && (p.versions.installed != null || p.versions.imported != null)))
+        var checkForTrustWarnings = !Unsupported.IsPackageTrustValidationDisabled;
+        if (!m_PackageDatabase.allPackages.AnyMatches(package => HasErrorsOrTrustIssues(package, checkForTrustWarnings)))
             return;
 
         var dialogResult = m_Application.DisplayDialogComplex("openPackageManagerWithErrorPackages",
-            L10n.Tr("Packages with Errors"),
-            L10n.Tr("This project contains one or more packages with errors. Do you want to open Package Manager?"),
-            L10n.Tr("Open Package Manager"),
-            L10n.Tr("Dismiss"),
-            L10n.Tr("Dismiss Forever"));
+            L10n.Tr("Packages with Errors", null),
+            L10n.Tr("This project contains packages with errors, warnings, or security compliance issues and you may want to update or replace them.\n\nYou can manage package issues using the Package Manager (Window > Package Management)", null),
+            L10n.Tr("Open Package Manager", null),
+            L10n.Tr("Dismiss", null),
+            L10n.Tr("Dismiss Forever", null));
         switch (dialogResult)
         {
             case 0:
@@ -214,5 +215,22 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
                 m_SettingsProxy.Save();
                 break;
         }
+    }
+
+    // The internal modifier is used (instead of private) to give our test project access to these properties/methods
+    internal static bool HasErrorsOrTrustIssues(IPackage package, bool checkForTrustWarnings)
+    {
+        var installedVersion = package.versions.installed;
+        if (installedVersion == null && package.versions.imported == null)
+            return false;
+
+        if (package.state == PackageState.Error)
+            return true;
+
+        if (!checkForTrustWarnings || installedVersion == null)
+            return false;
+
+        // Invalid signatures always warrant the popup, even when the trust policy allows them
+        return installedVersion.trustAndSignature == TrustAndSignature.UntrustedInvalidSignature || !installedVersion.meetsTrustPolicy;
     }
 }

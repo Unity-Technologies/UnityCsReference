@@ -229,6 +229,21 @@ namespace UnityEngine.Accessibility
             _ => AccessibilityManager.IsScreenReaderEnabled()
         };
 
+        /// <summary>
+        /// Whether the Accessibility module supports the current platform. Only players are supported; in the Editor,
+        /// an active hierarchy is accepted regardless, solely to feed the Accessibility Hierarchy Viewer.
+        /// </summary>
+        /// <remakrs>
+        /// Note that <see cref="screenReaderStatusOverride"/> can force <see cref="isScreenReaderEnabled"/> to @@true@@
+        /// even on unsupported platforms, so consumers that generate hierarchies automatically should check this before
+        /// doing any work.
+        /// </remakrs>
+        internal static bool isSupportedPlatform
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            get => AccessibilityManager.isSupportedPlatform;
+        }
+
         [AutoStaticsCleanupOnCodeReload]
         static ScreenReaderStatusOverride s_ScreenReaderStatusOverride;
 

@@ -24,6 +24,53 @@ namespace UnityEngine.Audio
     public unsafe partial struct RootOutputInstance : IEquatable<RootOutputInstance>
     {
         /// <summary>
+        /// Parameters controlling how a <see cref="RootOutputInstance"/> is created.
+        /// </summary>
+        /// <remarks>
+        /// Owns the cross-cutting update behaviour shared by all scriptable processors directly. A
+        /// <see cref="RootOutputInstance"/> has no type-specific construction arguments today, but having its own type
+        /// keeps it symmetric with <see cref="GeneratorInstance.CreationParameters"/> and leaves room to add them later.
+        /// The implicit conversion from <see cref="ProcessorInstance.CreationParameters"/> keeps existing call sites working.
+        /// </remarks>
+        public struct CreationParameters
+        {
+            /// <summary>
+            /// Control under what circumstances <see cref="ProcessorInstance.IControl{TRealtime}.Update"/> will be called.
+            /// </summary>
+            public ProcessorInstance.UpdateSetting controlUpdateSetting { get; set; }
+
+            /// <summary>
+            /// Control under what circumstances <see cref="ProcessorInstance.IRealtime.Update"/> will be called.
+            /// </summary>
+            public ProcessorInstance.UpdateSetting realtimeUpdateSetting { get; set; }
+
+            internal readonly ProcessorInstance.InitializationFlags BuildInitializationFlags()
+            {
+                ProcessorInstance.InitializationFlags flags = 0;
+
+                if (controlUpdateSetting == ProcessorInstance.UpdateSetting.UpdateIfDataIsAvailable)
+                    flags |= ProcessorInstance.InitializationFlags.UpdateControlIfDataIsAvailable;
+                else if (controlUpdateSetting == ProcessorInstance.UpdateSetting.UpdateAlways)
+                    flags |= ProcessorInstance.InitializationFlags.UpdateControlAlways;
+
+                if (realtimeUpdateSetting == ProcessorInstance.UpdateSetting.UpdateIfDataIsAvailable)
+                    flags |= ProcessorInstance.InitializationFlags.UpdateProcessorIfDataIsAvailable;
+                else if (realtimeUpdateSetting == ProcessorInstance.UpdateSetting.UpdateAlways)
+                    flags |= ProcessorInstance.InitializationFlags.UpdateProcessorAlways;
+
+                return flags;
+            }
+
+#pragma warning disable CS0618 // Intentionally bridges from the obsolete ProcessorInstance.CreationParameters.
+            // Kept out of the docs: the qualified nested parameter type breaks doc-ID parsing in the doc pipeline.
+            [UnityEngine.Internal.ExcludeFromDocs]
+            [Obsolete("Construct RootOutputInstance.CreationParameters directly; ProcessorInstance.CreationParameters will be removed.")]
+            public static implicit operator CreationParameters(ProcessorInstance.CreationParameters common)
+                => new() { controlUpdateSetting = common.controlUpdateSetting, realtimeUpdateSetting = common.realtimeUpdateSetting };
+#pragma warning restore CS0618
+        }
+
+        /// <summary>
         /// The control interface an implementation of a <see cref="RootOutputInstance"/> must implement on a struct to be fully formed.
         /// </summary>
         /// <remarks>
@@ -193,7 +240,7 @@ namespace UnityEngine.Audio
                 public TUserControl UserControl;
             }
 
-            internal static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserControl, TUserProcessor>>();
+            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserControl, TUserProcessor>>();
 
             [BurstDiscard]
             internal static unsafe void Initialize()
@@ -265,7 +312,7 @@ namespace UnityEngine.Audio
                 public TUserProcessor UserProcessor;
             }
 
-            internal static readonly BurstLike.SharedStatic<IntPtr> jobReflectionData = BurstLike.SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserProcessor>>();
+            internal static readonly SharedStatic<IntPtr> jobReflectionData = SharedStatic<IntPtr>.GetOrCreate<JobStruct<TUserProcessor>>();
 
             [BurstDiscard]
             internal static unsafe void Initialize()

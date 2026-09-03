@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
@@ -199,8 +200,10 @@ namespace Unity.UI.Builder
             m_BindingTypeDropdown = this.Q<DropdownField>("binding-type__dropdown-field");
             m_BindingTypeDropdown.RegisterValueChangedCallback((e) =>
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 UpdateBindingBeingCreatedFromBindingClass();
                 Refresh();
+                #pragma warning restore UAL0015
             });
             m_BindingAttributesContainer = this.Q("binding-attributes__container");
             m_OkButton = this.Q<Button>("button--ok");
@@ -506,3 +509,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

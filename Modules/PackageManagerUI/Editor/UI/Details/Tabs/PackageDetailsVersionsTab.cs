@@ -37,7 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPackageLinkFactory packageLinkFactory) : base(unityConnect)
         {
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Version History");
+            m_DisplayName = L10n.Tr("Version History", null);
             m_ResourceLoader = resourceLoader;
             m_ApplicationProxy = applicationProxy;
             m_PackageManagerPrefs = packageManagerPrefs;
@@ -58,14 +58,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionsToolbar = new VisualElement { name = "versionsToolbar" };
             m_Container.Add(m_VersionsToolbar);
 
-            var versionsShowOthersButton = new Button { name = "versionsShowAllButton", text = L10n.Tr("See other versions") };
+            var versionsShowOthersButton = new Button { name = "versionsShowAllButton", text = L10n.Tr("See other versions", null) };
             versionsShowOthersButton.clickable.clicked += ShowOthersVersion;
             m_VersionsToolbar.Add(versionsShowOthersButton);
 
-            m_LoadingLabel = new Label { name = "versionsLoadingLabel", text = L10n.Tr("Loading...") };
+            m_LoadingLabel = new Label { name = "versionsLoadingLabel", text = L10n.Tr("Loading...", null) };
             m_Container.Add(m_LoadingLabel);
 
-            m_NonCompliantPackageLabel = new Label { name = "nonCompliantPackageLabel", text = L10n.Tr("Information is unavailable because the package comes from a restricted registry.") };
+            m_NonCompliantPackageLabel = new Label { name = "nonCompliantPackageLabel", text = L10n.Tr("Information is unavailable because the package comes from a restricted registry.", null) };
             m_NonCompliantPackageLabel.AddToClassList("packageDetailsTabMessage");
             m_ContentContainer.Add(m_NonCompliantPackageLabel);
         }

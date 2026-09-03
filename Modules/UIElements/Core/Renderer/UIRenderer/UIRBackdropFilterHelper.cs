@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Experimental.Rendering;
@@ -169,7 +168,7 @@ namespace UnityEngine.UIElements.UIR
 
         // Captures the backdrop region, applies filters, and binds the result to the (pre-allocated) TextureId.
         // The output RenderTexture is stored in RenderData and released next frame.
-        public static void GenerateBackdropFilterTexture(DrawParams drawParams, VisualElement ve, float pixelsPerPoint, RenderData owner)
+        public static void GenerateBackdropFilterTexture(DrawParams drawParams, VisualElement ve, RenderData owner)
         {
             var textureRegistry = owner.renderTree.renderTreeManager.textureRegistry;
 
@@ -209,18 +208,23 @@ namespace UnityEngine.UIElements.UIR
             // InflateCapture maps the CSS sides onto the capture's row order.
             var chainMargins = FilterHelper.ComputeBackdropCaptureReadMargins(ve.computedStyle.backdropFilter);
 
+            Rect drawBounds = drawParams.drawBounds;
+            RectInt activeViewport = Utility.GetActiveViewport();
+            float scaleX = drawParams.pixelScale.x;
+            float scaleY = drawParams.pixelScale.y;
+
             RectInt pixelRect;
             RectInt captureRect;
             if (!isNestedRT)
             {
-                pixelRect = RenderChainCommand.RectPointsToPixelsAndFlipYAxis(worldBound, drawParams.boundsMin, pixelsPerPoint);
+                pixelRect = RenderChainCommand.RectPointsToPixels(worldBound, drawBounds.min, scaleX, scaleY, activeViewport);
                 if (pixelRect.width <= 0 || pixelRect.height <= 0)
                     return;
 
                 // Clamp to the ancestor clip in the capture's own space: clippingRect (panel space, covers overflow:hidden)
                 // for a normal element, but the scissor for a filtered element captured in a nested tree (UI-5094).
                 Rect clipRect = object.ReferenceEquals(owner, ve.renderData) ? owner.clippingRect : drawParams.scissor.Peek();
-                RectInt clipRectInt = RenderChainCommand.RectPointsToPixelsAndFlipYAxis(clipRect, drawParams.boundsMin, pixelsPerPoint);
+                RectInt clipRectInt = RenderChainCommand.RectPointsToPixels(clipRect, drawBounds.min, scaleX, scaleY, activeViewport);
 
                 // A top-origin aux RT needs the bottom-origin rects reflected about the full source
                 // height (not the viewport) into raw-row space; bottom-origin rows already match.
@@ -231,7 +235,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 captureRect = pixelRect;
-                InflateCapture(ref captureRect, chainMargins, topOriginRows, pixelsPerPoint, pixelsPerPoint);
+                InflateCapture(ref captureRect, chainMargins, topOriginRows, scaleX, scaleY);
 
                 if (!ClampCapture(ref captureRect, clipRectInt))
                     return;
@@ -246,20 +250,6 @@ namespace UnityEngine.UIElements.UIR
                 if (treeBound.width <= UIRUtility.k_Epsilon || treeBound.height <= UIRUtility.k_Epsilon)
                     return;
 
-                Rect drawBounds = drawParams.drawBounds;
-                RectInt activeViewport = Utility.GetActiveViewport();
-
-                // Mid-render of the nested tree: draw bounds and viewport must be valid here, so a bad value is a bug.
-                bool validRenderState = drawBounds.width > UIRUtility.k_Epsilon && drawBounds.height > UIRUtility.k_Epsilon
-                    && activeViewport.width > 0 && activeViewport.height > 0;
-                Debug.Assert(validRenderState, "Backdrop-filter nested-RT remap reached with invalid draw bounds or viewport.");
-                if (!validRenderState)
-                    return;
-
-                // The nested tree's projection scale can deviate from the panel's pixelsPerPoint (atlas block
-                // rounding), so derive it from the active viewport / draw bounds; the rect mapping itself is shared.
-                float scaleX = activeViewport.width / drawBounds.width;
-                float scaleY = activeViewport.height / drawBounds.height;
                 pixelRect = RenderChainCommand.RectPointsToPixels(treeBound, drawBounds.min, scaleX, scaleY, activeViewport);
                 if (pixelRect.width <= 0 || pixelRect.height <= 0)
                     return;
@@ -482,4 +472,3 @@ namespace UnityEngine.UIElements.UIR
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

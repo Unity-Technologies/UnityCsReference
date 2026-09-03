@@ -18,10 +18,12 @@ sealed class UICanvasPanManipulator : PointerManipulator
     int m_ActivatingButton;
     Vector2 m_InitialPointerPosition;
 
+    public bool IsPanning => m_Panning;
+
     public UICanvasPanManipulator(UIViewport viewport)
     {
         m_Viewport = viewport;
-        m_Viewport.AddManipulator(this);
+        m_Viewport.Surface.AddManipulator(this);
         m_Canvas = m_Viewport.Q<UICanvas>();
         activators.Add(new ManipulatorActivationFilter { button = MouseButton.MiddleMouse });
         activators.Add(new ManipulatorActivationFilter { button = MouseButton.RightMouse });
@@ -60,7 +62,7 @@ sealed class UICanvasPanManipulator : PointerManipulator
         if (m_Panning)
         {
             target.ReleaseMouse();
-            evt.StopPropagation();
+            evt.StopImmediatePropagation();
         }
 
         m_Panning = false;

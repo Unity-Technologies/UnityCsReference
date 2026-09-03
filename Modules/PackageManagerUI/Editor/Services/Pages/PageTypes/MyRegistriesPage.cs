@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public const string k_Id = "MyRegistries";
 
         public override string id => k_Id;
-        public override string displayName => L10n.Tr("All Registries");
+        public override string displayName => L10n.Tr("All Registries", null);
         public override Icon icon => Icon.MyRegistriesPage;
 
         public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.UpmSearch;
@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string GetGroupName(IPackage package)
         {
             var version = package.versions.primary;
-            return string.IsNullOrEmpty(version.author?.name) ? L10n.Tr("Other") : version.author.name;
+            return string.IsNullOrEmpty(version.author?.name) ? L10n.Tr("Other", null) : version.author.name;
         }
     }
 }

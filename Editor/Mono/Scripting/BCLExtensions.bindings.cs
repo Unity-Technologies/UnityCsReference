@@ -17,8 +17,5 @@ namespace UnityEditor.Scripting
         extern internal static string NetstandardTargetingPackDirectory();
         [FreeFunction(Name = "BCLExtensions::CoreCLRTargetingPackDirectory", IsThreadSafe = true)]
         extern internal static string CoreCLRTargetingPackDirectory();
-        [FreeFunction(Name = "BCLExtensions::IsFilenameConflictingWithBCLExtensions", IsThreadSafe = true)]
-        extern internal static bool IsFilenameConflictingWithBCLExtensions(string assemblyFileName);
-
     }
 }

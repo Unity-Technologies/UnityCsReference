@@ -1,4 +1,3 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: ScriptingRuntime not yet converted
 using System.Runtime.CompilerServices;
 using PreserveAttribute = Unity.Private.Scripting.PreserveAttribute;
 
@@ -26,11 +25,19 @@ namespace Unity.Scripting.LifecycleManagement
     internal sealed class CodeLoadedScope : LifecycleScope
     {
         public static readonly string ScopeName = "CodeLoaded";
+
+        // The generation counter and its async-local copy are compared to detect async work leaking across a
+        // reload; resetting them on reload would defeat that tracking.
+        [NoAutoStaticsCleanup]
         private static int _codeLoadedGeneration;
+        [NoAutoStaticsCleanup]
         static AsyncLocal<int> _executionContextGeneration = new AsyncLocal<int>();
         public static int CurrentCodeLoadedGeneration => _codeLoadedGeneration;
         public static int ExecutionContextGeneration => _executionContextGeneration.Value;
 
+        // Recycled by the scope transition itself (RecycleCancellationTokenSource); a reload must not null it
+        // out from under in-flight work.
+        [NoAutoStaticsCleanup]
         private static CancellationTokenSource? _cancellationTokenSource;
 
         /// <summary>
@@ -91,4 +98,3 @@ namespace Unity.Scripting.LifecycleManagement
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

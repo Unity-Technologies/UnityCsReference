@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
@@ -24,15 +25,21 @@ internal unsafe struct StyleClassList : IEnumerable<UniqueStyleString>
     private static readonly MemoryLabel k_MemoryLabel = new(nameof(UIElements), nameof(Record));
 
     // Per record data
+    [NoAutoStaticsCleanup] // process-wide interned style-class store, safe to persist
     private static ComponentDataStore s_Records;
+    [NoAutoStaticsCleanup] // native pointer into persistent store, safe to persist
     private static Record* s_EmptyRecordPtr;
+    [NoAutoStaticsCleanup] // record counter, safe to persist
     private static int s_RecordCount;
 
     // Per classId combined data
+    [NoAutoStaticsCleanup] // native id pool, safe to persist
     private static UnmanagedBlock<int> s_RecordSortedIdPool;
+    [NoAutoStaticsCleanup] // record counter, safe to persist
     private static int s_RecordSortedIdCount = 0;
 
     // Per distinct hash data
+    [NoAutoStaticsCleanup] // interned-record lookup (no user refs), safe to persist
     private static Dictionary<int, StyleClassList> s_HashToFirstRecord;
 
     static StyleClassList()
@@ -1078,3 +1085,4 @@ internal static class StyleClassListManager
     public static extern unsafe void SetClassIdBasePtr(int* ptr);
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

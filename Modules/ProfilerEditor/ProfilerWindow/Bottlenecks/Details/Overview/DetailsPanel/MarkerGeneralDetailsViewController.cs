@@ -18,8 +18,8 @@ namespace Unity.Profiling.Editor.UI
 
         static class Content
         {
-            public static readonly string k_FrameLabel = L10n.Tr("Frame");
-            public static readonly string k_OccurrencesLabel = L10n.Tr("Occurrences");
+            public static readonly string k_FrameLabel = L10n.Tr("Frame", null);
+            public static readonly string k_OccurrencesLabel = L10n.Tr("Occurrences", null);
         }
 
         readonly Marker m_Marker;

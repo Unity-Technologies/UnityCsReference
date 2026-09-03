@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: DeviceSimulator not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -67,7 +68,9 @@ namespace UnityEditor.DeviceSimulation
             m_UserInterface = new UserInterfaceController(this, rootVisualElement, serializedState, m_PluginController, m_TouchInput);
             m_UserInterface.OnScreenToggled += HandleScreenChange;
             m_UserInterface.DeviceView.onGUIHandler += HandleInputEvent;
+            #pragma warning disable UAL0015 // populates the asset-modification processor caches, which repopulate on demand after reload
             InitSimulation();
+            #pragma warning restore UAL0015
         }
 
         public void Dispose()
@@ -233,3 +236,4 @@ namespace UnityEditor.DeviceSimulation
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

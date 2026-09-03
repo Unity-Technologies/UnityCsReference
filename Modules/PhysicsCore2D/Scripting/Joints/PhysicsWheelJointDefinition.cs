@@ -16,7 +16,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public struct PhysicsWheelJointDefinition
+    public record struct PhysicsWheelJointDefinition
     {
         /// <summary>
         /// Create a default <see cref="PhysicsWheelJoint"/> definition.
@@ -52,6 +52,9 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// The local anchor frame constraint relative to bodyB's origin.
         /// </summary>
+        /// <remarks>
+        /// The wheel rotates freely, so this frame's rotation is never read by the joint; only its position matters.
+        /// </remarks>
         public PhysicsTransform localAnchorB { readonly get => m_LocalAnchorB; set => m_LocalAnchorB = value; }
 
         /// <summary>
@@ -71,6 +74,16 @@ namespace Unity.U2D.Physics
         /// It is applied at create only; the authored <see cref="localAnchorB"/> is ignored while this is set.
         /// </remarks>
         public bool autoAnchorB { readonly get => m_AutoAnchorB; set => m_AutoAnchorB = value; }
+
+        /// <summary>
+        /// When set, local anchor frame A's rotation is recomputed at create so the slide axis is the direction from anchor A to anchor B.
+        /// </summary>
+        /// <remarks>
+        /// It is measured after any <see cref="autoAnchorA"/>/<see cref="autoAnchorB"/> resolution, so it reflects the anchors actually used.
+        /// It is applied at create only; the authored <see cref="localAnchorA"/> rotation is ignored while this is set.
+        /// Anchors that coincide in world space (an auto anchor places them together) have no direction, so the world X axis is used.
+        /// </remarks>
+        public bool autoAxis { readonly get => m_AutoAxis; set => m_AutoAxis = value; }
 
         /// <summary>
         /// Enable/Disable a spring along the joint axis.
@@ -168,6 +181,7 @@ namespace Unity.U2D.Physics
         [SerializeField] internal PhysicsTransform m_LocalAnchorB;
         [SerializeField] internal bool m_AutoAnchorA;
         [SerializeField] internal bool m_AutoAnchorB;
+        [SerializeField] internal bool m_AutoAxis;
         [SerializeField] internal bool m_EnableSpring;
         [SerializeField] [Min(0.0f)] internal float m_SpringFrequency;
         [SerializeField] [Min(0.0f)] internal float m_SpringDamping;

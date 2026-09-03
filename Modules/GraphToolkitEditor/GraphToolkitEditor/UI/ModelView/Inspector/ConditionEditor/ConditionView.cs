@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using Unity.GraphToolkit.InternalBridge;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -100,21 +102,56 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            var menu = evt.menu;
-            if (!IsSelected)
+            if (!IsCorrectTarget(evt.target as VisualElement))
+                return;
+
+            var menuItems = GetContextualMenuItems();
+            if (menuItems == null)
+                return; // Selected: defer to ConditionEditor, which builds a selection-aware menu.
+
+            foreach (var menuItem in menuItems)
+                evt.menu.AppendAction(menuItem.Item1, menuItem.Item2);
+
+            ContextualMenuUserEntries.AppendConditionEntries(evt, TransitionSupportModel, TransitionModel, ConditionModel);
+
+            evt.StopPropagation();
+        }
+
+        /// <summary>
+        /// Whether this view is the <see cref="ConditionView"/> a contextual menu event targets.
+        /// </summary>
+        /// <param name="target">The element the event targets.</param>
+        /// <returns><c>true</c> when <paramref name="target"/> is null or sits inside this view.</returns>
+        /// <remarks>
+        /// The target can be an enclosing group or, when a value field or colour swatch handles the
+        /// pointer itself, a child of the row. Only the row the cursor is actually over may populate
+        /// the menu; an ancestor would add items acting on the wrong <see cref="ConditionModel"/>.
+        /// </remarks>
+        internal bool IsCorrectTarget(VisualElement target)
+        {
+            return target == null || target.GetFirstOfType<ConditionView>() == this;
+        }
+
+        /// <summary>
+        /// The menu items this view contributes, as label and action pairs, or <c>null</c> when it
+        /// contributes none.
+        /// </summary>
+        /// <remarks>
+        /// Returned rather than appended so a test can execute an item without displaying a menu: a
+        /// real contextual menu never closes in a test and hangs the run on Windows.
+        /// </remarks>
+        internal List<Tuple<string, Action<DropdownMenuAction>>> GetContextualMenuItems()
+        {
+            if (IsSelected)
+                return null;
+
+            return new List<Tuple<string, Action<DropdownMenuAction>>>
             {
-                menu.AppendAction(CommandMenuItemNames.Delete, _ =>
-                {
-                    RootView.Dispatch(new DeleteConditionsCommand(new[] { ConditionModel }));
-                });
-
-                menu.AppendAction(CommandMenuItemNames.Duplicate, _ =>
-                {
-                    RootView.Dispatch(new DuplicateConditionsCommand(new[] { ConditionModel }));
-                });
-
-                evt.StopPropagation();
-            }
+                new(CommandMenuItemNames.Delete,
+                    _ => RootView.Dispatch(new DeleteConditionsCommand(new[] { ConditionModel }))),
+                new(CommandMenuItemNames.Duplicate,
+                    _ => RootView.Dispatch(new DuplicateConditionsCommand(new[] { ConditionModel })))
+            };
         }
 
         /// <inheritdoc />
@@ -132,5 +169,7 @@ namespace Unity.GraphToolkit.Editor
             base.PostBuildUI();
             AddToClassList(ussClassName);
         }
+
+        internal void CallBuildContextualMenuForTests(ContextualMenuPopulateEvent evt) => BuildContextualMenu(evt);
     }
 }

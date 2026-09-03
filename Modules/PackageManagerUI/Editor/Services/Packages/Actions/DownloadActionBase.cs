@@ -56,16 +56,14 @@ internal abstract class DownloadActionBase : PackageAction
         return m_AssetStoreDownloadManager.GetDownloadOperation(version?.package.product?.id)?.isInProgress == true;
     }
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfNoNetwork(m_Application);
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfNoNetwork(m_Application),
+        new DisableIfCompiling(m_Application)
+    );
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfPackageDisabled(version);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfPackageDisabled()
+    );
 
     protected override bool IsHiddenWhenInProgress(IPackageVersion version) => true;
 }

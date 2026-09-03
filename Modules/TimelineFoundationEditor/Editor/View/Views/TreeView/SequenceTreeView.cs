@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.Time;
 using Unity.Timeline.Foundation.View.Internals;
@@ -23,7 +23,9 @@ namespace Unity.Timeline.Foundation.View
         const string k_HideFoldoutStyle = "hideTreeViewFoldout";
         const string k_ControlsColumnResizer = "controls-column-resizer";
 
+        [NoAutoStaticsCleanup] // Immutable UXML template-path descriptor; holds only a fixed path string, safe to persist across reload.
         static readonly TemplateResource k_Template = Internals.UIResources.TemplateFactory.Get<SequenceTreeView>();
+        [NoAutoStaticsCleanup] // Immutable USS stylesheet-path descriptor; holds only fixed path strings, safe to persist across reload.
         static readonly StylesheetResource k_Stylesheet = Internals.UIResources.StylesheetFactory.Get<SequenceTreeView>();
 
         public VisualElement ControlsHeader => m_Header.ControlsHeader;
@@ -397,4 +399,3 @@ namespace Unity.Timeline.Foundation.View
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

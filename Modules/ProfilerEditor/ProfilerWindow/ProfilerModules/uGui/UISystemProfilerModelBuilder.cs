@@ -35,7 +35,7 @@ namespace UnityEditor
         {
             base.ConfigureChartSeries(historySize, counters);
 
-            Model.series[counters.Length] = m_EventsSeries = new ChartSeriesViewData("Events", string.Empty, string.Empty, historySize, ProfilerColors.chartAreaColors[(uint)counters.Length % ProfilerColors.chartAreaColors.Length]);
+            Model.series[counters.Length] = m_EventsSeries = new ChartSeriesViewData("Events", string.Empty, string.Empty, string.Empty, historySize, ProfilerColors.chartAreaColors[(uint)counters.Length % ProfilerColors.chartAreaColors.Length]);
         }
 
         public override void UpdateData(int firstEmptyFrame, int firstFrame, int frameCount)

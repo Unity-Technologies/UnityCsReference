@@ -8,11 +8,11 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class AddAction : PackageAction
 {
-    private static readonly string k_InstallButtonText = L10n.Tr("Install");
-    private static readonly string k_InstallingButtonText = L10n.Tr("Installing");
+    private static readonly string k_InstallButtonText = L10n.Tr("Install", null);
+    private static readonly string k_InstallingButtonText = L10n.Tr("Installing", null);
 
-    private static readonly string k_EnableButtonText = L10n.Tr("Enable");
-    private static readonly string k_EnablingButtonText = L10n.Tr("Enabling");
+    private static readonly string k_EnableButtonText = L10n.Tr("Enable", null);
+    private static readonly string k_EnablingButtonText = L10n.Tr("Enabling", null);
 
     private readonly IPackageOperationDispatcher m_OperationDispatcher;
     private readonly IApplicationProxy m_Application;
@@ -46,16 +46,16 @@ internal class AddAction : PackageAction
                 var packageNameAndVersions = string.Join("\n\u2022 ",
                     customizedDependencies.SelectAsEnumerable(package => $"{package.displayName} - {package.versions.recommended.version}"));
 
-                var title = string.Format(L10n.Tr("Installing {0}"), version.GetDescriptor());
+                var title = string.Format(L10n.Tr("Installing {0}", null), version.GetDescriptor());
                 var message = customizedDependencies.Count == 1 ?
                     string.Format(
-                        L10n.Tr("This {0} includes a package version that is different from what's already installed. Would you like to reset the following package to the required version?\n\u2022 {1}"),
+                        L10n.Tr("This {0} includes a package version that is different from what's already installed. Would you like to reset the following package to the required version?\n\u2022 {1}", null),
                         version.GetDescriptor(), packageNameAndVersions) :
                     string.Format(
-                        L10n.Tr("This {0} includes package versions that are different from what are already installed. Would you like to reset the following packages to the required versions?\n\u2022 {1}"),
+                        L10n.Tr("This {0} includes package versions that are different from what are already installed. Would you like to reset the following packages to the required versions?\n\u2022 {1}", null),
                         version.GetDescriptor(), packageNameAndVersions);
 
-                var result = m_Application.DisplayDialogComplex("installPackageWithCustomizedDependencies", title, message, L10n.Tr("Install and Reset"), L10n.Tr("Cancel"), L10n.Tr("Install Only"));
+                var result = m_Application.DisplayDialogComplex("installPackageWithCustomizedDependencies", title, message, L10n.Tr("Install and Reset", null), L10n.Tr("Cancel", null), L10n.Tr("Install Only", null));
                 if (result == 1) // Cancel
                     return false;
                 if (result == 0) // Install and reset
@@ -73,7 +73,7 @@ internal class AddAction : PackageAction
             var installRecommended = version.package.versions.recommended == version ? "Recommended" : "NonRecommended";
             var eventName = $"installNew{installRecommended}";
 
-            if (version.package.isDeprecated && !m_Application.DisplayDialog("installDeprecatedPackage", L10n.Tr("Deprecated package installation"), L10n.Tr("Are you sure you want to install this deprecated package?"), L10n.Tr("Install"), L10n.Tr("Cancel")))
+            if (version.package.isDeprecated && !m_Application.DisplayDialog("installDeprecatedPackage", L10n.Tr("Deprecated package installation", null), L10n.Tr("Are you sure you want to install this deprecated package?", null), L10n.Tr("Install", null), L10n.Tr("Cancel", null)))
                 return false;
 
             if (!m_OperationDispatcher.Install(version, OperationType.Install))
@@ -98,9 +98,9 @@ internal class AddAction : PackageAction
             return k_InProgressGenericTooltip;
 
         if (version?.HasTag(PackageTag.BuiltIn) == true)
-            return string.Format(L10n.Tr("Click to enable this {0} in your project."), version.GetDescriptor());
+            return string.Format(L10n.Tr("Click to enable this {0} in your project.", null), version.GetDescriptor());
 
-        return string.Format(L10n.Tr("Click to install this {0} into your project."), version.GetDescriptor());
+        return string.Format(L10n.Tr("Click to install this {0} into your project.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
@@ -113,16 +113,14 @@ internal class AddAction : PackageAction
 
     public override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsInstallInProgress(version);
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
-    {
-        yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
-        yield return new DisableIfCompiling(m_Application);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
+        new DisableIfCompiling(m_Application)
+    );
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        yield return new DisableIfVersionDeprecated(version);
-        yield return new DisableIfEnterpriseEntitlementsError(version);
-        yield return new DisableIfExportingInProgress(version.package);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfVersionDeprecated(),
+        new DisableIfEnterpriseEntitlementsError(),
+        new DisableIfExportingInProgress()
+    );
 }

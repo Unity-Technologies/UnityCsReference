@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
@@ -188,6 +189,9 @@ namespace UnityEngine.UIElements
 
             foreach (var panel in GetSortedScreenOverlayPlayerPanels())
             {
+                if (panel.disposed)
+                    continue;
+
                 if (panel.targetTexture != null)
                 {
                     // We don't want the state to be restored immediately because the next panel might be rendering
@@ -245,6 +249,9 @@ namespace UnityEngine.UIElements
             for (; currentOverlayIndex < overlayPanels.Count; ++currentOverlayIndex)
             {
                 var overlayPanel = overlayPanels[currentOverlayIndex];
+                if (overlayPanel.disposed)
+                    continue;
+
                 if (overlayPanel.sortingPriority >= maxPriority)
                     return;
 
@@ -297,6 +304,9 @@ namespace UnityEngine.UIElements
         {
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {
+                if (panel.disposed)
+                    continue;
+
                 if (!onlyOffscreen || panel.targetTexture != null)
                     RepaintPanel(panel);
             }
@@ -319,6 +329,8 @@ namespace UnityEngine.UIElements
 
         [NoAutoStaticsCleanup]
         private static bool s_IsPlayMode = false;
+
+        internal static bool isPlayMode => s_IsPlayMode;
 
         public static void RegisterEventSystem(Object eventSystem)
         {
@@ -350,6 +362,11 @@ namespace UnityEngine.UIElements
                 LayoutManager.SharedManager.Collect();
             }
 
+            if (ComponentManager.IsSharedManagerCreated)
+            {
+                ComponentManager.SharedManager.Collect();
+            }
+
             NativeTextBufferReclaimer.Collect();
 
             using (s_PreUpdatePanelRenderersMarker.Auto())
@@ -367,6 +384,9 @@ namespace UnityEngine.UIElements
             // Update panels from back to front. World space first, then screen overlay.
             foreach (BaseRuntimePanel panel in sortedPlayerPanels)
             {
+                if (panel.disposed)
+                    continue;
+
                 panel.Update();
             }
 
@@ -715,3 +735,4 @@ namespace UnityEngine.UIElements
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

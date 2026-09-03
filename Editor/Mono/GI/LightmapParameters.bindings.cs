@@ -29,15 +29,23 @@ namespace UnityEditor
         }
 
         // Realtime GI
+        // Not obsolete like the rest of this block: the Progressive lightmapper derives terrain heightmap sampling density from this.
         public extern float resolution { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public extern float clusterResolution { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public extern int irradianceBudget { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public extern int irradianceQuality { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public extern float modellingTolerance { get; set; }
 
         [NativeName("EdgeStitching")]
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public extern bool stitchEdges { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public extern bool isTransparent { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public extern int systemTag { get; set; }
 
         // Baked GI

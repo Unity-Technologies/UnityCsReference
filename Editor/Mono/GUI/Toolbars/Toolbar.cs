@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditorInternal;
@@ -105,13 +106,13 @@ namespace UnityEditor
         const string k_MainToolbarEditModeClassName = k_MainToolbarUSSClassName + "--edit-mode";
         const string k_MainToolbarTempEditModeClassName = k_MainToolbarUSSClassName + "--temp-edit-mode";
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal static readonly string editModeName = L10n.Tr("Edit Mode");
+        internal static readonly string editModeName = L10n.Tr("Edit Mode", null);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal static readonly string menuItemSearchName = L10n.Tr("Add MenuItem shortcut");
+        internal static readonly string menuItemSearchName = L10n.Tr("Add Menu Item Shortcut", null);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal static readonly string showAllName = L10n.Tr("Show All");
+        internal static readonly string showAllName = L10n.Tr("Show All", null);
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal static readonly string hideAllName = L10n.Tr("Hide All");
+        internal static readonly string hideAllName = L10n.Tr("Hide All", null);
 
         [AutoStaticsCleanupOnCodeReload]
         internal static MainToolbarWindow instance;
@@ -124,7 +125,9 @@ namespace UnityEditor
 
         MainToolbarWindow()
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             instance = this;
+            #pragma warning restore UAL0015
         }
 
         string[] GetAllUniquePaths()
@@ -157,7 +160,9 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_Parent = Toolbar.instance;
+            #pragma warning restore UAL0018
 
             m_UniqueMenuCategories = GetAllUniquePaths();
 
@@ -378,10 +383,12 @@ namespace UnityEditor
 
         Toolbar()
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             s_Instance = this;
 #pragma warning disable CS0618 // Type or member is obsolete
             get = s_Instance;
 #pragma warning restore CS0618 // Type or member is obsolete
+            #pragma warning restore UAL0015
         }
 
         // Matches the toolbar content's app-toolbar color so the panel root doesn't show the lighter hostview fill.
@@ -506,3 +513,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

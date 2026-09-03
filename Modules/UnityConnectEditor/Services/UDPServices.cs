@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
+using Unity.Scripting.LifecycleManagement;
+
 namespace UnityEditor.Connect
 {
     [InitializeOnLoad]
-    internal class UDPService : SingleService
+    internal partial class UDPService : SingleService
     {
         public override string name { get; }
         public override string title { get; }
@@ -21,18 +23,33 @@ namespace UnityEditor.Connect
         public override string editorGamePackageName { get; } = "com.unity.purchasing.udp";
 
         public override Notification.Topic notificationTopic => Notification.Topic.UDPService;
-        static readonly UDPService k_Instance;
-        public static UDPService instance => k_Instance;
-        static UDPService()
+        [AutoStaticsCleanupOnCodeReload]
+        static UDPService k_Instance;
+        public static UDPService instance
         {
-            k_Instance = new UDPService();
+            get
+            {
+                EnsureInstanceInitialized();
+                return k_Instance;
+            }
+        }
+        // [OnCodeLoaded] re-registers this service with ServicesRepository after a reload;
+        // the null check in `instance` covers consumers that reach us before it has run
+        // (ordering across classes is not guaranteed).
+        [OnCodeLoaded]
+        static void EnsureInstanceInitialized()
+        {
+            if (k_Instance == null)
+            {
+                k_Instance = new UDPService();
+            }
         }
 
         UDPService()
         {
             name = "UDP";
-            title = L10n.Tr("Unity Distribution Portal");
-            description = L10n.Tr("Distribute to multiple app stores through a single hub.");
+            title = L10n.Tr("Unity Distribution Portal", null);
+            description = L10n.Tr("Distribute to multiple app stores through a single hub.", null);
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-UDP.png";
             displayToggle = false;
             isPackage = true;
@@ -43,4 +60,4 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

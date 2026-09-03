@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,6 +12,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -31,14 +31,30 @@ internal struct SynchronizePathResult
     public string propertyPath { get; set; }
 }
 
+/// <summary>
+/// One ancestor UXML instance of an element: the instance's TemplateAsset and the document
+/// containing it, which is where an Attribute Override targeting the element would be authored.
+/// </summary>
+internal readonly struct AncestorOverrideScope
+{
+    public TemplateAsset instanceAsset { get; }
+    public VisualTreeAsset document => instanceAsset.visualTreeAsset;
+
+    public AncestorOverrideScope(TemplateAsset instanceAsset) => this.instanceAsset = instanceAsset;
+}
+
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 internal static class UxmlAssetUtilities
 {
     const string k_ArraySizePart = "size";
+    [NoAutoStaticsCleanup] // path-parts cache, safe to persist
     static readonly Dictionary<string, string[]> s_PathPartsCache = new();
+    [NoAutoStaticsCleanup] // temp scratch list, safe to persist
     static readonly List<UxmlObjectAsset> s_TempUxmlAssets = new();
+    [NoAutoStaticsCleanup] // reusable marshaling buffer, safe to persist
     static readonly object[] s_SingleUxmlSerializedData = new object[1];
 
+    [NoAutoStaticsCleanup] // within-operation flag, safe to persist
     static bool s_DocumentUndoRecorded = false;
 
     /// <summary>
@@ -454,15 +470,14 @@ internal static class UxmlAssetUtilities
                         GetPathToTemplateAsset(templateAsset, visualElement, getVisualElementAsset);
                     templateAsset.SetAttributeOverride(attributeName, value, pathToTemplateAsset);
 
+                    UxmlSerializer.CreateSerializedDataOverrides(editedVisualTreeAsset);
+
                     var elementsToChange = templateContainerParent.Query(currentVisualElementName).Where(v => v.GetType() == visualElement.GetType());
                     elementsToChange.ForEach(x =>
                     {
-                        var templateVea = x.visualElementAsset;
-
-                        if (templateVea == null)
+                        if (x.visualElementAsset == null)
                             return;
 
-                        UxmlSerializer.CreateSerializedDataOverrides(editedVisualTreeAsset);
                         onDeserializeElement?.Invoke(editedVisualTreeAsset, x);
                     });
                 }
@@ -472,6 +487,80 @@ internal static class UxmlAssetUtilities
         {
             uxmlAsset.SetAttribute(attributeName, value);
         }
+    }
+
+    // Writes a component attribute override at a template instance. A component override is a whole component
+    // UxmlSerializedData (one per element-path + component type) in the template's componentAttributeOverrides;
+    // here we find-or-create that entry and set the one changed attribute on it (with the override flag), then
+    // refold the overrides so the live element re-applies them. Mirrors PostAttributeValueChange's template path.
+    public static void PostComponentAttributeOverride(
+        VisualTreeAsset editedVisualTreeAsset,
+        UxmlSerializedDataDescription componentDescription,
+        UxmlSerializedAttributeDescription attribute,
+        object value,
+        VisualElement element,
+        Func<VisualElement, VisualElementAsset> getVisualElementAsset = null)
+    {
+        if (element == null || componentDescription == null || attribute == null)
+            return;
+
+        var templateContainer = GetRootTemplateContainerInEditedVisualTree(editedVisualTreeAsset, element);
+        var templateAsset = (getVisualElementAsset != null
+            ? getVisualElementAsset(templateContainer)
+            : templateContainer?.visualElementAsset) as TemplateAsset;
+        if (templateAsset == null || string.IsNullOrEmpty(element.name))
+            return;
+
+        var pathToTemplateAsset = GetPathToTemplateAsset(templateAsset, element, getVisualElementAsset);
+        var dataType = componentDescription.serializedDataType;
+
+        UxmlComponentSerializedData overrideData = null;
+        if (templateAsset.componentAttributeOverrides != null)
+        {
+            foreach (var existing in templateAsset.componentAttributeOverrides)
+            {
+                if (existing.m_ComponentData?.GetType() == dataType &&
+                    existing.NamesPathMatchesElementNamesPath(pathToTemplateAsset))
+                {
+                    overrideData = existing.m_ComponentData;
+                    break;
+                }
+            }
+        }
+
+        if (overrideData == null)
+        {
+            overrideData = (UxmlComponentSerializedData)componentDescription.CreateDefaultSerializedData();
+            templateAsset.AddComponentAttributeOverride(pathToTemplateAsset, overrideData);
+        }
+
+        attribute.SetSerializedValue(overrideData, value);
+        attribute.SetSerializedValueAttributeFlags(overrideData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+
+        UxmlSerializer.CreateSerializedDataOverrides(editedVisualTreeAsset);
+    }
+
+    // True if the component attribute at the template-instance element has an override in the root template.
+    public static bool HasComponentAttributeOverrideInRootTemplate(VisualTreeAsset editedVisualTreeAsset,
+        VisualElement element, UxmlSerializedDataDescription componentDescription, UxmlSerializedAttributeDescription attribute)
+    {
+        var templateContainer = GetRootTemplateContainerInEditedVisualTree(editedVisualTreeAsset, element);
+        var templateAsset = templateContainer?.visualElementAsset as TemplateAsset;
+        if (templateAsset?.componentAttributeOverrides == null || componentDescription == null || attribute == null)
+            return false;
+
+        var pathToTemplateAsset = GetPathToTemplateAsset(templateAsset, element);
+        var dataType = componentDescription.serializedDataType;
+        foreach (var over in templateAsset.componentAttributeOverrides)
+        {
+            if (over.m_ComponentData?.GetType() == dataType &&
+                over.NamesPathMatchesElementNamesPath(pathToTemplateAsset) &&
+                attribute.GetSerializedValueAttributeFlags(over.m_ComponentData) == UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>
@@ -563,7 +652,22 @@ internal static class UxmlAssetUtilities
     public static string[] GetPathToTemplateAsset(TemplateAsset templateAsset, VisualElement element,
         Func<VisualElement, VisualElementAsset> getVisualElementAsset = null)
     {
-        var path = new List<string> { element.name };
+        var path = new List<string>();
+        return TryGetPathToTemplateAsset(templateAsset, element, path, getVisualElementAsset)
+            ? path.ToArray()
+            : null;
+    }
+
+    /// <summary>
+    /// Fills <paramref name="path"/> with the names path from a visual element to a template asset, for
+    /// callers that can reuse the list.
+    /// </summary>
+    public static bool TryGetPathToTemplateAsset(TemplateAsset templateAsset, VisualElement element,
+        List<string> path, Func<VisualElement, VisualElementAsset> getVisualElementAsset = null)
+    {
+        path.Clear();
+        path.Add(element.name);
+
         var parent = element.parent;
         var parentAsset = getVisualElementAsset != null ? getVisualElementAsset(parent) : parent?.visualElementAsset;
 
@@ -578,7 +682,7 @@ internal static class UxmlAssetUtilities
             parentAsset = getVisualElementAsset != null ? getVisualElementAsset(parent) : parent?.visualElementAsset;
         }
 
-        return parentAsset != templateAsset ? null : path.ToArray();
+        return parentAsset == templateAsset;
     }
 
     /// <summary>
@@ -666,6 +770,49 @@ internal static class UxmlAssetUtilities
         property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
         return SyncUxmlObjectChanges(context, property.propertyPath);
+    }
+
+    /// <summary>
+    /// Replaces null items of a UXML object array with new instances of the specified type.
+    /// </summary>
+    /// <remarks>
+    /// Resizing the array through the bound size field creates null items, which cannot be edited and
+    /// serialize as null UXML nodes. Only call this when the array accepts a single UXML object type.
+    /// </remarks>
+    /// <param name="context">The attributes editing context.</param>
+    /// <param name="property">The array property to fill.</param>
+    /// <param name="type">The <c>UxmlSerializedData</c> type to instantiate.</param>
+    /// <returns>Whether any item was replaced.</returns>
+    public static bool FillNullArrayItemsInSerializedData(UxmlAttributesEditingContext context,
+        SerializedProperty property, Type type)
+    {
+        if (context.isReadOnly || type == null || !property.isArray || !HasNullArrayItems(property))
+            return false;
+
+        Undo.RegisterCompleteObjectUndo(property.serializedObject.targetObject, GetUndoMessage(property));
+
+        for (var i = 0; i < property.arraySize; ++i)
+        {
+            var item = property.GetArrayElementAtIndex(i);
+
+            if (item.managedReferenceValue == null)
+                item.managedReferenceValue = UxmlSerializedDataCreator.CreateUxmlSerializedData(type.DeclaringType);
+        }
+
+        property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+        SyncUxmlObjectChanges(context, property.propertyPath);
+        return true;
+    }
+
+    static bool HasNullArrayItems(SerializedProperty property)
+    {
+        for (var i = 0; i < property.arraySize; ++i)
+        {
+            if (property.GetArrayElementAtIndex(i).managedReferenceValue == null)
+                return true;
+        }
+
+        return false;
     }
 
     public static SynchronizePathResult RemoveArrayItemFromSerializedData(UxmlAttributesEditingContext context,
@@ -779,6 +926,266 @@ internal static class UxmlAssetUtilities
     }
 
     /// <summary>
+    /// Re-applies the serialized-data overrides that ancestor UXML instances declare for this element,
+    /// in clone order (inner instances first, so outer ones win). Editing flows that re-deserialize a
+    /// live element from its own document's data use this to restore the values those overrides drive.
+    /// </summary>
+    public static void ReapplyAncestorSerializedDataOverrides(VisualElement element)
+    {
+        var vea = element?.visualElementAsset;
+        if (vea == null)
+            return;
+
+        using var _ = ListPool<int>.Get(out var idsPath);
+        idsPath.Add(vea.id);
+
+        // The clone matches a template instance's own attributes with its id on the path twice.
+        if (vea is TemplateAsset)
+            idsPath.Add(vea.id);
+
+        var ownerDocument = element.visualTreeAssetSource;
+
+        // The logical parent chain, not the physical one: the clone builds its ids path from the asset
+        // tree, which a content container in the physical chain would add an extra instance id to.
+        for (var ancestor = element.parent; ancestor != null; ancestor = ancestor.parent)
+        {
+            if (ancestor is IPanelComponentRootElement)
+                break;
+
+            if (ancestor is not TemplateContainer { visualElementAsset: TemplateAsset templateAsset } container)
+                continue;
+
+            // The clone-time ids path is root-first (see CreationContext.veaIdsPath).
+            idsPath.Insert(0, templateAsset.id);
+
+            // A non-owning container (slot content) keeps its id on the clone path, but its overrides never applied.
+            if (container.templateSource != ownerDocument)
+                continue;
+
+            foreach (var dataOverride in templateAsset.serializedDataOverrides)
+            {
+                if (dataOverride.m_ElementId == vea.id
+                    && VisualElementAsset.IdsPathMatchesAttributeOverrideIdsPath(idsPath, dataOverride.m_ElementIdsPath, templateAsset.id))
+                {
+                    VisualElementAsset.ApplySerializedDataOverride(in dataOverride, element);
+                }
+            }
+
+            ownerDocument = container.visualTreeAssetSource;
+        }
+    }
+
+    /// <summary>
+    /// Fills <paramref name="results"/> with one entry per ancestor UXML instance of the element,
+    /// nearest first.
+    /// </summary>
+    public static void GetAncestorOverrideScopes(VisualElement element, List<AncestorOverrideScope> results)
+    {
+        results.Clear();
+
+        var ownerDocument = element?.visualTreeAssetSource;
+
+        for (var ancestor = element?.parent; ancestor != null; ancestor = ancestor.parent)
+        {
+            if (ancestor is IPanelComponentRootElement)
+                break;
+
+            if (ancestor is not TemplateContainer { visualElementAsset: TemplateAsset templateAsset } container)
+                continue;
+
+            // A non-owning container (slot content) cannot author overrides for the element.
+            if (container.templateSource != ownerDocument)
+                continue;
+
+            results.Add(new AncestorOverrideScope(templateAsset));
+
+            ownerDocument = container.visualTreeAssetSource;
+        }
+    }
+
+    /// <summary>
+    /// Returns whether the given ancestor instance authors an Attribute Override targeting the
+    /// specified attribute of the element, under its current or an obsolete uxml name.
+    /// </summary>
+    public static bool HasAttributeOverrideFor(TemplateAsset instanceAsset, VisualElement element, UxmlSerializedAttributeDescription attribute)
+    {
+        if (instanceAsset == null || element?.visualElementAsset == null
+            || attribute?.serializedFieldAttributeFlags is not { DeclaringType: { } declaringType })
+            return false;
+
+        var description = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
+        return AuthoredOverrideTargets(instanceAsset, element, attribute, description, declaringType);
+    }
+
+    /// <summary>
+    /// Resolves whether an ancestor instance's Attribute Override drives the specified attribute of the
+    /// element, reporting the outermost document that authors it, or null when none resolves.
+    /// </summary>
+    public static bool TryGetDrivingAttributeOverride(VisualElement element, UxmlSerializedAttributeDescription attribute, out VisualTreeAsset definingDocument)
+    {
+        definingDocument = null;
+        var vea = element?.visualElementAsset;
+        if (vea == null || attribute?.serializedFieldAttributeFlags is not { DeclaringType: { } declaringType })
+            return false;
+
+        var description = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
+        var driven = false;
+        using var _ = ListPool<int>.Get(out var idsPath);
+        idsPath.Add(vea.id);
+
+        // The clone matches a template instance's own attributes with its id on the path twice.
+        if (vea is TemplateAsset)
+            idsPath.Add(vea.id);
+
+        var ownerDocument = element.visualTreeAssetSource;
+
+        // The logical parent chain, not the physical one: the clone builds its ids path from the asset
+        // tree, which a content container in the physical chain would add an extra instance id to.
+        for (var ancestor = element.parent; ancestor != null; ancestor = ancestor.parent)
+        {
+            if (ancestor is IPanelComponentRootElement)
+                break;
+
+            if (ancestor is not TemplateContainer { visualElementAsset: TemplateAsset templateAsset } container)
+                continue;
+
+            // The clone-time ids path is root-first (see CreationContext.veaIdsPath).
+            idsPath.Insert(0, templateAsset.id);
+
+            // A non-owning container (slot content) keeps its id on the clone path, but its overrides never applied.
+            if (container.templateSource != ownerDocument)
+                continue;
+
+            driven |= DrivesAttribute(templateAsset, idsPath, vea.id, declaringType, attribute);
+
+            if (templateAsset.visualTreeAsset != null
+                && AuthoredOverrideTargets(templateAsset, element, attribute, description, declaringType))
+            {
+                definingDocument = templateAsset.visualTreeAsset;
+            }
+
+            ownerDocument = container.visualTreeAssetSource;
+        }
+
+        return driven;
+    }
+
+    /// <summary>
+    /// Returns whether the instance's own authored overrides, element or component, target the
+    /// specified attribute at this element's names path.
+    /// </summary>
+    static bool AuthoredOverrideTargets(TemplateAsset instanceAsset, VisualElement element,
+        UxmlSerializedAttributeDescription attribute, UxmlSerializedDataDescription description, Type declaringType)
+    {
+        var hasElementOverrides = description != null && instanceAsset.hasAttributeOverride;
+        if (!hasElementOverrides && !instanceAsset.hasComponentAttributeOverride)
+            return false;
+
+        using var _ = ListPool<string>.Get(out var namesPath);
+        if (!TryGetPathToTemplateAsset(instanceAsset, element, namesPath))
+            return false;
+
+        if (hasElementOverrides)
+        {
+            foreach (var authoredOverride in instanceAsset.attributeOverrides)
+            {
+                if (!authoredOverride.NamesPathMatchesElementNamesPath(namesPath))
+                    continue;
+
+                if (description.FindAttributeWithUxmlName(authoredOverride.m_AttributeName) == attribute)
+                    return true;
+
+                foreach (var obsoleteMatch in description.FindAttributesWithObsoleteUxmlName(authoredOverride.m_AttributeName))
+                {
+                    if (obsoleteMatch == attribute)
+                        return true;
+                }
+            }
+        }
+
+        if (instanceAsset.hasComponentAttributeOverride)
+        {
+            // A component override carries its authored data rather than an attribute name, so the
+            // attribute it targets comes from that data's own flags.
+            foreach (var componentOverride in instanceAsset.componentAttributeOverrides)
+            {
+                if (componentOverride.NamesPathMatchesElementNamesPath(namesPath)
+                    && OverridesAttribute(componentOverride.m_ComponentData, declaringType, attribute))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    static bool DrivesAttribute(TemplateAsset templateAsset, List<int> idsPath, int elementId,
+        Type declaringType, UxmlSerializedAttributeDescription attribute)
+    {
+        foreach (var dataOverride in templateAsset.serializedDataOverrides)
+        {
+            if (dataOverride.m_ElementId != elementId
+                || !VisualElementAsset.IdsPathMatchesAttributeOverrideIdsPath(idsPath, dataOverride.m_ElementIdsPath, templateAsset.id))
+                continue;
+
+            if (OverridesAttribute(dataOverride.m_SerializedData, declaringType, attribute))
+                return true;
+
+            var componentOverrides = dataOverride.m_ComponentOverrides;
+            if (componentOverrides == null)
+                continue;
+
+            for (var i = 0; i < componentOverrides.Count; ++i)
+            {
+                if (OverridesAttribute(componentOverrides[i], declaringType, attribute))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    // The type test also guards the flags read, which throws for data that does not declare the field.
+    static bool OverridesAttribute(UxmlSerializedData data, Type declaringType,
+        UxmlSerializedAttributeDescription attribute)
+        => data != null
+            && declaringType.IsAssignableFrom(data.GetType())
+            && (attribute.GetSerializedValueAttributeFlags(data) & UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml) != 0;
+
+    /// <summary>
+    /// Resolves the live element that represents the given document at or above this element: the
+    /// enclosing instance of the document, or the panel root element when it is the panel's root
+    /// document.
+    /// </summary>
+    public static bool TryGetEnclosingDocumentSceneTarget(VisualElement element, VisualTreeAsset document,
+        out VisualElement sceneTarget)
+    {
+        sceneTarget = null;
+        if (element == null || document == null)
+            return false;
+
+        for (var candidate = element; candidate != null; candidate = candidate.hierarchy.parent)
+        {
+            if (candidate is TemplateContainer { templateSource: { } templateSource } && templateSource == document)
+            {
+                sceneTarget = candidate;
+                return true;
+            }
+
+            // The pattern is a reference test, so a destroyed component needs the Unity-null test too:
+            // reading visualTreeAsset off one throws MissingReferenceException.
+            if (candidate is IPanelComponentRootElement { panelComponent: { } panelComponent }
+                && (panelComponent is not UnityEngine.Object component || component != null)
+                && panelComponent.visualTreeAsset == document)
+            {
+                sceneTarget = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Indicates whether the specified uxml attribute is inlined or template overridden.
     /// </summary>
     /// <param name="editedVisualTreeAsset">The edited Visual Tree Asset</param>
@@ -878,4 +1285,3 @@ internal static class UxmlAssetUtilities
         return false;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

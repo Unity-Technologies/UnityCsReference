@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEngine;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
@@ -20,6 +21,7 @@ namespace UnityEditor.TerrainTools
         {
             get
             {
+                if (!TerrainEditorUtility.IsEditable()) return false;
                 var currTool = TerrainInspector.GetActiveTerrainTool() as ITerrainPaintToolWithOverlays;
                 if (currTool == null) return false;
                 bool directlyInheritsOverlays = currTool.GetType().BaseType.GetGenericTypeDefinition() == typeof(TerrainPaintToolWithOverlays<>).GetGenericTypeDefinition();
@@ -34,11 +36,13 @@ namespace UnityEditor.TerrainTools
             BrushOpacity.k_Id,
             BrushSize.k_Id)
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             s_Instance = this;
 
             // only rebuild if the next tool is/isn't PaintDetailsTool
             ToolManager.activeToolChanged += RebuildAttributesOverlays;
             ToolManager.activeContextChanged += RebuildAttributesOverlays;
+            #pragma warning restore UAL0015
         }
 
         public override void OnWillBeDestroyed()
@@ -186,9 +190,11 @@ namespace UnityEditor.TerrainTools
 
             RegisterCallback<AttachToPanelEvent>(e =>
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 ToolManager.activeToolChanged += UpdateValues;
                 ToolManager.activeContextChanged += UpdateValues;
                 TerrainInspector.BrushStrengthChanged += UpdateValues;
+                #pragma warning restore UAL0015
                 BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
                 BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
             });
@@ -286,16 +292,19 @@ namespace UnityEditor.TerrainTools
             UpdateValues();
         }
 
-        public BrushSize()
-            : base(k_Label, Texture, minBrushSize, maxBrushSize, BrushAttributes.s_Instance.layout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal)
+        #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+        public BrushSize() : base(k_Label, Texture, minBrushSize, maxBrushSize, BrushAttributes.s_Instance.layout == Layout.VerticalToolbar ? SliderDirection.Vertical : SliderDirection.Horizontal)
+        #pragma warning restore UAL0015
         {
             UpdateOverlayDirection(true);
 
             RegisterCallback<AttachToPanelEvent>(e =>
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 ToolManager.activeToolChanged += UpdateValues;
                 ToolManager.activeContextChanged += UpdateValues;
                 TerrainInspector.BrushSizeChanged += UpdateValues;
+                #pragma warning restore UAL0015
                 BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
                 BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
             });
@@ -382,13 +391,17 @@ namespace UnityEditor.TerrainTools
                     return $"{f:F2}";
                 return $"{s} {f:F2}";
             };
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             UpdateOverlayDirection(true);
+            #pragma warning restore UAL0015
 
             RegisterCallback<AttachToPanelEvent>(e =>
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 ToolManager.activeToolChanged += UpdateValues;
                 ToolManager.activeContextChanged += UpdateValues;
                 PaintDetailsTool.BrushTargetStrengthChanged += UpdateValues;
+                #pragma warning restore UAL0015
                 BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
                 BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
             });
@@ -427,3 +440,4 @@ namespace UnityEditor.TerrainTools
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

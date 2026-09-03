@@ -60,20 +60,20 @@ namespace UnityEditorInternal
         private readonly static Color k_KeyColorForNonCurves = new Color(0.7f, 0.7f, 0.7f, 0.5f);
         private readonly static Color k_LeftoverCurveColor = Color.yellow;
 
-        private static readonly string k_DefaultValue = L10n.Tr(" (Default Value)");
-        private static readonly string k_TransformPosition = L10n.Tr("Transform position, rotation and scale can't be partially animated. This value will be animated to the default value");
-        private static readonly string k_Missing = L10n.Tr(" (Missing!)");
-        private static readonly string k_OverridenTooltip = L10n.Tr("Value is overriding a curve in a higher layer");
-        private static readonly string k_GameObjectComponentMissing = L10n.Tr("The GameObject or Component is missing ({0})");
-        private static readonly string k_DuplicateGameObjectName = L10n.Tr(" (Duplicate GameObject name!)");
-        private static readonly string k_TargetForCurveIsAmbigous = L10n.Tr("Target for curve is ambiguous since there are multiple GameObjects with same name ({0})");
-        private static readonly string k_RemoveProperties = L10n.Tr("Remove Properties");
-        private static readonly string k_RemoveProperty = L10n.Tr("Remove Property");
-        private static readonly string k_RemoveOverrides = L10n.Tr("Revert Properties");
-        private static readonly string k_RemoveOverride = L10n.Tr("Revert Property");
-        private static readonly string k_AddKey = L10n.Tr("Add Key");
-        private static readonly string k_DeleteKey = L10n.Tr("Delete Key");
-        private static readonly string k_RemoveCurve = L10n.Tr("Remove Curve");
+        private static readonly string k_DefaultValue = L10n.Tr(" (Default Value)", null);
+        private static readonly string k_TransformPosition = L10n.Tr("Transform position, rotation and scale can't be partially animated. This value will be animated to the default value", null);
+        private static readonly string k_Missing = L10n.Tr(" (Missing!)", null);
+        private static readonly string k_OverridenTooltip = L10n.Tr("Value is overriding a curve in a higher layer", null);
+        private static readonly string k_GameObjectComponentMissing = L10n.Tr("The GameObject or Component is missing ({0})", null);
+        private static readonly string k_DuplicateGameObjectName = L10n.Tr(" (Duplicate GameObject name!)", null);
+        private static readonly string k_TargetForCurveIsAmbigous = L10n.Tr("Target for curve is ambiguous since there are multiple GameObjects with same name ({0})", null);
+        private static readonly string k_RemoveProperties = L10n.Tr("Remove Properties", null);
+        private static readonly string k_RemoveProperty = L10n.Tr("Remove Property", null);
+        private static readonly string k_RemoveOverrides = L10n.Tr("Revert Properties", null);
+        private static readonly string k_RemoveOverride = L10n.Tr("Revert Property", null);
+        private static readonly string k_AddKey = L10n.Tr("Add Key", null);
+        private static readonly string k_DeleteKey = L10n.Tr("Delete Key", null);
+        private static readonly string k_RemoveCurve = L10n.Tr("Remove Curve", null);
 
         [NoAutoStaticsCleanup]
         internal static int s_WasInsideValueRectFrame = -1;
@@ -413,7 +413,7 @@ namespace UnityEditorInternal
                 bool handledByCustomHandler = false;
                 foreach (var handler in AnimationWindowUtility.PropertyHandlers)
                 {
-                    if (handler.TryDoValueField(fieldRect, valueFieldDragRect, id,
+                    if (handler.TryDoValueField(state, fieldRect, valueFieldDragRect, id,
                             curve.binding, curve.valueType, node.animatableObjectType, value,
                             out var handlerValue, ref node.handlerData))
                     {
@@ -504,6 +504,23 @@ namespace UnityEditorInternal
                     curvesChanged = true;
                 }
 
+            }
+            else if (node is AnimationWindowHierarchyPropertyGroupNode && node.curves != null && node.curves.Length > 0)
+            {
+                // CalculateRects gives a value column to property rows only, so the column has to be
+                // measured here. Same metrics, so what a handler draws lines up with the rows below it.
+                // The label still spans the full row, so a long group name can run underneath.
+                Rect groupFieldRect = new Rect(rect.xMax - k_ValueFieldOffsetFromRightSide, rect.y,
+                    k_ValueFieldWidth, rect.height);
+
+                AnimationWindowCurve groupCurve = node.curves[0];
+                foreach (var handler in AnimationWindowUtility.PropertyHandlers)
+                {
+                    if (handler.TryDisplayPropertyGroup(state, groupFieldRect,
+                            groupCurve.binding, groupCurve.valueType,
+                            node.animatableObjectType, ref node.handlerData))
+                        break;
+                }
             }
 
             if (curvesChanged)
@@ -745,15 +762,20 @@ namespace UnityEditorInternal
             else
                 menu.AddItem(new GUIContent(str), false, DeleteKeysAtCurrentTime, curves);
 
-            if (interactedNodes.Count == 1 && interactedNodes[0] is AnimationWindowHierarchyPropertyNode propNode
-                && propNode.curves is { Length: > 0 })
+            // A group row stands for the curves under it and shares their element path, so whatever a
+            // handler offers on one of those curves it can offer here - which is where the user is looking
+            // while the group is collapsed.
+            if (interactedNodes.Count == 1
+                && interactedNodes[0] is AnimationWindowHierarchyPropertyNode or AnimationWindowHierarchyPropertyGroupNode
+                && interactedNodes[0].curves is { Length: > 0 })
             {
-                var propCurve = propNode.curves[0];
+                var interactedNode = interactedNodes[0];
+                var propCurve = interactedNode.curves[0];
                 foreach (var handler in AnimationWindowUtility.PropertyHandlers)
                 {
-                    if (handler.TryPopulateContextMenu(menu,
-                            propCurve.binding, propCurve.valueType, propNode.animatableObjectType,
-                            propNode.handlerData, data => propNode.handlerData = data))
+                    if (handler.TryPopulateContextMenu(state, menu,
+                            propCurve.binding, propCurve.valueType, interactedNode.animatableObjectType,
+                            interactedNode.handlerData, data => interactedNode.handlerData = data))
                         break;
                 }
             }
@@ -788,7 +810,7 @@ namespace UnityEditorInternal
                 curveBindings[i] = activeCurves[i].binding;
             }
 
-            state.activeClip.SetInterpolations(curveBindings, mode, L10n.Tr("Rotation Interpolation"));
+            state.activeClip.SetInterpolations(curveBindings, mode, L10n.Tr("Rotation Interpolation", null));
             state.hierarchyData.ReloadData();
         }
 

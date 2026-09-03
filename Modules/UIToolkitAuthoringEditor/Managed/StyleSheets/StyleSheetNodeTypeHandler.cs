@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -12,6 +11,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -290,6 +290,7 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
 
     readonly NodeMappings m_Mappings = new();
     protected readonly StyleSheetEditorExporter m_Exporter = new();
+    [NoAutoStaticsCleanup] // immutable export-options, safe to persist
     internal static readonly StyleSheetExporter.UssExportOptions s_ExportOptions = new()
     {
         ignoreSelectorPrefixList = new[] { "__unity" }
@@ -350,6 +351,12 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
     /// Flags indicating if mutating operations are permitted in the hierarchy.
     /// </summary>
     protected bool isReadonly { get; set; } = true;
+
+    /// <summary>
+    /// Toggles whether the hierarchy is read-only. The window drives this from its current data source:
+    /// editable when inside a UI Stage, read-only when displaying a selected panel component's document.
+    /// </summary>
+    internal void SetReadOnly(bool value) => isReadonly = value;
 
     public StyleSheetNodeTypeHandler()
         : this(new StyleSheetSelectionHandler(), new StyleRuleSelectionHandler())
@@ -465,6 +472,21 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
     }
 
     protected static string OwnerSuffix(VisualTreeAsset owningDocument) => owningDocument != null ? $" ({StyleSheetAssetUtilities.GetDocumentDisplayName(owningDocument)})" : string.Empty;
+
+    /// <summary>
+    /// The label of a style sheet row: its file name, the same unsaved-changes marker the document rows carry
+    /// in the hierarchy, and — for an inherited sheet — the document it comes from.
+    /// </summary>
+    /// <remarks>
+    /// The marker is deliberately not gated on the row being editable: a sheet displayed read-only here can
+    /// still have been dirtied by the UI Builder or the UI Stage, and that is exactly when saying so matters.
+    /// It is part of the display name only, so filtering keeps matching the bare file name.
+    /// </remarks>
+    protected static string GetStyleSheetDisplayName(in Node node)
+    {
+        var marker = UIAssetRegistry.LiveInstance?.IsDirty(node.StyleSheet) == true ? "*" : string.Empty;
+        return $"{node.StyleSheet.name}.uss{marker}{OwnerSuffix(node.OwningDocument)}";
+    }
 
     public void RefreshStyleSheetNodeName(HierarchyNode node)
     {
@@ -691,6 +713,16 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
     {
         base.Initialize();
         UICommandQueue.RegisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
+        UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
+    }
+
+    // The `.uss` rows carry the unsaved-changes marker (see GetStyleSheetDisplayName), so they have to be
+    // redrawn when a style sheet is dirtied or saved — by this window or by any other tool sharing it. Only
+    // the sheets that have a row here are worth a redraw; the registry reports every tracked asset.
+    void OnAssetDirtyStateChanged(UnityEngine.Object asset)
+    {
+        if (asset is StyleSheet styleSheet && Hierarchy.IsCreated && m_Mappings.TryGetValue(styleSheet, out _))
+            CommandList.SetDirty();
     }
 
     protected override void Dispose(bool disposing)
@@ -699,6 +731,10 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
 
         HoveredRule = null;
         UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Highlight, ProcessHighlightElementsCommand);
+
+        var registry = UIAssetRegistry.LiveInstance;
+        if (registry != null)
+            registry.AssetDirtyStateChanged -= OnAssetDirtyStateChanged;
 
         // Clear selection handlers directly since hierarchy is already emptied at this point
         m_StyleSheetSelectionHandler.Clear();
@@ -987,4 +1023,3 @@ internal class StyleSheetNodeTypeHandler : HierarchyNodeTypeHandler
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

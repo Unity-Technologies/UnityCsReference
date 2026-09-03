@@ -104,6 +104,9 @@ namespace Unity.U2D.Physics
         bool worldDrawing { get; set; }
 
         /// <undoc/>
+        bool selectedDrawing { get; set; }
+
+        /// <undoc/>
         void Draw();
     }
 
@@ -360,13 +363,79 @@ namespace Unity.U2D.Physics
         public static void SetOwnerUserData(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas, int ownerKey = 0) => PhysicsJoint_SetOwnerUserDataSpan(joints, userDatas, ownerKey);
 
         /// <summary>
+        /// Set the same <see cref="PhysicsUserData"/> on a batch of joints that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="joints">The joints to set the owner user data on.</param>
+        /// <param name="physicsUserData">The user data to set on every joint.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsJoint.SetOwner(UnityEngine.Object)"/>.</param>
+        public static void SetOwnerUserData(ReadOnlySpan<PhysicsJoint> joints, PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsJoint_SetOwnerUserDataSpanAll(joints, physicsUserData, ownerKey);
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> on a batch of joints that can be used for any purpose.
+        /// The joints and userDatas spans must be the same length; joints[n] receives userDatas[n].
+        /// </summary>
+        /// <param name="joints">The joints to set the user data on.</param>
+        /// <param name="userDatas">The user data to set, one entry per joint.</param>
+        public static void SetUserData(ReadOnlySpan<PhysicsJoint> joints, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsJoint_SetUserDataSpan(joints, userDatas);
+
+        /// <summary>
+        /// Set the same <see cref="PhysicsUserData"/> on a batch of joints that can be used for any purpose.
+        /// </summary>
+        /// <param name="joints">The joints to set the user data on.</param>
+        /// <param name="physicsUserData">The user data to set on every joint.</param>
+        public static void SetUserData(ReadOnlySpan<PhysicsJoint> joints, PhysicsUserData physicsUserData) => PhysicsJoint_SetUserDataSpanAll(joints, physicsUserData);
+
+        /// <summary>
         /// Controls whether this joint is automatically drawn when the world is drawn.
         /// </summary>
         public readonly bool worldDrawing { get => PhysicsJoint_GetWorldDrawing(this); set => PhysicsJoint_SetWorldDrawing(this, value); }
 
         /// <summary>
-        /// Draw a PhysicsJoint that visually represents its current state in the world.
+        /// Controls whether this joint is drawn individually when the world is drawn.
         /// </summary>
+        /// <remarks>
+        /// The joint is only drawn when the world draw options include <see cref="PhysicsWorld.DrawOptions.SelectedJoints"/>; changing the draw options never changes this state.
+        /// The state persists until set to false, the joint is destroyed, or <see cref="PhysicsWorld.ClearDrawSelected"/> clears the whole world.
+        /// The joint must also have <see cref="worldDrawing"/> enabled to be drawn.
+        /// </remarks>
+        public unsafe readonly bool selectedDrawing
+        {
+            get => PhysicsJoint_GetSelectedDrawing(this);
+            set
+            {
+                var joint = this;
+                PhysicsJoint_SetSelectedDrawing(new ReadOnlySpan<PhysicsJoint>(&joint, 1), value);
+            }
+        }
+
+        /// <summary>
+        /// Controls which Unity editor views this joint is drawn into.
+        /// </summary>
+        /// <remarks>
+        /// This filters on top of the world's own <see cref="PhysicsWorld.drawTarget"/>: the world decides whether it draws into a view at all, and this decides whether this joint is included when it does.
+        /// The state is not part of the joint definition and is never recorded, because it describes how the joint is being looked at rather than what it is.
+        /// A player build has no Scene view, so a joint set to <see cref="PhysicsWorld.DrawTarget.SceneView"/> is never drawn in a build.
+        /// </remarks>
+        public readonly PhysicsWorld.DrawTarget drawTarget { get => PhysicsJoint_GetDrawTarget(this); set => PhysicsJoint_SetDrawTarget(this, value); }
+
+        /// <summary>
+        /// Set the selected drawing state on a batch of joints.
+        /// </summary>
+        /// <remarks>
+        /// The joints can belong to different worlds; the world of each joint is locked only when it changes across the batch, so joints should be ordered by world for the fewest locks.
+        /// Any invalid joint in the batch is ignored.
+        /// See <see cref="selectedDrawing"/> for what the state controls.
+        /// </remarks>
+        /// <param name="joints">The joints to set the selected drawing state on.</param>
+        /// <param name="selected">The selected drawing state to set on every joint.</param>
+        public static void SetSelectedDrawing(ReadOnlySpan<PhysicsJoint> joints, bool selected) => PhysicsJoint_SetSelectedDrawing(joints, selected);
+
+        /// <summary>
+        /// Draw this joint's current state once, as custom drawing.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="selectedDrawing"/>, this does not persist: it draws once and is gone once every Scene/Game view has painted.
+        /// </remarks>
         public readonly void Draw() => PhysicsJoint_Draw(this);
 
         #endregion

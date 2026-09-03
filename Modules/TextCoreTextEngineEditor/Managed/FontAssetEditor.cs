@@ -58,6 +58,8 @@ namespace UnityEditor.TextCore.Text
             [NoAutoStaticsCleanup]
             public static bool generationSettingsPanel = true;
             [NoAutoStaticsCleanup]
+            public static bool fontSubsettingPanel = false;
+            [NoAutoStaticsCleanup]
             public static bool fontAtlasInfoPanel = true;
             [NoAutoStaticsCleanup]
             public static bool fontWeightPanel = true;
@@ -395,6 +397,9 @@ namespace UnityEditor.TextCore.Text
 
             serializedObject.Update();
 
+            // Disabled until the conversion flow ships with its legal notice.
+            //DrawStaticMigrationSection();
+
             if (m_ShowObsoleteProperties_prop.boolValue)
             {
                 EditorGUILayout.HelpBox(
@@ -595,24 +600,32 @@ namespace UnityEditor.TextCore.Text
             }
             #endregion
 
+            // FONT SUBSETTING PANEL
+            #region Font Subsetting
+            DrawFontSubsettingSection();
+            #endregion
+
             // ATLAS & MATERIAL PANEL
             #region Atlas & Material
-            rect = EditorGUILayout.GetControlRect(false, 24);
-
-            if (GUI.Button(rect, new GUIContent("<b>Atlas & Material</b>"), TM_EditorStyles.sectionHeader))
-                UI_PanelState.fontAtlasInfoPanel = !UI_PanelState.fontAtlasInfoPanel;
-
-            GUI.Label(rect, (UI_PanelState.fontAtlasInfoPanel ? "" : s_UiStateLabel[1]), TM_EditorStyles.rightLabel);
-
-            if (UI_PanelState.fontAtlasInfoPanel)
+            if (m_ShowObsoleteProperties_prop.boolValue)
             {
-                EditorGUI.indentLevel = 1;
+                rect = EditorGUILayout.GetControlRect(false, 24);
 
-                GUI.enabled = false;
-                EditorGUILayout.PropertyField(font_atlas_prop, new GUIContent("Font Atlas"));
-                EditorGUILayout.PropertyField(font_material_prop, new GUIContent("Font Material"));
-                GUI.enabled = true;
-                EditorGUILayout.Space();
+                if (GUI.Button(rect, new GUIContent("<b>Atlas & Material</b>"), TM_EditorStyles.sectionHeader))
+                    UI_PanelState.fontAtlasInfoPanel = !UI_PanelState.fontAtlasInfoPanel;
+
+                GUI.Label(rect, (UI_PanelState.fontAtlasInfoPanel ? "" : s_UiStateLabel[1]), TM_EditorStyles.rightLabel);
+
+                if (UI_PanelState.fontAtlasInfoPanel)
+                {
+                    EditorGUI.indentLevel = 1;
+
+                    GUI.enabled = false;
+                    EditorGUILayout.PropertyField(font_atlas_prop, new GUIContent("Font Atlas"));
+                    EditorGUILayout.PropertyField(font_material_prop, new GUIContent("Font Material"));
+                    GUI.enabled = true;
+                    EditorGUILayout.Space();
+                }
             }
             #endregion
 
@@ -943,8 +956,6 @@ namespace UnityEditor.TextCore.Text
             }
 
             // GLYPH TABLE
-            if (m_ShowObsoleteProperties_prop.boolValue)
-            {
             #region Glyph Table
             EditorGUIUtility.labelWidth = labelWidth;
             EditorGUIUtility.fieldWidth = fieldWidth;
@@ -1146,7 +1157,6 @@ namespace UnityEditor.TextCore.Text
                 EditorGUILayout.Space();
             }
             #endregion
-            }
 
             // FONT FEATURE TABLES
 
@@ -2954,8 +2964,6 @@ namespace UnityEditor.TextCore.Text
             // Static font asset
             if (populationMode == 0)
             {
-                m_fontAsset.sourceFontFile = null;
-
                 //Set atlas textures to non readable.
                 for (int i = 0; i < m_fontAsset.atlasTextures.Length; i++)
                 {
@@ -2972,15 +2980,10 @@ namespace UnityEditor.TextCore.Text
                 if (m_fontAsset.m_SourceFontFile_EditorRef.dynamic == false)
                 {
                     Debug.LogWarning("Please set the [" + m_fontAsset.name + "] font to dynamic mode as this is required for Dynamic SDF support.", m_fontAsset.m_SourceFontFile_EditorRef);
-                    m_AtlasPopulationMode_prop.intValue = 0;
-                    m_fontAsset.atlasPopulationMode = (AtlasPopulationMode)populationMode;
-
-                    serializedObject.ApplyModifiedProperties();
+                    m_fontAsset.atlasPopulationMode = AtlasPopulationMode.Static;
                 }
                 else
                 {
-                    m_fontAsset.sourceFontFile = m_fontAsset.m_SourceFontFile_EditorRef;
-
                     // Set atlas textures to readable.
                     for (int i = 0; i < m_fontAsset.atlasTextures.Length; i++)
                     {
@@ -2992,10 +2995,6 @@ namespace UnityEditor.TextCore.Text
 
                     //Debug.Log("Atlas Population mode set to [" + (m_AtlasPopulationMode_prop.intValue == 1 ? "Dynamic" : "Dynamic OS") + "].");
                 }
-
-                // Dynamic OS font asset
-                if (populationMode == 2)
-                    m_fontAsset.sourceFontFile = null;
             }
 
             serializedObject.Update();

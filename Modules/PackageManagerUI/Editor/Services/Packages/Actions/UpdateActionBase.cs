@@ -2,16 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal abstract class UpdateActionBase : PackageAction
 {
-    private static readonly string k_UpdateToButtonTextFormat = L10n.Tr("Update to {0}");
-    private static readonly string k_UpdatingToButtonTextFormat = L10n.Tr("Updating to {0}");
-    private static readonly string k_UpdateToWithoutVersionButtonText = L10n.Tr("Update");
-    private static readonly string k_UpdatingToWithoutVersionButtonText = L10n.Tr("Updating");
+    private static readonly string k_UpdateToButtonTextFormat = L10n.Tr("Update to {0}", null);
+    private static readonly string k_UpdatingToButtonTextFormat = L10n.Tr("Updating to {0}", null);
+    private static readonly string k_UpdateToWithoutVersionButtonText = L10n.Tr("Update", null);
+    private static readonly string k_UpdatingToWithoutVersionButtonText = L10n.Tr("Updating", null);
 
     protected bool m_ShowVersion;
 
@@ -40,17 +38,17 @@ internal abstract class UpdateActionBase : PackageAction
         if (installedVersion is { isDirectDependency: false } && installedVersion != targetVersion)
         {
             // if the installed version is being used by a Feature Set show the more specific Feature Set dialog instead of the generic one
-            var title = string.Format(L10n.Tr("Updating {0}"), version.GetDescriptor());
+            var title = string.Format(L10n.Tr("Updating {0}", null), version.GetDescriptor());
             if (m_PackageDatabase.IsUsedByFeature(installedVersion))
             {
-                var message = string.Format(L10n.Tr("Changing a {0} that is part of a feature can lead to errors. Are you sure you want to proceed?"), version.GetDescriptor());
-                if (!m_Application.DisplayDialog("updatePackagePartOfFeature", title, message, L10n.Tr("Yes"), L10n.Tr("No")))
+                var message = string.Format(L10n.Tr("Changing a {0} that is part of a feature can lead to errors. Are you sure you want to proceed?", null), version.GetDescriptor());
+                if (!m_Application.DisplayDialog("updatePackagePartOfFeature", title, message, L10n.Tr("Yes", null), L10n.Tr("No", null)))
                     return false;
             }
             else
             {
-                var message = L10n.Tr("This version of the package is being used by other packages. Upgrading a different version might break your project. Are you sure you want to continue?");
-                if (!m_Application.DisplayDialog("updatePackageUsedByOthers", title, message, L10n.Tr("Yes"), L10n.Tr("No")))
+                var message = L10n.Tr("This version of the package is being used by other packages. Upgrading a different version might break your project. Are you sure you want to continue?", null);
+                if (!m_Application.DisplayDialog("updatePackageUsedByOthers", title, message, L10n.Tr("Yes", null), L10n.Tr("No", null)))
                     return false;
             }
         }
@@ -69,7 +67,7 @@ internal abstract class UpdateActionBase : PackageAction
         if (isInProgress)
             return k_InProgressGenericTooltip;
 
-        return string.Format(L10n.Tr("Click to update this {0} to the specified version."), version.GetDescriptor());
+        return string.Format(L10n.Tr("Click to update this {0} to the specified version.", null), version.GetDescriptor());
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
@@ -82,17 +80,25 @@ internal abstract class UpdateActionBase : PackageAction
 
     public override bool IsInProgress(IPackageVersion version) => m_OperationDispatcher.IsInstallInProgress(GetUpdateTarget(version));
 
-    protected override IEnumerable<DisableCondition> GetAllTemporaryDisableConditions()
+    protected override DisableConditionList<IPackageVersion> CreateTemporaryDisableConditions() => new(
+        new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher),
+        new DisableIfCompiling(m_Application)
+    );
+
+    private sealed class DisableIfUpdateTargetVersionDeprecated : DisableIfVersionDeprecated
     {
-        yield return new DisableIfInstallOrEmbedOrUninstallInProgress(m_OperationDispatcher);
-        yield return new DisableIfCompiling(m_Application);
+        private readonly UpdateActionBase m_Action;
+        public DisableIfUpdateTargetVersionDeprecated(UpdateActionBase action)
+        {
+            m_Action = action;
+        }
+
+        protected override IPackageVersion GetVersionToCheck(IPackageVersion item) => m_Action.GetUpdateTarget(item);
     }
 
-    protected override IEnumerable<DisableCondition> GetAllDisableConditions(IPackageVersion version)
-    {
-        // We need to check the target version so that we don't disable the button in the details header
-        yield return new DisableIfVersionDeprecated(GetUpdateTarget(version));
-        yield return new DisableIfEnterpriseEntitlementsError(version);
-        yield return new DisableIfExportingInProgress(version.package);
-    }
+    protected override DisableConditionList<IPackageVersion> CreateDisableConditions() => new(
+        new DisableIfUpdateTargetVersionDeprecated(this),
+        new DisableIfEnterpriseEntitlementsError(),
+        new DisableIfExportingInProgress()
+    );
 }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
@@ -216,6 +215,19 @@ namespace UnityEngine.UIElements.StyleSheets
                     break;
             }
             return rot;
+        }
+
+        static public Curvature ReadCurvature(int valCount, StylePropertyValue val1, StylePropertyValue val2)
+        {
+            if (val1.handle.valueType == StyleValueType.Keyword && (StyleValueKeyword)val1.handle.valueIndex == StyleValueKeyword.None)
+            {
+                return Curvature.None();
+            }
+
+            // One angle bends the horizontal axis only; two angles bend both. Sign selects concave vs. convex.
+            Angle x = ReadAngle(val1);
+            Angle y = valCount > 1 ? ReadAngle(val2) : new Angle(0);
+            return new Curvature(x, y);
         }
 
         static bool TryReadEnum(StyleEnumType enumType, StylePropertyValue value, out int intValue)
@@ -533,13 +545,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     }
                 }
             }
-            else
+            else if (valueType == StyleValueType.Enum && getCursorIdFunc != null)
             {
-                // Default cursor
-                if (getCursorIdFunc != null)
-                {
-                    cursor.defaultCursorId = getCursorIdFunc(val1.sheet, val1.handle);
-                }
+                cursor.defaultCursorId = getCursorIdFunc(val1.sheet, val1.handle);
             }
 
             return cursor;
@@ -654,4 +662,3 @@ namespace UnityEngine.UIElements.StyleSheets
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

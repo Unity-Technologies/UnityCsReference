@@ -147,6 +147,10 @@ namespace UnityEngine.Bindings
                 case MarshalledArray.DataOwner.ExternallyOwned:
                 case MarshalledArray.DataOwner.Empty:
                 case MarshalledArray.DataOwner.Null:
+                case MarshalledArray.DataOwner.OutNullCollection:
+                case MarshalledArray.DataOwner.OutWithSize:
+                case MarshalledArray.DataOwner.OutWithCapacity:
+                    // Native call threw before executing; no native strings were allocated into the buffer
                     break;
                 case MarshalledArray.DataOwner.PinnedBuffer:
                 case MarshalledArray.DataOwner.TempAllocated:

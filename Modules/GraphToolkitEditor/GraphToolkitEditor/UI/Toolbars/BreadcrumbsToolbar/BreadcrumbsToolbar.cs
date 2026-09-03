@@ -14,7 +14,7 @@ namespace Unity.GraphToolkit.Editor
     [Overlay(typeof(GraphViewEditorWindow), toolbarId, "Breadcrumbs", true,
         defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Top,
         defaultDockIndex = 1000, defaultLayout = Layout.HorizontalToolbar)]
-    [Icon("Icons/GraphToolkit/BreadcrumbsToolbar/Breadcrumb.png")]
+    [Icon("GraphToolkit/Icons/BreadcrumbsToolbar/Breadcrumb.png")]
     [UnityRestricted]
     internal sealed class BreadcrumbsToolbar : Toolbar
     {

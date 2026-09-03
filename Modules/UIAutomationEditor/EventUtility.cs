@@ -2,12 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIAutomationEditor not yet converted
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIAutomation
 {
@@ -224,6 +224,7 @@ namespace UnityEditor.UIAutomation
         // Mouse dragging (simulates simple mousedown, mouse drag and mouse up)
         // ----------------------------------------------------------
 
+        [NoAutoStaticsCleanup] // scratch position updated at the start of every simulated drag; a stale value is harmless
         static Vector2 s_PrevMousePosition;
 
         public static void Drag(EditorWindow window, Vector2 mousePositionStart, Vector2 mousePositionEnd)
@@ -377,7 +378,7 @@ namespace UnityEditor.UIAutomation
             get { return s_Wait.keepWaiting; }
         }
 
+        [NoAutoStaticsCleanup] // test-automation wait helper, recreated by each Wait() call; holds no user code references
         static Wait s_Wait;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

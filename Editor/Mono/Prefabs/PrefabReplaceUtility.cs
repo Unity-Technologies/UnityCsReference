@@ -66,19 +66,20 @@ namespace UnityEditor
 
         internal static bool AddReplaceMenuItemsToMenuBasedOnCurrentSelection(GenericMenu menu, string parentMenuItemPath, GameObject contextGameObject, List<GameObject> listOfInstanceRoots, List<GameObject> listOfPlainGameObjects, GameObject prefabAsset)
         {
-            if (listOfInstanceRoots.Count == 0 && listOfPlainGameObjects.Count == 0)
+            if (!ModeService.HasCapability(ModeCapability.AssetAuthoring, true)
+                 || (listOfInstanceRoots.Count == 0 && listOfPlainGameObjects.Count == 0))
                 return false;
 
             string GetMenuItemText(string text, string parentMenuItemPath, bool needsObjectSelector)
             {
-                return string.Format("{0}{1}{2}", parentMenuItemPath, text, (needsObjectSelector ? "..." : ""));
+                return string.Format("{0}{1}{2}", parentMenuItemPath, text, (needsObjectSelector ? "..." : string.Empty));
             }
 
             bool needObjectSelector = prefabAsset == null;
-            var replaceText = L10n.Tr("Replace");
-            var replaceAndKeepOverridesText = L10n.Tr("Replace and Keep Overrides");
-            var reconnectPrefabText = L10n.Tr("Reconnect Prefab");
-            var replaceAndReconnectPrefabText = L10n.Tr("Replace and Reconnect Prefab");
+            var replaceText = L10n.Tr("Replace", null);
+            var replaceAndKeepOverridesText = L10n.Tr("Replace and Keep Overrides", null);
+            var reconnectPrefabText = L10n.Tr("Reconnect Prefab", null);
+            var replaceAndReconnectPrefabText = L10n.Tr("Replace and Reconnect Prefab", null);
 
             if (listOfInstanceRoots.Count > 0)
             {

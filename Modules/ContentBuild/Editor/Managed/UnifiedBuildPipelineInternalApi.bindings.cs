@@ -23,9 +23,7 @@ namespace UnityEditor.Build.Content
         // Get string with the JSON representation of the build metadata for an asset.
         // When useImporter is false this call directly calculates the data e.g. it bypasses importer caching layer
         // allowCaching controls the importer cache, when false it forces the importer to run even if there is already a cached output
-        public static extern string CalculateAssetBuildMetaDataAsJson(GUID asset, bool allowCaching);
 
-        public static extern string GetImportResultIDForMetaDataImport(GUID asset);
 
         // Returns the import result as SinglePassImportResult JSON.
         public static extern string RunSinglePassImport(GUID asset);
@@ -37,8 +35,6 @@ namespace UnityEditor.Build.Content
         public static extern string FileWriteMetaDataToJson(Hash128 contentFileMetadataHash);
 
         public static extern bool MetaDataImportArtifactExists(GUID asset);
-
-        public static extern bool BuildInstructionImportArtifactExists(GUID asset);
 
         // Used for testing purposes. This will crash the editor so we can test handling importer crashes
         public static extern void CrashEditor();

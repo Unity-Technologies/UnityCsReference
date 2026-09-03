@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,7 +74,7 @@ namespace UnityEditor
             public static readonly GUIContent openPrefab = EditorGUIUtility.TrTextContent("Open", "Open Prefab Asset '{0}'\nPress modifier key [Alt] to open in isolation.");
             public static readonly GUIContent tooltipForObjectFieldForRootInPrefabContents = EditorGUIUtility.TrTextContent("", "Replacing the root Prefab instance in a Variant is not supported since it will break all overrides for existing instances of this Variant, including their positions and rotations.");
             public static readonly GUIContent tooltipForObjectFieldForNestedPrefabs = EditorGUIUtility.TrTextContent("", "You can only replace outermost Prefab instances. Open Prefab Mode to replace a nested Prefab instance.");
-            public static readonly string selectString = L10n.Tr("Select");
+            public static readonly string selectString = L10n.Tr("Select", null);
 
             public static readonly float kIconSize = 24;
             public static readonly float column1Width = kIconSize + Styles.tagFieldWidth + 10;
@@ -1506,3 +1507,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

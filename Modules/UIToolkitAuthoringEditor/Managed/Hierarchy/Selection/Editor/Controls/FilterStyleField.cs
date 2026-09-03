@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
@@ -63,7 +64,7 @@ namespace Unity.UIToolkit.Editor
             m_FilterListView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
             m_FilterListView.selectionType = SelectionType.Multiple;
             m_FilterListView.makeNoneElement =
-                () => new Label(L10n.Tr(k_EmptyListText)).WithClassList(k_EmptyListClassName);
+                () => new Label(L10n.Tr(k_EmptyListText, null)).WithClassList(k_EmptyListClassName);
             m_FilterListView.makeItem = () =>
             {
                 return new FilterFunctionListViewItem();
@@ -251,3 +252,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

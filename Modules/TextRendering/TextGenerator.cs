@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Text not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -142,9 +143,11 @@ namespace UnityEngine
         // are in the corresponding Bindings.txt file.
 
         ///<summary>Create a TextGenerator.</summary>
+#pragma warning disable UAL0015 // chains to TextGenerator(int), whose debug weak-reference tracking is benign (see below)
         public TextGenerator()
             : this(50)
         {}
+#pragma warning restore UAL0015
 
         ///<summary>Create a TextGenerator.</summary>
         public TextGenerator(int initialCapacity)
@@ -153,11 +156,13 @@ namespace UnityEngine
             m_Verts = new List<UIVertex>((initialCapacity + 1) * 4);
             m_Characters = new List<UICharInfo>(initialCapacity + 1);
             m_Lines = new List<UILineInfo>(20);
+#pragma warning disable UAL0015 // debug weak-reference tracker only, reset wholesale on reload
             lock (s_Instances)
             {
                 m_Id = s_NextId++;
                 s_Instances.Add(m_Id, new WeakReference(this));
             }
+#pragma warning restore UAL0015
         }
 
 #pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
@@ -383,3 +388,4 @@ namespace UnityEngine
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

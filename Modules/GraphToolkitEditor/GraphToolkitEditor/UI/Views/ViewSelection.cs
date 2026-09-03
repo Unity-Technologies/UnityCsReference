@@ -472,7 +472,7 @@ namespace Unity.GraphToolkit.Editor
         internal void AppendCopyPortValueMenuItem(ContextualMenuPopulateEvent evt, PortModel portModel)
         {
             var canCopy = portModel.GetConnectedWires().Count == 0 && portModel.EmbeddedValue != null;
-            evt.menu.AppendAction(L10n.Tr("Copy Value"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Copy Value", null), _ =>
             {
                 var copyPasteData = new CopyPasteData(new List<Constant> { portModel.EmbeddedValue });
                 m_ClipboardProvider.SerializeDataToClipboard(copyPasteData);
@@ -492,7 +492,7 @@ namespace Unity.GraphToolkit.Editor
                 canPaste = CanPaste() && portModel.EmbeddedValue != null && portModel.EmbeddedValue.IsAssignableFrom(constant.Type);
             }
 
-            evt.menu.AppendAction(L10n.Tr("Paste Value"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Paste Value", null), _ =>
             {
                 View.Dispatch(new UpdateConstantsValueCommand(new[] { portModel.EmbeddedValue }, constant?.ObjectValue));
             }, canPaste ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
@@ -537,7 +537,7 @@ namespace Unity.GraphToolkit.Editor
             if (action == null)
                 return;
 
-            evt.menu.AppendMenuItemFromShortcutWithName<ShortCutPasteWithoutWires>(View.GraphTool, L10n.Tr("Paste as New"), action,
+            evt.menu.AppendMenuItemFromShortcutWithName<ShortCutPasteWithoutWires>(View.GraphTool, L10n.Tr("Paste as New", null), action,
                 enableItemMenu ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
 

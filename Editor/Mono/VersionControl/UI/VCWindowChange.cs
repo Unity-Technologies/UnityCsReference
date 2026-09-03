@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: VersionControl not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal.VersionControl;
@@ -14,7 +15,11 @@ namespace UnityEditor.VersionControl
     // Change window used for either submitting a window, editing a change list or creating a new change list.
     internal class WindowChange : EditorWindow
     {
-        ListControl submitList = new ListControl();
+        #pragma warning disable UAL0015
+        internal WindowChange() {} // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+
+        ListControl submitList = new ListControl(); // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+        #pragma warning restore UAL0015
         AssetList assetList = new AssetList();
         ChangeSet changeSet = new ChangeSet();
         string description = string.Empty;
@@ -509,3 +514,4 @@ namespace UnityEditor.VersionControl
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -337,7 +337,7 @@ namespace Unity.UI.Builder
                 propName = uxmlAttr.name;
                 valueBinding = new FieldValueBindingInfo(FieldValueBindingInfoType.Constant);
                 bool isInline =
-                    BuilderInspectorAttributes.IsAttributeOverriden(inspector.currentVisualElement, uxmlAttr);
+                    BuilderInspectorAttributes.IsAttributeOverriden(inspector.currentVisualElement, uxmlAttr, inspector.document);
                 valueSource = new FieldValueSourceInfo(isInline ? FieldValueSourceInfoType.Inline : FieldValueSourceInfoType.Default);
             }
             // .. otherwise, if the field is a USS property then...

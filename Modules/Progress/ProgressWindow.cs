@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ProgressWindow not yet converted
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Scripting.LifecycleManagement;
@@ -14,6 +15,10 @@ namespace UnityEditor
 {
     partial class ProgressWindow : EditorWindow
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        public ProgressWindow() {}
+        #pragma warning restore UAL0015
+
         internal const string ussBasePath = "StyleSheets/ProgressWindow";
         internal static readonly string ussPath = $"{ussBasePath}/ProgressWindow.uss";
         internal static readonly string ussPathDark = $"{ussBasePath}/ProgressWindowDark.uss";
@@ -118,7 +123,7 @@ namespace UnityEditor
             m_DismissAllBtn = new ToolbarButton(ClearInactive)
             {
                 name = "DismissAllBtn",
-                text = L10n.Tr("Clear Inactive"),
+                text = L10n.Tr("Clear Inactive", null),
             };
             toolbar.Add(m_DismissAllBtn);
 
@@ -135,7 +140,9 @@ namespace UnityEditor
             s_VisualProgressItemTask = EditorGUIUtility.Load(k_UxmlProgressItemPath) as VisualTreeAsset;
 
             m_TreeView = new TreeView();
+            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_TreeView.makeItem = MakeTreeViewItem;
+            #pragma warning restore UAL0018
             m_TreeView.bindItem = BindTreeViewItem;
             m_TreeView.unbindItem = UnbindTreeViewItem;
             m_TreeView.destroyItem = DestroyTreeViewItem;
@@ -496,3 +503,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

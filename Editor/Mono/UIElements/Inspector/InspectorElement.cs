@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
@@ -275,11 +274,15 @@ namespace UnityEditor.UIElements
         /// Initialized a new instance of <see cref="InspectorElement"/> for the specified <see cref="Editor"/>.
         /// </summary>
         /// <param name="editor">The editor to bind to.</param>
+        #pragma warning disable UAL0015 // reads current EditorSettings at construction time only; no state persists across a domain reload
         public InspectorElement(Editor editor) : this(editor, GetDefaultInspectorFramework()) {}
+        #pragma warning restore UAL0015
 
         internal InspectorElement(Object obj, DefaultInspectorFramework defaultInspectorFramework) : this(new SerializedObject(obj), null, defaultInspectorFramework) { }
         internal InspectorElement(SerializedObject serializedObject, DefaultInspectorFramework defaultInspectorFramework) : this(serializedObject, null, defaultInspectorFramework) {}
+        #pragma warning disable UAL0015 // only populates ScriptAttributeUtility's type-keyed caches, which are themselves annotated to survive a domain reload
         internal InspectorElement(Editor editor, DefaultInspectorFramework defaultInspectorFramework) : this(editor.serializedObject, editor, defaultInspectorFramework) {}
+        #pragma warning restore UAL0015
 
         InspectorElement(SerializedObject obj, Editor editor, DefaultInspectorFramework defaultInspectorFramework)
         {
@@ -981,4 +984,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -17,7 +17,7 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal partial class PlacematGradientBorder : ImmediateModeElement
     {
-        const string k_PlacematborderShaderPath = "Shaders/GraphToolkit/PlacematBorder.shader";
+        const string k_PlacematborderShaderPath = "GraphToolkit/Shaders/PlacematBorder.shader";
         [NoAutoStaticsCleanup] // shader asset loaded at static init; asset survives reload, no null-check lazy pattern
         static Shader s_Shader = EditorGUIUtility.LoadRequired(k_PlacematborderShaderPath) as Shader;
         [AutoStaticsCleanupOnCodeReload]

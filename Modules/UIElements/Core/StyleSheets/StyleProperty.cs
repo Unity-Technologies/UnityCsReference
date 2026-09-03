@@ -1130,6 +1130,58 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Sets a <see cref="Curvature"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetCurvature(StyleSheet styleSheet, Curvature value)
+        {
+            if (value.IsNone())
+            {
+                SetSize(ref m_Values, 1);
+                styleSheet.WriteKeyword(ref values[0], StyleValueKeyword.None);
+                requireVariableResolve = false;
+                return;
+            }
+
+            // A flat vertical axis round-trips as a single angle (horizontal bend only).
+            if (value.y.value == 0f)
+            {
+                SetSize(ref m_Values, 1);
+                styleSheet.WriteAngle(ref values[0], value.x);
+                requireVariableResolve = false;
+                return;
+            }
+
+            SetSize(ref m_Values, 2);
+            styleSheet.WriteAngle(ref values[0], value.x);
+            styleSheet.WriteAngle(ref values[1], value.y);
+            requireVariableResolve = false;
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="Curvature"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetCurvature(StyleSheet styleSheet, out Curvature value)
+        {
+            if (handleCount is <= 0 or > 2)
+            {
+                value = default;
+                return false;
+            }
+
+            var valCount = handleCount;
+            var val1 = new StylePropertyValue() { handle = values[0], sheet = styleSheet };
+            var val2 = valCount > 1 ? new StylePropertyValue { handle = values[1], sheet = styleSheet } : default;
+
+            value = StylePropertyReader.ReadCurvature(valCount, val1, val2);
+            return true;
+        }
+
+        /// <summary>
         /// Sets a <see cref="Scale"/> as the current value.
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
@@ -1588,6 +1640,13 @@ namespace UnityEngine.UIElements
                 Debug.LogWarning("Runtime cursors other than the default cursor need to be defined using a texture.");
             }
 
+            // No texture: a null asset reference warns on resolve and serializes as url("").
+            if (value.texture == null)
+            {
+                SetKeyword(styleSheet, StyleValueKeyword.Initial);
+                return;
+            }
+
             if (value.hotspot != Vector2.zero)
             {
                 SetSize(ref m_Values, 3);
@@ -1600,6 +1659,8 @@ namespace UnityEngine.UIElements
                 SetSize(ref m_Values, 1);
                 styleSheet.WriteAssetReference(ref values[0], value.texture);
             }
+
+            requireVariableResolve = false;
         }
 
         /// <summary>

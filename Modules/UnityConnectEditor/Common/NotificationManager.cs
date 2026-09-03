@@ -2,13 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
 using System.Threading;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Unity.Collections;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
@@ -17,9 +17,10 @@ namespace UnityEditor.Connect
     /// The notifications can be handled however subscriber wishes, but:
     ///   Easy UIElements implementation -> use UIElementsNotificationSubscriber
     /// </summary>
-    internal class NotificationManager
+    internal partial class NotificationManager
     {
-        static readonly NotificationManager k_Instance;
+        [AutoStaticsCleanupOnCodeReload]
+        static NotificationManager k_Instance;
 
         const long k_DuplicateNotificationMillisecondsThreshold = 1000;
 
@@ -28,11 +29,16 @@ namespace UnityEditor.Connect
         long m_NotificationIdCounter;
         Dictionary<Notification.Topic, HashSet<INotificationSubscriber>> m_SubscribersByTopic = new Dictionary<Notification.Topic, HashSet<INotificationSubscriber>>();
 
-        public static NotificationManager instance => k_Instance;
-
-        static NotificationManager()
+        public static NotificationManager instance
         {
-            k_Instance = new NotificationManager();
+            get
+            {
+                if (k_Instance == null)
+                {
+                    k_Instance = new NotificationManager();
+                }
+                return k_Instance;
+            }
         }
 
         NotificationManager()
@@ -261,4 +267,3 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

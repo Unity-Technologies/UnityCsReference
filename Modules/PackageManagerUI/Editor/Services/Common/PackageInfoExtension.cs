@@ -34,7 +34,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             result = string.IsNullOrEmpty(packageInfo?.description) ?
-                     string.Format(L10n.Tr("This built in package controls the presence of the {0} module."), packageInfo.displayName) :
+                     string.Format(L10n.Tr("This built in package controls the presence of the {0} module.", null), packageInfo.displayName) :
                      packageInfo.description.Split(new[] { k_BuiltinPackageDocsUrlKey }, StringSplitOptions.None)[0];
 
             return true;

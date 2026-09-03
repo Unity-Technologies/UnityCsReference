@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,13 +10,15 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
-class LiveAttributePropertyController
+partial class LiveAttributePropertyController
 {
-    public abstract class PropertyDriver<T> : ScriptableObject where T : PropertyDriver<T>
+    public abstract partial class PropertyDriver<T> : ScriptableObject where T : PropertyDriver<T>
     {
+        [AutoStaticsCleanupOnCodeReload]
         static T s_Driver;
 
         public static T instance => s_Driver;
@@ -39,6 +40,7 @@ class LiveAttributePropertyController
     enum LiveAttributePropertyModificationValueType
     {
         BoxedValue,
+        BoxedArrayValue,
         ManagedReferenceValue,
         ManagedReferenceArrayValue,
     }
@@ -93,6 +95,13 @@ class LiveAttributePropertyController
         if (serializedDataProperty == null)
             return;
 
+        // The object the live attribute values are read from: the element, or the live component for a
+        // component context. Null (e.g. a component not attached to the live element) means there is no
+        // live state to sync.
+        var liveAttributeOwner = context.liveAttributeOwner;
+        if (liveAttributeOwner == null)
+            return;
+
         // Collect existing bindings first
         using var listHandle = ListPool<BindingInfo>.Get(out var bindingInfos);
         using var hashHandle = HashSetPool<string>.Get(out var resolvedBindingLookup);
@@ -113,7 +122,7 @@ class LiveAttributePropertyController
             var property = serializedDataProperty.FindPropertyRelative(attribute.serializedField.Name);
             if (property == null)
                 continue;
-            CollectLiveAttributeValuePropertyModifications(context.element, context.uxmlSerializedData, attribute, property, propertyModifications, ref hasUnsupportedDrivenPropertyChange, syncOnlyBoundValues, resolvedBindingLookup);
+            CollectLiveAttributeValuePropertyModifications(liveAttributeOwner, context.uxmlSerializedData, attribute, property, propertyModifications, ref hasUnsupportedDrivenPropertyChange, syncOnlyBoundValues, resolvedBindingLookup);
         }
 
         if (propertyModifications.Count > 0)
@@ -135,6 +144,13 @@ class LiveAttributePropertyController
                 {
                     case LiveAttributePropertyModificationValueType.BoxedValue:
                         modification.property.boxedValue = modification.value;
+                        break;
+                    case LiveAttributePropertyModificationValueType.BoxedArrayValue:
+                        var boxedArray = modification.value as IList;
+                        modification.property.arraySize = boxedArray?.Count ?? 0;
+                        modification.property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                        for (var i = 0; i < modification.property.arraySize; i++)
+                            modification.property.GetArrayElementAtIndex(i).boxedValue = boxedArray[i];
                         break;
                     case LiveAttributePropertyModificationValueType.ManagedReferenceValue:
                         modification.property.managedReferenceValue = modification.value;
@@ -330,11 +346,19 @@ class LiveAttributePropertyController
 
             if (isBound || (!syncOnlyBoundValues && !UxmlAttributeComparison.ObjectEquals(value, uxmlValue)))
             {
+                var isArray = property.isArray && property.propertyType != SerializedPropertyType.String;
+
+                // Resizing the serialized array is not a revertible driven change, so snapshot before mutating.
+                if (isArray && property.arraySize != ((value as IList)?.Count ?? 0))
+                    hasUnsupportedDrivenPropertyChange = true;
+
                 propertyModifications.Add(new LiveAttributePropertyModification
                 {
                     attribute = attributeDescription,
                     property = property,
-                    valueType = LiveAttributePropertyModificationValueType.BoxedValue,
+                    valueType = isArray
+                        ? LiveAttributePropertyModificationValueType.BoxedArrayValue
+                        : LiveAttributePropertyModificationValueType.BoxedValue,
                     value = value,
                     isBound = isBound,
                 });
@@ -346,4 +370,3 @@ class LiveAttributePropertyController
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

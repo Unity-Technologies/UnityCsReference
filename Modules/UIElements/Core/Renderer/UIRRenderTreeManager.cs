@@ -301,7 +301,9 @@ namespace UnityEngine.UIElements.UIR
                     forceGammaRendering = true;
             }
             isFlat = panel.isFlat;
+#pragma warning disable UAL0015 // the UIRenderDevice constructor's event subscriptions are reload-safe; see UIRenderDevice.OnCodeReloadCleanup
             device = new UIRenderDevice(panel.panelRenderer.vertexBudget, 0, isFlat, forceGammaRendering, panel.panelRenderer.extraVertexChannels);
+#pragma warning restore UAL0015
 
             Shaders.Acquire();
 
@@ -456,6 +458,8 @@ namespace UnityEngine.UIElements.UIR
                 m_Stats.elementsRemoved = removedThisFrame;
                 m_TotalVisualElements += (int)addedThisFrame - (int)removedThisFrame;
 
+                shaderInfoAllocator.storageCompareWrites = m_ShaderInfoUpdateGuard.compareWrites;
+
                 m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
                 m_Compositor.Update(m_RootRenderTree);
                 device.AdvanceFrame(); // Before making any changes to the buffers
@@ -474,7 +478,8 @@ namespace UnityEngine.UIElements.UIR
                 vectorImageManager?.Commit();
                 // Frame boundary — all Reset+Insert cycles are done.
                 backgroundGradientBaker?.PurgePending();
-                shaderInfoAllocator.IssuePendingStorageChanges();
+                bool uploadedShaderInfo = shaderInfoAllocator.IssuePendingStorageChanges();
+                m_ShaderInfoUpdateGuard.IssuedPendingStorageChanges(uploadedShaderInfo);
 
                 device.OnFrameRenderingBegin();
 
@@ -495,6 +500,10 @@ namespace UnityEngine.UIElements.UIR
         void SerializeRootTreeCommands()
         {
             Debug.Assert(drawInCameras);
+
+            // The camera draws these commands, so the device does reach frame boundaries: this is the
+            // drawInCameras counterpart of RenderRootTree and must notify the guard just the same.
+            m_ShaderInfoUpdateGuard.OnRender();
 
             if (m_RootRenderTree?.firstCommand == null)
                 return;
@@ -529,9 +538,13 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        readonly ShaderInfoUpdateGuard m_ShaderInfoUpdateGuard = new();
+
         public void RenderRootTree()
         {
             Debug.Assert(!drawInCameras);
+
+            m_ShaderInfoUpdateGuard.OnRender();
 
             PanelClearSettings clearSettings = panel.clearSettings;
             if (clearSettings.clearColor || clearSettings.clearDepthStencil)

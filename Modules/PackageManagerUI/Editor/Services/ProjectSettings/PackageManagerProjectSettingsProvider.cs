@@ -14,23 +14,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         public const string k_PackageManagerSettingsPath = "Project/Package Manager";
         public static readonly string[] k_Keywords = new []
         {
-            L10n.Tr("enable"),
-            L10n.Tr("preview"),
-            L10n.Tr("package"),
-            L10n.Tr("scoped"),
-            L10n.Tr("registries"),
-            L10n.Tr("registry"),
-            L10n.Tr("dependencies"),
-            L10n.Tr("security"),
-            L10n.Tr("signature"),
-            L10n.Tr("trust"),
+            L10n.Tr("enable", null),
+            L10n.Tr("preview", null),
+            L10n.Tr("package", null),
+            L10n.Tr("scoped", null),
+            L10n.Tr("registries", null),
+            L10n.Tr("registry", null),
+            L10n.Tr("dependencies", null),
+            L10n.Tr("security", null),
+            L10n.Tr("signature", null),
+            L10n.Tr("trust", null),
         };
 
         const string k_GeneralServicesTemplatePath = "UXML/PackageManager/PackageManagerProjectSettings.uxml";
         protected VisualTreeAsset m_GeneralTemplate;
 
         private static readonly string k_Message = L10n.Tr(
-            "Pre-release package versions are in the process of becoming stable. The recommended best practice is to use them only for testing purposes and to give direct feedback to the authors.");
+            "Pre-release package versions are in the process of becoming stable. The recommended best practice is to use them only for testing purposes and to give direct feedback to the authors.", null);
 
         internal static class StylesheetPath
         {
@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var saveIt = true;
                         if (newValue && !m_SettingsProxy.oneTimeWarningShown)
                         {
-                            if (application.DisplayDialog("showPreReleasePackages", L10n.Tr("Show Pre-release Package Versions"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                            if (application.DisplayDialog("showPreReleasePackages", L10n.Tr("Show Pre-release Package Versions", null), k_Message, L10n.Tr("I understand", null), L10n.Tr("Cancel", null)))
                                 m_SettingsProxy.oneTimeWarningShown = true;
                             else
                                 saveIt = false;

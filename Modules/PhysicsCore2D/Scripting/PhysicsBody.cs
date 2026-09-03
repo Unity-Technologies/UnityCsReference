@@ -193,7 +193,7 @@ namespace Unity.U2D.Physics
         /// Used to define a Transform write "tween" for a body.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public struct TransformWriteTween
+        public record struct TransformWriteTween
         {
             /// <summary>
             /// The body to be used during the lifetime of the tween.
@@ -379,7 +379,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct MassConfiguration
+        public record struct MassConfiguration
         {
             /// <summary>
             /// Get a default mass configuration with a mass of one, a rotational inertia of one and a centroid at the origin.
@@ -415,7 +415,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct BuoyancyInput
+        public record struct BuoyancyInput
         {
             /// <summary>
             /// Create a default <see cref="BuoyancyInput"/>.
@@ -512,7 +512,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct WindInput
+        public record struct WindInput
         {
             /// <summary>
             /// Create a default <see cref="WindInput"/>.
@@ -528,10 +528,17 @@ namespace Unity.U2D.Physics
             }
 
             /// <summary>
+            /// The maximum magnitude allowed for each component of <see cref="force"/>.
+            /// Larger magnitudes have no useful effect because body speeds are capped each simulation step, so values are clamped into this range.
+            /// </summary>
+            public const float MaxForce = 100000f;
+
+            /// <summary>
             /// The wind velocity vector.
             /// Scaled by <see cref="drag"/> when computing the per-shape aerodynamic relative velocity.
+            /// Each component's magnitude is clamped to <see cref="MaxForce"/>.
             /// </summary>
-            public Vector2 force { readonly get => m_Force; set => m_Force = value; }
+            public Vector2 force { readonly get => m_Force; set => m_Force = new Vector2(Mathf.Clamp(value.x, -MaxForce, MaxForce), Mathf.Clamp(value.y, -MaxForce, MaxForce)); }
 
             /// <summary>
             /// Drag coefficient.
@@ -573,7 +580,7 @@ namespace Unity.U2D.Physics
         /// A batch item used to set the velocity of a <see cref="PhysicsBody"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public struct BatchVelocity
+        public record struct BatchVelocity
         {
             /// <summary>
             /// Create a default batch velocity, assigning the <see cref="PhysicsBody"/>.
@@ -621,7 +628,7 @@ namespace Unity.U2D.Physics
         /// A batch item used to apply a force to a <see cref="PhysicsBody"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public struct BatchForce
+        public record struct BatchForce
         {
             /// <summary>
             /// Create a default batch force, assigning the <see cref="PhysicsBody"/>.
@@ -710,7 +717,7 @@ namespace Unity.U2D.Physics
         /// A batch item used to apply an impulse to a <see cref="PhysicsBody"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public struct BatchImpulse
+        public record struct BatchImpulse
         {
             /// <summary>
             /// Create a default batch impulse, assigning the <see cref="PhysicsBody"/>.
@@ -807,7 +814,7 @@ namespace Unity.U2D.Physics
         /// A batch item used to get/set the pose of a <see cref="PhysicsBody"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public struct BatchTransform
+        public record struct BatchTransform
         {
             /// <summary>
             /// Create a default batch transform, assigning the <see cref="PhysicsBody"/>.
@@ -1771,6 +1778,29 @@ namespace Unity.U2D.Physics
         public static void SetOwnerUserData(ReadOnlySpan<PhysicsBody> bodies, ReadOnlySpan<PhysicsUserData> userDatas, int ownerKey = 0) => PhysicsBody_SetOwnerUserDataSpan(bodies, userDatas, ownerKey);
 
         /// <summary>
+        /// Set the same <see cref="PhysicsUserData"/> on a batch of bodies that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="bodies">The bodies to set the owner user data on.</param>
+        /// <param name="physicsUserData">The user data to set on every body.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>.</param>
+        public static void SetOwnerUserData(ReadOnlySpan<PhysicsBody> bodies, PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsBody_SetOwnerUserDataSpanAll(bodies, physicsUserData, ownerKey);
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> on a batch of bodies that can be used for any purpose.
+        /// The bodies and userDatas spans must be the same length; bodies[n] receives userDatas[n].
+        /// </summary>
+        /// <param name="bodies">The bodies to set the user data on.</param>
+        /// <param name="userDatas">The user data to set, one entry per body.</param>
+        public static void SetUserData(ReadOnlySpan<PhysicsBody> bodies, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsBody_SetUserDataSpan(bodies, userDatas);
+
+        /// <summary>
+        /// Set the same <see cref="PhysicsUserData"/> on a batch of bodies that can be used for any purpose.
+        /// </summary>
+        /// <param name="bodies">The bodies to set the user data on.</param>
+        /// <param name="physicsUserData">The user data to set on every body.</param>
+        public static void SetUserData(ReadOnlySpan<PhysicsBody> bodies, PhysicsUserData physicsUserData) => PhysicsBody_SetUserDataSpanAll(bodies, physicsUserData);
+
+        /// <summary>
         /// Get/Set the transform object associated with the body.
         /// This can be used as a write transform and/or as a depth-hint for <see cref="PhysicsWorld"/> drawing.
         /// See <see cref="PhysicsBody.transformWriteMode"/>.
@@ -2039,8 +2069,51 @@ namespace Unity.U2D.Physics
         public readonly bool worldDrawing { get => PhysicsBody_GetWorldDrawing(this); set => PhysicsBody_SetWorldDrawing(this, value); }
 
         /// <summary>
-        /// Draw a body that visually represents its current state in the world.
+        /// Controls whether this body is drawn individually when the world is drawn.
         /// </summary>
+        /// <remarks>
+        /// The body is only drawn when the world draw options include <see cref="PhysicsWorld.DrawOptions.SelectedBodies"/>; changing the draw options never changes this state.
+        /// The state persists until set to false, the body is destroyed, or <see cref="PhysicsWorld.ClearDrawSelected"/> clears the whole world.
+        /// The body must also have <see cref="worldDrawing"/> enabled to be drawn.
+        /// </remarks>
+        public unsafe readonly bool selectedDrawing
+        {
+            get => PhysicsBody_GetSelectedDrawing(this);
+            set
+            {
+                var body = this;
+                PhysicsBody_SetSelectedDrawing(new ReadOnlySpan<PhysicsBody>(&body, 1), value);
+            }
+        }
+
+        /// <summary>
+        /// Controls which Unity editor views this body is drawn into.
+        /// </summary>
+        /// <remarks>
+        /// This filters on top of the world's own <see cref="PhysicsWorld.drawTarget"/>: the world decides whether it draws into a view at all, and this decides whether this body is included when it does.
+        /// The state is not part of the body definition and is never recorded, because it describes how the body is being looked at rather than what it is.
+        /// A player build has no Scene view, so a body set to <see cref="PhysicsWorld.DrawTarget.SceneView"/> is never drawn in a build.
+        /// </remarks>
+        public readonly PhysicsWorld.DrawTarget drawTarget { get => PhysicsBody_GetDrawTarget(this); set => PhysicsBody_SetDrawTarget(this, value); }
+
+        /// <summary>
+        /// Set the selected drawing state on a batch of bodies.
+        /// </summary>
+        /// <remarks>
+        /// The bodies can belong to different worlds; the world of each body is locked only when it changes across the batch, so bodies should be ordered by world for the fewest locks.
+        /// Any invalid body in the batch is ignored.
+        /// See <see cref="selectedDrawing"/> for what the state controls.
+        /// </remarks>
+        /// <param name="bodies">The bodies to set the selected drawing state on.</param>
+        /// <param name="selected">The selected drawing state to set on every body.</param>
+        public static void SetSelectedDrawing(ReadOnlySpan<PhysicsBody> bodies, bool selected) => PhysicsBody_SetSelectedDrawing(bodies, selected);
+
+        /// <summary>
+        /// Draw this body's current state once, as custom drawing.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="selectedDrawing"/>, this does not persist: it draws once and is gone once every Scene/Game view has painted.
+        /// </remarks>
         public readonly void Draw() => PhysicsBody_Draw(this);
 
         #endregion

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -19,9 +20,9 @@ namespace UnityEditor.EditorTools
     sealed class EditorToolSettingsOverlay : Overlay, ICreateToolbar, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
         const string k_NoSettingsLabelName = "NoSettingsLabel";
-        static readonly string k_NoSettingsHorizontal = L10n.Tr("No Tool Settings");
-        static readonly string k_NoSettingsVertical =  L10n.Tr("None");
-        static readonly string k_NoSettingsTooltip =  L10n.Tr("No tool settings available for the currently active tool and context.");
+        static readonly string k_NoSettingsHorizontal = L10n.Tr("No Tool Settings", null);
+        static readonly string k_NoSettingsVertical =  L10n.Tr("None", null);
+        static readonly string k_NoSettingsTooltip =  L10n.Tr("No tool settings available for the currently active tool and context.", null);
 
         Editor m_ToolEditor, m_ContextEditor;
         Editor m_DefaultToolEditor, m_DefaultContextEditor;
@@ -51,8 +52,10 @@ namespace UnityEditor.EditorTools
 
         public EditorToolSettingsOverlay()
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             ToolManager.activeToolChangedForOwner += OnToolChangedForOwner;
             ToolManager.activeContextChangedForOwner += OnToolChangedForOwner;
+            #pragma warning restore UAL0015
         }
 
         public override void OnCreated()
@@ -326,3 +329,4 @@ namespace UnityEditor.EditorTools
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

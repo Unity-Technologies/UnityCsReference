@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 
 namespace Unity.Timeline.Foundation.ViewModel
@@ -16,6 +16,7 @@ namespace Unity.Timeline.Foundation.ViewModel
         public readonly IReadOnlyList<Track> removedTracks;
         public readonly IReadOnlyList<Track> reorderedTracks;
 
+        [NoAutoStaticsCleanup] // immutable empty-sentinel; wraps only zero-length arrays and never references live tracks
         public static readonly HierarchyDiff Empty = new HierarchyDiff(
             Array.Empty<Track>(),
             Array.Empty<Track>(),
@@ -34,4 +35,3 @@ namespace Unity.Timeline.Foundation.ViewModel
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

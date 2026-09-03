@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -24,6 +23,9 @@ namespace UnityEditor.UIElements.Inspector
         internal const string k_EditorElementsError = "The VisualTreeAsset contains editor-only elements that cannot be used at runtime.\nPlease remove the following elements:";
         const string k_InspectorEditSourceAssetButtonTooltip = "Edit the Visual Tree Asset (UXML) in the UI Builder.";
         const string k_InspectorNewSourceAssetButtonTooltip = "Create a new Visual Tree Asset (UXML).";
+        const string k_GenerateAccessibilityHierarchyLabel = "Generate Accessibility Hierarchy";
+        const string k_GenerateAccessibilityHierarchyTooltip = "Include this component's content in the automatically " +
+            "generated accessibility hierarchy. For more information, visit Project Settings > UI Toolkit.";
 
         // Flags set by PresetEditor on temporary preview GameObjects
         const HideFlags k_PresetPreviewFlags = HideFlags.HideInHierarchy | HideFlags.NotEditable |
@@ -100,6 +102,38 @@ namespace UnityEditor.UIElements.Inspector
             m_SourceAssetButton.clicked += OnSourceAssetButtonClicked;
 
             m_SortingOrderField = m_RootVisualElement.MandatoryQ<PropertyField>("sort-order-field");
+
+            // The per-component accessibility opt-out only surfaces while the experimental
+            // project setting is on; that setting also gates the runtime, so a hidden field is
+            // also inert. Deliberately not a bound PropertyField: a serialized write bypasses the
+            // property setter that notifies the accessibility bridge of live gate changes, and on
+            // UIDocument it additionally triggers OnValidate, which recreates the document's UI
+            // (wiping content built from code at runtime).
+            if (UIToolkitAccessibilitySettingsEditor.generateHierarchies)
+            {
+                var accessibilityToggle = new Toggle(k_GenerateAccessibilityHierarchyLabel)
+                {
+                    tooltip = k_GenerateAccessibilityHierarchyTooltip
+                };
+                accessibilityToggle.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
+                accessibilityToggle.SetValueWithoutNotify(((IPanelComponent)target).GetAccessibilityEnabled());
+                accessibilityToggle.RegisterValueChangedCallback(evt =>
+                {
+                    Undo.RecordObject(target, "Change Generate Accessibility Hierarchy");
+                    ((IPanelComponent)target).SetAccessibilityEnabled(evt.newValue);
+                });
+
+                // Undo/Redo, revert and paste write the serialized gate without going through the
+                // toggle; the component resyncs the accessibility bridge from its own validation
+                // channel, and this tracker refreshes the displayed value (it lives and dies with
+                // the toggle). Same serialized name on both components, native on PanelRenderer.
+                if (serializedObject.FindProperty("m_GenerateAccessibilityHierarchy") is { } gateProperty)
+                    accessibilityToggle.TrackPropertyValue(gateProperty,
+                        (_, property) => accessibilityToggle.SetValueWithoutNotify(property.boolValue));
+
+                var sortingOrderParent = m_SortingOrderField.parent;
+                sortingOrderParent.Insert(sortingOrderParent.IndexOf(m_SortingOrderField) + 1, accessibilityToggle);
+            }
 
             m_WorldSpaceDimensionsFoldout = m_RootVisualElement.MandatoryQ<Foldout>("world-space-dimensions");
 
@@ -389,4 +423,3 @@ namespace UnityEditor.UIElements.Inspector
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -10,12 +10,19 @@ namespace UnityEngine
     [NativeHeader("Runtime/GI/DynamicGI.h")]
     public sealed partial class DynamicGI
     {
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public static extern float indirectScale { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public static extern float updateThreshold { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public static extern int   materialUpdateTimeSlice { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public static extern void  SetEmissive(Renderer renderer, Color color);
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         [NativeMethod(ThrowsException = true)] public static extern void  SetEnvironmentData([NotNull] float[] input);
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public static extern bool  synchronousMode { get; set; }
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public static extern bool  isConverged { get; }
 
         internal static extern int scheduledMaterialUpdatesCount { get; }

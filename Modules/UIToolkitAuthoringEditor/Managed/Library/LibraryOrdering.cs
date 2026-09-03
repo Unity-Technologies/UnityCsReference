@@ -2,16 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.UIElements;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
     internal static class LibraryOrdering
     {
+        [NoAutoStaticsCleanup] // fixed engine control-type list, never mutated
         static readonly Type[] k_CuratedOrder =
         {
             // Containers
@@ -93,6 +94,7 @@ namespace Unity.UIToolkit.Editor
             typeof(PropertyField),
         };
 
+        [NoAutoStaticsCleanup] // built once from k_CuratedOrder engine types, never mutated
         static readonly Dictionary<Type, int> s_OrderByType = BuildOrderByType();
 
         static Dictionary<Type, int> BuildOrderByType()
@@ -113,4 +115,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

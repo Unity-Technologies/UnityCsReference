@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -23,7 +24,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IProjectSettingsProxy m_SettingsProxy;
         private readonly IDropdownHandler m_DropdownHandler;
 
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         public PackageManagerToolbar() : this(
+        #pragma warning restore UAL0015
             ServicesContainer.instance.Resolve<IResourceLoader>(),
             ServicesContainer.instance.Resolve<IApplicationProxy>(),
             ServicesContainer.instance.Resolve<IUnityConnectProxy>(),
@@ -67,9 +70,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             SetupAddMenu();
             SetupSortingMenu();
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SetupFilters();
+            #pragma warning restore UAL0015
             SetupInProgressSpinner();
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             SetupAdvancedMenu();
+            #pragma warning restore UAL0015
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -137,13 +144,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 filtersSelected.Append(filter).Append(separator);
             // Since we always append the separator at the end, we want to make sure to move the ending separator
             filtersSelected.Length = Mathf.Max(0, filtersSelected.Length - separator.Length);
-            filtersMenu.text = filtersSelected.Length == 0 ? L10n.Tr("Filters") : string.Format(L10n.Tr("Filters ({0})"), filtersSelected);
+            filtersMenu.text = filtersSelected.Length == 0 ? L10n.Tr("Filters", null) : string.Format(L10n.Tr("Filters ({0})", null), filtersSelected);
         }
 
         private void UpdateSortMenuText(PageSortOption sortOption)
         {
             var displayName = sortOption.GetDisplayName();
-            sortingMenu.text = string.IsNullOrEmpty(displayName) ? L10n.Tr("Sort") : string.Format(L10n.Tr("Sort: {0}"), displayName);
+            sortingMenu.text = string.IsNullOrEmpty(displayName) ? L10n.Tr("Sort", null) : string.Format(L10n.Tr("Sort: {0}", null), displayName);
         }
 
         private void UpdateSortingMenu(IPage page)
@@ -170,17 +177,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (!m_Application.isInternetReachable && (page.capability & PageCapability.RequireNetwork) != 0)
             {
-                var tooltipText = L10n.Tr("You need to be online before you can sort or filter packages.");
+                var tooltipText = L10n.Tr("You need to be online before you can sort or filter packages.", null);
                 DisableElementsWithTooltip(tooltipText, sortingMenu, filtersMenu, clearFiltersButton);
             }
             else if (!m_UnityConnect.isUserLoggedIn && (page.capability & PageCapability.RequireUserLoggedIn) != 0)
             {
-                var tooltipText = L10n.Tr("You need to sign in before you can sort or filter packages.");
+                var tooltipText = L10n.Tr("You need to sign in before you can sort or filter packages.", null);
                 DisableElementsWithTooltip(tooltipText, sortingMenu, filtersMenu, clearFiltersButton);
             }
             else if (page.filters is not { anySupportedFilters: true })
             {
-                var tooltipText = L10n.Tr("There are no applicable filters to display for this context.");
+                var tooltipText = L10n.Tr("There are no applicable filters to display for this context.", null);
                 DisableElementsWithTooltip(tooltipText, filtersMenu, clearFiltersButton);
             }
             else
@@ -192,7 +199,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 filtersMenu.tooltip = filtersMenu.text;
 
                 clearFiltersButton.SetEnabled(page.filters.isFilterSet);
-                clearFiltersButton.tooltip = clearFiltersButton.enabledSelf ? clearFiltersButton.text : L10n.Tr("There are no filters applied.");
+                clearFiltersButton.tooltip = clearFiltersButton.enabledSelf ? clearFiltersButton.text : L10n.Tr("There are no filters applied.", null);
             }
         }
 
@@ -224,7 +231,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetupInProgressSpinner()
         {
-            spinnerButtonContainer.tooltip = L10n.Tr("Click to see progress details");
+            spinnerButtonContainer.tooltip = L10n.Tr("Click to see progress details", null);
             spinnerButtonContainer.OnLeftClick(() =>
             {
                 if (!inProgressSpinner.started)
@@ -236,10 +243,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetupAdvancedMenu()
         {
-            toolbarSettingsMenu.tooltip = L10n.Tr("Advanced");
+            toolbarSettingsMenu.tooltip = L10n.Tr("Advanced", null);
 
             var dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Project Settings");
+            dropdownItem.text = L10n.Tr("Project Settings", null);
             dropdownItem.action = () =>
             {
                 if (!m_SettingsProxy.advancedSettingsExpanded)
@@ -252,7 +259,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Preferences");
+            dropdownItem.text = L10n.Tr("Preferences", null);
             dropdownItem.action = () =>
             {
                 SettingsWindow.Show(SettingsScope.User, PackageManagerUserSettingsProvider.k_PackageManagerUserSettingsPath);
@@ -261,7 +268,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
             dropdownItem.insertSeparatorBefore = true;
-            dropdownItem.text = L10n.Tr("Manual resolve");
+            dropdownItem.text = L10n.Tr("Manual resolve", null);
             dropdownItem.action = () =>
             {
                 if (!EditorApplication.isPlaying)
@@ -274,7 +281,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
                 dropdownItem.insertSeparatorBefore = true;
-                dropdownItem.text = L10n.Tr("Internal/Reset Package Manager UI");
+                dropdownItem.text = L10n.Tr("Internal/Reset Package Manager UI", null);
                 dropdownItem.action = () =>
                 {
                     PackageManagerWindow.instance?.Close();
@@ -287,11 +294,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void SetupAddMenu()
         {
             var dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Install package from disk...");
+            dropdownItem.text = L10n.Tr("Install package from disk...", null);
             dropdownItem.userData = "AddFromDisk";
             dropdownItem.action = () =>
             {
-                var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "package.json file", "json" });
+                var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk", null), "", new[] { "package.json file", "json" });
                 if (string.IsNullOrEmpty(path))
                     return;
 
@@ -299,7 +306,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     if (IOUtils.GetFileName(path) != "package.json")
                     {
-                        Debug.Log(L10n.Tr("[Package Manager Window] Please select a valid package.json file in a package folder."));
+                        Debug.Log(L10n.Tr("[Package Manager Window] Please select a valid package.json file in a package folder.", null));
                         return;
                     }
 
@@ -316,11 +323,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Install package from tarball...");
+            dropdownItem.text = L10n.Tr("Install package from tarball...", null);
             dropdownItem.userData = "AddFromTarball";
             dropdownItem.action = () =>
             {
-                var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "Package tarball", "tgz, tar.gz" });
+                var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk", null), "", new[] { "Package tarball", "tgz, tar.gz" });
 
                 if ((string.IsNullOrEmpty(path)) || !m_OperationDispatcher.InstallFromPath(path, out var tempPackageId))
                     return;
@@ -330,16 +337,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Install package from git URL...");
+            dropdownItem.text = L10n.Tr("Install package from git URL...", null);
             dropdownItem.userData = "AddFromGit";
             dropdownItem.action = () =>
             {
                 var args = new InputDropdownArgs
                 {
-                    title = L10n.Tr("Install package from git URL"),
+                    title = L10n.Tr("Install package from git URL", null),
                     iconUssClass = "git",
-                    placeholderText = L10n.Tr("URL"),
-                    submitButtonText = L10n.Tr("Install"),
+                    placeholderText = L10n.Tr("URL", null),
+                    submitButtonText = L10n.Tr("Install", null),
                     onInputSubmitted = url =>
                     {
                         if (!m_OperationDispatcher.InstallFromUrl(url))
@@ -354,7 +361,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Install package by technical name...");
+            dropdownItem.text = L10n.Tr("Install package by technical name...", null);
             dropdownItem.userData = "AddByName";
             dropdownItem.action = () =>
             {
@@ -362,7 +369,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
-            dropdownItem.text = L10n.Tr("Create package...");
+            dropdownItem.text = L10n.Tr("Create package...", null);
             dropdownItem.userData = "CreatePackage";
             dropdownItem.insertSeparatorBefore = true;
             dropdownItem.action = () =>
@@ -424,3 +431,4 @@ namespace UnityEditor.PackageManager.UI.Internal
         private LoadingSpinner inProgressSpinner => cache.Get<LoadingSpinner>("inProgressSpinner");
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

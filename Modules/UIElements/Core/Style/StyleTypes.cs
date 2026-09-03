@@ -111,6 +111,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static Curvature ToCurvature(this StyleKeyword keyword)
+        {
+            switch (keyword)
+            {
+                case StyleKeyword.None:
+                    return Curvature.None();
+                default:
+                    Debug.LogAssertion($"Unexpected StyleKeyword '{keyword.ToString()}'");
+                    return new Curvature();
+            }
+        }
+
         internal static TextAutoSize ToTextAutoSize(this StyleKeyword keyword)
         {
             switch (keyword)

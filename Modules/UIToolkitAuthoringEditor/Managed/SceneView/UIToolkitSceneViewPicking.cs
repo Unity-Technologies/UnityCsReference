@@ -2,13 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System.Collections.Generic;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -21,10 +22,15 @@ namespace Unity.UIToolkit.Editor
             HandleUtility.RegisterRenderPickingCallback(RenderForPicking);
         }
 
+        [NoAutoStaticsCleanup] // lazily-created picking material, safe to persist
         static Material s_PickingMaterial;
+        [NoAutoStaticsCleanup] // lazily-created quad mesh, safe to persist
         static Mesh s_QuadMesh;
+        [NoAutoStaticsCleanup] // scratch list, safe to persist
         static List<IPanelComponent> s_PickedPanels = new();
+        [NoAutoStaticsCleanup] // per-pick scratch set, safe to persist
         static HashSet<Object> s_SystemIgnoreSet; // System ignore/filter set for GetAllOverlapping
+        [NoAutoStaticsCleanup] // picking-type state, safe to persist
         static RenderPickingType s_RenderPickingType; // Type determines how to interpret the ignore set
 
         const float k_PickingQuadCameraOffset = 0.001f;
@@ -228,4 +234,4 @@ namespace Unity.UIToolkit.Editor
 
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

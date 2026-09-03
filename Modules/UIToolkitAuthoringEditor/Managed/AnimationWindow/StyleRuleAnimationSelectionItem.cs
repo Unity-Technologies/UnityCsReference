@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -11,6 +10,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -19,9 +19,10 @@ namespace Unity.UIToolkit.Editor
     // and the canonical match for single-target work. Element discovery re-walks the panel per call.
     internal sealed class StyleRuleAnimationSelectionItem : UIToolkitAnimationSelectionItemBase
     {
-        static readonly string k_OnboardingLabelFallback = L10n.Tr("the selected style rule");
+        static readonly string k_OnboardingLabelFallback = L10n.Tr("the selected style rule", null);
 
         // Renders the rule's selector the same way the inspector header does.
+        [NoAutoStaticsCleanup] // stateless exporter, safe to persist
         static readonly StyleSheetNodeTypeHandler.StyleSheetEditorExporter s_SelectorExporter = new();
 
         readonly StyleSheet m_StyleSheet;
@@ -263,4 +264,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

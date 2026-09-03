@@ -289,6 +289,7 @@ namespace UnityEngine
         ///<summary>The index of the realtime lightmap applied to this terrain.</summary>
         ///<seealso cref="Renderer.realtimeLightmapIndex" />
         [NativeProperty("DynamicLightmapIndexInt")]
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         extern public int realtimeLightmapIndex { get; set; }
 
         ///<summary>The UV scale &amp; offset used for a baked lightmap.</summary>
@@ -299,6 +300,7 @@ namespace UnityEngine
         ///<summary>The UV scale &amp; offset used for a realtime lightmap.</summary>
         ///<seealso cref="Renderer.realtimeLightmapScaleOffset" />
         [NativeProperty("DynamicLightmapST")]
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         extern public Vector4 realtimeLightmapScaleOffset { get; set; }
 
         [Obsolete("Terrain.freeUnusedRenderingResources is obsolete; use keepUnusedRenderingResources instead.")]
@@ -634,6 +636,7 @@ namespace UnityEngine
     {
         ///<summary>Schedules an update of the albedo and emissive Textures of a system that contains the Terrain.</summary>
         ///<remarks>The second overload specifies a region of the Terrain that needs to be updated. This makes sure that only the systems that overlap with the specified rectangle get updated, which could help improve performance. The coordinates are specified the same way as in <see cref="TerrainData.SetAlphamaps" />.</remarks>
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public static void UpdateGIMaterials(this Terrain terrain)
         {
             if (terrain.terrainData == null)
@@ -644,6 +647,7 @@ namespace UnityEngine
 
         ///<summary>Schedules an update of the albedo and emissive Textures of a system that contains the Terrain.</summary>
         ///<remarks>The second overload specifies a region of the Terrain that needs to be updated. This makes sure that only the systems that overlap with the specified rectangle get updated, which could help improve performance. The coordinates are specified the same way as in <see cref="TerrainData.SetAlphamaps" />.</remarks>
+        [Obsolete("Enlighten realtime Global Illumination is deprecated and will be removed in a future release. #from(6000.7)", false)]
         public static void UpdateGIMaterials(this Terrain terrain, int x, int y, int width, int height)
         {
             if (terrain.terrainData == null)

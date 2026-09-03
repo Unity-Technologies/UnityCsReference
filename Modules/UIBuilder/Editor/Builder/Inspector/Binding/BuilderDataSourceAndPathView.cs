@@ -477,7 +477,7 @@ namespace Unity.UI.Builder
                         var isAttributeOverrideAttribute =
                             context.isInTemplateInstance
                             && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(currentElement,
-                                attributeName);
+                                attributeName, context.document);
                         var canUnsetBinding = !context.isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
 
                         return (attributesUxmlOwner != null && currentUxmlAttributeOwner.HasAttribute(attributeName)) || isAttributeOverrideAttribute || canUnsetBinding
@@ -494,7 +494,7 @@ namespace Unity.UI.Builder
                         var bindingProperty = BuilderNameUtilities.ConvertDashToCamel(k_BindingAttr_DataSourceType);
                         var isAttributeOverrideAttribute =
                             context.isInTemplateInstance
-                            && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(currentElement, k_BindingAttr_DataSourceType);
+                            && BuilderAssetUtilities.HasAttributeOverrideInRootTemplate(currentElement, k_BindingAttr_DataSourceType, context.document);
                         var canUnsetBinding = !context.isInTemplateInstance && DataBindingUtility.TryGetBinding(currentElement, new PropertyPath(bindingProperty), out _);
 
                         return (attributesUxmlOwner != null && currentUxmlAttributeOwner.HasAttribute(k_BindingAttr_DataSourceType)) || isAttributeOverrideAttribute || canUnsetBinding

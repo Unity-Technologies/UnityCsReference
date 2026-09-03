@@ -7,6 +7,11 @@ namespace Unity.Scripting.LifecycleManagement
         private readonly Dictionary<Type, Dictionary<Assembly, List<LifecycleMethodData>>> _lifecycleCallbacks = new();
         private readonly Dictionary<Assembly, HashSet<Type>> _assemblyToAttributeTypes = new();
 
+        // Immutable sentinel returned instead of allocating an empty list. It never holds user code
+        // references, so it must not be cleared on code reload.
+        [NoAutoStaticsCleanup]
+        private static readonly List<LifecycleMethodData> s_NoMethods = new();
+
         public void Register(Type lifecycleAttributeType, Assembly assembly, string methodFullName, Action callback)
         {
             if (!_lifecycleCallbacks.TryGetValue(lifecycleAttributeType, out var typeCallbacks))
@@ -34,20 +39,24 @@ namespace Unity.Scripting.LifecycleManagement
 
         internal List<LifecycleMethodData> Get(Type lifecycleAttributeType, IReadOnlyList<Assembly> assemblies)
         {
-            var result = new List<LifecycleMethodData>();
-
-            if (_lifecycleCallbacks.TryGetValue(lifecycleAttributeType, out var typeCallbacks))
+            // Early-out without allocating: most attribute types have no registered methods at all
+            // and this runs on every scope transition (multiple times per domain reload).
+            if (!_lifecycleCallbacks.TryGetValue(lifecycleAttributeType, out var typeCallbacks) || typeCallbacks.Count == 0)
             {
-                foreach (var assembly in assemblies)
+                return s_NoMethods;
+            }
+
+            List<LifecycleMethodData>? result = null;
+            foreach (var assembly in assemblies)
+            {
+                if (typeCallbacks.TryGetValue(assembly, out var assemblyCallbacks))
                 {
-                    if (typeCallbacks.TryGetValue(assembly, out var assemblyCallbacks))
-                    {
-                        result.AddRange(assemblyCallbacks);
-                    }
+                    result ??= new List<LifecycleMethodData>();
+                    result.AddRange(assemblyCallbacks);
                 }
             }
 
-            return result;
+            return result ?? s_NoMethods;
         }
 
         internal void Clear(IReadOnlyList<Assembly> assemblies)

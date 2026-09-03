@@ -71,7 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool isInstallOrUninstallInProgress => m_UpmClient.isAddOrRemoveInProgress;
         public bool isEmbedInProgress => m_UpmClient.isEmbedInProgress;
 
-        private string InstallOrRemoveInProgressWarningMessage(string installSource) => string.Format(L10n.Tr("[Package Manager Window] The request to install {0} will be canceled due to an ongoing Install/Remove operation. Please retry your request once the current operation has completed."), installSource);
+        private string InstallOrRemoveInProgressWarningMessage(string installSource) => string.Format(L10n.Tr("[Package Manager Window] The request to install {0} will be canceled due to an ongoing Install/Remove operation. Please retry your request once the current operation has completed.", null), installSource);
         public bool IsUninstallInProgress(IPackage package)
         {
             return m_UpmClient.IsRemoveInProgress(package?.name);

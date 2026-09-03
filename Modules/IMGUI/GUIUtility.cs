@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIFramework not yet converted
 // Use this define to debug who grabs and releases hotcontrol
 //#define DEBUG_HOTCONTROL
 // Use this define to debug controlID consistency together with 's_LogControlID' (default false) to enable logging in
@@ -27,17 +28,21 @@ namespace UnityEngine
     public sealed class ExitGUIException : Exception
     {
         ///<exclude />
+#pragma warning disable UAL0015 // thrown and caught synchronously within the same GUI call; guiIsExiting is a transient dispatch signal, never persisted across a reload boundary
         public ExitGUIException()
         {
             GUIUtility.guiIsExiting = true;
         }
+#pragma warning restore UAL0015
 
+#pragma warning disable UAL0015 // thrown and caught synchronously within the same GUI call; guiIsExiting is a transient dispatch signal, never persisted across a reload boundary
         internal ExitGUIException(string message)
             : base(message)
         {
             GUIUtility.guiIsExiting = true;
             Console.WriteLine(message);
         }
+#pragma warning restore UAL0015
     }
 
     // Utility class for making new GUI controls.
@@ -712,3 +717,4 @@ namespace UnityEngine
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

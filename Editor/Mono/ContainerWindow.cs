@@ -368,10 +368,10 @@ namespace UnityEditor
                 var title = allUnsaved[0].titleContent.text;
 
                 option = EditorDialog.DisplayComplexDecisionDialog(
-                    (string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected"),
+                    (string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected", null),
                     allUnsaved[0].saveChangesMessage,
-                    L10n.Tr("Save"),
-                    L10n.Tr("Discard"),
+                    L10n.Tr("Save", null),
+                    L10n.Tr("Discard", null),
                     default);
             }
             else
@@ -387,10 +387,10 @@ namespace UnityEditor
                 savedChangesBuilder.Append(allUnsaved[last]);
 
                 option = EditorDialog.DisplayComplexDecisionDialog(
-                    L10n.Tr("Unsaved Changes Detected"),
+                    L10n.Tr("Unsaved Changes Detected", null),
                     savedChangesBuilder.ToString(),
-                    L10n.Tr("Save All"),
-                    L10n.Tr("Discard All"),
+                    L10n.Tr("Save All", null),
+                    L10n.Tr("Discard All", null),
                     default);
             }
 
@@ -400,10 +400,22 @@ namespace UnityEditor
                 {
                     case DialogResult.DefaultAction:
                         bool areAllSaved = true;
-                        foreach (var w in allUnsaved)
+                        // Batch the imports so a shared dependency reimports once, not once per saved asset.
+                        bool batchSaveAll = allUnsaved.Count > 1;
+                        if (batchSaveAll)
+                            AssetDatabase.StartAssetEditing();
+                        try
                         {
-                            w.SaveChanges();
-                            areAllSaved = areAllSaved && !w.hasUnsavedChanges;
+                            foreach (var w in allUnsaved)
+                            {
+                                w.SaveChanges();
+                                areAllSaved = areAllSaved && !w.hasUnsavedChanges;
+                            }
+                        }
+                        finally
+                        {
+                            if (batchSaveAll)
+                                AssetDatabase.StopAssetEditing();
                         }
                         return areAllSaved;
                     case DialogResult.AlternateAction:
@@ -419,7 +431,7 @@ namespace UnityEditor
             catch (Exception ex)
             {
                 EditorDialog.DisplayAlertDialog(
-                    L10n.Tr("Save Changes Failed"),
+                    L10n.Tr("Save Changes Failed", null),
                     ex.Message,
                     default,
                     DialogIconType.Error);

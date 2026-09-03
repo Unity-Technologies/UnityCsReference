@@ -32,10 +32,11 @@ namespace Unity.UIToolkit.Editor
         readonly List<UIAnimationClip> m_UIClips = new();
         readonly List<UIAnimationClip> m_ScratchClips = new();
 
-        protected static readonly string k_OnboardingLabelFormat = L10n.Tr("To begin animating {0}, create a UI Animation Clip.");
+        protected static readonly string k_OnboardingLabelFormat = L10n.Tr("To begin animating {0}, create a UI Animation Clip.", null);
         protected UIToolkitAnimationSelectionItemBase(AnimationWindow window)
         {
             m_Window = window;
+            AnimationUtility.onCurveWasModified += CurveWasModified;
         }
 
         internal AnimationWindow animationWindow => m_Window;
@@ -127,6 +128,29 @@ namespace Unity.UIToolkit.Editor
         // (e.g. stop any in-flight recording session). Default is a no-op.
         protected virtual void OnClipCleared() { }
 
+        // AnimationWindowState routes this event to builtin items only; a UI Toolkit one listens for itself.
+        void CurveWasModified(AnimationClip clip, EditorCurveBinding binding,
+            AnimationUtility.CurveModifiedType type)
+        {
+            if (clip == null || m_UIClip == null || clip != m_UIClip.animationClip)
+                return;
+
+            OnClipCurvesChanged(type);
+
+            if (m_Window == null)
+                return;
+
+            if (type == AnimationUtility.CurveModifiedType.CurveModified)
+                m_Window.RefreshCurve(binding);
+            else
+                m_Window.RefreshClip();
+
+            m_Window.Repaint();
+        }
+
+        // Hook for subclasses to follow the clip's curves on the target side. Default is a no-op.
+        protected virtual void OnClipCurvesChanged(AnimationUtility.CurveModifiedType type) { }
+
         UIAnimationClip TryCreateAndAssignNewUIAnimationClip()
         {
             if (!canCreateClips)
@@ -175,6 +199,22 @@ namespace Unity.UIToolkit.Editor
             }
         }
 
+        // Activates one of this target's own clips, as picking it in the clip dropdown would. Clips the
+        // target does not own are refused so an unrelated caller cannot repoint the window at a clip this
+        // selection has no context for; Synchronize then keeps the pick and the refresh hash rebuilds the view.
+        internal bool TrySetActiveClip(UIAnimationClip uiClip)
+        {
+            if (uiClip == null)
+                return false;
+            if (m_UIClip == uiClip)
+                return true;
+            if (!m_UIClips.Contains(uiClip))
+                return false;
+
+            SetUIClip(uiClip);
+            return true;
+        }
+
         // Match a dropdown wrapper to its UIAnimationClip by inner AnimationClip identity (AnimationWindowClip's equality).
         UIAnimationClip FindUIClipFor(AnimationWindowClip wrapper)
         {
@@ -194,8 +234,9 @@ namespace Unity.UIToolkit.Editor
         }
 
         public virtual bool disabled => m_Clip == null || !m_Clip.isValid;
-        // AnimationWindowClip.isReadOnly reads the inner clip's hideFlags without a null check, so guard on isValid first (a destroyed clip would throw).
-        public bool isReadOnly => m_Clip != null && m_Clip.isValid && m_Clip.isReadOnly;
+        // Not m_Clip.isReadOnly: the field's static type binds to AnimationWindowClip's equality test
+        // rather than the wrapper's, which would let the window offer edits the write layer refuses.
+        public bool isReadOnly => m_Clip != null && m_Clip.isValid && VisualElementAnimationWindowClip.IsReadOnly(m_Clip.animationClip);
         public virtual bool canChangeClip => true;
         // Gating on `disabled` keeps the toolbar "+" popup and the inline tree-row "Add Property"
         // button in sync; otherwise the popup lists properties that CreateDefaultCurves would
@@ -379,6 +420,8 @@ namespace Unity.UIToolkit.Editor
 
         public virtual void Dispose()
         {
+            AnimationUtility.onCurveWasModified -= CurveWasModified;
+            UIAnimationBindingResolution.Release(this);
             m_Controller?.Dispose();
             m_Controller = null;
         }

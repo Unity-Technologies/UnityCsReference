@@ -2,20 +2,25 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
-internal class StyleInspectorDefaultContent : VisualElement
+internal partial class StyleInspectorDefaultContent : VisualElement
 {
+    [NoAutoStaticsCleanup] // feature toggle, safe to persist
     internal static bool s_TimeSlice = true;
+    [AutoStaticsCleanupOnCodeReload]
     static VisualTreeAsset s_DefaultContent;
+    [NoAutoStaticsCleanup] // default-content pool, safe to persist
     static UnityEngine.Pool.ObjectPool<StyleInspectorDefaultContent> s_StyleInspectorDefaultContentPool = new(Create);
 
     static VisualTreeAsset DefaultContent
@@ -153,8 +158,20 @@ internal class StyleInspectorDefaultContent : VisualElement
         else
         {
             DefaultContent.CloneTree(this);
+            UpdateExperimentalRowVisibility();
             contentWasGenerated?.Invoke(this);
         }
+
+        // Pooled instances are re-attached on reuse; re-check so toggling the setting applies live.
+        RegisterCallback<AttachToPanelEvent>(_ => UpdateExperimentalRowVisibility());
+    }
+
+    // Experimental style rows are hidden until their feature is enabled in Project Settings > UI Toolkit.
+    void UpdateExperimentalRowVisibility()
+    {
+        var curvatureRow = this.Q("unity-curvature-row");
+        if (curvatureRow != null)
+            curvatureRow.style.display = UIToolkitProjectSettings.enableCurvedUI ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     private void CreateTimeSlicedContent()
@@ -184,7 +201,8 @@ internal class StyleInspectorDefaultContent : VisualElement
         m_TempTimeSlicedCloneScheduledItem.Pause();
         s_TimeSlice = false;
         m_TempTimeSlicedContent = null;
+        UpdateExperimentalRowVisibility();
         contentWasGenerated?.Invoke(this);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -169,7 +169,7 @@ namespace UnityEditor
     {
         protected static class Styles
         {
-            public static readonly string editAngularLimitsUndoMessage = L10n.Tr("Change Joint Angular Limits");
+            public static readonly string editAngularLimitsUndoMessage = L10n.Tr("Change Joint Angular Limits", null);
         }
 
         public override GUIContent toolbarIcon

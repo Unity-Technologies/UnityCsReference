@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 
@@ -14,6 +15,15 @@ namespace UnityEngine.UIElements
     [Icon("UIToolkit/Icons/DropdownField.png")]
     public partial class DropdownField : PopupField<string>
     {
+        // Attributes are deserialized in declaration order and the index resolves against the
+        // choices, so choices must be declared before the index.
+        [UxmlAttribute("choices"), UxmlAttributeBindingPath(nameof(choices))]
+        internal List<string> choicesUXML
+        {
+            get => choices;
+            set => choices = value;
+        }
+
         // The index field is responsible for applying validation to the value entered by users.
         // In order to ensure that users are able to enter the complete value without interruption,
         // we need to introduce a delay before the validation is performed.
@@ -23,23 +33,6 @@ namespace UnityEngine.UIElements
         {
             get => index;
             set => index = value;
-        }
-
-        [UxmlAttribute("choices"), UxmlAttributeBindingPath(nameof(choices))]
-        internal List<string> choicesUXML
-        {
-            get => choices;
-            set
-            {
-                choices = value;
-
-                // Index needs to be set after choices to initialize the field value
-                // Dont set the index if its default or it will revert the change that may have come from `value`.
-                if (index != DropdownField.kPopupFieldDefaultIndex)
-                {
-                    SetIndexWithoutNotify(index);
-                }
-            }
         }
 
         // This field serves the purpose of overriding the value field so we can conceal it from the UI Builder.
@@ -103,3 +96,4 @@ namespace UnityEngine.UIElements
             : base(label, choices, defaultIndex, formatSelectedValueCallback, formatListItemCallback) {}
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

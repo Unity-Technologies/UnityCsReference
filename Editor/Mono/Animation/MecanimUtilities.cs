@@ -187,7 +187,7 @@ namespace UnityEditor.Animations
         internal static AnimationClip CreateNewClip(string gameObjectName, string suggestedName = null)
         {
             // Go forward with presenting user a save clip dialog
-            string message = string.Format(L10n.Tr("Create a new animation for the game object '{0}':"), gameObjectName);
+            string message = string.Format(L10n.Tr("Create a new animation for the game object '{0}':", null), gameObjectName);
             string newClipDirectory = ProjectWindowUtil.GetActiveFolderPath();
             if (s_LastPathUsedForNewClip != null)
             {
@@ -197,8 +197,8 @@ namespace UnityEditor.Animations
                     newClipDirectory = directoryPath;
                 }
             }
-            string defaultName = string.IsNullOrWhiteSpace(suggestedName) ? L10n.Tr("New Animation") : suggestedName;
-            string newClipPath = EditorUtility.SaveFilePanelInProject(L10n.Tr("Create New Animation"), defaultName, "anim", message, newClipDirectory);
+            string defaultName = string.IsNullOrWhiteSpace(suggestedName) ? L10n.Tr("New Animation", null) : suggestedName;
+            string newClipPath = EditorUtility.SaveFilePanelInProject(L10n.Tr("Create New Animation", null), defaultName, "anim", message, newClipDirectory);
 
             // If user canceled or save path is invalid, we can't create a clip
             if (newClipPath == "")

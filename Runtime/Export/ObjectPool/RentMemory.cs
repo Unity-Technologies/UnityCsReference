@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.Pool
 {
-    [VisibleToOtherModules]
+    [VisibleToOtherModules("UnityEngine.CoreModule", "UnityEngine.HierarchyModule", "UnityEditor.HierarchyModule", "UnityEditor.QuickSearchModule", "UnityEngine.UIElementsModule")]
     readonly struct RentMemory<T> : IDisposable where T : class
     {
         readonly T[] m_Array;

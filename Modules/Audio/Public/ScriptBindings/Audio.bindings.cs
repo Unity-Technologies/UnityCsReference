@@ -265,7 +265,25 @@ namespace UnityEngine
         ///- This speaker mode isn't discrete.
         ///- Quality depends on the decoder.
         ///- Pro Logic is often treated as plain stereo today.</remarks>
-        Prologic = 7
+        Prologic = 7,
+        ///<summary>The Surround 7.1.4 speaker setup which contains twelve channels.</summary>
+        ///<remarks>The Surround 7.1.4 speaker mode contains twelve channels:
+        ///
+        ///- Front left
+        ///- Front right
+        ///- Front center
+        ///- Low-Frequency Effects (LFE subwoofer)
+        ///- Side left
+        ///- Side right
+        ///- Rear left
+        ///- Rear right
+        ///- Top front left
+        ///- Top front right
+        ///- Top rear left
+        ///- Top rear right
+        ///
+        ///This speaker mode is only available when the Enhanced Audio Foundation is active. It can be used through the **Output Channel Layout** in the [Audio Manager](xref:class-AudioManager) project settings. Requesting it through <see cref="AudioSettings.Reset" /> while the Classic Audio Foundation is active throws an ArgumentException.</remarks>
+        Mode7point1point4 = 13
     }
 
     internal enum AudioFoundation
@@ -317,7 +335,7 @@ namespace UnityEngine
                 case AudioSpeakerMode.Mode5point1: return 6;
                 case AudioSpeakerMode.Mode7point1: return 8;
                 case AudioSpeakerMode.Prologic: return 2;
-                throw new ArgumentException($"{nameof(speakerMode)}");
+                case AudioSpeakerMode.Mode7point1point4: return 12;
             }
 
             throw new ArgumentException($"{nameof(speakerMode)}");
@@ -2309,7 +2327,7 @@ namespace UnityEngine
         ///<param name="creationParameters">Initialization parameters passed through.</param>
         ///<returns>Returns the generator instance of the clip.</returns>
         ///<seealso href="xref:audio-scriptable-processors-generators">Using AudioClips as generators</seealso>
-        public GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat, ProcessorInstance.CreationParameters creationParameters)
+        public GeneratorInstance CreateInstance(ControlContext context, AudioFormat? nestedFormat, GeneratorInstance.CreationParameters creationParameters)
         {
             CheckIsNotPersistent();
 
@@ -3400,6 +3418,14 @@ namespace UnityEngine
         internal extern bool isContainerPlaying
         {
             [NativeName("IsContainerPlaying")]
+            get;
+        }
+
+        // Whether the source is in the audio manager's per-frame update list. Test-only: lets tests
+        // assert that an idle source is cleaned up again after external playback ends.
+        internal extern bool isRegisteredWithAudioManager
+        {
+            [NativeName("IsRegisteredWithAudioManager")]
             get;
         }
 

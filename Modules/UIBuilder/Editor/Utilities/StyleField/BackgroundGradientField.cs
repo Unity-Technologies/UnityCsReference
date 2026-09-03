@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using UnityEditor.UIElements;
@@ -92,9 +93,8 @@ namespace Unity.UI.Builder
         }
 
         // Sensible starting gradient (CSS "to bottom", white → white) shown when nothing is set.
-        internal static BackgroundGradient defaultAuthoringGradient => BackgroundGradient.Linear(Mathf.PI,
-            BackgroundGradientStop.Percent(Color.white, 0f),
-            BackgroundGradientStop.Percent(Color.white, 1f));
+        internal static BackgroundGradient defaultAuthoringGradient
+            => UnityEditor.UIElements.BackgroundField.defaultAuthoringGradient;
 
         void PushModelToControls(in BackgroundGradient model)
         {
@@ -153,3 +153,4 @@ namespace Unity.UI.Builder
             => UnityEditor.UIElements.BackgroundField.UnityGradientToBackgroundStops(g);
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -236,21 +236,7 @@ internal readonly record struct VisualTreeAssetEditingContext
             }
         }
 
-        return WillCauseCircularDependency(visualTreeAsset, visitedSet);
-    }
-
-    private bool WillCauseCircularDependency(VisualTreeAsset visualTreeAsset, HashSet<string> visitedPaths)
-    {
-        if (!visitedPaths.Add(AssetDatabase.GetAssetPath(visualTreeAsset)))
-            return true;
-
-        foreach (var template in visualTreeAsset.templateDependencies)
-        {
-            if (WillCauseCircularDependency(template, visitedPaths))
-                return true;
-        }
-
-        return false;
+        return VisualElementEditingUtility.WillCauseCircularDependency(visualTreeAsset, visitedSet);
     }
 
     private VisualElementEditFlags GetInContextElementEditFlags(VisualElement element)

@@ -71,8 +71,8 @@ namespace UnityEditor.UIElements
         {
             var desc = counter.Description;
             if (!string.IsNullOrEmpty(desc))
-                return string.Format(L10n.Tr("{0}\n\nProfiler marker: {1}"), desc, hierarchyMarkerName);
-            return string.Format(L10n.Tr("Profiler marker: {0}"), hierarchyMarkerName);
+                return string.Format(L10n.Tr("{0}\n\nProfiler marker: {1}", null), desc, hierarchyMarkerName);
+            return string.Format(L10n.Tr("Profiler marker: {0}", null), hierarchyMarkerName);
         }
 
         protected override VisualElement CreateView()
@@ -81,7 +81,7 @@ namespace UnityEditor.UIElements
             columns.Add(new Column
             {
                 name = "panel",
-                title = L10n.Tr("Panel"),
+                title = L10n.Tr("Panel", null),
                 minWidth = 120,
                 optional = false,
                 comparison = (a, b) => EntityId.ToULong(GetRowData(a).panelEntityId).CompareTo(EntityId.ToULong(GetRowData(b).panelEntityId)),
@@ -117,34 +117,34 @@ namespace UnityEditor.UIElements
             var eventsColumn = new Column
             {
                 name = "events",
-                title = L10n.Tr("Events"),
+                title = L10n.Tr("Events", null),
                 minWidth = 60,
                 width = 80,
                 makeHeader = UIToolkitProfilerToolbarHelpers.CreateDefaultColumnHeaderContent,
                 comparison = (a, b) => GetRowData(a).eventCount.CompareTo(GetRowData(b).eventCount),
                 bindCell = (e, index) => ((Label)e).text = GetRowData(index).eventCount.ToString("N0"),
             };
-            var eventsHeaderTooltip = L10n.Tr("Number of events dispatched on this panel during the frame (pointer, keyboard, navigation, and others). Click the row to see the per-event list in the right pane.");
+            var eventsHeaderTooltip = L10n.Tr("Number of events dispatched on this panel during the frame (pointer, keyboard, navigation, and others). Click the row to see the per-event list in the right pane.", null);
             eventsColumn.bindHeader = (ve) => UIToolkitProfilerToolbarHelpers.BindColumnHeaderWithTooltip(ve, eventsColumn, eventsHeaderTooltip);
             columns.Add(eventsColumn);
 
             columns.Add(new Column
             {
                 name = "total",
-                title = L10n.Tr("Total"),
+                title = L10n.Tr("Total", null),
                 minWidth = 80,
                 comparison = (a, b) => GetRowData(a).totalTimeMs.CompareTo(GetRowData(b).totalTimeMs),
                 bindCell = (e, index) => ((Label)e).text = FormatTime(GetRowData(index).totalTimeMs)
             });
 
-            columns.Add(MakePanelCountColumn("hierarchyChanges", L10n.Tr("Hierarchy Changes"),
-                L10n.Tr("Number of hierarchy version changes (add/remove/reparent of VisualElements) since the previous frame."),
+            columns.Add(MakePanelCountColumn("hierarchyChanges", L10n.Tr("Hierarchy Changes", null),
+                L10n.Tr("Number of hierarchy version changes (add/remove/reparent of VisualElements) since the previous frame.", null),
                 r => r.hierarchyVersionChanges));
-            columns.Add(MakePanelCountColumn("repaintChanges", L10n.Tr("Repaint Changes"),
-                L10n.Tr("Number of repaint version changes since the previous frame. High values indicate elements are being marked dirty frequently."),
+            columns.Add(MakePanelCountColumn("repaintChanges", L10n.Tr("Repaint Changes", null),
+                L10n.Tr("Number of repaint version changes since the previous frame. High values indicate elements are being marked dirty frequently.", null),
                 r => r.repaintVersionChanges));
-            columns.Add(MakePanelCountColumn("veCount", L10n.Tr("VE Count"),
-                L10n.Tr("Total number of VisualElements in this panel's hierarchy."),
+            columns.Add(MakePanelCountColumn("veCount", L10n.Tr("VE Count", null),
+                L10n.Tr("Total number of VisualElements in this panel's hierarchy.", null),
                 r => r.visualElementCount));
 
             // Flat list (no children); using the tree variant gives us a totals row and consistent
@@ -172,7 +172,7 @@ namespace UnityEditor.UIElements
             var treeStack = UIToolkitProfilerToolbarHelpers.WrapWithEmptyOverlay(
                 m_TreeView,
                 "uitoolkit-profiler-details-tree-stack",
-                L10n.Tr("No data to show. Start profiling UI Toolkit content to see details."),
+                L10n.Tr("No data to show. Start profiling UI Toolkit content to see details.", null),
                 out m_EmptyOverlay);
 
             var splitView = m_PanelComponentsPane.WireUp(treeStack, mainToolbar);
@@ -512,7 +512,7 @@ namespace UnityEditor.UIElements
                 veSum += row.visualElementCount;
             }
 
-            m_TreeView.SetTotalCell("panel", L10n.Tr("Total"));
+            m_TreeView.SetTotalCell("panel", L10n.Tr("Total", null));
             for (var i = 0; i < m_Counters.Length; i++)
                 m_TreeView.SetTotalCell(m_Counters[i].Name, FormatTime(m_CounterTotalsScratch[i]));
             m_TreeView.SetTotalCell("total", FormatTime(totalTimeSum));

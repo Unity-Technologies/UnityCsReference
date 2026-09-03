@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
@@ -33,13 +34,24 @@ namespace Unity.UI.Builder
         [SerializeField]
         int m_ActiveOpenUXMLFileIndex = 0;
 
+        // The default document is the one owned by the primary Builder window: it survives its window closing
+        // and is the only one persisted to disk. Secondary windows each own a non-default document.
+        [SerializeField]
+        bool m_IsDefaultDocument = true;
+
         // Unserialized Data
         readonly WeakReference m_PrimaryViewportWindow = new WeakReference(null);
         readonly List<BuilderPaneWindow> m_RegisteredWindows = new List<BuilderPaneWindow>();
 
+        // Set for the duration of this document's own save, so OnExternalSave can tell it apart from a save
+        // sent by another Builder window (which must be processed like any other tool's).
+        internal bool isSavingOwnDocument { get; set; }
+
         //
         // Getters
         //
+
+        internal bool isDefaultDocument => m_IsDefaultDocument;
 
         public BuilderDocumentOpenUXML activeOpenUXMLFile
         {
@@ -48,7 +60,7 @@ namespace Unity.UI.Builder
                 // We should always have one open UXML, even if unsaved.
                 if (m_OpenUXMLFiles.Count == 0)
                 {
-                    m_OpenUXMLFiles.Add(new BuilderDocumentOpenUXML());
+                    m_OpenUXMLFiles.Add(new BuilderDocumentOpenUXML { document = this });
                     m_ActiveOpenUXMLFileIndex = 0;
                 }
 
@@ -172,6 +184,9 @@ namespace Unity.UI.Builder
 
         void OnEnable()
         {
+            foreach (var openUXMLFile in m_OpenUXMLFiles)
+                openUXMLFile.document = this;
+
             EditorApplication.wantsToQuit += UnityWantsToQuit;
             BuilderAssetPostprocessor.Register(this);
             UICommandQueue.RegisterHandlerForCategory(CommandCategory.Save, OnExternalSave);
@@ -192,6 +207,65 @@ namespace Unity.UI.Builder
             newDoc.LoadFromDisk();
             ThemeUtility.LoadThemeOverrides();
             return newDoc;
+        }
+
+        public static BuilderDocument CreateSecondaryInstance()
+        {
+            var newDoc = ScriptableObject.CreateInstance<BuilderDocument>();
+            newDoc.hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
+            newDoc.name = "BuilderDocument";
+            newDoc.m_IsDefaultDocument = false;
+            ThemeUtility.LoadThemeOverrides();
+            return newDoc;
+        }
+
+        public static BuilderDocument FindOrCreateDefaultInstance()
+        {
+            var allDocuments = Resources.FindObjectsOfTypeAll(typeof(BuilderDocument));
+            foreach (var doc in allDocuments)
+            {
+                var builderDocument = (BuilderDocument)doc;
+                if (builderDocument.isDefaultDocument)
+                    return builderDocument;
+            }
+
+            return CreateInstance();
+        }
+
+        // The default-document role follows the primary window: when the role migrates, the promoted window's
+        // document becomes the one persisted to disk, and the outgoing default — now role-less — is destroyed
+        // with its closing window like any secondary document.
+        internal static void MakeDefaultDocument(BuilderDocument newDefault)
+        {
+            if (newDefault == null || newDefault.m_IsDefaultDocument)
+                return;
+
+            foreach (var doc in Resources.FindObjectsOfTypeAll<BuilderDocument>())
+            {
+                if (doc != newDefault)
+                    doc.m_IsDefaultDocument = false;
+            }
+
+            newDefault.m_IsDefaultDocument = true;
+            newDefault.SaveToDisk();
+        }
+
+        // Reopens the given file as this document's root, rebuilding the same state LoadFromDisk leaves for
+        // the default document; the regular OnAfterBuilderDeserialize pass then reloads it into the canvas.
+        internal void ReopenAsset(VisualTreeAsset asset) => activeOpenUXMLFile.ReopenAsset(asset);
+
+        // Called when the owning secondary window closes for good: release what the open files hold (registry
+        // references, backups) and destroy the document. The default document is never destroyed; it lingers so
+        // the next primary window can restore it.
+        internal void DestroyForClosedWindow()
+        {
+            if (m_IsDefaultDocument)
+                return;
+
+            foreach (var openUXMLFile in m_OpenUXMLFiles)
+                openUXMLFile.Clear();
+
+            DestroyImmediate(this);
         }
 
         //
@@ -416,7 +490,7 @@ namespace Unity.UI.Builder
 
         public void AddSubDocumentInIsolation()
         {
-            var newUXMLFile = new BuilderDocumentOpenUXML();
+            var newUXMLFile = new BuilderDocumentOpenUXML { document = this };
             newUXMLFile.openSubDocumentParentIndex = m_ActiveOpenUXMLFileIndex;
 
             m_OpenUXMLFiles.Add(newUXMLFile);
@@ -425,7 +499,7 @@ namespace Unity.UI.Builder
 
         public void AddSubDocumentInContext(TemplateAsset templateAsset, int templateAssetIndex)
         {
-            var newUXMLFile = new BuilderDocumentOpenUXML();
+            var newUXMLFile = new BuilderDocumentOpenUXML { document = this };
             newUXMLFile.openSubDocumentParentIndex = m_ActiveOpenUXMLFileIndex;
             newUXMLFile.templateAsset = templateAsset;
             newUXMLFile.templateAssetIndex = templateAssetIndex;
@@ -496,7 +570,7 @@ namespace Unity.UI.Builder
                     openUXMLFile.ResyncBackupToCurrentAsset();
             }
 
-            var builderWindow = Builder.ActiveWindow;
+            var builderWindow = primaryViewportWindow as Builder;
             if (builderWindow != null)
                 builderWindow.toolbar?.InitCanvasTheme();
         }
@@ -547,6 +621,10 @@ namespace Unity.UI.Builder
             var json = File.ReadAllText(path);
             EditorJsonUtility.FromJsonOverwrite(json, this);
 
+            // FromJsonOverwrite replaced the open-file list, so re-establish ownership before anything else.
+            foreach (var openUXMLFile in m_OpenUXMLFiles)
+                openUXMLFile.document = this;
+
             // Very important we convert asset references to paths here after a restore.
             foreach (var openUXMLFile in m_OpenUXMLFiles)
                 openUXMLFile.OnAfterLoadFromDisk();
@@ -554,6 +632,14 @@ namespace Unity.UI.Builder
 
         public void SaveToDisk()
         {
+            // There is a single on-disk state file; a secondary document persisting would clobber the default's.
+            // Its window remembers the open file through the editor layout's serialization instead.
+            if (!m_IsDefaultDocument)
+            {
+                (primaryViewportWindow as Builder)?.RememberRootAssetForLayout();
+                return;
+            }
+
             var json = EditorJsonUtility.ToJson(this, true);
 
             var folderPath = BuilderConstants.builderDocumentDiskJsonFolderAbsolutePath;
@@ -573,8 +659,8 @@ namespace Unity.UI.Builder
                 return;
 
             // The Builder handles its own save/discard, but needs to sync up when an asset is saved or
-            // discarded from a different tool.
-            if (context.Source == CommandSources.Builder)
+            // discarded from a different tool — another Builder window included.
+            if (context.Source == CommandSources.Builder && isSavingOwnDocument)
                 return;
 
             switch (context.Command)
@@ -654,6 +740,29 @@ namespace Unity.UI.Builder
             return false;
         }
 
+        // Whether the registry — the dirtiness source of truth shared by all tools — reports unsaved content
+        // for any asset of the active document. A sibling's change notification alone is not proof of an edit.
+        internal bool AreOpenAssetsDirtyInRegistry()
+        {
+            var vta = activeOpenUXMLFile?.visualTreeAsset;
+            if (vta == null)
+                return false;
+
+            var registry = UIAssetRegistry.instance;
+            if (registry.IsDirty(vta))
+                return true;
+
+            using var _ = ListPool<StyleSheet>.Get(out var sheets);
+            UIAssetRegistry.CollectDocumentStyleSheets(vta, sheets);
+            foreach (var sheet in sheets)
+            {
+                if (sheet != null && registry.IsDirty(sheet))
+                    return true;
+            }
+
+            return false;
+        }
+
         void ReconcileUnsavedMarkersFromRegistry()
         {
             var vta = activeOpenUXMLFile?.visualTreeAsset;
@@ -721,3 +830,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

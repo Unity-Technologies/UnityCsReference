@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ContentBuild not yet converted
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -77,21 +78,24 @@ namespace UnityEditor
 
         internal static string k_ResourcesSDKPlatformInfoPath => Path.Combine(EditorApplication.applicationContentsPath, "Resources/SDKPlatformInfo");
 
-        static readonly string k_SDKPlatformInfoFailToParseError = L10n.Tr("Failed to parse SDK platform manifest '{0}': {1}.");
-        static readonly string k_SDKPlatformInfoFailToParseUnknownError = L10n.Tr("Failed to parse SDK platform manifest '{0}'.");
-        static readonly string k_SDKPlatformInfoMissingGuidError = L10n.Tr("SDK platform manifest '{0}' is missing a valid guid.");
-        static readonly string k_SDKPlatformInfoInvalidVersionError = L10n.Tr("SDK platform manifest '{0}' has an invalid version ({1}).");
-        static readonly string k_SDKPlatformGuidAlreadyUsedError = L10n.Tr("SDK platform guid '{0}' is already used by another platform.");
-        static readonly string k_SDKPlatformMissingBaseGuidError = L10n.Tr("SDK platform '{0}' is a derived platform but is missing a valid base platform guid.");
-        static readonly string k_SDKPlatformNoSupportedGuidsError = L10n.Tr("SDK platform '{0}' is a multi-target platform but has no supported platform guids.");
-        static readonly string k_SDKPlatformInvalidPlatformTypeError = L10n.Tr("SDK platform '{0}' has an invalid platform type.");
-        static readonly string k_SDKPlatformMissingDisplayNameWarning = L10n.Tr("SDK platform '{0}' is missing a display name.");
-        static readonly string k_SDKPlatformMissingPlatformGroupWarning = L10n.Tr("SDK platform '{0}' does not reference any platform group. The platform was registered but will not appear in any group.");
-        static readonly string k_SDKPlatformUnknownPlatformGroupWarning = L10n.Tr("SDK platform '{0}' references unknown platform group '{1}'. The platform was registered but will not appear in any group.");
-        internal static readonly string k_SDKProviderMissingPlatformInfoError = L10n.Tr("The SDK platform provider '{0}' does not reference a valid platform.");
-        static readonly string k_CreateIPlatformProviderFailedError = L10n.Tr("Failed to create IPlatformProvider instance for type '{0}'.");
-        static readonly string k_PlatformDeprecatedDefaultWithDisplayName = L10n.Tr("The {0} platform is deprecated.");
-        static readonly string k_DerivedPlatformUsesDeprecatedBase = L10n.Tr("This platform is based on {0}, which is deprecated.");
+        static readonly string k_SDKPlatformInfoFailToParseError = L10n.Tr("Failed to parse SDK platform manifest '{0}': {1}.", null);
+        static readonly string k_SDKPlatformInfoFailToParseUnknownError = L10n.Tr("Failed to parse SDK platform manifest '{0}'.", null);
+        static readonly string k_SDKPlatformInfoMissingGuidError = L10n.Tr("SDK platform manifest '{0}' is missing a valid guid.", null);
+        static readonly string k_SDKPlatformInfoInvalidVersionError = L10n.Tr("SDK platform manifest '{0}' has an invalid version ({1}).", null);
+        static readonly string k_SDKPlatformGuidAlreadyUsedError = L10n.Tr("SDK platform guid '{0}' is already used by another platform.", null);
+        static readonly string k_SDKPlatformMissingBaseGuidError = L10n.Tr("SDK platform '{0}' is a derived platform but is missing a valid base platform guid.", null);
+        static readonly string k_SDKPlatformNoSupportedGuidsError = L10n.Tr("SDK platform '{0}' is a multi-target platform but has no supported platform guids.", null);
+        static readonly string k_SDKPlatformMissingVariantsError = L10n.Tr("SDK platform '{0}' is a multi-target platform but has no preconfigured settings variants in the manifest.", null);
+        static readonly string k_SDKPlatformVariantMissingGuidError = L10n.Tr("SDK platform '{0}' is a multi-target platform but has a preconfigured settings variant '{1}' without a platform GUID.", null);
+        static readonly string k_SDKPlatformVariantUnsupportedGuidError = L10n.Tr("SDK platform '{0}' has a preconfigured settings variant '{1}' with platform GUID '{2}' which is not one of the platform's supported platform guids.", null);
+        static readonly string k_SDKPlatformInvalidPlatformTypeError = L10n.Tr("SDK platform '{0}' has an invalid platform type.", null);
+        static readonly string k_SDKPlatformMissingDisplayNameWarning = L10n.Tr("SDK platform '{0}' is missing a display name.", null);
+        static readonly string k_SDKPlatformMissingPlatformGroupWarning = L10n.Tr("SDK platform '{0}' does not reference any platform group. The platform was registered but will not appear in any group.", null);
+        static readonly string k_SDKPlatformUnknownPlatformGroupWarning = L10n.Tr("SDK platform '{0}' references unknown platform group '{1}'. The platform was registered but will not appear in any group.", null);
+        internal static readonly string k_SDKProviderMissingPlatformInfoError = L10n.Tr("The SDK platform provider '{0}' does not reference a valid platform.", null);
+        static readonly string k_CreateIPlatformProviderFailedError = L10n.Tr("Failed to create IPlatformProvider instance for type '{0}'.", null);
+        static readonly string k_PlatformDeprecatedDefaultWithDisplayName = L10n.Tr("The {0} platform is deprecated.", null);
+        static readonly string k_DerivedPlatformUsesDeprecatedBase = L10n.Tr("This platform is based on {0}, which is deprecated.", null);
 
         public static extern bool PlatformHasFlag(BuildTarget platform, TargetAttributes flag);
 
@@ -312,7 +316,7 @@ namespace UnityEditor
             public PlatformPackageList partnerPackages = new PlatformPackageList();
 
             public string description = string.Empty;
-            public string instructions = L10n.Tr("*standard install form hub");
+            public string instructions = L10n.Tr("*standard install form hub", null);
             public string iconName = "BuildSettings.Editor";
             public string subtitle = string.Empty;
             public string settingsDocsLink = null;
@@ -328,6 +332,8 @@ namespace UnityEditor
             /// Custom deprecation copy for UI when <see cref="PlatformAttributes.IsDeprecated"/> is set. May be empty if a generic fallback should be used.
             /// </summary>
             public string deprecationMessage = string.Empty;
+
+            public PreconfiguredSettingsVariant[] preconfiguredSettingsVariants = Array.Empty<PreconfiguredSettingsVariant>();
 
             public PlatformInfo() {}
 
@@ -408,7 +414,7 @@ namespace UnityEditor
                 {
                     displayName = "Windows",
                     downloadLinkName = "Windows-Mono",
-                    description = L10n.Tr("Access an ecosystem of Unity-supported game development solutions to reach the vast PC gamer audience around the world. Leverage DirectX 12 and inline ray tracing support for cutting edge visual fidelity. Use the Microsoft GDK packages to further unlock the Microsoft gaming ecosystem."),
+                    description = L10n.Tr("Access an ecosystem of Unity-supported game development solutions to reach the vast PC gamer audience around the world. Leverage DirectX 12 and inline ray tracing support for cutting edge visual fidelity. Use the Microsoft GDK packages to further unlock the Microsoft gaming ecosystem.", null),
                     subtarget = StandaloneBuildSubtarget.Player,
                     buildTarget = BuildTarget.StandaloneWindows64,
                     iconName = "BuildSettings.Windows",
@@ -421,7 +427,7 @@ namespace UnityEditor
                 {
                     displayName = "macOS",
                     downloadLinkName = "Mac-Mono",
-                    description = L10n.Tr("Take advantage of Unity’s support for the latest Mac devices with M series chips. The Mac Standalone platform also supports Intel-based Mac devices."),
+                    description = L10n.Tr("Take advantage of Unity’s support for the latest Mac devices with M series chips. The Mac Standalone platform also supports Intel-based Mac devices.", null),
                     subtarget = StandaloneBuildSubtarget.Player,
                     buildTarget = BuildTarget.StandaloneOSX,
                     iconName = "BuildSettings.OSX",
@@ -434,7 +440,7 @@ namespace UnityEditor
                 {
                     displayName = "Linux",
                     downloadLinkName = "Linux-Mono",
-                    description = L10n.Tr("Leverage Unity’s platform support for Linux, including an ecosystem of game development solutions for creators of all skill levels."),
+                    description = L10n.Tr("Leverage Unity’s platform support for Linux, including an ecosystem of game development solutions for creators of all skill levels.", null),
                     subtarget = StandaloneBuildSubtarget.Player,
                     buildTarget = BuildTarget.StandaloneLinux64,
                     iconName = "BuildSettings.Linux",
@@ -448,7 +454,7 @@ namespace UnityEditor
                 {
                     displayName = "Windows Server",
                     downloadLinkName = "Windows-Server",
-                    description = L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Windows Server platform, including publishing multiplayer games."),
+                    description = L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Windows Server platform, including publishing multiplayer games.", null),
                     buildTarget = BuildTarget.StandaloneWindows64,
                     subtarget = StandaloneBuildSubtarget.Server,
                     iconName = "BuildSettings.DedicatedServer",
@@ -456,7 +462,7 @@ namespace UnityEditor
                     {
                         requiredPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("Dedicated Server"), "com.unity.dedicated-server", L10n.Tr("The Dedicated Server package contains optimizations and workflow improvements for developing Dedicated Server platform.")),
+                            new PlatformPackageInfo(L10n.Tr("Dedicated Server", null), "com.unity.dedicated-server", L10n.Tr("The Dedicated Server package contains optimizations and workflow improvements for developing Dedicated Server platform.", null)),
                         }
                     },
                     flags = PlatformAttributes.IsWindowsServerBuildTarget | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
@@ -468,7 +474,7 @@ namespace UnityEditor
                 {
                     displayName = "macOS Server",
                     downloadLinkName = "Mac-Server",
-                    description = L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Mac Server platform, including publishing multiplayer games."),
+                    description = L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Mac Server platform, including publishing multiplayer games.", null),
                     buildTarget = BuildTarget.StandaloneOSX,
                     subtarget = StandaloneBuildSubtarget.Server,
                     iconName = "BuildSettings.DedicatedServer",
@@ -476,7 +482,7 @@ namespace UnityEditor
                     {
                         requiredPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("Dedicated Server"), "com.unity.dedicated-server", L10n.Tr("The Dedicated Server package contains optimizations and workflow improvements for developing Dedicated Server platform.")),
+                            new PlatformPackageInfo(L10n.Tr("Dedicated Server", null), "com.unity.dedicated-server", L10n.Tr("The Dedicated Server package contains optimizations and workflow improvements for developing Dedicated Server platform.", null)),
                         }
                     },
                     flags = PlatformAttributes.IsMacServerBuildTarget | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
@@ -488,7 +494,7 @@ namespace UnityEditor
                 {
                     displayName = "Linux Server",
                     downloadLinkName = "Linux-Server",
-                    description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Linux Server platform, including publishing multiplayer games."),
+                    description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Linux Server platform, including publishing multiplayer games.", null),
                     buildTarget = BuildTarget.StandaloneLinux64,
                     subtarget = StandaloneBuildSubtarget.Server,
                     iconName = "BuildSettings.DedicatedServer",
@@ -496,7 +502,7 @@ namespace UnityEditor
                     {
                         requiredPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("Dedicated Server"), "com.unity.dedicated-server", L10n.Tr("The Dedicated Server package contains optimizations and workflow improvements for developing Dedicated Server platform.")),
+                            new PlatformPackageInfo(L10n.Tr("Dedicated Server", null), "com.unity.dedicated-server", L10n.Tr("The Dedicated Server package contains optimizations and workflow improvements for developing Dedicated Server platform.", null)),
                         }
                     },
                     flags = PlatformAttributes.IsLinuxServerBuildTarget | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
@@ -509,19 +515,19 @@ namespace UnityEditor
                 {
                     displayName = "Android™",
                     downloadLinkName = "Android",
-                    description = L10n.Tr("Android is a large and varied device ecosystem with over 3bn active devices. Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for Android games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth."),
+                    description = L10n.Tr("Android is a large and varied device ecosystem with over 3bn active devices. Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for Android games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.", null),
                     buildTarget = BuildTarget.Android,
                     nameAndLinkToShowUnderTitle = new List<NameAndLink>
                     {
-                        new NameAndLink{name = L10n.Tr("Unity Android Manual"),  linkUrl = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/android.html"},
+                        new NameAndLink{name = L10n.Tr("Unity Android Manual", null),  linkUrl = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/android.html"},
                     },
                     iconName = "BuildSettings.Android",
                     internalPackages = new PlatformPackageList
                     {
                         recommendedPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("In-App Purchasing"), "com.unity.purchasing",
-                                L10n.Tr("With Unity IAP, setting up in-app purchases for your game across multiple app stores has never been easier."))
+                            new PlatformPackageInfo(L10n.Tr("In-App Purchasing", null), "com.unity.purchasing",
+                                L10n.Tr("With Unity IAP, setting up in-app purchases for your game across multiple app stores has never been easier.", null))
                         }
                     },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
@@ -533,15 +539,15 @@ namespace UnityEditor
                 {
                     displayName = "iOS",
                     downloadLinkName = "iOS",
-                    description =  L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for iOS games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth."),
+                    description =  L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for iOS games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.", null),
                     buildTarget = BuildTarget.iOS,
                     iconName = "BuildSettings.iPhone",
                     internalPackages = new PlatformPackageList
                     {
                         recommendedPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("In-App Purchasing"), "com.unity.purchasing",
-                                L10n.Tr("With Unity IAP, setting up in-app purchases for your game across multiple app stores has never been easier."))
+                            new PlatformPackageInfo(L10n.Tr("In-App Purchasing", null), "com.unity.purchasing",
+                                L10n.Tr("With Unity IAP, setting up in-app purchases for your game across multiple app stores has never been easier.", null))
                         }
                     },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
@@ -554,12 +560,12 @@ namespace UnityEditor
                 {
                     displayName = "PlayStation®4",
                     downloadLinkName = "PS4",
-                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
-                    description = L10n.Tr("Create your game with a comprehensive development platform for PlayStation®4. Discover powerful creation tools to take your PlayStation game to the next level."),
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.", null),
+                    description = L10n.Tr("Create your game with a comprehensive development platform for PlayStation®4. Discover powerful creation tools to take your PlayStation game to the next level.", null),
                     buildTarget = BuildTarget.PS4,
                     nameAndLinkToShowUnderTitle = new List<NameAndLink>
                     {
-                        new NameAndLink{ name = L10n.Tr("Register as a PlayStation developer"), linkUrl = "https://partners.playstation.net/"}
+                        new NameAndLink{ name = L10n.Tr("Register as a PlayStation developer", null), linkUrl = "https://partners.playstation.net/"}
                     },
                     iconName = "BuildSettings.PS4",
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
@@ -571,12 +577,12 @@ namespace UnityEditor
                 {
                     displayName = "PlayStation®5",
                     downloadLinkName = "PS5",
-                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
-                    description = L10n.Tr("Create your game with a comprehensive development platform for PlayStation®5. Discover powerful creation tools to take your PlayStation game to the next level."),
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.", null),
+                    description = L10n.Tr("Create your game with a comprehensive development platform for PlayStation®5. Discover powerful creation tools to take your PlayStation game to the next level.", null),
                     buildTarget = BuildTarget.PS5,
                     nameAndLinkToShowUnderTitle = new List<NameAndLink>
                     {
-                        new NameAndLink{name = L10n.Tr("Register as a PlayStation developer"), linkUrl = "https://partners.playstation.net/"}
+                        new NameAndLink{name = L10n.Tr("Register as a PlayStation developer", null), linkUrl = "https://partners.playstation.net/"}
                     },
                     iconName = "BuildSettings.PS5",
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
@@ -588,12 +594,12 @@ namespace UnityEditor
                 {
                     displayName = "Xbox Series X|S",
                     downloadLinkName = "GameCoreScarlett",
-                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
-                    description = L10n.Tr("Attract players around the world on the latest generation of Xbox: Xbox Series X|S. Push the graphical fidelity of your games with inline ray tracing, all while maintaining performance with the latest optimizations for DirectX 12."),
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.", null),
+                    description = L10n.Tr("Attract players around the world on the latest generation of Xbox: Xbox Series X|S. Push the graphical fidelity of your games with inline ray tracing, all while maintaining performance with the latest optimizations for DirectX 12.", null),
                     buildTarget = BuildTarget.GameCoreXboxSeries,
                     nameAndLinkToShowUnderTitle = new List<NameAndLink>
                     {
-                         new NameAndLink{name = L10n.Tr("Register as an Xbox developer"), linkUrl = "https://www.xbox.com/en-US/developers/id"}
+                         new NameAndLink{name = L10n.Tr("Register as an Xbox developer", null), linkUrl = "https://www.xbox.com/en-US/developers/id"}
                     },
                     iconName = "BuildSettings.GameCoreScarlett",
                     flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget
@@ -605,12 +611,12 @@ namespace UnityEditor
                 {
                     displayName = "Xbox One",
                     downloadLinkName = "GameCoreXboxOne",
-                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
-                    description = L10n.Tr("Attract and engage over 50 million players around the world on Xbox One."),
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.", null),
+                    description = L10n.Tr("Attract and engage over 50 million players around the world on Xbox One.", null),
                     buildTarget = BuildTarget.GameCoreXboxOne,
                     nameAndLinkToShowUnderTitle = new List<NameAndLink>
                     {
-                        new NameAndLink{name = L10n.Tr("Register as an Xbox developer"), linkUrl ="https://www.xbox.com/en-US/developers/id"}
+                        new NameAndLink{name = L10n.Tr("Register as an Xbox developer", null), linkUrl ="https://www.xbox.com/en-US/developers/id"}
                     },
                     iconName = "BuildSettings.GameCoreXboxOne",
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget
@@ -622,12 +628,12 @@ namespace UnityEditor
                 {
                     displayName = "Nintendo Switch™",
                     downloadLinkName = "Switch",
-                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
-                    description = L10n.Tr("Bring your game to Nintendo Switch™ with Unity’s optimized platform support as well as a dedicated forum."),
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.", null),
+                    description = L10n.Tr("Bring your game to Nintendo Switch™ with Unity’s optimized platform support as well as a dedicated forum.", null),
                     buildTarget = BuildTarget.Switch,
                     nameAndLinkToShowUnderTitle = new List<NameAndLink>
                     {
-                        new NameAndLink{name = L10n.Tr("Register as a Nintendo developer"), linkUrl = "http://developer.nintendo.com"}
+                        new NameAndLink{name = L10n.Tr("Register as a Nintendo developer", null), linkUrl = "http://developer.nintendo.com"}
                     },
                     iconName = "BuildSettings.Switch",
                     flags = PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget,
@@ -639,8 +645,8 @@ namespace UnityEditor
                new PlatformInfo
                {
                     displayName = "Nintendo Switch™ 2",
-                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
-                    description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform"),
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.", null),
+                    description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform", null),
                     buildTarget = BuildTarget.Switch2,
                     iconName = "BuildSettings.Switch2",
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget,
@@ -654,7 +660,7 @@ namespace UnityEditor
                 {
                     displayName = "Web",
                     downloadLinkName = "WebGL",
-                    description =  L10n.Tr("Leverage Unity’s web solutions to offer your players near-instant access to their favorite games, no matter where they want to play. Our web platform includes support for desktop and mobile browsers."),
+                    description =  L10n.Tr("Leverage Unity’s web solutions to offer your players near-instant access to their favorite games, no matter where they want to play. Our web platform includes support for desktop and mobile browsers.", null),
                     buildTarget = BuildTarget.WebGL,
                     iconName = "BuildSettings.WebGL",
                     settingsDocsLink = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/web-setting-configurations.html",
@@ -670,51 +676,51 @@ namespace UnityEditor
                     description = L10n.Tr(
                         "Take advantage of Unity's support for Meta Quest platforms and leverage Unity's extensive XR tools and frameworks. " +
                         "This platform offers default project settings and configurations for a streamlined publishing process."
-                    ),
+                    , null),
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Meta",
                     internalPackages = new PlatformPackageList
                     {
                         requiredPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("OpenXR Plugin"), "com.unity.xr.openxr",
-                                L10n.Tr("OpenXR is an open, royalty-free standard developed by Khronos that aims to simplify AR/VR development by allowing developers to target a wide range of AR/VR devices. Use this plug-in to enable OpenXR in XR Plug-in Management.")),
+                            new PlatformPackageInfo(L10n.Tr("OpenXR Plugin", null), "com.unity.xr.openxr",
+                                L10n.Tr("OpenXR is an open, royalty-free standard developed by Khronos that aims to simplify AR/VR development by allowing developers to target a wide range of AR/VR devices. Use this plug-in to enable OpenXR in XR Plug-in Management.", null)),
                         }
                     },
                     partnerPackages = new PlatformPackageList
                     {
                         recommendedPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("Meta XR All-in-one SDK"), "com.meta.xr.sdk.all",
-                                L10n.Tr("Meta XR All-in-One SDK is a wrapper package that depends on the latest version of all Meta XR SDKs, making it easy to get started with VR development."),
-                                L10n.Tr("Meta"), true),
-                            new PlatformPackageInfo(L10n.Tr("Meta XR Core SDK"), "com.meta.xr.sdk.core",
-                                L10n.Tr("Meta XR Core SDK package provides the latest features to create immersive experiences for Meta XR devices."),
-                                L10n.Tr("Meta"), true),
-                            new PlatformPackageInfo(L10n.Tr("Meta XR Audio SDK"), "com.meta.xr.sdk.audio",
-                                L10n.Tr("Comprehensive spatial audio features for immersive applications, including a spatial audio renderer with HRTF, ambisonic audio playback, and room acoustics for creating immersive environments."),
-                                L10n.Tr("Meta"), true),
-                            new PlatformPackageInfo(L10n.Tr("Meta XR Haptics SDK"), "com.meta.xr.sdk.haptics",
-                                L10n.Tr("SDK for playback of haptics created in Meta Haptics Studio on Quest devices."),
-                                L10n.Tr("Meta"), true),
-                            new PlatformPackageInfo(L10n.Tr("Meta XR Interaction SDK Essentials"), "com.meta.xr.sdk.interaction",
-                                L10n.Tr("Provides the core implementations of all the provided interaction models along with necessary shaders, materials, and prefabs."),
-                                L10n.Tr("Meta"), true),
-                            new PlatformPackageInfo(L10n.Tr("Meta XR Interaction SDK"), "com.meta.xr.sdk.interaction.ovr",
-                                L10n.Tr("This package allows Interaction SDK to interface with OVRPlugin. Use this package if you are using OVRPlugin or the Core SDK package."),
-                                L10n.Tr("Meta"), true),
-                            new PlatformPackageInfo(L10n.Tr("Meta XR Platform SDK"), "com.meta.xr.sdk.platform",
-                                L10n.Tr("Use the Platform SDK to create social VR applications. Add Matchmaking, DLC,In-App Purchases, Cloud Storage, and more to your experience using the individual components of the SDK."),
-                                L10n.Tr("Meta"), true),
-                            new PlatformPackageInfo(L10n.Tr("Meta XR Voice SDK"), "com.meta.xr.sdk.voice",
-                                L10n.Tr("Voice SDK enables natural voice interactions for AR/VR apps, powered by Wit.ai."),
-                                L10n.Tr("Meta"), true),
-                            new PlatformPackageInfo(L10n.Tr("Meta XR Simulator"), "com.meta.xr.simulator",
-                                L10n.Tr("Meta XR Simulator allows developers to preview their VR changes without needing a physical device."),
-                                L10n.Tr("Meta"), true),
-                            new PlatformPackageInfo(L10n.Tr("Meta XR MR Utility Kit"), "com.meta.xr.mrutilitykit",
-                                L10n.Tr("Helper tools & functions to simplify development with Scene API. Works on Mac & PC, without a device attached."),
-                                L10n.Tr("Meta"), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR All-in-one SDK", null), "com.meta.xr.sdk.all",
+                                L10n.Tr("Meta XR All-in-One SDK is a wrapper package that depends on the latest version of all Meta XR SDKs, making it easy to get started with VR development.", null),
+                                L10n.Tr("Meta", null), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Core SDK", null), "com.meta.xr.sdk.core",
+                                L10n.Tr("Meta XR Core SDK package provides the latest features to create immersive experiences for Meta XR devices.", null),
+                                L10n.Tr("Meta", null), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Audio SDK", null), "com.meta.xr.sdk.audio",
+                                L10n.Tr("Comprehensive spatial audio features for immersive applications, including a spatial audio renderer with HRTF, ambisonic audio playback, and room acoustics for creating immersive environments.", null),
+                                L10n.Tr("Meta", null), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Haptics SDK", null), "com.meta.xr.sdk.haptics",
+                                L10n.Tr("SDK for playback of haptics created in Meta Haptics Studio on Quest devices.", null),
+                                L10n.Tr("Meta", null), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Interaction SDK Essentials", null), "com.meta.xr.sdk.interaction",
+                                L10n.Tr("Provides the core implementations of all the provided interaction models along with necessary shaders, materials, and prefabs.", null),
+                                L10n.Tr("Meta", null), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Interaction SDK", null), "com.meta.xr.sdk.interaction.ovr",
+                                L10n.Tr("This package allows Interaction SDK to interface with OVRPlugin. Use this package if you are using OVRPlugin or the Core SDK package.", null),
+                                L10n.Tr("Meta", null), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Platform SDK", null), "com.meta.xr.sdk.platform",
+                                L10n.Tr("Use the Platform SDK to create social VR applications. Add Matchmaking, DLC,In-App Purchases, Cloud Storage, and more to your experience using the individual components of the SDK.", null),
+                                L10n.Tr("Meta", null), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Voice SDK", null), "com.meta.xr.sdk.voice",
+                                L10n.Tr("Voice SDK enables natural voice interactions for AR/VR apps, powered by Wit.ai.", null),
+                                L10n.Tr("Meta", null), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Simulator", null), "com.meta.xr.simulator",
+                                L10n.Tr("Meta XR Simulator allows developers to preview their VR changes without needing a physical device.", null),
+                                L10n.Tr("Meta", null), true),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR MR Utility Kit", null), "com.meta.xr.mrutilitykit",
+                                L10n.Tr("Helper tools & functions to simplify development with Scene API. Works on Mac & PC, without a device attached.", null),
+                                L10n.Tr("Meta", null), true),
                         }
                     },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget,
@@ -728,14 +734,14 @@ namespace UnityEditor
                 {
                     displayName = "Android XR",
                     downloadLinkName = "Android",
-                    description = L10n.Tr("Android XR provides a strong foundation for high-performance, immersive experiences. OpenXR conformance ensures support for widely used XR extensions, while cross-platform tools provide a familiar development experience. The Android XR build profile offers pre-configured settings tailored for Android XR development, making getting started fast and easy."),
+                    description = L10n.Tr("Android XR provides a strong foundation for high-performance, immersive experiences. OpenXR conformance ensures support for widely used XR extensions, while cross-platform tools provide a familiar development experience. The Android XR build profile offers pre-configured settings tailored for Android XR development, making getting started fast and easy.", null),
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Android",
                     internalPackages = new PlatformPackageList
                     {
                         requiredPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("Unity OpenXR Android XR"), "com.unity.xr.androidxr-openxr", L10n.Tr("Enables you to build mixed reality apps for Android XR devices by implementing support for Android XR extensions.")),
+                            new PlatformPackageInfo(L10n.Tr("Unity OpenXR Android XR", null), "com.unity.xr.androidxr-openxr", L10n.Tr("Enables you to build mixed reality apps for Android XR devices by implementing support for Android XR extensions.", null)),
                         }
                     },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
@@ -747,7 +753,7 @@ namespace UnityEditor
                 {
                     displayName = "Universal Windows Platform",
                     downloadLinkName = "Universal-Windows-Platform",
-                    description = L10n.Tr("Benefit from Unity’s runtime support for UWP, ensuring you’re able to reach as many users as possible in the Microsoft ecosystem. UWP is used for HoloLens and Windows 10 and 11 devices, among others."),
+                    description = L10n.Tr("Benefit from Unity’s runtime support for UWP, ensuring you’re able to reach as many users as possible in the Microsoft ecosystem. UWP is used for HoloLens and Windows 10 and 11 devices, among others.", null),
                     buildTarget = BuildTarget.WSAPlayer,
                     iconName = "BuildSettings.Metro",
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget
@@ -764,7 +770,7 @@ namespace UnityEditor
                     {
                         requiredPackages = new[]
                         {
-                            new PlatformPackageInfo(L10n.Tr("Unity Render Service for Android™ Support"), "com.unity.android.render-service", L10n.Tr("Enables building the Unity Render Service for Android™. Contact your sales representative for access."))
+                            new PlatformPackageInfo(L10n.Tr("Unity Render Service for Android™ Support", null), "com.unity.android.render-service", L10n.Tr("Enables building the Unity Render Service for Android™. Contact your sales representative for access.", null))
                         }
                     },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsVisibleInPlatformBrowserOnly
@@ -776,7 +782,7 @@ namespace UnityEditor
                 {
                     displayName = "tvOS",
                     downloadLinkName = "AppleTV",
-                    description = L10n.Tr("Choose tvOS if you’re planning to develop applications for Apple TVs. tvOS is based on the iOS operating system and has many similar frameworks, technologies, and concepts."),
+                    description = L10n.Tr("Choose tvOS if you’re planning to develop applications for Apple TVs. tvOS is based on the iOS operating system and has many similar frameworks, technologies, and concepts.", null),
                     buildTarget = BuildTarget.tvOS,
                     iconName = "BuildSettings.tvOS",
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
@@ -788,7 +794,7 @@ namespace UnityEditor
                 {
                     displayName = "visionOS",
                     downloadLinkName = "VisionOS",
-                    description = L10n.Tr("Build for Apple Vision Pro today.\nBe among the first to create games, lifestyle experiences, and industry apps for Apple's all-new platform. Familiar frameworks and tools. Get ready to design and build an entirely new universe of apps and games for Apple Vision Pro."),
+                    description = L10n.Tr("Build for Apple Vision Pro today.\nBe among the first to create games, lifestyle experiences, and industry apps for Apple's all-new platform. Familiar frameworks and tools. Get ready to design and build an entirely new universe of apps and games for Apple Vision Pro.", null),
                     buildTarget = BuildTarget.VisionOS,
                     iconName = "BuildSettings.visionOS",
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
@@ -800,7 +806,7 @@ namespace UnityEditor
                 {
                     displayName = "Linux Headless Simulation",
                     downloadLinkName = "CloudRendering",
-                    description = L10n.Tr("Utilize Unity’s headless Linux editor to deploy high-fidelity simulations at scale in cloud environments."),
+                    description = L10n.Tr("Utilize Unity’s headless Linux editor to deploy high-fidelity simulations at scale in cloud environments.", null),
                     buildTarget = BuildTarget.LinuxHeadlessSimulation,
                     iconName = "BuildSettings.LinuxHeadlessSimulation",
                     flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
@@ -812,14 +818,14 @@ namespace UnityEditor
                 {
                     displayName = "Embedded Linux",
                     downloadLinkName = "EmbeddedLinux",
-                    instructions = L10n.Tr("As the Embedded Linux platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access."),
-                    description = L10n.Tr("Choose Embedded Linux, a compact version of Linux, if you are planning to build applications for embedded devices and appliances."),
+                    instructions = L10n.Tr("As the Embedded Linux platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access.", null),
+                    description = L10n.Tr("Choose Embedded Linux, a compact version of Linux, if you are planning to build applications for embedded devices and appliances.", null),
                     buildTarget = BuildTarget.EmbeddedLinux,
                     iconName = "BuildSettings.EmbeddedLinux",
 
                     // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
                     // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
-                    temporaryLabelAndLinkForIndustrialOnboarding = new NameAndLink{name = L10n.Tr("No Embedded Linux module loaded. If you are a current Embedded Platforms customer, contact your Account Manager for download instructions.\nFor information on access and licensing, contact the Unity Sales team."), linkUrl = "https://create.unity.com/unity-for-industries?sfcid=7015G000000KFqdQAG&sflsa=2023-04-na-dg-hmi-solutions-contact-us"},
+                    temporaryLabelAndLinkForIndustrialOnboarding = new NameAndLink{name = L10n.Tr("No Embedded Linux module loaded. If you are a current Embedded Platforms customer, contact your Account Manager for download instructions.\nFor information on access and licensing, contact the Unity Sales team.", null), linkUrl = "https://create.unity.com/unity-for-industries?sfcid=7015G000000KFqdQAG&sflsa=2023-04-na-dg-hmi-solutions-contact-us"},
 
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
@@ -830,14 +836,14 @@ namespace UnityEditor
                 {
                     displayName = "QNX®",
                     downloadLinkName = "QNX",
-                    instructions = L10n.Tr("As the QNX platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access."),
-                    description = L10n.Tr("Deploy the Unity runtime to automotive and other embedded systems utilizing the Blackberry® QNX® real-time operating system."),
+                    instructions = L10n.Tr("As the QNX platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access.", null),
+                    description = L10n.Tr("Deploy the Unity runtime to automotive and other embedded systems utilizing the Blackberry® QNX® real-time operating system.", null),
                     buildTarget = BuildTarget.QNX,
                     iconName = "BuildSettings.QNX",
 
                     // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
                     // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
-                    temporaryLabelAndLinkForIndustrialOnboarding = new NameAndLink{name = L10n.Tr("No QNX® module loaded. If you are a current Embedded Platforms customer, contact your Account Manager for download instructions.\nFor information on access and licensing, contact the Unity Sales team."), linkUrl = "https://create.unity.com/unity-for-industries?sfcid=7015G000000KFqdQAG&sflsa=2023-04-na-dg-hmi-solutions-contact-us"},
+                    temporaryLabelAndLinkForIndustrialOnboarding = new NameAndLink{name = L10n.Tr("No QNX® module loaded. If you are a current Embedded Platforms customer, contact your Account Manager for download instructions.\nFor information on access and licensing, contact the Unity Sales team.", null), linkUrl = "https://create.unity.com/unity-for-industries?sfcid=7015G000000KFqdQAG&sflsa=2023-04-na-dg-hmi-solutions-contact-us"},
 
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget,
                     buildProfilePlatformBannerBgColorHex = "#FF443A"
@@ -865,7 +871,7 @@ namespace UnityEditor
         {
             new PlatformGroup
             {
-                groupName = L10n.Tr("Mobile"),
+                groupName = L10n.Tr("Mobile", null),
                 platforms = new GUID []
                 {
                     new("b9b35072a6f44c2e863f17467ea3dc13"), // Android
@@ -874,7 +880,7 @@ namespace UnityEditor
             },
              new PlatformGroup
             {
-                groupName = L10n.Tr("Desktop"),
+                groupName = L10n.Tr("Desktop", null),
                 platforms = new GUID []
                 {
                     new("4e3c793746204150860bf175a9a41a05"), // Windows
@@ -885,7 +891,7 @@ namespace UnityEditor
             },
             new PlatformGroup
             {
-                groupName = L10n.Tr("XR"),
+                groupName = L10n.Tr("XR", null),
                 platforms = new GUID []
                 {
                     new("80657fe557de4d17822398b3a01b8c9e"), // Meta Quest
@@ -895,7 +901,7 @@ namespace UnityEditor
             },
             new PlatformGroup
             {
-                groupName = L10n.Tr("Web"),
+                groupName = L10n.Tr("Web", null),
                 platforms = new GUID []
                 {
                     new("84a3bb9e7420477f885e98145999eb20"), // Web
@@ -903,7 +909,7 @@ namespace UnityEditor
             },
             new PlatformGroup
             {
-                groupName = L10n.Tr("Console"),
+                groupName = L10n.Tr("Console", null),
                 platforms = new GUID []
                 {
                     new("c9f186cd3d594a1496bca1860359f842"), // Xbox X|S
@@ -917,7 +923,7 @@ namespace UnityEditor
             },
             new PlatformGroup
             {
-                groupName = L10n.Tr("Industry"),
+                groupName = L10n.Tr("Industry", null),
                 platforms = new GUID []
                 {
                     new("f1d7bec2fd7f42f481c66ef512f47845"), // EmbeddedLinux
@@ -929,7 +935,7 @@ namespace UnityEditor
             },
             new PlatformGroup
             {
-                groupName = L10n.Tr("Servers"),
+                groupName = L10n.Tr("Servers", null),
                 platforms = new GUID []
                 {
                     new("8d1e1bca926649cba89d37a4c66e8b3d"), // Windows server
@@ -943,7 +949,9 @@ namespace UnityEditor
         {
             LoadSDKPlatforms();
             PreloadBuildPlatformInstalledData();
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             LoadSDKMultiTargetPlatformExtensions();
+            #pragma warning restore UAL0015
         }
 
         public static IEnumerable<GUID> GetAllPlatforms() => allPlatforms.Keys;
@@ -1136,6 +1144,9 @@ namespace UnityEditor
                 var basePlatformGuid = new GUID(sdkPlatformInfo.basePlatformGuid);
                 var (baseBuildTarget, baseSubtarget) = GetBuildTargetAndSubtargetFromGUID(basePlatformGuid);
 
+                var preconfiguredSettingsVariants = ParseManifestVariants(sdkPlatformInfo.preconfiguredSettingsVariants);
+                var supportedGuids = Array.Empty<GUID>();
+
                 var flags = PlatformAttributes.None;
                 switch (sdkPlatformInfo.flags.platformType)
                 {
@@ -1154,6 +1165,14 @@ namespace UnityEditor
                             Debug.LogError(string.Format(k_SDKPlatformNoSupportedGuidsError, sdkPlatformGuid));
                             continue;
                         }
+                        if (preconfiguredSettingsVariants.Length <= 0)
+                        {
+                            Debug.LogError(string.Format(k_SDKPlatformMissingVariantsError, sdkPlatformGuid));
+                            continue;
+                        }
+                        supportedGuids = Array.ConvertAll(sdkPlatformInfo.supportedPlatformGuids, s => new GUID(s));
+                        if (!AreVariantPlatformGuidsValid(sdkPlatformGuid, preconfiguredSettingsVariants, supportedGuids))
+                            continue;
                         break;
                     default:
                         Debug.LogError(string.Format(k_SDKPlatformInvalidPlatformTypeError, sdkPlatformGuid));
@@ -1173,8 +1192,7 @@ namespace UnityEditor
 
                 PlatformInfo platformInfo = new()
                 {
-                    supportedPlatformGuids = sdkPlatformInfo.flags.platformType == SDKPlatformType.MultiTarget ?
-                        Array.ConvertAll(sdkPlatformInfo.supportedPlatformGuids, s => new GUID(s)) : Array.Empty<GUID>(),
+                    supportedPlatformGuids = supportedGuids,
                     buildTarget = baseBuildTarget,
                     subtarget = baseSubtarget,
                     displayName = displayName,
@@ -1187,6 +1205,7 @@ namespace UnityEditor
                     internalPackages = sdkPlatformInfo.internalPackages,
                     partnerPackages = sdkPlatformInfo.partnerPackages,
                     deprecationMessage = deprecationMessage,
+                    preconfiguredSettingsVariants = preconfiguredSettingsVariants,
                     flags = flags | PlatformAttributes.IsSDKPlatform | PlatformAttributes.IsVisibleInPlatformBrowserOnly |
                         PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget |
                         PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget,
@@ -1202,10 +1221,10 @@ namespace UnityEditor
 
                 var groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == targetGroupName);
                 // SDK platform JSON typically stores the English group identifier (e.g. "Web") while
-                // allPlatformGroups use localized titles (L10n.Tr("Web")). Without this fallback the
+                // allPlatformGroups use localized titles. Without this fallback the
                 // platform is registered in allPlatforms but never added to a browser group.
                 if (groupIndex < 0)
-                    groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == L10n.Tr(targetGroupName));
+                    groupIndex = Array.FindIndex(allPlatformGroups, g => g.groupName == L10n.Tr(targetGroupName, null));
                 if (groupIndex < 0)
                 {
                     Debug.LogWarning(string.Format(k_SDKPlatformUnknownPlatformGroupWarning, sdkPlatformGuid, targetGroupName));
@@ -1216,6 +1235,41 @@ namespace UnityEditor
                 platformsList.Add(sdkPlatformGuid);
                 allPlatformGroups[groupIndex].platforms = platformsList.ToArray();
             }
+        }
+
+        static PreconfiguredSettingsVariant[] ParseManifestVariants(SDKPreconfiguredSettingsVariantInfo[] manifestVariants)
+        {
+            if (manifestVariants == null || manifestVariants.Length == 0)
+                return Array.Empty<PreconfiguredSettingsVariant>();
+
+            var variantList = new List<PreconfiguredSettingsVariant>(manifestVariants.Length);
+            foreach (var variant in manifestVariants)
+            {
+                var guid = string.IsNullOrEmpty(variant.platformGuid) ? default : new GUID(variant.platformGuid);
+                variantList.Add(new PreconfiguredSettingsVariant(variant.displayName, variant.selectedInitially, variant.description, variant.tooltip, guid));
+            }
+
+            return variantList.ToArray();
+        }
+
+        static bool AreVariantPlatformGuidsValid(GUID sdkPlatformGuid, PreconfiguredSettingsVariant[] variants, GUID[] supportedGuids)
+        {
+            foreach (var variant in variants)
+            {
+                if (variant.PlatformGuid.Empty())
+                {
+                    Debug.LogError(string.Format(k_SDKPlatformVariantMissingGuidError, sdkPlatformGuid, variant.Name));
+                    return false;
+                }
+
+                if (Array.IndexOf(supportedGuids, variant.PlatformGuid) < 0)
+                {
+                    Debug.LogError(string.Format(k_SDKPlatformVariantUnsupportedGuidError, sdkPlatformGuid, variant.Name, variant.PlatformGuid));
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         static void PreloadBuildPlatformInstalledData()
@@ -1771,6 +1825,14 @@ namespace UnityEditor
             return string.Empty;
         }
 
+        public static PreconfiguredSettingsVariant[] BuildPlatformPreconfiguredSettingsVariants(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.preconfiguredSettingsVariants;
+
+            return Array.Empty<PreconfiguredSettingsVariant>();
+        }
+
         /// <summary>
         /// When the platform is marked deprecated, returns true and sets <paramref name="deprecationMessage"/> to the
         /// configured text. The message may be empty if no custom copy was provided; callers should supply a fallback in that case.
@@ -1829,3 +1891,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

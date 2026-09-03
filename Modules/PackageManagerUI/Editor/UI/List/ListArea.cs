@@ -227,7 +227,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!m_UnityConnect.isUserLoggedIn)
                 {
                     if (m_UnityConnect.isUserInfoReady)
-                        HideListShowMessage(L10n.Tr("Sign in to access your assets"), L10n.Tr("Sign in"), m_UnityConnect.ShowLogin);
+                        HideListShowMessage(L10n.Tr("Sign in to access your assets", null), L10n.Tr("Sign in", null), m_UnityConnect.ShowLogin);
                     else
                         HideListShowMessage(string.Empty);
                     return false;
@@ -235,8 +235,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 if (m_BackgroundFetchHandler.isCheckUpdateInProgress && page.filters.status == PageFilterStatus.UpdateAvailable)
                 {
-                    HideListShowMessage(string.Format(L10n.Tr("Checking for updates {0}%..."), m_BackgroundFetchHandler.checkUpdatePercentage),
-                        L10n.Tr("Cancel"), () => m_PageManager.activePage.ClearFilters());
+                    HideListShowMessage(string.Format(L10n.Tr("Checking for updates {0}%...", null), m_BackgroundFetchHandler.checkUpdatePercentage),
+                        L10n.Tr("Cancel", null), () => m_PageManager.activePage.ClearFilters());
                     return false;
                 }
             }
@@ -246,18 +246,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (isListEmpty || !isInitialFetchingDone)
             {
                 if (m_PageRefreshHandler.IsRefreshInProgress(page))
-                    HideListShowMessage(L10n.Tr("Refreshing list..."));
+                    HideListShowMessage(L10n.Tr("Refreshing list...", null));
                 else
                 {
                     var searchText = page.searchText;
                     if (string.IsNullOrEmpty(searchText))
-                        HideListShowMessage(page.filters.isFilterSet ? L10n.Tr("No results for the specified filters.") : L10n.Tr("No items to display."));
+                        HideListShowMessage(page.filters.isFilterSet ? L10n.Tr("No results for the specified filters.", null) : L10n.Tr("No items to display.", null));
                     else
                     {
                         const int maxSearchTextToDisplay = 64;
                         if (searchText.Length > maxSearchTextToDisplay)
                             searchText = searchText.Substring(0, maxSearchTextToDisplay) + "...";
-                        HideListShowMessage(string.Format(L10n.Tr("No results for \"{0}\""), searchText));
+                        HideListShowMessage(string.Format(L10n.Tr("No results for \"{0}\"", null), searchText));
                     }
                 }
                 return false;

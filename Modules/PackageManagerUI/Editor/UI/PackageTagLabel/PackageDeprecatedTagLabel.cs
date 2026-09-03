@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageDeprecatedTagLabel()
         {
             name = "tagDeprecated";
-            text = L10n.Tr("Deprecated");
+            text = L10n.Tr("Deprecated", null);
         }
 
         public override void Refresh(IPackageVersion version)

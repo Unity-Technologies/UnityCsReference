@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
@@ -30,7 +31,7 @@ namespace UnityEditor.UIElements
         public string ToString(object value, VisualTreeAsset visualTreeAsset);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
     internal readonly struct UxmlAttributeConversionResult
     {
         public readonly bool success;
@@ -88,7 +89,8 @@ namespace UnityEditor.UIElements
         [NoAutoStaticsCleanup]
         private static readonly Dictionary<Type, IUxmlAttributeConverter> s_Converters = new();
 
-        static UxmlAttributeConverter()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             var types = TypeCache.GetTypesDerivedFrom<IUxmlAttributeConverter>();
             foreach (var converterType in types)
@@ -777,11 +779,14 @@ namespace UnityEditor.UIElements
             if (items.Length <= 0 || !UxmlAttributeConverter.TryGetConverter<T>(out var converter))
                 return null;
 
+            // An empty entry is a real value for strings; for any other type it is a stray separator.
+            var keepEmptyItems = typeof(T) == typeof(string) && items.Length > 1;
+
             var result = new List<T>();
             for (var i = 0; i < items.Length; i++)
             {
                 var s = items[i].Trim();
-                if (string.IsNullOrEmpty(s))
+                if (s.Length == 0 && !keepEmptyItems)
                     continue;
 
                 var decoded = UxmlUtility.DecodeListItem(s);
@@ -1658,6 +1663,56 @@ namespace UnityEditor.UIElements
         }
     }
 
+    internal class CurvatureAttributeConverter : UxmlAttributeConverter<Curvature>
+    {
+        public override Curvature FromString(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return Curvature.Initial();
+            }
+
+            var spanStr = value.AsSpan().Trim();
+            if (spanStr.Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                return Curvature.None();
+            }
+
+            var parts = value.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            switch (parts.Length)
+            {
+                case 1:
+                {
+                    // Single angle: X bend only (curves the vertical extent), flat around Y.
+                    var x = Angle.TryParseString(parts[0], out var rx) ? rx : default;
+                    return new Curvature(x);
+                }
+                case 2:
+                {
+                    // Bi-axial: X (vertical extent) then Y (horizontal extent).
+                    var x = Angle.TryParseString(parts[0], out var rx) ? rx : default;
+                    var y = Angle.TryParseString(parts[1], out var ry) ? ry : default;
+                    return new Curvature(x, y);
+                }
+                default:
+                    return Curvature.Initial();
+            }
+        }
+
+        public override string ToString(Curvature value)
+        {
+            // Following the syntax: "none | <angle>{1,2}". A flat Y axis reduces to a single X angle.
+            if (value.IsNone())
+                return "none";
+
+            if (value.y.value == 0f)
+                return value.x.ToString();
+
+            return FormattableString.Invariant($"{value.x} {value.y}");
+        }
+    }
+
     internal class ScaleAttributeConverter : UxmlAttributeConverter<Scale>
     {
         public override Scale FromString(string value)
@@ -2110,3 +2165,4 @@ namespace UnityEditor.UIElements
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

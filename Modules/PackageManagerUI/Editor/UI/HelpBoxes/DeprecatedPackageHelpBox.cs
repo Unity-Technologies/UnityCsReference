@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var message = version.package.deprecationMessage;
-            text = string.IsNullOrEmpty(message) ? L10n.Tr("This package is no longer supported.") : message;
+            text = string.IsNullOrEmpty(message) ? L10n.Tr("This package is no longer supported.", null) : message;
         }
     }
 }

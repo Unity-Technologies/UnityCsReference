@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
@@ -155,8 +156,11 @@ namespace UnityEditor.Build.Profile.Elements
                     return;
 
                 var lastCompiledDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(BuildProfileContext.instance.cachedEditorScriptingDefines);
-                m_Profile.scriptingDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
-                if (ArrayUtility.ArrayEquals(m_Profile.scriptingDefines, lastCompiledDefines))
+                // Currently, the setter for scripting defines also applies the changes in SetAndApplyScriptingDefines(),
+                // But we want to compare sanitized defines before applying the changes,
+                // so we store the defines in local variables to avoid them being applied, and set them after the user chooses to in the dialog below.
+                var currentDefines = BuildProfileModuleUtil.RemoveInvalidScriptingDefines(m_Profile.scriptingDefines);
+                if (ArrayUtility.ArrayEquals(currentDefines, lastCompiledDefines))
                 {
                     return;
                 }
@@ -165,7 +169,7 @@ namespace UnityEditor.Build.Profile.Elements
 
                 if (isAutomatedEnvironment || EditorUtility.DisplayDialog(TrText.scriptingDefinesModified, TrText.scriptingDefinesModifiedBody, TrText.apply, TrText.revert))
                 {
-                    m_Profile.SetAndApplyScriptingDefines(m_Profile.scriptingDefines);
+                    m_Profile.SetAndApplyScriptingDefines(currentDefines);
                 }
                 else
                 {
@@ -240,3 +244,4 @@ namespace UnityEditor.Build.Profile.Elements
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -35,32 +35,32 @@ namespace UnityEditor.PackageManager.UI.Internal
             switch (newTag)
             {
                 case PackageTag.Custom:
-                    text = L10n.Tr("Custom");
+                    text = L10n.Tr("Custom", null);
                     tooltip = string.Empty;
                     break;
                 case PackageTag.Local:
-                    text = L10n.Tr("Local");
+                    text = L10n.Tr("Local", null);
                     tooltip = string.Empty;
                     break;
                 case PackageTag.Tarball:
-                    text = L10n.Tr("Tarball");
+                    text = L10n.Tr("Tarball", null);
                     tooltip = string.Empty;
                     break;
                 case PackageTag.Git:
-                    text = L10n.Tr("Git");
+                    text = L10n.Tr("Git", null);
                     tooltip = string.Empty;
                     break;
                 case PackageTag.Deprecated:
-                    text = L10n.Tr("D");
-                    tooltip = L10n.Tr("Deprecated");
+                    text = L10n.Tr("D", null);
+                    tooltip = L10n.Tr("Deprecated", null);
                     break;
                 case PackageTag.PreRelease:
-                    text = L10n.Tr("Pre");
-                    tooltip = L10n.Tr("Pre-release");
+                    text = L10n.Tr("Pre", null);
+                    tooltip = L10n.Tr("Pre-release", null);
                     break;
                 case PackageTag.Experimental:
-                    text = L10n.Tr("Exp");
-                    tooltip = L10n.Tr("Experimental");
+                    text = L10n.Tr("Exp", null);
+                    tooltip = L10n.Tr("Experimental", null);
                     break;
                 case PackageTag.None:
                 default:

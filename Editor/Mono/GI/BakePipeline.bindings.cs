@@ -86,6 +86,8 @@ namespace UnityEditor.LightBaking
         extern void Update(bool isOnDemandBakeInProgress, bool isOnDemandBakeAsync, bool shouldBeRunning,
             ref float progress, ref StageName currentStage);
         extern bool RunInProgress();
+        // Only meaningful once RunInProgress() is false.
+        extern bool GetLastRunSucceeded();
         extern void ClearProgress();
 
         internal static class BindingsMarshaller

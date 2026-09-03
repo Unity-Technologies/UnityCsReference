@@ -24,12 +24,10 @@ namespace Unity.GraphToolkit.Editor
             set => m_Title = value;
         }
 
-        /// <summary>
-        /// The index of this condition in its parent.
-        /// </summary>
-        public int IndexInParent { get; private set; }
-
         public virtual TransitionModel Transition { get; set; }
+
+        /// <inheritdoc />
+        public ITransitionRule Rule => Transition;
 
         /// <summary>
         /// The parent condition of this <see cref="ConditionModel"/>.
@@ -74,11 +72,6 @@ namespace Unity.GraphToolkit.Editor
             if (indentLevel > 0)
                 result = new string('\t', indentLevel);
             return result;
-        }
-
-        protected internal void SetIndexInParent(int index)
-        {
-            IndexInParent = index;
         }
 
         protected internal void SetParent(GroupConditionModel parent)

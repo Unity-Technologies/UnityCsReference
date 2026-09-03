@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _3DPhysics not yet converted
 using UnityEditor.EditorTools;
 using UnityEngine;
 
@@ -14,7 +15,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent toolbarIcon = new GUIContent(
                 EditorGUIUtility.IconContent("AnchorTransformTool").image,
-                L10n.Tr("Edit the anchor transforms of this Articulation Body"));
+                L10n.Tr("Edit the anchor transforms of this Articulation Body", null));
         }
 
         public override GUIContent toolbarIcon => Styles.toolbarIcon;
@@ -83,3 +84,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

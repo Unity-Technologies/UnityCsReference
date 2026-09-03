@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -13,6 +13,7 @@ namespace Unity.Timeline.Foundation.Widgets
     class PlayHeadOverlay : CanvasOverlay
     {
         const string k_Name = "playHeadOverlay";
+        [NoAutoStaticsCleanup] // Immutable USS stylesheet-path descriptor; holds only fixed path strings, safe to persist across reload.
         static readonly StylesheetResource s_Stylesheet = UIResources.StylesheetFactory.Get<PlayHeadOverlay>();
 
         TimeTooltipOverlay m_TimeTooltip;
@@ -68,4 +69,3 @@ namespace Unity.Timeline.Foundation.Widgets
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

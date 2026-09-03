@@ -75,7 +75,7 @@ public readonly struct ChangedNode
         m_ChangedPorts = changedPorts;
     }
 
-    /// <summary>The node that was modified, or `null` if the node was removed.</summary>
+    /// <summary>The node that was modified.</summary>
     public INode Node => m_Node;
 
     /// <summary>The unique identifier of the node.</summary>
@@ -85,10 +85,9 @@ public readonly struct ChangedNode
     /// The categories of changes that affected this node, as a set of <see cref="ChangeKind"/> flags.
     /// </summary>
     /// <remarks>
-    /// Contains <see cref="ChangeKind.Added"/> when the node was added, <see cref="ChangeKind.Removed"/> when the
-    /// node was removed, and <see cref="ChangeKind.PortChanged"/> when any port on the node changed
-    /// (inspect <see cref="ChangedPorts"/> for details), in addition to any change categories reported by the
-    /// graph (e.g. <see cref="ChangeKind.Data"/>, <see cref="ChangeKind.Layout"/>).
+    /// Contains <see cref="ChangeKind.Added"/> when the node was added, and <see cref="ChangeKind.PortChanged"/>
+    /// when any port on the node changed (inspect <see cref="ChangedPorts"/> for details), in addition to any
+    /// change categories reported by the graph (e.g. <see cref="ChangeKind.Data"/>, <see cref="ChangeKind.Layout"/>).
     /// </remarks>
     public ChangeKind ChangeKinds => m_ChangeKinds;
 
@@ -103,7 +102,7 @@ public readonly struct ChangedNode
 /// A removed <see cref="IVariable"/> does not have a matching `ChangedVariable`.
 /// <br/>
 /// <br/>
-/// For a usage example, see <see cref="GraphChanges"/>.
+/// For a usage example, see <see cref="GraphChanges"/> or <see cref="StateMachineChanges"/>.
 /// </remarks>
 public readonly struct ChangedVariable
 {
@@ -118,7 +117,7 @@ public readonly struct ChangedVariable
         m_ChangeKinds = changeKinds;
     }
 
-    /// <summary>The variable that was modified, or `null` if the variable was removed.</summary>
+    /// <summary>The variable that was modified.</summary>
     public IVariable Variable => m_Variable;
 
     /// <summary>The unique identifier of the variable.</summary>
@@ -128,8 +127,8 @@ public readonly struct ChangedVariable
     /// The categories of changes that affected this variable, as a set of <see cref="ChangeKind"/> flags.
     /// </summary>
     /// <remarks>
-    /// Contains <see cref="ChangeKind.Added"/> when the variable was added, <see cref="ChangeKind.Removed"/> when the
-    /// variable was removed, in addition to any change categories reported by the graph (e.g. <see cref="ChangeKind.Data"/>).
+    /// Contains <see cref="ChangeKind.Added"/> when the variable was added, in addition to any change categories
+    /// reported by the graph or state machine (e.g. <see cref="ChangeKind.Data"/>).
     /// </remarks>
     public ChangeKind ChangeKinds => m_ChangeKinds;
 }
@@ -156,7 +155,7 @@ public readonly struct ChangedConstantNode
         m_ChangeKinds = changeKinds;
     }
 
-    /// <summary>The constant node that was modified, or `null` if the constant node was removed.</summary>
+    /// <summary>The constant node that was modified.</summary>
     public IConstantNode ConstantNode => m_ConstantNode;
 
     /// <summary>The unique identifier of the constant node.</summary>
@@ -166,9 +165,8 @@ public readonly struct ChangedConstantNode
     /// The categories of changes that affected this constant node, as a set of <see cref="ChangeKind"/> flags.
     /// </summary>
     /// <remarks>
-    /// Contains <see cref="ChangeKind.Added"/> when the constant node was added, <see cref="ChangeKind.Removed"/>
-    /// when the constant node was removed, in addition to any change categories reported by the graph
-    /// (e.g. <see cref="ChangeKind.Data"/>).
+    /// Contains <see cref="ChangeKind.Added"/> when the constant node was added, in addition to any change
+    /// categories reported by the graph (e.g. <see cref="ChangeKind.Data"/>).
     /// </remarks>
     public ChangeKind ChangeKinds => m_ChangeKinds;
 }
@@ -195,7 +193,7 @@ public readonly struct ChangedSubgraphNode
         m_ChangeKinds = changeKinds;
     }
 
-    /// <summary>The subgraph node that was modified, or `null` if the subgraph node was removed.</summary>
+    /// <summary>The subgraph node that was modified.</summary>
     public ISubgraphNode SubgraphNode => m_SubgraphNode;
 
     /// <summary>The unique identifier of the subgraph node.</summary>
@@ -205,9 +203,8 @@ public readonly struct ChangedSubgraphNode
     /// The categories of changes that affected this subgraph node, as a set of <see cref="ChangeKind"/> flags.
     /// </summary>
     /// <remarks>
-    /// Contains <see cref="ChangeKind.Added"/> when the subgraph node was added, <see cref="ChangeKind.Removed"/>
-    /// when the subgraph node was removed, in addition to any change categories reported by the graph
-    /// (e.g. <see cref="ChangeKind.Data"/>).
+    /// Contains <see cref="ChangeKind.Added"/> when the subgraph node was added, in addition to any change
+    /// categories reported by the graph (e.g. <see cref="ChangeKind.Data"/>).
     /// </remarks>
     public ChangeKind ChangeKinds => m_ChangeKinds;
 }
@@ -218,9 +215,10 @@ public readonly struct ChangedSubgraphNode
 /// <remarks>
 /// Access this through <see cref="GraphLogger.GraphChanges"/> inside <see cref="Graph.OnGraphChanged"/>.
 /// Inspect <see cref="ChangedNodes"/>, <see cref="ChangedVariables"/>, <see cref="ChangedConstantNodes"/>,
-/// and <see cref="ChangedSubgraphNodes"/> to react to what was added, removed, or modified. Each entry's
+/// and <see cref="ChangedSubgraphNodes"/> to react to what was added or modified. Each entry's
 /// `ChangeKinds` property is a set of <see cref="ChangeKind"/> bit-flags describing the categories
-/// of change that apply.
+/// of change that apply. Removed elements are not reported, except for removed ports, which appear in
+/// <see cref="ChangedNode.ChangedPorts"/> on their owning node.
 /// </remarks>
 /// <example>
 /// <code lang="cs">
@@ -231,13 +229,6 @@ public readonly struct ChangedSubgraphNode
 ///
 ///     foreach (ChangedNode changedNode in changes.ChangedNodes)
 ///     {
-///         // Removed nodes have a null Node; only ID is available.
-///         if (changedNode.Node == null)
-///         {
-///             Debug.Log($"Node removed: {changedNode.ID}");
-///             continue;
-///         }
-///
 ///         if ((changedNode.ChangeKinds & ChangeKind.Added) != 0)
 ///             Debug.Log($"Node added: {changedNode.Node}");
 ///
@@ -265,28 +256,13 @@ public readonly struct ChangedSubgraphNode
 ///     }
 ///
 ///     foreach (ChangedVariable changedVariable in changes.ChangedVariables)
-///     {
-///         if (changedVariable.Variable == null)
-///             Debug.Log($"Variable removed: {changedVariable.ID}");
-///         else
-///             Debug.Log($"Variable changed: {changedVariable.Variable.Name} ({changedVariable.ChangeKinds})");
-///     }
+///         Debug.Log($"Variable changed: {changedVariable.Variable.Name} ({changedVariable.ChangeKinds})");
 ///
 ///     foreach (ChangedConstantNode changedConstant in changes.ChangedConstantNodes)
-///     {
-///         if (changedConstant.ConstantNode == null)
-///             Debug.Log($"Constant node removed: {changedConstant.ID}");
-///         else
-///             Debug.Log($"Constant node changed: {changedConstant.ConstantNode} ({changedConstant.ChangeKinds})");
-///     }
+///         Debug.Log($"Constant node changed: {changedConstant.ConstantNode} ({changedConstant.ChangeKinds})");
 ///
 ///     foreach (ChangedSubgraphNode changedSubgraph in changes.ChangedSubgraphNodes)
-///     {
-///         if (changedSubgraph.SubgraphNode == null)
-///             Debug.Log($"Subgraph node removed: {changedSubgraph.ID}");
-///         else
-///             Debug.Log($"Subgraph node changed: {changedSubgraph.SubgraphNode} ({changedSubgraph.ChangeKinds})");
-///     }
+///         Debug.Log($"Subgraph node changed: {changedSubgraph.SubgraphNode} ({changedSubgraph.ChangeKinds})");
 /// }
 /// ]]>
 /// </code>
@@ -309,44 +285,43 @@ public class GraphChanges
         m_ChangedSubgraphNodes = changedSubgraphNodes ?? Array.Empty<ChangedSubgraphNode>();
     }
     /// <summary>
-    /// The nodes that were added, removed, or modified in this change event.
+    /// The nodes that were added or modified in this change event.
     /// </summary>
     /// <remarks>
-    /// Each entry's <see cref="ChangedNode.ChangeKinds"/> indicates the kind of change (e.g. `"Added"`, `"Removed"`,
+    /// Each entry's <see cref="ChangedNode.ChangeKinds"/> indicates the kind of change (e.g. `"Added"`,
     /// `"PortChanged"`, or one of the graph's standard change categories).
-    /// For removed nodes, <see cref="ChangedNode.Node"/> is `null` and only <see cref="ChangedNode.ID"/> identifies it.
+    /// Removed nodes are not reported; removed ports on a surviving node appear in
+    /// <see cref="ChangedNode.ChangedPorts"/>.
     /// </remarks>
     public IReadOnlyList<ChangedNode> ChangedNodes => m_ChangedNodes ?? Array.Empty<ChangedNode>();
 
     /// <summary>
-    /// The variables that were added, removed, or modified in this change event.
+    /// The variables that were added or modified in this change event.
     /// </summary>
     /// <remarks>
-    /// Each entry's <see cref="ChangedVariable.ChangeKinds"/> indicates the kind of change (e.g. `"Added"`, `"Removed"`,
+    /// Each entry's <see cref="ChangedVariable.ChangeKinds"/> indicates the kind of change (e.g. `"Added"`,
     /// or one of the graph's standard change categories).
-    /// For removed variables, <see cref="ChangedVariable.Variable"/> is `null` and only <see cref="ChangedVariable.ID"/> identifies it.
+    /// Removed variables are not reported.
     /// </remarks>
     public IReadOnlyList<ChangedVariable> ChangedVariables => m_ChangedVariables ?? Array.Empty<ChangedVariable>();
 
     /// <summary>
-    /// The constant nodes that were added, removed, or modified in this change event.
+    /// The constant nodes that were added or modified in this change event.
     /// </summary>
     /// <remarks>
     /// Each entry's <see cref="ChangedConstantNode.ChangeKinds"/> indicates the kind of change (e.g. `"Added"`,
-    /// `"Removed"`, or one of the graph's standard change categories).
-    /// For removed constant nodes, <see cref="ChangedConstantNode.ConstantNode"/> is `null` and only
-    /// <see cref="ChangedConstantNode.ID"/> identifies it.
+    /// or one of the graph's standard change categories).
+    /// Removed constant nodes are not reported.
     /// </remarks>
     public IReadOnlyList<ChangedConstantNode> ChangedConstantNodes => m_ChangedConstantNodes ?? Array.Empty<ChangedConstantNode>();
 
     /// <summary>
-    /// The subgraph nodes that were added, removed, or modified in this change event.
+    /// The subgraph nodes that were added or modified in this change event.
     /// </summary>
     /// <remarks>
     /// Each entry's <see cref="ChangedSubgraphNode.ChangeKinds"/> indicates the kind of change (e.g. `"Added"`,
-    /// `"Removed"`, or one of the graph's standard change categories).
-    /// For removed subgraph nodes, <see cref="ChangedSubgraphNode.SubgraphNode"/> is `null` and only
-    /// <see cref="ChangedSubgraphNode.ID"/> identifies it.
+    /// or one of the graph's standard change categories).
+    /// Removed subgraph nodes are not reported.
     /// </remarks>
     public IReadOnlyList<ChangedSubgraphNode> ChangedSubgraphNodes => m_ChangedSubgraphNodes ?? Array.Empty<ChangedSubgraphNode>();
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
@@ -117,9 +118,12 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (m_Clickable != null && m_Clickable.target == this)
+                if (m_Clickable != null)
                 {
-                    this.RemoveManipulator(m_Clickable);
+                    if (m_Clickable.target == this)
+                        this.RemoveManipulator(m_Clickable);
+
+                    m_Clickable.clicked -= OnClickedForInsights;
                 }
 
                 m_Clickable = value;
@@ -127,8 +131,18 @@ namespace UnityEngine.UIElements
                 if (m_Clickable != null)
                 {
                     this.AddManipulator(m_Clickable);
+                    m_Clickable.clicked += OnClickedForInsights;
                 }
             }
+        }
+
+        // Insights.Enabled must be evaluated at click time: insights are enabled
+        // asynchronously (after the remote configuration is fetched), so buttons
+        // created before that would otherwise never report clicks.
+        void OnClickedForInsights()
+        {
+            if (panel?.contextType == ContextType.Player && Insights.Enabled)
+                Insights.LogEvent(UI.InsightID.Button_Clicked, this);
         }
 
         /// <summary>
@@ -452,3 +466,4 @@ namespace UnityEngine.UIElements
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

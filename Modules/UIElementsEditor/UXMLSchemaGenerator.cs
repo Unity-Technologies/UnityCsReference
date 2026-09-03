@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -44,7 +44,7 @@ namespace UnityEditor.UIElements
         }
     }
 
-    internal class UxmlSchemaGenerator
+    internal partial class UxmlSchemaGenerator
     {
         // Folder, relative to the project root.
         public const string SchemaFolder = "UIElementsSchema";
@@ -65,7 +65,7 @@ namespace UnityEditor.UIElements
             GenerateSchemaFiles(SchemaFolder);
         }
 
-        internal class SchemaInfo
+        internal partial class SchemaInfo
         {
             public SchemaInfo(string uxmlNamespace)
             {
@@ -81,12 +81,16 @@ namespace UnityEditor.UIElements
             public string namepacePrefix { get; }
             public HashSet<string> importNamespaces { get; } = new();
 
-            [NoAutoStaticsCleanup]
-            static Dictionary<string, string> s_NamespacePrefix { get; }
+            // Holds prefixes declared by user-assembly [UxmlNamespacePrefix] attributes, so it is
+            // cleared on code reload and lazily rebuilt from the current assemblies on next use.
+            [AutoStaticsCleanupOnCodeReload]
+            static Dictionary<string, string> s_NamespacePrefix;
 
-            static SchemaInfo()
+            static Dictionary<string, string> namespacePrefix => s_NamespacePrefix ??= BuildNamespacePrefixes();
+
+            static Dictionary<string, string> BuildNamespacePrefixes()
             {
-                s_NamespacePrefix = new Dictionary<string, string>
+                var prefixes = new Dictionary<string, string>
                 {
                     { string.Empty, "global" },
                     { typeof(VisualElement).Namespace, "engine" },
@@ -104,7 +108,7 @@ namespace UnityEditor.UIElements
                         foreach (var nsPrefixAttributeObject in assembly.GetCustomAttributes(typeof(UxmlNamespacePrefixAttribute), false))
                         {
                             var nsPrefixAttribute = (UxmlNamespacePrefixAttribute)nsPrefixAttributeObject;
-                            s_NamespacePrefix[nsPrefixAttribute.ns] = nsPrefixAttribute.prefix;
+                            prefixes[nsPrefixAttribute.ns] = nsPrefixAttribute.prefix;
                         }
                     }
                     catch (TypeLoadException e)
@@ -112,6 +116,8 @@ namespace UnityEditor.UIElements
                         Debug.LogWarningFormat("Error while loading types from assembly {0}: {1}", assembly.FullName, e);
                     }
                 }
+
+                return prefixes;
             }
 
             static string GetPrefixForNamespace(string ns)
@@ -119,10 +125,10 @@ namespace UnityEditor.UIElements
                 if (string.IsNullOrEmpty(ns))
                     return string.Empty;
 
-                if (s_NamespacePrefix.TryGetValue(ns, out var prefix))
+                if (namespacePrefix.TryGetValue(ns, out var prefix))
                     return prefix;
 
-                s_NamespacePrefix[ns] = string.Empty;
+                namespacePrefix[ns] = string.Empty;
                 return string.Empty;
             }
         }
@@ -146,6 +152,12 @@ namespace UnityEditor.UIElements
             static readonly XmlQualifiedName s_BaseTypeAnyType = new XmlQualifiedName("anyType", k_XmlSchemaNamespace);
             [NoAutoStaticsCleanup]
             static readonly XmlQualifiedName s_VisualElementName = new XmlQualifiedName(nameof(VisualElement), k_DefaultNamespace);
+            // Abstract substitution-group head for [VisualElementComponent] child nodes (never authored directly).
+            const string k_VisualElementComponentName = "VisualElementComponent";
+            [NoAutoStaticsCleanup]
+            static readonly XmlQualifiedName s_VisualElementComponentName = new XmlQualifiedName(k_VisualElementComponentName, k_DefaultNamespace);
+            [NoAutoStaticsCleanup]
+            static readonly XmlQualifiedName s_VisualElementComponentTypeName = new XmlQualifiedName(k_VisualElementComponentName + k_TypeSuffix, k_DefaultNamespace);
 
             public Dictionary<string, SchemaInfo> schemas { get; } = new();
 
@@ -298,6 +310,21 @@ namespace UnityEditor.UIElements
 
             void AddSpecialElements()
             {
+                // VisualElementComponent — abstract substitution head for [VisualElementComponent] nodes. Each
+                // component substitutes for it, and every element's content model accepts it as a child.
+                var componentHeadType = new XmlSchemaComplexType
+                {
+                    Name = k_VisualElementComponentName + k_TypeSuffix,
+                    AnyAttribute = new XmlSchemaAnyAttribute { ProcessContents = XmlSchemaContentProcessing.Lax }
+                };
+                GetSchemaInfo(k_DefaultNamespace).schema.Items.Add(componentHeadType);
+                GetSchemaInfo(k_DefaultNamespace).schema.Items.Add(new XmlSchemaElement
+                {
+                    Name = k_VisualElementComponentName,
+                    IsAbstract = true,
+                    SchemaTypeName = s_VisualElementComponentTypeName
+                });
+
                 // UXML is the document root. It is not substitutable, so it keeps a standalone type whose
                 // children are any VisualElement (and, through substitution, the special tags added below).
                 var uxmlType = AddFakeElement(k_DefaultNamespace, "UXML");
@@ -474,6 +501,10 @@ namespace UnityEditor.UIElements
             /// <returns></returns>
             XmlQualifiedName AddElementType(UxmlSerializedDataDescription description)
             {
+                // Components are leaf nodes that substitute for the component head, not VisualElement.
+                if (description.isComponent)
+                    return AddComponentType(description);
+
                 var typeName = description.uxmlName + k_TypeSuffix;
                 var elementType = description.serializedDataType.DeclaringType;
                 if (m_ProcessedTypes.ContainsKey(elementType))
@@ -567,6 +598,9 @@ namespace UnityEditor.UIElements
                             });
                         }
                     }
+
+                    // Any [VisualElementComponent] may be authored as a child node.
+                    rootChoice.Items.Add(new XmlSchemaElement { RefName = s_VisualElementComponentName });
                 }
                 else if (useExtension)
                 {
@@ -595,6 +629,7 @@ namespace UnityEditor.UIElements
                         {
                             RefName = s_VisualElementName
                         });
+                        rootChoice.Items.Add(new XmlSchemaElement { RefName = s_VisualElementComponentName });
                     }
                     else
                     {
@@ -755,6 +790,39 @@ namespace UnityEditor.UIElements
                     Debug.LogException(e);
                 }
                 return null;
+            }
+
+            // A [VisualElementComponent] is emitted as a leaf complexType extending the component head, with an
+            // element that substitutes for that head (so it is a valid child of any element) but is NOT
+            // part of the VisualElement substitution group (it cannot stand in for a visual child).
+            XmlQualifiedName AddComponentType(UxmlSerializedDataDescription description)
+            {
+                var typeName = description.uxmlName + k_TypeSuffix;
+                var elementType = description.serializedDataType.DeclaringType;
+                if (m_ProcessedTypes.ContainsKey(elementType))
+                    return new XmlQualifiedName(typeName, elementType.Namespace);
+
+                var elementTypeAttributes = new HashSet<string>();
+                m_ProcessedTypes.Add(elementType, elementTypeAttributes);
+
+                var xmlElementType = new XmlSchemaComplexType { Name = typeName };
+                var schemaInfo = GetSchemaInfo(elementType.Namespace);
+                schemaInfo.schema.Items.Add(xmlElementType);
+
+                var extension = new XmlSchemaComplexContentExtension { BaseTypeName = s_VisualElementComponentTypeName };
+                schemaInfo.importNamespaces.Add(k_DefaultNamespace);
+                xmlElementType.ContentModel = new XmlSchemaComplexContent { Content = extension };
+
+                AddAttributes(description, extension.Attributes, elementTypeAttributes, xmlElementType, schemaInfo);
+
+                schemaInfo.schema.Items.Add(new XmlSchemaElement
+                {
+                    Name = description.uxmlName,
+                    SchemaTypeName = new XmlQualifiedName(xmlElementType.Name, elementType.Namespace),
+                    SubstitutionGroup = s_VisualElementComponentName
+                });
+
+                return new XmlQualifiedName(typeName, elementType.Namespace);
             }
 
             (XmlQualifiedName baseTypeName, UxmlSerializedDataDescription baseTypeDescription) GetElementBaseType(UxmlSerializedDataDescription description)
@@ -1036,11 +1104,11 @@ namespace UnityEditor.UIElements
             try
             {
                 var schemaData = new SchemaGenerator();
-                EditorUtility.DisplayProgressBar(L10n.Tr("Generating UXML Schema Files"), L10n.Tr("Please wait..."), 0.0f);
+                EditorUtility.DisplayProgressBar(L10n.Tr("Generating UXML Schema Files", null), L10n.Tr("Please wait...", null), 0.0f);
 
                 schemaData.Generate();
 
-                EditorUtility.DisplayProgressBar(L10n.Tr("Generating UXML Schema Files"), L10n.Tr("Please wait..."), 0.75f);
+                EditorUtility.DisplayProgressBar(L10n.Tr("Generating UXML Schema Files", null), L10n.Tr("Please wait...", null), 0.75f);
 
                 schemaData.WriteSchemaFiles(baseDir);
             }
@@ -1051,4 +1119,4 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

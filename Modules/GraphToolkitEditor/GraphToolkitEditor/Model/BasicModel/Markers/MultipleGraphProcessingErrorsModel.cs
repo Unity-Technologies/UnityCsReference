@@ -29,7 +29,7 @@ namespace Unity.GraphToolkit.Editor
         public override object UserData => null;
 
         /// <inheritdoc />
-        public override GraphLogAction Action => null;
+        public override ILogAction Action => null;
 
         /// <summary>
         /// The errors associated with the parent model.

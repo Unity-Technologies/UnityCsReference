@@ -22,7 +22,7 @@ namespace UnityEditorInternal
             get
             {
                 if (m_LocalizedTargetName == null)
-                    m_LocalizedTargetName = L10n.Tr(target.name);
+                    m_LocalizedTargetName = L10n.Tr(target.name, null);
                 return m_LocalizedTargetName;
             }
         }

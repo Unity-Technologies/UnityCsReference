@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -537,17 +537,49 @@ namespace UnityEngine.UIElements
         {
             ref var wti = ref ve.worldTransformInverse;
             var localRay = new Ray(wti.MultiplyPoint3x4(worldRay.origin), wti.MultiplyVector(worldRay.direction));
-            var intersects = IntersectLocalRay(ve, localRay, out localPoint);
-            var worldPoint = ve.worldTransformRef.MultiplyPoint3x4(localPoint);
+            var intersects = IntersectLocalRay(ve, localRay, out localPoint, out var surfaceLocalPoint);
+            // Measure distance to the actual (possibly curved) surface point on the ray, not the flat localPoint,
+            // so cross-element/cross-document depth sorting matches what the user sees. For a flat element the two
+            // coincide.
+            var worldPoint = ve.worldTransformRef.MultiplyPoint3x4(surfaceLocalPoint);
             distance = Vector3.Distance(worldRay.origin, worldPoint);
             return intersects;
         }
 
         internal static bool IntersectLocalRay([NotNull] this VisualElement ve, Ray localRay, out Vector3 localPoint)
         {
-            // Intersect local ray with the Z=0 plane.
+            return IntersectLocalRay(ve, localRay, out localPoint, out _);
+        }
+
+        // Intersects a ray (in `ve`'s local space) with the element and returns the FLAT element-local point the
+        // ray lands on (`localPoint`, z = 0) plus the actual surface point on the ray (`surfaceLocalPoint`, used
+        // for depth). For a flat element the two coincide (the Z=0 plane). For a curved element (Curved UI)
+        // the element is bent onto a curved surface, so the ray is intersected with that surface via the
+        // shared render bend math (UIRCurvatureGeometry) and the flat (u,v) is recovered — that is the value
+        // rect.Contains / ContainsPoint / event coordinates expect, so downstream input handling is unchanged.
+        internal static bool IntersectLocalRay([NotNull] this VisualElement ve, Ray localRay, out Vector3 localPoint, out Vector3 surfaceLocalPoint)
+        {
+            // Curved path: only on a non-flat WorldSpace panel with the panel's sticky
+            // curvature bit set, and only for an element that is actually in a curved conform chain
+            // (CountChain > 0 — this includes flat descendants of a curved ancestor, which are still bent, and
+            // respects the explicit-0deg flat-barrier opt-out). Such an element is NOT flat in its own local
+            // space, so it must never fall back to the Z=0 plane test.
+            if (ve.mayBeInCurvedChain &&
+                ve.elementPanel is BaseRuntimePanel { isFlat: false } &&
+                UIRCurvatureGeometry.CountChain(ve) > 0)
+            {
+                if (UIRCurvatureGeometry.TryIntersect(ve, localRay, UIRCurvatureGeometry.PickZScale(ve),
+                        out localPoint, out surfaceLocalPoint))
+                    return true; // TryIntersect's grid spans exactly [0,w]x[0,h], so localPoint is within rect
+
+                localPoint = surfaceLocalPoint = Vector3.zero;
+                return false;
+            }
+
+            // Flat fast path: intersect local ray with the Z=0 plane.
             var distance = -localRay.origin.z / localRay.direction.z;
             localPoint = localRay.origin + localRay.direction * distance;
+            surfaceLocalPoint = localPoint;
 
             // If the ray is going away from the Z=0 plane (or is NaN), we need to reject the point.
             if (!(distance > 0))
@@ -580,6 +612,11 @@ namespace UnityEngine.UIElements
 
     static class MathUtils
     {
+        // Unlike Mathf.Clamp01, whose AggressiveInlining is IL2CPP-only (a real call per use under Mono),
+        // this one inlines on all backends.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal static float Clamp01(float value) => value < 0f ? 0f : value > 1f ? 1f : value;
+
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         internal static Matrix4x4 PreApply2DOffset(ref Matrix4x4 m, Vector2 p)
         {
@@ -610,4 +647,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

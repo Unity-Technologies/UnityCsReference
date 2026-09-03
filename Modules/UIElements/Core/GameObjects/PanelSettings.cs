@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -358,8 +357,13 @@ namespace UnityEngine.UIElements
             get => m_TargetTexture;
             set
             {
+                var changed = m_TargetTexture != value;
                 m_TargetTexture = value;
                 m_PanelAccess.SetTargetTexture();
+
+                // An offscreen surface is not represented in the accessibility hierarchy.
+                if (changed)
+                    UITKAccessibilityBridge.OnPanelSettingsChanged(this);
             }
         }
 
@@ -373,7 +377,15 @@ namespace UnityEngine.UIElements
         public PanelRenderMode renderMode
         {
             get => m_RenderMode;
-            set => m_RenderMode = value;
+            set
+            {
+                var changed = m_RenderMode != value;
+                m_RenderMode = value;
+
+                // Only screen-space overlay panels participate in the accessibility hierarchy.
+                if (changed)
+                    UITKAccessibilityBridge.OnPanelSettingsChanged(this);
+            }
         }
 
         PanelRenderMode IPanelSettings.renderMode => renderMode;
@@ -548,8 +560,13 @@ namespace UnityEngine.UIElements
             get => m_SortingOrder;
             set
             {
+                var changed = m_SortingOrder != value;
                 m_SortingOrder = value;
                 ApplySortingOrder();
+
+                // Panel sorting decides the accessibility reading order across panels.
+                if (changed)
+                    UITKAccessibilityBridge.OnPanelSettingsChanged(this);
             }
         }
 
@@ -572,8 +589,13 @@ namespace UnityEngine.UIElements
             get => m_TargetDisplay;
             set
             {
+                var changed = m_TargetDisplay != value;
                 m_TargetDisplay = value;
                 m_PanelAccess.SetTargetDisplay();
+
+                // Only main-window panels participate in the accessibility hierarchy.
+                if (changed)
+                    UITKAccessibilityBridge.OnPanelSettingsChanged(this);
             }
         }
 
@@ -1114,6 +1136,8 @@ namespace UnityEngine.UIElements
             }
 
             m_AttachedPanelComponentsList.AddToListAndToVisualTree(panelComponent, visualTree, false);
+
+            UITKAccessibilityBridge.OnPanelComponentAttached(panelComponent);
         }
 
         internal void DetachPanelComponent(IPanelComponent panelComponent)
@@ -1122,6 +1146,8 @@ namespace UnityEngine.UIElements
                 return;
 
             m_AttachedPanelComponentsList.RemoveFromListAndFromVisualTree(panelComponent);
+
+            UITKAccessibilityBridge.OnPanelComponentDetached(panelComponent);
 
             if (m_AttachedPanelComponentsList.m_AttachedPanelComponents.Count == 0)
                 m_PanelAccess.MarkPotentiallyEmpty();
@@ -1214,4 +1240,3 @@ namespace UnityEngine.UIElements
 }
 
 #pragma warning restore CS0618
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

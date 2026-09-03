@@ -338,6 +338,7 @@ namespace UnityEngine
         [FreeFunction("GetAllAssetBundles")]
         internal extern static AssetBundle[] GetAllLoadedAssetBundles_Native();
         ///<summary>Get an enumeration of all the currently loaded AssetBundles.</summary>
+        ///<returns>An enumeration of all the AssetBundles that are currently loaded.</returns>
         public static IEnumerable<AssetBundle> GetAllLoadedAssetBundles()
         {
             return GetAllLoadedAssetBundles_Native();
@@ -1255,6 +1256,8 @@ namespace UnityEngine
 
         ///<summary>Check if an AssetBundle contains a specific object.</summary>
         ///<remarks>Returns true if an Asset referred to by <c>name</c> is contained in the AssetBundle, false otherwise.</remarks>
+        ///<param name="name">The name of the object to look for.</param>
+        ///<returns>True if an asset with the specified name is in the AssetBundle. Otherwise, false.</returns>
         [NativeMethod("Contains")]
         public extern bool Contains(string name);
 
@@ -1299,6 +1302,7 @@ namespace UnityEngine
         ///<param name="name">Name of the Asset.  For the most precise matching this should be the relative path of the Asset that was built into the AssetBundle, including the file extension.
         ///                The relative path and file extension are optional, and Assets can be found and loaded based on the filename alone.  However this opens the potential for unexpected results if the filename is not unique within the AssetBundle.
         ///                At build time it is also possible to specify a name for the Asset using <see cref="P:UnityEditor.AssetBundleBuild.addressableNames" />.  In that case that specified name will be expected to load the Asset instead of the Asset path.</param>
+        ///<returns>The loaded asset that matches the specified name.</returns>
         public Object LoadAsset(string name)
         {
             return LoadAsset(name, typeof(Object));
@@ -1315,6 +1319,7 @@ namespace UnityEngine
         ///<param name="name">Name of the Asset.  For the most precise matching this should be the relative path of the Asset that was built into the AssetBundle, including the file extension.
         ///                The relative path and file extension are optional, and Assets can be found and loaded based on the filename alone.  However this opens the potential for unexpected results if the filename is not unique within the AssetBundle.
         ///                At build time it is also possible to specify a name for the Asset using <see cref="P:UnityEditor.AssetBundleBuild.addressableNames" />.  In that case that specified name will be expected to load the Asset instead of the Asset path.</param>
+        ///<returns>The loaded asset of type <typeparamref name="T" /> that matches the specified name.</returns>
         public T LoadAsset<T>(string name) where T : Object
         {
             return (T)LoadAsset(name, typeof(T));
@@ -1334,6 +1339,7 @@ namespace UnityEngine
         ///<param name="type">The provided type will be checked against the Asset's main object, and if that is not compatible it will be matched against visible objects within the Asset.
         ///                Not all nested objects are visible, for example this will not work to directly retrieve a Transform, MonoBehaviour or other Component.
         ///                In cases where there are multiple matches for the name argument, the requested type can determine which Asset to load.</param>
+        ///<returns>The loaded asset that matches the specified name and type.</returns>
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
         public Object LoadAsset(string name, Type type)
         {
@@ -1365,6 +1371,7 @@ namespace UnityEngine
         ///<param name="name">Name of the Asset.  For the most precise matching this should be the relative path of the Asset that was built into the AssetBundle, including the file extension.
         ///                The relative path and file extension are optional, and Assets can be found and loaded based on the filename alone.  However this opens the potential for unexpected results if the filename is not unique within the AssetBundle.
         ///                At build time it is also possible to specify a name for the Asset using <see cref="P:UnityEditor.AssetBundleBuild.addressableNames" />.  In that case that specified name will be expected to load the Asset instead of the Asset path.</param>
+        ///<returns>Asynchronous load request. Use the <see cref="AssetBundleRequest.asset" /> property to get the loaded asset once the operation completes.</returns>
         ///<seealso cref="AssetBundleRequest" />
         public AssetBundleRequest LoadAssetAsync(string name)
         {
@@ -1379,6 +1386,7 @@ namespace UnityEngine
         ///<param name="name">Name of the Asset.  For the most precise matching this should be the relative path of the Asset that was built into the AssetBundle, including the file extension.
         ///                The relative path and file extension are optional, and Assets can be found and loaded based on the filename alone.  However this opens the potential for unexpected results if the filename is not unique within the AssetBundle.
         ///                At build time it is also possible to specify a name for the Asset using <see cref="P:UnityEditor.AssetBundleBuild.addressableNames" />.  In that case that specified name will be expected to load the Asset instead of the Asset path.</param>
+        ///<returns>Asynchronous load request. Use the <see cref="AssetBundleRequest.asset" /> property to get the loaded asset once the operation completes.</returns>
         ///<seealso cref="AssetBundleRequest" />
         public AssetBundleRequest LoadAssetAsync<T>(string name)
         {
@@ -1396,6 +1404,7 @@ namespace UnityEngine
         ///<param name="type">The provided type will be checked against the Asset's main object, and if that is not compatible it will be matched against visible objects within the Asset.
         ///                Not all nested objects are visible, for example this will not work to directly retrieve a Transform, MonoBehaviour or other Component.
         ///                In cases where there are multiple matches for the name argument, the requested type can determine which Asset to load.</param>
+        ///<returns>Asynchronous load request. Use the <see cref="AssetBundleRequest.asset" /> property to get the loaded asset once the operation completes.</returns>
         ///<seealso cref="AssetBundleRequest" />
         public AssetBundleRequest LoadAssetAsync(string name, Type type)
         {
@@ -1419,6 +1428,7 @@ namespace UnityEngine
         ///<remarks>Load objects from the Asset and its SubAssets.  If the signatures that specify the type are called then the requested type is matched against the Main object and Visible objects in each Asset.
         ///                Otherwise the main objects of each Asset is returned.  An example usage is to load all sprites from an sprite that uses "Multiple" for its [Sprite Mode](xref:texture-type-sprite).</remarks>
         ///<param name="name">Name of the Asset.</param>
+        ///<returns>An array of the loaded asset and its sub-assets.</returns>
         public Object[] LoadAssetWithSubAssets(string name)
         {
             return LoadAssetWithSubAssets(name, typeof(Object));
@@ -1437,6 +1447,7 @@ namespace UnityEngine
         ///<remarks>Load objects from the Asset and its SubAssets.  If the signatures that specify the type are called then the requested type is matched against the Main object and Visible objects in each Asset.
         ///                Otherwise the main objects of each Asset is returned.  An example usage is to load all sprites from an sprite that uses "Multiple" for its [Sprite Mode](xref:texture-type-sprite).</remarks>
         ///<param name="name">Name of the Asset.</param>
+        ///<returns>An array of the loaded asset and its sub-assets of type <typeparamref name="T" />.</returns>
         public T[] LoadAssetWithSubAssets<T>(string name) where T : Object
         {
             return ConvertObjects<T>(LoadAssetWithSubAssets(name, typeof(T)));
@@ -1447,6 +1458,7 @@ namespace UnityEngine
         ///                Otherwise the main objects of each Asset is returned.  An example usage is to load all sprites from an sprite that uses "Multiple" for its [Sprite Mode](xref:texture-type-sprite).</remarks>
         ///<param name="name">Name of the Asset.</param>
         ///<param name="type">Type to load.</param>
+        ///<returns>An array of the loaded asset and its sub-assets that match the specified type.</returns>
         public Object[] LoadAssetWithSubAssets(string name, Type type)
         {
             if (name == null)
@@ -1467,6 +1479,7 @@ namespace UnityEngine
 
         ///<summary>Loads Asset and sub Assets from the AssetBundle asynchronously.</summary>
         ///<param name="name">Name of the Asset.</param>
+        ///<returns>Asynchronous load request. Use the <see cref="AssetBundleRequest.allAssets" /> property to get the loaded asset and its sub-assets once the operation completes.</returns>
         ///<seealso cref="AssetBundleRequest.allAssets" />
         public AssetBundleRequest LoadAssetWithSubAssetsAsync(string name)
         {
@@ -1475,6 +1488,7 @@ namespace UnityEngine
 
         ///<summary>Loads Asset and sub Assets from the AssetBundle asynchronously.</summary>
         ///<param name="name">Name of the Asset.</param>
+        ///<returns>Asynchronous load request. Use the <see cref="AssetBundleRequest.allAssets" /> property to get the loaded asset and its sub-assets once the operation completes.</returns>
         ///<seealso cref="AssetBundleRequest.allAssets" />
         public AssetBundleRequest LoadAssetWithSubAssetsAsync<T>(string name)
         {
@@ -1484,6 +1498,7 @@ namespace UnityEngine
         ///<summary>Loads Asset and sub Assets from the AssetBundle asynchronously.</summary>
         ///<param name="name">Name of the Asset.</param>
         ///<param name="type">Type to load.</param>
+        ///<returns>Asynchronous load request. Use the <see cref="AssetBundleRequest.allAssets" /> property to get the loaded asset and its sub-assets once the operation completes.</returns>
         ///<seealso cref="AssetBundleRequest.allAssets" />
         public AssetBundleRequest LoadAssetWithSubAssetsAsync(string name, Type type)
         {
@@ -1504,12 +1519,14 @@ namespace UnityEngine
         }
 
         ///<summary>Loads all Assets contained in the AssetBundle synchronously.</summary>
+        ///<returns>An array of all the assets in the AssetBundle.</returns>
         public UnityEngine.Object[] LoadAllAssets()
         {
             return LoadAllAssets(typeof(UnityEngine.Object));
         }
 
         ///<summary>Loads all Assets contained in the AssetBundle synchronously.</summary>
+        ///<returns>An array of all the assets of type <typeparamref name="T" /> in the AssetBundle.</returns>
         public T[] LoadAllAssets<T>() where T : Object
         {
             return ConvertObjects<T>(LoadAllAssets(typeof(T)));
@@ -1517,6 +1534,7 @@ namespace UnityEngine
 
         ///<summary>Loads all Assets contained in the AssetBundle synchronously.</summary>
         ///<param name="type">When specified only main or visible objects that derive from the provided type are returned.</param>
+        ///<returns>An array of all the assets in the AssetBundle that derive from the specified type.</returns>
         public UnityEngine.Object[] LoadAllAssets(Type type)
         {
             if (type == null)
@@ -1528,6 +1546,7 @@ namespace UnityEngine
         }
 
         ///<summary>Loads all Assets contained in the AssetBundle asynchronously.</summary>
+        ///<returns>Asynchronous load request. Use the <see cref="AssetBundleRequest.allAssets" /> property to get the loaded assets once the operation completes.</returns>
         ///<seealso cref="AssetBundleRequest.allAssets" />
         public AssetBundleRequest LoadAllAssetsAsync()
         {
@@ -1535,6 +1554,7 @@ namespace UnityEngine
         }
 
         ///<summary>Loads all Assets contained in the AssetBundle asynchronously.</summary>
+        ///<returns>Asynchronous load request. Use the <see cref="AssetBundleRequest.allAssets" /> property to get the loaded assets once the operation completes.</returns>
         ///<seealso cref="AssetBundleRequest.allAssets" />
         public AssetBundleRequest LoadAllAssetsAsync<T>()
         {
@@ -1543,6 +1563,7 @@ namespace UnityEngine
 
         ///<summary>Loads all Assets contained in the AssetBundle asynchronously.</summary>
         ///<param name="type">When specified only main or visible objects that derive from the provided type are returned.</param>
+        ///<returns>Asynchronous load request. Use the <see cref="AssetBundleRequest.allAssets" /> property to get the loaded assets once the operation completes.</returns>
         ///<seealso cref="AssetBundleRequest.allAssets" />
         public AssetBundleRequest LoadAllAssetsAsync(Type type)
         {
@@ -1594,6 +1615,7 @@ namespace UnityEngine
         ///After calling UnloadAsync on an AssetBundle, you cannot load any more objects from that bundle and other operations on the bundle will throw InvalidOperationException.
         ///
         ///**Warning:** Unloading an asset bundle that serves as a dependency for other asset bundles still in use can lead to undefined behavior. This includes serialization errors that may occur even if the dependency asset bundle is later reloaded. To avoid such issues, ensure that an asset bundle and all asset bundles that depend on it are unloaded together.</remarks>
+        ///<param name="unloadAllLoadedObjects">Set to true to also destroy all objects that were loaded from the AssetBundle. Set to false to keep them.</param>
         ///<returns>Asynchronous unload request for an AssetBundle.</returns>
         ///<seealso cref="UnloadAllAssetBundles" />
         ///<seealso cref="Unload" />
@@ -1605,6 +1627,7 @@ namespace UnityEngine
         ///<remarks>The names are the project-relative path of each Asset file, unless a different name was specified at build time.
         ///
         ///                If the AssetBundle contains Scenes this returns an empty string array.</remarks>
+        ///<returns>An array of the names of all the assets in the AssetBundle.</returns>
         ///<seealso cref="P:UnityEditor.AssetBundleBuild.addressableNames" />
         [NativeMethod("GetAllAssetNames")]
         public extern string[] GetAllAssetNames();
@@ -1613,6 +1636,7 @@ namespace UnityEngine
         ///<remarks>The names are the project-relative path of each .unity file, unless a different name was specified at build time.
         ///
         ///                An AssetBundle can store either Scenes or Assets, never a mix of the two.  If the AssetBundle contains only Assets this returns an empty string array.</remarks>
+        ///<returns>An array of the paths of all the scenes in the AssetBundle.</returns>
         ///<seealso cref="AssetBundle.isStreamedSceneAssetBundle" />
         ///<seealso cref="M:UnityEngine.SceneManagement.SceneManager.LoadScene" />
         ///<seealso cref="P:UnityEditor.AssetBundleBuild.addressableNames" />
@@ -1633,6 +1657,7 @@ namespace UnityEngine
         ///<param name="method">The compression method, level and blocksize to use during recompression. Only some <see cref="BuildCompression" /> types are supported (see note).</param>
         ///<param name="expectedCRC">CRC of the <see cref="AssetBundle" /> to test against. Testing this requires additional file reading and computation. Pass in 0 to skip this check. Unity does not compute a CRC when the source and destination <see cref="BuildCompression" /> are the same, so no CRC verification takes place (see note).</param>
         ///<param name="priority">The priority at which the recompression operation should run. This sets thread priority during the operation and does not effect the order in which operations are performed. Recompression operations run on a background worker thread.</param>
+        ///<returns>Asynchronous recompress operation. Use the <see cref="AssetBundleRecompressOperation" /> to monitor and control the operation.</returns>
         public static AssetBundleRecompressOperation RecompressAssetBundleAsync(string inputPath, string outputPath, BuildCompression method, UInt32 expectedCRC = 0, ThreadPriority priority = ThreadPriority.Low)
         {
             return RecompressAssetBundleAsync_Internal(inputPath, outputPath, method, expectedCRC, priority);

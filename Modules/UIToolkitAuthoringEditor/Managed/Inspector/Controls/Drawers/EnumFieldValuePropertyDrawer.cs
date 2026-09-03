@@ -2,12 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -86,7 +86,9 @@ namespace Unity.UIToolkit.Editor
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class EnumStringValueField : BaseEnumStringValueField<EnumField>
     {
+        [NoAutoStaticsCleanup] // stateless accessor delegate, safe to persist
         static readonly Func<EnumField, string> s_GetFieldValue = (field) => field.valueAsString;
+        [NoAutoStaticsCleanup] // stateless accessor delegate, safe to persist
         static readonly Action<EnumField, string> s_SetFieldValue = (field, value) => field.valueAsString = value;
 
         public EnumStringValueField(string label) : base(label, s_GetFieldValue, s_SetFieldValue)
@@ -97,7 +99,9 @@ namespace Unity.UIToolkit.Editor
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class EnumFlagsStringValueField : BaseEnumStringValueField<EnumFlagsField>
     {
+        [NoAutoStaticsCleanup] // stateless accessor delegate, safe to persist
         static readonly Func<EnumFlagsField, string> s_GetFieldValue = (field) => field.valueAsString;
+        [NoAutoStaticsCleanup] // stateless accessor delegate, safe to persist
         static readonly Action<EnumFlagsField, string> s_SetFieldValue = (field, value) => field.valueAsString = value;
 
         public EnumFlagsStringValueField(string label) : base(label, s_GetFieldValue, s_SetFieldValue)
@@ -180,4 +184,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

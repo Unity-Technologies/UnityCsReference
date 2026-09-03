@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -76,7 +75,37 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            entry = SelectorAccelerationCacheEntry.Allocate(totalParts, totalSelectors, totalComplexSelectors);
+            // Pre-count the distinct (tableType, tableKey) pairs so the key index is allocated
+            // at its exact size (a fixed per-descriptor capacity wastes up to 12B per
+            // descriptor on sheets with many rules per key). Build-time only; pooled scratch.
+            int keyIndexCount = 0;
+            var packedKeys = System.Buffers.ArrayPool<long>.Shared.Rent(totalComplexSelectors);
+            try
+            {
+                int packedCount = 0;
+                CollectTableKeys(styleSheet, packedKeys, ref packedCount);
+                if (styleSheet.flattenedRecursiveImports != null)
+                {
+                    foreach (var sheet in styleSheet.flattenedRecursiveImports)
+                    {
+                        if (sheet == null) continue;
+                        CollectTableKeys(sheet, packedKeys, ref packedCount);
+                    }
+                }
+
+                Array.Sort(packedKeys, 0, packedCount);
+                for (int i = 0; i < packedCount; i++)
+                {
+                    if (i == 0 || packedKeys[i] != packedKeys[i - 1])
+                        keyIndexCount++;
+                }
+            }
+            finally
+            {
+                System.Buffers.ArrayPool<long>.Shared.Return(packedKeys);
+            }
+
+            entry = SelectorAccelerationCacheEntry.Allocate(totalParts, totalSelectors, totalComplexSelectors, keyIndexCount);
             entry.ownerStyleSheet = styleSheet;
 
             // The entry isn't published to the cache yet, so a throw past this point would
@@ -110,6 +139,8 @@ namespace UnityEngine.UIElements
                     SpanSort.Sort(allDescriptors, s_DescriptorRefComparison);
 
                 BuildRangeTables(ref entry, allDescriptors);
+                Debug.Assert(entry.m_KeyIndexCount == keyIndexCount,
+                    "Key-index pre-count disagrees with the built index; GetTableSlot and BuildRangeTables are out of sync");
             }
             catch (Exception)
             {
@@ -153,6 +184,65 @@ namespace UnityEngine.UIElements
             }
 
             return true;
+        }
+
+        // Maps a complex selector's rightmost part to its acceleration-table slot. The single
+        // source of truth for the key scheme: the descriptor fill and the key-count pre-pass
+        // (CollectTableKeys) both go through here.
+        private static void GetTableSlot(StyleComplexSelector complexSelector, out SelectorAccelerationTableType tableType, out int tableKey)
+        {
+            var lastSelector = complexSelector.selectors[^1];
+            var lastPart = lastSelector.parts[0];
+
+            switch (lastPart.type)
+            {
+                case StyleSelectorType.Class:
+                    tableType = SelectorAccelerationTableType.Class;
+                    tableKey = lastPart.cachedUniqueStyleStringId;
+                    break;
+                case StyleSelectorType.ID:
+                    tableType = SelectorAccelerationTableType.Name;
+                    tableKey = lastPart.cachedUniqueStyleStringId;
+                    break;
+                case StyleSelectorType.Type:
+                    tableType = SelectorAccelerationTableType.Type;
+                    tableKey = lastPart.cachedUniqueStyleStringId;
+                    break;
+                case StyleSelectorType.Wildcard:
+                    tableType = SelectorAccelerationTableType.None;
+                    tableKey = 1; // 1 for wildcard
+                    break;
+                case StyleSelectorType.PseudoClass:
+                    tableType = SelectorAccelerationTableType.None;
+                    tableKey = ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0) ? 0 : 1;
+                    break;
+                default:
+                    // Predicates never reach the cache builder; zeros match the previous
+                    // cleared-memory behavior.
+                    tableType = (SelectorAccelerationTableType)0;
+                    tableKey = 0;
+                    break;
+            }
+        }
+
+        // Packs every Name/Type/Class table slot of the sheet into keys (one entry per
+        // descriptor; None slots are skipped — root/wildcard don't enter the key index).
+        private static void CollectTableKeys(StyleSheet styleSheet, long[] keys, ref int count)
+        {
+            for (int ruleIdx = 0; ruleIdx < styleSheet.rules.Length; ruleIdx++)
+            {
+                var rule = styleSheet.rules[ruleIdx];
+                if (rule.complexSelectors == null) continue;
+
+                foreach (var complexSelector in rule.complexSelectors)
+                {
+                    GetTableSlot(complexSelector, out var tableType, out var tableKey);
+                    if (tableType == SelectorAccelerationTableType.None)
+                        continue;
+
+                    keys[count++] = ((long)tableType << 32) | (uint)tableKey;
+                }
+            }
         }
 
         // Flatten a stylesheet into the writable region spans.
@@ -221,32 +311,7 @@ namespace UnityEngine.UIElements
                         pDesc.ancestorHashes[i] = complexSelector.ancestorHashes.hashes[i];
 
                     // Set tableType and tableKey based on last part
-                    var lastSelector = complexSelector.selectors[^1];
-                    var lastPart = lastSelector.parts[0];
-
-                    switch (lastPart.type)
-                    {
-                        case StyleSelectorType.Class:
-                            pDesc.tableType = SelectorAccelerationTableType.Class;
-                            pDesc.tableKey = lastPart.cachedUniqueStyleStringId;
-                            break;
-                        case StyleSelectorType.ID:
-                            pDesc.tableType = SelectorAccelerationTableType.Name;
-                            pDesc.tableKey = lastPart.cachedUniqueStyleStringId;
-                            break;
-                        case StyleSelectorType.Type:
-                            pDesc.tableType = SelectorAccelerationTableType.Type;
-                            pDesc.tableKey = lastPart.cachedUniqueStyleStringId;
-                            break;
-                        case StyleSelectorType.Wildcard:
-                            pDesc.tableType = SelectorAccelerationTableType.None;
-                            pDesc.tableKey = 1; // 1 for wildcard
-                            break;
-                        case StyleSelectorType.PseudoClass:
-                            pDesc.tableType = SelectorAccelerationTableType.None;
-                            pDesc.tableKey = ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0) ? 0 : 1;
-                            break;
-                    }
+                    GetTableSlot(complexSelector, out pDesc.tableType, out pDesc.tableKey);
 
                     descriptorIdx++;
                 }
@@ -278,127 +343,75 @@ namespace UnityEngine.UIElements
             return flattened;
         }
 
-        // Build range tables from sorted descriptors
-        private static void BuildRangeTables(ref SelectorAccelerationCacheEntry entry, Span<SelectorRangeDescriptor> allDescriptors)
+        // Fill the key index over the sorted descriptors. Descriptors are sorted by
+        // (tableType, tableKey, orderInStyleSheet), so one pass emits one SelectorKeyIndexEntry
+        // per distinct key and each table becomes a key-sorted block of the index; key lookup
+        // is a binary search at match time (TryGetDescriptorRange / FindKeyRange). The None
+        // block keeps direct descriptor ranges and splits into :root (tableKey 0) then
+        // wildcard (tableKey 1) sub-blocks, per the keys assigned in FlattenStyleSheet.
+        private static unsafe void BuildRangeTables(ref SelectorAccelerationCacheEntry entry, Span<SelectorRangeDescriptor> allDescriptors)
         {
-            // Initialize to null - only allocate if needed
-            entry.nameTable = null;
-            entry.typeTable = null;
-            entry.classTable = null;
+            entry.nameTableRegion = default;
+            entry.typeTableRegion = default;
+            entry.classTableRegion = default;
+            entry.rootSelectorRange = default;
+            entry.wildCardSelectorRange = default;
             entry.nonEmptyTablesMask = 0;
+            entry.m_KeyIndexCount = 0;
 
             int descriptorCount = allDescriptors.Length;
-
-            // Count unique keys per table type from sorted descriptors
-            // Since descriptors are sorted by (tableType, tableKey, orderInStyleSheet),
-            // we can count unique (tableType, tableKey) pairs in a single pass
-            int uniqueNameCount = 0;
-            int uniqueTypeCount = 0;
-            int uniqueClassCount = 0;
-
-            SelectorAccelerationTableType lastTableType = (SelectorAccelerationTableType)(-2);
-            int lastTableKey = -1;
-
-            for (int i = 0; i < descriptorCount; i++)
+            int idx = 0;
+            while (idx < descriptorCount)
             {
-                // ref readonly avoids copying the 56B descriptor per iteration.
-                ref readonly var descriptor = ref allDescriptors[i];
+                var tableType = allDescriptors[idx].tableType;
+                int runStart = idx;
 
-                // Check if this is a new unique (tableType, tableKey) pair
-                if (descriptor.tableType != lastTableType || descriptor.tableKey != lastTableKey)
+                if (tableType == SelectorAccelerationTableType.None)
                 {
-                    switch (descriptor.tableType)
-                    {
-                        case SelectorAccelerationTableType.Name:
-                            uniqueNameCount++;
-                            break;
-                        case SelectorAccelerationTableType.Type:
-                            uniqueTypeCount++;
-                            break;
-                        case SelectorAccelerationTableType.Class:
-                            uniqueClassCount++;
-                            break;
-                    }
+                    while (idx < descriptorCount && allDescriptors[idx].tableType == tableType)
+                        idx++;
 
-                    lastTableType = descriptor.tableType;
-                    lastTableKey = descriptor.tableKey;
+                    int rootEnd = runStart;
+                    while (rootEnd < idx && allDescriptors[rootEnd].tableKey == 0)
+                        rootEnd++;
+                    entry.rootSelectorRange = new DescriptorRange { start = runStart, count = rootEnd - runStart };
+                    entry.wildCardSelectorRange = new DescriptorRange { start = rootEnd, count = idx - rootEnd };
+                    continue;
+                }
+
+                // Emit one key-index entry per distinct key of this table's descriptor run.
+                int regionStart = entry.m_KeyIndexCount;
+                while (idx < descriptorCount && allDescriptors[idx].tableType == tableType)
+                {
+                    int key = allDescriptors[idx].tableKey;
+                    int keyStart = idx;
+                    while (idx < descriptorCount && allDescriptors[idx].tableType == tableType && allDescriptors[idx].tableKey == key)
+                        idx++;
+
+                    entry.m_KeyIndexPtr[entry.m_KeyIndexCount++] = new SelectorKeyIndexEntry
+                    {
+                        key = key,
+                        range = new DescriptorRange { start = keyStart, count = idx - keyStart },
+                    };
+                }
+
+                var region = new DescriptorRange { start = regionStart, count = entry.m_KeyIndexCount - regionStart };
+                switch (tableType)
+                {
+                    case SelectorAccelerationTableType.Name:
+                        entry.nameTableRegion = region;
+                        entry.nonEmptyTablesMask |= 1 << (int)SelectorAccelerationTableType.Name;
+                        break;
+                    case SelectorAccelerationTableType.Type:
+                        entry.typeTableRegion = region;
+                        entry.nonEmptyTablesMask |= 1 << (int)SelectorAccelerationTableType.Type;
+                        break;
+                    case SelectorAccelerationTableType.Class:
+                        entry.classTableRegion = region;
+                        entry.nonEmptyTablesMask |= 1 << (int)SelectorAccelerationTableType.Class;
+                        break;
                 }
             }
-
-            int rootStart = -1;
-            int rootCount = 0;
-            int wildcardStart = -1;
-            int wildcardCount = 0;
-
-            for (int i = 0; i < descriptorCount; i++)
-            {
-                ref readonly var descriptor = ref allDescriptors[i];
-
-                if (descriptor.tableType == SelectorAccelerationTableType.None)
-                {
-                    // Check if it's a :root selector or wildcard
-                    var lastSelector = entry.allSelectors[descriptor.selectorsStart + descriptor.selectorCount - 1];
-                    if ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0)
-                    {
-                        if (rootStart < 0) rootStart = i;
-                        rootCount++;
-                    }
-                    else
-                    {
-                        if (wildcardStart < 0) wildcardStart = i;
-                        wildcardCount++;
-                    }
-                }
-                else
-                {
-                    // Lazily allocate table on first use and set mask bit
-                    Dictionary<int, DescriptorRange> table;
-                    switch (descriptor.tableType)
-                    {
-                        case SelectorAccelerationTableType.Name:
-                            if (entry.nameTable == null)
-                            {
-                                entry.nameTable = new Dictionary<int, DescriptorRange>(uniqueNameCount);
-                                entry.nonEmptyTablesMask |= (1 << (int)SelectorAccelerationTableType.Name);
-                            }
-                            table = entry.nameTable;
-                            break;
-                        case SelectorAccelerationTableType.Type:
-                            if (entry.typeTable == null)
-                            {
-                                entry.typeTable = new Dictionary<int, DescriptorRange>(uniqueTypeCount);
-                                entry.nonEmptyTablesMask |= (1 << (int)SelectorAccelerationTableType.Type);
-                            }
-                            table = entry.typeTable;
-                            break;
-                        case SelectorAccelerationTableType.Class:
-                            if (entry.classTable == null)
-                            {
-                                entry.classTable = new Dictionary<int, DescriptorRange>(uniqueClassCount);
-                                entry.nonEmptyTablesMask |= (1 << (int)SelectorAccelerationTableType.Class);
-                            }
-                            table = entry.classTable;
-                            break;
-                        default:
-                            continue; // Should not happen
-                    }
-
-                    if (!table.TryGetValue(descriptor.tableKey, out var range))
-                    {
-                        // New key, start new range
-                        table[descriptor.tableKey] = new DescriptorRange { start = i, count = 1 };
-                    }
-                    else
-                    {
-                        // Extend existing range
-                        range.count++;
-                        table[descriptor.tableKey] = range;
-                    }
-                }
-            }
-
-            entry.rootSelectorRange = new DescriptorRange { start = rootStart < 0 ? 0 : rootStart, count = rootCount };
-            entry.wildCardSelectorRange = new DescriptorRange { start = wildcardStart < 0 ? 0 : wildcardStart, count = wildcardCount };
         }
 
         // Sort by: tableType, then tableKey, then orderInStyleSheet. Subtraction is safe here
@@ -415,4 +428,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

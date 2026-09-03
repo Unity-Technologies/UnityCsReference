@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -16,13 +17,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_NewRegistryClass = "newRegistry";
         private const string k_SelectedScopeClass = "selectedScope";
 
-        private string k_EditRegistryName = L10n.Tr("Edit Registry Name");
-        private string k_EditRegistryUrl = L10n.Tr("Edit Registry URL");
-        private string k_EditRegistryScopes = L10n.Tr("Edit Registry Scopes");
-        private string k_AddNewRegistryDraft = L10n.Tr("Add New Registry Draft");
-        private string k_RemoveRegistry = L10n.Tr("Remove registry");
-        private string k_RegistrySelectionChange = L10n.Tr("Registry Selection Change");
-        private string k_RestrictedRegistry = L10n.Tr("Restricted Registry");
+        private string k_EditRegistryName = L10n.Tr("Edit Registry Name", null);
+        private string k_EditRegistryUrl = L10n.Tr("Edit Registry URL", null);
+        private string k_EditRegistryScopes = L10n.Tr("Edit Registry Scopes", null);
+        private string k_AddNewRegistryDraft = L10n.Tr("Add New Registry Draft", null);
+        private string k_RemoveRegistry = L10n.Tr("Remove registry", null);
+        private string k_RegistrySelectionChange = L10n.Tr("Registry Selection Change", null);
+        private string k_RestrictedRegistry = L10n.Tr("Restricted Registry", null);
 
         private Dictionary<string, RegistryItem> m_ExistingRegistryItems = new ();
 
@@ -36,7 +37,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IUpmRegistryClient m_UpmRegistryClient;
         private readonly ICustomDisplayDialog m_CustomDisplayDialog;
 
+        #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
         public ScopedRegistriesSettings() : this(
+        #pragma warning restore UAL0015
             ServicesContainer.instance.Resolve<IResourceLoader>(),
             ServicesContainer.instance.Resolve<IProjectSettingsProxy>(),
             ServicesContainer.instance.Resolve<IApplicationProxy>(),
@@ -84,8 +87,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmRegistryClient.onRegistriesModified += OnRegistriesModified;
             m_UpmRegistryClient.onRegistryOperationError += OnRegistryOperationError;
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
             Undo.undoRedoEvent += OnUndoRedoPerformed;
+            #pragma warning restore UAL0015
 
             // on domain reload, it's not guaranteed that the settings have
             //  reloaded the draft object yet- need to wait and do this when
@@ -159,13 +164,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 bool deleteRegistry;
                 if (AnyPackageInstalledFromRegistry(draft.original.name))
                 {
-                    var message = L10n.Tr("There are packages in your project that are from this scoped registry, deleting the scoped registry might break these packages, are you sure you want to continue?");
-                    deleteRegistry = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("deleteScopedRegistryWithInstalledPackages", L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("Delete anyway"), L10n.Tr("Cancel"));
+                    var message = L10n.Tr("There are packages in your project that are from this scoped registry, deleting the scoped registry might break these packages, are you sure you want to continue?", null);
+                    deleteRegistry = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("deleteScopedRegistryWithInstalledPackages", L10n.Tr("Deleting a scoped registry", null), message, L10n.Tr("Delete anyway", null), L10n.Tr("Cancel", null));
                 }
                 else
                 {
-                    var message = L10n.Tr("You are about to delete a scoped registry, are you sure you want to continue?");
-                    deleteRegistry = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("deleteScopedRegistry", L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("OK"), L10n.Tr("Cancel"));
+                    var message = L10n.Tr("You are about to delete a scoped registry, are you sure you want to continue?", null);
+                    deleteRegistry = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("deleteScopedRegistry", L10n.Tr("Deleting a scoped registry", null), message, L10n.Tr("OK", null), L10n.Tr("Cancel", null));
                 }
 
 
@@ -222,7 +227,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                {
                    if (registryInfo.compliance.status == RegistryComplianceStatus.NonCompliant)
                    {
-                       var displayDialogArgs = new CustomDisplayDialogArgs(k_RestrictedRegistry, idForAnalytics: "nonCompliantRegistry", L10n.Tr("OK"), new Vector2(340f, 165f))
+                       var displayDialogArgs = new CustomDisplayDialogArgs(k_RestrictedRegistry, idForAnalytics: "nonCompliantRegistry", L10n.Tr("OK", null), new Vector2(340f, 165f))
                        {
                            headerIcon = Icon.RegistryErrorLarge,
                            headerMainText = registryInfo.name,
@@ -239,9 +244,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                    if (draft.isUrlOrScopesUpdated && AnyPackageInstalledFromRegistry(draft.original.name) &&
                        !m_ApplicationProxy.DisplayDialog("updateScopedRegistry",
-                           L10n.Tr("Updating a scoped registry"),
-                           L10n.Tr("There are packages in your project that are from this scoped registry, updating the URL or the scopes could result in errors in your project. Are you sure you want to continue?"),
-                           L10n.Tr("OK"), L10n.Tr("Cancel")))
+                           L10n.Tr("Updating a scoped registry", null),
+                           L10n.Tr("There are packages in your project that are from this scoped registry, updating the URL or the scopes could result in errors in your project. Are you sure you want to continue?", null),
+                           L10n.Tr("OK", null), L10n.Tr("Cancel", null)))
                        return;
 
                    if (draft.original is not null)
@@ -346,9 +351,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!draft.hasUnsavedChanges)
                 return true;
 
-            var discardChanges = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("discardUnsavedRegistryChanges", L10n.Tr("Discard unsaved changes"),
-                L10n.Tr("You have unsaved changes which would be lost if you continue this operation. Do you want to continue and discard unsaved changes?"),
-                L10n.Tr("Continue"), L10n.Tr("Cancel"));
+            var discardChanges = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("discardUnsavedRegistryChanges", L10n.Tr("Discard unsaved changes", null),
+                L10n.Tr("You have unsaved changes which would be lost if you continue this operation. Do you want to continue and discard unsaved changes?", null),
+                L10n.Tr("Continue", null), L10n.Tr("Cancel", null));
 
             if (discardChanges)
                 RevertChanges();
@@ -405,7 +410,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // thrown by m_RegistryLabels.Add below.
                     UnityEngine.Debug.LogWarning(
                         string.Format(
-                            L10n.Tr("Unable to display a scoped registry named {0} defined in a UPM configuration file: an existing scoped registry has the same name in your project manifest. Rename one of the conflicting scoped registries if you want to see them all in the Scoped Registry list."),
+                            L10n.Tr("Unable to display a scoped registry named {0} defined in a UPM configuration file: an existing scoped registry has the same name in your project manifest. Rename one of the conflicting scoped registries if you want to see them all in the Scoped Registry list.", null),
                             registryInfo.name)
                     );
                     continue;
@@ -446,10 +451,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             var isAddNewRegistry = draft.original is null;
             var hasUnsavedChanges = draft.hasUnsavedChanges;
 
-            revertRegistriesButton.text = isAddNewRegistry ? L10n.Tr("Cancel") : L10n.Tr("Revert");
+            revertRegistriesButton.text = isAddNewRegistry ? L10n.Tr("Cancel", null) : L10n.Tr("Revert", null);
             revertRegistriesButton.SetEnabled(isAddNewRegistry || hasUnsavedChanges);
 
-            applyRegistriesButton.text = isAddNewRegistry ? L10n.Tr("Save") : L10n.Tr("Apply");
+            applyRegistriesButton.text = isAddNewRegistry ? L10n.Tr("Save", null) : L10n.Tr("Apply", null);
             applyRegistriesButton.SetEnabled(hasUnsavedChanges);
         }
 
@@ -515,3 +520,4 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Button applyRegistriesButton => cache.Get<Button>("applyRegistriesButton");
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

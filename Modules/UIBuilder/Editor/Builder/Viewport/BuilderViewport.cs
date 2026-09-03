@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -210,7 +211,9 @@ namespace Unity.UI.Builder
             m_Surface = this.Q("viewport-surface");
             m_Surface.pickingMode = PickingMode.Ignore;
             m_Canvas = this.Q<BuilderCanvas>("canvas");
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_Canvas.document = paneWindow.document;
+            #pragma warning restore UAL0015
             m_Canvas.SetSelection(selection);
             m_ContentContainerWrapper = m_Canvas.Q<VisualElement>("content-container-wrapper");
             m_SharedStylesAndDocumentElement = this.Q("shared-styles-and-document");
@@ -246,7 +249,9 @@ namespace Unity.UI.Builder
 
             m_Notifications = this.Q<BuilderNotifications>("notifications");
 
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_BuilderViewportDragger = new BuilderViewportDragger(paneWindow, paneWindow.rootVisualElement, selection, this, m_BuilderParentTracker);
+            #pragma warning restore UAL0015
             m_BuilderViewportDragger.RegisterPaneContent(this);
             m_BuilderMover.parentTracker = m_BuilderParentTracker;
 
@@ -256,7 +261,9 @@ namespace Unity.UI.Builder
             m_BuilderViewportDragger.RegisterCallbacksOnTarget(m_PickOverlay);
             m_Viewport.RegisterCallback<MouseDownEvent>(OnMissPick);
             m_Canvas.header.AddManipulator(new Clickable(OnCanvasHeaderClick));
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             m_ContextMenuManipulator?.RegisterCallbacksOnTarget(m_Viewport);
+            #pragma warning restore UAL0015
 
             // Make sure this gets focus when the pane gets focused.
             primaryFocusable = this;
@@ -770,3 +777,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

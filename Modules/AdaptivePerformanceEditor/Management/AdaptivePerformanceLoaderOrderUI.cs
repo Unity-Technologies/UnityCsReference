@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AdaptivePerformance not yet converted
 using System.Collections.Generic;
 using System;
 
@@ -39,9 +40,9 @@ namespace UnityEditor.AdaptivePerformance.Editor
 
         internal struct Content
         {
-            public static readonly string k_AtNoLoaderInstance = L10n.Tr("There are no Adaptive Performance providers available for this platform.");
-            public static readonly GUIContent k_LoaderUITitle = EditorGUIUtility.TrTextContent(L10n.Tr("Providers"));
-            public static readonly GUIContent k_HelpContent = new GUIContent("", EditorGUIUtility.IconContent("_Help@2x").image, L10n.Tr("Selecting a provider installs that providers package. Packages can be managed through the Package Manager."));
+            public static readonly string k_AtNoLoaderInstance = L10n.Tr("There are no Adaptive Performance providers available for this platform.", null);
+            public static readonly GUIContent k_LoaderUITitle = EditorGUIUtility.TrTextContent(L10n.Tr("Providers", null));
+            public static readonly GUIContent k_HelpContent = new GUIContent("", EditorGUIUtility.IconContent("_Help@2x").image, L10n.Tr("Selecting a provider installs that providers package. Packages can be managed through the Package Manager.", null));
         }
 
         private List<LoaderInformation> m_LoaderMetadata = null;
@@ -195,3 +196,4 @@ namespace UnityEditor.AdaptivePerformance.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

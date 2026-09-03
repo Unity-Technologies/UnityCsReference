@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AssetImporters not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -23,6 +24,13 @@ namespace UnityEditor
         ModelImporter singleImporter { get { return targets[0] as ModelImporter; } }
 
         internal const string ActiveClipIndex = "ModelImporterClipEditor.ActiveClipIndex";
+        internal const string ActiveClipIndexAssetPath = "ModelImporterClipEditor.ActiveClipIndexAssetPath";
+
+        internal static void ClearPersistedClipSelection()
+        {
+            EditorPrefs.DeleteKey(ActiveClipIndex);
+            EditorPrefs.DeleteKey(ActiveClipIndexAssetPath);
+        }
 
         public string selectedClipName
         {
@@ -238,9 +246,13 @@ namespace UnityEditor
             : base(panelContainer)
         {
             //Generate new Clip List
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_ClipList = new ReorderableList(new List<ClipInformation>(), typeof(string), false, true, true, true);
+            #pragma warning restore UAL0015
             m_ClipList.onAddCallback = AddClipInList;
-            m_ClipList.onSelectCallback = SelectClipInList;
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+            m_ClipList.onSelectCallback = list => { ClearPersistedClipSelection(); SelectClipInList(list); };
+            #pragma warning restore UAL0015
             m_ClipList.onRemoveCallback = RemoveClipInList;
             m_ClipList.drawElementCallback = DrawClipElement;
             m_ClipList.drawHeaderCallback = DrawClipHeader;
@@ -272,9 +284,20 @@ namespace UnityEditor
             if (serializedObject.isEditingMultipleObjects)
                 return;
 
-            //Sometimes we dont want to start at the 0th index, this is where we're editing a clip - see
-            m_ClipList.index = EditorPrefs.GetInt(ActiveClipIndex, 0);
-            EditorPrefs.DeleteKey(ActiveClipIndex);
+            //Sometimes we dont want to start at the 0th index, this is when we're editing a clip via the
+            //"Edit..." button on an embedded AnimationClip (see AnimationClipEditor.EditWithImporter).
+            //The inspector may rebuild this editor several times while the selection change settles, so
+            //the request must survive rebuilds: it is only cleared when it targets a different asset,
+            //or once the user picks another clip (see the onSelectCallback above).
+            m_ClipList.index = 0;
+            var requestedClipAssetPath = EditorPrefs.GetString(ActiveClipIndexAssetPath, string.Empty);
+            if (!string.IsNullOrEmpty(requestedClipAssetPath))
+            {
+                if (requestedClipAssetPath == singleImporter.assetPath)
+                    m_ClipList.index = EditorPrefs.GetInt(ActiveClipIndex, 0);
+                else
+                    ClearPersistedClipSelection();
+            }
             //Reset the Model Importer to its serialized copy
             DeserializeClips();
 
@@ -473,9 +496,9 @@ namespace UnityEditor
             if (s_ImportMessageFoldout)
             {
                 if (m_Errors.Length > 0)
-                    EditorGUILayout.HelpBox(L10n.Tr(m_Errors), MessageType.Error);
+                    EditorGUILayout.HelpBox(L10n.Tr(m_Errors, null), MessageType.Error);
                 if (m_Warnings.Length > 0)
-                    EditorGUILayout.HelpBox(L10n.Tr(m_Warnings), MessageType.Warning);
+                    EditorGUILayout.HelpBox(L10n.Tr(m_Warnings, null), MessageType.Warning);
                 if (animationType == ModelImporterAnimationType.Human)
                 {
                     EditorGUILayout.PropertyField(m_AnimationDoRetargetingWarnings, styles.GenerateRetargetingWarnings);
@@ -484,7 +507,7 @@ namespace UnityEditor
                     {
                         if (m_RetargetWarnings.Length > 0)
                         {
-                            EditorGUILayout.HelpBox(L10n.Tr(m_RetargetWarnings), MessageType.Info);
+                            EditorGUILayout.HelpBox(L10n.Tr(m_RetargetWarnings, null), MessageType.Info);
                         }
                     }
                     else
@@ -1254,3 +1277,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

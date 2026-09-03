@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -169,7 +170,7 @@ namespace UnityEditor.Connect
             {
                 m_MainServiceToggle.RegisterValueChangedCallback(evt =>
                 {
-                    if (currentUserPermission != UserRole.Owner && currentUserPermission != UserRole.Manager)
+                    if (!CanEditServices(currentUserPermission))
                     {
                         UpdateServiceToggleAndDashboardLink(evt.previousValue);
                         return;
@@ -523,7 +524,7 @@ namespace UnityEditor.Connect
                                 NotificationManager.instance.Publish(
                                     Notification.Topic.BuildService,
                                     Notification.Severity.Error,
-                                    L10n.Tr(k_MessageProjectStateMismatch));
+                                    L10n.Tr(k_MessageProjectStateMismatch, null));
                             }
                             else
                             {
@@ -545,7 +546,7 @@ namespace UnityEditor.Connect
                             NotificationManager.instance.Publish(
                                 Notification.Topic.BuildService,
                                 Notification.Severity.Error,
-                                L10n.Tr(k_MessageErrorForProjectData));
+                                L10n.Tr(k_MessageErrorForProjectData, null));
                             Debug.LogException(ex);
                         }
                     }
@@ -599,7 +600,7 @@ namespace UnityEditor.Connect
                             NotificationManager.instance.Publish(
                                 Notification.Topic.BuildService,
                                 Notification.Severity.Error,
-                                L10n.Tr(k_MessageErrorForProjectTeamData));
+                                L10n.Tr(k_MessageErrorForProjectTeamData, null));
                             Debug.LogException(ex);
                         }
                     }
@@ -676,7 +677,7 @@ namespace UnityEditor.Connect
                                     }
                                 });
 
-                                m_Provider.rootVisualElement.Q<TextElement>(className: k_ServiceTargetContainerTitleClassName).text = L10n.Tr(k_LabelConfiguredTargets);
+                                m_Provider.rootVisualElement.Q<TextElement>(className: k_ServiceTargetContainerTitleClassName).text = L10n.Tr(k_LabelConfiguredTargets, null);
                                 var targetsContainer = m_Provider.rootVisualElement.Q(className: k_ServiceTargetContainerClassName);
                                 foreach (var jsonBuildEntry in buildEntryList)
                                 {
@@ -692,7 +693,7 @@ namespace UnityEditor.Connect
                             NotificationManager.instance.Publish(
                                 Notification.Topic.BuildService,
                                 Notification.Severity.Error,
-                                L10n.Tr(k_MessageErrorForProjectBuildTargetsData));
+                                L10n.Tr(k_MessageErrorForProjectBuildTargetsData, null));
                             Debug.LogException(ex);
                         }
                     }
@@ -729,7 +730,7 @@ namespace UnityEditor.Connect
                         {
                             buildButton.SetEnabled(false);
                         }
-                        buildButton.text = L10n.Tr(k_LabelBuildButton);
+                        buildButton.text = L10n.Tr(k_LabelBuildButton, null);
                         buildButton.clicked += () =>
                         {
                             var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(k_LaunchBuildPayload));
@@ -739,7 +740,7 @@ namespace UnityEditor.Connect
                             launchBuildPostRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
                             launchBuildPostRequest.SetRequestHeader("Content-Type", "application/json;charset=utf-8");
                             m_Provider.m_BuildRequests.Add(launchBuildPostRequest);
-                            var launchingMessage = string.Format(L10n.Tr(k_MessageLaunchingBuild), buildTargetName);
+                            var launchingMessage = string.Format(L10n.Tr(k_MessageLaunchingBuild, null), buildTargetName);
 
                             Debug.Log(launchingMessage);
                             NotificationManager.instance.Publish(
@@ -770,7 +771,7 @@ namespace UnityEditor.Connect
                                                     if (launchedBuild.ContainsKey(k_JsonNodeNameBuild))
                                                     {
                                                         var buildNumber = launchedBuild[k_JsonNodeNameBuild].AsFloat().ToString();
-                                                        var message = string.Format(L10n.Tr(k_MessageLaunchedBuildSuccess), buildNumber, buildTargetName);
+                                                        var message = string.Format(L10n.Tr(k_MessageLaunchedBuildSuccess, null), buildNumber, buildTargetName);
                                                         Debug.Log(message);
                                                         NotificationManager.instance.Publish(
                                                             Notification.Topic.BuildService,
@@ -779,7 +780,7 @@ namespace UnityEditor.Connect
                                                     }
                                                     else if (launchedBuild.ContainsKey(k_JsonNodeNameError))
                                                     {
-                                                        var message = string.Format(L10n.Tr(k_MessageLaunchedBuildFailedWithMsg), buildTargetName, launchedBuild[k_JsonNodeNameError].ToString());
+                                                        var message = string.Format(L10n.Tr(k_MessageLaunchedBuildFailedWithMsg, null), buildTargetName, launchedBuild[k_JsonNodeNameError].ToString());
                                                         Debug.LogError(message);
                                                         NotificationManager.instance.Publish(
                                                             Notification.Topic.BuildService,
@@ -790,7 +791,7 @@ namespace UnityEditor.Connect
                                             }
                                             else
                                             {
-                                                var message = L10n.Tr(k_MessageLaunchedBuildFailure);
+                                                var message = L10n.Tr(k_MessageLaunchedBuildFailure, null);
                                                 Debug.LogError(message);
                                                 NotificationManager.instance.Publish(
                                                     Notification.Topic.BuildService,
@@ -803,7 +804,7 @@ namespace UnityEditor.Connect
                                             NotificationManager.instance.Publish(
                                                 Notification.Topic.BuildService,
                                                 Notification.Severity.Error,
-                                                L10n.Tr(k_MessageErrorForBuildLaunch));
+                                                L10n.Tr(k_MessageErrorForBuildLaunch, null));
                                             Debug.LogException(ex);
                                         }
                                     }
@@ -899,7 +900,7 @@ namespace UnityEditor.Connect
                             NotificationManager.instance.Publish(
                                 Notification.Topic.BuildService,
                                 Notification.Severity.Error,
-                                L10n.Tr(k_MessageErrorForApiStatusData));
+                                L10n.Tr(k_MessageErrorForApiStatusData, null));
                             Debug.LogException(ex);
                         }
                     }
@@ -918,3 +919,4 @@ namespace UnityEditor.Connect
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

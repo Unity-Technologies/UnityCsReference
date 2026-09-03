@@ -16,25 +16,25 @@ namespace UnityEditor
         {
             public const int faceThumbnailSize = 64;
 
-            public static readonly string nativeTextureInfo = L10n.Tr("External texture: Unity cannot make changes to this Cubemap.");
-            public static readonly string compressedTextureInfo = L10n.Tr("Compressed texture: Unity can only make limited changes to this Cubemap.");
+            public static readonly string nativeTextureInfo = L10n.Tr("External texture: Unity cannot make changes to this Cubemap.", null);
+            public static readonly string compressedTextureInfo = L10n.Tr("Compressed texture: Unity can only make limited changes to this Cubemap.", null);
 
             public static readonly string[] faceSelectionLabels = { "Right\n(+X)", "Left\n(-X)", "Top\n(+Y)", "Bottom\n(-Y)", "Front\n(+Z)", "Back\n(-Z)" };
 
-            public static readonly string faceSizeLabel = L10n.Tr("Face size");
-            public static readonly string faceSizeWarning = L10n.Tr("Lowering face size is a destructive operation, you might need to re-assign the textures later to fix resolution issues. It's preferable to use Cubemap texture import type instead of Legacy Cubemap assets.");
+            public static readonly string faceSizeLabel = L10n.Tr("Face size", null);
+            public static readonly string faceSizeWarning = L10n.Tr("Lowering face size is a destructive operation, you might need to re-assign the textures later to fix resolution issues. It's preferable to use Cubemap texture import type instead of Legacy Cubemap assets.", null);
             public static readonly string[] faceSizeOptionLabels = { "16", "32", "64", "128", "256", "512", "1024", "2048" };
             public static readonly int[] faceSizeOptionValues = { 16, 32, 64, 128, 256, 512, 1024, 2048 };
 
-            public static readonly string generateMipmapLabel = L10n.Tr("Generate Mipmap");
+            public static readonly string generateMipmapLabel = L10n.Tr("Generate Mipmap", null);
             public static readonly GUIContent streamingMipmapLevelsContent = EditorGUIUtility.TrTextContent("Stream Mipmap Levels", "Don't load image data immediately but wait till image data is requested from script.");
 
-            public static readonly string linearLabel = L10n.Tr("Linear");
+            public static readonly string linearLabel = L10n.Tr("Linear", null);
 
-            public static readonly string readableLabel = L10n.Tr("Readable");
+            public static readonly string readableLabel = L10n.Tr("Readable", null);
 
-            public static readonly string filterModeLabel = L10n.Tr("Filter Mode");
-            public static readonly string anisoLevelLabel = L10n.Tr("Aniso Level");
+            public static readonly string filterModeLabel = L10n.Tr("Filter Mode", null);
+            public static readonly string anisoLevelLabel = L10n.Tr("Aniso Level", null);
         }
 
         private Texture2D[] m_Images;

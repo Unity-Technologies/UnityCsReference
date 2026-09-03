@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitDevTools not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -110,7 +111,9 @@ namespace UnityEditor
         public IBaseInspectView instructionModeView { get { return m_InstructionModeView; } }
         IBaseInspectView m_InstructionModeView;
 
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         protected GUIViewDebuggerWindow()
+        #pragma warning restore UAL0015
         {
             m_InstructionModeView = new StyleDrawInspectView(this);
             m_Highlighter = new ElementHighlighter();
@@ -469,3 +472,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

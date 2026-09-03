@@ -13,7 +13,9 @@ namespace UnityEditor
         public AnimationClipInfoProperties(SerializedProperty prop)
         {
             m_Property = prop;
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             Editor.AssignCachedProperties(this, prop);
+            #pragma warning restore UAL0015
         }
 
 #pragma warning disable 0649

@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements.StyleSheets
     internal static partial class StylePropertyUtil
     {
         public const int k_GroupOffset = 16;
-        internal const int k_SerializationLayoutHash = 887123582;
+        internal const int k_SerializationLayoutHash = -1402510785;
 
         [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
         internal static readonly Dictionary<string, StylePropertyId> s_NameToId = new Dictionary<string, StylePropertyId>()
@@ -422,6 +422,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 "-unity-background-scale-mode",
                 StylePropertyId.UnityBackgroundScaleMode
+            },
+                        {
+                "-unity-curvature",
+                StylePropertyId.UnityCurvature
             },
                         {
                 "-unity-editor-text-rendering-mode",
@@ -930,6 +934,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "-unity-background-scale-mode"
             },
                         {
+                StylePropertyId.UnityCurvature,
+                "-unity-curvature"
+            },
+                        {
                 StylePropertyId.UnityEditorTextRenderingMode,
                 "-unity-editor-text-rendering-mode"
             },
@@ -1434,6 +1442,10 @@ namespace UnityEngine.UIElements.StyleSheets
                         {
                 "-unity-background-scale-mode",
                 "unityBackgroundScaleMode"
+            },
+                        {
+                "-unity-curvature",
+                "unityCurvature"
             },
                         {
                 "-unity-editor-text-rendering-mode",
@@ -1942,6 +1954,10 @@ namespace UnityEngine.UIElements.StyleSheets
                 "-unity-background-scale-mode"
             },
                         {
+                "unityCurvature",
+                "-unity-curvature"
+            },
+                        {
                 "unityEditorTextRenderingMode",
                 "-unity-editor-text-rendering-mode"
             },
@@ -2304,6 +2320,8 @@ namespace UnityEngine.UIElements.StyleSheets
             VersionChangeType.Styles | VersionChangeType.Color,
             /*StylePropertyId.UnityBackgroundScaleMode*/
             VersionChangeType.Styles | VersionChangeType.Repaint,
+            /*StylePropertyId.UnityCurvature*/
+            VersionChangeType.Styles | VersionChangeType.Repaint | VersionChangeType.Transform,
             /*StylePropertyId.UnityEditorTextRenderingMode*/
             VersionChangeType.Styles | VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Repaint,
             /*StylePropertyId.UnityFont*/
@@ -3340,6 +3358,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     return (int)&transformData.translate - (int)&transformData;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return (int)&rareData.unityBackgroundImageTintColor - (int)&rareData;
+                case StylePropertyId.UnityCurvature:
+                    return (int)&rareData.unityCurvature - (int)&rareData;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return (int)&inheritedData.unityEditorTextRenderingMode - (int)&inheritedData;
                 case StylePropertyId.UnityFont:
@@ -3501,6 +3521,8 @@ namespace UnityEngine.UIElements.StyleSheets
                     return (int)(&transformData.translate + 1) - (int)&transformData.translate;
                 case StylePropertyId.UnityBackgroundImageTintColor:
                     return (int)(&rareData.unityBackgroundImageTintColor + 1) - (int)&rareData.unityBackgroundImageTintColor;
+                case StylePropertyId.UnityCurvature:
+                    return (int)(&rareData.unityCurvature + 1) - (int)&rareData.unityCurvature;
                 case StylePropertyId.UnityEditorTextRenderingMode:
                     return (int)(&inheritedData.unityEditorTextRenderingMode + 1) - (int)&inheritedData.unityEditorTextRenderingMode;
                 case StylePropertyId.UnityFont:

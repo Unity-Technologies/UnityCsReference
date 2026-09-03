@@ -1645,12 +1645,12 @@ namespace UnityEditor
         // ReSharper disable once MemberCanBePrivate.Global - used by SaveLayoutTests.cs
         internal static void SaveGUI()
         {
-            PromptWindow.Show(L10n.Tr("Create Layout"),
-                L10n.Tr("Create a layout"),
-                L10n.Tr("Enter the name of the layout you want to create"),
-                L10n.Tr("Layout Name"),
+            PromptWindow.Show(L10n.Tr("Create Layout", null),
+                L10n.Tr("Create a layout", null),
+                L10n.Tr("Enter the name of the layout you want to create", null),
+                L10n.Tr("Layout Name", null),
                 lastLoadedLayoutName,
-                L10n.Tr("Create"),
+                L10n.Tr("Create", null),
                 MainToolbarWindow.instance,
                 CanCreateLayout,
                 (name) =>

@@ -9,7 +9,10 @@ namespace UnityEngine.AMD
 {
     ///<summary>Provides methods to manage loading and unloading AMD module plugins.</summary>
     ///<remarks>
-    ///  <c>AMDUnityPlugin</c> contains the implementation for AMD's &lt;a href="https://gpuopen.com/fidelityfx-superresolution-2/"&gt;FidelityFX Super Resolution 2&lt;/a&gt; (FSR2) temporal upscaler.
+    ///<c>AMDUnityPlugin</c> contains the implementations for AMD's temporal upscaling technologies:
+    ///
+    ///- <see href="https://gpuopen.com/fidelityfx-superresolution-2/">FidelityFX Super Resolution 2</see>
+    ///- <see href="https://gpuopen.com/amd-fsr-upscaling/">FidelityFX Super Resolution 3 and 4</see>
     ///
     ///To access this API, follow these steps:
     ///
@@ -17,15 +20,19 @@ namespace UnityEngine.AMD
     ///2. Go to **Built-in packages**.
     ///3. Enable the **AMD** package.
     ///
-    ///Once enabled, the plugin is automatically loaded by Unity and becomes available for both built-in and custom FSR2 integration workflows.
+    ///Once enabled, the plugin is automatically loaded by Unity and becomes available for both built-in and custom FSR integration workflows.
     ///
-    ///**Note:** You don't need to use this API to enable FSR2 in a Unity project. For more information, refer to &lt;a href="https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.2/manual/Dynamic-Resolution.html"&gt;HDRP Dynamic Resolution&lt;/a&gt;.
+    ///**Note:** You don't need to use this API to enable FSR in a Unity project. For more information,
+    ///refer to Upscaling Framework or <see href="https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.2/manual/Dynamic-Resolution.html">HDRP Dynamic Resolution</see>.
     ///
-    ///<c>AMDUnityPlugin</c> enables advanced users to access and integrate AMD's FSR2 functionality directly in custom rendering workflows. 
-    ///It's primarily intended for users who want to bypass the built-in engine integration available in the High Definition Render Pipeline (HDRP) and implement their own FSR2 logic, such as through a <c>CustomPass</c> or other Scriptable Render Pipeline (SRP) extensions. 
+    ///<c>AMDUnityPlugin</c> enables advanced users to access and integrate AMD's FSR functionality directly in custom rendering workflows. 
+    ///It's primarily intended for users who want to bypass Upscaler Framework or the built-in engine integration available in the High Definition Render Pipeline (HDRP),
+    ///to implement their own FSR logic, such as through a <c>CustomPass</c> or other Scriptable Render Pipeline (SRP) extensions.
     ///
     ///When using this API manually, it's good practice to verify that the plugin is available using <see cref="AMDUnityPlugin.IsLoaded" />. 
-    ///In case the plugin fails to load automatically (for example, the end user isn't using the native AMD package), you can load it manually using <see cref="AMDUnityPlugin.Load" />.</remarks>
+    ///In case the plugin fails to load automatically (for example, the end user isn't using the native AMD package), you can load it manually using <see cref="AMDUnityPlugin.Load" />.
+    ///</remarks>
+    ///
     ///<example nocheck="true">
     ///  <code><![CDATA[
     ///using UnityEngine;
@@ -33,7 +40,7 @@ namespace UnityEngine.AMD
     ///using UnityEngine.Rendering.HighDefinition;
     ///using UnityEngine.AMD;
     ///
-    /// // Example HDRP custom pass 
+    /// // Example HDRP custom pass
     ///public class CustomFSRPass : CustomPass
     ///{
     ///    public static bool EnsureAMDPluginLoaded()
@@ -155,6 +162,7 @@ namespace UnityEngine.AMD
         ///]]></code>
         ///</example>
         extern public static bool Load();
+
         ///<summary>Checks whether the <c>AMDUnityPlugin</c> in the AMD native module has been loaded or not.</summary>
         ///<returns>Returns true if the plugin has been loaded. Otherwise, returns false.</returns>
         ///<example nocheck="true">

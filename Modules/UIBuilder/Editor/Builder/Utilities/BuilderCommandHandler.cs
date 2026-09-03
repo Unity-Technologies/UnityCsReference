@@ -33,6 +33,7 @@ namespace Unity.UI.Builder
         private bool m_ExternalChangeAffectsStyleSheets;
         private bool m_ExternalChangeAffectsVisualTree;
         CommandCategory m_ExternalChangesCategories;
+        readonly HashSet<UnityEngine.Object> m_ExternalChangeAssets = new HashSet<UnityEngine.Object>();
 
         public BuilderCommandHandler(
             BuilderPaneWindow paneWindow,
@@ -85,6 +86,7 @@ namespace Unity.UI.Builder
             m_ExternalChangeAffectsStyleSheets = false;
             m_ExternalChangeAffectsVisualTree = false;
             m_ExternalChangesCategories = CommandCategory.None;
+            m_ExternalChangeAssets.Clear();
         }
 
         public void RegisterPane(BuilderPaneContent paneContent)
@@ -565,6 +567,12 @@ namespace Unity.UI.Builder
                 foreach (var attribute in attributes)
                 {
                     unpackedVEA.SetAttribute(attribute.Key, attribute.Value);
+                    if (unpackedVEA.serializedData != null)
+                    {
+                        UxmlSerializer.TryParseSerializedAttribute(attribute.Key, attribute.Value,
+                            unpackedVEA.serializedData,
+                            new CreationContext(m_PaneWindow.document.visualTreeAsset));
+                    }
                 }
 
                 if (isRootElement)
@@ -613,8 +621,8 @@ namespace Unity.UI.Builder
             m_PaneWindow.OnEnableAfterAllSerialization();
 
             // Keep hierarchy tree state in the new unpacked element
-            var hierarchy = Builder.ActiveWindow.hierarchy;
-            hierarchy.elementHierarchyView.CopyTreeViewItemStates(rootVea, rootUnpackedVEA);
+            var hierarchy = (m_PaneWindow as Builder)?.hierarchy;
+            hierarchy?.elementHierarchyView.CopyTreeViewItemStates(rootVea, rootUnpackedVEA);
 
             // Delete old template element
             BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document.visualTreeAsset, templateContainer, false);
@@ -661,10 +669,26 @@ namespace Unity.UI.Builder
 
         private void SyncExternalChanges(in CommandContext context)
         {
-            // Only track commands that were not sent by the Builder. The actual reload decision is deferred to
+            // Only track commands that were not sent by this window. The actual reload decision is deferred to
             // OnGroupEnded, once the full set of modified objects for the group is known.
-            if (context.Status != CommandExecutionStatus.Success || context.Source == CommandSources.Builder)
+            if (context.Status != CommandExecutionStatus.Success)
                 return;
+
+            if (context.Source == CommandSources.Builder)
+            {
+                // A Builder-sourced command is only external here when a sibling Builder window sent it. Its
+                // asset payload stands in for the group's undo objects, which a Builder edit never records.
+                if (context.Command is not BuilderSyncCommand syncCommand || syncCommand.SenderWindow == m_PaneWindow)
+                    return;
+
+                // A sibling's undo/redo refresh is not an edit: every window already refreshes itself from
+                // Undo.undoRedoEvent, and relaying it would re-mark this window unsaved right after a save.
+                if (syncCommand.IsUndoRedoRefresh)
+                    return;
+
+                foreach (var asset in syncCommand.Assets)
+                    m_ExternalChangeAssets.Add(asset);
+            }
 
             m_ExternalChangesCategories |= context.Command.Category;
         }
@@ -682,14 +706,27 @@ namespace Unity.UI.Builder
         {
             // Nothing external was recorded during this group, so it's safe to skip any reload.
             if (m_ExternalChangesCategories == CommandCategory.None)
+            {
+                m_ExternalChangeAssets.Clear();
                 return;
+            }
 
             m_ExternalChangesCategories = CommandCategory.None;
 
             if (!IsPrimaryViewportWindow)
+            {
+                m_ExternalChangeAssets.Clear();
                 return;
+            }
 
-            if (!ClassifyExternalChanges(context.UndoObjects, out var affectsStyleSheets, out var affectsVisualTree))
+            // Classify the group's undo objects together with any sibling-window sync payloads.
+            if (context.UndoObjects != null)
+                m_ExternalChangeAssets.UnionWith(context.UndoObjects);
+
+            var affectsDocument = ClassifyExternalChanges(m_ExternalChangeAssets, out var affectsStyleSheets, out var affectsVisualTree);
+            m_ExternalChangeAssets.Clear();
+
+            if (!affectsDocument)
                 return;
 
             if (affectsStyleSheets)
@@ -794,10 +831,34 @@ namespace Unity.UI.Builder
                 CollectTemplateDependencies(nested, dependencyAssets);
         }
 
+        // The user is typing in a field or dragging (pointer captured) in this window, which has focus.
+        bool IsUserInteractingWithWindow()
+        {
+            if (EditorWindow.focusedWindow != m_PaneWindow)
+                return false;
+
+            // The leaf, not the retargeted focusedElement: a focused field retargets to the field itself,
+            // while the element actually being typed in is its inner TextElement.
+            var root = m_PaneWindow.rootVisualElement;
+            if (root.focusController?.GetLeafFocusedElement() is TextElement)
+                return true;
+
+            return root.panel?.GetCapturingElement(PointerId.mousePointerId) != null;
+        }
+
         void SyncExternalChangesDeferred()
         {
             if (!m_PendingExternalRefresh)
                 return;
+
+            // A change arriving while the user is typing or dragging here is an echo of their own edit relayed
+            // by another window; refreshing now would rebuild the inspector and steal the field focus. Hold
+            // the refresh until the interaction ends; it re-arms once per editor tick.
+            if (IsUserInteractingWithWindow())
+            {
+                EditorApplication.delayCall += SyncExternalChangesDeferred;
+                return;
+            }
 
             var selection = m_PaneWindow.primarySelection;
             if (selection == null)
@@ -810,15 +871,18 @@ namespace Unity.UI.Builder
 
             try
             {
-                selection.ClearSelection(null);
+                // Clear only the in-memory selection: the markers live in the shared asset, so stripping them
+                // would delete the EDITING window's selection. The refresh below re-resolves ours from them.
+                selection.ClearSelection(null, false);
                 selection.isApplyingExternalCommand = true;
                 selection.suppressStyleSheetsPaneUnsavedMark = !m_ExternalChangeAffectsStyleSheets;
                 selection.suppressHierarchyPaneUnsavedMark = m_ExternalChangeAffectsStyleSheets && !m_ExternalChangeAffectsVisualTree;
 
-                // Mark only the document that is actually open here. The BuilderDocument setter fans the flag out
-                // to every open UXML file, but only the active one is ever cleared again, so a sub-document would
-                // stay marked unsaved for the rest of the session.
-                if (m_ExternalChangeAffectsStyleSheets || m_ExternalChangeAffectsVisualTree)
+                // Mark only the active open file (the BuilderDocument setter fans out to sub-documents, which
+                // are never cleared again). Gate on the registry: a sibling window also notifies on load/init
+                // and right after a save, when nothing is actually unsaved.
+                if ((m_ExternalChangeAffectsStyleSheets || m_ExternalChangeAffectsVisualTree)
+                    && m_PaneWindow.document.AreOpenAssetsDirtyInRegistry())
                     m_PaneWindow.document.activeOpenUXMLFile.hasUnsavedChanges = true;
 
                 m_PaneWindow.OnEnableAfterAllSerialization();

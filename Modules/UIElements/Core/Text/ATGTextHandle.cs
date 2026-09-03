@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 #pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,14 @@ namespace UnityEngine.UIElements
         // Buffer for processed text that differs from TextElement.textBuffer
         // (password-masked, placeholder, elided)
         NativeTextBuffer m_ProcessedTextBuffer;
+
+#pragma warning disable UA5000 // Only finalizer-thread-safe work: the buffer is handed to the reclaimer and TextGenerationInfo.Destroy is thread-safe.
+        ~UITKTextHandle()
+        {
+            NativeTextBufferReclaimer.EnqueueForDisposal(ref m_ProcessedTextBuffer);
+            DestroyPermanentCachedGenerationInfo();
+        }
+#pragma warning restore UA5000
 
         internal unsafe bool TryGetSourceTextPointer(out IntPtr ptr, out int length)
         {
@@ -205,7 +214,7 @@ namespace UnityEngine.UIElements
             ref var style = ref m_TextElement.computedStyle;
             if (style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
             {
-                var effectiveFontsize = (int)Math.Round((style.fontSize.value) * GetPixelsPerPoint(), MidpointRounding.AwayFromZero);
+                var effectiveFontsize = (int)Math.Round((style.fontSize) * GetPixelsPerPoint(), MidpointRounding.AwayFromZero);
                 nativeSettings.fontSize = effectiveFontsize * 64;
                 fa = GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             }
@@ -246,7 +255,7 @@ namespace UnityEngine.UIElements
             // A managed string is only required for an explicit measure request
             string? text = textToMeasure;
 
-            var effectiveFontSize = (fontsize ?? style.fontSize.value) * scale;
+            var effectiveFontSize = (fontsize ?? style.fontSize) * scale;
             nativeSettings.fontSize = (int)Math.Round(effectiveFontSize * 64.0f, MidpointRounding.AwayFromZero);
             nativeSettings.bestFit = style.unityTextAutoSize.mode == TextAutoSizeMode.BestFit;
             nativeSettings.maxFontSize = (int)(style.unityTextAutoSize.maxSize.value * 64.0f * scale);
@@ -397,7 +406,7 @@ namespace UnityEngine.UIElements
                 return;
 
             var scale = GetPixelsPerPoint();
-            var effectiveFontsize = (int)Math.Round((style.fontSize.value) * scale, MidpointRounding.AwayFromZero);
+            var effectiveFontsize = (int)Math.Round((style.fontSize) * scale, MidpointRounding.AwayFromZero);
 
             GetCorrespondingBitmapFontAsset(fa, effectiveFontsize);
             GenerateBitmapFallbackFontAssets(effectiveFontsize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
@@ -451,3 +460,4 @@ namespace UnityEngine.UIElements
     }
 }
 #pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

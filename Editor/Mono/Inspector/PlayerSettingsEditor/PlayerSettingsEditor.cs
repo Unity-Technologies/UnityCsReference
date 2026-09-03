@@ -23,6 +23,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEditor.Build.Profile;
+using UnityEditor.Build.Profile.Analytics;
 using Unity.Collections;
 using System.Collections.Immutable;
 using Unity.Scripting.LifecycleManagement;
@@ -104,10 +105,10 @@ namespace UnityEditor
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
             public static readonly GUIContent graphicsAPIDeprecationMessage = EditorGUIUtility.TrTextContent("There are select Graphics API included that are deprecated and will be removed in a future version. For more information, refer to the Graphics API documentation.");
             public static readonly GUIContent glesWithEntitiesGraphicsDeprecationMessage = EditorGUIUtility.TrTextContent("Support for OpenGL ES for Entities Graphics is deprecated, and will be removed in a future version of Entities Graphics.");
-            public static readonly string changeColorSpaceString = L10n.Tr("Changing the color space may take a significant amount of time.");
+            public static readonly string changeColorSpaceString = L10n.Tr("Changing the color space may take a significant amount of time.", null);
             public static readonly string globalPlayerSettingsInfo =
-                L10n.Tr("Editing these global player settings will not affect the current state of the project, because the active build profile is using its own customized player settings. Edit the build profile to change them.");
-            public static readonly string globalPlayerSettingsInfoButton = L10n.Tr("Edit Build Profile");
+                L10n.Tr("Editing these global player settings will not affect the current state of the project, because the active build profile is using its own customized player settings. Edit the build profile to change them.", null);
+            public static readonly string globalPlayerSettingsInfoButton = L10n.Tr("Edit Build Profile", null);
         }
 
         class SettingsContent
@@ -288,29 +289,29 @@ namespace UnityEditor
             public static readonly GUIContent allowHDRDisplay = EditorGUIUtility.TrTextContent("Allow HDR Display Output*", "Enable the use of HDR displays and include all the resources required for them to function correctly.");
             public static readonly GUIContent useHDRDisplay = EditorGUIUtility.TrTextContent("Use HDR Display Output*", "Checks if the main display supports HDR and if it does, switches to HDR output at the start of the application.");
             public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing.");
-            public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
-            public static readonly string undoChangedGraphicsAPIString              = L10n.Tr("Changed Graphics API Settings");
-            public static readonly string undoChangedScriptingDefineString          = L10n.Tr("Changed Scripting Define Settings");
-            public static readonly string undoChangedGraphicsJobsString             = L10n.Tr("Changed Graphics Jobs Setting");
-            public static readonly string undoChangedGraphicsJobModeString          = L10n.Tr("Changed Graphics Job Mode Setting");
-            public static readonly string undoChangedPlatformShaderChunkSizeString  = L10n.Tr("Changed Shader Chunk Size Platform Setting");
-            public static readonly string undoChangedPlatformShaderChunkCountString = L10n.Tr("Changed Shader Chunk Count Platform Setting");
-            public static readonly string undoChangedDefaultShaderChunkSizeString   = L10n.Tr("Changed Shader Chunk Size Default Setting");
-            public static readonly string undoChangedDefaultShaderChunkCountString  = L10n.Tr("Changed Shader Chunk Count Default Setting");
+            public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings", null);
+            public static readonly string undoChangedGraphicsAPIString              = L10n.Tr("Changed Graphics API Settings", null);
+            public static readonly string undoChangedScriptingDefineString          = L10n.Tr("Changed Scripting Define Settings", null);
+            public static readonly string undoChangedGraphicsJobsString             = L10n.Tr("Changed Graphics Jobs Setting", null);
+            public static readonly string undoChangedGraphicsJobModeString          = L10n.Tr("Changed Graphics Job Mode Setting", null);
+            public static readonly string undoChangedPlatformShaderChunkSizeString  = L10n.Tr("Changed Shader Chunk Size Platform Setting", null);
+            public static readonly string undoChangedPlatformShaderChunkCountString = L10n.Tr("Changed Shader Chunk Count Platform Setting", null);
+            public static readonly string undoChangedDefaultShaderChunkSizeString   = L10n.Tr("Changed Shader Chunk Size Default Setting", null);
+            public static readonly string undoChangedDefaultShaderChunkCountString  = L10n.Tr("Changed Shader Chunk Count Default Setting", null);
 
         }
 
         internal class RecompileReason
         {
-            public static readonly string scriptingDefineSymbolsModified             = L10n.Tr("Scripting define symbols setting modified");
-            public static readonly string suppressCommonWarningsModified             = L10n.Tr("Suppress common warnings setting modified");
-            public static readonly string apiCompatibilityLevelModified              = L10n.Tr("API Compatibility level modified");
-            public static readonly string editorAssembliesCompatibilityLevelModified = L10n.Tr("Editor Assemblies Compatibility level modified");
-            public static readonly string useDeterministicCompilationModified        = L10n.Tr("Use deterministic compilation modified");
-            public static readonly string additionalCompilerArgumentsModified        = L10n.Tr("Additional compiler arguments modified");
-            public static readonly string activeBuildTargetGroupModified             = L10n.Tr("Active build target group modified");
+            public static readonly string scriptingDefineSymbolsModified             = L10n.Tr("Scripting define symbols setting modified", null);
+            public static readonly string suppressCommonWarningsModified             = L10n.Tr("Suppress common warnings setting modified", null);
+            public static readonly string apiCompatibilityLevelModified              = L10n.Tr("API Compatibility level modified", null);
+            public static readonly string editorAssembliesCompatibilityLevelModified = L10n.Tr("Editor Assemblies Compatibility level modified", null);
+            public static readonly string useDeterministicCompilationModified        = L10n.Tr("Use deterministic compilation modified", null);
+            public static readonly string additionalCompilerArgumentsModified        = L10n.Tr("Additional compiler arguments modified", null);
+            public static readonly string activeBuildTargetGroupModified             = L10n.Tr("Active build target group modified", null);
 
-            public static readonly string presetChanged = L10n.Tr("Preset changed");
+            public static readonly string presetChanged = L10n.Tr("Preset changed", null);
         }
 
         PlayerSettingsSplashScreenEditor m_SplashScreenEditor;
@@ -345,6 +346,7 @@ namespace UnityEditor
 
         // Section and tab selection state
 
+        // Keep in sync with Tests/EditModeAndPlayModeTests/PlayerSettings/Assets/Editor/PlayerSettingsApplicationIdentifierTests.cs.
         SavedInt m_SelectedSection = new SavedInt("PlayerSettings.ShownSection", -1);
 
         BuildPlatform[] validPlatforms;
@@ -486,7 +488,6 @@ namespace UnityEditor
 
         // Legacy
         SerializedProperty m_LegacyClampBlendShapeWeights;
-        SerializedProperty m_AndroidEnableTango;
         SerializedProperty m_Enable360StereoCapture;
 
         SerializedProperty m_VirtualTexturingSupportEnabled;
@@ -1059,7 +1060,6 @@ namespace UnityEditor
             m_RequireES32                   = FindPropertyAssert("openGLRequireES32");
 
             m_LegacyClampBlendShapeWeights = FindPropertyAssert("legacyClampBlendShapeWeights");
-            m_AndroidEnableTango           = FindPropertyAssert("AndroidEnableTango");
 
             m_SpriteBatchVertexThreshold = FindPropertyAssert("m_SpriteBatchVertexThreshold");
             m_SpriteBatchMaxVertexCount = FindPropertyAssert("m_SpriteBatchMaxVertexCount");
@@ -1351,7 +1351,7 @@ namespace UnityEditor
             get
             {
                 if (m_LocalizedTargetName == null)
-                    m_LocalizedTargetName = L10n.Tr(target.name);
+                    m_LocalizedTargetName = L10n.Tr(target.name, null);
                 return m_LocalizedTargetName;
             }
         }
@@ -1476,7 +1476,7 @@ namespace UnityEditor
                 CheckUpdatePresetSelectorStatus();
 
             if (!IsBuildProfileEditor())
-                GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatformValue].title.text));
+                GUILayout.Label(string.Format(L10n.Tr("Settings for {0}", null), validPlatforms[selectedPlatformValue].title.text));
 
             // Increase the offset to accomodate large labels, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth + 4);
@@ -1877,7 +1877,7 @@ namespace UnityEditor
             var enabled = new bool[availableDevices.Length];
             for (int i = 0; i < availableDevices.Length; ++i)
             {
-                names[i] = L10n.Tr(GraphicsDeviceTypeToString(target, availableDevices[i]));
+                names[i] = L10n.Tr(GraphicsDeviceTypeToString(target, availableDevices[i]), null);
                 enabled[i] = !list.list.Contains(availableDevices[i]);
             }
 
@@ -2149,7 +2149,7 @@ namespace UnityEditor
             GUIContent[] names = new GUIContent[availableDevices.Length];
             for (int i = 0; i < availableDevices.Length; ++i)
             {
-                names[i] = EditorGUIUtility.TrTextContent(L10n.Tr(GraphicsDeviceTypeToString(targetPlatform, availableDevices[i])));
+                names[i] = EditorGUIUtility.TrTextContent(L10n.Tr(GraphicsDeviceTypeToString(targetPlatform, availableDevices[i]), null));
             }
 
             GraphicsDeviceType selected = BuildEnumPopup(EditorGUIUtility.TrTextContent(displayTitle), currentDevices[0], availableDevices, names);
@@ -2164,8 +2164,16 @@ namespace UnityEditor
             {
                 GraphicsDeviceType recommendedAPI = RecommendedGraphicsDeviceTypeFromDeprecated(targetPlatform, selected);
                 string text = $"The Graphics API has been deprecated and will be removed in a future version. Use {GraphicsDeviceTypeToString(targetPlatform, recommendedAPI)} instead.";
-                EditorGUILayout.HelpBox(L10n.Tr(text), MessageType.Info, true);
+                EditorGUILayout.HelpBox(L10n.Tr(text, null), MessageType.Info, true);
             }
+        }
+
+        void SetUseDefaultGraphicsAPIsWithTelemetry(BuildTarget targetPlatform, bool useDefault)
+        {
+            var previous = m_CurrentTarget.GetUseDefaultGraphicsAPIs_Internal(targetPlatform);
+            m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, useDefault);
+            if (useDefault != previous)
+                BuildSettingsAnalytics.SendSettingChanged("auto_graphics_api", useDefault, targetPlatform);
         }
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, GUIContent platformTitleContent)
@@ -2294,7 +2302,7 @@ namespace UnityEditor
                             isAutoGraphicsAPITouched = true;
                             // if restart = 0 (restart now), or 2 (restart later), we update the setting value.
                             Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
-                            m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, toggledAutomatic);
+                            SetUseDefaultGraphicsAPIsWithTelemetry(targetPlatform, toggledAutomatic);
 
                             // we need to update the APIs list when we toggle automatic graphics API
                             var apiList = (List<GraphicsDeviceType>)deviceList.list;
@@ -2315,14 +2323,14 @@ namespace UnityEditor
                          // set the value of Default Graphics API (users could still choose DX12 without checking Automatic Graphics API)
                     {
                         Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
-                        m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, toggledAutomatic);
+                        SetUseDefaultGraphicsAPIsWithTelemetry(targetPlatform, toggledAutomatic);
                         OnTargetObjectChangedDirectly();
                     }
                 }
                 else // if not active build profile and not an editor platform, we don't check for restarts, just store the value
                 {
                     Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
-                    m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, toggledAutomatic);
+                    SetUseDefaultGraphicsAPIsWithTelemetry(targetPlatform, toggledAutomatic);
                     OnTargetObjectChangedDirectly();
                 }
             }
@@ -2424,7 +2432,7 @@ namespace UnityEditor
         {
             string name = gamut.ToString();
             if (!IsColorGamutSupportedOnTargetGroup(targetGroup, gamut))
-                name += L10n.Tr(" (not supported on this platform)");
+                name += L10n.Tr(" (not supported on this platform)", null);
             return name;
         }
 
@@ -4563,7 +4571,11 @@ namespace UnityEditor
             vertexFlags = (VertexChannelCompressionFlags)EditorGUILayout.EnumFlagsField(SettingsContent.vertexChannelCompressionMask, vertexFlags);
             m_VertexChannelCompressionMask.intValue = (int)vertexFlags;
 
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, SettingsContent.stripUnusedMeshComponents);
+            if (EditorGUI.EndChangeCheck())
+                BuildSettingsAnalytics.SendSettingChanged("optimize_mesh_data", m_StripUnusedMeshComponents.boolValue, platform.defaultTarget);
+
             EditorGUILayout.PropertyField(m_MipStripping, SettingsContent.mipStripping);
 
             EditorGUILayout.Space();

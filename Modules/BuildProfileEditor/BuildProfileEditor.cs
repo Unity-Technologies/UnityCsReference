@@ -103,7 +103,7 @@ namespace UnityEditor.Build.Profile
             BuildProfileContext.instance.UpdateBuildProfileInitialization(profile);
 
             if (BuildProfileContext.instance.TryGetInitializationInfo(profile, out var initializationInfo)
-                && !initializationInfo.IsDone())
+                && initializationInfo.ShouldShowBootstrapView())
             {
                 Action callback = parent != null ? parent.RepaintBuildProfileInspector : null;
                 return new BuildProfileBootstrapView(m_Profile, initializationInfo, callback);
@@ -156,6 +156,8 @@ namespace UnityEditor.Build.Profile
             m_PlatformDeprecationHelpBox.Update(profile);
 
             bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, guid);
+            if (!hasErrors && profile.isMultiTarget)
+                hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.platformGuid);
             isClassic = BuildProfileContext.IsClassicPlatformProfile(profile);
 
             if (!isClassic)

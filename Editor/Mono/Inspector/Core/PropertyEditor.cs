@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -78,12 +79,12 @@ namespace UnityEditor
         protected const int k_AutoScrollZoneHeight = 24;
         const float m_PreviewDefaultHeight = 200;
         const float m_PreviewMinHeight = 20;
-        static readonly string k_DebugInfoPanelTooltip = L10n.Tr("In Debug mode, the Inspector also displays the item's private properties and doesn't use custom inspector code.");
-        static readonly string k_ExitDebugButtonTooltip = L10n.Tr("Change the Inspector window back to Normal mode.");
-        static readonly string k_DebugModeLabel = L10n.Tr("Inspector mode: Debug");
-        static readonly string k_ExitDebugModeButton = L10n.Tr("Exit Debug");
-        static readonly string k_DebugInternalModeLabel = L10n.Tr("Inspector mode: Debug Internal");
-        static readonly string k_ExitDebugInternalModeButton = L10n.Tr("Exit Debug Internal");
+        static readonly string k_DebugInfoPanelTooltip = L10n.Tr("In Debug mode, the Inspector also displays the item's private properties and doesn't use custom inspector code.", null);
+        static readonly string k_ExitDebugButtonTooltip = L10n.Tr("Change the Inspector window back to Normal mode.", null);
+        static readonly string k_DebugModeLabel = L10n.Tr("Inspector mode: Debug", null);
+        static readonly string k_ExitDebugModeButton = L10n.Tr("Exit Debug", null);
+        static readonly string k_DebugInternalModeLabel = L10n.Tr("Inspector mode: Debug Internal", null);
+        static readonly string k_ExitDebugInternalModeButton = L10n.Tr("Exit Debug Internal", null);
 
         float m_CachedPreviewHeight = m_PreviewDefaultHeight;
         bool m_IsPreviewPoppedOut = false;
@@ -259,10 +260,10 @@ namespace UnityEditor
             public static GUIStyle vcsBarStyleTwoRows = new GUIStyle(EditorStyles.toolbar);
             public static readonly string objectDisabledModuleWarningFormat = L10n.Tr(
                 "The built-in package '{0}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
-            );
+            , null);
             public static readonly string objectDisabledModuleWithDependencyWarningFormat = L10n.Tr(
                 "The built-in package '{0}', which is required by the package '{1}', which implements this component type, has been disabled in Package Manager. This object will be removed in play mode and from any builds you make."
-            );
+            , null);
 
             [NoAutoStaticsCleanup]
             public static readonly SVC<float> lineSeparatorOffset = new SVC<float>("AC-Button", "--separator-line-top-offset");
@@ -346,7 +347,9 @@ namespace UnityEditor
             }
         }
 
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         internal PropertyEditor()
+        #pragma warning restore UAL0015
         {
             editorDragging = new EditorDragging(this);
             minSize = new Vector2(k_MinimumWindowWidth, minSize.y);
@@ -654,7 +657,7 @@ namespace UnityEditor
             m_ScrollView.horizontalScroller.slider.viewDataKey = null;
 
             var multiContainer = rootVisualElement.Q(className: s_MultiEditClassName);
-            multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text));
+            multiContainer.Query<TextElement>().ForEach((label) => label.text = L10n.Tr(label.text, null));
             multiContainer.RemoveFromHierarchy();
 
             m_MultiEditLabel = multiContainer;
@@ -3024,3 +3027,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

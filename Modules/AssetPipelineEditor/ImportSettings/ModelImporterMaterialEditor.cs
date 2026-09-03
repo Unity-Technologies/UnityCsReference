@@ -387,7 +387,7 @@ namespace UnityEditor
                         //Where all the required embedded materials are not in the asset database, we need to reimport them
                         if (!AllEmbeddedMaterialsAreImported())
                         {
-                            if (EditorUtility.DisplayDialog(L10n.Tr("Are you sure you want to re-extract the Materials?"), L10n.Tr("In order to re-extract the Materials we'll need to reimport the mesh, this might take a while. Do you want to continue?"), L10n.Tr("Yes"), L10n.Tr("No")))
+                            if (EditorUtility.DisplayDialog(L10n.Tr("Are you sure you want to re-extract the Materials?", null), L10n.Tr("In order to re-extract the Materials we'll need to reimport the mesh, this might take a while. Do you want to continue?", null), L10n.Tr("Yes", null), L10n.Tr("No", null)))
                                 ReimportEmbeddedMaterials();
                             else
                                 return false;
@@ -533,7 +533,7 @@ namespace UnityEditor
         {
             if (targets.Length > 1)
             {
-                EditorGUILayout.HelpBox(L10n.Tr("Material Editing is not supported on multiple selection"), MessageType.Info);
+                EditorGUILayout.HelpBox(L10n.Tr("Material Editing is not supported on multiple selection", null), MessageType.Info);
                 return;
             }
 

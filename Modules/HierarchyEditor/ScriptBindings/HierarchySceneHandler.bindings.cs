@@ -479,7 +479,7 @@ namespace Unity.Hierarchy.Editor
             // Set active
             if (scene.isLoaded)
             {
-                menu.AppendAction(L10n.Tr("Set Active Scene"),
+                menu.AppendAction(L10n.Tr("Set Active Scene", null),
                                   a => EditorSceneManager.SetActiveScene((Scene)a.userData),
                                   a => hasMultipleScenes && SceneManager.CanSetAsActiveScene(scene)
                                       ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled,
@@ -493,7 +493,7 @@ namespace Unity.Hierarchy.Editor
                 var actionCondition = !EditorApplication.isPlaying || scene.isSubScene;
                 // Boxing once here instead of in each AppendAction
                 object userDataMulti = (allSelectedScenes, isNotPlayingAndSceneIsAuthoring: actionCondition, hasMultipleScenes);
-                menu.AppendAction(L10n.Tr("Save Scene"), obj => SceneHierarchyHooks.SaveScenes(obj.userData),
+                menu.AppendAction(L10n.Tr("Save Scene", null), obj => SceneHierarchyHooks.SaveScenes(obj.userData),
                                   a =>
                                   {
                                       var (_, isNotPlayingAndSceneIsAuthoring, _) = ((Scene[], bool, bool))a.userData;
@@ -502,7 +502,7 @@ namespace Unity.Hierarchy.Editor
                                   userDataMulti);
 
                 object userData = (scene, isNotPlayingAndSceneIsAuthoring: actionCondition, hasMultipleScenes);
-                menu.AppendAction(L10n.Tr("Save Scene As"),
+                menu.AppendAction(L10n.Tr("Save Scene As", null),
                                   obj => SceneHierarchyHooks.SaveSceneAs(obj.userData),
                                   a =>
                                   {
@@ -510,7 +510,7 @@ namespace Unity.Hierarchy.Editor
                                       return isNotPlayingAndSceneIsAuthoring && !scene.isSubScene ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
                                   }, userData);
 
-                menu.AppendAction(L10n.Tr("Save All"),
+                menu.AppendAction(L10n.Tr("Save All", null),
                                   obj => EditorSceneManager.SaveOpenScenes(),
                                   a =>
                                   {
@@ -531,7 +531,7 @@ namespace Unity.Hierarchy.Editor
                     // Unload
                     object userData = (allSelectedScenes, canUnloadScenes: isUnloadOrRemoveValid && !EditorApplication.isPlaying && !string.IsNullOrEmpty(scene.path) && hasMultipleScenes);
 
-                    menu.AppendAction(L10n.Tr("Unload Scene"), obj => SceneHierarchyHooks.UnloadScenes(obj.userData), a =>
+                    menu.AppendAction(L10n.Tr("Unload Scene", null), obj => SceneHierarchyHooks.UnloadScenes(obj.userData), a =>
                     {
                         var (_, canUnloadScenes) = ((Scene[], bool))a.userData;
                         return canUnloadScenes ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
@@ -540,14 +540,14 @@ namespace Unity.Hierarchy.Editor
                 else
                 {
                     // Load
-                    menu.AppendAction(L10n.Tr("Load Scene"), obj => SceneHierarchyHooks.LoadScenes(obj.userData),
+                    menu.AppendAction(L10n.Tr("Load Scene", null), obj => SceneHierarchyHooks.LoadScenes(obj.userData),
                                       a => EditorApplication.isPlaying ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal,
                                       allSelectedScenes);
                 }
 
                 // Remove
                 bool allScenesSelected = allSelectedScenes.Length == EditorSceneManager.sceneCount;
-                menu.AppendAction(L10n.Tr("Remove Scene"), obj => SceneHierarchyHooks.RemoveScenes(obj.userData),
+                menu.AppendAction(L10n.Tr("Remove Scene", null), obj => SceneHierarchyHooks.RemoveScenes(obj.userData),
                                   a => !isUnloadOrRemoveValid || allScenesSelected || EditorApplication.isPlaying || SceneManager.sceneCount == 1 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal,
                                   allSelectedScenes);
             }
@@ -556,7 +556,7 @@ namespace Unity.Hierarchy.Editor
             if (scene.isLoaded)
             {
                 var userData = (allSelectedScenes, SceneHierarchyHooks.CanSceneChangesBeDiscarded(scene));
-                menu.AppendAction(L10n.Tr("Discard changes"), obj => SceneHierarchyHooks.DiscardChanges(obj.userData), a =>
+                menu.AppendAction(L10n.Tr("Discard changes", null), obj => SceneHierarchyHooks.DiscardChanges(obj.userData), a =>
                 {
                     var (_, canDiscardChanges) = ((Scene[], bool))a.userData;
                     return canDiscardChanges ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
@@ -567,7 +567,7 @@ namespace Unity.Hierarchy.Editor
             menu.AppendSeparator();
             if (scene.IsValid())
             {
-                menu.AppendAction(L10n.Tr("Select Scene Asset"), obj => SceneHierarchy.SelectSceneAsset(obj.userData),
+                menu.AppendAction(L10n.Tr("Select Scene Asset", null), obj => SceneHierarchy.SelectSceneAsset(obj.userData),
                     a => string.IsNullOrEmpty(((Scene)a.userData).path)
                         ? DropdownMenuAction.Status.Disabled
                         : DropdownMenuAction.Status.Normal,
@@ -576,7 +576,7 @@ namespace Unity.Hierarchy.Editor
 
             if (!scene.isSubScene)
             {
-                menu.AppendAction(L10n.Tr("Add New Scene"), obj => SceneHierarchy.AddNewScene(obj.userData),
+                menu.AppendAction(L10n.Tr("Add New Scene", null), obj => SceneHierarchy.AddNewScene(obj.userData),
                                   _ => EditorApplication.isPlaying ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal,
                                   scene);
             }
@@ -585,7 +585,7 @@ namespace Unity.Hierarchy.Editor
             if (scene.IsValid())
             {
                 menu.AppendAction(
-                    L10n.Tr("Prefab/Remove Unused Overrides..."),
+                    L10n.Tr("Prefab/Remove Unused Overrides...", null),
                     RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem,
                     a => ((Scene)a.userData).isLoaded ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled,
                     scene);

@@ -272,6 +272,19 @@ namespace UnityEngine
 
         [StaticAccessor("QualitySettingsScripting", StaticAccessorType.DoubleColon)] extern public static int maxQueuedFrames { get; set; }
 
+        /// <summary>
+        /// Disables swapchain pre-transform ("Apply display rotation during rendering")
+        /// at runtime. Takes effect on the next display update. A no-op where
+        /// SystemInfo.supportsSwapChainPreTransform is false; may be managed by the active
+        /// render pipeline.
+        /// </summary>
+        [StaticAccessor("QualitySettingsScripting", StaticAccessorType.DoubleColon)]
+        extern public static bool disableSwapChainPreTransform
+        {
+            [NativeName("GetSwapChainPreTransformDisabled")] get;
+            [NativeName("SetSwapChainPreTransformDisabled")] set;
+        }
+
         [NativeName("GetCurrentIndex")] extern public static int  GetQualityLevel();
         [FreeFunction] extern public static Object GetQualitySettings();
         [NativeName("SetCurrentIndex")] extern public static void SetQualityLevel(int index, [uei.DefaultValue("true")] bool applyExpensiveChanges);

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -66,8 +67,8 @@ namespace UnityEditor
             public static readonly GUIContent contextLabel = EditorGUIUtility.TrTextContent("in");
             public static readonly GUIContent removeUnusedOverridesButtonContent = EditorGUIUtility.TrTextContentWithIcon("Unused overrides", EditorGUIUtility.LoadIcon("Clear"));
 
-            public static readonly string nonApplicableTooltipApply = L10n.Tr("There are no overrides that can be applied to Prefab source '{0}'.");
-            public static readonly string nonApplicableTooltipRevert = L10n.Tr("There are no overrides that can be reverted.");
+            public static readonly string nonApplicableTooltipApply = L10n.Tr("There are no overrides that can be applied to Prefab source '{0}'.", null);
+            public static readonly string nonApplicableTooltipRevert = L10n.Tr("There are no overrides that can be reverted.", null);
 
             public static readonly GUIContent infoMultiple = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.");
             public static readonly GUIContent infoMultipleNoApply = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.\nApplying is not possible for one or more Prefabs. Select individual Prefabs for details.");
@@ -110,13 +111,17 @@ namespace UnityEditor
             m_TreeView.SetApplyTarget(selectedGameObject, prefabAssetRoot, AssetDatabase.GetAssetPath(prefabAssetRoot));
 
             // m_TreeView.SetApplyTarget already reloads the TreeView so don't do it again in RefreshStatus.
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             RefreshStatus(false);
+            #pragma warning restore UAL0015
         }
 
         internal PrefabOverridesWindow(GameObject[] selectedGameObjects)
         {
             m_SelectedGameObjects = selectedGameObjects;
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             RefreshStatus();
+            #pragma warning restore UAL0015
         }
 
         public override void OnOpen()
@@ -545,10 +550,10 @@ namespace UnityEditor
 
             // If more than one instance of the same Prefab Asset, show dialog to user.
             if (multipleOfSame && !EditorUtility.DisplayDialog(
-                L10n.Tr("Multiple instances of same Prefab Asset"),
-                L10n.Tr("Multiple instances of the same Prefab Asset were detected. Potentially conflicting overrides will be applied sequentially and will overwrite each other."),
-                L10n.Tr("OK"),
-                L10n.Tr("Cancel")))
+                L10n.Tr("Multiple instances of same Prefab Asset", null),
+                L10n.Tr("Multiple instances of the same Prefab Asset were detected. Potentially conflicting overrides will be applied sequentially and will overwrite each other.", null),
+                L10n.Tr("OK", null),
+                L10n.Tr("Cancel", null)))
                 return false;
 
             // Make sure assets are checked out in version control.
@@ -943,3 +948,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ShortcutManagement not yet converted
 using System;
 using UnityEditor.Experimental;
 using UnityEngine;
@@ -11,6 +12,10 @@ namespace UnityEditor.ShortcutManagement
 {
     class DeleteShortcutProfileWindow : PromptWindowBase
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal DeleteShortcutProfileWindow() { }
+        #pragma warning restore UAL0015
+
         private TextElement m_HeaderTextElement;
         private TextElement m_MessageTextElement;
         Button m_SubmitButton;
@@ -52,8 +57,8 @@ namespace UnityEditor.ShortcutManagement
             var cancelButton = root.Q<Button>("cancel");
 
             // Set localized text
-            m_SubmitButton.text = L10n.Tr("Delete Profile");
-            cancelButton.text = L10n.Tr("Cancel");
+            m_SubmitButton.text = L10n.Tr("Delete Profile", null);
+            cancelButton.text = L10n.Tr("Cancel", null);
 
             // Set up event handlers
             m_SubmitButton.clickable.clicked += Submit;
@@ -78,3 +83,4 @@ namespace UnityEditor.ShortcutManagement
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

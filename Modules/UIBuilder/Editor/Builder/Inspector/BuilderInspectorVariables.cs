@@ -2,8 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Unity.UIToolkit.Editor;
+using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -75,31 +80,106 @@ namespace Unity.UI.Builder
             return null;
         }
 
-        public override void ExtractToGlobalVariable()
-        {
-            RegisterStyleSheetUndo();
+        protected override bool supportsCreateNewStyleSheet => true;
 
+        protected override IReadOnlyList<(StyleSheet sheet, string label)> GetAvailableStyleSheets()
+        {
+            var vta = m_Inspector.document.activeOpenUXMLFile.visualTreeAsset;
+            if (vta == null)
+                return Array.Empty<(StyleSheet, string)>();
+
+            var sheets = vta.GetAllReferencedStyleSheets();
+            var result = new List<(StyleSheet, string)>();
+            var labelCounts = new Dictionary<string, int>();
+            foreach (var sheet in sheets)
+            {
+                if (sheet == null) continue;
+                var path = AssetDatabase.GetAssetPath((UnityEngine.Object)sheet);
+                var label = string.IsNullOrEmpty(path) ? sheet.name : Path.GetFileName(path);
+                labelCounts.TryGetValue(label, out var count);
+                labelCounts[label] = count + 1;
+                result.Add((sheet, label));
+            }
+
+            for (var i = 0; i < result.Count; i++)
+            {
+                var (sheet, label) = result[i];
+                if (labelCounts[label] <= 1)
+                    continue;
+
+                var path = AssetDatabase.GetAssetPath((UnityEngine.Object)sheet);
+                if (string.IsNullOrEmpty(path))
+                    continue;
+
+                var parent = Path.GetFileName(Path.GetDirectoryName(path));
+                result[i] = (sheet, string.IsNullOrEmpty(parent) ? label : $"{label} ({parent})");
+            }
+
+            return result;
+        }
+
+        public override void ExtractVariableToRootSelector(StyleSheet targetStyleSheet = null)
+        {
             var selectedIndices = variablesListView.selectedIndicesList;
             if (selectedIndices.Count == 0)
                 return;
 
-            var rootSelector = m_Inspector.styleSheet.FindSelector(":root");
-            if (currentVisualElement.GetStyleComplexSelector().Equals(rootSelector))
+            // Capture source data before any rebuild invalidates references
+            var capturedSourceSheet = styleSheet;
+            var capturedSourceRule  = styleRule;
+            var capturedProps = new List<StyleProperty>();
+            foreach (var i in selectedIndices)
+            {
+                if (i >= 0 && i < variablesItemsSource.Count)
+                    capturedProps.Add(variablesItemsSource[i]);
+            }
+
+            string newUssPath = null;
+            if (targetStyleSheet == null)
+            {
+                newUssPath = BuilderStyleSheetsUtilities.s_SaveFileDialogCallback();
+                if (string.IsNullOrEmpty(newUssPath))
+                    return;
+
+                BuilderStyleSheetsUtilities.CreateNewUSSAsset(m_Inspector.paneWindow, newUssPath);
+                targetStyleSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(newUssPath);
+                if (targetStyleSheet == null)
+                    return;
+
+                Undo.RegisterCompleteObjectUndo(capturedSourceSheet, "Extract Variable to New StyleSheet");
+            }
+
+            var rootSelector = targetStyleSheet.FindSelector(":root");
+
+            // Don't extract if we are already editing the :root rule of the target stylesheet
+            if (rootSelector != null && capturedSourceRule == rootSelector.rule)
                 return;
 
             if (rootSelector == null)
             {
-                rootSelector = BuilderSharedStyles.CreateNewSelector(currentVisualElement.parent, styleSheet, ":root");
-                m_Selection.NotifyOfHierarchyChange(m_Inspector);
-                m_Selection.NotifyOfStylingChange(m_Inspector);
+                // CreateNewSelector adds the :root rule to the StyleSheet; the change is applied by the notifications below.
+                var selectorsRoot = BuilderSharedStyles.GetSelectorContainerElement(m_Selection.documentRootElement);
+                rootSelector = BuilderSharedStyles.CreateNewSelector(selectorsRoot, targetStyleSheet, ":root");
+                if (newUssPath == null)
+                {
+                    m_Selection.NotifyOfHierarchyChange(m_Inspector);
+                    m_Selection.NotifyOfStylingChange(m_Inspector);
+                }
             }
 
-            foreach (var selectedIndex in selectedIndices)
+            var isSameSheet = targetStyleSheet == capturedSourceSheet;
+            foreach (var prop in capturedProps)
             {
-                if (selectedIndex < 0 || selectedIndex >= variablesItemsSource.Count)
-                    continue;
-                var styleProperty = variablesItemsSource[selectedIndex];
-                styleSheet.TransferPropertyToSelector(rootSelector, styleRule, styleProperty);
+                if (isSameSheet)
+                    capturedSourceSheet.TransferPropertyToSelector(rootSelector, capturedSourceRule, prop);
+                else
+                    targetStyleSheet.TransferPropertyToSelector(rootSelector, capturedSourceSheet, capturedSourceRule, prop);
+            }
+
+            if (newUssPath != null)
+            {
+                m_Selection.NotifyOfHierarchyChange(m_Inspector);
+                m_Selection.NotifyOfStylingChange(m_Inspector);
             }
 
             DeleteVariable(variablesListView);
@@ -107,3 +187,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

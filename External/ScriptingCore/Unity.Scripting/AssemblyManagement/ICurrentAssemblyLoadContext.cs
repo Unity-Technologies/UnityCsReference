@@ -1,12 +1,15 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: ScriptingRuntime not yet converted
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Scripting.AssemblyManagement
 {
     internal interface ICurrentAssemblyLoadContext
     {
+        // Handle to the current assembly load context, installed by the host and swapped by the
+        // assembly-management machinery itself around reloads; no scope transition should clear it.
+        [NoAutoStaticsCleanup]
         public static ICurrentAssemblyLoadContext? Instance { get; internal set; }
 
         /// <summary>
@@ -38,4 +41,3 @@ namespace Unity.Scripting.AssemblyManagement
         internal bool IsAssemblyInUserCodeALC(Assembly assembly);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

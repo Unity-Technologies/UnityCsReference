@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
@@ -45,7 +46,10 @@ internal partial class StyleAnimationListView : StyleLonghandListView<StyleAnima
         const string k_UssDarkSkinPath = "UIToolkitAuthoring/Inspector/Controls/FoldoutAnimationFieldDark.uss";
         const string k_UssLightSkinPath = "UIToolkitAuthoring/Inspector/Controls/FoldoutAnimationFieldLight.uss";
 
+        readonly StyleAnimationListView m_AnimationListView;
+
         UIAnimationClipField m_ClipField;
+        Button m_NewClipButton;
         FloatField m_DurationField;
         FloatField m_DelayField;
         AnimationIterationCountField m_IterationCountField;
@@ -63,6 +67,8 @@ internal partial class StyleAnimationListView : StyleLonghandListView<StyleAnima
         public FoldoutAnimationField(StyleAnimationListView listView)
             : base(listView, ussClassName, k_UssPath, k_UssDarkSkinPath, k_UssLightSkinPath)
         {
+            m_AnimationListView = listView;
+
             m_ClipField = new UIAnimationClipField("Clip");
             m_ClipField.AddToClassList(clipUssClassName);
             m_ClipField.AddToClassList(UIAnimationClipField.alignedFieldUssClassName);
@@ -70,15 +76,12 @@ internal partial class StyleAnimationListView : StyleLonghandListView<StyleAnima
             m_ClipField.tooltip = "<b>USS property: animation-name</b>\nAnimation clip to apply with the current element as root. Animation paths are relative to this element.";
             RegisterLonghand((int)AnimationChangeType.Clip, m_ClipField);
 
-            var newClipButton = new Button
-            {
-                text = "New...",
-                name = AnimationClipNewButtonController.AnimationClipNewButtonName,
-                tooltip = "Create a new UI Animation Clip asset and assign it to this animation."
-            };
-            newClipButton.AddToClassList(newClipButtonUssClassName);
-            AnimationClipNewButtonController.ConnectRowButton(newClipButton, m_ClipField);
-            m_ClipField.Add(newClipButton);
+            // Text and tooltip are owned by the controller, which swaps them with the clip state.
+            m_NewClipButton = new Button { name = AnimationClipNewButtonController.AnimationClipNewButtonName };
+            m_NewClipButton.AddToClassList(newClipButtonUssClassName);
+            AnimationClipNewButtonController.ConnectRowButton(m_NewClipButton, m_ClipField,
+                () => m_AnimationListView.canEditClipsInAnimationWindow);
+            m_ClipField.Add(m_NewClipButton);
 
             m_DurationField = new NonNegativeFloatField("Duration");
             m_DurationField.AddToClassList(durationUssClassName);
@@ -184,6 +187,8 @@ internal partial class StyleAnimationListView : StyleLonghandListView<StyleAnima
         {
             text = data.ToString(mask);
             m_ClipField.SetValueWithoutNotify(data.clip);
+            AnimationClipNewButtonController.UpdateButtonMode(m_NewClipButton,
+                m_AnimationListView.canEditClipsInAnimationWindow && data.clip != null);
             m_DurationField.SetValueWithoutNotify(data.duration);
             m_IterationCountField.SetValueWithoutNotify(data.iterationCount);
             m_DelayField.SetValueWithoutNotify(data.delay);
@@ -286,6 +291,7 @@ internal partial class StyleAnimationListView : StyleLonghandListView<StyleAnima
     readonly List<AnimationPlayState> m_AnimationPlayState = new();
 
     LonghandDescriptor<AnimationData>[] m_Descriptors;
+    bool m_CanEditClipsInAnimationWindow = true;
 
     protected override IReadOnlyList<LonghandDescriptor<AnimationData>> Descriptors => m_Descriptors ??= new[]
     {
@@ -338,11 +344,27 @@ internal partial class StyleAnimationListView : StyleLonghandListView<StyleAnima
         ReplaceBackingList(m_AnimationIterationCount, iterationCounts);
         ReplaceBackingList(m_AnimationDirection, directions);
         ReplaceBackingList(m_AnimationPlayState, playStates);
-        Refresh();
+        RefreshFromExternalPush();
     }
 
     public void SetLonghandContextMenu(StylePropertyId stylePropertyId, Action<DropdownMenu> populateMenu)
         => SetLonghandContextMenuCore(stylePropertyId, populateMenu);
+
+    // Whether a row's clip button offers Edit... (opening the Animation window) once a clip is assigned. The
+    // window edits whatever the global selection points at, so only a host that drives that selection may
+    // leave this on. Rebuilding the rows on change is what repaints buttons that already rendered as Edit...
+    public bool canEditClipsInAnimationWindow
+    {
+        get => m_CanEditClipsInAnimationWindow;
+        set
+        {
+            if (m_CanEditClipsInAnimationWindow == value)
+                return;
+
+            m_CanEditClipsInAnimationWindow = value;
+            Refresh();
+        }
+    }
 
     protected override void RaiseHostChangeEvent(int changeType, bool structural, bool cleared)
     {
@@ -371,3 +393,4 @@ internal partial class StyleAnimationListView : StyleLonghandListView<StyleAnima
         return new AnimationData(clip, duration, delay, iterationCount, direction, playState);
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

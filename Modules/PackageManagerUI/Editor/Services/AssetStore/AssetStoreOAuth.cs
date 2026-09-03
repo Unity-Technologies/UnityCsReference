@@ -140,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 else
                 {
-                    OnOperationError(string.Format(L10n.Tr("Error while getting auth code: {0}"), authCodeResponse.Exception));
+                    OnOperationError(string.Format(L10n.Tr("Error while getting auth code: {0}", null), authCodeResponse.Exception));
                 }
             });
         }
@@ -161,7 +161,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var secret = m_UnityConnect.GetConfigurationURL(CloudConfigUrl.CloudPackagesKey);
             if (string.IsNullOrEmpty(secret))
             {
-                OnOperationError(L10n.Tr("Error while getting access token: invalid configuration from Unity Connect"));
+                OnOperationError(L10n.Tr("Error while getting access token: invalid configuration from Unity Connect", null));
                 return;
             }
 
@@ -174,10 +174,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_AccessToken = null;
 
                 var response = m_HttpClientFactory.ParseResponseAsDictionary(httpClient);
-                var errorMessage = response == null ? L10n.Tr("Unable to parse http response.") : response.GetString("errorMessage");
+                var errorMessage = response == null ? L10n.Tr("Unable to parse http response.", null) : response.GetString("errorMessage");
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    OnOperationError(string.Format(L10n.Tr("Error while getting access token: {0}"), errorMessage));
+                    OnOperationError(string.Format(L10n.Tr("Error while getting access token: {0}", null), errorMessage));
                     return;
                 }
 
@@ -190,14 +190,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     ClearAccessTokenCallbacks();
                 }
                 else
-                    OnOperationError(L10n.Tr("Access token invalid"));
+                    OnOperationError(L10n.Tr("Access token invalid", null));
             };
             m_AccessTokenRequest.Begin();
         }
 
         private void OnOperationError(string errorMessage)
         {
-            Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] {0}"), errorMessage));
+            Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] {0}", null), errorMessage));
             onError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, errorMessage, UIError.Attribute.DetailInConsole));
 
             // when we have trouble getting access token, it's most likely because the auth code is no longer valid.

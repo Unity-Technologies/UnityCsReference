@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -14,8 +14,11 @@ namespace UnityEngine.UIElements
     [UxmlElement(visibility = LibraryVisibility.Hidden)]
     internal partial class RotateField : BaseField<Rotate>, IValueField<Rotate>
     {
-        public static readonly string styleFieldUssClassName = "unity-style-field";
-        internal static readonly UniqueStyleString styleFieldUssClassNameUnique = new(styleFieldUssClassName);
+        public new static readonly string ussClassName = "unity-rotate-field";
+        internal static readonly UniqueStyleString styleFieldUssClassNameUnique = new(ussClassName);
+
+        public static readonly string foldoutUssClassName = ussClassName + "__foldout";
+        static readonly UniqueStyleString foldoutUssClassNameUnique = new(foldoutUssClassName);
 
         AngleField m_AngleField;
         Vector3Field m_AxisField;
@@ -23,45 +26,41 @@ namespace UnityEngine.UIElements
         public AngleField angleField => m_AngleField;
         public Vector3Field axisField => m_AxisField;
 
-        private BaseFieldMouseDragger m_Dragger;
+        BaseFieldMouseDragger m_Dragger;
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
         public RotateField() : this(null) { }
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="label">The Label text.</param>
-        public RotateField(string label)
-            : base(label, null)
+        public RotateField(string label) : base(label, null)
         {
-            m_AngleField = new AngleField();
-            m_AxisField = new Vector3Field();
+            AddToClassList(styleFieldUssClassNameUnique);
 
-            visualInput.Add(m_AngleField);
-            visualInput.Add(m_AxisField);
+            var foldout = new Foldout { text = "Rotate", value = false, viewDataKey = "unity-rotate-foldout" };
+            foldout.AddToClassList(foldoutUssClassNameUnique);
+            foldout.toggleOnLabelClick = false;
 
-            m_AngleField.AddToClassList(styleFieldUssClassNameUnique);
+            m_AngleField = new AngleField("Angle");
+            m_AxisField = new Vector3Field("Axis");
+
+            m_AngleField.AddToClassList(alignedFieldUssClassNameUnique);
+            m_AxisField.AddToClassList(alignedFieldUssClassNameUnique);
+
+            foldout.Add(m_AngleField);
+            foldout.Add(m_AxisField);
+            visualInput.Add(foldout);
 
             m_AngleField.RegisterValueChangedCallback(e =>
             {
-                if (e.newValue != value.angle)
-                {
-                    value = new Rotate(e.newValue, value.axis);
-                }
+                UpdateRotateField();
+                e.StopPropagation();
             });
 
             m_AxisField.RegisterValueChangedCallback(e =>
             {
-                if (e.newValue != value.axis)
-                {
-                    value = new Rotate(value.angle, e.newValue);
-                }
+                UpdateRotateField();
+                e.StopPropagation();
             });
 
-            AddLabelDragger();
+            AddLabelDragger(foldout);
             SetValueWithoutNotify(Rotate.Initial());
         }
 
@@ -72,36 +71,30 @@ namespace UnityEngine.UIElements
             m_AxisField.SetValueWithoutNotify(value.axis);
         }
 
-        protected void AddLabelDragger()
+        void AddLabelDragger(Foldout foldout)
         {
-            m_Dragger = new FieldMouseDragger<Angle>(m_AngleField);
-            EnableLabelDragger(!m_AngleField.isReadOnly);
+            var dragZone = foldout.Q(className: Toggle.textUssClassName);
+            if (dragZone == null)
+                return;
+
+            m_Dragger = new FieldMouseDragger<Rotate>(this);
+            m_Dragger.SetDragZone(dragZone);
+            dragZone.EnableInClassList(labelDraggerVariantUssClassNameUnique, true);
         }
-
-        void EnableLabelDragger(bool enable)
-        {
-            if (m_Dragger != null)
-            {
-                m_Dragger.SetDragZone(enable ? labelElement : null);
-
-                labelElement.EnableInClassList(labelDraggerVariantUssClassNameUnique, enable);
-            }
-        }
-
 
         public void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, Rotate startValue)
         {
             m_AngleField.ApplyInputDeviceDelta(delta, speed, startValue.angle);
         }
 
-        public void StartDragging()
-        {
-            m_AngleField.StartDragging();
-        }
+        public void StartDragging() => m_AngleField.StartDragging();
 
-        public void StopDragging()
+        public void StopDragging() => m_AngleField.StopDragging();
+
+        void UpdateRotateField()
         {
-            m_AngleField.StopDragging();
+            value = new Rotate(m_AngleField.value, m_AxisField.value);
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

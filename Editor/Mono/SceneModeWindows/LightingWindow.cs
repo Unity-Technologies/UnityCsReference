@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,7 +38,7 @@ namespace UnityEditor
             public static readonly GUIContent cancelLabel = EditorGUIUtility.TrTextContent("Cancel");
             public static readonly GUIContent ImageconversionModuleDisabledMessage = EditorGUIUtility.TrTextContentWithIcon("Generate Lighting is unavailable without the Image Conversion Module.", MessageType.Warning);
 
-            public static readonly string unityComputeLightBakerInfoBoxText = L10n.Tr("The Unity Compute Light Baker samples the environment and emissive surfaces with the direct sample count. To improve quality increase the number of Direct Samples. To reduce bake time, set GPU Baking Profile to Highest Performance.");
+            public static readonly string unityComputeLightBakerInfoBoxText = L10n.Tr("The Unity Compute Light Baker samples the environment and emissive surfaces with the direct sample count. To improve quality increase the number of Direct Samples. To reduce bake time, set GPU Baking Profile to Highest Performance.", null);
             public static readonly GUIContent dontShowAgain = EditorGUIUtility.TrTextContent("Don't show again");
 
             public static readonly GUIContent progressiveGPUBakingDevice = EditorGUIUtility.TrTextContent("GPU Baking Device", "Will list all available GPU devices.");
@@ -49,7 +50,7 @@ namespace UnityEditor
 
             public static readonly GUIContent invalidEnvironmentLabel = EditorGUIUtility.TrTextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning);
             public static readonly GUIContent unsupportedDenoisersLabel = EditorGUIUtility.TrTextContentWithIcon("Unsupported denoiser selected", MessageType.Error);
-            public static readonly GUIContent cannotBakeRosettaNotInstalledLabel = EditorGUIUtility.TrTextContentWithIcon("Unable to start the baking process as the required version of Apple Rosetta could not be found", MessageType.Error);
+            public static readonly GUIContent cannotBakeRosettaNotInstalledLabel = EditorGUIUtility.TrTextContentWithIcon("The lighting features this Scene uses require Apple Rosetta 2, which is not installed. Use a lightmapper that runs natively instead: set Default Light Baker to Unity Compute in Project Settings > Graphics.", MessageType.Error);
 
             public static readonly GUIContent GPUUseHardwareRayTracing = EditorGUIUtility.TrTextContent("Hardware Ray Tracing", "Use hardware ray tracing if the GPU device supports it.");
             public static readonly GUIContent GPUUseHardwareRayTracingNotSupported = EditorGUIUtility.TrTextContent("Hardware Ray Tracing", "Hardware ray tracing is not supported by the GPU device.");
@@ -609,6 +610,7 @@ namespace UnityEditor
                 {
                     // Bake button if we are not currently baking
                     bool showBakeButton = Lightmapping.shouldBakeInteractively || !Lightmapping.isRunning;
+                    bool rosettaRequiredAndUnavailable = Lightmapping.IsRosettaRequiredAndUnavailable();
                     if (showBakeButton)
                     {
                         bool anythingCompiling = ShaderUtil.anythingCompiling;
@@ -622,7 +624,7 @@ namespace UnityEditor
                                 bool usingUnityComputeLightmapper = Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.UnityComputeGPU;
                                 bool doDisableMainButton =
                                     (!m_ImageConversionModuleAvailable && usingUnityComputeLightmapper) ||
-                                    Lightmapping.IsRosettaRequiredAndUnavailable() ||
+                                    rosettaRequiredAndUnavailable ||
                                     !SelectedDenoisersSupported();
 
                                 GUIContent guiContent = anythingCompiling ? Styles.bakeLabelAnythingCompiling : Styles.bakeLabel;
@@ -654,6 +656,9 @@ namespace UnityEditor
                             Lightmapping.Cancel();
                         }
                     }
+
+                    if (rosettaRequiredAndUnavailable)
+                        DrawRosettaNotInstalledLabel();
                 }
 
                 // Per-tab summaries.
@@ -858,6 +863,16 @@ namespace UnityEditor
                 s.Append("s");
         }
 
+        static void DrawRosettaNotInstalledLabel()
+        {
+            using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
+            {
+                GUILayout.BeginVertical();
+                GUILayout.Label(Styles.cannotBakeRosettaNotInstalledLabel, EditorStyles.wordWrappedMiniLabel);
+                GUILayout.EndVertical();
+            }
+        }
+
         internal static void Summary()
         {
             if (!SelectedDenoisersSupported() && !Lightmapping.isRunning)
@@ -870,15 +885,6 @@ namespace UnityEditor
                 }
             }
 
-            if (Lightmapping.IsRosettaRequiredAndUnavailable())
-            {
-                using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
-                {
-                    GUILayout.BeginVertical();
-                    GUILayout.Label(Styles.cannotBakeRosettaNotInstalledLabel, EditorStyles.wordWrappedMiniLabel);
-                    GUILayout.EndVertical();
-                }
-            }
             bool outdatedEnvironment = RenderSettings.WasUsingAutoEnvironmentBakingWithNonDefaultSettings();
             if (outdatedEnvironment && !Lightmapping.isRunning)
             {
@@ -1037,3 +1043,4 @@ namespace UnityEditor
         }
     }
 } // namespace
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

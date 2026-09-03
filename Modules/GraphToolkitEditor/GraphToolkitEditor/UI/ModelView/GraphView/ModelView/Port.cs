@@ -585,7 +585,7 @@ namespace Unity.GraphToolkit.Editor
             if (PortModel.Capacity == PortCapacity.None || PortModel.Options.HasFlag(PortModelOptions.Hidden))
                 return;
 
-            evt.menu.AppendAction(L10n.Tr("Create Variable from port"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Create Variable from port", null), _ =>
             {
                 var blackboardSection = GraphView.GraphModel.GetSectionModel(string.IsNullOrEmpty(sectionName) ? GraphModel.DefaultSectionName : sectionName);
                 var modifierFlags = !isInputOrOutput ? ModifierFlags.None :
@@ -638,22 +638,9 @@ namespace Unity.GraphToolkit.Editor
 
         void InvokeUserGraphContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            var graph = (GraphView?.GraphModel as GraphModelImp)?.Graph as Graph;
-            if (graph == null)
-                return;
+            var owner = (GraphView?.GraphModel as GraphModelImp)?.Graph;
 
-            var context = new GraphMenuContext(graph, PortModel, evt.mousePosition, evt.menu);
-
-            var itemCountBefore = evt.menu.MenuItems().Count;
-            MenuCommandRegistry.InvokeGraphHandlers(context);
-
-            // If a handler added entries, separate them from the built-in entries
-            // above so the user's items don't blend visually with the previous
-            // category. Skip when the user's first item is already a separator so
-            // a handler that prepends its own doesn't end up with two.
-            var items = evt.menu.MenuItems();
-            if (items.Count > itemCountBefore && items[itemCountBefore] is not DropdownMenuSeparator)
-                evt.menu.InsertSeparator(string.Empty, itemCountBefore);
+            ContextualMenuUserEntries.AppendGraphEntries(evt, owner, PortModel);
         }
 
         bool IsMouseOnCapsuleNodeTitle(Vector2 mousePosition)
@@ -741,7 +728,7 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             var connectedPortsCount = PortModel.GetConnectedPorts().Count;
-            evt.menu.AppendAction(L10n.Tr("Disconnect All Wires"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Disconnect All Wires", null), _ =>
             {
                 GraphView.Dispatch(new DisconnectWiresOnPortCommand(PortModel));
             }, connectedPortsCount == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
@@ -752,7 +739,7 @@ namespace Unity.GraphToolkit.Editor
             if (!GraphView.GraphModel.CanExpandPort(PortModel))
                 return;
 
-            evt.menu.AppendAction(L10n.Tr((expand ? "Expand" :  "Collapse") + " Port"), _ =>
+            evt.menu.AppendAction(L10n.Tr((expand ? "Expand" :  "Collapse") + " Port", null), _ =>
             {
                 GraphView.Dispatch(new ExpandPortCommand(expand, new[] { PortModel }));
             }, !PortModel.IsExpandedSelf && expand || PortModel.IsExpandedSelf && !expand ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
@@ -764,7 +751,7 @@ namespace Unity.GraphToolkit.Editor
             if (PortModel.Capacity == PortCapacity.None || PortModel.Options.HasFlag(PortModelOptions.Hidden))
                 return;
 
-            evt.menu.AppendAction(L10n.Tr("Add Node from port"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Add Node from port", null), _ =>
             {
                 var portPosition = GetGlobalCenter();
 

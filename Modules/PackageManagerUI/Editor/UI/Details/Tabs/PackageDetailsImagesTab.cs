@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageDetailsImagesTab(IUnityConnectProxy unityConnect, IAssetStoreCache assetStoreCache) : base(unityConnect)
         {
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Images");
+            m_DisplayName = L10n.Tr("Images", null);
             m_AssetStoreCache = assetStoreCache;
 
             m_ImageTextures = new List<Texture2D>();

@@ -10,8 +10,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     [UxmlElement]
     internal partial class SignInBar : VisualElement
     {
-        private static readonly string k_Message = L10n.Tr("to manage Asset Store packages");
-        private static readonly string k_ButtonText = L10n.Tr("Sign in");
+        private static readonly string k_Message = L10n.Tr("to manage Asset Store packages", null);
+        private static readonly string k_ButtonText = L10n.Tr("Sign in", null);
 
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IPageManager m_PageManager;

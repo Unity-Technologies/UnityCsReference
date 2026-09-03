@@ -204,7 +204,9 @@ namespace UnityEditor
             var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
             var lightmapper = settings.lightmapper;
             bool bakedGI = settings.bakedGI;
+#pragma warning disable 618
             bool realtimeGI = settings.realtimeGI;
+#pragma warning restore 618
 
             m_GameObjectsSerializedObject.Update();
 
@@ -370,7 +372,9 @@ namespace UnityEditor
 
             var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
             bool bakedGI = settings.bakedGI;
+#pragma warning disable 618
             bool realtimeGI = settings.realtimeGI;
+#pragma warning restore 618
 
             ReceiveGI receiveGI = (ReceiveGI)m_ReceiveGI.intValue;
 
@@ -805,7 +809,9 @@ namespace UnityEditor
 
             var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
 
+#pragma warning disable 618
             bool showEnlightenSettings = isPrefabAsset || settings.realtimeGI;
+#pragma warning restore 618
 
             if (!HasSupportedTopologyForGI(mesh))
             {
@@ -935,7 +941,7 @@ namespace UnityEditor
                 }
             }
             if (terrainChunksX * terrainChunksY > 1)
-                EditorGUILayout.HelpBox(string.Format(L10n.Tr("Terrain is chunked up into {0} instances for baking."), terrainChunksX * terrainChunksY), MessageType.None);
+                EditorGUILayout.HelpBox(string.Format(L10n.Tr("Terrain is chunked up into {0} instances for baking.", null), terrainChunksX * terrainChunksY), MessageType.None);
         }
 
         void ShowBakePerformanceWarning(Terrain terrain)
@@ -953,8 +959,10 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(Styles.resolutionTooHighWarning.text, MessageType.Warning);
             }
 
+#pragma warning disable 618
             var terrainClustersInWidth = terrainSystemTexelsInWidth * lightmapParameters.clusterResolution;
             var terrainClustersInHeight = terrainSystemTexelsInHeight * lightmapParameters.clusterResolution;
+#pragma warning restore 618
             var terrainTrisPerClusterInWidth = terrain.terrainData.heightmapResolution / terrainClustersInWidth;
             var terrainTrisPerClusterInHeight = terrain.terrainData.heightmapResolution / terrainClustersInHeight;
             const float kTerrainClusterTriDensityThreshold = 256.0f / 5.0f;

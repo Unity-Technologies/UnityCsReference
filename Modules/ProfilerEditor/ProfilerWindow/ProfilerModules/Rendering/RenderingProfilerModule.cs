@@ -29,11 +29,11 @@ namespace UnityEditorInternal.Profiling
 
         static readonly string[] k_ChartModeNames =
         {
-            L10n.Tr("Rendering"),
-            L10n.Tr("GRD Pipeline"),
-            L10n.Tr("GRD Coverage"),
-            L10n.Tr("GRD Instances"),
-            L10n.Tr("GRD Batches"),
+            L10n.Tr("Rendering", null),
+            L10n.Tr("GRD Pipeline", null),
+            L10n.Tr("GRD Coverage", null),
+            L10n.Tr("GRD Instances", null),
+            L10n.Tr("GRD Batches", null),
         };
 
         const int k_DefaultOrderIndex = 2;

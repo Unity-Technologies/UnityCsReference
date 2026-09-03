@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using Unity.Timeline.Foundation.Time;
 using UnityEngine.TestTools;
@@ -13,6 +13,7 @@ namespace Unity.Timeline.Foundation.Model
 {
     readonly struct Marker : IEquatable<Marker>, IComparable<Marker>
     {
+        [NoAutoStaticsCleanup] // immutable invalid-sentinel; content is null and id/time are inert value types
         public static readonly Marker Invalid = new Marker(UniqueID.Invalid);
 
         public readonly UniqueID id;
@@ -91,4 +92,3 @@ namespace Unity.Timeline.Foundation.Model
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

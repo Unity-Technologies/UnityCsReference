@@ -32,7 +32,7 @@ namespace UnityEditor.AddComponent
             get => m_ClassName;
         }
 
-        public NewScriptDropdownItem() : base("New Script", L10n.Tr("New Script")) {}
+        public NewScriptDropdownItem() : base("New Script", L10n.Tr("New Script", null)) {}
 
         internal bool CanCreate() =>
             m_ClassName.Length > 0 &&

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine.Pool;
@@ -253,7 +254,7 @@ namespace UnityEngine.UIElements
             m_ScrollView.UnregisterCallback<FocusOutEvent>(OnFocusOut);
         }
 
-        void Hide(bool giveFocusBack = false)
+        internal void Hide(bool giveFocusBack = false)
         {
             m_MenuContainer.RemoveFromHierarchy();
 
@@ -266,6 +267,10 @@ namespace UnityEngine.UIElements
             }
 
             onClose?.Invoke();
+
+            // After RemoveFromHierarchy, so the menu already reads as closed when the bridge
+            // notifies the screen reader.
+            UITKAccessibilityBridge.OnDropdownMenuClosed(this);
 
             contentContainer.userData = null;
             m_TargetElement = null;
@@ -746,6 +751,8 @@ namespace UnityEngine.UIElements
             targetElement.SetActivePseudoState(true);
 
             contentContainer.userData = this;
+
+            UITKAccessibilityBridge.OnDropdownMenuOpened(this);
         }
 
         void SetFitContentWidth(bool fit)
@@ -881,3 +888,4 @@ namespace UnityEngine.UIElements
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

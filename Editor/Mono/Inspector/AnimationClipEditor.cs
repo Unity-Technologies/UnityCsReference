@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using UnityEngine;
 using UnityEditor.Animations;
 using System;
@@ -52,6 +53,7 @@ namespace UnityEditor
                 }
 
                 EditorPrefs.SetInt(ModelImporterClipEditor.ActiveClipIndex, clipIndex);
+                EditorPrefs.SetString(ModelImporterClipEditor.ActiveClipIndexAssetPath, importer.assetPath);
             }
         }
 
@@ -59,7 +61,7 @@ namespace UnityEditor
         {
             public static readonly GUIContent StartFrame = EditorGUIUtility.TrTextContent("Start", "Start frame of the clip.");
             public static readonly GUIContent EndFrame = EditorGUIUtility.TrTextContent("End", "End frame of the clip.");
-            public static readonly string AverageVelocity = L10n.Tr("Average Velocity: {0}\nAverage Angular Y Speed: {1} deg/s");
+            public static readonly string AverageVelocity = L10n.Tr("Average Velocity: {0}\nAverage Angular Y Speed: {1} deg/s", null);
 
             public static readonly GUIContent HasAdditiveReferencePose = EditorGUIUtility.TrTextContent("Additive Reference Pose", "Enable to define the additive reference pose frame.");
             public static readonly GUIContent AdditiveReferencePoseFrame = EditorGUIUtility.TrTextContent("Pose Frame", "Pose Frame.");
@@ -134,7 +136,7 @@ namespace UnityEditor
             public static readonly GUIContent Events = EditorGUIUtility.TrTextContent("Events");
             public static readonly GUIContent LoopMatch = EditorGUIUtility.TrTextContent("loop match");
 
-            public static readonly string InvalidMultiSelection = L10n.Tr("Both legacy and non legacy Animation Clips have been selected. This combination cannot be edited together. Select either legacy or non legacy Animation Clips.");
+            public static readonly string InvalidMultiSelection = L10n.Tr("Both legacy and non legacy Animation Clips have been selected. This combination cannot be edited together. Select either legacy or non legacy Animation Clips.", null);
 
             public static readonly GUIContent AddEventContent = EditorGUIUtility.TrIconContent("Animation.AddEvent", "Add Event.");
 
@@ -2170,3 +2172,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

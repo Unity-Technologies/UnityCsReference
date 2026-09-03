@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TreeEditor not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -28,7 +27,7 @@ namespace TreeEditor
 
         static class Styles
         {
-            public static string groupSeedString = LocalizationDatabase.GetLocalizedString("Tree Seed|The global seed that affects the entire tree. Use it to randomize your tree, while keeping the general structure of it.");
+            public static readonly string groupSeedString = LocalizationDatabase.GetLocalizedString("Tree Seed|The global seed that affects the entire tree. Use it to randomize your tree, while keeping the general structure of it.");
         }
 
         public void SetRootMatrix(Matrix4x4 m)
@@ -83,4 +82,3 @@ namespace TreeEditor
         internal override string EdgeTurbulenceString { get { return null; } }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

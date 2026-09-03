@@ -2,16 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System;
 using UnityEditor.Analytics;
 using UnityEngine;
 using UnityEngine.Networking;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
     [InitializeOnLoad]
-    internal class AnalyticsService : SingleService
+    internal partial class AnalyticsService : SingleService
     {
         public override string name { get; }
         public override string title { get; }
@@ -29,23 +30,38 @@ namespace UnityEditor.Connect
         public override bool shouldEnableOnProjectCreation => false;
         public override bool shouldSyncOnProjectRebind => true;
 
-        static readonly AnalyticsService k_Instance;
+        [AutoStaticsCleanupOnCodeReload]
+        static AnalyticsService k_Instance;
 
-        public static AnalyticsService instance => k_Instance;
+        public static AnalyticsService instance
+        {
+            get
+            {
+                EnsureInstanceInitialized();
+                return k_Instance;
+            }
+        }
 
         private struct AnalyticsServiceState { public bool analytics; }
 
-        static AnalyticsService()
+        // [OnCodeLoaded] re-registers this service with ServicesRepository after a reload;
+        // the null check in `instance` covers consumers that reach us before it has run
+        // (ordering across classes is not guaranteed).
+        [OnCodeLoaded]
+        static void EnsureInstanceInitialized()
         {
-            k_Instance = new AnalyticsService();
+            if (k_Instance == null)
+            {
+                k_Instance = new AnalyticsService();
+            }
         }
 
         AnalyticsService()
         {
             const string serviceName = "Legacy Analytics";
             name = serviceName;
-            title = L10n.Tr(serviceName);
-            description = L10n.Tr("Discover player insights");
+            title = L10n.Tr(serviceName, null);
+            description = L10n.Tr("Discover player insights", null);
             pathTowardIcon = @"Builtin Skins\Shared\Images\ServicesWindow-ServiceIcon-Analytics.png";
             displayToggle = true;
             packageName = "com.unity.analytics";
@@ -94,4 +110,4 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

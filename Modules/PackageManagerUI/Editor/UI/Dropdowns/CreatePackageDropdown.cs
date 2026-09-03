@@ -12,7 +12,7 @@ internal class CreatePackageDropdown : DropdownContent
 {
     private static readonly Vector2 k_DefaultWindowSize = new(320, 52);
     private static readonly Vector2 k_WindowSizeWithError = new(320, 94);
-    private static readonly string k_GeneralExceptionErrorMessage = L10n.Tr("An error occured while creating the package. See console for more details.");
+    private static readonly string k_GeneralExceptionErrorMessage = L10n.Tr("An error occured while creating the package. See console for more details.", null);
 
     public override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
 
@@ -29,7 +29,7 @@ internal class CreatePackageDropdown : DropdownContent
         Add(root);
         cache = new VisualElementCache(root);
 
-        packageDisplayNameField.textEdition.placeholder = L10n.Tr("Package display name");
+        packageDisplayNameField.textEdition.placeholder = L10n.Tr("Package display name", null);
 
 
         submitButton.clickable.clicked += SubmitClicked;
@@ -81,9 +81,9 @@ internal class CreatePackageDropdown : DropdownContent
 
         if (!m_PackageCreator.CanGenerateValidNamespace(packageDisplayName))
         {
-            var title = L10n.Tr("Cannot generate namespace");
-            var message = L10n.Tr("A valid namespace could not be generated from the display name you entered. The default namespace will be used instead. Do you want to continue?");
-            if (!m_Application.DisplayDialog("fallbackToDefaultNamespace", title, message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
+            var title = L10n.Tr("Cannot generate namespace", null);
+            var message = L10n.Tr("A valid namespace could not be generated from the display name you entered. The default namespace will be used instead. Do you want to continue?", null);
+            if (!m_Application.DisplayDialog("fallbackToDefaultNamespace", title, message, L10n.Tr("Continue", null), L10n.Tr("Cancel", null)))
                 return;
         }
 

@@ -2,16 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.View.Internals
 {
-    static class MoveManipulatorUtils
+    static partial class MoveManipulatorUtils
     {
-        static List<VisualElement> s_Picks = new List<VisualElement>();
+        [AutoStaticsCleanupOnCodeReload] // scratch buffer for panel picking; retains the last pick's VisualElements, which must not outlive a code reload
+        static readonly List<VisualElement> s_Picks = new List<VisualElement>();
 
         public static ItemElement FindItemFromTarget(VisualElement target, Vector2 mousePosition)
         {
@@ -32,4 +33,3 @@ namespace Unity.Timeline.Foundation.View.Internals
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

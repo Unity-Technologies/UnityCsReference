@@ -13,7 +13,7 @@ namespace UnityEditor.Build
         static readonly GUIContent k_BuildHistoryLimitText = EditorGUIUtility.TrTextContent(
             "Build History Limit",
             "Maximum number of builds to retain in Build History. 0 disables automatic deletion. Changes take effect on the next build.");
-        private static readonly string k_OpenFolder = L10n.Tr("Open Containing Folder");
+        private static readonly string k_OpenFolder = L10n.Tr("Open Containing Folder", null);
 
         private BuildPipelineSettingsProvider()
             : base("Project/Build Pipeline", SettingsScope.Project)

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.GraphToolkit.Editor.Implementation;
 using UnityEngine;
 
 namespace Unity.GraphToolkit.Editor
@@ -29,6 +30,7 @@ namespace Unity.GraphToolkit.Editor
     /// See also:
     ///
     ///- <see cref="Condition{T}"/> for the base class used to define custom conditions
+    ///- <see cref="ConditionView{T}"/> for adding custom UI to a condition's row in the transition inspector
     ///- <see cref="StateMachine"/> for the graph type that contains transitions and conditions
     ///- <see cref="State"/> for the base class used to define custom states
     ///- <see cref="IGroupCondition"/> for reading a transition's condition hierarchy
@@ -57,6 +59,17 @@ namespace Unity.GraphToolkit.Editor
         public Hash128 ID => GetImplementation().ID;
 
         /// <summary>
+        /// The rule this condition belongs to, or <c>null</c> when the condition is not part of one.
+        /// </summary>
+        public ITransitionRule Rule => GetImplementation().Rule;
+
+        /// <summary>
+        /// The <see cref="StateMachine"/> that contains this condition, or <see langword="null"/> when the condition
+        /// is not part of a state machine.
+        /// </summary>
+        public StateMachine StateMachine => (m_Implementation?.GraphModel as GraphModelImp)?.Graph as StateMachine;
+
+        /// <summary>
         /// The label displayed for the condition in the transition inspector.
         /// </summary>
         /// <remarks>
@@ -70,6 +83,44 @@ namespace Unity.GraphToolkit.Editor
         /// The text displayed when hovering over the condition in the transition inspector.
         /// </summary>
         public virtual string Tooltip => null;
+
+        
+        /// <summary>
+        /// Creates a new empty group condition.
+        /// </summary>
+        /// <returns>The newly created group condition.</returns>
+        /// <remarks>
+        /// The condition is not added to any group; add it with <see cref="IGroupCondition.Add"/>.
+        /// </remarks>
+        public static IGroupCondition CreateGroupCondition()
+        {
+            return new GroupConditionModel();
+        }
+
+        /// <summary>
+        /// Creates a new variable condition.
+        /// </summary>
+        /// <param name="variable">The variable the condition compares.</param>
+        /// <param name="defaultValue">The initial value the variable is compared against.</param>
+        /// <returns>The newly created variable condition.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="variable"/> is <c>null</c>.</exception>
+        /// <remarks>
+        /// The condition is not added to any group; add it with <see cref="IGroupCondition.Add"/>. The comparison
+        /// operator of the new condition defaults to <see cref="ConditionComparison.Equal"/>.
+        /// </remarks>
+        public static IVariableCondition CreateVariableCondition(IVariable variable, object defaultValue, ConditionComparison comparison = ConditionComparison.Equal)
+        {
+            if (variable == null)
+                throw new ArgumentNullException(nameof(variable));
+
+            var condition = new VariableConditionModel { GraphModel = ((VariableDeclarationModelBase)variable).GraphModel };
+            condition.SetVariable((VariableDeclarationModelBase)variable);
+            condition.Comparison = comparison;
+            if (defaultValue != null && condition.Value != null)
+                condition.Value.ObjectValue = defaultValue;
+
+            return condition;
+        }
     }
 
     /// <summary>

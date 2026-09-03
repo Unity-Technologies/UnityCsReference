@@ -175,7 +175,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     // ToS error are not related to any specific package, and we don't really have a good place to
                     // show the error in the UI. It is to be addressed in https://jira.unity3d.com/browse/PAX-1994.
-                    Debug.Log(string.Format(L10n.Tr("[Package Manager Window] {0}"), error.message));
+                    Debug.Log(string.Format(L10n.Tr("[Package Manager Window] {0}", null), error.message));
                 });
             return true;
         }
@@ -304,9 +304,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (!m_Application.isBatchMode)
                     m_Application.DisplayDialog("assetCacheLocationChanged",
-                        L10n.Tr("Assets Cache location changed"),
-                        L10n.Tr("The Assets Cache location has been changed, all current downloads will be canceled."),
-                        L10n.Tr("OK"));
+                        L10n.Tr("Assets Cache location changed", null),
+                        L10n.Tr("The Assets Cache location has been changed, all current downloads will be canceled.", null),
+                        L10n.Tr("OK", null));
 
                 AbortAllDownloads();
             }
@@ -325,9 +325,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     else
                     {
                         var result = m_Application.DisplayDialog("acceptToS",
-                            L10n.Tr("Accepting Terms of Service and EULA"),
-                            L10n.Tr("You need to accept Asset Store Terms of Service and EULA before you can download/update any package."),
-                            L10n.Tr("Read and accept"), L10n.Tr("Close"));
+                            L10n.Tr("Accepting Terms of Service and EULA", null),
+                            L10n.Tr("You need to accept Asset Store Terms of Service and EULA before you can download/update any package.", null),
+                            L10n.Tr("Read and accept", null), L10n.Tr("Close", null));
 
                         if (result)
                             m_UnityConnect.OpenAuthorizedURLInWebBrowser(k_TermsOfServicesURL);

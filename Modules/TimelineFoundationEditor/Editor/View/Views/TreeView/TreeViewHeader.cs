@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Widgets;
 using UnityEngine.UIElements;
 
@@ -14,6 +14,7 @@ namespace Unity.Timeline.Foundation.View
         const string k_ControlsHeader = "controlsHeader";
         const string k_ContentsHeader = "contentsHeader";
 
+        [NoAutoStaticsCleanup] // Immutable UXML template-path descriptor; holds only a fixed path string, safe to persist across reload.
         static readonly TemplateResource k_Template = Internals.UIResources.TemplateFactory.Get<TreeViewHeader>();
 
         public VisualElement ControlsHeader { get; }
@@ -43,4 +44,3 @@ namespace Unity.Timeline.Foundation.View
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

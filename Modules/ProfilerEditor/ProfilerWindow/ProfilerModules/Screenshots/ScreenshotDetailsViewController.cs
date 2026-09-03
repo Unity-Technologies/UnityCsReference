@@ -17,6 +17,14 @@ namespace UnityEditorInternal.Profiling
     {
         const string k_UxmlResourceName = "Profiler/Screenshots/ScreenshotDetailsView.uxml";
 
+        static class Content
+        {
+            public static readonly string k_NoScreenshotAvailableFormat = L10n.Tr("Frame {0} - No screenshot available");
+            public static readonly string k_FrameResolutionFormat = L10n.Tr("Frame {0} - {1}x{2}");
+            public static readonly string k_ShowingFromFrameOneAgoFormat = L10n.Tr("Frame {0} - Showing screenshot from frame {1} (1 frame ago)");
+            public static readonly string k_ShowingFromFrameManyAgoFormat = L10n.Tr("Frame {0} - Showing screenshot from frame {1} ({2} frames ago)");
+        }
+
         readonly ScreenshotIndexCatalogue m_Catalogue;
         Image m_ScreenshotImage;
         VisualElement m_EmptyState;
@@ -54,13 +62,13 @@ namespace UnityEditorInternal.Profiling
 
             m_ScreenshotImage.scaleMode = ScaleMode.ScaleToFit;
 
-            emptyStateTitle.text = L10n.Tr("No screenshots data available");
+            emptyStateTitle.text = L10n.Tr("No screenshots data available", null);
 
             var asyncReadbackLink = $"<a href=\"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/ScriptReference/Rendering.AsyncGPUReadback.html\">AsyncGPUReadback</a>";
             emptyStateBody.enableRichText = true;
             emptyStateBody.text = string.Format(
                 L10n.Tr("Screenshots are captured automatically while profiling a Player or Play Mode, as long as the platform supports {0}.\n\n" +
-                        "The rate of screenshot capture can be modified under Preferences > Analysis > Profiler, or disabled by setting a value below 1."),
+                        "The rate of screenshot capture can be modified under Preferences > Analysis > Profiler, or disabled by setting a value below 1.", null),
                 asyncReadbackLink);
 
             return view;
@@ -90,12 +98,16 @@ namespace UnityEditorInternal.Profiling
                 // Resolve the source frame from the catalogue first — cheap (binary search, no
                 // pixel-data read). If it points at the same EmissionFrame we already have on
                 // screen, skip the expensive extract step and only refresh the label text.
-                if (!TryResolveSourceFrame(logicalFrame, firstAvailableFrame, out var sourceEmissionFrame, out var sourceLogicalFrame))
+                if (m_Catalogue == null
+                    || !m_Catalogue.TryResolveDisplayedScreenshot(logicalFrame, firstAvailableFrame, out var source))
                 {
                     ClearCurrentTexture();
-                    SetInfoText($"Frame {logicalFrame + 1} - No screenshot available");
+                    SetInfoText(string.Format(Content.k_NoScreenshotAvailableFormat, logicalFrame + 1));
                     return;
                 }
+
+                var sourceEmissionFrame = source.EmissionFrame;
+                var sourceLogicalFrame = source.LogicalFrame;
 
                 if (m_CurrentTexture != null && sourceEmissionFrame == m_CurrentTextureEmissionFrame)
                 {
@@ -107,7 +119,7 @@ namespace UnityEditorInternal.Profiling
                 if (!extracted.Found)
                 {
                     ClearCurrentTexture();
-                    SetInfoText($"Frame {logicalFrame + 1} - No screenshot available");
+                    SetInfoText(string.Format(Content.k_NoScreenshotAvailableFormat, logicalFrame + 1));
                     return;
                 }
 
@@ -143,51 +155,18 @@ namespace UnityEditorInternal.Profiling
         void UpdateInfoText(int requestedLogicalFrame, int sourceLogicalFrame, Texture2D texture)
         {
             var requestedSourceDiff = requestedLogicalFrame - sourceLogicalFrame;
-            SetInfoText(sourceLogicalFrame == requestedLogicalFrame
-                ? $"Frame {requestedLogicalFrame + 1} - {texture.width}x{texture.height}"
-                : $"Frame {requestedLogicalFrame + 1} - Showing screenshot from frame {sourceLogicalFrame + 1} " +
-                 (requestedSourceDiff == 1 ? "(1 frame ago)" : $"({requestedSourceDiff} frames ago)"));
+            if (sourceLogicalFrame == requestedLogicalFrame)
+                SetInfoText(string.Format(Content.k_FrameResolutionFormat, requestedLogicalFrame + 1, texture.width, texture.height));
+            else if (requestedSourceDiff == 1)
+                SetInfoText(string.Format(Content.k_ShowingFromFrameOneAgoFormat, requestedLogicalFrame + 1, sourceLogicalFrame + 1));
+            else
+                SetInfoText(string.Format(Content.k_ShowingFromFrameManyAgoFormat, requestedLogicalFrame + 1, sourceLogicalFrame + 1, requestedSourceDiff));
         }
 
         struct ScreenshotResult
         {
             public Texture2D Texture;
             public bool Found;
-        }
-
-        // Returns the EmissionFrame to extract pixel data from, plus the LogicalFrame that source
-        // depicts (used for the "Showing from frame N (M frames ago)" label). Does no pixel-data
-        // reads — caller uses the EmissionFrame to decide whether to reuse a cached texture.
-        bool TryResolveSourceFrame(int logicalFrame, int firstAvailableFrame, out int sourceEmissionFrame, out int sourceLogicalFrame)
-        {
-            sourceEmissionFrame = -1;
-            sourceLogicalFrame = -1;
-
-            if (m_Catalogue == null)
-                return false;
-
-            // Direct LogicalFrame hit: the catalogue tells us the EmissionFrame to read metadata from.
-            if (m_Catalogue.TryGetEmissionFrame(logicalFrame, out int directEmissionFrame))
-            {
-                sourceEmissionFrame = directEmissionFrame;
-                sourceLogicalFrame = logicalFrame;
-                return true;
-            }
-
-            // Fall back to the most recent prior screenshot in LogicalFrame space so the panel
-            // keeps showing something rather than blanking out for every non-capture frame.
-            // Catalogue-driven (binary search), so this works for legacy captures that lack
-            // kFramesSinceLastScreenshot metadata on the requested frame.
-            if (!m_Catalogue.TryGetNearestPriorLogicalFrame(logicalFrame, out ScreenshotFrame nearest))
-                return false;
-
-            // Reject a match whose depicted frame has fallen below the available window.
-            if (nearest.LogicalFrame < firstAvailableFrame)
-                return false;
-
-            sourceEmissionFrame = nearest.EmissionFrame;
-            sourceLogicalFrame = nearest.LogicalFrame;
-            return true;
         }
 
         static ScreenshotResult ExtractScreenshotFromEmissionFrame(int emissionFrame)

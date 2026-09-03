@@ -32,6 +32,90 @@ static class SerializedPropertyExtensions
         return copy.Parent() ? copy : null;
     }
 
+    // The virtual-path-part selector that routes a data binding into a component's live data on the owner
+    // element rather than a property of the element itself: "${component:<Type>}.<field>".
+    internal const string componentBindingSelectorPrefix = "${component:";
+    internal const char componentBindingSelectorSuffix = '}';
+
+    // A direct field of a component attached to the element: its parent is the component's serialized data
+    // entry in the owner's m_ComponentData list. The binding selector is ${component:<ComponentName>}.<field>.
+    static bool TryGetComponentBindingPath(SerializedProperty property, out string result)
+    {
+        result = null;
+        var parent = property.GetParentProperty();
+        if (parent is not { propertyType: SerializedPropertyType.ManagedReference } ||
+            !parent.propertyPath.Contains("m_ComponentData.Array.data["))
+            return false;
+
+        var description = GetDescriptionFromManagedReferenceTypename(parent.managedReferenceFullTypename);
+        var componentType = description?.serializedDataType?.DeclaringType;
+        if (description is not { isComponent: true } || componentType == null)
+            return false;
+
+        var attribute = description.FindAttributeWithPropertyName(GetLastPathSegment(property.propertyPath));
+        if (attribute == null)
+            return false;
+
+        result = $"{componentBindingSelectorPrefix}{componentType.Name}{componentBindingSelectorSuffix}.{attribute.bindingPath}";
+        return true;
+    }
+
+    /// <summary>
+    /// Resolves the C# field type targeted by a component binding path
+    /// (<c>${component:&lt;Type&gt;}.&lt;field&gt;</c>). Returns false for element binding paths, whose
+    /// target type is resolved through the element's own property bag instead. Used by the inspector to
+    /// label a component binding and to decide that a component field is bindable.
+    /// </summary>
+    public static bool TryGetComponentAttributeType(string bindingPath, out Type type)
+    {
+        type = null;
+        if (string.IsNullOrEmpty(bindingPath) ||
+            !bindingPath.StartsWith(componentBindingSelectorPrefix, StringComparison.Ordinal))
+            return false;
+
+        // The identifier runs to the closing brace; a "." and the field path must follow it.
+        var close = bindingPath.IndexOf(componentBindingSelectorSuffix, componentBindingSelectorPrefix.Length);
+        if (close <= componentBindingSelectorPrefix.Length ||
+            close + 1 >= bindingPath.Length || bindingPath[close + 1] != '.')
+            return false;
+
+        var shortTypeName = bindingPath.Substring(componentBindingSelectorPrefix.Length,
+            close - componentBindingSelectorPrefix.Length);
+        var fieldBindingPath = bindingPath.Substring(close + 2);
+
+        var description = FindComponentDescriptionByShortName(shortTypeName);
+        if (description == null)
+            return false;
+
+        foreach (var attribute in description.serializedAttributes)
+        {
+            if (attribute.bindingPath == fieldBindingPath)
+            {
+                type = attribute.type;
+                return type != null;
+            }
+        }
+        return false;
+    }
+
+    // A component binding selector uses the component's short type name; there is at most one component of a
+    // given type per element, so the short name locates it on the owner. Match it against the registered
+    // component serialized-data descriptions.
+    static UxmlSerializedDataDescription FindComponentDescriptionByShortName(string shortTypeName)
+    {
+        foreach (var serializedDataType in UxmlSerializedDataRegistry.SerializedDataTypes.Values)
+        {
+            var declaringType = serializedDataType?.DeclaringType;
+            if (declaringType == null || declaringType.Name != shortTypeName)
+                continue;
+
+            var description = UxmlSerializedDataRegistry.GetDescription(declaringType.FullName);
+            if (description is { isComponent: true })
+                return description;
+        }
+        return null;
+    }
+
     // managedReferenceFullTypename returns the UxmlSerializedData nested type (e.g.
     // "UnityEngine.UIElements UnityEngine.UIElements.Columns/UxmlSerializedData"), but
     // GetDescription expects the declaring element type name (e.g. "UnityEngine.UIElements.Columns").
@@ -83,6 +167,11 @@ static class SerializedPropertyExtensions
     {
         if (property == null)
             return string.Empty;
+
+        // A component attribute is rooted at the owner's m_ComponentData list, not m_SerializedData, and
+        // binds through the ${component:<Type>}.<field> selector rather than an element property path.
+        if (TryGetComponentBindingPath(property, out var componentPath))
+            return componentPath;
 
         // Walk up from the property to the m_SerializedData root, collecting path segments
         // and managed reference typenames at each UxmlObjectReference boundary.

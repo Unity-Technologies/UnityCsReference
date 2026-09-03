@@ -19,7 +19,7 @@ namespace UnityEditor.Search
         internal static void OpenMenuItemsPicker()
         {
             var searchContext = SearchService.CreateContext("menu", string.Empty);
-            var state = SearchViewState.CreatePickerState(L10n.Tr("Menu Items"), searchContext, OnMenuItemSelected);
+            var state = SearchViewState.CreatePickerState(L10n.Tr("Menu Items", null), searchContext, OnMenuItemSelected);
             state.excludeClearItem = true;
             state.resultViewDescriptorList = new SearchResultViewDescriptorList(new[] { SearchTreeView.GetDescriptor() });
             var view = SearchService.ShowPicker(state);

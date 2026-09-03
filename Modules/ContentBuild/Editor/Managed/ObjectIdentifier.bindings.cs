@@ -80,12 +80,14 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Returns a nicely formatted string for this ObjectIdentifier.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.ObjectIdentifier" />.</remarks>
+        ///<returns>A string that represents the object identifier.</returns>
         public override string ToString()
         {
             return string.Format("{{ guid: {0}, fileID: {1}, type: {2}, path: {3}}}", m_GUID, m_LocalIdentifierInFile, m_FileType, m_FilePath);
         }
 
         ///<summary>Implements the IComparable interface.</summary>
+        ///<param name="other">The object identifier to compare with this instance.</param>
         ///<returns>The returned value is the comparison result of the guid, local identifier, file type or file path depending on which of these is not equal first when checked in that order.</returns>
         public int CompareTo(ObjectIdentifier other)
         {
@@ -100,6 +102,9 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Returns true if the ObjectIdentifiers are the same.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.ObjectIdentifier" />.</remarks>
+        ///<param name="a">The first object identifier to compare.</param>
+        ///<param name="b">The second object identifier to compare.</param>
+        ///<returns>True if the two object identifiers are equal. Otherwise, false.</returns>
         public static bool operator ==(ObjectIdentifier a, ObjectIdentifier b)
         {
             return a.CompareTo(b) == 0;
@@ -107,6 +112,9 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Returns true if the ObjectIdentifiers are different.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.ObjectIdentifier" />.</remarks>
+        ///<param name="a">The first object identifier to compare.</param>
+        ///<param name="b">The second object identifier to compare.</param>
+        ///<returns>True if the two object identifiers are not equal. Otherwise, false.</returns>
         public static bool operator !=(ObjectIdentifier a, ObjectIdentifier b)
         {
             return a.CompareTo(b) != 0;
@@ -144,6 +152,7 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Gets the hash code for the ObjectIdentifier.</summary>
         ///<remarks>Internal use only. See <see cref="Build.Content.ObjectIdentifier" />.</remarks>
+        ///<returns>A hash code for the current instance.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -159,6 +168,8 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Tries to find, load, and return the Object that represents this ObjectIdentifier.</summary>
         ///<remarks>Returns null if the Object cannot be found or loaded. This can happen if the asset that contains the Object identified was deleted or the ObjectIdentifier is invalid.</remarks>
+        ///<param name="objectId">The object identifier to convert.</param>
+        ///<returns>The object that the specified object identifier references.</returns>
         [FreeFunction("GetObjectFromObjectIdentifier")]
         public static extern UnityEngine.Object ToObject(ObjectIdentifier objectId);
 
@@ -168,9 +179,16 @@ namespace UnityEditor.Build.Content
         public static int ToInstanceID(ObjectIdentifier objectId) => ToEntityId(objectId);
         ///<summary>Tries to return the EntityId that represents this ObjectIdentifier.</summary>
         ///<remarks>Returns EntityId.None if the ObjectIdentifier is invalid.</remarks>
+        ///<param name="objectId">The object identifier to convert.</param>
+        ///<returns>The <see cref="EntityId" /> that corresponds to the specified object identifier, or EntityId.None if the object identifier is invalid.</returns>
         [FreeFunction("GetEntityIdFromObjectIdentifier")]
         public static extern EntityId ToEntityId(ObjectIdentifier objectId);
 
+        ///<summary>Tries to convert a persistent Object into an ObjectIdentifier.</summary>
+        ///<param name="targetObject">The Object to look up.</param>
+        ///<param name="objectId">Out parameter with the found object identifier.</param>
+        ///<remarks>Returns false if it was not possible. This can happen if the Object is a Scene Object, or was not loaded from an Object on disk.</remarks>
+        ///<returns>True if an object identifier was found for the specified Object. Otherwise, false.</returns>
         public static bool TryGetObjectIdentifier(UnityEngine.Object targetObject, out ObjectIdentifier objectId)
         {
             return GetObjectIdentifierFromObject(targetObject, out objectId);
@@ -180,6 +198,7 @@ namespace UnityEditor.Build.Content
         ///<param name="entityId">The object identifier's entity id to look up.</param>
         ///<param name="objectId">Out parameter with the found object identifier.</param>
         ///<remarks>Returns false if it was not possible. This can happen if the Object is a Scene Object, or was not loaded from and Object on disk.</remarks>
+        ///<returns>True if an object identifier was found for the specified entity ID. Otherwise, false.</returns>
         public static bool TryGetObjectIdentifier(EntityId entityId, out ObjectIdentifier objectId)
         {
             return GetObjectIdentifierFromEntityId(entityId, out objectId);

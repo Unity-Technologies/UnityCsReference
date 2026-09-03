@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Text not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -62,7 +63,9 @@ namespace UnityEditor
                 return;
 
             // Force init after each domain reload (lazy init may hit a worker thread).
+            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             _ = defaultTextSettings;
+            #pragma warning restore UAL0018
         }
 
         // Persisted across domain reloads; re-attached to the base runtime caches via UsePersistedCaches.
@@ -367,3 +370,4 @@ namespace UnityEditor
 }
 
 #pragma warning restore CS0618
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

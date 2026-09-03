@@ -20,7 +20,7 @@ namespace UnityEditor.Search
         [MainToolbarElement("Editor Controls/Store", defaultDockPosition = MainToolbarDockPosition.Left, defaultDockIndex = 10)]
         static MainToolbarElement QueryStoreButtonInfo()
         {
-            return new MainToolbarDropdown(new MainToolbarContent("Asset Store", s_Icon, L10n.Tr($"Asset Store")), ActivateAssetStoreMenu)
+            return new MainToolbarDropdown(new MainToolbarContent("Asset Store", s_Icon, L10n.Tr($"Asset Store", null)), ActivateAssetStoreMenu)
             {
                 displayed = CommandService.Exists(k_SearchStoreCommand)
             };

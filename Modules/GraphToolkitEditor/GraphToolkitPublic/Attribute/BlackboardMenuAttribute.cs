@@ -7,24 +7,26 @@ using System;
 namespace Unity.GraphToolkit.Editor
 {
     /// <summary>
-    /// Marks a static method as a contributor to the blackboard's right-click
-    /// contextual menu. Every time the menu opens, the decorated method is
-    /// invoked with a <see cref="GraphMenuContext"/> that exposes the element
+    /// Marks a static method as a contributor to the blackboard's right-click contextual menu. Every
+    /// time the menu opens, the decorated method is invoked with a context that exposes the element
     /// under the cursor and lets the method append entries via
-    /// <see cref="GraphMenuContext.AppendAction(string, Action)"/>.
+    /// <see cref="MenuContext.AppendAction(string, Action)"/>.
     /// </summary>
     /// <remarks>
-    /// The decorated method must be <c>static</c>, return <c>void</c>, and take
-    /// a single <see cref="GraphMenuContext"/> parameter. The user is
-    /// responsible for filtering on the clicked element and deciding what to
-    /// append.
+    /// The decorated method must be <c>static</c>, return <c>void</c>, and take a single context
+    /// parameter. The type passed to the constructor decides which context type: a
+    /// <see cref="Graph"/> subclass requires a <see cref="GraphMenuContext"/> parameter, a
+    /// <see cref="StateMachine"/> subclass requires a <see cref="StateMachineMenuContext"/> parameter.
+    /// The user is responsible for filtering on the clicked element and deciding what to append.
     /// <br/>
     /// <br/>
-    /// Pass a <see cref="Graph"/> subclass to the constructor to restrict the
-    /// handler to that graph type. The handler is invoked when the active
-    /// graph's type matches the listed type or derives from it. Apply the
-    /// attribute multiple times on the same method to register it for several
-    /// graph types.
+    /// The handler is invoked when the active graph or state machine's type matches the listed type or
+    /// derives from it. Apply the attribute multiple times on the same method to register it for
+    /// several types, as long as they all require the same context type.
+    /// <br/>
+    /// <br/>
+    /// <see cref="MenuContext.ClickedObject"/> is the clicked <see cref="IVariable"/>, or <c>null</c>
+    /// when the click landed on empty space in the blackboard.
     /// </remarks>
     /// <example>
     /// <code lang="cs">
@@ -44,7 +46,7 @@ namespace Unity.GraphToolkit.Editor
     public sealed class BlackboardMenuAttribute : Attribute
     {
         /// <summary>
-        /// The <see cref="Graph"/> subclass the handler is restricted to.
+        /// The <see cref="Graph"/> or <see cref="StateMachine"/> subclass the handler is restricted to.
         /// </summary>
         public Type GraphType { get; }
 
@@ -52,7 +54,7 @@ namespace Unity.GraphToolkit.Editor
         /// Initializes a new instance of the <see cref="BlackboardMenuAttribute"/> class.
         /// </summary>
         /// <param name="graphType">
-        /// The <see cref="Graph"/> subclass the handler is restricted to.
+        /// The <see cref="Graph"/> or <see cref="StateMachine"/> subclass the handler is restricted to.
         /// </param>
         public BlackboardMenuAttribute(Type graphType)
         {

@@ -2,12 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Toolbars
 {
-    static class QualityDropdown
+    static partial class QualityDropdown
     {
         const string k_Path = "Editor Utility/Quality";
         [NoAutoStaticsCleanup] // Transient UI-displayed flag, re-set every time the toolbar element is rebuilt; safe to persist.
@@ -15,13 +16,29 @@ namespace UnityEditor.Toolbars
         [NoAutoStaticsCleanup] // Scratch quality-level index, consumed and reset to -1 on each rebuild; safe to persist.
         static int s_TemporaryNewQualityLevel = -1;
 
-        static QualityDropdown()
+        [OnCodeLoaded]
+        static void Initialize()
         {
-            ModeService.modeChanged += (args) => RebuildContent();
-            QualitySettings.activeQualityLevelIndexChanged += (prev, current, currentInOld) => RebuildContent(currentInOld);
-            QualitySettings.activeQualityLevelRenamed += (prev, current) => RebuildContent();
+            ModeService.modeChanged += OnModeChanged;
+            QualitySettings.activeQualityLevelIndexChanged += OnActiveQualityLevelIndexChanged;
+            QualitySettings.activeQualityLevelRenamed += OnActiveQualityLevelRenamed;
             Undo.undoRedoEvent += OnUndoRedo;
         }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            ModeService.modeChanged -= OnModeChanged;
+            QualitySettings.activeQualityLevelIndexChanged -= OnActiveQualityLevelIndexChanged;
+            QualitySettings.activeQualityLevelRenamed -= OnActiveQualityLevelRenamed;
+            Undo.undoRedoEvent -= OnUndoRedo;
+        }
+
+        static void OnModeChanged(ModeService.ModeChangedArgs args) => RebuildContent();
+
+        static void OnActiveQualityLevelIndexChanged(int prev, int current, int currentInOld) => RebuildContent(currentInOld);
+
+        static void OnActiveQualityLevelRenamed(string prev, string current) => RebuildContent();
 
         static void RebuildContent(int newQualityLevel = -1)
         {
@@ -46,7 +63,7 @@ namespace UnityEditor.Toolbars
 
             return new MainToolbarDropdown(new MainToolbarContent(
                     currentQualityName,
-                    L10n.Tr("Select current quality level")),
+                    L10n.Tr("Select current quality level", null)),
                      (buttonRect) => {
                     OpenQualityWindow(buttonRect);
                 })
@@ -74,7 +91,7 @@ namespace UnityEditor.Toolbars
 
             menu.AddSeparator(string.Empty);
 
-            menu.AddItem(new GUIContent(L10n.Tr("Open Quality Settings...")), false, OpenQualitySettings);
+            menu.AddItem(new GUIContent(L10n.Tr("Open Quality Settings...", null)), false, OpenQualitySettings);
 
             menu.DropDown(buttonRect);
         }
@@ -91,3 +108,4 @@ namespace UnityEditor.Toolbars
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

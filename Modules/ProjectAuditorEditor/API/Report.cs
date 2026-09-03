@@ -367,7 +367,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <summary>
         /// Check whether all issues in the report are valid.
         /// </summary>
-        /// <returns>True is none of the issues in the report have a null description string. Otherwise returns false.</returns>
+        /// <returns>True if none of the issues in the report have a null description string. Otherwise returns false.</returns>
         public bool IsValid()
         {
             if (moduleMetadata.Count == 0)

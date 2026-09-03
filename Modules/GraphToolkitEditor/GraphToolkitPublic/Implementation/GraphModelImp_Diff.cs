@@ -149,6 +149,9 @@ partial class GraphModelImp
         public ChangedSubgraphNode Build() => new ChangedSubgraphNode(SubgraphNode, Guid, Kinds);
     }
 
+    protected virtual void CollectChangeData(GraphChangeDescription changes, ILogger logger)
+        => CollectChangeData(changes, logger as GraphLogger);
+
     void CollectChangeData(GraphChangeDescription changes, GraphLogger graphLogger)
     {
         if (changes != null)
@@ -307,7 +310,7 @@ partial class GraphModelImp
         foreach (var sb in m_SubgraphNodeBuilders.Values)
             changedSubgraphNodes.Add(sb.Build());
 
-        graphLogger.SetChangeData(changedNodes, changedVariables, changedConstantNodes, changedSubgraphNodes);
+        graphLogger?.SetChangeData(changedNodes, changedVariables, changedConstantNodes, changedSubgraphNodes);
 
         m_NodeBuilders.Clear();
         m_VariableBuilders.Clear();

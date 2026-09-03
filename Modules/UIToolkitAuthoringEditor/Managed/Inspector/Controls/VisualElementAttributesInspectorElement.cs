@@ -2,11 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
@@ -20,12 +21,14 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
     internal const string k_RootPropertyFieldUssClassName = "unity-uxml-serialized-data-root-property-field";
     const string k_LinkToCustomControlMigrationDoc = "https://docs.unity3d.com/Manual/ui-systems/migrate-custom-control.html";
     internal static readonly string k_UsingUxmlTraitsOrUxmlSerializedDataNotDefinedWarning = L10n.Tr("Attributes for this control failed to load because it uses UxmlTraits, a deprecated API; or did not define its UxmlSerializedData class." +
-                                                                          $" To make attributes readable and editable, update the control to use UxmlElement. <a href=\"{k_LinkToCustomControlMigrationDoc}\">Learn more</a>.");
+                                                                          $" To make attributes readable and editable, update the control to use UxmlElement. <a href=\"{k_LinkToCustomControlMigrationDoc}\">Learn more</a>.", null);
+    [NoAutoStaticsCleanup] // immutable binding id, safe to persist
     public static BindingId TargetProperty = nameof(Target);
+    [NoAutoStaticsCleanup] // immutable binding id, safe to persist
     public static BindingId IsReadOnlyProperty = nameof(IsReadOnly);
 
     internal const string k_NoNameHelpBoxName = "no-name-help-box";
-    static readonly string k_NoNameMessage = L10n.Tr("A name is required in order to override attributes.");
+    static readonly string k_NoNameMessage = L10n.Tr("A name is required in order to override attributes.", null);
 
     readonly UxmlAttributesView m_AttributesView;
     readonly HelpBox m_NoNameHelpBox;
@@ -138,4 +141,4 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
         m_RootPropertyField.bindingPath = bindingPath;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

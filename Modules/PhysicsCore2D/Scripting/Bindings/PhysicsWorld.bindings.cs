@@ -196,6 +196,7 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsWorld::SetOwnerUserData", IsThreadSafe = true)] extern internal static void PhysicsWorld_SetOwnerUserData(PhysicsWorld world, PhysicsUserData physicsUserData, int ownerKey);
         [NativeMethod(Name = "PhysicsWorld::GetOwnerUserData", IsThreadSafe = true)] extern internal static PhysicsUserData PhysicsWorld_GetOwnerUserData(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::IsDefaultWorld", IsThreadSafe = true)] extern internal static bool PhysicsWorld_IsDefaultWorld(PhysicsWorld world);
+        [NativeMethod(Name = "PhysicsWorld::ClearDrawSelected", IsThreadSafe = true)] extern internal static void PhysicsWorld_ClearDrawSelected(PhysicsWorld world);
         [NativeMethod(Name = "PhysicsWorld::DrawShapes", IsThreadSafe = true)] extern internal static void PhysicsWorld_DrawShapes(ReadOnlySpan<PhysicsShape> shapes);
         [NativeMethod(Name = "PhysicsWorld::DrawAllWorlds")] extern internal static void PhysicsWorld_DrawAllWorlds(PhysicsAABB drawAABB, PhysicsWorld.DrawTarget cameraTarget);
     }

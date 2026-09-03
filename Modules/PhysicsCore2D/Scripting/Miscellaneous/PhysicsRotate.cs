@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public partial struct PhysicsRotate : ISerializationCallbackReceiver
+    public partial record struct PhysicsRotate : ISerializationCallbackReceiver
     {
         /// <summary>
         /// The rotation direction where X = cos(rotation) and Y = sin(rotation).

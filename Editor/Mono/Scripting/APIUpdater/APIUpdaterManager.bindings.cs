@@ -128,7 +128,7 @@ namespace UnityEditorInternal.APIUpdating
             }
 
             sw.Stop();
-            APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assembly(ies) updated)."), finishOk ? L10n.Tr("success") : L10n.Tr("error"), sw.ElapsedMilliseconds, updatedCount >= 0 ? updatedCount : 0, assembliesToCheckCount);
+            APIUpdaterLogger.WriteToFile(L10n.Tr("Update finished with {0} in {1} ms ({2}/{3} assembly(ies) updated).", null), finishOk ? L10n.Tr("success", null) : L10n.Tr("error", null), sw.ElapsedMilliseconds, updatedCount >= 0 ? updatedCount : 0, assembliesToCheckCount);
 
             PersistListOfAssembliesToUpdate();
         }
@@ -223,14 +223,14 @@ namespace UnityEditorInternal.APIUpdating
             var timedOut = tasks.Where(t => !t.Event.WaitOne(0));
 #pragma warning restore UAC2001
 
-            var sb = new StringBuilder(L10n.Tr("Timeout while checking assemblies:"));
+            var sb = new StringBuilder(L10n.Tr("Timeout while checking assemblies:", null));
             foreach (var task in timedOut)
             {
                 sb.AppendFormat("{1}{0}", Environment.NewLine, task.Candidate.Path);
             }
 
-            sb.AppendFormat(L10n.Tr("{0}Timeout: {1} ms"), Environment.NewLine, waitedTime.Milliseconds);
-            sb.AppendFormat(L10n.Tr("{0}Update configurations from those assemblies may have not been applied."), Environment.NewLine);
+            sb.AppendFormat(L10n.Tr("{0}Timeout: {1} ms", null), Environment.NewLine, waitedTime.Milliseconds);
+            sb.AppendFormat(L10n.Tr("{0}Update configurations from those assemblies may have not been applied.", null), Environment.NewLine);
             APIUpdaterLogger.WriteErrorToConsole(sb.ToString());
         }
 
@@ -243,7 +243,7 @@ namespace UnityEditorInternal.APIUpdating
             var timedOutTasks = tasks.Where(t => !t.Event.WaitOne(0));
 #pragma warning restore UAC2001
 
-            var sb = new StringBuilder(L10n.Tr("Timeout while updating assemblies:"));
+            var sb = new StringBuilder(L10n.Tr("Timeout while updating assemblies:", null));
             foreach (var updaterTask in timedOutTasks)
             {
                 sb.AppendFormat("{1} (Output: {2}){0}", Environment.NewLine, updaterTask.Candidate.Path, updaterTask.OutputPath);
@@ -262,7 +262,7 @@ namespace UnityEditorInternal.APIUpdating
             if (tasksWithErrors.Length == 0)
                 return false;
 
-            var sb = new StringBuilder(L10n.Tr("Unable to update following assemblies:"));
+            var sb = new StringBuilder(L10n.Tr("Unable to update following assemblies:", null));
             foreach (var updaterTask in tasksWithErrors)
             {
                 sb.Append(FormatErrorFromTask(updaterTask));
@@ -281,7 +281,7 @@ namespace UnityEditorInternal.APIUpdating
             // this may happen if mono.exe (which we use to run AssemblyUpdater.exe) cannot run the executable
             // and reports an error (for example, *file not found*)
             var unknownStatusMessage = APIUpdaterAssemblyHelper.IsUnknown(updaterTask.Result)
-                ? L10n.Tr(" does not match any return code from AssemblyUpdater.exe")
+                ? L10n.Tr(" does not match any return code from AssemblyUpdater.exe", null)
                 : string.Empty;
 
             var exceptionMessage = updaterTask.Exception != null
@@ -305,7 +305,7 @@ namespace UnityEditorInternal.APIUpdating
             if (completedSuccessfully.Count == 0)
                 return;
 
-            sb.AppendFormat(L10n.Tr("Following assemblies were successfully updated but due to the failed ones above they were ignored (not copied to the destination folder):"));
+            sb.AppendFormat(L10n.Tr("Following assemblies were successfully updated but due to the failed ones above they were ignored (not copied to the destination folder):", null));
             foreach (var updaterTask in completedSuccessfully)
             {
                 sb.AppendFormat("{1}\t(Result = {2}) (Output: {3}){0}{4}{0}", Environment.NewLine, updaterTask.Candidate.Path, updaterTask.Result, updaterTask.OutputPath, updaterTask.StdOut);
@@ -346,7 +346,7 @@ namespace UnityEditorInternal.APIUpdating
 #pragma warning restore UAC2001
             if (assembliesRequiringConsent.Length > 0 && !AskForConsent(assembliesRequiringConsent))
             {
-                APIUpdaterLogger.WriteToFile(L10n.Tr("User declined to run APIUpdater"));
+                APIUpdaterLogger.WriteToFile(L10n.Tr("User declined to run APIUpdater", null));
                 return 0;
             }
 
@@ -461,7 +461,7 @@ namespace UnityEditorInternal.APIUpdating
             SaveDependencyGraph(depGraph, k_AssemblyDependencyGraphFilePath);
 
             sw.Stop();
-            APIUpdaterLogger.WriteToFile(L10n.Tr("Processing imported assemblies took {0} ms ({1}/{2} assembly(ies))."), sw.ElapsedMilliseconds, assembliesToUpdate.Count, sortedCandidatesForUpdating.Count);
+            APIUpdaterLogger.WriteToFile(L10n.Tr("Processing imported assemblies took {0} ms ({1}/{2} assembly(ies)).", null), sw.ElapsedMilliseconds, assembliesToUpdate.Count, sortedCandidatesForUpdating.Count);
 
             UpdateAssemblies();
         }
@@ -524,10 +524,10 @@ namespace UnityEditorInternal.APIUpdating
             if (withErrors.Length == 0)
                 return false;
 
-            var sb = new StringBuilder(L10n.Tr("Failed to check following assemblies for updater configurations:\r\n"));
+            var sb = new StringBuilder(L10n.Tr("Failed to check following assemblies for updater configurations:\r\n", null));
             foreach (var failedAssemblyInfo in withErrors)
             {
-                sb.AppendFormat(L10n.Tr("{0} (ret = {1}):\r\n{2}{3}{4}"), failedAssemblyInfo.Candidate.Path, failedAssemblyInfo.Result, HumanMessage("StdOut", failedAssemblyInfo.StdOut), HumanMessage("StdErr", failedAssemblyInfo.StdErr), HumanMessage("Exception", failedAssemblyInfo.Exception?.ToString()));
+                sb.AppendFormat(L10n.Tr("{0} (ret = {1}):\r\n{2}{3}{4}", null), failedAssemblyInfo.Candidate.Path, failedAssemblyInfo.Result, HumanMessage("StdOut", failedAssemblyInfo.StdOut), HumanMessage("StdErr", failedAssemblyInfo.StdErr), HumanMessage("Exception", failedAssemblyInfo.Exception?.ToString()));
             }
             sb.Append("\r\n--------------");
 
@@ -648,7 +648,7 @@ namespace UnityEditorInternal.APIUpdating
 #pragma warning restore UAC2001, UAC2011
             if (resolvedList.Length > 1)
             {
-                APIUpdaterLogger.WriteToFile(L10n.Tr("Warning : Multiple matches found for assembly name '{0}'. Shortest path one ({1}) chosen as the source of updates. Full list: {2}"), assemblyName, assemblyPathInAssetsFolder, string.Join(Environment.NewLine, resolvedList));
+                APIUpdaterLogger.WriteToFile(L10n.Tr("Warning : Multiple matches found for assembly name '{0}'. Shortest path one ({1}) chosen as the source of updates. Full list: {2}", null), assemblyName, assemblyPathInAssetsFolder, string.Join(Environment.NewLine, resolvedList));
             }
 
             if (assemblyPathInAssetsFolder != null && (assemblyPathInAssetsFolder.IsInPackage() || assemblyPathInAssetsFolder.IsInAssetsFolder()))
@@ -743,11 +743,11 @@ namespace UnityEditorInternal.APIUpdating
             }
             catch (UnauthorizedAccessException ex)
             {
-                APIUpdaterLogger.WriteToFile(string.Format(L10n.Tr("Failed to save assembly dependency graph ({0}). Exception: {1}")), path, ex);
+                APIUpdaterLogger.WriteToFile(string.Format(L10n.Tr("Failed to save assembly dependency graph ({0}). Exception: {1}", null)), path, ex);
             }
             catch (IOException ex)
             {
-                APIUpdaterLogger.WriteToFile(string.Format(L10n.Tr("Failed to save assembly dependency graph ({0}). Exception: {1}")), path, ex);
+                APIUpdaterLogger.WriteToFile(string.Format(L10n.Tr("Failed to save assembly dependency graph ({0}). Exception: {1}", null)), path, ex);
             }
         }
 
@@ -763,11 +763,11 @@ namespace UnityEditorInternal.APIUpdating
             }
             catch (IOException e)
             {
-                APIUpdaterLogger.WriteToFile(L10n.Tr($"Failed to read assembly dependency graph ({assemblyDependencyGraphFilePath}). Exception: {e}"));
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Failed to read assembly dependency graph ({assemblyDependencyGraphFilePath}). Exception: {e}", null));
             }
             catch (InvalidDataException ide)
             {
-                APIUpdaterLogger.WriteToFile(L10n.Tr($"Failed to read assembly dependency graph ({assemblyDependencyGraphFilePath}). Message: {ide.Message}"));
+                APIUpdaterLogger.WriteToFile(L10n.Tr($"Failed to read assembly dependency graph ({assemblyDependencyGraphFilePath}). Message: {ide.Message}", null));
             }
 
             return new AssemblyDependencyGraph();

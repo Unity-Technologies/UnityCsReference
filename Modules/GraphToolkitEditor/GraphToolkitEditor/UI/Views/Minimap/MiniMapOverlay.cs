@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using System;
 using UnityEditor.Overlays;
 using UnityEngine;
@@ -14,7 +15,7 @@ namespace Unity.GraphToolkit.Editor
         defaultLayout = Layout.Panel
         , defaultWidth = 200, defaultHeight = 150
      )]
-    [Icon("Icons/GraphToolkit/PanelsToolbar/MiniMap.png")]
+    [Icon("GraphToolkit/Icons/PanelsToolbar/MiniMap.png")]
     [UnityRestricted]
     internal sealed class MiniMapOverlay : OverlayWithView
     {
@@ -79,3 +80,4 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

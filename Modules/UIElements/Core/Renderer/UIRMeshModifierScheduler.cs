@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements.UIR
         {
             public Entry rootEntry;
             public VisualElement element;
+            public RenderData renderData;
             public List<MeshModifierRegistration> chain;
             public int chainIndex;
             public JobHandle combined;
@@ -41,16 +42,16 @@ namespace UnityEngine.UIElements.UIR
 
         public void RegisterDirtyElement(Entry rootEntry, RenderData renderData)
         {
-            if (renderData.isSubTreeQuad)
-                return;
-
             var chain = renderData.m_EffectiveModifiers;
             if (chain == null || chain.Count == 0)
+                return;
+            if (renderData.isSubTreeQuad && !HasSubTreeQuadModifier(chain))
                 return;
 
             var state = AcquireState();
             state.rootEntry = rootEntry;
             state.element = renderData.owner;
+            state.renderData = renderData;
             state.chain = chain;
             state.chainIndex = 0;
             state.combined = default;
@@ -110,7 +111,7 @@ namespace UnityEngine.UIElements.UIR
         void AdvanceElement(ElementState state, TempMeshAllocatorImpl allocator, ExtraVertexChannels panelExtras)
         {
             m_DrawBuffer.Clear();
-            CollectDrawEntries(state.rootEntry, m_DrawBuffer);
+            CollectDrawEntries(state.rootEntry, m_DrawBuffer, state.renderData.isSubTreeQuad);
 
             while (state.chainIndex < state.chain.Count)
             {
@@ -121,12 +122,15 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 var reg = state.chain[state.chainIndex++];
+                if (state.renderData.isSubTreeQuad && !reg.appliesToSubTreeQuad)
+                    continue;
 
                 try
                 {
                     var ctx = new MeshModificationContext
                     {
                         element = state.element,
+                        renderData = state.renderData,
                         drawsBuffer = m_DrawBuffer,
                         allocator = allocator,
                         panelExtras = panelExtras,
@@ -216,6 +220,7 @@ namespace UnityEngine.UIElements.UIR
             s.combined = default;
             s.chain = null;
             s.element = null;
+            s.renderData = null;
             s.rootEntry = null;
             m_StatePool.Push(s);
         }
@@ -223,14 +228,24 @@ namespace UnityEngine.UIElements.UIR
         ElementState AcquireState()
             => m_StatePool.Count > 0 ? m_StatePool.Pop() : new ElementState();
 
-        static void CollectDrawEntries(Entry e, List<Entry> buffer)
+        internal static bool HasSubTreeQuadModifier(List<MeshModifierRegistration> chain)
+        {
+            for (int i = 0; i < chain.Count; ++i)
+            {
+                if (chain[i].appliesToSubTreeQuad)
+                    return true;
+            }
+            return false;
+        }
+
+        static void CollectDrawEntries(Entry e, List<Entry> buffer, bool includeDynamicTextured)
         {
             if (e == null)
                 return;
-            if (IsDrawEntry(e.type))
+            if (IsDrawEntry(e.type) || (includeDynamicTextured && e.type == EntryType.DrawDynamicTexturedMesh))
                 buffer.Add(e);
             for (var c = e.firstChild; c != null; c = c.nextSibling)
-                CollectDrawEntries(c, buffer);
+                CollectDrawEntries(c, buffer, includeDynamicTextured);
         }
 
         static bool IsDrawEntry(EntryType type)

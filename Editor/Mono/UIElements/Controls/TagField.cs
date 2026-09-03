@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
     /// A <see cref="TagField"/> editor. For more information, refer to [[wiki:UIE-uxml-element-TagField|UXML element TagField]].
     /// </summary>
     [Icon("UIToolkit/Icons/TagField.png")]
-    [UxmlElement(visibility = LibraryVisibility.Visible)]
+    [UxmlElement]
     public partial class TagField : PopupField<string>
     {
         internal override string GetValueToDisplay()
@@ -68,7 +68,7 @@ namespace UnityEditor.UIElements
             {
                 if (value != null)
                 {
-                    Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the selected value."));
+                    Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the selected value.", null));
                 }
 
                 m_FormatSelectedValueCallback = null;
@@ -85,7 +85,7 @@ namespace UnityEditor.UIElements
             {
                 if (value != null)
                 {
-                    Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the list items."));
+                    Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the list items.", null));
                 }
 
                 m_FormatListItemCallback = null;
@@ -149,7 +149,7 @@ namespace UnityEditor.UIElements
                 menu.AddItem(menuItem, isSelected, () => ChangeValueFromMenu(menuItem));
             }
             menu.AddSeparator(String.Empty);
-            menu.AddItem(L10n.Tr("Add Tag..."), false, OpenTagInspector);
+            menu.AddItem(L10n.Tr("Add Tag...", null), false, OpenTagInspector);
         }
 
         void ChangeValueFromMenu(string menuItem)

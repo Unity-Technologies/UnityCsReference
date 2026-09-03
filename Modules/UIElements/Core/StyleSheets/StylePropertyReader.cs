@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -75,6 +74,21 @@ namespace UnityEngine.UIElements.StyleSheets
         static bool s_WarnedRadialPositionUnit;
         [NoAutoStaticsCleanup] // one-shot warning flags; safe to persist across reload
         static bool s_WarnedPixelStopPosition;
+
+        // Styles re-resolve on every hover/layout/animation change, so a missing asset baked into a
+        // sheet would otherwise warn on each pass. A reimport reuses the sheet's EntityId and so
+        // stays deduped here; the importer logs its own warning for every import.
+        [NoAutoStaticsCleanup]
+        static HashSet<(EntityId sheet, string url)> s_WarnedMissingAssets;
+
+        static void WarnMissingAssetOnce(StyleSheet sheet, string format, string url)
+        {
+            s_WarnedMissingAssets ??= new HashSet<(EntityId, string)>();
+            if (!s_WarnedMissingAssets.Add((sheet.GetEntityId(), url)))
+                return;
+
+            Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, format, url, sheet.name), sheet);
+        }
 
         private List<StylePropertyValue> m_Values = new List<StylePropertyValue>();
         private List<int> m_ValueCount = new List<int>();
@@ -217,6 +231,14 @@ namespace UnityEngine.UIElements.StyleSheets
             return ReadScale(valueCount, val1, val2, val3);
         }
 
+        public Curvature ReadCurvature(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+
+            return ReadCurvature(valueCount, val1, val2);
+        }
+
         public float ReadFloat(int index)
         {
             var value = m_Values[m_CurrentValueIndex + index];
@@ -315,9 +337,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.MissingAssetReference:
                 {
                     var missingAssetUrl = value.sheet.ReadMissingAssetReferenceUrl(value.handle);
-                    Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
+                    WarnMissingAssetOnce(value.sheet,
                         "Missing font asset reference '{0}' in stylesheet '{1}'. The font asset may have been deleted or moved.",
-                        missingAssetUrl, value.sheet.name), value.sheet);
+                        missingAssetUrl);
                     break;
                 }
 
@@ -381,9 +403,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.MissingAssetReference:
                 {
                     var missingAssetUrl = value.sheet.ReadMissingAssetReferenceUrl(value.handle);
-                    Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
+                    WarnMissingAssetOnce(value.sheet,
                         "Missing asset reference '{0}' in stylesheet '{1}'. The asset may have been deleted or moved.",
-                        missingAssetUrl, value.sheet.name), value.sheet);
+                        missingAssetUrl);
                     break;
                 }
 
@@ -1507,4 +1529,3 @@ namespace UnityEngine.UIElements.StyleSheets
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

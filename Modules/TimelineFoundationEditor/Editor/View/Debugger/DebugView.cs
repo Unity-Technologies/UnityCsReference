@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.ViewModel;
 using UnityEngine;
 using Unity.Timeline.Foundation.CSO;
@@ -27,6 +27,7 @@ namespace Unity.Timeline.Foundation.View.Debugger
         bool m_IsChangelogOpened = true;
         bool m_ShouldLogCommands = true;
         bool m_ShouldLogComponentChanges = false;
+        [NoAutoStaticsCleanup] // lazily-created bold copy of EditorStyles.foldout; built only from skin assets that survive code reload, and re-created on first use if null
         static GUIStyle s_CustomFoldoutStyle;
 
         public DebugView()
@@ -219,4 +220,3 @@ namespace Unity.Timeline.Foundation.View.Debugger
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

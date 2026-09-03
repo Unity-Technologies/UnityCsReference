@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using UnityEditor;
 using UnityEditor.Accessibility;
@@ -14,9 +15,9 @@ namespace Unity.Profiling.Editor.UI
     {
         internal static class Content
         {
-            public static readonly string k_CpuActiveTimeTooltip = L10n.Tr("CPU Active Time is the duration within the frame that the CPU was doing work for.\n\nThis is computed by taking the longest thread duration between the main thread and the render thread, and subtracting the time that thread spent waiting, including waiting for 'present' and 'target FPS'.\n\nIt is possible for this duration to be longer than the 'CPU Time' value shown in the CPU Usage module's Timeline view when the Render Thread took longer than the Main Thread. This is because the Timeline view displays the beginning and end of the frame on the main thread.");
-            public static readonly string k_GpuTimeTooltip = L10n.Tr("GPU Time is the duration between when the GPU was sent its first command for the frame and when the GPU completed its work for that frame.");
-            public static readonly string k_NoValueText = L10n.Tr("No Value");
+            public static readonly string k_CpuActiveTimeTooltip = L10n.Tr("CPU Active Time is the duration within the frame that the CPU was doing work for.\n\nThis is computed by taking the longest thread duration between the main thread and the render thread, and subtracting the time that thread spent waiting, including waiting for 'present' and 'target FPS'.\n\nIt is possible for this duration to be longer than the 'CPU Time' value shown in the CPU Usage module's Timeline view when the Render Thread took longer than the Main Thread. This is because the Timeline view displays the beginning and end of the frame on the main thread.", null);
+            public static readonly string k_GpuTimeTooltip = L10n.Tr("GPU Time is the duration between when the GPU was sent its first command for the frame and when the GPU completed its work for that frame.", null);
+            public static readonly string k_NoValueText = L10n.Tr("No Value", null);
         }
 
         // Model.
@@ -238,3 +239,4 @@ namespace Unity.Profiling.Editor.UI
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

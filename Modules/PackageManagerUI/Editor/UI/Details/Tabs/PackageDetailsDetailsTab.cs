@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache = upmCache;
 
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Details");
+            m_DisplayName = L10n.Tr("Details", null);
             var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsDetailsTab.uxml");
             m_ContentContainer.Add(root);
             m_Cache = new VisualElementCache(root);
@@ -62,7 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshDescription(IPackageVersion version)
         {
             var hasVersionDescription = !string.IsNullOrEmpty(version.description);
-            var desc = hasVersionDescription ? version.description : L10n.Tr("There is no description for this package.");
+            var desc = hasVersionDescription ? version.description : L10n.Tr("There is no description for this package.", null);
             if (desc.Length > k_MaxDescriptionCharacters)
                 desc = desc.Substring(0, k_MaxDescriptionCharacters);
             detailDescription.EnableInClassList(k_EmptyDescriptionClass, !hasVersionDescription);

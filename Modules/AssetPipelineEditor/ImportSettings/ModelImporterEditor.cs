@@ -14,7 +14,7 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class ModelImporterEditor : AssetImporterTabbedEditor
     {
-        static readonly string s_LocalizedTitle = L10n.Tr("Model Import Settings");
+        static readonly string s_LocalizedTitle = L10n.Tr("Model Import Settings", null);
 
         // The modelimporterclipeditor is drawing its own preview for clips to be editable.
         protected override bool useAssetDrawPreview => !(activeTab is ModelImporterClipEditor);

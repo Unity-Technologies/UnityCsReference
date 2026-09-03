@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public partial struct PhysicsWorldDefinition
+    public partial record struct PhysicsWorldDefinition
     {
         /// <summary>
         /// Create a default <see cref="PhysicsWorld"/> definition.
@@ -236,7 +236,7 @@ namespace Unity.U2D.Physics
         /// Controls the draw thickness (outline and orientation).
         /// See <see cref="PhysicsWorld.drawThickness"/>.
         /// </summary>
-        public float drawThickness { readonly get => m_DrawThickness; set => m_DrawThickness = Mathf.Clamp(value, 1f, 5f); }
+        public float drawThickness { readonly get => m_DrawThickness; set => m_DrawThickness = Mathf.Clamp(value, 1f, 10f); }
 
         /// <summary>
         /// Controls the draw fill alpha. This is used to scale the interior fill alpha and is only used when <see cref="PhysicsWorld.DrawFillOptions.Outline"/> is used so that the interior color can be distinguished from the outline color by transparency.
@@ -279,8 +279,11 @@ namespace Unity.U2D.Physics
         /// The expected world capacities used to presize internal allocations when the <see cref="PhysicsWorld"/> is created.
         /// All counts default to zero, in which case the engine uses its own minimum defaults.
         /// Presizing avoids reallocations during the first simulation steps for worlds with a known object count.
-        /// See <see cref="PhysicsWorld.capacity"/>.
+        /// Every count is in the range zero to <see cref="PhysicsWorld.WorldCapacity.MaxCapacity"/> and any value outside that range is clamped into it.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="PhysicsWorld.capacity"/>.
+        /// </remarks>
         public PhysicsWorld.WorldCapacity capacity { readonly get => m_Capacity; set => m_Capacity = value; }
 
         #region Internal
@@ -313,7 +316,7 @@ namespace Unity.U2D.Physics
         [SerializeField] PhysicsWorld.DrawContactType m_DrawContactType;
         [SerializeField] PhysicsWorld.IgnoreFilter m_DrawFilter;
         [SerializeField] PhysicsWorld.DrawTarget m_DrawTarget;
-        [SerializeField] [Range(1f, 5f)] float m_DrawThickness;
+        [SerializeField] [Range(1f, 10f)] float m_DrawThickness;
         [SerializeField] [Range(0f, 1f)] float m_DrawFillAlpha;
         [SerializeField] [Range(0.0001f, 10f)] float m_DrawPointScale;
         [SerializeField] [Range(0.0001f, 10f)] float m_DrawNormalScale;

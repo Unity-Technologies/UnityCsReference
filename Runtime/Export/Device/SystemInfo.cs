@@ -136,6 +136,8 @@ namespace UnityEngine.Device
 
         public static bool supportsMultisampleAutoResolve => ShimManager.systemInfoShim.supportsMultisampleAutoResolve;
 
+        public static bool supportsSwapChainPreTransform => ShimManager.systemInfoShim.supportsSwapChainPreTransform;
+
         public static bool supportsMultisampledShaderResolve => ShimManager.systemInfoShim.supportsMultisampledShaderResolve;
 
         public static int supportsTextureWrapMirrorOnce => ShimManager.systemInfoShim.supportsTextureWrapMirrorOnce;
@@ -211,6 +213,8 @@ namespace UnityEngine.Device
         public static bool supportsMachineLearning => ShimManager.systemInfoShim.supportsMachineLearning;
 
         public static bool supportsMemorylessTextures => ShimManager.systemInfoShim.supportsMemorylessTextures;
+
+        public static bool supportsBackbufferDepthMemoryless => ShimManager.systemInfoShim.supportsBackbufferDepthMemoryless;
 
         public static bool supportsSetConstantBuffer => ShimManager.systemInfoShim.supportsSetConstantBuffer;
 

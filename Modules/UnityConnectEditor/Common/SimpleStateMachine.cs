@@ -157,7 +157,7 @@ namespace UnityEditor.Connect
                     }
                     else
                     {
-                        Debug.LogError("SimpleStateMachine.ProcessEvent: " + L10n.Tr("Attempting to change to an undefined state. Contact Unity Support."));
+                        Debug.LogError("SimpleStateMachine.ProcessEvent: " + L10n.Tr("Attempting to change to an undefined state. Contact Unity Support.", null));
                     }
                 }
             }

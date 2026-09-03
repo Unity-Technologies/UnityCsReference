@@ -21,7 +21,7 @@ namespace Unity.GraphToolkit.Editor
 
         static bool IsValid(GraphElementModel blockNodeModel)
         {
-            return blockNodeModel is not IPlaceholder && blockNodeModel.IsDroppable();
+            return blockNodeModel is not IPlaceholder;
         }
 
         /// <inheritdoc />

@@ -18,7 +18,7 @@ namespace UnityEditor.Toolbars
         
         static readonly string k_Tooltip = L10n.Tr("The tool context determines what the Move, Rotate, Scale, Rect, and Transform tools" +
                                           " select and modify. GameObject is the default, and allows you to work with " +
-                                          "GameObjects. Additional contexts allow you to edit different objects.");
+                                          "GameObjects. Additional contexts allow you to edit different objects.", null);
         
         static readonly string k_DropdownUssClassName = "editor-tools-dropdown";
         static readonly string k_DropdownItemIConUssClassName = k_DropdownUssClassName + "__item-icon";
@@ -27,13 +27,13 @@ namespace UnityEditor.Toolbars
         static readonly string k_MenuHelpButtonUssClassName = k_DropdownUssClassName + "__info-help-button";
         
         static readonly string k_BuiltInHelpIconName = "_Help";
-        static readonly string k_HelpButtonTooltip =  L10n.Tr("Open Editor Tool Contexts documentation page.");
+        static readonly string k_HelpButtonTooltip =  L10n.Tr("Open Editor Tool Contexts documentation page.", null);
         
-        static readonly string k_NoContextsAvailableInfo = L10n.Tr("No other Tool Contexts available");
-        static readonly string k_NoContextsAvailableTooltip = L10n.Tr("No scripts were found in the project that implement a custom Editor Tool Context.");
+        static readonly string k_NoContextsAvailableInfo = L10n.Tr("No other Tool Contexts available", null);
+        static readonly string k_NoContextsAvailableTooltip = L10n.Tr("No scripts were found in the project that implement a custom Editor Tool Context.", null);
         
-        static readonly string k_NotMatchingContextsInfo = L10n.Tr("Tool Contexts not matching selection");
-        static readonly string k_NotMatchingContextsTooltip = L10n.Tr("Custom Editor Tool Contexts targeting types incompatible with the current selection cannot be activated.");
+        static readonly string k_NotMatchingContextsInfo = L10n.Tr("Tool Contexts not matching selection", null);
+        static readonly string k_NotMatchingContextsTooltip = L10n.Tr("Custom Editor Tool Contexts targeting types incompatible with the current selection cannot be activated.", null);
 
         public ToolContextButton()
         {

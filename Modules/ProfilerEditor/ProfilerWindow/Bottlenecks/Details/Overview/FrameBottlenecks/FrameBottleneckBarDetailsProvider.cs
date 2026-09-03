@@ -58,8 +58,8 @@ namespace Unity.Profiling.Editor.UI
         {
             static class Content
             {
-                public static readonly string k_BarName_Cpu = L10n.Tr("CPU Active Time");
-                public static readonly string k_BarName_Gpu = L10n.Tr("GPU Time");
+                public static readonly string k_BarName_Cpu = L10n.Tr("CPU Active Time", null);
+                public static readonly string k_BarName_Gpu = L10n.Tr("GPU Time", null);
             }
 
             readonly FrameBottleneckBarType m_BarType;

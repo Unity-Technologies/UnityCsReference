@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -48,6 +48,7 @@ namespace Unity.Timeline.Foundation.View
         static readonly string k_PlatformPath = (Application.platform == RuntimePlatform.WindowsEditor) ? "Windows/" : "macOS/";
         static readonly string k_CursorAssetDirectory = k_CursorAssetRoot + k_PlatformPath;
 
+        [NoAutoStaticsCleanup] // fixed enum-to-asset-path lookup table populated once at load; contents never change and hold no ALC-bound state
         static readonly Dictionary<CursorType, CursorInfo> k_CursorInfoLookup = new Dictionary<CursorType, CursorInfo>
         {
             { CursorType.MixBoth,  new CursorInfo(k_CursorAssetDirectory + k_MixBothCursorAssetName,  new Vector2(16, 18))},
@@ -57,6 +58,7 @@ namespace Unity.Timeline.Foundation.View
             { CursorType.Ripple,   new CursorInfo(k_CursorAssetDirectory + k_RippleCursorAssetName,   new Vector2(26, 19))}
         };
 
+        [NoAutoStaticsCleanup] // lazy cache of cursor textures loaded by fixed path via EditorGUIUtility.Load; the assets survive code reload and missing entries re-load on demand
         static readonly Dictionary<string, Texture2D> k_CursorAssetCache = new Dictionary<string, Texture2D>();
 
         public static Cursor GetCursor(CursorType cursorType)
@@ -75,4 +77,3 @@ namespace Unity.Timeline.Foundation.View
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -51,32 +51,32 @@ namespace UnityEditor.QuickInstall
 
         void DrawPendingInstallation()
         {
-            EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Installing)));
+            EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Installing, null)));
         }
 
         void DrawInstallWindow()
         {
             if (!string.IsNullOrEmpty(m_Config.Subtitle))
             {
-                EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Subtitle)), Styles.textLabel);
+                EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Subtitle, null)), Styles.textLabel);
                 if (m_Config.ShowSeparator)
                     DrawSeparator();
             }
 
             EditorGUILayout.BeginVertical(Styles.verticalStyle);
-            EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Body)), Styles.textLabel);
+            EditorGUILayout.LabelField(new GUIContent(L10n.Tr(m_Config.Body, null)), Styles.textLabel);
             if (!string.IsNullOrEmpty(m_Config.DocumentationUrl))
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button(L10n.Tr("Read more"), Styles.linkLabel, GUILayout.ExpandWidth(false)))
+                if (GUILayout.Button(L10n.Tr("Read more", null), Styles.linkLabel, GUILayout.ExpandWidth(false)))
                     Application.OpenURL(m_Config.DocumentationUrl);
                 EditorGUILayout.EndHorizontal();
             }
             
             EditorGUILayout.EndVertical();
             GUILayout.Space(15);
-            if (GUILayout.Button(new GUIContent(L10n.Tr(m_Config.InstallButton))))
+            if (GUILayout.Button(new GUIContent(L10n.Tr(m_Config.InstallButton, null))))
             {
                 m_AddManagementRequest = QuickInstaller.InstallPackage(m_PackageName, InstallMethod.ProjectSettings);
             }

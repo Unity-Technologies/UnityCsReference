@@ -53,7 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void CreateTags()
         {
             versionContainer.Add(new PackageDeprecatedTagLabel());
-            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Disabled, L10n.Tr("Disabled")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Disabled, L10n.Tr("Disabled", null)));
         }
 
         private void CreateHelpBoxes()
@@ -118,13 +118,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     lockedIcon.RemoveFromClassList("unlocked");
                     lockedIcon.AddToClassList("locked");
-                    lockedIcon.tooltip = L10n.Tr("This package is locked because it's part of a feature set. Click unlock button to be able to make changes");
+                    lockedIcon.tooltip = L10n.Tr("This package is locked because it's part of a feature set. Click unlock button to be able to make changes", null);
                 }
                 else
                 {
                     lockedIcon.AddToClassList("unlocked");
                     lockedIcon.RemoveFromClassList("locked");
-                    lockedIcon.tooltip = L10n.Tr("This package is unlocked. You can now change its version.");
+                    lockedIcon.tooltip = L10n.Tr("This package is unlocked. You can now change its version.", null);
                 }
             }
             UIUtils.SetElementDisplay(lockedIcon, showLockedIcon);
@@ -167,7 +167,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var message = new Label
             {
                 name = "usedInFeatureSetMessageLabel",
-                text = L10n.Tr("Installed as part of the ")
+                text = L10n.Tr("Installed as part of the ", null)
             };
 
             element.Add(message);
@@ -184,14 +184,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     usedInFeatureSetMessageContainer.Add(CreateLink(featureSets[i]));
                 }
 
-                var and = new Label(L10n.Tr(" and ")) { style = { marginLeft = 0, paddingLeft = 0 } };
+                var and = new Label(L10n.Tr(" and ", null)) { style = { marginLeft = 0, paddingLeft = 0 } };
                 usedInFeatureSetMessageContainer.Add(and);
                 usedInFeatureSetMessageContainer.Add(CreateLink(featureSets[^1]));
-                usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr("features.")));
+                usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr("features.", null)));
             }
             else
             {
-                usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr("feature.")));
+                usedInFeatureSetMessageContainer.Add(new Label(L10n.Tr("feature.", null)));
             }
         }
 
@@ -214,7 +214,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!showEnterpriseLabel)
                 return;
             detailEnterpriseLabel.text = "E";
-            detailEnterpriseLabel.tooltip = L10n.Tr("This is an entitled package.");
+            detailEnterpriseLabel.tooltip = L10n.Tr("This is an entitled package.", null);
         }
 
         private void RefreshVersionLabel()
@@ -229,7 +229,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var releaseDateString = m_Version.publishedDate?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"));
             detailVersion.text = string.IsNullOrEmpty(releaseDateString)
                 ? versionString
-                : string.Format(L10n.Tr("{0} · {1}"), versionString, releaseDateString);
+                : string.Format(L10n.Tr("{0} · {1}", null), versionString, releaseDateString);
         }
 
         private VisualElementCache cache { get; }

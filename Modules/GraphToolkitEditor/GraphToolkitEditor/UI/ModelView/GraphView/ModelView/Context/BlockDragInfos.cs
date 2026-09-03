@@ -221,8 +221,8 @@ namespace Unity.GraphToolkit.Editor
                 {
                     if (element is ContextNodeView context)
                     {
-                        // Blocks cannot be dropped into a context node placeholder.
-                        if (context.ContextNodeModel is IPlaceholder)
+                        // Blocks cannot be dropped into a context node whose type is missing.
+                        if (PlaceholderModelHelper.IsMissingTypeModel(context.ContextNodeModel))
                             continue;
 
                         Vector2 posInContext = context.WorldToLocal(e.mousePosition);

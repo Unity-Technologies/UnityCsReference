@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using UnityEditor;
 using UnityEditor.EditorTools;
@@ -38,10 +39,14 @@ namespace Unity.UIToolkit.Editor
         {
             Selection.selectionChanged += OnStateChanged;
             StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
+            UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnAuthoringSettingChanged;
+            UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnAuthoringSettingChanged;
             OnStateChanged();
         }
 
         static void OnStageChanged(Stage _) => OnStateChanged();
+
+        static void OnAuthoringSettingChanged(bool _) => OnStateChanged();
 
         static void OnStateChanged()
         {
@@ -54,16 +59,25 @@ namespace Unity.UIToolkit.Editor
 
         static void ApplyContextSwitch()
         {
-            // VE context only activates inside an authoring stage AND with a VE selected.
-            // Outside the stage the VTA is read-only, so the transform tools have nothing to do.
-            var wantVeContext = VisualElementToolUtility.IsAuthoringStageActive()
-                                && Selection.activeObject is VisualElementSelection;
+            var wantVeContext = WantsVisualElementContext();
             var activeIsVeContext = ToolManager.activeContextType == typeof(VisualElementToolContext);
 
             if (wantVeContext && !activeIsVeContext && ToolManager.CanSetActiveContext<VisualElementToolContext>())
                 ToolManager.SetActiveContext<VisualElementToolContext>();
             else if (!wantVeContext && activeIsVeContext)
                 ToolManager.SetActiveContext<GameObjectToolContext>();
+        }
+
+        // VE context only activates where the document is editable, with a VE selected, and on a panel
+        // whose elements have a transform the gizmos can act on.
+        static bool WantsVisualElementContext()
+        {
+            if (!VisualElementToolUtility.CanUseTransformTools())
+                return false;
+            if (Selection.activeObject is not VisualElementSelection selection)
+                return false;
+
+            return VisualElementToolUtility.IsGizmoTarget(VisualElementToolUtility.FindHostPanel(selection.Element));
         }
     }
 
@@ -86,8 +100,7 @@ namespace Unity.UIToolkit.Editor
             if (window is not SceneView)
                 return;
 
-            // The VTA is read-only outside an authoring stage
-            if (!VisualElementToolUtility.IsAuthoringStageActive())
+            if (!VisualElementToolUtility.CanUseTransformTools())
                 return;
 
             var allSelected = VisualElementToolUtility.GetSelectedElements();
@@ -100,12 +113,14 @@ namespace Unity.UIToolkit.Editor
                 return;
 
             var activePanel = VisualElementSceneViewOverlay.FindPanelComponentForElement(activeElement);
-            if (activePanel == null)
+            if (activePanel == null || !VisualElementToolUtility.IsGizmoTarget(activePanel))
                 return;
+
+            var panelSelection = VisualElementToolUtility.FilterByHostPanel(allSelected, activePanel);
 
             // Topmost filter: descendants of a selected ancestor move with that ancestor,
             // applying the delta to both would move them twice.
-            var topmost = VisualElementToolUtility.GetTopmostElements(allSelected);
+            var topmost = VisualElementToolUtility.GetTopmostElements(panelSelection);
 
             // Pause live reload while dragging so per-frame writes don't rebuild the panel tree.
             var dragInProgress = GUIUtility.hotControl != 0;
@@ -121,7 +136,7 @@ namespace Unity.UIToolkit.Editor
             }
 
             var pivot = Tools.pivotMode == PivotMode.Center
-                ? VisualElementToolUtility.GetSelectionWorldCenter(allSelected, activePanel)
+                ? VisualElementToolUtility.GetSelectionWorldCenter(panelSelection, activePanel)
                 : VisualElementToolUtility.GetElementWorldCenter(activeElement, activePanel);
             var rotation = VisualElementToolUtility.GetGizmoRotation(activeElement, activePanel);
 
@@ -134,8 +149,7 @@ namespace Unity.UIToolkit.Editor
             if (worldDelta.sqrMagnitude < float.Epsilon)
                 return;
 
-            // All selected elements share the active panel in stage mode (all redirected from
-            // the same UXML), so compute the world -> pixel conversion once.
+            // Every element left shares the active panel, so the world -> pixel conversion is computed once.
             var transformOwner = VisualElementToolUtility.FindTransformOwner(activePanel);
             if (transformOwner == null)
                 return;
@@ -162,8 +176,7 @@ namespace Unity.UIToolkit.Editor
                 new Length(sum.y, LengthUnit.Pixel),
                 sum.z);
 
-            SetInlineStylePropertyCommand<Translate>.Execute(
-                CommandSources.Scene,
+            VisualElementToolUtility.WriteStyleProperty(
                 element,
                 StylePropertyId.Translate,
                 StylePropertyBinding.SetTranslate,
@@ -171,3 +184,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

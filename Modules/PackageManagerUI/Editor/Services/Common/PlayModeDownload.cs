@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using UnityEngine;
 
@@ -17,8 +18,8 @@ namespace UnityEditor.PackageManager.UI.Internal
     [InitializeOnLoad]
     internal static class PlayModeDownload
     {
-        private static readonly string k_DefaultGotItButtonText = L10n.Tr("Got it");
-        private static readonly string k_DefaultCancelButtonText = L10n.Tr("Cancel");
+        private static readonly string k_DefaultGotItButtonText = L10n.Tr("Got it", null);
+        private static readonly string k_DefaultCancelButtonText = L10n.Tr("Cancel", null);
 
         static PlayModeDownload()
         {
@@ -37,8 +38,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
                 if (assetStoreDownloadManager.IsAnyDownloadInProgress())
                 {
-                    var title = L10n.Tr("Package download in progress");
-                    var message = L10n.Tr("Please note that entering Play Mode while Unity is downloading a package may impact performance");
+                    var title = L10n.Tr("Package download in progress", null);
+                    var message = L10n.Tr("Please note that entering Play Mode while Unity is downloading a package may impact performance", null);
                     var accept = applicationProxy.DisplayDialog("enterPlayModeWhenDownloadInProgress", title, message, k_DefaultGotItButtonText, k_DefaultCancelButtonText);
 
                     if (accept)
@@ -66,8 +67,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return true;
 
             var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
-            var title = L10n.Tr("Play Mode in progress");
-            var message = L10n.Tr("Please note that making changes in the Package Manager while in Play Mode may impact performance.");
+            var title = L10n.Tr("Play Mode in progress", null);
+            var message = L10n.Tr("Please note that making changes in the Package Manager while in Play Mode may impact performance.", null);
             var accept = applicationProxy.DisplayDialog("startDownloadWhenInPlayMode", title, message, k_DefaultGotItButtonText, k_DefaultCancelButtonText);
 
             if (accept)
@@ -77,3 +78,4 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

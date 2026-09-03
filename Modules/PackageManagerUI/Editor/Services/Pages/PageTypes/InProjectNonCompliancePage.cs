@@ -12,7 +12,7 @@ internal class InProjectNonCompliancePage: InProjectPage
     public new const string k_Id = "NonCompliance";
 
     public override string id => k_Id;
-    public override string displayName => L10n.Tr("Restricted Packages");
+    public override string displayName => L10n.Tr("Restricted Packages", null);
     public override Icon icon => Icon.Error;
 
     public override bool visible => visualStates.countTotal > 0;

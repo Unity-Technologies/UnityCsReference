@@ -11,6 +11,8 @@ namespace Unity.GraphToolkit.Editor.Implementation
     {
         public Node Node { get; }
 
+        bool IUserModelImp.IsMissingDefinition => Node == null;
+
         void CustomOnDefineNode(NodeModel.NodeDefinitionScope definitionScope)
         {
             if (Node == null)

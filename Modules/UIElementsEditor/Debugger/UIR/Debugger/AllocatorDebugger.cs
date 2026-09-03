@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
@@ -14,6 +15,10 @@ namespace UnityEditor.UIElements.Debugger
 {
     internal class AllocatorDebugger : UIRDebugger
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        internal AllocatorDebugger() { }
+        #pragma warning restore UAL0015
+
         [MenuItem("Window/Analysis/UIR Allocator Debugger", false, 202, true)]
         public static void Open()
         {
@@ -214,3 +219,4 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

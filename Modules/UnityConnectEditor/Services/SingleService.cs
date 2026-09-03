@@ -107,7 +107,7 @@ namespace UnityEditor.Connect
         {
             if (enable && requiresBoundProject && !UnityConnect.instance.projectInfo.projectBound)
             {
-                NotificationManager.instance.Publish(notificationTopic, Notification.Severity.Warning, L10n.Tr(string.Format(k_NoUnityProjectIdMessage, name)));
+                NotificationManager.instance.Publish(notificationTopic, Notification.Severity.Warning, L10n.Tr(string.Format(k_NoUnityProjectIdMessage, name), null));
                 SettingsService.OpenProjectSettings(GeneralProjectSettings.generalProjectSettingsPath);
             }
             else
@@ -120,7 +120,7 @@ namespace UnityEditor.Connect
         {
             if (enable && requiresCoppaCompliance && UnityConnect.instance.projectInfo.COPPA.ToCOPPACompliance() == COPPACompliance.COPPAUndefined)
             {
-                NotificationManager.instance.Publish(notificationTopic, Notification.Severity.Warning, L10n.Tr(string.Format(k_NoCoppaComplianceMessage, name)));
+                NotificationManager.instance.Publish(notificationTopic, Notification.Severity.Warning, L10n.Tr(string.Format(k_NoCoppaComplianceMessage, name), null));
                 SettingsService.OpenProjectSettings(GeneralProjectSettings.generalProjectSettingsPath);
             }
             else

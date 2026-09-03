@@ -23,7 +23,10 @@ namespace UnityEditor.TerrainTools
         [SerializeField]
         TerrainLayer m_SelectedTerrainLayer = null;
 
-        // Keep this separate from m_SelectedTerrainLayer so that it allows selecting null TerrainLayers (like those deleted from Assets).
+        // What gets painted with. An object rather than an index, because OnPaint runs for whichever terrain the brush lands on and a neighbour orders its layers differently.
+        TerrainLayer m_ResolvedTerrainLayer = null;
+
+        // Keep this separate from the layer fields so that it allows selecting null TerrainLayers (like those deleted from Assets).
         private int m_SelectedTerrainLayerIndex = -1;
 
         [FormerlyPrefKeyAs("Terrain/Texture Paint", "f4")]
@@ -58,15 +61,17 @@ namespace UnityEditor.TerrainTools
         public override bool HasBrushMask => true;
         public override bool HasBrushAttributes => true;
 
+        // Both fields describe the terrain just left. Nothing paints until a repaint resolves them.
         public override void OnEnterToolMode()
         {
             m_SelectedTerrainLayerIndex = -1;
+            m_ResolvedTerrainLayer = null;
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
             BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.uv, editContext.brushSize, 0.0f);
-            PaintContext paintContext = TerrainPaintUtility.BeginPaintTexture(terrain, brushXform.GetBrushXYBounds(), m_SelectedTerrainLayer);
+            PaintContext paintContext = TerrainPaintUtility.BeginPaintTexture(terrain, brushXform.GetBrushXYBounds(), m_ResolvedTerrainLayer);
             if (paintContext == null)
                 return false;
 
@@ -129,29 +134,32 @@ namespace UnityEditor.TerrainTools
 
             Rect dropAreaRect = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-            if (m_SelectedTerrainLayerIndex == -1)
-                m_SelectedTerrainLayerIndex = FindLayerIndex(terrain, m_SelectedTerrainLayer);
-
-            // Show the selection grid for terrain layers
-            int newSelectedTerrainLayerIndex = TerrainLayerUtility.ShowTerrainLayersSelectionHelper(terrain, m_SelectedTerrainLayerIndex);
-            EditorGUILayout.Space();
-
-            // Update m_SelectedTerrainLayer if the selection index changed
-            if (newSelectedTerrainLayerIndex != m_SelectedTerrainLayerIndex)
+            // Disabled rather than ignored: this grid is drawn live in every Terrain inspector.
+            bool ownsSelection = OwnsSelection(terrain);
+            using (new EditorGUI.DisabledScope(!ownsSelection))
             {
-                m_SelectedTerrainLayerIndex = newSelectedTerrainLayerIndex;
-                m_SelectedTerrainLayer = m_SelectedTerrainLayerIndex != -1 ? terrain.terrainData.terrainLayers[m_SelectedTerrainLayerIndex] : null;
-            }
+                // Show the selection grid for terrain layers
+                int newSelectedTerrainLayerIndex = TerrainLayerUtility.ShowTerrainLayersSelectionHelper(terrain, SelectionIndexFor(terrain));
+                EditorGUILayout.Space();
 
-            // Show the detailed inspector for the currently selected terrain layer
-            TerrainLayerUtility.ShowTerrainLayerGUI(terrain, m_SelectedTerrainLayer, ref m_SelectedTerrainLayerInspector,
-                (m_TemplateMaterialEditor as MaterialEditor)?.customShaderGUI as ITerrainLayerCustomUI);
-            EditorGUILayout.Space();
+                // Unconditional: an unchanged index does not mean an unchanged layer.
+                UpdateSelection(terrain, newSelectedTerrainLayerIndex);
+
+                // Show the detailed inspector for the currently selected terrain layer. Owner only:
+                // DrawFoldoutInspector recreates this shared editor whenever the layer differs.
+                if (ownsSelection)
+                {
+                    TerrainLayerUtility.ShowTerrainLayerGUI(terrain, m_ResolvedTerrainLayer, ref m_SelectedTerrainLayerInspector,
+                        (m_TemplateMaterialEditor as MaterialEditor)?.customShaderGUI as ITerrainLayerCustomUI);
+                    EditorGUILayout.Space();
+                }
+            }
 
             EditorGUILayout.EndVertical();
 
             // Handle drag and drop for this specific area
-            HandleLayerDragAndDrop(dropAreaRect, terrain);
+            if (ownsSelection)
+                HandleLayerDragAndDrop(dropAreaRect, terrain);
 
             EditorGUI.EndChangeCheck();
         }
@@ -168,6 +176,54 @@ namespace UnityEditor.TerrainTools
         public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             TextureToolSettingsGUI(terrain, editContext, true);
+        }
+
+        internal TerrainLayer resolvedTerrainLayer => m_ResolvedTerrainLayer;
+
+        // -1 means whoever set it did not have the pick, so look it up for this terrain instead.
+        internal int SelectionIndexFor(Terrain terrain)
+        {
+            return m_SelectedTerrainLayerIndex != -1
+                ? m_SelectedTerrainLayerIndex
+                : FindLayerIndex(terrain, m_SelectedTerrainLayer);
+        }
+
+        internal void UpdateSelection(Terrain terrain, int selectedIndex)
+        {
+            if (!OwnsSelection(terrain))
+                return;
+
+            m_SelectedTerrainLayerIndex = selectedIndex;
+            m_ResolvedTerrainLayer = ResolveSelectedLayer(terrain, selectedIndex);
+            if (m_ResolvedTerrainLayer != null)
+                m_SelectedTerrainLayer = m_ResolvedTerrainLayer;
+        }
+
+        internal void ResetSelection()
+        {
+            m_SelectedTerrainLayerIndex = -1;
+            m_ResolvedTerrainLayer = null;
+            m_SelectedTerrainLayer = null;
+        }
+
+        // One selection on one tool, but a locked window means two inspectors drawing the grid.
+        // TerrainInspector gates its own scene painting on this static, so follow the one it names.
+        // Permissive when it is null, unlike TerrainInspector, which reads null as disabled: no
+        // inspector owning it means OnToolGUI returns before painting anything, so there is nothing
+        // to arbitrate and refusing the write would only freeze the selection.
+        private static bool OwnsSelection(Terrain terrain)
+        {
+            TerrainInspector owner = TerrainInspector.s_activeTerrainInspectorInstance;
+            return owner == null || owner.target as Terrain == terrain;
+        }
+
+        private static TerrainLayer ResolveSelectedLayer(Terrain terrain, int index)
+        {
+            if (index < 0 || terrain == null || terrain.terrainData == null)
+                return null;
+
+            TerrainLayer[] layers = terrain.terrainData.terrainLayers;
+            return index < layers.Length ? layers[index] : null;
         }
 
         private int FindLayerIndex(Terrain terrain, TerrainLayer layer)
@@ -276,10 +332,7 @@ namespace UnityEditor.TerrainTools
                         }
 
                         if (lastDraggedLayer != null)
-                        {
-                            m_SelectedTerrainLayer = lastDraggedLayer;
-                            m_SelectedTerrainLayerIndex = FindLayerIndex(terrain, lastDraggedLayer);
-                        }
+                            UpdateSelection(terrain, FindLayerIndex(terrain, lastDraggedLayer));
                     }
                     CleanupInspectorDragState();
                     evt.Use();

@@ -15,10 +15,12 @@ using static UnityEditor.AnimationUtility;
 using UnityEditor.AnimationWindowBuiltin;
 using UnityEngine.Animations;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 
 namespace UnityEditorInternal
 {
     [System.Serializable]
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     partial class AnimationWindowState : ICurveEditorState
     {
         public enum RefreshType
@@ -102,6 +104,7 @@ namespace UnityEditorInternal
         public const float kDefaultFrameRate = 60.0f;
         public const string kEditCurveUndoLabel = "Edit Curve";
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         public IAnimationWindowSelectionItem selection
         {
             get => m_Selection;

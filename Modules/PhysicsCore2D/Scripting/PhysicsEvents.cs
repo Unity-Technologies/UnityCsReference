@@ -18,7 +18,7 @@ namespace Unity.U2D.Physics
     /// See <see cref="PhysicsWorld.Simulate(float)"/> and <see cref="PhysicsWorld.Simulate(ReadOnlySpan{PhysicsWorld}, float)"/>.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial struct PhysicsEvents
+    public readonly partial record struct PhysicsEvents
     {
         /// <summary>
         /// An event produced by a <see cref="PhysicsBody"/> that indicates the simulation changed the body in one of the following ways:
@@ -28,7 +28,7 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsWorld.bodyUpdateEvents"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct BodyUpdateEvent
+        public readonly record struct BodyUpdateEvent
         {
             /// <summary>
             /// The current transform of the body.
@@ -64,7 +64,7 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsWorld.triggerBeginEvents"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct TriggerBeginEvent
+        public readonly record struct TriggerBeginEvent
         {
             /// <summary>
             /// The trigger shape involved in the event.
@@ -104,7 +104,7 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsWorld.triggerEndEvents"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct TriggerEndEvent
+        public readonly record struct TriggerEndEvent
         {
             /// <summary>
             /// The trigger shape involved in the event.
@@ -143,7 +143,7 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsWorld.contactBeginEvents"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct ContactBeginEvent
+        public readonly record struct ContactBeginEvent
         {
             /// <summary>
             /// One of the shapes involved in the event.
@@ -190,7 +190,7 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsWorld.contactEndEvents"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct ContactEndEvent
+        public readonly record struct ContactEndEvent
         {
             /// <summary>
             /// One of the shapes involved in the event.
@@ -238,7 +238,7 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsWorld.contactHitEvents"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct ContactHitEvent
+        public readonly record struct ContactHitEvent
         {
             /// <summary>
             /// One of the shapes involved in the event.
@@ -294,7 +294,7 @@ namespace Unity.U2D.Physics
         /// This can be used to decide if a contact between the two shapes should be created or not.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct ContactFilterEvent
+        public readonly record struct ContactFilterEvent
         {
             /// <summary>
             /// The physics world both shapes are within.
@@ -327,7 +327,7 @@ namespace Unity.U2D.Physics
         /// An event produced when a contact between a pair of <see cref="PhysicsShape"/> is updated, used to provide the ability to decide if the contact should be disabled or not.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct PreSolveEvent
+        public readonly record struct PreSolveEvent
         {
             /// <summary>
             /// The physics world both shapes are within.
@@ -372,7 +372,7 @@ namespace Unity.U2D.Physics
         /// An event produced by a Joint which exceeds either its <see cref="PhysicsJoint.forceThreshold"/> or <see cref="PhysicsJoint.torqueThreshold"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct JointThresholdEvent
+        public readonly record struct JointThresholdEvent
         {
             /// <summary>
             /// The joint involved in the event.
@@ -394,7 +394,7 @@ namespace Unity.U2D.Physics
         /// An event produced and sent to the callback target set with <see cref="PhysicsWorld.transformWriteCallbackTarget"/> which must implement <see cref="PhysicsCallbacks.ITransformWriteCallback"/> which will have <see cref="PhysicsCallbacks.ITransformWriteCallback.OnTransformWrite(PhysicsEvents.TransformWriteEvent)"/> called allowing custom transform writing.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly partial struct TransformWriteEvent
+        public readonly partial record struct TransformWriteEvent
         {
             internal TransformWriteEvent(
                 PhysicsWorld world,
@@ -464,7 +464,7 @@ namespace Unity.U2D.Physics
         /// An event produced and sent to the callback target set with <see cref="PhysicsWorld.transformWriteCallbackTarget"/> which must implement <see cref="PhysicsCallbacks.ITransformWriteCallback"/> which will have <see cref="PhysicsCallbacks.ITransformWriteCallback.OnTransformTweenWrite(TransformTweenWriteEvent)"/> called allowing custom transform writing.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly partial struct TransformTweenWriteEvent
+        public readonly partial record struct TransformTweenWriteEvent
         {
             internal TransformTweenWriteEvent(
                 PhysicsWorld world,
@@ -534,7 +534,7 @@ namespace Unity.U2D.Physics
         /// An event produced after registering via <see cref="PhysicsWorld.RegisterTransformChange(Transform, PhysicsCallbacks.ITransformChangedCallback)"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct TransformChangeEvent
+        public readonly record struct TransformChangeEvent
         {
             /// <summary>
             /// The transform that changed.

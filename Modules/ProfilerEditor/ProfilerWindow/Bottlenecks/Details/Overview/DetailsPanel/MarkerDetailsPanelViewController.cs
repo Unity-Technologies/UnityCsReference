@@ -13,10 +13,10 @@ namespace Unity.Profiling.Editor.UI
     {
         static class Content
         {
-            public static readonly string k_TabLabel_General = L10n.Tr("General");
-            public static readonly string k_TabLabel_Instances = L10n.Tr("Instances");
-            public static readonly string k_ViewButtonLabel = L10n.Tr("View");
-            public static readonly string k_ViewButtonTooltip = L10n.Tr("Show the selected marker in the Hierarchy View of CPU Profiler module");
+            public static readonly string k_TabLabel_General = L10n.Tr("General", null);
+            public static readonly string k_TabLabel_Instances = L10n.Tr("Instances", null);
+            public static readonly string k_ViewButtonLabel = L10n.Tr("View", null);
+            public static readonly string k_ViewButtonTooltip = L10n.Tr("Show the selected marker in the Hierarchy View of CPU Profiler module", null);
         }
 
         private readonly Marker m_Marker;

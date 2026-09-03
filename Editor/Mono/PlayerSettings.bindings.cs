@@ -1534,6 +1534,7 @@ namespace UnityEditor
             get { return 0; }
         }
 
+        [Obsolete("PlayerSettings.gpuSkinning is deprecated and will be removed in a future release. Use PlayerSettings.meshDeformation instead.", false)]
         [NativeProperty("GPUSkinning")]
         public static extern bool gpuSkinning { get; set; }
 

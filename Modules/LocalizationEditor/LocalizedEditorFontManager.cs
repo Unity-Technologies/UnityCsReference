@@ -2,16 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: LocalizationEditor not yet converted
 using UnityEngine;
 using UnityEditor.Experimental;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
     // internal class to manage localized editor fonts
     internal class LocalizedEditorFontManager
     {
+        [NoAutoStaticsCleanup] // editor fonts are loaded once per process and survive reload; re-running setup is unnecessary
         static bool s_FontInitialized = false;
 
         private class FontSetting
@@ -49,6 +50,7 @@ namespace UnityEditor
             }
         }
 
+        [NoAutoStaticsCleanup] // cache of font settings parsed from a fixed editor resource file; holds no user code references
         private static Dictionary<SystemLanguage, FontDictionary> m_fontDictionaries;
 
         private static FontDictionary GetFontDictionary(SystemLanguage language)
@@ -155,4 +157,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

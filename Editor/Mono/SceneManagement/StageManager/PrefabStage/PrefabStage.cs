@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -47,7 +48,7 @@ namespace UnityEditor.SceneManagement
             }
         }
 
-        internal static readonly string s_PrefabInContextPreviewValuesTooltip = L10n.Tr("This property is previewing the overridden value on the Prefab instance.\n\nTo edit this property, open this Prefab Asset in isolation by pressing the modifier key [Alt] while you open it.");
+        internal static readonly string s_PrefabInContextPreviewValuesTooltip = L10n.Tr("This property is previewing the overridden value on the Prefab instance.\n\nTo edit this property, open this Prefab Asset in isolation by pressing the modifier key [Alt] while you open it.", null);
 
         public enum Mode
         {
@@ -1215,10 +1216,10 @@ namespace UnityEditor.SceneManagement
         internal override string GetErrorMessage()
         {
             if (m_PrefabContentsRoot == null)
-                return L10n.Tr("Error: The Prefab contents root has been deleted.\n\nPrefab: ") + m_PrefabAssetPath;
+                return L10n.Tr("Error: The Prefab contents root has been deleted.\n\nPrefab: ", null) + m_PrefabAssetPath;
 
             if (m_PrefabContentsRoot.scene != scene)
-                return L10n.Tr("Error: The root GameObject of the opened Prefab has been moved out of the Prefab Stage scene by a script.\n\nPrefab: ") + m_PrefabAssetPath;
+                return L10n.Tr("Error: The root GameObject of the opened Prefab has been moved out of the Prefab Stage scene by a script.\n\nPrefab: ", null) + m_PrefabAssetPath;
 
             return null;
         }
@@ -1241,7 +1242,7 @@ namespace UnityEditor.SceneManagement
             if (isAssetMissing)
             {
                 style = isLastCrumb ? BreadcrumbBar.DefaultStyles.labelBoldMissing : BreadcrumbBar.DefaultStyles.labelMissing;
-                content.tooltip = L10n.Tr("Prefab Asset has been deleted.");
+                content.tooltip = L10n.Tr("Prefab Asset has been deleted.", null);
             }
 
             return new BreadcrumbBar.Item
@@ -1375,9 +1376,9 @@ namespace UnityEditor.SceneManagement
 
                 if (hasUnsavedChanges)
                 {
-                    var title = L10n.Tr("Prefab Has Been Changed on Disk");
-                    var message = string.Format(L10n.Tr("You have modifications to the Prefab '{0}' that was changed on disk while in Prefab Mode. Do you want to keep your changes or reload the Prefab and discard your changes?"), m_PrefabContentsRoot.name);
-                    bool keepChanges = EditorUtility.DisplayDialog(title, message, L10n.Tr("Keep Changes"), L10n.Tr("Discard Changes"));
+                    var title = L10n.Tr("Prefab Has Been Changed on Disk", null);
+                    var message = string.Format(L10n.Tr("You have modifications to the Prefab '{0}' that was changed on disk while in Prefab Mode. Do you want to keep your changes or reload the Prefab and discard your changes?", null), m_PrefabContentsRoot.name);
+                    bool keepChanges = EditorUtility.DisplayDialog(title, message, L10n.Tr("Keep Changes", null), L10n.Tr("Discard Changes", null));
                     if (!keepChanges)
                         ReloadStage();
                 }
@@ -1399,11 +1400,11 @@ namespace UnityEditor.SceneManagement
         {
             if (PrefabUtility.IsPrefabAssetMissing(m_PrefabContentsRoot))
             {
-                string title = L10n.Tr("Saving Variant Failed");
-                string message = L10n.Tr("Can't save the Prefab Variant when its parent Prefab is missing. You have to unpack the root GameObject or recover the missing parent Prefab in order to save the Prefab Variant");
+                string title = L10n.Tr("Saving Variant Failed", null);
+                string message = L10n.Tr("Can't save the Prefab Variant when its parent Prefab is missing. You have to unpack the root GameObject or recover the missing parent Prefab in order to save the Prefab Variant", null);
                 if (autoSave)
-                    message += L10n.Tr("\n\nAuto Save has been temporarily disabled.");
-                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+                    message += L10n.Tr("\n\nAuto Save has been temporarily disabled.", null);
+                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK", null));
                 m_TemporarilyDisableAutoSave = true;
                 return true;
             }
@@ -1475,11 +1476,11 @@ namespace UnityEditor.SceneManagement
             }
             else
             {
-                string title = L10n.Tr("Saving Failed");
-                string message = L10n.Tr("Saving failed. Check the Console window to get more insight into what needs to be fixed.");
+                string title = L10n.Tr("Saving Failed", null);
+                string message = L10n.Tr("Saving failed. Check the Console window to get more insight into what needs to be fixed.", null);
                 if (autoSave)
-                    message += L10n.Tr("\n\nAuto Save has been temporarily disabled.");
-                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK"));
+                    message += L10n.Tr("\n\nAuto Save has been temporarily disabled.", null);
+                EditorUtility.DisplayDialog(title, message, L10n.Tr("OK", null));
 
                 m_TemporarilyDisableAutoSave = true;
                 m_IgnoreNextAssetImportedEventForCurrentPrefab = false;
@@ -1544,7 +1545,7 @@ namespace UnityEditor.SceneManagement
 
                 if (relativePath == m_PrefabAssetPath)
                 {
-                    if (EditorUtility.DisplayDialog(L10n.Tr("Save Prefab has failed"), L10n.Tr("Overwriting the same path as another open prefab is not allowed."), L10n.Tr("Try Again"), L10n.Tr("Cancel")))
+                    if (EditorUtility.DisplayDialog(L10n.Tr("Save Prefab has failed", null), L10n.Tr("Overwriting the same path as another open prefab is not allowed.", null), L10n.Tr("Try Again", null), L10n.Tr("Cancel", null)))
                         continue;
 
                     return false;
@@ -1622,12 +1623,12 @@ namespace UnityEditor.SceneManagement
 
                 if (!string.IsNullOrEmpty(errorMsg))
                 {
-                    var t = L10n.Tr("Rename Prefab File Not Possible");
-                    var m = string.Format(L10n.Tr("The Prefab file name must match the Prefab root GameObject name but there is already a Prefab asset with the file name '{0}' in the same folder. The root GameObject name will therefore be changed back to match the Prefab file name when saving."), m_PrefabContentsRoot.name);
+                    var t = L10n.Tr("Rename Prefab File Not Possible", null);
+                    var m = string.Format(L10n.Tr("The Prefab file name must match the Prefab root GameObject name but there is already a Prefab asset with the file name '{0}' in the same folder. The root GameObject name will therefore be changed back to match the Prefab file name when saving.", null), m_PrefabContentsRoot.name);
 
                     if (showCancelButton)
                     {
-                        if (EditorUtility.DisplayDialog(t, m, L10n.Tr("OK"), L10n.Tr("Cancel Save")))
+                        if (EditorUtility.DisplayDialog(t, m, L10n.Tr("OK", null), L10n.Tr("Cancel Save", null)))
                         {
                             RenameInstanceRootToMatchPrefabFile();
                             return true;
@@ -1638,17 +1639,17 @@ namespace UnityEditor.SceneManagement
                         }
                     }
 
-                    EditorUtility.DisplayDialog(t, m, L10n.Tr("OK"));
+                    EditorUtility.DisplayDialog(t, m, L10n.Tr("OK", null));
                     RenameInstanceRootToMatchPrefabFile();
                     return true;
                 }
 
-                var title = L10n.Tr("Rename Prefab File?");
-                var message = string.Format(L10n.Tr("The Prefab file name must match the Prefab root GameObject name. Do you want to rename the file to '{0}' or use the old name '{1}' for both?"), m_PrefabContentsRoot.name, prefabFilename);
+                var title = L10n.Tr("Rename Prefab File?", null);
+                var message = string.Format(L10n.Tr("The Prefab file name must match the Prefab root GameObject name. Do you want to rename the file to '{0}' or use the old name '{1}' for both?", null), m_PrefabContentsRoot.name, prefabFilename);
 
                 if (showCancelButton)
                 {
-                    int option = EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Rename File"), L10n.Tr("Cancel Save"), L10n.Tr("Use Old Name"));
+                    int option = EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Rename File", null), L10n.Tr("Cancel Save", null), L10n.Tr("Use Old Name", null));
                     switch (option)
                     {
                         // Rename prefab file
@@ -1666,7 +1667,7 @@ namespace UnityEditor.SceneManagement
                 }
                 else
                 {
-                    bool renameFile = EditorUtility.DisplayDialog(title, message, L10n.Tr("Rename File"), L10n.Tr("Use Old Name"));
+                    bool renameFile = EditorUtility.DisplayDialog(title, message, L10n.Tr("Rename File", null), L10n.Tr("Use Old Name", null));
                     if (renameFile)
                         RenamePrefabFileToMatchPrefabInstanceName();
                     else
@@ -1709,10 +1710,10 @@ namespace UnityEditor.SceneManagement
 
             if (IsPrefabInImmutableFolder())
             {
-                var header = L10n.Tr("Immutable Prefab");
-                var message = L10n.Tr("The Prefab was changed in Prefab Mode but is in a read-only folder so the changes cannot be saved.");
-                var buttonOK = L10n.Tr("OK");
-                var buttonCancel = L10n.Tr("Cancel");
+                var header = L10n.Tr("Immutable Prefab", null);
+                var message = L10n.Tr("The Prefab was changed in Prefab Mode but is in a read-only folder so the changes cannot be saved.", null);
+                var buttonOK = L10n.Tr("OK", null);
+                var buttonCancel = L10n.Tr("Cancel", null);
 
                 if (EditorUtility.DisplayDialog(header, message, buttonOK, buttonCancel))
                     return true; // OK: continue to close stage
@@ -2239,3 +2240,4 @@ namespace UnityEditor.SceneManagement
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

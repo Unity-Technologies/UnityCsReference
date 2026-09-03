@@ -24,7 +24,7 @@ namespace UnityEditor.Build.Profile.Internal
             }
         }
 
-        static readonly string k_AddSettings = L10n.Tr("Add Settings");
+        static readonly string k_AddSettings = L10n.Tr("Add Settings", null);
         IAddSettingsDataProvider m_Provider;
 
         public AddSettingsDropdownDataSource(IAddSettingsDataProvider settingsTypeProvider)

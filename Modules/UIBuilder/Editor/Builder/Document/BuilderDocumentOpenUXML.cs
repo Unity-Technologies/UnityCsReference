@@ -91,30 +91,23 @@ namespace Unity.UI.Builder
         [NoAutoStaticsCleanup] // Monotonic temp-file name counter; persisting it just continues the sequence, never reset, safe across reload.
         internal static int s_UssTempFileCounter = 1;
 
-        public BuilderUXMLFileSettings fileSettings => m_FileSettings ?? (m_FileSettings = new BuilderUXMLFileSettings(visualTreeAsset));
+        public BuilderUXMLFileSettings fileSettings => m_FileSettings ?? (m_FileSettings = new BuilderUXMLFileSettings(visualTreeAsset, document));
 
-        internal List<BuilderDocumentOpenUXML> openUXMLFiles
+        // The owning document assigns itself on creation, deserialization and load; the fallback only covers a
+        // file that was never attached to a document, which matches the old find-the-singleton behavior.
+        internal BuilderDocument document
         {
             get
             {
-                // Find or create document.
                 if (m_Document == null)
-                {
-                    var allDocuments = Resources.FindObjectsOfTypeAll(typeof(BuilderDocument));
-                    if (allDocuments.Length > 1)
-                        Debug.LogError("UIBuilder: More than one BuilderDocument was somehow created!");
-                    if (allDocuments.Length == 0)
-                        m_Document = BuilderDocument.CreateInstance();
-                    else
-                        m_Document = allDocuments[0] as BuilderDocument;
-                }
+                    m_Document = BuilderDocument.FindOrCreateDefaultInstance();
 
-                if (m_Document == null)
-                    return null;
-
-                return m_Document.openUXMLFiles;
+                return m_Document;
             }
+            set => m_Document = value;
         }
+
+        internal List<BuilderDocumentOpenUXML> openUXMLFiles => document.openUXMLFiles;
 
         public StyleSheet activeStyleSheet
         {
@@ -502,12 +495,21 @@ namespace Unity.UI.Builder
             }
 
             var savedContext = new VisualTreeAssetEditingContext(visualTreeAsset);
-            PreSaveCommand.Execute(CommandSources.Builder, savedContext);
 
-            var succeeded = true;
+            // Flag the owner while the save (and its pre/post commands) runs, so it can tell its own save from
+            // one arriving out of another Builder window.
+            var ownerDocument = document;
+            ownerDocument.isSavingOwnDocument = true;
+
+            // Starts false so a save that throws before writing anything reports as failed to PostSaveCommand
+            // in the finally (a "successful" report would rebaseline the registry over unsaved edits).
+            var succeeded = false;
             try
             {
+                PreSaveCommand.Execute(CommandSources.Builder, savedContext);
                 ClearUndo();
+
+                succeeded = true;
 
                 var startTime = DateTime.UtcNow;
                 using var pool = ListPool<BuilderDocumentOpenUSS>.Get(out var savedUSSFiles);
@@ -562,7 +564,14 @@ namespace Unity.UI.Builder
             }
             finally
             {
-                PostSaveCommand.Execute(CommandSources.Builder, savedContext, succeeded);
+                try
+                {
+                    PostSaveCommand.Execute(CommandSources.Builder, savedContext, succeeded);
+                }
+                finally
+                {
+                    ownerDocument.isSavingOwnDocument = false;
+                }
             }
 
             return succeeded;
@@ -875,9 +884,11 @@ namespace Unity.UI.Builder
 
         private void LoadVisualTreeAsset(VisualTreeAsset newVisualTreeAsset)
         {
-            var builderWindow = Builder.ActiveWindow;
-            if (builderWindow == null)
-                builderWindow = Builder.ShowWindow();
+            // Reload into the window that owns this document, never another Builder instance. If the owning
+            // window is gone there is no canvas to reload; external holders are notified separately.
+            var builderWindow = document.primaryViewportWindow as Builder;
+            if (builderWindow == null || builderWindow.document != document)
+                return;
 
             if (string.IsNullOrEmpty(uxmlPath))
                 builderWindow.toolbar.ReloadDocument();
@@ -894,10 +905,10 @@ namespace Unity.UI.Builder
             if (m_DocumentBeingSavedExplicitly || m_ExternalReimportInProgress)
                 return;
 
-            // Only participate when a Builder window is open to drive the reload. Otherwise leave the external
-            // change entirely to the asset registry's own push handling (which the claim below would suppress) — so
-            // we never claim a reimport we won't reload, orphaning it.
-            var builderOpen = EditorWindow.HasOpenInstances<Builder>();
+            // Only participate when this document's own Builder window is open to drive the reload. Otherwise
+            // leave the external change entirely to the asset registry's own push handling (which the claim below
+            // would suppress) — so we never claim a reimport we won't reload, orphaning it.
+            var builderOpen = document.primaryViewportWindow is Builder;
 
             var newVisualTreeAsset = visualTreeAsset;
             var isCurrentDocumentBeingProcessed = assetPath == uxmlOldPath;
@@ -1088,6 +1099,13 @@ namespace Unity.UI.Builder
 
         public void OnAfterDeserialize()
         {
+        }
+
+        internal void ReopenAsset(VisualTreeAsset asset)
+        {
+            m_VisualTreeAssetRef = asset;
+            m_OpenendVisualTreeAssetOldPath = AssetDatabase.GetAssetPath(asset);
+            OnAfterLoadFromDisk();
         }
 
         public void OnAfterLoadFromDisk()
@@ -1421,10 +1439,13 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            // Preserve the backup's selection markers across the wholesale sync, and re-apply
-            // them onto the freshly reimported asset so the canvas selection survives the
-            // dependent reimport. (UUM-141060)
-            var markers = CaptureSelectionMarkers(m_VisualTreeAssetBackup);
+            // Preserve selection markers across the sync so the canvas selection survives the dependent
+            // reimport (UUM-141060). Prefer the fresh asset's markers — the backup's index-based snapshot can
+            // map onto a stale element order after a sibling's reorder — falling back to the backup only when
+            // the reimport stripped them.
+            var markers = CaptureSelectionMarkers(fresh);
+            if (markers.isEmpty)
+                markers = CaptureSelectionMarkers(m_VisualTreeAssetBackup);
             fresh.DeepOverwrite(m_VisualTreeAssetBackup);
             ApplySelectionMarkers(m_VisualTreeAssetBackup, markers);
             ApplySelectionMarkers(fresh, markers);
@@ -1470,9 +1491,13 @@ namespace Unity.UI.Builder
             // Sync the backup to the freshly imported asset so a later RestoreAssetsFromBackup
             // doesn't revert ids referenced by ancestor serializedDataOverrides (UUM-141060),
             // capturing selection markers across the sync so the editor-only state survives.
+            // Prefer markers already on the live asset over the backup's index-based snapshot; see
+            // ResyncBackupToCurrentAsset.
             if (m_VisualTreeAssetBackup != null && m_VisualTreeAsset != null)
             {
-                var markers = CaptureSelectionMarkers(m_VisualTreeAssetBackup);
+                var markers = CaptureSelectionMarkers(m_VisualTreeAsset);
+                if (markers.isEmpty)
+                    markers = CaptureSelectionMarkers(m_VisualTreeAssetBackup);
                 m_VisualTreeAsset.DeepOverwrite(m_VisualTreeAssetBackup);
                 ApplySelectionMarkers(m_VisualTreeAssetBackup, markers);
                 ApplySelectionMarkers(m_VisualTreeAsset, markers);
@@ -1488,6 +1513,8 @@ namespace Unity.UI.Builder
         {
             public List<int> selectedVeaIndices;
             public bool hasRootMarker;
+
+            public bool isEmpty => (selectedVeaIndices == null || selectedVeaIndices.Count == 0) && !hasRootMarker;
         }
 
         static SelectionMarkerSnapshot CaptureSelectionMarkers(VisualTreeAsset vta)

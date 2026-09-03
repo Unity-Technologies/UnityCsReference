@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using UnityEditor.Overlays;
 using UnityEditor.Snap;
@@ -22,7 +23,9 @@ namespace UnityEditor.Toolbars
             
             this.RegisterValueChangedCallback(OnValueChanged);
             
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
         }
 
         public void SetValueWithoutNotify(float newValue, bool linked)
@@ -60,7 +63,9 @@ namespace UnityEditor.Toolbars
             name = "GridSettings";
             tooltip = "Settings for the Scene view grid.";
 
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
             
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
@@ -94,12 +99,14 @@ namespace UnityEditor.Toolbars
 
         public SnapSettings()
         {
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
             
             m_GridSnapToggle = new EditorToolbarToggle();
             m_GridSnapToggle.name = "GridSnappingToggle";
             m_GridSnapToggle.tooltip = L10n.Tr("Toggle absolute Grid Snapping on and off.\n\n" + 
-                                               "Grid Snapping will fallback to Incremental Snapping if handle rotation is not aligned to grid.");
+                                               "Grid Snapping will fallback to Incremental Snapping if handle rotation is not aligned to grid.", null);
             m_GridSnapToggle.RegisterValueChangedCallback((evt) =>
             {
                 EditorSnapSettings.gridSnapEnabled = evt.newValue;
@@ -109,7 +116,7 @@ namespace UnityEditor.Toolbars
             
             m_IncrementSnapToggle = new EditorToolbarToggle();
             m_IncrementSnapToggle.name = "IncrementalSnappingToggle";
-            m_IncrementSnapToggle.tooltip = L10n.Tr("Toggle Incremental Snapping on and off");
+            m_IncrementSnapToggle.tooltip = L10n.Tr("Toggle Incremental Snapping on and off", null);
             m_IncrementSnapToggle.RegisterValueChangedCallback((evt) =>
             {
                 EditorSnapSettings.snapEnabled = evt.newValue;
@@ -128,7 +135,7 @@ namespace UnityEditor.Toolbars
                     EditorSnapSettings.move = newSnapSize;
                 }
             });
-            m_IncrementalSnapSizeField.tooltip = L10n.Tr("Incremental Snapping size");
+            m_IncrementalSnapSizeField.tooltip = L10n.Tr("Incremental Snapping size", null);
             Add(m_IncrementalSnapSizeField);
             
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
@@ -182,7 +189,7 @@ namespace UnityEditor.Toolbars
         {
             m_Toggle = new EditorToolbarToggle();
             m_Toggle.name = "AngleSnappingToggle";
-            m_Toggle.tooltip = L10n.Tr("Toggle Angle Snapping on and off");
+            m_Toggle.tooltip = L10n.Tr("Toggle Angle Snapping on and off", null);
             m_Toggle.RegisterValueChangedCallback((evt) => EditorSnapSettings.angleSnapEnabled = !EditorSnapSettings.angleSnapEnabled);
             UpdateGridAngleSnapEnableValue();
             Add(m_Toggle);
@@ -191,11 +198,13 @@ namespace UnityEditor.Toolbars
             m_FloatField.name = "SceneViewAngleSnapSize";
             m_FloatField.RegisterValueChangedCallback((evt) => EditorSnapSettingsData.instance.snapSettings.rotation = evt.newValue);
             m_FloatField.SetValueWithoutNotify(EditorSnapSettingsData.instance.snapSettings.rotation);
-            m_FloatField.tooltip = L10n.Tr("Incremental angle snap size");
+            m_FloatField.tooltip = L10n.Tr("Incremental angle snap size", null);
             Add(m_FloatField);
             
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
                
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -227,7 +236,7 @@ namespace UnityEditor.Toolbars
         {
             m_Toggle = new EditorToolbarToggle();
             m_Toggle.name = "ScaleSnappingToggle";
-            m_Toggle.tooltip = L10n.Tr("Toggle Scale Snapping on and off");
+            m_Toggle.tooltip = L10n.Tr("Toggle Scale Snapping on and off", null);
             m_Toggle.RegisterValueChangedCallback((evt) => EditorSnapSettings.scaleSnapEnabled = !EditorSnapSettings.scaleSnapEnabled);
             UpdateGridScaleSnapEnableValue();
             Add(m_Toggle);
@@ -236,11 +245,13 @@ namespace UnityEditor.Toolbars
             m_FloatField.name = "SceneViewScaleSnapSize";
             m_FloatField.RegisterValueChangedCallback((evt) => EditorSnapSettingsData.instance.snapSettings.scale = evt.newValue);
             m_FloatField.SetValueWithoutNotify(EditorSnapSettingsData.instance.snapSettings.scale);
-            m_FloatField.tooltip = L10n.Tr("Scale snap multiplier");
+            m_FloatField.tooltip = L10n.Tr("Scale snap multiplier", null);
             Add(m_FloatField);
 
             EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
+            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             SceneViewToolbarStyles.AddStyleSheets(this);
+            #pragma warning restore UAL0015
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -262,3 +273,4 @@ namespace UnityEditor.Toolbars
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

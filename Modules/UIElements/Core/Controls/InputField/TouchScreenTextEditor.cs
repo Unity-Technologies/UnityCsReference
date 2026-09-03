@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.UIElements
@@ -38,7 +37,7 @@ namespace UnityEngine.UIElements
         {
             ++Frame;
 
-            if (editingUtilities.TouchScreenKeyboardCanBeUsed() && !textElement.edition.hideSoftKeyboard)
+            if (TextEditingUtilities.TouchScreenKeyboardCanBeUsed() && !textElement.edition.hideSoftKeyboard)
             {
                 bool showPlaceholderText;
                 if (textElement.m_TouchScreenKeyboard == null)
@@ -211,7 +210,7 @@ namespace UnityEngine.UIElements
         {
             base.HandleEventBubbleUp(evt);
 
-            if (!editingUtilities.TouchScreenKeyboardCanBeUsed() || textElement.edition.isReadOnly || textElement.edition.hideSoftKeyboard)
+            if (!TextEditingUtilities.TouchScreenKeyboardCanBeUsed() || textElement.edition.isReadOnly || textElement.edition.hideSoftKeyboard)
                 return;
 
             switch (evt)
@@ -301,4 +300,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

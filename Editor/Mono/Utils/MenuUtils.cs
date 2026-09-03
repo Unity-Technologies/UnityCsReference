@@ -69,7 +69,7 @@ namespace UnityEditor
             }
 
             if (!menuItem.isSeparator && EditorApplication.ValidateMenuItem(menuItem.path))
-                menu.AddItem(new GUIContent(L10n.TrPath(replacementMenuString)), false, MenuCallback<T>, callbackObject);
+                menu.AddItem(new GUIContent(L10n.TrPath(replacementMenuString, null)), false, MenuCallback<T>, callbackObject);
         }
 
         static string GetSubmenuPath(GenericMenu.MenuItem item)

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -20,8 +21,11 @@ namespace UnityEditor.Build.Profile.Elements
         [Serializable]
         class SceneListClipboard
         {
+            public string sceneListClipboardId = k_ClipboardId;
             public EditorBuildSettingsScene[] scenes = Array.Empty<EditorBuildSettingsScene>();
         }
+
+        const string k_ClipboardId = "UnityEditor.Build.Profile.SceneList";
 
         /// <summary>
         /// Scene list settings displays a list of <see cref="EditorBuildSettingsScene"/> stored
@@ -104,10 +108,9 @@ namespace UnityEditor.Build.Profile.Elements
             if (string.IsNullOrEmpty(systemBuffer))
                 return;
 
-            var clipboard = new SceneListClipboard();
+            var clipboard = new SceneListClipboard { sceneListClipboardId = null };
             try
             {
-                Undo.RecordObject(profile, "Paste Sub-Asset Values");
                 EditorJsonUtility.FromJsonOverwrite(systemBuffer, clipboard);
             }
             catch (ArgumentException)
@@ -116,6 +119,13 @@ namespace UnityEditor.Build.Profile.Elements
                 return;
             }
 
+            if (clipboard.sceneListClipboardId != k_ClipboardId)
+            {
+                Debug.LogWarning("Clipboard does not contain valid scene list data for pasting.");
+                return;
+            }
+
+            Undo.RecordObject(profile, "Paste Sub-Asset Values");
             profile.scenes = clipboard.scenes ?? Array.Empty<EditorBuildSettingsScene>();
             EditorUtility.SetDirty(profile);
         }
@@ -135,3 +145,4 @@ namespace UnityEditor.Build.Profile.Elements
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

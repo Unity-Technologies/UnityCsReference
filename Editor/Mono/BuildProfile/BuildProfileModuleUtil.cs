@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: BuildSettingsWindow not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -43,18 +42,18 @@ namespace UnityEditor.Build.Profile
         // For UI cases where the extension `.asset` is not taken into consideration
         public const int k_MaxAssetFileNameLengthWithoutExtension = k_MaxAssetFileNameLength - 6;
         public const string platformRequirementWarningHelpboxName = "helpbox-card-warning";
-        static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.");
-        static readonly string k_SupportedPlatformStatus = L10n.Tr("{0} module installed, {1} module not loaded.");
-        static readonly string k_SDKPlatformPackageNotInstalled = L10n.Tr("{0} SDK Platform package is not installed.");
-        static readonly string k_DerivedPlatformInactive = L10n.Tr("{0} is currently disabled.");
-        static readonly string k_DerivedPlatformDisabled = L10n.Tr("{0} was disabled via command-line arguments.");
-        static readonly string k_EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules");
-        static readonly string k_BuildProfileRecompileReason = L10n.Tr("Active build profile scripting defines changes.");
+        static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.", null);
+        static readonly string k_SupportedPlatformStatus = L10n.Tr("{0} module installed, {1} module not loaded.", null);
+        static readonly string k_SDKPlatformPackageNotInstalled = L10n.Tr("{0} SDK Platform package is not installed.", null);
+        static readonly string k_DerivedPlatformInactive = L10n.Tr("{0} is currently disabled.", null);
+        static readonly string k_DerivedPlatformDisabled = L10n.Tr("{0} was disabled via command-line arguments.", null);
+        static readonly string k_EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules", null);
+        static readonly string k_BuildProfileRecompileReason = L10n.Tr("Active build profile scripting defines changes.", null);
         static readonly GUIContent k_OpenDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
         static readonly GUIContent k_InstallModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
-        static readonly string k_ModuleInstalled = L10n.Tr("{0} module has been installed.");
-        static readonly string k_RestartNeeded = L10n.Tr("Please restart the Unity Editor to load the module.");
-        static readonly string k_RestartEditor = L10n.Tr("Restart Unity Editor");
+        static readonly string k_ModuleInstalled = L10n.Tr("{0} module has been installed.", null);
+        static readonly string k_RestartNeeded = L10n.Tr("Please restart the Unity Editor to load the module.", null);
+        static readonly string k_RestartEditor = L10n.Tr("Restart Unity Editor", null);
         static readonly GUIContent k_ActivateDerivedPlatform = EditorGUIUtility.TrTextContent("Enable Platform");
         [NoAutoStaticsCleanup] // static config set, allocated once, contains only string literals
         static readonly HashSet<string> s_BuildProfileIconModules = new()
@@ -379,16 +378,16 @@ namespace UnityEditor.Build.Profile
             }
 
             var buildTarget = GetBuildTargetAndSubtarget(platformId).Item1;
-            string licenseMsg = L10n.Tr("Your license does not cover {0} Publishing.");
-            string buttonMsg = L10n.Tr("Go to Our Online Store");
+            string licenseMsg = L10n.Tr("Your license does not cover {0} Publishing.", null);
+            string buttonMsg = L10n.Tr("Go to Our Online Store", null);
             string url = k_BuyProUrl;
             if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsConsole))
             {
                 licenseMsg += " Please see the {0} section of the Platform Module Installation documentation for more details.";
-                buttonMsg = L10n.Tr("Platform Module Installation");
+                buttonMsg = L10n.Tr("Platform Module Installation", null);
                 url = k_ConsoleModuleUrl;
             }
-            licenseMsg = L10n.Tr(licenseMsg);
+            licenseMsg = L10n.Tr(licenseMsg, null);
 
             helpbox.text = string.Format(licenseMsg, displayName);
             if (!IsStandalonePlatform(buildTarget))
@@ -785,6 +784,9 @@ namespace UnityEditor.Build.Profile
             return EditorUtility.GetInvalidFilenameChars();
         }
 
+        public static void ClearBuildProfileInitialization(BuildProfile profile) =>
+            BuildProfileContext.instance.ClearBuildProfileInitialization(profile);
+
         /// <summary>
         /// Delete last runnable build key in EditorPrefs for a profile that will be deleted
         /// </summary>
@@ -1124,6 +1126,9 @@ namespace UnityEditor.Build.Profile
         public static string BuildPlatformKeyFeatures(GUID platformGuid) =>
             BuildTargetDiscovery.BuildPlatformKeyFeatures(platformGuid);
 
+        public static PreconfiguredSettingsVariant[] BuildPlatformPreconfiguredSettingsVariants(GUID platformGuid) =>
+            BuildTargetDiscovery.BuildPlatformPreconfiguredSettingsVariants(platformGuid);
+
         /// <summary>
         /// Check if the platform has samples in the package manager.
         /// </summary>
@@ -1263,11 +1268,11 @@ namespace UnityEditor.Build.Profile
         static bool ShowRestartEditorDialog(PlayerSettingsRequiringRestart[] settingsRequiringRestart)
         {
             var editorPromptText = new StringBuilder();
-            editorPromptText.AppendLine(L10n.Tr("The Unity editor must be restarted for the following settings to take effect:"));
+            editorPromptText.AppendLine(L10n.Tr("The Unity editor must be restarted for the following settings to take effect:", null));
             var playerSettingNames = GetPlayerSettingNamesToEditorRestartPromptText(settingsRequiringRestart);
             editorPromptText.AppendLine(playerSettingNames.ToString());
-            return EditorUtility.DisplayDialog(L10n.Tr("Unity editor restart required"),
-                editorPromptText.ToString(), L10n.Tr("Apply"), L10n.Tr("Cancel"));
+            return EditorUtility.DisplayDialog(L10n.Tr("Unity editor restart required", null),
+                editorPromptText.ToString(), L10n.Tr("Apply", null), L10n.Tr("Cancel", null));
         }
 
 
@@ -1494,10 +1499,10 @@ namespace UnityEditor.Build.Profile
                 return false;
 
             var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(platformGuid);
-            var downloadPlatformGuid = new GUID();
 
             var installedPlatforms = new List<string>();
             var availablePlatforms = new List<string>();
+            var availablePlatformGuids = new List<GUID>();
             foreach (var guid in supportedPlatformGuids)
             {
                 var name = GetClassicPlatformDisplayName(guid);
@@ -1505,10 +1510,8 @@ namespace UnityEditor.Build.Profile
                     installedPlatforms.Add(name);
                 else
                 {
-                    if (downloadPlatformGuid.Empty())
-                        downloadPlatformGuid = guid;
-
                     availablePlatforms.Add(name);
+                    availablePlatformGuids.Add(guid);
                 }
             }
 
@@ -1522,18 +1525,7 @@ namespace UnityEditor.Build.Profile
             helpbox.text = string.Format(k_SupportedPlatformStatus, installedPlatformDisplayNames, availablePlatformDisplayNames) +
                 "\n" + k_EditorWillNeedToBeReloaded;
 
-            if (!BuildPlayerWindow.IsEditorInstalledWithHub() || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(downloadPlatformGuid))
-            {
-                var url = BuildPlayerWindow.GetPlaybackEngineDownloadURL(downloadPlatformGuid);
-                helpbox.buttonText = k_OpenDownloadPage.ToString();
-                helpbox.onButtonClicked += () => Help.BrowseURL(url);
-            }
-            else
-            {
-                var url = BuildPlayerWindow.GetUnityHubModuleDownloadURL(downloadPlatformGuid);
-                helpbox.buttonText = k_InstallModuleWithHub.ToString();
-                helpbox.onButtonClicked += () => Help.BrowseURL(url);
-            }
+            UpdateHelpBoxModuleDownloadButton(helpbox, availablePlatformGuids.ToArray());
 
             return true;
         }
@@ -1542,11 +1534,11 @@ namespace UnityEditor.Build.Profile
         {
             var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(platformGuid);
             var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(basePlatformGuid);
-            var downloadPlatformGuid = platformGuid;
+            var downloadPlatformGuids = new[] { platformGuid };
 
             if (BuildTargetDiscovery.TryGetSupportedPlatformGuids(platformGuid, out var supportedPlatformGuids))
             {
-                downloadPlatformGuid = supportedPlatformGuids[0];
+                downloadPlatformGuids = supportedPlatformGuids;
 
                 var supportedDisplayNames = new List<string>();
                 foreach (var supportedGuid in supportedPlatformGuids)
@@ -1561,18 +1553,26 @@ namespace UnityEditor.Build.Profile
 
             helpbox.text = string.Format(k_NoModuleLoaded, displayName) + "\n" + k_EditorWillNeedToBeReloaded;
 
-            if (!BuildPlayerWindow.IsEditorInstalledWithHub() || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(downloadPlatformGuid))
+            UpdateHelpBoxModuleDownloadButton(helpbox, downloadPlatformGuids);
+        }
+
+        static void UpdateHelpBoxModuleDownloadButton(HelpBox helpbox, GUID[] downloadPlatformGuids)
+        {
+            if (BuildPlayerWindow.IsEditorInstalledWithHub())
             {
-                var url = BuildPlayerWindow.GetPlaybackEngineDownloadURL(downloadPlatformGuid);
-                helpbox.buttonText = k_OpenDownloadPage.ToString();
-                helpbox.onButtonClicked += () => Help.BrowseURL(url);
+                var hubInstallableGuids = Array.FindAll(downloadPlatformGuids, BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub);
+                if (hubInstallableGuids.Length > 0)
+                {
+                    var hubUrl = BuildPlayerWindow.GetUnityHubModuleDownloadURL(hubInstallableGuids);
+                    helpbox.buttonText = k_InstallModuleWithHub.ToString();
+                    helpbox.onButtonClicked += () => Help.BrowseURL(hubUrl);
+                    return;
+                }
             }
-            else
-            {
-                var url = BuildPlayerWindow.GetUnityHubModuleDownloadURL(downloadPlatformGuid);
-                helpbox.buttonText = k_InstallModuleWithHub.ToString();
-                helpbox.onButtonClicked += () => Help.BrowseURL(url);
-            }
+
+            var url = BuildPlayerWindow.GetPlaybackEngineDownloadURL(downloadPlatformGuids[0]);
+            helpbox.buttonText = k_OpenDownloadPage.ToString();
+            helpbox.onButtonClicked += () => Help.BrowseURL(url);
         }
 
         private static void UpdateHelpBoxForPlatformDisabledViaArguments(GUID platformId, HelpBox helpbox)
@@ -1671,4 +1671,3 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

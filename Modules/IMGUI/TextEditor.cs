@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIFramework not yet converted
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -153,7 +154,9 @@ namespace UnityEngine
         public TextEditor()
         {
             var style = GUIStyle.none;
+#pragma warning disable UAL0015 // TextEditor instances live in GUIStateObjects.s_StateCache, which is itself wiped on reload, recreating this object wholesale
             m_TextHandle = IMGUITextHandle.GetTextHandle(style, position, textWithWhitespace, Color.white, false);
+#pragma warning restore UAL0015
             m_TextHandle.AddToPermanentCacheAndGenerateMesh();
             m_TextSelecting = new TextSelectingUtilities(m_TextHandle);
             m_TextEditing = new TextEditingUtilities(m_TextSelecting, m_TextHandle, m_Content.text);
@@ -572,3 +575,4 @@ namespace UnityEngine
         }
     }
 } // namespace
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

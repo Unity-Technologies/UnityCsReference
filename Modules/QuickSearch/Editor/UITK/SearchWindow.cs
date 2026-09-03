@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -907,32 +908,32 @@ namespace UnityEditor.Search
 
             if (!IsPicker())
             {
-                menu.AddItem(new GUIContent(L10n.Tr("Preferences")), false, () => SearchUtils.OpenPreferences());
+                menu.AddItem(new GUIContent(L10n.Tr("Preferences", null)), false, () => SearchUtils.OpenPreferences());
                 menu.AddSeparator("");
             }
 
-            var savedSearchContent = new GUIContent(L10n.Tr("Searches"));
-            var previewInspectorContent = new GUIContent(L10n.Tr("Inspector"));
+            var savedSearchContent = new GUIContent(L10n.Tr("Searches", null));
+            var previewInspectorContent = new GUIContent(L10n.Tr("Inspector", null));
 
             if (IsSavedSearchQueryEnabled())
                 menu.AddItem(savedSearchContent, m_ViewState.flags.HasAny(SearchViewFlags.OpenLeftSidePanel), () => TogglePanelView(SearchViewFlags.OpenLeftSidePanel));
             if (m_ViewState.flags.HasNone(SearchViewFlags.DisableInspectorPreview))
                 menu.AddItem(previewInspectorContent, m_ViewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview), () => TogglePanelView(SearchViewFlags.OpenInspectorPreview));
             if (m_ViewState.flags.HasNone(SearchViewFlags.DisableBuilderModeToggle))
-                menu.AddItem(new GUIContent(L10n.Tr($"Query Builder\tF1")), viewState.queryBuilderEnabled, ToggleQueryBuilder);
-            menu.AddItem(new GUIContent(L10n.Tr($"Status Bar")), SearchSettings.showStatusBar, ToggleShowStatusBar);
+                menu.AddItem(new GUIContent(L10n.Tr($"Query Builder\tF1", null)), viewState.queryBuilderEnabled, ToggleQueryBuilder);
+            menu.AddItem(new GUIContent(L10n.Tr($"Status Bar", null)), SearchSettings.showStatusBar, ToggleShowStatusBar);
 
             if (Utils.isDeveloperBuild)
             {
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent(L10n.Tr($"Debug")), context?.options.HasAny(SearchFlags.Debug) ?? false, ToggleDebugQuery);
-                menu.AddItem(new GUIContent(L10n.Tr("Serialize SearchContext")), false, () => SerializeSearchContext());
+                menu.AddItem(new GUIContent(L10n.Tr($"Debug", null)), context?.options.HasAny(SearchFlags.Debug) ?? false, ToggleDebugQuery);
+                menu.AddItem(new GUIContent(L10n.Tr("Serialize SearchContext", null)), false, () => SerializeSearchContext());
             }
 
             if (!IsPicker())
             {
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent(L10n.Tr($"Keep Open")), SearchSettings.keepOpen, ToggleKeepOpen);
+                menu.AddItem(new GUIContent(L10n.Tr($"Keep Open", null)), SearchSettings.keepOpen, ToggleKeepOpen);
             }
         }
 
@@ -1022,7 +1023,7 @@ namespace UnityEditor.Search
                     return;
 
                 if (m_SearchView == null || m_SearchView.results.Count == 0)
-                    titleContent.text = L10n.Tr("Search");
+                    titleContent.text = L10n.Tr("Search", null);
                 else
                     titleContent.text = $"Search ({m_SearchView.results.Count})";
             }
@@ -1692,3 +1693,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -17,8 +17,8 @@ namespace UnityEditor.Build.Profile
     internal class BuildProfileRenameOverlay
     {
         static readonly string k_InvalidChars = BuildProfileModuleUtil.GetFilenameInvalidCharactersStr();
-        static readonly string k_ErrorMessage = string.Format(L10n.Tr("A file name can't contain any of the following characters:\t{0}"), k_InvalidChars);
-        static readonly string k_ErrorMessageLength = string.Format(L10n.Tr("Build profile name is too long (maximum {0} bytes)"), BuildProfileModuleUtil.k_MaxAssetFileNameLengthWithoutExtension);
+        static readonly string k_ErrorMessage = string.Format(L10n.Tr("A file name can't contain any of the following characters:\t{0}", null), k_InvalidChars);
+        static readonly string k_ErrorMessageLength = string.Format(L10n.Tr("Build profile name is too long (maximum {0} bytes)", null), BuildProfileModuleUtil.k_MaxAssetFileNameLengthWithoutExtension);
 
         TextField m_TextField;
         Rect? m_ErrorRect = null;

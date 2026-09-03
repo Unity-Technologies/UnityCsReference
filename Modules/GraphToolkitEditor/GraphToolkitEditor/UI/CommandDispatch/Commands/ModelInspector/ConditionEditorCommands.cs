@@ -213,8 +213,8 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal class RemoveTransitionElementsCommand : ModelCommand<TransitionSupportModel>
     {
-        static readonly string k_UndoStringSingular = L10n.Tr("Remove Transition");
-        static readonly string k_UndoStringPlural = L10n.Tr("Remove Transitions");
+        static readonly string k_UndoStringSingular = L10n.Tr("Remove Transition", null);
+        static readonly string k_UndoStringPlural = L10n.Tr("Remove Transitions", null);
 
         /// <summary>
         /// The transitions to remove, grouped by the support model they belong to.
@@ -505,7 +505,7 @@ namespace Unity.GraphToolkit.Editor
                 {
                     var parentGroup = conditionModel.Parent;
 
-                    parentGroup.InsertCondition(conditionModel.Clone(), conditionModel.IndexInParent + 1);
+                    parentGroup.InsertCondition(conditionModel.Clone(), parentGroup.IndexOf(conditionModel) + 1);
                 }
                 updater.MarkUpdated(changeScope.ChangeDescription);
             }

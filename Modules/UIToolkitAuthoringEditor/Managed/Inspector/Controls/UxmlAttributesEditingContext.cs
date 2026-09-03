@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
@@ -103,23 +104,27 @@ class UxmlAttributesEditingContext : IDisposable
     /// <summary>
     /// The VisualTreeAsset that contains the UXML elements being edited.
     /// </summary>
-    public VisualTreeAsset editedVisualTreeAsset { get; private set; }
+    public VisualTreeAsset editedVisualTreeAsset { get; protected set; }
 
     /// <summary>
     /// The VisualTreeAsset that contains the UXML elements being edited or the temporary VisualTreeAsset
     /// used to edit template instances and VisualElements dynamically created.
     /// </summary>
-    public VisualTreeAsset visualTreeAsset { get; private set; }
+    public VisualTreeAsset visualTreeAsset { get; protected set; }
 
     /// <summary>
     /// The VisualElementAsset being edited.
     /// </summary>
-    public VisualElementAsset elementAsset { get; private set; }
+    public VisualElementAsset elementAsset { get; protected set; }
 
     /// <summary>
     /// The serialized data being edited element.
     /// </summary>
-    public UxmlSerializedData uxmlSerializedData
+    /// <remarks>
+    /// Virtual so a component-targeting context can return one of the element's
+    /// <see cref="VisualElementAsset.componentData"/> entries instead of the element's own data.
+    /// </remarks>
+    public virtual UxmlSerializedData uxmlSerializedData
     {
         get
         {
@@ -137,9 +142,63 @@ class UxmlAttributesEditingContext : IDisposable
     }
 
     /// <summary>
+    /// The object the live attribute values are read from when syncing the inspector to runtime state.
+    /// For an element that is the element itself (its attributes are members of the element); a
+    /// component context overrides this to return the live component value, whose fields the
+    /// component's attribute descriptions actually read.
+    /// </summary>
+    internal virtual object liveAttributeOwner => element;
+
+    /// <summary>
+    /// Whether edited attribute values are mirrored onto the element's <see cref="UxmlAsset"/> (its
+    /// stored UXML properties), in addition to the serialized data. This is how an element's attributes
+    /// are kept ready for export. A component context returns false: a component has no UxmlAsset of its
+    /// own, its values live only in the component serialized data, and the exporter rebuilds the
+    /// component node from that data. Mirroring would otherwise write the component's attributes onto the
+    /// owner element node, which is wrong.
+    /// </summary>
+    internal virtual bool mirrorsAttributesToUxmlAsset => true;
+
+    /// <summary>
+    /// Whether the attribute fields in this context can be data-bound through the inspector (the binding
+    /// section of the field's right-click menu, and the bound-state affordance). Both element and component
+    /// contexts return true; they differ only in how a candidate path is validated (see
+    /// <see cref="IsBindablePath"/>).
+    /// </summary>
+    internal virtual bool supportsAttributeBindings => true;
+
+    /// <summary>
+    /// Whether <paramref name="bindingPath"/> addresses a real, bindable target. The element flow validates
+    /// against the element's own property bag; a component context validates the
+    /// <c>component:&lt;Type&gt;.&lt;field&gt;</c> selector against the component's data instead.
+    /// </summary>
+    internal virtual bool IsBindablePath(VisualElement element, BindingId bindingPath)
+    {
+        var container = element;
+        string path = bindingPath;
+        return !string.IsNullOrEmpty(path) && PropertyContainer.IsPathValid(ref container, bindingPath);
+    }
+
+    /// <summary>
+    /// Persists an attribute edit made at a template instance as an override on the root template. The base
+    /// writes an element attribute override; a component context overrides this to write a component override
+    /// (TemplateAsset.componentAttributeOverrides) instead, since the two use different storage.
+    /// </summary>
+    internal virtual void WriteTemplateAttributeOverride(UxmlSerializedAttributeDescription attribute, object value)
+        => SetAttributeOverrideCommand.Execute(CommandSources.Inspector, editedVisualTreeAsset, attribute, element, value);
+
+    /// <summary>
+    /// The read counterpart of <see cref="WriteTemplateAttributeOverride"/>: at a template instance, is this
+    /// attribute overridden on the root template? Returns null when this context has no special storage and the
+    /// shared element-attribute path should answer; a component context returns a non-null result because its
+    /// override lives in TemplateAsset.componentAttributeOverrides, which the element path cannot see.
+    /// </summary>
+    internal virtual bool? IsTemplateAttributeOverridden(UxmlSerializedAttributeDescription attribute) => null;
+
+    /// <summary>
     /// Indicates whether the current element is part of a template instance.
     /// </summary>
-    public bool isInTemplateInstance { get; private set; }
+    public bool isInTemplateInstance { get; protected set; }
 
     /// <summary>
     /// The VisualElement that is currently being viewed or edited.
@@ -151,24 +210,40 @@ class UxmlAttributesEditingContext : IDisposable
     /// the live object used to view read-only attributes.
     /// This serialized object is used to resolved paths to serialized attribute properties.
     /// </summary>
-    public SerializedObject rootSerializedObject { get; private set; }
+    public SerializedObject rootSerializedObject { get; protected set; }
 
     /// <summary>
     /// The serialized path from the current uxml element to the current VisualTreeAsset. Using the rootSerializedObject, this path is used as base path to locate attribute properties in the serialized data.
     /// </summary>
-    public string serializedBasePath { get; private set; }
+    public string serializedBasePath { get; protected set; }
 
     /// <summary>
     /// The UxmlSerializedDataDescription that describes the serialized data for the current element.
     /// </summary>
-    public UxmlSerializedDataDescription uxmlSerializedDataDescription { get; private set; }
+    public UxmlSerializedDataDescription uxmlSerializedDataDescription { get; protected set; }
 
     /// <summary>
     /// Indicates whether the attributes are read-only in this context.
     /// </summary>
     public bool isReadOnly { get; private set; }
 
-    internal TempSerializedData tempSerializedData { get; private set; }
+    bool m_StageShowsAncestorOverrides;
+
+    /// <summary>
+    /// True where fields never surface ancestor Attribute Overrides, such as the binding editor.
+    /// </summary>
+    internal bool suppressAncestorOverrides { get; set; }
+
+    /// <summary>
+    /// Whether fields in this context surface Attribute Overrides declared by ancestor UXML instances.
+    /// </summary>
+    /// <remarks>
+    /// Snapshot taken when the context is set, so the answer stays consistent with the document chosen
+    /// for editing when a stage opens or closes afterwards.
+    /// </remarks>
+    internal bool showsAncestorOverrides => m_StageShowsAncestorOverrides && !suppressAncestorOverrides;
+
+    internal TempSerializedData tempSerializedData { get; set; }
 
     /// <summary>
     /// Indicates whether the undo system is enabled for this context.
@@ -252,6 +327,7 @@ class UxmlAttributesEditingContext : IDisposable
     {
         this.editedVisualTreeAsset = editedVisualTreeAsset;
         isInTemplateInstance = false;
+        m_StageShowsAncestorOverrides = StageUtility.GetCurrentStage() is not VisualElementEditingStage;
 
         if (element != null)
         {
@@ -335,7 +411,14 @@ class UxmlAttributesEditingContext : IDisposable
         isReadOnly = false;
     }
 
-    static string GetSerializedPath(UxmlAsset asset)
+    /// <summary>
+    /// The serialized field segment appended to the element path to reach the data being edited.
+    /// The element context edits the element's own <c>m_SerializedData</c>; a component context
+    /// overrides this to reach a specific entry of the element's <c>m_ComponentData</c> list.
+    /// </summary>
+    protected virtual string SerializedDataRelativePath => k_UxmlSerializedDataFieldName;
+
+    protected string GetSerializedPath(UxmlAsset asset)
     {
         using var _parents = ListPool<(UxmlAsset a, int i)>.Get(out var parents);
         var sb = new System.Text.StringBuilder();
@@ -378,7 +461,7 @@ class UxmlAttributesEditingContext : IDisposable
         }
 
         sb.Append(".");
-        sb.Append(k_UxmlSerializedDataFieldName);
+        sb.Append(SerializedDataRelativePath);
 
         return sb.ToString();
     }

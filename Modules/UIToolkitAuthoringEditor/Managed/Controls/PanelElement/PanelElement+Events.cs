@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -157,10 +156,9 @@ sealed partial class PanelElement
 
     internal Vector2 LocalToPanelPosition(Vector2 localPosition)
     {
-        var scaledPos = localPosition * SubPanel.pixelsPerPoint;
         return SubPanel is RuntimePanel runtimePanel
-            ? (Vector2)runtimePanel.ScreenToPanel(scaledPos)
-            : scaledPos;
+            ? (Vector2)runtimePanel.ScreenToPanel(localPosition)
+            : localPosition * SubPanel.pixelsPerPoint;
     }
 
     internal void PickAll(Vector2 localPosition, List<VisualElement> results)
@@ -353,4 +351,3 @@ sealed partial class PanelElement
         return ve;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

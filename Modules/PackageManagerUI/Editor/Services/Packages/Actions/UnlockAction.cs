@@ -33,12 +33,12 @@ internal class UnlockAction : PackageAction
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Unlock to make changes");
+        return L10n.Tr("Unlock to make changes", null);
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        return L10n.Tr("Unlock");
+        return L10n.Tr("Unlock", null);
     }
 
     public override bool IsInProgress(IPackageVersion version) => false;

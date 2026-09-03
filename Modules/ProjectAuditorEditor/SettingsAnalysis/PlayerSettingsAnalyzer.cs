@@ -152,7 +152,10 @@ namespace Unity.ProjectAuditor.Editor.SettingsAnalysis
         {
             if (!PlayerSettings.SplashScreen.show)
                 return false;
-            var type = Type.GetType("UnityEditor.PlayerSettingsSplashScreenEditor,UnityEditor.dll");
+            // Resolve through the declaring assembly rather than an assembly-qualified string:
+            // the old "...,UnityEditor.dll" form relies on Mono tolerating a '.dll' suffix in the
+            // assembly simple name, which CoreCLR's stricter parser rejects (returns null).
+            var type = typeof(PlayerSettings).Assembly.GetType("UnityEditor.PlayerSettingsSplashScreenEditor");
             if (type == null)
                 return false;
 

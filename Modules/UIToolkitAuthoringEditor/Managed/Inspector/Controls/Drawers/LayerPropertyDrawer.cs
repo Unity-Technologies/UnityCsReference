@@ -12,7 +12,7 @@ namespace Unity.UIToolkit.Editor
     [CustomPropertyDrawer(typeof(LayerDecoratorAttribute))]
     class LayerPropertyDrawer : PropertyDrawer
     {
-        static readonly string s_LocalizedLabel = L10n.Tr("Value");
+        static readonly string s_LocalizedLabel = L10n.Tr("Value", null);
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {

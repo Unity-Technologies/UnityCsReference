@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -10,6 +9,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -18,8 +18,11 @@ namespace Unity.UIToolkit.Editor
     [UxmlElement]
     partial class CheckerboardBackground : VisualElement
     {
+        [NoAutoStaticsCleanup] // custom-style-property descriptor, safe to persist
         static readonly CustomStyleProperty<int> k_CellSizeProperty = new CustomStyleProperty<int>("--cell-size");
+        [NoAutoStaticsCleanup] // custom-style-property descriptor, safe to persist
         static readonly CustomStyleProperty<Color> k_OddCellColorProperty = new CustomStyleProperty<Color>("--odd-cell-color");
+        [NoAutoStaticsCleanup] // custom-style-property descriptor, safe to persist
         static readonly CustomStyleProperty<Color> k_EvenCellColorProperty = new CustomStyleProperty<Color>("--even-cell-color");
 
         const int k_DefaultCellSize = 50;
@@ -214,4 +217,3 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

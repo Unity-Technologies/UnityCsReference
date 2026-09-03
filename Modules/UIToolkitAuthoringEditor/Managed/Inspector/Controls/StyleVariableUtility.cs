@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -11,18 +10,21 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-internal static class StyleVariableUtility
+internal static partial class StyleVariableUtility
 {
     public static readonly string ElementLinkedVariableHandlerVEPropertyName = "__unity-ui-builder-linked-variable-handler";
     public static readonly string VariableDescriptionsCouldNotBeLoadedMessage = "Could not load the variable descriptions file.";
     public static readonly string USSVariableUIBuilderPrefix = "--unity_builder";
     public static readonly string SelectedStyleRulePropertyName = "--ui-builder-selected-style-property";
 
+    [NoAutoStaticsCleanup] // shared empty dictionary sentinel, safe to persist
     static readonly Dictionary<string, string> s_EmptyEditorVarDescriptions = new();
+    [AutoStaticsCleanupOnCodeReload]
     static Dictionary<string, string> s_EditorVarDescriptions;
 
     [Serializable]
@@ -202,4 +204,3 @@ internal static class StyleVariableUtility
             || (UIElementsEditorUtility.IsCommonLightStyleSheetLoaded() && styleSheet == UIElementsEditorUtility.GetCommonLightStyleSheet());
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

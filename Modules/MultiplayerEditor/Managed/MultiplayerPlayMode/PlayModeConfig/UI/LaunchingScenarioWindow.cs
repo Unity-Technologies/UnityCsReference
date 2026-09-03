@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
 using System;
 using Unity.PlayMode.Editor;
 using UnityEditor;
@@ -116,13 +117,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             m_Message.text = $"Scenario is {GetLabelForStage(status.CurrentStage)}...";
 
-            var mainEditorCount = GetInstanceCount<MainEditorController>(m_ScenarioConfig);
+            var scenario = m_ScenarioConfig == null ? null : m_ScenarioConfig.Scenario;
+
+            var mainEditorCount = GetInstanceCount<MainEditorController>(scenario);
             m_MainEditorMessage.text = mainEditorCount > 0 ? $"Activating main editor..." : string.Empty;
 
-            var editorInstanceCount = GetInstanceCount<CloneEditorController>(m_ScenarioConfig);
+            var editorInstanceCount = GetInstanceCount<CloneEditorController>(scenario);
             m_EditorInstanceMessage.text = editorInstanceCount > 0 ? $"Activating {editorInstanceCount} editor instance(s)..." : string.Empty;
 
-            var localInstanceCount = GetInstanceCount<LocalPlayerController>(m_ScenarioConfig);
+            var localInstanceCount = GetInstanceCount<LocalPlayerController>(scenario);
             m_LocalInstanceMessage.text = localInstanceCount > 0 ? $"Building {localInstanceCount} local instance(s)..." : string.Empty;
 
             UpdateProgressBar(m_ProgressBar, status.OverallStatus.Progress);
@@ -217,14 +220,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
             rootVisualElement.styleSheets.Add(EditorGUIUtility.LoadRequired(k_Stylesheet) as StyleSheet);
         }
 
-        private static int GetInstanceCount<T>(OrchestratedScenario scenarioConfig) where T : InstanceController
+        internal static int GetInstanceCount<T>(Scenario scenario) where T : PlayModeController
         {
+            if (scenario == null)
+                return 0;
+
             var instanceCount = 0;
-            var allInstances = scenarioConfig.GetAllInstances();
-            foreach (var instanceItem in allInstances)
+            foreach (var instance in scenario.GetAllInstances())
             {
-                if (instanceItem.GetRunMode() == RunModeState.ScenarioControl &&
-                    instanceItem.IsInstanceType(typeof(T)))
+                if (instance.Controller is T && !instance.IsFreeRunMode())
                 {
                     instanceCount++;
                 }
@@ -245,3 +249,4 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

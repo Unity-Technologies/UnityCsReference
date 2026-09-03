@@ -10,7 +10,7 @@ namespace Unity.U2D.Physics
     /// Constants used throughout the 2D physics system.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly partial struct PhysicsConstants
+    public readonly partial record struct PhysicsConstants
     {
         /// <summary>
         /// A constant defining the maximum number of worker threads supported by physics simulation.

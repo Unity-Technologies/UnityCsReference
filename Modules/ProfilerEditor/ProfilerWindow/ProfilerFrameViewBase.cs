@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using UnityEngine;
 using System;
 using UnityEditor;
@@ -52,17 +53,17 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent liveUpdateMessage = EditorGUIUtility.TrTextContent("Displaying of frame data disabled while recording Playmode or Editor. To see the data, pause recording, or toggle \"Live\" display mode on. " +
                 "\n \"Live\" display mode increases the overhead in the EditorLoop when the Profiler Window is repainted.");
 
-            public static readonly string selectionExtraInfoHierarhcyView = L10n.Tr("Selection Info: ");
-            public static readonly string proxySampleMessage = L10n.Tr("Sample \"{0}\" {1} {2} deeper not found in this frame within the selected Sample Stack.");
-            public static readonly string proxySampleMessageHidden0msSamples =  L10n.Tr("If the sample is 0.00ms (CPU profiler) or 0.000ms (GPU profiler) it might be hidden.");
-            public static readonly string proxySampleMessageScopeSingular = L10n.Tr("scope");
-            public static readonly string proxySampleMessageScopePlural = L10n.Tr("scopes");
-            public static readonly string proxySampleMessageTooltip = L10n.Tr("Selected Sample Stack: {0}");
-            public static readonly string proxySampleMessagePart2TimelineView = L10n.Tr("\nClosest match:\n");
+            public static readonly string selectionExtraInfoHierarhcyView = L10n.Tr("Selection Info: ", null);
+            public static readonly string proxySampleMessage = L10n.Tr("Sample \"{0}\" {1} {2} deeper not found in this frame within the selected Sample Stack.", null);
+            public static readonly string proxySampleMessageHidden0msSamples =  L10n.Tr("If the sample is 0.00ms (CPU profiler) or 0.000ms (GPU profiler) it might be hidden.", null);
+            public static readonly string proxySampleMessageScopeSingular = L10n.Tr("scope", null);
+            public static readonly string proxySampleMessageScopePlural = L10n.Tr("scopes", null);
+            public static readonly string proxySampleMessageTooltip = L10n.Tr("Selected Sample Stack: {0}", null);
+            public static readonly string proxySampleMessagePart2TimelineView = L10n.Tr("\nClosest match:\n", null);
 
             public static readonly string callstackText = LocalizationDatabase.GetLocalizedString("Call Stack:");
 
-            public static readonly string sampleHiddenText = L10n.Tr("This sample is hidden by the current filter.\nTry disabling 'Hide 0ms Samples' to see it.");
+            public static readonly string sampleHiddenText = L10n.Tr("This sample is hidden by the current filter.\nTry disabling 'Hide 0ms Samples' to see it.", null);
             // 6 seems like a good default value for margins used in quite some places. Do note though, that this is little more than a semi-randomly chosen magic number.
             public const int magicMarginValue = 6;
             const float k_DetailedViewTypeToolbarDropDownWidth = 150f;
@@ -657,3 +658,4 @@ namespace UnityEditorInternal.Profiling
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

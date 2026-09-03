@@ -105,7 +105,8 @@ namespace UnityEditor.IMGUI.Controls
             content.image = lastContentImage;
 
             if (!string.IsNullOrEmpty(content.tooltip) && rect.Contains(Event.current.mousePosition) &&
-                !string.Equals(content.tooltip, content.text, StringComparison.Ordinal))
+                (!string.Equals(content.tooltip, content.text, StringComparison.Ordinal) ||
+                 lineStyle.CalcSize(content).x > rect.width))
                 GUIStyle.SetMouseTooltip(content.tooltip, rect);
 
             if (Event.current.type != EventType.Repaint)

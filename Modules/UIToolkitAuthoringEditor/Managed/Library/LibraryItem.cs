@@ -2,7 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitAuthoringFramework not yet converted
+using Unity.Scripting.LifecycleManagement;
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -11,7 +12,7 @@ using UnityEngine.UIElements;
 namespace Unity.UIToolkit.Editor
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class LibraryItem
+    internal partial class LibraryItem
     {
         public const string DragDataKey = "LibraryItem";
 
@@ -23,6 +24,7 @@ namespace Unity.UIToolkit.Editor
         public string assetPath { get; }
         public bool isAsset => !string.IsNullOrEmpty(assetPath);
 
+        [AutoStaticsCleanupOnCodeReload]
         static Background s_AssetIcon;
 
         VisualTreeAsset m_VisualTreeAsset;
@@ -98,4 +100,4 @@ namespace Unity.UIToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -295,7 +296,7 @@ namespace UnityEditor
             [NoAutoStaticsCleanup] // lazy-loaded Texture2D; null after reload is fine, re-loaded by LoadIcon
             public static Texture2D repaintDot = EditorGUIUtility.LoadIcon("RepaintDot");
             [NoAutoStaticsCleanup] // localized string; L10n is not runtime-state-dependent, safe to persist
-            public static string revertPropertyValueIdenticalToSource = L10n.Tr("Revert (identical value to Prefab '{0}')");
+            public static string revertPropertyValueIdenticalToSource = L10n.Tr("Revert (identical value to Prefab '{0}')", null);
         }
 
         [OnCodeLoaded]
@@ -621,8 +622,7 @@ namespace UnityEditor
 
             internal bool IsEditingControl(int id)
             {
-                bool hasFocus = GUIView.current != null ? GUIView.current.hasFocus : false;
-                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && hasFocus;
+                return GUIUtility.HasKeyFocus(id) && controlID == id && s_ActuallyEditing;
             }
 
             public virtual void BeginEditing(int id, string newText, Rect position, GUIStyle style, bool multiline, bool passwordField)
@@ -682,6 +682,10 @@ namespace UnityEditor
                             break;
                     }
                 }
+
+                // The text setter skips the refresh when the text is unchanged, but the cached
+                // handle's native generation may have been evicted while unfocused (UUM-149393).
+                UpdateTextHandle();
             }
 
             public virtual void EndEditing()
@@ -2200,7 +2204,9 @@ namespace UnityEditor
 
                     scrollPosition.y = GUI.VerticalScrollbar(scrollbarPosition, scrollPosition.y, position.height, 0, viewRect.height);
 
+                    #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                     if (!s_RecycledEditor.IsEditingControl(id))
+                    #pragma warning restore UAL0015
                     {
                         //When not editing we use the style.draw, so we need to change the offset on the style instead of the RecycledEditor.
                         style.contentOffset -= scrollPosition;
@@ -2673,10 +2679,8 @@ namespace UnityEditor
 
         static bool HasKeyboardFocus(int controlID)
         {
-            // Every EditorWindow has its own keyboardControl state so we also need to
-            // check if the current OS view has focus to determine if the control has actual key focus (gets the input)
-            // and not just being a focused control in an unfocused window.
-            return (GUIUtility.keyboardControl == controlID && EditorGUIUtility.HasCurrentWindowKeyFocus());
+            // Actual key focus also requires the control's window to be the active OS window (GUIUtility.HasKeyFocus wraps both).
+            return GUIUtility.HasKeyFocus(controlID);
         }
 
         internal struct NumberFieldValue
@@ -2852,7 +2856,15 @@ namespace UnityEditor
         // and consume gigabytes of memory; confirm with the user before applying.
         internal const int kArraySizeConfirmationThreshold = 1000;
 
-        internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style)
+        internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style, int maxArraySize = int.MaxValue)
+        {
+            return ArraySizeField(position, label, value, style, null, maxArraySize);
+        }
+
+        // Pass sizeProperty to validate against the property's maxArraySize. It is only queried when
+        // the user commits a new value (the field is delayed), because computing the maximum requires
+        // walking the array's serialized data - too costly to do on every draw.
+        internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style, SerializedProperty sizeProperty, int maxArraySize = int.MaxValue)
         {
             int id = GUIUtility.GetControlID(s_ArraySizeFieldHash, FocusType.Keyboard, position);
 
@@ -2861,7 +2873,9 @@ namespace UnityEditor
             string str = DelayedTextFieldInternal(position, id, label, value.ToString(kIntFieldFormatString), "0123456789-", style);
             if (EndChangeCheck())
             {
-                if (!TryConfirmArraySizeChange(value, str, out int newValue))
+                if (sizeProperty != null)
+                    maxArraySize = sizeProperty.maxArraySize;
+                if (!TryConfirmArraySizeChange(value, str, out int newValue, maxArraySize))
                 {
                     GUI.changed = wasChanged;
                     return value;
@@ -2871,24 +2885,37 @@ namespace UnityEditor
             return value;
         }
 
-        internal static bool TryConfirmArraySizeChange(int currentSize, string str, out int newSize)
+        internal static bool TryConfirmArraySizeChange(int currentSize, string str, out int newSize, int maxArraySize = int.MaxValue)
         {
-            if (!int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out newSize))
+            // Parse as long so a numeric value beyond int range is reported against the same
+            // effective limit as any other too-large value, instead of quoting int.MaxValue.
+            if (!long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out long parsedSize) || parsedSize < int.MinValue)
             {
                 EditorUtility.DisplayDialog(
-                    L10n.Tr("Invalid array size"),
-                    string.Format(L10n.Tr("\"{0}\" is not a valid array size. Allowed values are between 0 and {1:N0}."), str, int.MaxValue),
-                    L10n.Tr("OK"));
+                    L10n.Tr("Invalid array size", null),
+                    string.Format(L10n.Tr("\"{0}\" is not a valid array size. Allowed values are between 0 and {1:N0}.", null), str, maxArraySize),
+                    L10n.Tr("OK", null));
                 newSize = currentSize;
                 return false;
             }
+            // A larger array would exceed the maximum serialized object size (see SerializedProperty.maxArraySize).
+            if (parsedSize > maxArraySize)
+            {
+                EditorUtility.DisplayDialog(
+                    L10n.Tr("Invalid array size", null),
+                    string.Format(L10n.Tr("\"{0}\" exceeds the maximum size of {1:N0} elements for this array.", null), str, maxArraySize),
+                    L10n.Tr("OK", null));
+                newSize = currentSize;
+                return false;
+            }
+            newSize = (int)parsedSize;
             if (newSize > kArraySizeConfirmationThreshold && newSize > currentSize)
             {
                 if (!EditorUtility.DisplayDialog(
-                    L10n.Tr("Resize array"),
-                    string.Format(L10n.Tr("You are about to resize this array to {0:N0} elements. This may take a long time and use a lot of memory. Are you sure?"), newSize),
-                    L10n.Tr("Resize"),
-                    L10n.Tr("Cancel")))
+                    L10n.Tr("Resize array", null),
+                    string.Format(L10n.Tr("You are about to resize this array to {0:N0} elements. This may take a long time and use a lot of memory. Are you sure?", null), newSize),
+                    L10n.Tr("Resize", null),
+                    L10n.Tr("Cancel", null)))
                 {
                     newSize = currentSize;
                     return false;
@@ -3633,7 +3660,7 @@ namespace UnityEditor
                     if (pm.GetItemCount() > 0)
                         pm.AddSeparator("");
                     pm.AddItem(
-                        new GUIContent(L10n.Tr("Check Out") + " '" + obj.name + "'"),
+                        new GUIContent(L10n.Tr("Check Out", null) + " '" + obj.name + "'"),
                         false,
                         o => AssetDatabase.MakeEditable(AssetDatabase.GetAssetOrScenePath((Object)o)),
                         obj);
@@ -4462,7 +4489,7 @@ namespace UnityEditor
                     }
                 }
                 ArrayUtility.Add(ref tagValues, "");
-                ArrayUtility.Add(ref tagValues, L10n.Tr("Add Tag..."));
+                ArrayUtility.Add(ref tagValues, L10n.Tr("Add Tag...", null));
 
                 DoPopup(position, id, i, EditorGUIUtility.TempContent(tagValues), style);
                 return tag;
@@ -4510,7 +4537,7 @@ namespace UnityEditor
                     }
                 }
                 ArrayUtility.Add(ref tagValues, "");
-                ArrayUtility.Add(ref tagValues, L10n.Tr("Add Tag..."));
+                ArrayUtility.Add(ref tagValues, L10n.Tr("Add Tag...", null));
 
                 DoPopup(position, id, i, EditorGUIUtility.TempContent(tagValues), style);
                 return tag;
@@ -4579,7 +4606,7 @@ namespace UnityEditor
                 string[] layers = InternalEditorUtility.GetLayersWithId();
 
                 ArrayUtility.Add(ref layers, "");
-                ArrayUtility.Add(ref layers, L10n.Tr("Add Layer..."));
+                ArrayUtility.Add(ref layers, L10n.Tr("Add Layer...", null));
 
                 DoPopup(position, id, count, EditorGUIUtility.TempContent(layers), style);
                 Event.current.Use();
@@ -4759,7 +4786,7 @@ namespace UnityEditor
                 LoadableObjectId newLoadableObjectId = LoadableObjectIdEditorUtility.CreateLoadableObjectId(newObject);
                 if (newObject != null && !newLoadableObjectId.IsValid)
                 {
-                    Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableObjectId."));
+                    Debug.LogWarning(L10n.Tr("The selected object cannot be used as a LoadableObjectId.", null));
                     return;
                 }
                 property.loadableObjectIdValue = newLoadableObjectId;
@@ -5909,7 +5936,7 @@ namespace UnityEditor
                                 // See ExecuteCommand section below to see handling for copy & paste
                                 GUIUtility.keyboardControl = id;
 
-                                var names = new[] {L10n.Tr("Copy"), L10n.Tr("Paste")};
+                                var names = new[] {L10n.Tr("Copy", null), L10n.Tr("Paste", null)};
                                 var enabled = new[] {true, wasEnabled && Clipboard.hasColor};
                                 var currentView = GUIView.current;
 
@@ -7246,7 +7273,9 @@ namespace UnityEditor
 
             public PropertyScope(Rect totalPosition, GUIContent label, SerializedProperty property)
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 content = BeginProperty(totalPosition, label, property);
+                #pragma warning restore UAL0015
             }
 
             protected override void CloseScope()
@@ -8091,7 +8120,7 @@ namespace UnityEditor
                     case SerializedPropertyType.ArraySize:
                     {
                         BeginChangeCheck();
-                        int newValue = ArraySizeField(position, label, property.intValue, EditorStyles.numberField);
+                        int newValue = ArraySizeField(position, label, property.intValue, EditorStyles.numberField, property);
                         if (EndChangeCheck())
                         {
                             property.intValue = newValue;
@@ -9466,13 +9495,17 @@ namespace UnityEditor
         // Not partial: static nested partial classes produce a corrupt cctor PDB blob in the Unity Compiler
         // when the Roslyn source generator adds a fragment with a DelegateAutoCleanup field initializer.
         // Cleanup is registered manually below instead of via [AutoStaticsCleanupOnCodeReload].
-        [NoAutoStaticsCleanup]
         internal static class EnumNamesCache
         {
+            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
             static Dictionary<Type, GUIContent[]> s_EnumTypeLocalizedGUIContents = new();
+            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
             static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new();
+            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
             static Dictionary<Type, bool> s_IsEnumTypeUsingFlagsAttribute = new();
+            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
             static Dictionary<Type, string[]> s_SerializedPropertyEnumDisplayNames = new();
+            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
             static Dictionary<Type, string[]> s_SerializedPropertyEnumNames = new();
 
             [System.Runtime.CompilerServices.CompilerGenerated]
@@ -9577,10 +9610,11 @@ namespace UnityEditor
         }
 
         // Not partial: same compiler PDB bug as EnumNamesCache above.
-        [NoAutoStaticsCleanup]
         static class HelpButtonCache
         {
+            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
             static Dictionary<Type, bool> s_TypeIsPartOfTargetAssembliesMap = new();
+            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
             static Dictionary<Type, bool> s_ObjectHasHelp = new();
 
             [System.Runtime.CompilerServices.CompilerGenerated]
@@ -9647,3 +9681,4 @@ namespace UnityEditor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

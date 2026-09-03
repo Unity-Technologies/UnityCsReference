@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using Unity.UIToolkit.Editor;
@@ -14,18 +15,21 @@ namespace Unity.UI.Builder
 {
     sealed partial class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu, IDisposable
     {
+        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
+        Builder() {}
+        #pragma warning restore UAL0015
+
         [AutoStaticsCleanupOnCodeReload]
         public static Action<EditorWindow> onActiveBuilderWindowReady;
 
         partial class ScopedLazyClass
         {
+            #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             public ScopedLazyClass()
             {
                 EditorApplication.fileMenuSaved += () =>
                 {
-                    var builder = ActiveWindow;
-
-                    if (builder != null)
+                    foreach (var builder in Resources.FindObjectsOfTypeAll<Builder>())
                     {
                         // Make sure changes are committed before saving the file.
                         builder.inspector.BeforeSelectionChanged();
@@ -36,13 +40,14 @@ namespace Unity.UI.Builder
                             // See BuilderDocumentOpenUXML.OnPostProcessAsset delayed load.
                             EditorApplication.delayCall += () =>
                             {
-                                if (builder.document.hasUnsavedChanges)
+                                if (builder != null && builder.document.hasUnsavedChanges)
                                     builder.SaveChanges();
                             };
                         }
                     }
                 };
             }
+            #pragma warning restore UAL0015
         }
 
         // ScopedLazy<TValue, CodeLoadedScope> self-registers its own Cleanup() with the lifecycle
@@ -82,8 +87,9 @@ namespace Unity.UI.Builder
         public BuilderStyleSheets styleSheets => m_StyleSheets;
         internal override bool liveReloadPreferenceDefault => true;
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
-        [NoAutoStaticsCleanup] // Transient element-id handoff for the next document open; overwritten on each open and guarded by == -1 checks, so a persisted value is harmless across reload.
-        internal static int s_NextSelectedIdFromDocumentCommand = -1;
+
+        [NoAutoStaticsCleanup] // Transient selection handoff consumed by the next document open; null is the disarmed state, so a persisted value is harmless across reload.
+        internal static LoadUIDocumentCommand s_NextSelectionFromDocumentCommand;
 
         readonly Action m_UnregisterBuilderLibraryContentProcessors = BuilderLibraryContent.UnregisterProcessors;
 
@@ -111,24 +117,125 @@ namespace Unity.UI.Builder
 
         public HighlightOverlayPainter highlightOverlayPainter => m_HighlightOverlayPainter;
 
+        // The primary window plays the singleton role the Builder had before multi-instance: it owns the default
+        // document, is the target of "Open in UI Builder" style operations, and the role migrates when it closes.
+        [SerializeField]
+        bool m_IsPrimaryWindow;
+
+        internal bool isPrimaryWindow => m_IsPrimaryWindow;
+
+        // How a secondary window remembers its open file across editor restarts: the layout serializes windows
+        // and their asset references. Kept current by BuilderDocument.SaveToDisk.
+        [SerializeField]
+        VisualTreeAsset m_LastOpenedAsset;
+
+        internal void RememberRootAssetForLayout()
+        {
+            var openFiles = document.openUXMLFiles;
+            var rootAsset = openFiles.Count > 0 ? openFiles[0].visualTreeAsset : null;
+            m_LastOpenedAsset = rootAsset != null && EditorUtility.IsPersistent(rootAsset) ? rootAsset : null;
+        }
+
         [MenuItem(BuilderConstants.BuilderMenuEntry)]
         public static Builder ShowWindow()
         {
+            var primaryWindow = ActiveWindow;
+            if (primaryWindow != null)
+            {
+                primaryWindow.Show();
+                primaryWindow.Focus();
+                return primaryWindow;
+            }
+
             return GetWindow<Builder>();
+        }
+
+        // The "(New Window)" menu entry is experimental: UIToolkitProjectSettings owns the flag and manages
+        // the menu item (the Menu API lives in its module); we only hand it the command to run.
+        [InitializeOnLoadMethod]
+        static void RegisterNewWindowMenuCommand()
+        {
+            UnityEditor.UIElements.UIToolkitProjectSettings.openNewBuilderWindowMenuCommand = () => ShowNewWindow();
+        }
+
+        public static Builder ShowNewWindow()
+        {
+            return CreateWindow<Builder>();
         }
 
         public static Builder ActiveWindow
         {
             get
             {
-                var builderWindows =  Resources.FindObjectsOfTypeAll<Builder>();
+                var builderWindows = Resources.FindObjectsOfTypeAll<Builder>();
+                foreach (var builderWindow in builderWindows)
+                {
+                    if (builderWindow.m_IsPrimaryWindow)
+                        return builderWindow;
+                }
+
+                // Open windows must never be left without a primary; promote one (host migration safety net).
                 if (builderWindows.Length > 0)
                 {
+                    builderWindows[0].m_IsPrimaryWindow = true;
+                    // Mirror OnDestroy's promotion: the default-document role follows the primary role.
+                    BuilderDocument.MakeDefaultDocument(builderWindows[0].document);
                     return builderWindows[0];
                 }
 
                 return null;
             }
+        }
+
+        protected override BuilderDocument FindOrCreateDocument()
+        {
+            // The first window to need a document claims the primary role and with it the default document.
+            if (!m_IsPrimaryWindow && !AnyOtherWindowIsPrimary())
+                m_IsPrimaryWindow = true;
+
+            if (m_IsPrimaryWindow)
+                return BuilderDocument.FindOrCreateDefaultInstance();
+
+            var newDocument = BuilderDocument.CreateSecondaryInstance();
+
+            // A layout-restored window needs a fresh document (the old one did not survive the editor
+            // restart), so reopen the file the layout remembered for it.
+            if (m_LastOpenedAsset != null)
+                newDocument.ReopenAsset(m_LastOpenedAsset);
+
+            return newDocument;
+        }
+
+        bool AnyOtherWindowIsPrimary()
+        {
+            foreach (var builderWindow in Resources.FindObjectsOfTypeAll<Builder>())
+            {
+                if (builderWindow != this && builderWindow.m_IsPrimaryWindow)
+                    return true;
+            }
+
+            return false;
+        }
+
+        protected override void OnDestroy()
+        {
+            // Host migration: hand the primary role to another open window before this one is gone.
+            if (m_IsPrimaryWindow)
+            {
+                foreach (var builderWindow in Resources.FindObjectsOfTypeAll<Builder>())
+                {
+                    if (builderWindow == this)
+                        continue;
+
+                    builderWindow.m_IsPrimaryWindow = true;
+                    // The default-document role follows the primary role, so the disk state file keeps
+                    // tracking the primary's files; this window's outgoing document dies with it below.
+                    BuilderDocument.MakeDefaultDocument(builderWindow.document);
+                    break;
+                }
+            }
+
+            base.OnDestroy();
         }
 
         [NoAutoStaticsCleanup] // Lazily recreated warning GUIContent reused for editor notifications; survives reload safely and is rebuilt on demand when null.
@@ -157,7 +264,9 @@ namespace Unity.UI.Builder
         {
             // Ensure the fileMenuSaved subscription is established (and re-established after a code
             // reload, which nulls the ScopedLazy value). See s_ScopedLazy above.
+            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             _ = s_ScopedLazy.Value;
+            #pragma warning restore UAL0018
 
             var root = rootVisualElement;
             titleContent = GetLocalizedTitleContent();
@@ -320,17 +429,18 @@ namespace Unity.UI.Builder
 
             EditorApplication.delayCall += () =>
             {
-                if (s_NextSelectedIdFromDocumentCommand == -1) return;
+                if (s_NextSelectionFromDocumentCommand == null) return;
 
                 selection.ClearSelection(null, false);
-                var selectedElement = rootVisualElement.FindElement(ve =>
-                    ve.visualElementAsset?.id == s_NextSelectedIdFromDocumentCommand);
+                var selectedElement = LoadUIDocumentCommand.FindSelectedElement(documentRootElement,
+                    s_NextSelectionFromDocumentCommand.selectedId, s_NextSelectionFromDocumentCommand.selectedInstanceIds,
+                    s_NextSelectionFromDocumentCommand.selectedSourceDocument);
                 hierarchy.elementHierarchyView.RecursivelyExpandToItem(selectedElement);
                 selection.AddToSelection(null, selectedElement, false, false);
-                s_NextSelectedIdFromDocumentCommand = -1;
+                s_NextSelectionFromDocumentCommand = null;
             };
 
-            if (s_NextSelectedIdFromDocumentCommand == -1)
+            if (s_NextSelectionFromDocumentCommand == null)
                 selection.RestoreSelectionFromDocument(m_Viewport.sharedStylesAndDocumentElement);
         }
 
@@ -478,9 +588,7 @@ namespace Unity.UI.Builder
             EditorJsonUtility.FromJsonOverwrite(loadCommandStr, documentCommand);
 
             if (documentCommand.selectedId != -1)
-            {
-                s_NextSelectedIdFromDocumentCommand = documentCommand.selectedId;
-            }
+                s_NextSelectionFromDocumentCommand = documentCommand;
 
             if (builderWindow == null)
             {
@@ -495,6 +603,7 @@ namespace Unity.UI.Builder
 
             if (!validAsset)
             {
+                s_NextSelectionFromDocumentCommand = null;
                 builderWindow.NewDocument();
                 return false; // Let user open the asset in the IDE.
             }
@@ -526,9 +635,12 @@ namespace Unity.UI.Builder
             // If the builder is already open there is no call to OnEnableAfterSerialization
             if (documentCommand.selectedId != -1 && builderWindowAlreadyOpened)
             {
-                var selectedElement = builderWindow.rootVisualElement.FindElement(ve => ve.visualElementAsset?.id == s_NextSelectedIdFromDocumentCommand);
+                var selectedElement = LoadUIDocumentCommand.FindSelectedElement(builderWindow.documentRootElement,
+                    documentCommand.selectedId, documentCommand.selectedInstanceIds, documentCommand.selectedSourceDocument);
                 builderWindow.selection.ClearSelection(null, false);
                 builderWindow.selection.AddToSelection(null, selectedElement, false, false);
+
+                s_NextSelectionFromDocumentCommand = null;
             }
 
             return true;
@@ -548,3 +660,4 @@ namespace Unity.UI.Builder
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

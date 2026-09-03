@@ -288,9 +288,9 @@ namespace UnityEditorInternal.Profiling
 
             // Hide screenshots from frames that are no longer shown in the Profiler window — both those
             // evicted from memory, and those still resident but trimmed by the frame-count setting.
-            var firstSelectableFrame = ScreenshotIndexCatalogue.FirstDisplayedFrameIndex();
-            if (firstSelectableFrame < 0)
-                firstSelectableFrame = 0;
+            // Shared with ScreenshotIndexCatalogue.DisplayedFrameCount, which reports how many
+            // screenshots this filter leaves on screen.
+            var firstSelectableFrame = ScreenshotIndexCatalogue.FirstSelectableFrameIndex();
             foreach (var frameInfo in m_AllScreenshots)
             {
                 if (frameInfo.LogicalFrame >= firstSelectableFrame)

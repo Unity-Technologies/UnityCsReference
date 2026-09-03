@@ -198,7 +198,7 @@ namespace Unity.GraphToolkit.Editor
             emptyIcon.AddToClassList(ussClassName.WithUssElement("empty-warning-icon"));
             m_EmptyWarning.Add(emptyIcon);
 
-            m_EmptyLabel = new Label(L10n.Tr("There are no conditions in this group."));
+            m_EmptyLabel = new Label(L10n.Tr("There are no conditions in this group.", null));
             m_EmptyWarning.Add(m_EmptyLabel);
         }
 

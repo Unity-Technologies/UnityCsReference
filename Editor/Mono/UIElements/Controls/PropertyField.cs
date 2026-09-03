@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +19,7 @@ namespace UnityEditor.UIElements
     /// A SerializedProperty wrapper VisualElement that, on [[BindingExtensions.Bind|Bind()]], will generate the correct field elements with the correct binding paths. For more information, refer to [[wiki:UIE-uxml-element-PropertyField|UXML element PropertyField]].
     /// </summary>
     [Icon("UIToolkit/Icons/PropertyField.png")]
-    [UxmlElement(visibility = LibraryVisibility.Visible)]
+    [UxmlElement]
     public partial class PropertyField : VisualElement, IBindable
     {
         static readonly BindingId labelProperty = nameof(label);
@@ -35,6 +34,7 @@ namespace UnityEditor.UIElements
 
         static readonly string listViewNamePrefix = "unity-list-";
         static readonly string buttonGroupNamePrefix = "unity-button-group-";
+        static readonly UniqueStyleString toggleButtonGroupFixedSizeUssClassNameUnique = new(ToggleButtonGroup.ussClassName + "--fixed-size");
 
         /// <summary>
         /// Binding object that will be updated.
@@ -958,17 +958,13 @@ namespace UnityEditor.UIElements
             return listView;
         }
 
-        VisualElement ConfigureToggleButtonGroup(ToggleButtonGroup buttonGroup, SerializedProperty property, Func<ToggleButtonGroup> factory)
+        VisualElement ConfigureToggleButtonGroup(SerializedProperty property)
         {
             var propertyCopy = property.Copy();
 
-            if (buttonGroup == null)
-            {
-                buttonGroup = factory();
-                buttonGroup.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
-                buttonGroup.AddToClassList(ToggleButtonGroup.ussClassName + "--fixed-size");
-                buttonGroup.RegisterValueChangedCallback(OnToggleGroupChanged);
-            }
+            var buttonGroup = new ToggleButtonGroup();
+            buttonGroup.AddToClassList(BaseField<bool>.alignedFieldUssClassNameUnique);
+            buttonGroup.AddToClassList(toggleButtonGroupFixedSizeUssClassNameUnique);
 
             var lengthProperty = propertyCopy.FindPropertyRelative("m_Length");
             var dataProperty = propertyCopy.FindPropertyRelative("m_Data");
@@ -1001,7 +997,15 @@ namespace UnityEditor.UIElements
             buttonGroup.SetProperty(BaseField<ToggleButtonGroupState>.serializedPropertyCopyName, propertyCopy);
             buttonGroup.name = buttonGroupName;
             buttonGroup.label = fieldLabel;
-            buttonGroup.Q(className: ToggleButtonGroup.buttonGroupClassName).Clear();
+
+            for (var i = 0; i < length; i++)
+            {
+                buttonGroup.Add(new Button { text = i.ToString() });
+            }
+
+            // Discard the adjustments populating made, then start reporting changes.
+            buttonGroup.SetValueWithoutNotify((ToggleButtonGroupState)propertyCopy.structValue);
+            buttonGroup.RegisterValueChangedCallback(OnToggleGroupChanged);
 
             // Track changes to the ToggleButtonGroupState values.
             buttonGroup.TrackPropertyValue(propertyCopy);
@@ -1009,13 +1013,14 @@ namespace UnityEditor.UIElements
             buttonGroup.TrackPropertyValue(lengthProperty, OnPropertyChanged);
             buttonGroup.TrackPropertyValue(dataProperty, OnPropertyChanged);
 
-            for (var i = 0; i < length; i++)
-            {
-                buttonGroup.Add(new Button { text = i.ToString() });
-            }
-
             void OnToggleGroupChanged(ChangeEvent<ToggleButtonGroupState> evt)
             {
+                var current = (ToggleButtonGroupState)propertyCopy.structValue;
+
+                // Writing an unchanged value dirties the asset and rebuilds the inspector, which loops.
+                if (evt.newValue.Equals(current))
+                    return;
+
                 propertyCopy.structValue = evt.newValue;
                 propertyCopy.serializedObject.ApplyModifiedPropertiesWithoutUndo();
             }
@@ -1105,11 +1110,11 @@ namespace UnityEditor.UIElements
                                     uintField.onValidateValue += ClampToByte;
                                     break;
                             }
-                            
+
                         }
                         return uintField;
                     }
-   
+
                 {
                     var intField = ConfigureField<IntegerField, int>(originalField as IntegerField, property,
                         () => new IntegerField()) as IntegerField;
@@ -1129,7 +1134,7 @@ namespace UnityEditor.UIElements
                                 case "sbyte":
                                     intField.onValidateValue += ClampToSByte;
                                     break;
-                            }          
+                            }
                     }
 
                     return intField;
@@ -1337,7 +1342,7 @@ namespace UnityEditor.UIElements
                 case SerializedPropertyType.Generic:
                     if (property.type == nameof(ToggleButtonGroupState))
                     {
-                        return ConfigureToggleButtonGroup(originalField as ToggleButtonGroup, property, () => new ToggleButtonGroup());
+                        return ConfigureToggleButtonGroup(property);
                     }
 
                     return property.isArray
@@ -1429,4 +1434,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -17,7 +17,7 @@ namespace Unity.U2D.Physics
     /// If no <see cref="PhysicsCoreSettings2D"/> asset is assigned then the global layers (See <see cref="UnityEngine.LayerMask"/>) will be used.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly struct PhysicsLayers
+    public readonly record struct PhysicsLayers
     {
         /// <summary>
         /// Get a <see cref="PhysicsMask"/> for the specified layer name(s).

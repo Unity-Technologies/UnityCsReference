@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 
 using UnityEditorInternal;
 using Button = UnityEngine.UIElements.Button;
@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
@@ -40,7 +41,8 @@ namespace UnityEditor.Connect
         const string k_RoleOwner = "owner";
         const string k_RoleManager = "manager";
 
-        static readonly List<string> k_AtLeastManagerFilter;
+        [NoAutoStaticsCleanup] // immutable role-name filter (constants only); safe to persist across reload
+        static readonly List<string> k_AtLeastManagerFilter = new List<string>(new[] { k_RoleOwner, k_RoleManager });
 
         Dictionary<string, ProjectRequestResponse> m_ProjectInfoByName;
         internal ProjectNameSlashReplacer m_LastReuseBlockProject = new ProjectNameSlashReplacer();
@@ -73,11 +75,6 @@ namespace UnityEditor.Connect
         {
             public bool bound;
             public string projectName;
-        }
-
-        static ProjectBindManager()
-        {
-            k_AtLeastManagerFilter = new List<string>(new[] { k_RoleOwner, k_RoleManager });
         }
 
         /// <summary>
@@ -129,7 +126,7 @@ namespace UnityEditor.Connect
 
         void InitializeProjectBindManager(VisualElement rootVisualElement)
         {
-            m_LastReuseBlockProject.LastProjectName = L10n.Tr(k_SelectProjectText);
+            m_LastReuseBlockProject.LastProjectName = L10n.Tr(k_SelectProjectText, null);
             rootVisualElement.AddStyleSheetPath(k_ProjectBindCommonStyleSheetPath);
             rootVisualElement.viewDataKey = k_RootDataKey;
             rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? k_ProjectBindDarkStyleSheetPath : k_ProjectBindLightStyleSheetPath);
@@ -150,8 +147,8 @@ namespace UnityEditor.Connect
 
         void InitializeOrganizationsDropdown()
         {
-            m_OrganizationsDropdown.choices = new List<string>{L10n.Tr(k_SelectOrganizationText)};
-            m_OrganizationsDropdown.SetValueWithoutNotify(L10n.Tr(k_SelectOrganizationText));
+            m_OrganizationsDropdown.choices = new List<string>{L10n.Tr(k_SelectOrganizationText, null)};
+            m_OrganizationsDropdown.SetValueWithoutNotify(L10n.Tr(k_SelectOrganizationText, null));
 
             m_OrganizationsDropdown.RegisterValueChangedCallback(
                 str => _ = RunUITask(OnOrganizationsDropdownSelectedValueChanged(str)));
@@ -159,8 +156,8 @@ namespace UnityEditor.Connect
 
         void InitializeProjectsDropdown()
         {
-            m_ProjectsDropdown.choices = new List<string>{L10n.Tr(k_SelectProjectText)};
-            m_ProjectsDropdown.SetValueWithoutNotify(L10n.Tr(k_SelectProjectText));
+            m_ProjectsDropdown.choices = new List<string>{L10n.Tr(k_SelectProjectText, null)};
+            m_ProjectsDropdown.SetValueWithoutNotify(L10n.Tr(k_SelectProjectText, null));
 
             m_ProjectsDropdown.RegisterValueChangedCallback(
                 evt => _ = RunUITask(OnProjectsDropdownSelectedValueChanged(evt)));
@@ -237,7 +234,7 @@ namespace UnityEditor.Connect
             await AsyncUtils.RunNextActionOnMainThread(() =>
             {
                 m_OrganizationsDropdown.SetEnabled(m_OrganizationsDropdown.choices !=
-                                                   new List<string>() {L10n.Tr(k_SelectOrganizationText)});
+                                                   new List<string>() {L10n.Tr(k_SelectOrganizationText, null)});
 
                 var isManager = false;
 
@@ -250,16 +247,16 @@ namespace UnityEditor.Connect
                 }
 
                 m_CreateProjectButton.SetEnabled(
-                    m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText) &&
+                    m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText, null) &&
                     isManager);
 
-                m_ProjectsDropdown.SetEnabled(m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText));
+                m_ProjectsDropdown.SetEnabled(m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText, null));
 
-                m_LinkCloudProjectButton.SetEnabled(m_ProjectsDropdown.value != L10n.Tr(k_SelectProjectText));
+                m_LinkCloudProjectButton.SetEnabled(m_ProjectsDropdown.value != L10n.Tr(k_SelectProjectText, null));
 
                 m_RefreshButton.SetEnabled(true);
 
-                if (m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText) &&
+                if (m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText, null) &&
                     !isManager)
                 {
                     if (!m_CreateCloudProjectTab.Contains(m_CreatePermissionsHelpBox))
@@ -282,13 +279,13 @@ namespace UnityEditor.Connect
                 m_OrganizationsDropdown.SetValueWithoutNotify("");
 
                 if (m_OrganizationsDropdown.choices.Contains(savedOrg) &&
-                    savedOrg != L10n.Tr(k_SelectOrganizationText))
+                    savedOrg != L10n.Tr(k_SelectOrganizationText, null))
                 {
                     m_OrganizationsDropdown.value = savedOrg;
                 }
                 else
                 {
-                    m_OrganizationsDropdown.value = L10n.Tr(k_SelectOrganizationText);
+                    m_OrganizationsDropdown.value = L10n.Tr(k_SelectOrganizationText, null);
                 }
             });
         }
@@ -306,7 +303,7 @@ namespace UnityEditor.Connect
                 }
                 else
                 {
-                    m_ProjectsDropdown.value = L10n.Tr(k_SelectProjectText);
+                    m_ProjectsDropdown.value = L10n.Tr(k_SelectProjectText, null);
                 }
             });
         }
@@ -338,10 +335,10 @@ namespace UnityEditor.Connect
 
         async Task OnOrganizationsDropdownSelectedValueChanged(ChangeEvent<string> evt)
         {
-            if (m_OrganizationsDropdown.value == L10n.Tr(k_SelectOrganizationText))
+            if (m_OrganizationsDropdown.value == L10n.Tr(k_SelectOrganizationText, null))
             {
-                m_ProjectsDropdown.choices = new List<string>() { L10n.Tr(k_SelectProjectText) };
-                m_ProjectsDropdown.value = L10n.Tr(k_SelectProjectText);
+                m_ProjectsDropdown.choices = new List<string>() { L10n.Tr(k_SelectProjectText, null) };
+                m_ProjectsDropdown.value = L10n.Tr(k_SelectProjectText, null);
             }
             else
             {
@@ -359,8 +356,8 @@ namespace UnityEditor.Connect
         {
             var abort = false;
             var projectInfo = m_ProjectInfoByName[m_LastReuseBlockProject.LastProjectName];
-            if (EditorDialog.DisplayDecisionDialog(L10n.Tr(k_LinkProjectWindowTitle),
-                    string.Format(L10n.Tr(k_DialogConfirmationMessage), projectInfo.Name, projectInfo.OrganizationName),
+            if (EditorDialog.DisplayDecisionDialog(L10n.Tr(k_LinkProjectWindowTitle, null),
+                    string.Format(L10n.Tr(k_DialogConfirmationMessage, null), projectInfo.Name, projectInfo.OrganizationName),
                     default, default))
             {
                 try
@@ -413,7 +410,7 @@ namespace UnityEditor.Connect
 
                 sortedOrganizationNames.Sort();
 
-                var popUpChoices = new List<string> {L10n.Tr(k_SelectOrganizationText)};
+                var popUpChoices = new List<string> {L10n.Tr(k_SelectOrganizationText, null)};
                 popUpChoices.AddRange(sortedOrganizationNames);
 
                 await OnOrganizationsFetched(popUpChoices);
@@ -461,7 +458,7 @@ namespace UnityEditor.Connect
                 sortedProjectNames =
                     m_LastReuseBlockProject.ReplaceSlashForFakeSlash(sortedProjectNames);
                 sortedProjectNames.Sort();
-                sortedProjectNames.Insert(0, L10n.Tr(k_SelectProjectText));
+                sortedProjectNames.Insert(0, L10n.Tr(k_SelectProjectText, null));
 
                 await OnProjectsFetched(sortedProjectNames);
             }
@@ -511,7 +508,7 @@ namespace UnityEditor.Connect
             UnityConnect.instance.BindProject(projectInfo.Id, projectInfo.Name, projectInfo.OrganizationLegacyId);
             UnityConnect.instance.RefreshProject();
             EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindState() { bound = true, projectName = projectInfo.Name });
-            NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage));
+            NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage, null));
         }
 
         /// <summary>
@@ -583,4 +580,4 @@ namespace UnityEditor.Connect
         public delegate void ExceptionCallback(Exception exception);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

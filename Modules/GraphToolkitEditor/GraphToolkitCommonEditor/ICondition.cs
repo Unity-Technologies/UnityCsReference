@@ -23,5 +23,15 @@ namespace Unity.GraphToolkit.Editor
         /// The globally unique identifier for this condition.
         /// </summary>
         Hash128 ID { get; }
+
+        /// <summary>
+        /// The rule this condition belongs to, or <c>null</c> when the condition is not part of one.
+        /// </summary>
+        /// <remarks>
+        /// Together with <see cref="ITransitionRule.Transition"/>, this walks up from a condition to
+        /// the transition it takes part in. A condition that was created but never added to a group
+        /// has no rule yet.
+        /// </remarks>
+        ITransitionRule Rule { get; }
     }
 }

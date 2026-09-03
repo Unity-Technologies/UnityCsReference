@@ -19,7 +19,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
     /// </summary>
     internal static class ScenarioFactory
     {
-        public static MultiplayerRoleFlags GetRoleForInstance(IInstanceItem instance)
+        public static MultiplayerRoleFlags GetRoleForInstance(IPlayModeControllerItem instance)
         {
             if (!EditorMultiplayerManager.enableMultiplayerRoles)
                 return MultiplayerRoleFlags.Client;
@@ -35,12 +35,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         private static void CategorizeInstances(
-            IEnumerable<IInstanceItem> instanceItems,
-            out List<IInstanceItem> servers,
-            out List<IInstanceItem> clients)
+            IEnumerable<IPlayModeControllerItem> instanceItems,
+            out List<IPlayModeControllerItem> servers,
+            out List<IPlayModeControllerItem> clients)
         {
-            servers = new List<IInstanceItem>();
-            clients = new List<IInstanceItem>();
+            servers = new List<IPlayModeControllerItem>();
+            clients = new List<IPlayModeControllerItem>();
             foreach (var instance in instanceItems)
             {
                 if (GetRoleForInstance(instance).HasFlag(MultiplayerRoleFlags.Server))
@@ -54,7 +54,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        public static Scenario CreateScenario(OrchestratedScenario owner, IEnumerable<IInstanceItem> instanceItems)
+        public static Scenario CreateScenario(OrchestratedScenario owner, IEnumerable<IPlayModeControllerItem> instanceItems)
         {
             var scenario = Scenario.Create(owner != null ? owner.name : "");
 
@@ -80,7 +80,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return scenario;
         }
 
-        private static Instance ConnectOrCreateInstance(IInstanceItem instanceItem, OrchestratedScenario owner)
+        private static Instance ConnectOrCreateInstance(IPlayModeControllerItem instanceItem, OrchestratedScenario owner)
         {
             // If an Existing Instance is Actively Free Running, we connect that instance to this new Scenario.
             if (PlayModeScenarioManager.ActiveScenario is OrchestratedScenario config &&
@@ -101,7 +101,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return CreateInstance(instanceItem, owner);
         }
 
-        private static Instance CreateInstance(IInstanceItem instanceItem, OrchestratedScenario owner)
+        private static Instance CreateInstance(IPlayModeControllerItem instanceItem, OrchestratedScenario owner)
         {
             var controller = instanceItem.CreateController(owner);
             var decorators = CreateDecoratorsForInstance(instanceItem, owner);
@@ -117,16 +117,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return Instance.Create(instanceItem, controller, decorators, executionGraph);
         }
 
-        private static List<InstanceControllerDecorator> CreateDecoratorsForInstance(IInstanceItem instanceItem, OrchestratedScenario owner)
+        private static List<PlayModeControllerDecorator> CreateDecoratorsForInstance(IPlayModeControllerItem instanceItem, OrchestratedScenario owner)
         {
-            var decorators = InstanceExtensionManager.GetDecoratorTypes(instanceItem.GetInstanceType());
-            var decoratorList = new List<InstanceControllerDecorator>();
+            var decorators = PlayModeControllerRegistry.GetDecoratorTypes(instanceItem.GetInstanceType());
+            var decoratorList = new List<PlayModeControllerDecorator>();
 
             foreach (var decoratorType in decorators)
             {
-                if (!InstanceControllerDecorator.IsDecoratorWithSettings(decoratorType))
+                if (!PlayModeControllerDecorator.IsDecoratorWithSettings(decoratorType))
                 {
-                    decoratorList.Add((InstanceControllerDecorator)InstanceController.CreateInstance(decoratorType, instanceItem, owner));
+                    decoratorList.Add((PlayModeControllerDecorator)PlayModeController.CreateInstance(decoratorType, instanceItem, owner));
                 }
                 else
                 {

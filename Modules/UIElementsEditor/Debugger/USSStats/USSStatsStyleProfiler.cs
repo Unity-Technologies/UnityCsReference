@@ -76,13 +76,16 @@ struct USSStatsStyleProfiler : IStyleProfiler
     Dictionary<StyleSheet, StyleSheetStats> m_StyleSheetStatsCache;
     Dictionary<StyleComplexSelector, ComplexSelectorStats> m_SelectorStatsCache;
 
+    // Per-cache-entry buffers the native matcher fills with per-descriptor statistics during
+    // the profiled pass; folded into m_SelectorStatsCache by GetResults. Keyed by owner sheet
+    // (one acceleration cache entry per owner).
+    Dictionary<StyleSheet, (SelectorAccelerationCacheEntry entry, SelectorMatchStatsInfo[] stats)> m_MatchStatsBuffers;
+
     bool m_ElementHasName;
     int m_ElementClassCount;
     Stopwatch m_StyleSheetStopwatch;
-    Stopwatch m_SelectorStopwatch;
 
     StyleSheetStats m_StyleSheetStats;
-    ComplexSelectorStats m_CurrentSelectorStats;
 
     public void Initialize(VisualElement root)
     {
@@ -91,8 +94,8 @@ struct USSStatsStyleProfiler : IStyleProfiler
 
         m_StyleSheetStatsCache = PrewarmStyleSheetCache(styleSheets);
         m_SelectorStatsCache = PrewarmSelectorCache(styleSheets);
+        m_MatchStatsBuffers = new();
 
-        m_SelectorStopwatch = new();
         m_StyleSheetStopwatch = new();
         m_ElementHasName = false;
         m_ElementClassCount = 0;
@@ -102,10 +105,52 @@ struct USSStatsStyleProfiler : IStyleProfiler
     {
         m_StyleSheetStatsCache.Clear();
         m_SelectorStatsCache.Clear();
+        m_MatchStatsBuffers.Clear();
+    }
+
+    public SelectorMatchStatsInfo[] BeginSelectorMatching(in SelectorAccelerationCacheEntry accelerationCacheEntry)
+    {
+        // Pause the sheet stopwatch for the duration of the matching call: that time is
+        // attributed per selector through the stats buffer, not to sheet self time.
+        m_StyleSheetStopwatch.Stop();
+
+        var owner = accelerationCacheEntry.ownerStyleSheet;
+        if (!m_MatchStatsBuffers.TryGetValue(owner, out var buffer))
+        {
+            buffer = (accelerationCacheEntry, new SelectorMatchStatsInfo[accelerationCacheEntry.m_AllDescriptorsCount]);
+            m_MatchStatsBuffers[owner] = buffer;
+        }
+        return buffer.stats;
+    }
+
+    public void EndSelectorMatching()
+    {
+        m_StyleSheetStopwatch.Start();
     }
 
     public List<StyleSheetProfilingResult> GetResults()
     {
+        // Fold the native per-descriptor statistics into the per-selector caches. Sheet self
+        // time needs no adjustment: the sheet stopwatch is paused for the duration of every
+        // matching call (Begin/EndSelectorMatching).
+        foreach (var kvp in m_MatchStatsBuffers)
+        {
+            var (entry, stats) = kvp.Value;
+            var descriptors = entry.allDescriptors;
+            for (int i = 0; i < stats.Length; i++)
+            {
+                var stat = stats[i];
+                if (stat.testedCount == 0)
+                    continue;
+
+                var selectorStats = m_SelectorStatsCache[entry.GetComplexSelector(in descriptors[i])];
+                selectorStats.totalTime += stat.timeNs / 1_000_000.0;
+                selectorStats.totalMatches += (int)stat.matchedCount;
+                selectorStats.totalRejections += (int)(stat.testedCount - stat.matchedCount);
+                selectorStats.totalFastRejections += (int)stat.fastRejectedCount;
+            }
+        }
+
         var list = new List<StyleSheetProfilingResult>();
 
         foreach (var styleSheet in m_StyleSheetStatsCache.Keys)
@@ -207,34 +252,6 @@ struct USSStatsStyleProfiler : IStyleProfiler
             m_StyleSheetStats.totalQueryCount++;
 
         m_StyleSheetStopwatch.Restart();
-    }
-
-    public void BeginMatchingSelector(StyleComplexSelector complexSelector)
-    {
-        m_StyleSheetStopwatch.Stop();
-        m_CurrentSelectorStats = m_SelectorStatsCache[complexSelector];
-        m_SelectorStopwatch.Restart();
-    }
-
-    public void EndMatchingSelector(StyleComplexSelector complexSelector, bool match, bool passedAncestorFilter)
-    {
-        m_SelectorStopwatch.Stop();
-        m_CurrentSelectorStats.totalTime += m_SelectorStopwatch.Elapsed.TotalMilliseconds;
-
-        if (match)
-            m_CurrentSelectorStats.totalMatches++;
-        else
-        {
-            if (!passedAncestorFilter)
-            {
-                m_CurrentSelectorStats.totalFastRejections++;
-            }
-            m_CurrentSelectorStats.totalRejections++;
-        }
-
-        m_CurrentSelectorStats = null;
-
-        m_StyleSheetStopwatch.Start();
     }
 
     public void EndMatchingStyleSheet(StyleSheet styleSheet)

@@ -51,7 +51,7 @@ namespace Unity.GraphToolkit.Editor
     /// </summary>
     [Serializable]
     [UnityRestricted]
-    internal abstract partial class TransitionSupportModel : WireModel, IHasTitle, IGraphElementContainer, IHasElementColor, ITransition
+    internal abstract partial class TransitionSupportModel : WireModel, IHasTitle, IGraphElementContainer, ITransition
     {
         [SerializeField]
         [HideInInspector]
@@ -77,20 +77,13 @@ namespace Unity.GraphToolkit.Editor
         [FormerlySerializedAs("m_StoreTransitions")]
         List<TransitionModel> m_Transitions = new();
 
-        [SerializeField]
-        protected ElementColor m_ElementColor;
-
         Color m_DefaultColor;
 
         string m_Tooltip;
 
-        /// <inheritdoc />
-        public ElementColor ElementColor => m_ElementColor = new ElementColor(this);
-
-        /// <inheritdoc />
-        public void SetColor(Color color) => m_ElementColor.Color = color;
-
-        /// <inheritdoc />
+        /// <summary>
+        /// The default color of the transition.
+        /// </summary>
         public virtual Color DefaultColor
         {
             get => m_DefaultColor;
@@ -102,9 +95,6 @@ namespace Unity.GraphToolkit.Editor
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
-
-        /// <inheritdoc />
-        public bool UseColorAlpha => true;
 
         public virtual string IconPath => null;
 
@@ -145,6 +135,66 @@ namespace Unity.GraphToolkit.Editor
 
         /// <inheritdoc cref="ITransition.GetRules" />
         public IEnumerable<ITransitionRule> GetRules() => Transitions;
+
+        /// <inheritdoc cref="ITransition.RuleCount" />
+        public int RuleCount => Transitions.Count;
+
+        /// <inheritdoc cref="ITransition.GetRule" />
+        public ITransitionRule GetRule(int index)
+        {
+            if (index < 0 || index >= Transitions.Count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            return Transitions[index];
+        }
+
+        /// <inheritdoc cref="ITransition.AddRule()" />
+        public ITransitionRule AddRule()
+        {
+            CheckModificationLock();
+
+            var rule = CreateTransition();
+            AddTransition(rule);
+            return rule;
+        }
+
+        /// <inheritdoc cref="ITransition.AddRule(ITransitionRule)" />
+        public void AddRule(ITransitionRule rule)
+        {
+            CheckModificationLock();
+
+            if (rule == null)
+                throw new ArgumentNullException(nameof(rule));
+            if (rule is not TransitionModel model)
+                throw new ArgumentException("The rule is not a valid transition rule.", nameof(rule));
+            // A rule's conditions stay bound to the graph it was created in.
+            if (model.TransitionSupportModel != null && model.TransitionSupportModel.GraphModel != GraphModel)
+                throw new ArgumentException("The rule belongs to a transition in another state machine.", nameof(rule));
+            if (!AcceptsTransition(model))
+                throw new ArgumentException("This transition does not accept the given rule.", nameof(rule));
+            // Moving a rule out of its transition must not empty that transition: a transition always keeps at least one rule.
+            if (model.TransitionSupportModel != null && !ReferenceEquals(model.TransitionSupportModel, this) && model.TransitionSupportModel.Transitions.Count == 1)
+                throw new InvalidOperationException("The rule cannot be moved because it is the last rule of the transition it belongs to. Use StateMachine.Disconnect to remove that transition instead.");
+
+            AddTransition(model);
+        }
+
+        /// <inheritdoc cref="ITransition.RemoveRule" />
+        public void RemoveRule(ITransitionRule rule)
+        {
+            CheckModificationLock();
+
+            if (rule == null)
+                throw new ArgumentNullException(nameof(rule));
+
+            if (rule is not TransitionModel model || !ReferenceEquals(model.TransitionSupportModel, this))
+                throw new ArgumentException("The rule does not belong to this transition.", nameof(rule));
+
+            if (m_Transitions.Count == 1)
+                throw new InvalidOperationException("The rule cannot be removed because it is the last rule of this transition.");
+
+            RemoveTransitions(new[] { model });
+        }
 
         /// <summary>
         /// Returns the public <see cref="ITransition"/> to hand back through the read API. When this support
@@ -252,7 +302,6 @@ namespace Unity.GraphToolkit.Editor
             m_ToNodeAnchorOffset = 0.0f;
 
             m_Capabilities.Remove(Editor.Capabilities.Ascendable);
-            m_Capabilities.Add(Editor.Capabilities.Colorable);
         }
 
         /// <summary>
@@ -319,6 +368,7 @@ namespace Unity.GraphToolkit.Editor
                 transitionModel.TransitionSupportModel?.RemoveTransitions(new[] { transitionModel });
                 transitionModel.GraphModel = GraphModel;
                 transitionModel.TransitionSupportModel = this;
+                transitionModel.ConditionModel.Transition = transitionModel;
                 m_Transitions.Add(transitionModel);
                 GraphModel?.RegisterTransition(transitionModel);
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
@@ -352,7 +402,7 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Removes all transitions from this transition support.
         /// </summary>
-        public void RemoveAllTransitions()
+        public void RemoveAllTransitionRules()
         {
             if (m_Transitions.Count == 0)
                 return;
@@ -419,7 +469,7 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="source">The source transition support to copy transitions from.</param>
         public void ReplaceTransitions(TransitionSupportModel source)
         {
-            RemoveAllTransitions();
+            RemoveAllTransitionRules();
             CopyTransitions(source);
         }
 
@@ -431,8 +481,6 @@ namespace Unity.GraphToolkit.Editor
             {
                 transition.TransitionSupportModel = this;
             }
-
-            m_ElementColor.OwnerElementModel = this;
         }
 
         /// <inheritdoc />

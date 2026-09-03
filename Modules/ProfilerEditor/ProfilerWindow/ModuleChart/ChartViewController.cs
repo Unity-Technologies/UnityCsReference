@@ -246,14 +246,14 @@ namespace Unity.Profiling.Editor
         {
             if (m_Module.pinned)
             {
-                evt.menu.AppendAction(L10n.Tr("Unpin from Top"),
+                evt.menu.AppendAction(L10n.Tr("Unpin from Top", null),
                     _ => m_Module.pinned = false,
                     DropdownMenuAction.AlwaysEnabled);
             }
             else
             {
                 var atLimit = m_Module.ProfilerWindow.GetPinnedModuleCount() >= ProfilerWindow.k_MaximumPinnedModules;
-                evt.menu.AppendAction(L10n.Tr("Pin to Top"),
+                evt.menu.AppendAction(L10n.Tr("Pin to Top", null),
                     _ => m_Module.pinned = true,
                     atLimit ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
             }
@@ -314,7 +314,7 @@ namespace Unity.Profiling.Editor
         {
             var seriesIndex = m_LegendItems[index];
 
-            var name = m_Model.series[seriesIndex].name;
+            var name = m_Model.series[seriesIndex].displayName;
             item.Q<Label>(k_UxmlIdentifier_LegendItem_Label).text = name;
             var description = m_Model.series[seriesIndex].description;
             item.tooltip = string.IsNullOrEmpty(description) ? name : description;

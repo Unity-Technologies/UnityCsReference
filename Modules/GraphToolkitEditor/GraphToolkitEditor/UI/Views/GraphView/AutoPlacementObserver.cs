@@ -248,6 +248,23 @@ namespace Unity.GraphToolkit.Editor
                                 else
                                     newPosX += nodeModel.Position.x - portPos.x;
                             }
+                            else if (nodeUI is StateView stateView && wireModel is TransitionSupportModel transitionSupportModel)
+                            {
+                                // For state machine states, ports have no visual Port element. Use the anchor
+                                // position to align the connection point with the drop position.
+                                var anchorSide = modelToReposition.WireSide == WireSide.To
+                                    ? transitionSupportModel.ToNodeAnchorSide
+                                    : transitionSupportModel.FromNodeAnchorSide;
+                                var anchorOffset = modelToReposition.WireSide == WireSide.To
+                                    ? transitionSupportModel.ToNodeAnchorOffset
+                                    : transitionSupportModel.FromNodeAnchorOffset;
+
+                                var anchorWorldPos = stateView.GetPositionFromAnchorAndOffset(anchorSide, anchorOffset, m_GraphView.Zoom);
+                                var anchorLocalPos = nodeUI.parent.WorldToLocal(anchorWorldPos);
+
+                                newPosX = nodeUI.layout.x - (anchorLocalPos.x - nodeUI.layout.x);
+                                newPosY = nodeUI.layout.y - (anchorLocalPos.y - nodeUI.layout.y);
+                            }
                             else
                             {
                                 // If the connection to the port is not compatible, we want the last hovered position to correspond to the node's middle width or height, depending on the orientation.

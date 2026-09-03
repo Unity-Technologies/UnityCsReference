@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: GameCenter not yet converted
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.SocialPlatforms.Impl
 {
@@ -469,8 +469,9 @@ namespace UnityEngine.SocialPlatforms
 
     ///<exclude />
     [Obsolete("Local is deprecated and will be removed in a future release.", false)]
-    public class Local : ISocialPlatform
+    public partial class Local : ISocialPlatform
     {
+        [AutoStaticsCleanupOnCodeReload]
         static LocalUser m_LocalUser = null;
         List<UserProfile> m_Friends = new List<UserProfile>();
         List<UserProfile> m_Users = new List<UserProfile>();
@@ -751,4 +752,3 @@ namespace UnityEngine.SocialPlatforms
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

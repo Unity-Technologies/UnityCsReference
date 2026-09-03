@@ -309,12 +309,14 @@ namespace Unity.Loading
         public static extern ContentSceneFile[] GetSceneFiles(ContentNamespace nameSpace);
 
         ///<summary>Gets the target duration allowed per frame to integrate loading or unloading objects, in milliseconds.</summary>
+        ///<returns>The integration time in milliseconds.</returns>
         public static float GetIntegrationTimeMS()
         {
             return IntegrationTimeMS ;
         }
 
         ///<summary>Sets the target duration allowed per frame to integrate loading or unloading objects, in milliseconds.</summary>
+        ///<param name="integrationTimeMS">The integration time in milliseconds.</param>
         public static void SetIntegrationTimeMS(float integrationTimeMS)
         {
             if (integrationTimeMS <= 0)

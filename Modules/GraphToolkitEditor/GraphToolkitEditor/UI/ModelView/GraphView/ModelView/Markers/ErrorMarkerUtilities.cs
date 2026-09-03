@@ -151,9 +151,9 @@ static class ErrorMarkerUtilities
     {
         return errorType switch
         {
-            LogType.Error or LogType.Assert or LogType.Exception => localized ? L10n.Tr(k_ErrorString) : k_ErrorString,
-            LogType.Warning => localized ? L10n.Tr(k_WarningString) : k_WarningString,
-            LogType.Log => localized ? L10n.Tr(k_InfoString) : k_InfoString,
+            LogType.Error or LogType.Assert or LogType.Exception => localized ? L10n.Tr(k_ErrorString, null) : k_ErrorString,
+            LogType.Warning => localized ? L10n.Tr(k_WarningString, null) : k_WarningString,
+            LogType.Log => localized ? L10n.Tr(k_InfoString, null) : k_InfoString,
             _ => throw new ArgumentOutOfRangeException()
         };
     }

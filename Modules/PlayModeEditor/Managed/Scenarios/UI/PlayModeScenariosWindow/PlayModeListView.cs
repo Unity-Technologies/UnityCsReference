@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: PlayModeFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -40,7 +41,9 @@ namespace Unity.PlayMode.Editor
             m_NewItemTextField.OnFinishEdit += s =>
             {
                 m_NewItemTextField.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 var uniqueName = MakeUniqueScenarioName(s);
+                #pragma warning restore UAL0015
                 var newConfig = PlayModeScenarioUtils.CreatePlayModeConfig(uniqueName, m_NewItemTextField.userData as Type);
                 if (newConfig != null)
                 {
@@ -94,7 +97,9 @@ namespace Unity.PlayMode.Editor
             var selectedItem = m_ListView.selectedItem as PlayModeScenario;
             var currentConfig = selectedItem != null ? selectedItem : PlayModeScenarioManager.ActiveScenario;
 
+            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
             m_ListView.itemsSource = PlayModeScenarioUtils.GetAllConfigs();
+            #pragma warning restore UAL0018
             m_ListView.Rebuild();
             m_ListView.makeItem = () =>
             {
@@ -207,3 +212,4 @@ namespace Unity.PlayMode.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

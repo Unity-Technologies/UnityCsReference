@@ -18,7 +18,7 @@ namespace Unity.Mathematics.Editor
             public static readonly GUIContent Tooltip = new (
                 string.Empty,
                 L10n.Tr("Values you enter will be post-normalized. You will see the normalized result if you "
-                    + "change selection and view the values again."));
+                    + "change selection and view the values again.", null));
         }
 
         class VectorPropertyGUIData
@@ -186,7 +186,7 @@ namespace Unity.Mathematics.Editor
             {
                 EditorGUI.HelpBox(
                     EditorGUI.PrefixLabel(position, label),
-                    L10n.Tr($"{typeof(PostNormalizeAttribute).Name} only works with decimal vector types."),
+                    L10n.Tr($"{typeof(PostNormalizeAttribute).Name} only works with decimal vector types.", null),
                     MessageType.None
                 );
                 return;

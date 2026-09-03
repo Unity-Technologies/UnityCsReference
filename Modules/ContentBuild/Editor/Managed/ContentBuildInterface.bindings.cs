@@ -42,15 +42,17 @@ namespace UnityEditor.Build.Content
     public static partial class ContentBuildInterface
     {
         internal static extern void SetGarbageCollectionMemoryIncreaseThreshold(int mbThreshold);
-        ///<summary>Returns an array of AssetBundleBuild structs that detail the current AssetBundle layout, as set through the Inspector and stored in the AssetDatabase.</summary>
+        ///<summary>Retrieves an array of AssetBundleBuild structs that detail the current AssetBundle layout.</summary>
         ///<remarks>This API does not generate a build, instead it is a convenient function to populate the build definition into the format expected by some signatures of <see cref="BuildPipeline.BuildAssetBundles" />, or the Scriptable Build Pipeline.</remarks>
         ///<seealso cref="BuildPipeline.BuildAssetBundles" />
         ///<seealso cref="AssetDatabase.GetAllAssetBundleNames" />
         ///<seealso cref="AssetDatabase.GetAssetPathsFromAssetBundle" />
+        ///<returns>An array of AssetBundleBuild structs that detail the current AssetBundle layout, as set through the Inspector and stored in the AssetDatabase.</returns>
         public static extern AssetBundleBuild[] GenerateAssetBundleBuilds();
 
-        ///<summary>Returns the global usage information calculated by the Shader Stripping section of Graphics Settings.</summary>
+        ///<summary>Retrieves the global usage information calculated by the Shader Stripping section of Graphics Settings.</summary>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        /// <returns>An object containing the global usage information calculated by the Shader Stripping section of Graphics Settings.</returns>
         public static extern BuildUsageTagGlobal GetGlobalUsageFromGraphicsSettings();
 
         ///<summary>Gets information about the lighting and render settings in the active scene.</summary>
@@ -109,31 +111,39 @@ namespace UnityEditor.Build.Content
         [FreeFunction("CalculatePlayerDependenciesForScene")]
         static extern SceneDependencyInfo CalculatePlayerDependenciesForSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, DependencyType mode);
 
-        ///<summary>Returns a list of objects directly contained inside of an asset.</summary>
+        ///<summary>Obtains a list of objects directly contained inside of an asset.</summary>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<param name="asset">The GUID of the asset.</param>
+        ///<param name="target">The build target to get the object identifiers for.</param>
+        ///<returns>An array of ObjectIdentifier structs for the objects directly contained inside the asset.</returns>
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
 
-        ///<summary>Returns a list of objects directly contained inside of a loose serialized file.</summary>
+        ///<summary>Obtains a list of objects directly contained inside of a loose serialized file.</summary>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<param name="filePath">The path to the serialized file.</param>
+        ///<param name="target">The build target to get the object identifiers for.</param>
+        ///<returns>An array of ObjectIdentifier structs for the objects directly contained inside the serialized file.</returns>
         public static extern ObjectIdentifier[] GetPlayerObjectIdentifiersInSerializedFile(string filePath, BuildTarget target);
 
 
-        ///<summary>Returns a list of objects referenced by an object.</summary>
+        ///<summary>Obtains a list of objects referenced by an object.</summary>
         ///<param name="objectID">The specific object.</param>
-        /// ///<param name="target">The target platform.</param>
+        ///<param name="target">The target platform.</param>
         ///<param name="typeDB">The user script TypeDB for the player.</param>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<returns>An array of ObjectIdentifier structs for the objects referenced by the specified object.</returns>
         public static ObjectIdentifier[] GetPlayerDependenciesForObject(ObjectIdentifier objectID, BuildTarget target, TypeDB typeDB)
         {
             return GetPlayerDependencies_ObjectID(objectID, target, typeDB, DependencyType.DefaultDependencies);
         }
 
-        ///<summary>Returns a list of objects referenced by an object.</summary>
+        ///<summary>Obtains a list of objects referenced by an object.</summary>
         ///<param name="objectID">The specific object.</param>
-        /// ///<param name="target">The target platform.</param>
+        ///<param name="target">The target platform.</param>
         ///<param name="typeDB">The user script TypeDB for the player.</param>
         ///<param name="mode">Specifies how to calculate dependencies between internal objects and game assets.</param>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<returns>An array of ObjectIdentifier structs for the objects referenced by the specified object.</returns>
         public static ObjectIdentifier[] GetPlayerDependenciesForObject(ObjectIdentifier objectID, BuildTarget target, TypeDB typeDB, DependencyType mode)
         {
             return GetPlayerDependencies_ObjectID(objectID, target, typeDB, mode);
@@ -143,22 +153,24 @@ namespace UnityEditor.Build.Content
         static extern ObjectIdentifier[] GetPlayerDependencies_ObjectID(ObjectIdentifier objectID, BuildTarget target, TypeDB typeDB, DependencyType mode);
 
 
-        ///<summary>Returns a list of objects referenced by an object.</summary>
+        ///<summary>Obtains a list of objects referenced by an object.</summary>
         ///<param name="targetObject">The specific object.</param>
-        /// ///<param name="target">The target platform.</param>
+        ///<param name="target">The target platform.</param>
         ///<param name="typeDB">The user script TypeDB for the player.</param>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<returns>An array of ObjectIdentifier structs for the objects referenced by the specified object.</returns>
         public static ObjectIdentifier[] GetPlayerDependenciesForObject(UnityEngine.Object targetObject, BuildTarget target, TypeDB typeDB)
         {
             return GetPlayerDependencies_Object(targetObject, target, typeDB, DependencyType.DefaultDependencies);
         }
 
-        ///<summary>Returns a list of objects referenced by an object.</summary>
+        ///<summary>Obtains a list of objects referenced by an object.</summary>
         ///<param name="targetObject">The specific object.</param>
-        /// ///<param name="target">The target platform.</param>
+        ///<param name="target">The target platform.</param>
         ///<param name="typeDB">The user script TypeDB for the player.</param>
         ///<param name="mode">Specifies how to calculate dependencies between internal objects and game assets.</param>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<returns>An array of ObjectIdentifier structs for the objects referenced by the specified object.</returns>
         public static ObjectIdentifier[] GetPlayerDependenciesForObject(UnityEngine.Object targetObject, BuildTarget target, TypeDB typeDB, DependencyType mode)
         {
             return GetPlayerDependencies_Object(targetObject, target, typeDB, mode);
@@ -168,22 +180,24 @@ namespace UnityEditor.Build.Content
         static extern ObjectIdentifier[] GetPlayerDependencies_Object(UnityEngine.Object targetObject, BuildTarget target, TypeDB typeDB, DependencyType mode);
 
 
-        ///<summary>Returns a list of objects referenced by an object.</summary>
+        ///<summary>Obtains a list of objects referenced by an object.</summary>
         ///<param name="objectIDs">The specific object identifiers.</param>
-        /// ///<param name="target">The target platform.</param>
+        ///<param name="target">The target platform.</param>
         ///<param name="typeDB">The user script TypeDB for the player.</param>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<returns>An array of ObjectIdentifier structs for the objects referenced by the specified objects.</returns>
         public static ObjectIdentifier[] GetPlayerDependenciesForObjects(ObjectIdentifier[] objectIDs, BuildTarget target, TypeDB typeDB)
         {
             return GetPlayerDependencies_ObjectIDs(objectIDs, target, typeDB, DependencyType.DefaultDependencies);
         }
 
-        ///<summary>Returns a list of objects referenced by an object.</summary>
+        ///<summary>Obtains a list of objects referenced by an object.</summary>
         ///<param name="objectIDs">The specific object identifiers.</param>
-        /// ///<param name="target">The target platform.</param>
+        ///<param name="target">The target platform.</param>
         ///<param name="typeDB">The user script TypeDB for the player.</param>
         ///<param name="mode">Specifies how to calculate dependencies between internal objects and game assets.</param>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<returns>An array of ObjectIdentifier structs for the objects referenced by the specified objects.</returns>
         public static ObjectIdentifier[] GetPlayerDependenciesForObjects(ObjectIdentifier[] objectIDs, BuildTarget target, TypeDB typeDB, DependencyType mode)
         {
             return GetPlayerDependencies_ObjectIDs(objectIDs, target, typeDB, mode);
@@ -193,22 +207,24 @@ namespace UnityEditor.Build.Content
         [FreeFunction("GetPlayerDependenciesForObjectIDs")]
         static extern ObjectIdentifier[] GetPlayerDependencies_ObjectIDs(ObjectIdentifier[] objectIDs, BuildTarget target, TypeDB typeDB, DependencyType mode);
 
-        ///<summary>Returns a list of objects referenced by an object.</summary>
+        ///<summary>Obtains a list of objects referenced by an object.</summary>
         ///<param name="objects">The specific objects.</param>
-        /// ///<param name="target">The target platform.</param>
+        ///<param name="target">The target platform.</param>
         ///<param name="typeDB">The user script TypeDB for the player.</param>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<returns>An array of ObjectIdentifier structs for the objects referenced by the specified objects.</returns>
         public static ObjectIdentifier[] GetPlayerDependenciesForObjects(UnityEngine.Object[] objects, BuildTarget target, TypeDB typeDB)
         {
             return GetPlayerDependencies_Objects(objects, target, typeDB, DependencyType.DefaultDependencies);
         }
 
-        ///<summary>Returns a list of objects referenced by an object.</summary>
+        ///<summary>Obtains a list of objects referenced by an object.</summary>
         ///<param name="objects">The specific objects.</param>
-        /// ///<param name="target">The target platform.</param>
+        ///<param name="target">The target platform.</param>
         ///<param name="typeDB">The user script TypeDB for the player.</param>
         ///<param name="mode">Specifies how to calculate dependencies between internal objects and game assets.</param>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<returns>An array of ObjectIdentifier structs for the objects referenced by the specified objects.</returns>
         public static ObjectIdentifier[] GetPlayerDependenciesForObjects(UnityEngine.Object[] objects, BuildTarget target, TypeDB typeDB, DependencyType mode)
         {
             return GetPlayerDependencies_Objects(objects, target, typeDB, mode);
@@ -217,8 +233,11 @@ namespace UnityEditor.Build.Content
         [FreeFunction("GetPlayerDependenciesForObjects")]
         static extern ObjectIdentifier[] GetPlayerDependencies_Objects(UnityEngine.Object[] objects, BuildTarget target, TypeDB typeDB, DependencyType mode);
 
-        ///<summary>Returns a list of visible objects directly contained inside of an asset.</summary>
+        ///<summary>Obtains a list of visible objects directly contained inside an asset.</summary>
         ///<remarks>The returned objects are not loaded, and thus this method is more performant than <see cref="AssetDatabase.LoadAllAssetRepresentationsAtPath" />.</remarks>
+        ///<param name="asset">The GUID of the asset.</param>
+        ///<param name="target">The build target to get the representations for.</param>
+        ///<returns>An array of ObjectIdentifier structs representing the visible objects contained in the asset.</returns>
         public static extern ObjectIdentifier[] GetPlayerAssetRepresentations(GUID asset, BuildTarget target);
 
 
@@ -268,6 +287,9 @@ namespace UnityEditor.Build.Content
 
         ///<summary>Writes objects to a serialized file on disk.</summary>
         ///<remarks>Internal use only. See note on <see cref="Build.Content.ContentBuildInterface" />.</remarks>
+        ///<param name="outputFolder">The folder to write the serialized file to.</param>
+        ///<param name="parameters">The set of parameters used to write the file.</param>
+        ///<returns>The detailed results from writing the file.</returns>
         public static WriteResult WriteSerializedFile(string outputFolder, WriteParameters parameters)
         {
             if (IsBuildInProgress())
@@ -365,8 +387,9 @@ namespace UnityEditor.Build.Content
         [NativeMethod(ThrowsException = true)]
         extern public static void StartProfileCapture(ProfileCaptureOptions options);
 
-        ///<summary>Returns an array of ContentBuildProfileEvent structs that contain information for each occuring event. Also stops the profile capture.</summary>
+        ///<summary>Retrieves an array of ContentBuildProfileEvent structs that contain information for each occuring event. Also stops the profile capture.</summary>
         ///<remarks>Throws an InvalidOperationException if no profile capture has started.</remarks>
+        ///<returns>An array of ContentBuildProfileEvent structs that contain information for each captured event.</returns>
         [NativeMethod(ThrowsException = true)]
         extern public static ContentBuildProfileEvent[] StopProfileCapture();
 

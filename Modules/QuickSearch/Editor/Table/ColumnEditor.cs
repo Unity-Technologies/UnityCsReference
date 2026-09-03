@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Linq;
 using Unity.Scripting.LifecycleManagement;
@@ -54,7 +55,7 @@ namespace UnityEditor.Search
             var selectedProvider = Math.Max(0, providers.IndexOf(sc.provider));
             var formatPopup = new PopupField<string>(providers, selectedProvider, ObjectNames.NicifyVariableName, ObjectNames.NicifyVariableName)
             {
-                label = L10n.Tr("Format"),
+                label = L10n.Tr("Format", null),
             };
             formatPopup.RegisterValueChangedCallback(evt =>
             {
@@ -62,7 +63,7 @@ namespace UnityEditor.Search
                 editCallback?.Invoke(column);
             });
 
-            var iconField = new UIElements.ObjectField(L10n.Tr("Icon"))
+            var iconField = new UIElements.ObjectField(L10n.Tr("Icon", null))
             {
                 objectType = typeof(Texture2D),
                 value = column.icon.texture
@@ -73,7 +74,7 @@ namespace UnityEditor.Search
                 editCallback?.Invoke(column);
             });
 
-            var nameField = new TextField(L10n.Tr("Name")) {value = column.title};
+            var nameField = new TextField(L10n.Tr("Name", null)) {value = column.title};
             nameField.RegisterValueChangedCallback(e =>
             {
                 column.title = e.newValue;
@@ -87,7 +88,7 @@ namespace UnityEditor.Search
                 case TextAnchor.MiddleRight: initialAlignment = TextAlignment.Right; break;
                 default: initialAlignment = TextAlignment.Left; break;
             }
-            var alignmentField = new EnumField(L10n.Tr("Alignment"), TextAlignment.Left)
+            var alignmentField = new EnumField(L10n.Tr("Alignment", null), TextAlignment.Left)
             {
                 value = initialAlignment
             };
@@ -104,14 +105,14 @@ namespace UnityEditor.Search
                 editCallback?.Invoke(column);
             });
 
-            var sortableField = new Toggle(L10n.Tr("Sortable")) {value = column.sortable};
+            var sortableField = new Toggle(L10n.Tr("Sortable", null)) {value = column.sortable};
             sortableField.RegisterValueChangedCallback(e =>
             {
                 column.sortable = e.newValue;
                 editCallback?.Invoke(column);
             });
 
-            var pathField = new TextField(L10n.Tr("Path")) {value = sc.path};
+            var pathField = new TextField(L10n.Tr("Path", null)) {value = sc.path};
             pathField.RegisterValueChangedCallback(e =>
             {
                 sc.path = e.newValue;
@@ -119,7 +120,7 @@ namespace UnityEditor.Search
                 editCallback?.Invoke(column);
             });
 
-            var selectorField = new TextField(L10n.Tr("Selector")) {value = sc.selector};
+            var selectorField = new TextField(L10n.Tr("Selector", null)) {value = sc.selector};
             selectorField.RegisterValueChangedCallback(e =>
             {
                 sc.selector = e.newValue;
@@ -157,3 +158,4 @@ namespace UnityEditor.Search
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -51,9 +51,9 @@ namespace UnityEditor
     {
         static class Content
         {
-            public static readonly string Cancel = L10n.Tr("Cancel");
-            static readonly string k_DialogOptOutForThisMachine = L10n.Tr("Do not show me this message again on this machine.");
-            static readonly string k_DialogOptOutForThisSession = L10n.Tr("Do not show me this message again for this session.");
+            public static readonly string Cancel = L10n.Tr("Cancel", null);
+            static readonly string k_DialogOptOutForThisMachine = L10n.Tr("Do not show me this message again on this machine.", null);
+            static readonly string k_DialogOptOutForThisSession = L10n.Tr("Do not show me this message again for this session.", null);
             public static string GetDialogOptOutMessage(DialogOptOutDecisionType dialogOptOutType)
             {
                 switch (dialogOptOutType)

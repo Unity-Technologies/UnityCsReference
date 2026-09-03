@@ -2,20 +2,31 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using UnityEditor.Overlays;
 using UnityEngine;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Toolbars
 {
-    static class ModesDropdown
+    static partial class ModesDropdown
     {
         const string k_Path = "Editor Controls/Modes";
 
-        static ModesDropdown()
+        [OnCodeLoaded]
+        static void Initialize()
         {
             EditorApplication.delayCall += RebuildContent; //Immediately after a domain reload, calling check availability sometimes returns the wrong value
-            ModeService.modeChanged += (args) => RebuildContent();
+            ModeService.modeChanged += OnModeChanged;
         }
+
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            ModeService.modeChanged -= OnModeChanged;
+        }
+
+        static void OnModeChanged(ModeService.ModeChangedArgs args) => RebuildContent();
 
         static void RebuildContent()
         {
@@ -27,7 +38,7 @@ namespace UnityEditor.Toolbars
         {
             return new MainToolbarDropdown(
                 new MainToolbarContent(ModeService.modeNames[ModeService.currentIndex],
-                    L10n.Tr("Select which layers display in the Scene view.")),
+                    L10n.Tr("Select which layers display in the Scene view.", null)),
                 (buttonRect) => OpenModesDropdown(buttonRect));
         }
         
@@ -57,3 +68,4 @@ namespace UnityEditor.Toolbars
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPackageDatabase packageDatabase) : base(unityConnect)
         {
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Dependencies");
+            m_DisplayName = L10n.Tr("Dependencies", null);
             m_PackageDatabase = packageDatabase;
 
             var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsDependenciesTab.uxml");
@@ -108,16 +108,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return string.Empty;
 
             if (installedVersion.HasTag(PackageTag.Custom))
-                return L10n.Tr("(custom)");
+                return L10n.Tr("(custom)", null);
 
             if (installedVersion.HasTag(PackageTag.Local))
-                return L10n.Tr("(local)");
+                return L10n.Tr("(local)", null);
 
             if (installedVersion.HasTag(PackageTag.Tarball))
-                return L10n.Tr("(tarball)");
+                return L10n.Tr("(tarball)", null);
 
             var statusText = installedVersion.HasTag(PackageTag.BuiltIn)
-                ? L10n.Tr("enabled") : L10n.Tr("installed");
+                ? L10n.Tr("enabled", null) : L10n.Tr("installed", null);
             return installedVersion.version?.ToString() == dependency.version
                 ? string.Format("({0})", statusText) : string.Format("({0} {1})", installedVersion.version, statusText);
         }

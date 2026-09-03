@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class LocateSampleAction: SampleAction
@@ -39,17 +37,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             return sample.isImported || sample.previousImportPaths?.Count > 0;
         }
 
-        public override string GetText(Sample item, bool isInProgress) => L10n.Tr("Locate");
+        public override string GetText(Sample item, bool isInProgress) => L10n.Tr("Locate", null);
 
-        public override string GetTooltip(Sample item, bool isInProgress) => L10n.Tr("Click to locate the sample in your project.");
+        public override string GetTooltip(Sample item, bool isInProgress) => L10n.Tr("Click to locate the sample in your project.", null);
 
-        protected override IEnumerable<DisableCondition> GetAllDisableConditions(Sample sample)
-        {
-            yield return new DisableIfEntitlementsError(sample);
-            yield return new DisableIfPackageIsNotLoaded(sample);
-            yield return new DisableIfPackageIsInInvalidLocation(sample);
-            yield return new DisableIfSampleHasNoPath(sample);
-            yield return new DisableIfSamplePathDoesNotExist(sample, m_IOProxy);
-        }
+        protected override DisableConditionList<Sample> CreateDisableConditions() => new(
+            new DisableIfEntitlementsError(),
+            new DisableIfPackageIsNotLoaded(),
+            new DisableIfPackageIsInInvalidLocation(),
+            new DisableIfSampleHasNoPath(),
+            new DisableIfSamplePathDoesNotExist(m_IOProxy)
+        );
     }
 }

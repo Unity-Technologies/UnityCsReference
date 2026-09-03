@@ -21,6 +21,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         ProjectSettings,
         Build,
         Upgrade,
+        MigrationToURP,
+        MigrationToCoreCLR,
     }
 
     // A node in the view-selection navigation tree. A page is either:

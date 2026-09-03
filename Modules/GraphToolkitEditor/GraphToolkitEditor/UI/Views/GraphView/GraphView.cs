@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,6 +53,9 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal partial class GraphView : RootView, IDragSource, IHasItemLibrary, IHasContextualMenuItems
     {
+        /// <summary>
+        /// The default border, in pixels, used when framing the graph view.
+        /// </summary>
         public const int frameBorder = 30;
 
         /// <summary>
@@ -83,6 +87,8 @@ namespace Unity.GraphToolkit.Editor
 
         [AutoStaticsCleanupOnCodeReload]
         static readonly List<ChildView> k_UpdateAllUIs = new();
+        [NoAutoStaticsCleanup] // empty scratch list; cleared before each use, never holds persistent element references
+        static readonly List<VisualElement> k_PickedElements = new();
 
         /// <summary>
         /// The USS class name added to a <see cref="GraphView"/>.
@@ -119,6 +125,9 @@ namespace Unity.GraphToolkit.Editor
 
         readonly UserNodeViewBuilderLookup m_BuilderLookup = new();
         internal UserNodeViewBuilderLookup BuilderLookup => m_BuilderLookup;
+
+        readonly UserStateViewBuilderLookup m_StateBuilderLookup = new();
+        internal UserStateViewBuilderLookup StateBuilderLookup => m_StateBuilderLookup;
 
         Dictionary<VisualElement, string>[] m_ElementsPerZoom = new Dictionary<VisualElement, string> [(int)GraphViewZoomMode.Unknown];
 
@@ -963,37 +972,43 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Builds a <see cref="GraphMenuContext"/> from the current right-click
+        /// Builds a <see cref="MenuContext"/> from the current right-click
         /// and invokes every static method decorated with
         /// <see cref="GraphMenuAttribute"/>. Exceptions raised by user
         /// code are logged so they don't break the rest of the menu.
         /// </summary>
         void InvokeUserGraphContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            // TODO: Add support for state machine menu options (https://jira.unity3d.com/browse/GTF-2539)
-            var graph = (GraphViewModel?.GraphModelState?.GraphModel as GraphModelImp)?.Graph as Graph;
-            if (graph == null)
-                return;
+            var owner = (GraphViewModel?.GraphModelState?.GraphModel as GraphModelImp)?.Graph;
 
-            var clickedModel = (evt.target as ModelView)?.Model as GraphElementModel;
-            object clickedObject = clickedModel is IUserNodeModelImp userNode
-                ? userNode.Node
-                : clickedModel as INode;
-            if (clickedObject == null && clickedModel is WireModel wireModel && wireModel.FromPort != null && wireModel.ToPort != null)
-                clickedObject = graph.GetWire(wireModel.FromPort, wireModel.ToPort);
+            ContextualMenuUserEntries.AppendGraphEntries(evt, owner,
+                ContextualMenuUserEntries.GetClickedObject(owner, PickModelAt(evt.mousePosition)));
+        }
 
-            var context = new GraphMenuContext(graph, clickedObject, evt.mousePosition, evt.menu);
+        /// <summary>
+        /// The model of the topmost <see cref="ModelView"/> under <paramref name="position"/>, or null
+        /// when the position is over no element.
+        /// </summary>
+        /// <remarks>
+        /// Resolved by picking rather than from the event target: an inner control such as an editable
+        /// title label becomes the target itself, and panning captures the mouse so the event is
+        /// retargeted to this view.
+        /// </remarks>
+        GraphElementModel PickModelAt(Vector2 position)
+        {
+            if (panel == null)
+                return null;
 
-            var itemCountBefore = evt.menu.MenuItems().Count;
-            MenuCommandRegistry.InvokeGraphHandlers(context);
+            k_PickedElements.Clear();
+            panel.PickAll(position, k_PickedElements);
 
-            // If a handler added entries, separate them from the built-in entries
-            // above so the user's items don't blend visually with the previous
-            // category. Skip when the user's first item is already a separator so
-            // a handler that prepends its own doesn't end up with two.
-            var items = evt.menu.MenuItems();
-            if (items.Count > itemCountBefore && items[itemCountBefore] is not DropdownMenuSeparator)
-                evt.menu.InsertSeparator(string.Empty, itemCountBefore);
+            for (var i = 0; i < k_PickedElements.Count; i++)
+            {
+                if (k_PickedElements[i] is ModelView modelView && modelView.Model is GraphElementModel model)
+                    return model;
+            }
+
+            return null;
         }
 
         // CONTEXTUAL MENU METHODS:
@@ -1016,8 +1031,8 @@ namespace Unity.GraphToolkit.Editor
                 if (selection[i] is not WireModel)
                     allWires = false;
 
-                // If there is a placeholder in the selection, we only append the "Delete" menu item.
-                if (evt.target is not GraphView && selection[i] is IPlaceholder || selection[i] is IHasDeclarationModel { DeclarationModel: IPlaceholder })
+                // If there is a model with a missing type in the selection, we only append the "Delete" menu item.
+                if ((evt.target is not GraphView && PlaceholderModelHelper.IsMissingTypeModel(selection[i])) || selection[i] is IHasDeclarationModel { DeclarationModel: IPlaceholder })
                     return ContextualMenuHelpers.CategorizeMenuItems(new[] { ContextualMenuHelpers.deleteItem });
 
                 // If there is a placemat in the selection, we only append placemat menu items:
@@ -1206,7 +1221,7 @@ namespace Unity.GraphToolkit.Editor
                 portals.Add(portal);
             }
 
-            evt.menu.AppendAction(L10n.Tr("Create Opposite Portal"),
+            evt.menu.AppendAction(L10n.Tr("Create Opposite Portal", null),
                 _ =>
                 {
                     Dispatch(new CreateOppositePortalCommand(portals));
@@ -1238,7 +1253,7 @@ namespace Unity.GraphToolkit.Editor
 
             if (revertAll)
             {
-                evt.menu.AppendAction(L10n.Tr("Revert All to Wires"),
+                evt.menu.AppendAction(L10n.Tr("Revert All to Wires", null),
                     _ =>
                     {
                         Dispatch(new RevertAllPortalsToWireCommand(portals));
@@ -1246,7 +1261,7 @@ namespace Unity.GraphToolkit.Editor
             }
             else
             {
-                evt.menu.AppendAction(L10n.Tr("Revert to Wire"),
+                evt.menu.AppendAction(L10n.Tr("Revert to Wire", null),
                     _ =>
                     {
                         Dispatch(new RevertPortalsToWireCommand(portals));
@@ -1269,7 +1284,7 @@ namespace Unity.GraphToolkit.Editor
             var menuItemName = string.IsNullOrEmpty(itemName) ? "Insert Block " + (insertAbove ? "Above" : "Below") : itemName;
             var index = insertAbove ? blockNodeModel.GetIndex() : blockNodeModel.GetIndex() + 1;
 
-            evt.menu.AppendAction(L10n.Tr(menuItemName),
+            evt.menu.AppendAction(L10n.Tr(menuItemName, null),
                 action =>
                 {
                     Vector2 mousePosition = action?.eventInfo?.mousePosition ?? evt.mousePosition;
@@ -1333,14 +1348,14 @@ namespace Unity.GraphToolkit.Editor
 
             foreach (var value in StickyNote.GetSizes())
             {
-                evt.menu.AppendAction(L10n.Tr("Font Size/" + value),
+                evt.menu.AppendAction(L10n.Tr("Font Size/" + value, null),
                     menuAction => Dispatch(new UpdateStickyNoteTextSizeCommand(menuAction.userData as string, stickyNotes)),
                     GetSizeStatus, value);
             }
 
             foreach (var value in StickyNote.GetThemes())
             {
-                evt.menu.AppendAction(L10n.Tr("Color/" + value),
+                evt.menu.AppendAction(L10n.Tr("Color/" + value, null),
                     menuAction => Dispatch(new UpdateStickyNoteThemeCommand(menuAction.userData as string, stickyNotes)),
                     GetThemeStatus, value);
             }
@@ -1377,7 +1392,7 @@ namespace Unity.GraphToolkit.Editor
             if (selection.Count > 0 && (allBlocks || allPortals))
                 return;
 
-            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutCreatePlacematEvent>(GraphTool, selectedVisibleGraphElements.Count > 0 ? L10n.Tr("Create Placemat from Selection") : ShortcutCreatePlacematEvent.id, menuAction =>
+            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutCreatePlacematEvent>(GraphTool, selectedVisibleGraphElements.Count > 0 ? L10n.Tr("Create Placemat from Selection", null) : ShortcutCreatePlacematEvent.id, menuAction =>
             {
                 Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
                 Vector2 graphPosition = ContentViewContainer.WorldToLocal(mousePosition);
@@ -1405,7 +1420,7 @@ namespace Unity.GraphToolkit.Editor
                 colorables.Add(elementModel);
             }
 
-            evt.menu.AppendAction(L10n.Tr("Color/Change..."), _ =>
+            evt.menu.AppendAction(L10n.Tr("Color/Change...", null), _ =>
             {
                 void ChangeNodesColor(Color pickedColor)
                 {
@@ -1429,7 +1444,7 @@ namespace Unity.GraphToolkit.Editor
                 EditorBridge.ShowColorPicker(ChangeNodesColor, defaultColor, showAlpha);
             });
 
-            evt.menu.AppendAction(L10n.Tr("Color/Reset"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Color/Reset", null), _ =>
             {
                 Dispatch(new ResetElementColorCommand(colorables));
             });
@@ -1460,23 +1475,23 @@ namespace Unity.GraphToolkit.Editor
                     return;
             }
 
-            evt.menu.AppendAction(L10n.Tr("Align Elements/Top"),
+            evt.menu.AppendAction(L10n.Tr("Align Elements/Top", null),
                 _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper.AlignmentReference.Top));
-            evt.menu.AppendAction(L10n.Tr("Align Elements/Bottom"),
+            evt.menu.AppendAction(L10n.Tr("Align Elements/Bottom", null),
                 _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper.AlignmentReference.Bottom));
-            evt.menu.AppendAction(L10n.Tr("Align Elements/Left"),
+            evt.menu.AppendAction(L10n.Tr("Align Elements/Left", null),
                 _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper.AlignmentReference.Left));
-            evt.menu.AppendAction(L10n.Tr("Align Elements/Right"),
+            evt.menu.AppendAction(L10n.Tr("Align Elements/Right", null),
                 _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper.AlignmentReference.Right));
-            evt.menu.AppendAction(L10n.Tr("Align Elements/Horizontal Center"),
+            evt.menu.AppendAction(L10n.Tr("Align Elements/Horizontal Center", null),
                 _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper.AlignmentReference
                     .HorizontalCenter));
-            evt.menu.AppendAction(L10n.Tr("Align Elements/Vertical Center"),
+            evt.menu.AppendAction(L10n.Tr("Align Elements/Vertical Center", null),
                 _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper.AlignmentReference
                     .VerticalCenter));
-            evt.menu.AppendAction(L10n.Tr("Distribute Elements/Horizontal"),
+            evt.menu.AppendAction(L10n.Tr("Distribute Elements/Horizontal", null),
                 _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Horizontal));
-            evt.menu.AppendAction(L10n.Tr("Distribute Elements/Vertical"),
+            evt.menu.AppendAction(L10n.Tr("Distribute Elements/Vertical", null),
                 _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Vertical));
         }
 
@@ -1484,7 +1499,7 @@ namespace Unity.GraphToolkit.Editor
         {
             var menuItemName = string.IsNullOrEmpty(itemName) ? GraphModel.IsStateMachineGraph ? "Create State" : "Add Node" : itemName;
 
-            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutShowItemLibraryEvent>(GraphTool,  L10n.Tr(menuItemName), menuAction =>
+            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutShowItemLibraryEvent>(GraphTool,  L10n.Tr(menuItemName, null), menuAction =>
             {
                 Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
                 ShowItemLibrary(mousePosition);
@@ -1512,7 +1527,7 @@ namespace Unity.GraphToolkit.Editor
             if (GraphModel.SubgraphTemplates == null || GraphModel.SubgraphTemplates.Count == 0)
             {
                 // If there are no subgraph templates, append a menu item to create a local subgraph.
-                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, "")),
+                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, ""), null),
                     menuAction =>
                     {
                         Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
@@ -1526,7 +1541,7 @@ namespace Unity.GraphToolkit.Editor
                 foreach (var graphTemplate in GraphModel.SubgraphTemplates)
                 {
                     // If there is only one template possible, we don't need to display its name.
-                    evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, GraphModel.SubgraphTemplates.Count < 2 ? "" : graphTemplate.GraphTypeName + " ")),
+                    evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, GraphModel.SubgraphTemplates.Count < 2 ? "" : graphTemplate.GraphTypeName + " "), null),
                         menuAction =>
                         {
                             Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
@@ -1551,7 +1566,7 @@ namespace Unity.GraphToolkit.Editor
                 nodes.Add(node);
             }
 
-            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutToggleNodeCollapseEvent>(GraphTool, L10n.Tr("Toggle Collapse"), _ =>
+            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutToggleNodeCollapseEvent>(GraphTool, L10n.Tr("Toggle Collapse", null), _ =>
             {
                 var firstValue = ((ICollapsible)nodes[0]).Collapsed;
                 Dispatch(new CollapseNodeCommand(!firstValue, nodes));
@@ -1585,7 +1600,7 @@ namespace Unity.GraphToolkit.Editor
                 connectedNodes.Add(node);
             }
 
-            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutDisconnectWiresEvent>(GraphTool, L10n.Tr("Disconnect All Wires"), _ =>
+            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutDisconnectWiresEvent>(GraphTool, L10n.Tr("Disconnect All Wires", null), _ =>
             {
                 Dispatch(new DisconnectWiresCommand(connectedNodes));
             }, connectedNodes.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
@@ -1594,10 +1609,10 @@ namespace Unity.GraphToolkit.Editor
         void AppendStartTransitionCreationMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
         {
             // Only for a single selected state in a state machine graph.
-            if (!GraphModel.IsStateMachineGraph || selection.Count != 1 || selection[0] is not StateModel stateModel || stateModel is IPlaceholder)
+            if (!GraphModel.IsStateMachineGraph || selection.Count != 1 || selection[0] is not StateModel stateModel || PlaceholderModelHelper.IsMissingTypeModel(stateModel))
                 return;
 
-            evt.menu.AppendAction(L10n.Tr("Create Transition"), menuAction =>
+            evt.menu.AppendAction(L10n.Tr("Create Transition", null), menuAction =>
             {
                 var stateView = stateModel.GetView<StateView>(this);
                 var mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
@@ -1615,11 +1630,11 @@ namespace Unity.GraphToolkit.Editor
                 var type = transitionSupportType;
                 var categoryPath = GetTransitionSupportCategoryPath(type)?.Trim('/');
                 var subMenuPath = string.IsNullOrEmpty(categoryPath) ? string.Empty : categoryPath + "/";
-                evt.menu.AppendAction(subMenuPath + L10n.Tr("Create ") + GetTransitionSupportDisplayName(type), _ =>
+                evt.menu.AppendAction(subMenuPath + L10n.Tr("Create ", null) + GetTransitionSupportDisplayName(type), _ =>
                 {
                     foreach (var elementModel in selection)
                     {
-                        if (elementModel is not StateModel stateModel || stateModel is IPlaceholder)
+                        if (elementModel is not StateModel stateModel || PlaceholderModelHelper.IsMissingTypeModel(stateModel))
                             continue;
 
                         Dispatch(new CreateSelfTransitionSupportCommand(GraphModel, stateModel, type));
@@ -1660,7 +1675,7 @@ namespace Unity.GraphToolkit.Editor
             if (GraphModel.SubgraphTemplates == null || GraphModel.SubgraphTemplates.Count == 0)
             {
                 // If there are no subgraph templates, append a menu item to convert to a local subgraph.
-                evt.menu.AppendMenuItemFromShortcutWithName<ShortcutCreateLocalSubgraphFromSelectionEvent>(GraphTool, L10n.Tr(string.Format(menuItemName, "")), menuAction =>
+                evt.menu.AppendMenuItemFromShortcutWithName<ShortcutCreateLocalSubgraphFromSelectionEvent>(GraphTool, L10n.Tr(string.Format(menuItemName, ""), null), menuAction =>
                 {
                     Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
                     Vector2 graphPosition = ContentViewContainer.WorldToLocal(mousePosition);
@@ -1678,7 +1693,7 @@ namespace Unity.GraphToolkit.Editor
                     if (allow != null && !allow(graphTemplate))
                         continue;
 
-                    evt.menu.AppendMenuItemFromShortcutWithName<ShortcutCreateLocalSubgraphFromSelectionEvent>(GraphTool, L10n.Tr(string.Format(menuItemName, GraphModel.SubgraphTemplates.Count < 2 ? "" : graphTemplate.GraphTypeName + " ")), menuAction =>
+                    evt.menu.AppendMenuItemFromShortcutWithName<ShortcutCreateLocalSubgraphFromSelectionEvent>(GraphTool, L10n.Tr(string.Format(menuItemName, GraphModel.SubgraphTemplates.Count < 2 ? "" : graphTemplate.GraphTypeName + " "), null), menuAction =>
                     {
                         Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
                         Vector2 graphPosition = ContentViewContainer.WorldToLocal(mousePosition);
@@ -1728,7 +1743,7 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             var menuItemName = "Open " + (subgraphNode.IsReferencingLocalSubgraph ? "Local" : "Asset") + " Subgraph";
-            evt.menu.AppendAction(L10n.Tr(menuItemName), _ =>
+            evt.menu.AppendAction(L10n.Tr(menuItemName, null), _ =>
             {
                 subgraphNodeView.OpenSubgraph();
             });
@@ -1763,7 +1778,7 @@ namespace Unity.GraphToolkit.Editor
                 if (subgraphNodes == null || subgraphNodes.Count == 0)
                     return;
 
-                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, subgraphNodes.Count > 1 ? "s" : "")),
+                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, subgraphNodes.Count > 1 ? "s" : ""), null),
                     _ => Dispatch(isConvertToAsset
                         ? new ConvertLocalToAssetSubgraphCommand(subgraphNodes, null)
                         : new ConvertAssetToLocalSubgraphCommand(subgraphNodes, null)));
@@ -1787,7 +1802,7 @@ namespace Unity.GraphToolkit.Editor
                 if (subgraphNodeCount == 0 || subgraphNodesAndTemplates.Count == 0)
                     return;
 
-                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, subgraphNodeCount > 1 ? "s" : "")),
+                evt.menu.AppendAction(L10n.Tr(string.Format(menuItemName, subgraphNodeCount > 1 ? "s" : ""), null),
                     _ =>
                     {
                         StartMergingUndoableCommands();
@@ -1816,7 +1831,7 @@ namespace Unity.GraphToolkit.Editor
             if (obj == null || !EditorUtility.IsPersistent(obj) || !AssetDatabase.Contains(obj))
                 return;
 
-            evt.menu.AppendAction(L10n.Tr("Find Asset in Project"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Find Asset in Project", null), _ =>
             {
                 associateFileObject.ShowGraphObjectInProjectWindow();
             });
@@ -1837,7 +1852,7 @@ namespace Unity.GraphToolkit.Editor
                 variableNodes.Add(variableNode);
             }
 
-            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutConvertConstantAndVariableEvent>(GraphTool, L10n.Tr("Convert to Constant"),
+            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutConvertConstantAndVariableEvent>(GraphTool, L10n.Tr("Convert to Constant", null),
                 _ => Dispatch(new ConvertConstantNodesAndVariableNodesCommand(null, variableNodes)));
         }
 
@@ -1856,7 +1871,7 @@ namespace Unity.GraphToolkit.Editor
                 constantNodes.Add(constantNode);
             }
 
-            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutConvertConstantAndVariableEvent>(GraphTool, L10n.Tr("Convert to Variable"),
+            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutConvertConstantAndVariableEvent>(GraphTool, L10n.Tr("Convert to Variable", null),
                 _ => Dispatch(new ConvertConstantNodesAndVariableNodesCommand(constantNodes, null)));
         }
 
@@ -1879,7 +1894,7 @@ namespace Unity.GraphToolkit.Editor
                 singleOutputPortNodes.Add(singleOutputPortNode);
             }
 
-            evt.menu.AppendAction(L10n.Tr("Itemize"),
+            evt.menu.AppendAction(L10n.Tr("Itemize", null),
                 _ => Dispatch(new ItemizeNodeCommand(singleOutputPortNodes)),
                 canBeItemized ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
@@ -1938,7 +1953,7 @@ namespace Unity.GraphToolkit.Editor
             if (wires.Count > 0)
             {
                 var wireData = WireView.GetPortalsWireData(wires, this);
-                evt.menu.AppendMenuItemFromShortcutWithName<ShortcutConvertWireToPortalEvent>(GraphTool, L10n.Tr("Convert to Portals"), _ =>
+                evt.menu.AppendMenuItemFromShortcutWithName<ShortcutConvertWireToPortalEvent>(GraphTool, L10n.Tr("Convert to Portals", null), _ =>
                 {
                     Dispatch(new ConvertWiresToPortalsCommand(wireData, this));
                 }, hasNullOrMissingPort ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
@@ -1954,7 +1969,7 @@ namespace Unity.GraphToolkit.Editor
                 wireModel.ToPort.PortType == PortType.MissingPort ||
                 wireModel.FromPort.PortType == PortType.MissingPort;
 
-            evt.menu.AppendAction(L10n.Tr("Insert Node"), menuAction =>
+            evt.menu.AppendAction(L10n.Tr("Insert Node", null), menuAction =>
             {
                 var mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
                 ShowItemLibrary(mousePosition);
@@ -1980,7 +1995,7 @@ namespace Unity.GraphToolkit.Editor
             if (placemat == null)
                 return;
 
-            evt.menu.AppendAction(L10n.Tr("Select All Placemat Contents"),
+            evt.menu.AppendAction(L10n.Tr("Select All Placemat Contents", null),
                 _ =>
                 {
                     placemat.SelectAllInside();
@@ -2009,16 +2024,16 @@ namespace Unity.GraphToolkit.Editor
             var placematIsBottom = placematModelsInGraph[0] == placematModels[0];
             var canBeReordered = placematModelsInGraph.Count > 1;
 
-            evt.menu.AppendAction(L10n.Tr("Bring to Front"),
+            evt.menu.AppendAction(L10n.Tr("Bring to Front", null),
                 _ => Dispatch(new ChangePlacematOrderCommand(ZOrderMove.ToFront, placematModels)),
                 canBeReordered && !placematIsTop ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            evt.menu.AppendAction(L10n.Tr("Bring Forward"),
+            evt.menu.AppendAction(L10n.Tr("Bring Forward", null),
                 _ => Dispatch(new ChangePlacematOrderCommand(ZOrderMove.Forward, placematModels)),
                 canBeReordered && !placematIsTop ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            evt.menu.AppendAction(L10n.Tr("Send Backward"),
+            evt.menu.AppendAction(L10n.Tr("Send Backward", null),
                 _ => Dispatch(new ChangePlacematOrderCommand(ZOrderMove.Backward, placematModels)),
                 canBeReordered && !placematIsBottom ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-            evt.menu.AppendAction(L10n.Tr("Send to Back"),
+            evt.menu.AppendAction(L10n.Tr("Send to Back", null),
                 _ => Dispatch(new ChangePlacematOrderCommand(ZOrderMove.ToBack, placematModels)),
                 canBeReordered && !placematIsBottom ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
@@ -2045,7 +2060,7 @@ namespace Unity.GraphToolkit.Editor
             if (placemats.Count is 0 or > 1)
                 return;
 
-            evt.menu.AppendAction(L10n.Tr("Smart Resize"),
+            evt.menu.AppendAction(L10n.Tr("Smart Resize", null),
                 _ =>
                 {
                     foreach (var placemat in placemats)
@@ -2068,7 +2083,7 @@ namespace Unity.GraphToolkit.Editor
                 placemats.Add(placematModel);
             }
 
-            evt.menu.AppendAction(L10n.Tr("Delete and Select Contents"), _ =>
+            evt.menu.AppendAction(L10n.Tr("Delete and Select Contents", null), _ =>
             {
                 Dispatch(new DeleteAndSelectPlacematContentCommand(placemats, this));
             });
@@ -4981,3 +4996,4 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

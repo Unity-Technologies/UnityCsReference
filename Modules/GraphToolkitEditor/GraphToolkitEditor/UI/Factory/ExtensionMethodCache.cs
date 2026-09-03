@@ -71,6 +71,11 @@ namespace Unity.GraphToolkit.Editor
         [AutoStaticsCleanupOnCodeReload]
         static Dictionary<(Type, Type), MethodInfo> s_FactoryMethodCache = null;
 
+        // Results of previous lookups. Kept separate from s_FactoryMethodCache so a cached result never hides a registered method.
+        // ReSharper disable once StaticMemberInGenericType
+        [AutoStaticsCleanupOnCodeReload]
+        static Dictionary<(Type, Type), MethodInfo> s_ResolvedMethodCache = new Dictionary<(Type, Type), MethodInfo>();
+
         // ReSharper disable once StaticMemberInGenericType
         [AutoStaticsCleanupOnCodeReload]
         static Queue<Type> s_CandidateTypes = new Queue<Type>();
@@ -78,6 +83,7 @@ namespace Unity.GraphToolkit.Editor
         public static void ClearCache()
         {
             s_FactoryMethodCache = null;
+            s_ResolvedMethodCache.Clear();
         }
 
         /// <summary>
@@ -94,28 +100,35 @@ namespace Unity.GraphToolkit.Editor
             Func<MethodInfo, bool> filterMethods,
             Func<MethodInfo, Type> keySelector)
         {
-            Assert.AreEqual(0, s_CandidateTypes.Count);
+            var key = (viewDomain, targetType);
+            if (s_ResolvedMethodCache.TryGetValue(key, out var resolved))
+                return resolved;
 
             MethodInfo extension = null;
             var currentDomain = viewDomain;
 
-            while (extension == null && currentDomain != null)
+            // The queue is static, so the walk must leave it empty even when it throws.
+            try
             {
-                s_CandidateTypes.Enqueue(targetType);
-                do
+                while (extension == null && currentDomain != null)
                 {
-                    extension = GetExtensionMethodOf(currentDomain, s_CandidateTypes, filterMethods, keySelector);
-                }
-                while (extension == null && s_CandidateTypes.Count > 0);
+                    s_CandidateTypes.Enqueue(targetType);
+                    do
+                    {
+                        extension = GetExtensionMethodOf(currentDomain, s_CandidateTypes, filterMethods, keySelector);
+                    }
+                    while (extension == null && s_CandidateTypes.Count > 0);
 
-                currentDomain = currentDomain.BaseType;
+                    currentDomain = currentDomain.BaseType;
+                }
+            }
+            finally
+            {
+                s_CandidateTypes.Clear();
             }
 
-            var key = (viewDomain, targetType);
-            if (!s_FactoryMethodCache.ContainsKey(key))
-                s_FactoryMethodCache[key] = extension;
+            s_ResolvedMethodCache[key] = extension;
 
-            s_CandidateTypes.Clear();
             return extension;
         }
 

@@ -499,7 +499,7 @@ internal class StyleSheetEditingNodeTypeHandler : StyleSheetNodeTypeHandler, IHi
         if (styleNode.Rule != null)
             return m_Exporter.ToUssString(styleNode.StyleSheet, styleNode.Rule.complexSelectors, s_ExportOptions);
 
-        return $"{styleNode.StyleSheet.name}.uss{OwnerSuffix(styleNode.OwningDocument)}";
+        return GetStyleSheetDisplayName(styleNode);
     }
 
     bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)

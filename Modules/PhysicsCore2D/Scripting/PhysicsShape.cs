@@ -119,7 +119,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public partial struct SurfaceMaterial
+        public partial record struct SurfaceMaterial
         {
             /// <summary>
             /// The method used to mix friction or bounciness values.
@@ -239,7 +239,7 @@ namespace Unity.U2D.Physics
         /// Speculative collision is used so some contact points may be separated, a property available per-contact.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct ContactManifold : IEnumerable<ContactManifold.ManifoldPoint>
+        public readonly record struct ContactManifold : IEnumerable<ContactManifold.ManifoldPoint>
         {
             /// <summary>
             /// The unit normal vector in world space, points from shape A to bodyB
@@ -271,7 +271,7 @@ namespace Unity.U2D.Physics
             /// You may use the <see cref="ManifoldPoint.totalNormalImpulse"/> to determine if there was an interaction during the time step.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly struct ManifoldPoint
+            public readonly record struct ManifoldPoint
             {
                 /// <summary>
                 /// Location of the contact point in world space.
@@ -357,7 +357,7 @@ namespace Unity.U2D.Physics
             /// Fixed-sized manifold point array.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public readonly struct ManifoldPointArray
+            public readonly record struct ManifoldPointArray
             {
                 /// <summary>
                 /// Manifold Point #0.
@@ -480,7 +480,7 @@ namespace Unity.U2D.Physics
         /// See <see cref="PhysicsBody.GetContacts"/> and <see cref="PhysicsShape.GetContacts"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct Contact
+        public readonly record struct Contact
         {
             /// <summary>
 	        /// The unique Id of this contact.
@@ -518,7 +518,7 @@ namespace Unity.U2D.Physics
         /// This contact is volatile and may be destroyed automatically when the world is modified or simulated therefore it should always be checked for validity.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct ContactId
+        public readonly record struct ContactId
         {
             #region Id
 
@@ -603,7 +603,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct ContactFilter
+        public record struct ContactFilter
         {
             /// <summary>
             /// Create a contact filter.
@@ -678,7 +678,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct ShapeArray
+        public record struct ShapeArray
         {
             /// <summary>
             /// Construct with the specified vertices.
@@ -805,7 +805,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct MoverData
+        public record struct MoverData
         {
             /// <summary>
             /// Create a default mover data.
@@ -839,7 +839,7 @@ namespace Unity.U2D.Physics
         /// Collision results optionally returned from <see cref="PhysicsWorld.CastMover(PhysicsQuery.WorldMoverInput)"/> in <see cref="PhysicsQuery.WorldMoverResult"/>.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly struct MoverCollision
+        public readonly record struct MoverCollision
         {
             /// <summary>
             /// The shape the mover collided with.
@@ -879,7 +879,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         [Serializable]
         [StructLayout(LayoutKind.Sequential)]
-        public struct ShapeProxy
+        public record struct ShapeProxy
         {
             /// <summary>
             /// Create a shape proxy representing a single point.
@@ -2101,6 +2101,59 @@ namespace Unity.U2D.Physics
         public static void SetOwnerUserData(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsUserData> userDatas, int ownerKey = 0) => PhysicsShape_SetOwnerUserDataSpan(shapes, userDatas, ownerKey);
 
         /// <summary>
+        /// Set the same <see cref="PhysicsUserData"/> on a batch of shapes that can be used for any purpose, typically by the owner only.
+        /// </summary>
+        /// <param name="shapes">The shapes to set the owner user data on.</param>
+        /// <param name="physicsUserData">The user data to set on every shape.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsShape.SetOwner(UnityEngine.Object)"/>.</param>
+        public static void SetOwnerUserData(ReadOnlySpan<PhysicsShape> shapes, PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsShape_SetOwnerUserDataSpanAll(shapes, physicsUserData, ownerKey);
+
+        /// <summary>
+        /// Set <see cref="PhysicsUserData"/> on a batch of shapes that can be used for any purpose.
+        /// The shapes and userDatas spans must be the same length; shapes[n] receives userDatas[n].
+        /// </summary>
+        /// <param name="shapes">The shapes to set the user data on.</param>
+        /// <param name="userDatas">The user data to set, one entry per shape.</param>
+        public static void SetUserData(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<PhysicsUserData> userDatas) => PhysicsShape_SetUserDataSpan(shapes, userDatas);
+
+        /// <summary>
+        /// Set the same <see cref="PhysicsUserData"/> on a batch of shapes that can be used for any purpose.
+        /// </summary>
+        /// <param name="shapes">The shapes to set the user data on.</param>
+        /// <param name="physicsUserData">The user data to set on every shape.</param>
+        public static void SetUserData(ReadOnlySpan<PhysicsShape> shapes, PhysicsUserData physicsUserData) => PhysicsShape_SetUserDataSpanAll(shapes, physicsUserData);
+
+        /// <summary>
+        /// Set the <see cref="ContactFilter"/> on a batch of shapes.
+        /// The shapes and filters spans must be the same length; shapes[n] receives filters[n].
+        /// </summary>
+        /// <param name="shapes">The shapes to set the contact filter on.</param>
+        /// <param name="filters">The contact filters to set, one entry per shape.</param>
+        public static void SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<ContactFilter> filters) => PhysicsShape_SetContactFilterSpan(shapes, filters);
+
+        /// <summary>
+        /// Set the same <see cref="ContactFilter"/> on a batch of shapes.
+        /// </summary>
+        /// <param name="shapes">The shapes to set the contact filter on.</param>
+        /// <param name="contactFilter">The contact filter to set on every shape.</param>
+        public static void SetContactFilter(ReadOnlySpan<PhysicsShape> shapes, ContactFilter contactFilter) => PhysicsShape_SetContactFilterSpanAll(shapes, contactFilter);
+
+        /// <summary>
+        /// Set the <see cref="SurfaceMaterial"/> on a batch of shapes.
+        /// The shapes and surfaceMaterials spans must be the same length; shapes[n] receives surfaceMaterials[n].
+        /// </summary>
+        /// <param name="shapes">The shapes to set the surface material on.</param>
+        /// <param name="surfaceMaterials">The surface materials to set, one entry per shape.</param>
+        public static void SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, ReadOnlySpan<SurfaceMaterial> surfaceMaterials) => PhysicsShape_SetSurfaceMaterialSpan(shapes, surfaceMaterials);
+
+        /// <summary>
+        /// Set the same <see cref="SurfaceMaterial"/> on a batch of shapes.
+        /// </summary>
+        /// <param name="shapes">The shapes to set the surface material on.</param>
+        /// <param name="surfaceMaterial">The surface material to set on every shape.</param>
+        public static void SetSurfaceMaterial(ReadOnlySpan<PhysicsShape> shapes, SurfaceMaterial surfaceMaterial) => PhysicsShape_SetSurfaceMaterialSpanAll(shapes, surfaceMaterial);
+
+        /// <summary>
         /// Create a shape proxy from the shape.
         /// </summary>
         /// <param name="useWorldSpace">Whether to create the shape proxy in world-space or not. World-space will transform by the body origin the shape is attached to.</param>
@@ -2180,8 +2233,51 @@ namespace Unity.U2D.Physics
         public readonly bool worldDrawing { get => PhysicsShape_GetWorldDrawing(this); set => PhysicsShape_SetWorldDrawing(this, value); }
 
         /// <summary>
-        /// Draw the PhysicsShape that visually represents its current state in the world.
+        /// Controls whether this shape is drawn individually when the world is drawn.
         /// </summary>
+        /// <remarks>
+        /// The shape is only drawn when the world draw options include <see cref="PhysicsWorld.DrawOptions.SelectedShapes"/> or <see cref="PhysicsWorld.DrawOptions.SelectedShapeBounds"/>; changing the draw options never changes this state.
+        /// The state persists until set to false, the shape is destroyed, or <see cref="PhysicsWorld.ClearDrawSelected"/> clears the whole world.
+        /// The shape must also have <see cref="worldDrawing"/> enabled to be drawn.
+        /// </remarks>
+        public unsafe readonly bool selectedDrawing
+        {
+            get => PhysicsShape_GetSelectedDrawing(this);
+            set
+            {
+                var shape = this;
+                PhysicsShape_SetSelectedDrawing(new ReadOnlySpan<PhysicsShape>(&shape, 1), value);
+            }
+        }
+
+        /// <summary>
+        /// Controls which Unity editor views this shape is drawn into.
+        /// </summary>
+        /// <remarks>
+        /// This filters on top of the world's own <see cref="PhysicsWorld.drawTarget"/>: the world decides whether it draws into a view at all, and this decides whether this shape is included when it does.
+        /// The state is not part of the shape definition and is never recorded, because it describes how the shape is being looked at rather than what it is.
+        /// A player build has no Scene view, so a shape set to <see cref="PhysicsWorld.DrawTarget.SceneView"/> is never drawn in a build.
+        /// </remarks>
+        public readonly PhysicsWorld.DrawTarget drawTarget { get => PhysicsShape_GetDrawTarget(this); set => PhysicsShape_SetDrawTarget(this, value); }
+
+        /// <summary>
+        /// Set the selected drawing state on a batch of shapes.
+        /// </summary>
+        /// <remarks>
+        /// The shapes can belong to different worlds; the world of each shape is locked only when it changes across the batch, so shapes should be ordered by world for the fewest locks.
+        /// Any invalid shape in the batch is ignored.
+        /// See <see cref="selectedDrawing"/> for what the state controls.
+        /// </remarks>
+        /// <param name="shapes">The shapes to set the selected drawing state on.</param>
+        /// <param name="selected">The selected drawing state to set on every shape.</param>
+        public static void SetSelectedDrawing(ReadOnlySpan<PhysicsShape> shapes, bool selected) => PhysicsShape_SetSelectedDrawing(shapes, selected);
+
+        /// <summary>
+        /// Draw this shape's current state once, as custom drawing.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="selectedDrawing"/>, this does not persist: it draws once and is gone once every Scene/Game view has painted.
+        /// </remarks>
         public readonly void Draw() => PhysicsShape_Draw(this);
 
         #endregion

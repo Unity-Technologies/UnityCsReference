@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -13,7 +13,9 @@ namespace Unity.Timeline.Foundation.Widgets
     {
         const string k_Name = "horizontalLineOverlay";
 
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<float> s_SegmentWidthProperty = new CustomStyleProperty<float>("--segment-width");
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<Color> s_LineColorProperty = new CustomStyleProperty<Color>("--line-color");
 
         public HorizontalLineOverlay()
@@ -51,4 +53,3 @@ namespace Unity.Timeline.Foundation.Widgets
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

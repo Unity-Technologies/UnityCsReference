@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.Common;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -15,6 +15,7 @@ namespace Unity.Timeline.Foundation.ViewModel
     [VisibleToOtherModules("UnityEditor.TimelineFoundationModule")]
     internal readonly struct SequenceDiff : IEquatable<SequenceDiff>
     {
+        [NoAutoStaticsCleanup] // monotonically-increasing diff id; never reset or decremented, so continuing the sequence after a code reload is safe
         static uint id = 1;
 
         readonly uint m_Id;
@@ -172,4 +173,3 @@ namespace Unity.Timeline.Foundation.ViewModel
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

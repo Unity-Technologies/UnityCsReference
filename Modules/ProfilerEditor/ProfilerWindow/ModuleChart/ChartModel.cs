@@ -10,6 +10,7 @@ namespace Unity.Profiling.Editor
     internal class ChartSeriesViewData
     {
         public string name { get; private set; }
+        public string displayName { get; private set; }
         public string description { get; private set; }
         public string category { get; private set; }
         public Color color { get; private set; }
@@ -21,9 +22,13 @@ namespace Unity.Profiling.Editor
         public readonly int firstXValue = 0;
         public readonly int lastXValue = 0;
 
-        public ChartSeriesViewData(string name, string description, string category, int numDataPoints, Color color)
+        public ChartSeriesViewData(string name, string description, string category, int numDataPoints, Color color) : this(name, description, category, name, numDataPoints, color)
+        {}
+
+        public ChartSeriesViewData(string name, string description, string category, string displayName, int numDataPoints, Color color)
         {
             this.name = name;
+            this.displayName = displayName;
             this.description = description;
             this.category = category;
             this.color = color;

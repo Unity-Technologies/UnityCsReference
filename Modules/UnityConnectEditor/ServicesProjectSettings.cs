@@ -2,10 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UnityConnectHub not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.PackageManager.Requests;
@@ -25,7 +26,7 @@ namespace UnityEditor.Connect
     /// Keep in mind that each time ActivateAction is called, the UIElements window is brand new.
     /// Do not cache things related to UIElement state in your extension.
     /// </summary>
-    internal abstract class ServicesProjectSettings : SettingsProvider
+    internal abstract partial class ServicesProjectSettings : SettingsProvider
     {
         internal struct OpenDashboardForService
         {
@@ -74,9 +75,12 @@ namespace UnityEditor.Connect
         const string k_ToggleOffLabel = "OFF";
         protected const string k_ServiceToggleContainerClassName = "service-toggle-container";
         protected const string k_UnityToggleClassName = "unity-toggle";
+        [AutoStaticsCleanupOnCodeReload] // lazily cached translation; re-evaluated on first use after reload
         static string s_ToggleOnLabelTranslated;
+        [AutoStaticsCleanupOnCodeReload] // lazily cached translation; re-evaluated on first use after reload
         static string s_ToggleOffLabelTranslated;
 
+        [AutoStaticsCleanupOnCodeReload] // current user role; reset to default on code reload
         protected static UserRole currentUserPermission { get; private set; }
 
         SimpleStateMachine<Event> m_StateMachine;
@@ -260,11 +264,13 @@ namespace UnityEditor.Connect
             if (string.IsNullOrEmpty(s_ToggleOnLabelTranslated)
                 || string.IsNullOrEmpty(s_ToggleOffLabelTranslated))
             {
-                s_ToggleOnLabelTranslated = L10n.Tr(k_ToggleOnLabel);
-                s_ToggleOffLabelTranslated = L10n.Tr(k_ToggleOffLabel);
+                s_ToggleOnLabelTranslated = L10n.Tr(k_ToggleOnLabel, null);
+                s_ToggleOffLabelTranslated = L10n.Tr(k_ToggleOffLabel, null);
             }
 
+#pragma warning disable UAL0018 // toggle UI is recreated on reload; stale text is harmless
             toggle.text = active ? s_ToggleOnLabelTranslated : s_ToggleOffLabelTranslated;
+#pragma warning restore UAL0018
         }
 
         void OnRefreshRequired(ProjectInfo state)
@@ -408,14 +414,40 @@ namespace UnityEditor.Connect
         {
             try
             {
-                var userResponse = await UnityConnectRequests.GetCurrentUserRoleForProject(CloudProjectSettings.projectId);
+                var requestedProjectId = CloudProjectSettings.projectId;
+                var userResponse = await UnityConnectRequests.GetCurrentUserRoleForProject(requestedProjectId);
 
-                await AsyncUtils.RunNextActionOnMainThread(() => InternalToggleRestrictedVisualElementsAvailability(
-                    userResponse.OrganizationRole == UserRequestResponse.UserRole.User));
+                await AsyncUtils.RunNextActionOnMainThread(() =>
+                {
+                    // A response for a previous binding must not set the role for the project bound now.
+                    if (requestedProjectId != CloudProjectSettings.projectId)
+                        return;
+
+                    currentUserPermission = MapToUserRole(userResponse.OrganizationRole);
+                    InternalToggleRestrictedVisualElementsAvailability(!CanEditServices(currentUserPermission));
+                });
             }
             catch (Exception e)
             {
                 await AsyncUtils.RunNextActionOnMainThread(() => Debug.LogException(e));
+            }
+        }
+
+        internal static bool CanEditServices(UserRole role)
+        {
+            return role == UserRole.Owner || role == UserRole.Manager;
+        }
+
+        internal static UserRole MapToUserRole(UserRequestResponse.UserRole organizationRole)
+        {
+            switch (organizationRole)
+            {
+                case UserRequestResponse.UserRole.Owner:
+                    return UserRole.Owner;
+                case UserRequestResponse.UserRole.Manager:
+                    return UserRole.Manager;
+                default:
+                    return UserRole.User;
             }
         }
 
@@ -671,7 +703,7 @@ namespace UnityEditor.Connect
                     exceptionCallback = (compliance, exception) =>
                     {
                         NotificationManager.instance.Publish(Notification.Topic.CoppaCompliance, Notification.Severity.Error,
-                            L10n.Tr(exception.Message));
+                            L10n.Tr(exception.Message, null));
                     }
                 };
                 var coppaContainer = scrollContainer.Q(CoppaManager.coppaContainerName);
@@ -733,7 +765,7 @@ namespace UnityEditor.Connect
                     exceptionCallback = (exception) =>
                     {
                         NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Error,
-                            L10n.Tr(exception.Message));
+                            L10n.Tr(exception.Message, null));
                     }
                 };
             }
@@ -811,7 +843,7 @@ namespace UnityEditor.Connect
                             bound = false,
                             projectName = UnityConnect.instance.projectInfo.projectName
                         });
-                        NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_PermissionRefreshedMessage));
+                        NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_PermissionRefreshedMessage, null));
                         UnityConnect.instance.RefreshProject();
                     };
                 }
@@ -875,7 +907,7 @@ namespace UnityEditor.Connect
                 {
                     refreshAccessButton.clicked += () =>
                     {
-                        NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ConnectionRefreshedMessage));
+                        NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ConnectionRefreshedMessage, null));
                         UnityConnect.instance.RefreshProject();
                     };
                 }
@@ -940,7 +972,7 @@ namespace UnityEditor.Connect
                 {
                     refreshAccessButton.clicked += () =>
                     {
-                        NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ConnectionRefreshedMessage));
+                        NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ConnectionRefreshedMessage, null));
                         ServicesConfiguration.instance.LoadConfigurations(true);
                         stateMachine.ProcessEvent(Event.Initializing);
                     };
@@ -983,7 +1015,7 @@ namespace UnityEditor.Connect
                 {
                     //That is enough, message and stop
                     //Using the refresh btn will relaunch the verif for another k_MaxVerifyRetries attempts
-                    NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Error, L10n.Tr(k_ConnectionFailedMessage));
+                    NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Error, L10n.Tr(k_ConnectionFailedMessage, null));
                     ClearScheduledVerify();
                 }
             }
@@ -1055,7 +1087,7 @@ namespace UnityEditor.Connect
             }
         }
 
-        protected enum UserRole
+        internal enum UserRole
         {
             User,
             Owner,
@@ -1150,7 +1182,7 @@ namespace UnityEditor.Connect
                         // Display an info if a package is installed, but it is not the latest one !
                         if (!m_NotLatestPackageInfoHasBeenShown)
                         {
-                            NotificationManager.instance.Publish(topicForNotifications, Notification.Severity.Info, L10n.Tr(notLatestPackageInstalledInfo));
+                            NotificationManager.instance.Publish(topicForNotifications, Notification.Severity.Info, L10n.Tr(notLatestPackageInstalledInfo, null));
                             m_NotLatestPackageInfoHasBeenShown = true;
                         }
                     }
@@ -1219,7 +1251,7 @@ namespace UnityEditor.Connect
                     if (m_Request.Status == StatusCode.Success)
                     {
                         // Make sure the actual version is N/A...
-                        currentPackageVersion = L10n.Tr(k_NotApplicable).ToUpper();
+                        currentPackageVersion = L10n.Tr(k_NotApplicable, null).ToUpper();
                         foreach (var package in m_Request.Result)
                         {
                             if (package.name.Equals(provider.serviceInstance.packageName))
@@ -1294,10 +1326,10 @@ namespace UnityEditor.Connect
 
             protected virtual string GetUpdatePackageMessage()
             {
-                var messageForDialog = L10n.Tr(packageInstallationHeadsup);
+                var messageForDialog = L10n.Tr(packageInstallationHeadsup, null);
                 if ((duplicateInstallWarning != null) && assetStorePackageInstalled)
                 {
-                    messageForDialog = L10n.Tr(duplicateInstallWarning);
+                    messageForDialog = L10n.Tr(duplicateInstallWarning, null);
                 }
 
                 return messageForDialog;
@@ -1308,7 +1340,7 @@ namespace UnityEditor.Connect
                 if (!m_InstallingNewPackage)
                 {
                     if (EditorDialog.DisplayDecisionDialog(
-                        titleText: L10n.Tr(packageInstallationDialogTitle),
+                        titleText: L10n.Tr(packageInstallationDialogTitle, null),
                         messageText: messageForDialog,
                         yesButtonText: default,
                         noButtonText: default))
@@ -1333,4 +1365,4 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

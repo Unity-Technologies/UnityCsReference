@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
 using Unity.IntegerTime;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.UIElements;
 
 namespace Unity.Timeline.Foundation.Widgets.Internals
@@ -25,6 +25,7 @@ namespace Unity.Timeline.Foundation.Widgets.Internals
             RegisterCallback<CustomStyleResolvedEvent>(CustomStyleResolved);
         }
 
+        [NoAutoStaticsCleanup] // Immutable USS custom-style property key; holds no ALC-bound state, safe to persist across reload.
         static readonly CustomStyleProperty<float> k_RangeHandleWidth = new("--timeline-rangeHandle-width");
         const int k_FallBackLeft = 10;
         void CustomStyleResolved(CustomStyleResolvedEvent evt)
@@ -58,4 +59,3 @@ namespace Unity.Timeline.Foundation.Widgets.Internals
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

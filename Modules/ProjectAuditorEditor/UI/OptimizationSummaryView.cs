@@ -31,13 +31,22 @@ namespace Unity.ProjectAuditor.Editor.UI
         bool m_AnyAdditionalInsights;
         bool m_AnyCompilationErrors;
 
-        readonly Color[] m_SeverityColors =
+        readonly Color[] m_DarkSkinSeverityColors =
         [
-            new Color(0.96f, 0.3f, 0.26f),          // Critical
-            new Color(0.902f, 0.314f, 0f),          // Major
-            new Color(0.788f, 0.451f, 0.067f),      // Moderate
-            new Color(0.055f, 0.502f, 0.945f),      // Minor
-            new Color(0.768f, 0.768f, 0.768f, 1f)   // Ignored
+            new Color(0.6627f, 0.4118f, 0.9059f),   // Critical
+            new Color(1.0000f, 0.2196f, 0.2078f),   // Major
+            new Color(0.9608f, 0.5059f, 0.0000f),   // Moderate
+            new Color(0.3137f, 0.5843f, 0.7922f),   // Minor
+            new Color(0.6700f, 0.6700f, 0.6700f)    // Ignored
+        ];
+
+        readonly Color[] m_LightSkinSeverityColors =
+        [
+            new Color(0.5529f, 0.1059f, 0.8706f),   // Critical
+            new Color(0.7020f, 0.1725f, 0.0000f),   // Major
+            new Color(0.8431f, 0.4275f, 0.0000f),   // Moderate
+            new Color(0.2235f, 0.5373f, 0.7725f),   // Minor
+            new Color(0.4300f, 0.4300f, 0.4300f)    // Ignored
         ];
 
         public override string Description => "Project report summary.";
@@ -49,7 +58,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         }
 
         // The Optimization breakdown shows everything except Upgrade-area issues.
-        protected override bool MatchesSummaryFilter(ReportItem issue) => !HasUpgradeArea(issue);
+        protected override bool MatchesSummaryFilter(ReportItem issue) => !HasAnyAreas(issue, Areas.Upgrade);
 
         protected override void OnSummaryRefreshed()
         {
@@ -290,19 +299,21 @@ namespace Unity.ProjectAuditor.Editor.UI
                 var minor = m_Stats.SeveritiesByCategory[(int)category].Minor;
                 var ignored = m_Stats.SeveritiesByCategory[(int)category].Ignored;
 
+                var colors = SharedStyles.IsDarkMode ? m_DarkSkinSeverityColors : m_LightSkinSeverityColors;
+
                 List<ChartUtil.Element> inValues = new List<ChartUtil.Element>();
                 if (error != 0)
-                    inValues.Add(new ChartUtil.Element("Error", "Errors", error, m_SeverityColors[0], Utility.GetIcon(Utility.IconType.Error)));
+                    inValues.Add(new ChartUtil.Element("Error", "Errors", error, colors[0], Utility.GetIcon(Utility.IconType.Error)));
                 if (critical != 0)
-                    inValues.Add(new ChartUtil.Element("Critical", "Critical issues", critical, m_SeverityColors[0], Utility.GetIcon(Utility.IconType.Critical)));
+                    inValues.Add(new ChartUtil.Element("Critical", "Critical issues", critical, colors[0], Utility.GetIcon(Utility.IconType.Critical)));
                 if (major != 0)
-                    inValues.Add(new ChartUtil.Element("Major", "Major issues", major, m_SeverityColors[1], Utility.GetIcon(Utility.IconType.Major)));
+                    inValues.Add(new ChartUtil.Element("Major", "Major issues", major, colors[1], Utility.GetIcon(Utility.IconType.Major)));
                 if (moderate != 0)
-                    inValues.Add(new ChartUtil.Element("Moderate", "Moderate issues", moderate, m_SeverityColors[2], Utility.GetIcon(Utility.IconType.Moderate)));
+                    inValues.Add(new ChartUtil.Element("Moderate", "Moderate issues", moderate, colors[2], Utility.GetIcon(Utility.IconType.Moderate)));
                 if (minor != 0)
-                    inValues.Add(new ChartUtil.Element("Minor", "Minor issues", minor, m_SeverityColors[3], Utility.GetIcon(Utility.IconType.Minor)));
+                    inValues.Add(new ChartUtil.Element("Minor", "Minor issues", minor, colors[3], Utility.GetIcon(Utility.IconType.Minor)));
                 if (ignored != 0)
-                    inValues.Add(new ChartUtil.Element("Ignored", "Ignored issues", ignored, m_SeverityColors[4], Utility.GetIcon(Utility.IconType.Ignored)));
+                    inValues.Add(new ChartUtil.Element("Ignored", "Ignored issues", ignored, colors[4], Utility.GetIcon(Utility.IconType.Ignored)));
 
                 EditorGUILayout.BeginHorizontal();
 
@@ -380,7 +391,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent TopTenIssuesContent = EditorGUIUtility.TrTextContent("Top Ten Issues");
             public static readonly GUIContent AdditionalInsightsContent = EditorGUIUtility.TrTextContent("Additional Insights");
 
-            public static readonly string AnalysisInProgressText = L10n.Tr("{0} analysis is still running in the background (see more in Window > General > Progress)");
+            public static readonly string AnalysisInProgressText = L10n.Tr("{0} analysis is still running in the background (see more in Window > General > Progress)", null);
         }
     }
 }

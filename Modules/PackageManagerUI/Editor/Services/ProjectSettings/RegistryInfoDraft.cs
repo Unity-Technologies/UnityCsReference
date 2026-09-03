@@ -165,11 +165,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_ErrorMessage = string.Empty;
             if (string.IsNullOrEmpty(m_UserModifications.name?.Trim()))
-                AddErrorMessage(L10n.Tr("Registry name cannot be null, empty or whitespace"));
+                AddErrorMessage(L10n.Tr("Registry name cannot be null, empty or whitespace", null));
             if (m_UserModifications.GetSanitizedScopes().Length == 0)
-                AddErrorMessage(L10n.Tr("Scope(s) cannot be empty"));
+                AddErrorMessage(L10n.Tr("Scope(s) cannot be empty", null));
             if (!(Uri.TryCreate(m_UserModifications.url, UriKind.Absolute, out var uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps)))
-                AddErrorMessage(L10n.Tr("\"URL\" must be a valid uri with a scheme matching the http|https pattern"));
+                AddErrorMessage(L10n.Tr("\"URL\" must be a valid uri with a scheme matching the http|https pattern", null));
 
             return string.IsNullOrEmpty(m_ErrorMessage);
         }

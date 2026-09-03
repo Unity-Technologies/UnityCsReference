@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: BuildSettingsWindow not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Build.Profile.Elements;
@@ -227,11 +228,15 @@ namespace UnityEditor.Build.Profile
                 var internalPackages = BuildProfileModuleUtil.BuildPlatformInternalPackages(platformId);
                 var partnerPackages = BuildProfileModuleUtil.BuildPlatformPartnerPackages(platformId);
 
-                var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(platformId);
-                var preconfiguredSettingsVariants = (sdkPlatformExtension != null
-                    ? sdkPlatformExtension.preconfiguredSettingsVariants
-                    : BuildProfileModuleUtil.GetBuildProfileExtension(platformId)?.GetPreconfiguredSettingsVariants())
-                    ?? Array.Empty<PreconfiguredSettingsVariant>();
+                var preconfiguredSettingsVariants = BuildProfileModuleUtil.BuildPlatformPreconfiguredSettingsVariants(platformId);
+                if (preconfiguredSettingsVariants.Length <= 0)
+                {
+                    var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(platformId);
+                    preconfiguredSettingsVariants = (sdkPlatformExtension != null
+                        ? sdkPlatformExtension.preconfiguredSettingsVariants
+                        : BuildProfileModuleUtil.GetBuildProfileExtension(platformId)?.GetPreconfiguredSettingsVariants())
+                        ?? Array.Empty<PreconfiguredSettingsVariant>();
+                }
 
                 cards.Add(new BuildProfileCard()
                 {
@@ -263,6 +268,7 @@ namespace UnityEditor.Build.Profile
             var windowUxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
             var windowUss = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
             rootVisualElement.styleSheets.Add(windowUss);
+            rootVisualElement.AddToClassList(EditorGUIUtility.isProSkin ? Util.k_UssClassDark : Util.k_UssClassLight);
             windowUxml.CloneTree(rootVisualElement);
             m_CloseEvent = new BuildProfilePlatformBrowserClosed();
 
@@ -804,3 +810,4 @@ namespace UnityEditor.Build.Profile
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTemplate not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -46,7 +47,7 @@ namespace UnityEditor.SceneTemplate
             name = "Empty",
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-empty-scene.png",
-            description = L10n.Tr("Just an empty scene - no Game Objects."),
+            description = L10n.Tr("Just an empty scene - no Game Objects.", null),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Empty, additive),
             isDeprecated = false,
         };
@@ -57,7 +58,7 @@ namespace UnityEditor.SceneTemplate
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-2d-scene.png",
             badgePath = $"{Styles.k_IconsFolderFolder}2d-badge-scene-template.png",
-            description = L10n.Tr("Contains an orthographic camera setup for 2D games. Works with built-in renderer."),
+            description = L10n.Tr("Contains an orthographic camera setup for 2D games. Works with built-in renderer.", null),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2D, additive),
             isDeprecated = true,
         };
@@ -68,7 +69,7 @@ namespace UnityEditor.SceneTemplate
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
             badgePath = $"{Styles.k_IconsFolderFolder}3d-badge-scene-template.png",
-            description = L10n.Tr("Contains a camera and directional light. Works with built-in renderer."),
+            description = L10n.Tr("Contains a camera and directional light. Works with built-in renderer.", null),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default2DMode3DCamera, additive),
             isDeprecated = true,
         };
@@ -79,7 +80,7 @@ namespace UnityEditor.SceneTemplate
             isPinned = true,
             thumbnailPath = $"{Styles.k_IconsFolderFolder}scene-template-3d-scene.png",
             badgePath = $"{Styles.k_IconsFolderFolder}3d-badge-scene-template.png",
-            description = L10n.Tr("Contains a camera and directional light, works with built-in renderer."),
+            description = L10n.Tr("Contains a camera and directional light, works with built-in renderer.", null),
             onCreateCallback = additive => CreateBuiltinScene(BuiltinTemplateType.Default3D, additive),
             isDeprecated = true,
         };
@@ -362,3 +363,4 @@ namespace UnityEditor.SceneTemplate
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -48,7 +48,12 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Called after the graph has changed.
         /// </summary>
-        void OnGraphChanged(GraphLogger graphLogger);
+        /// <remarks>
+        /// The logger is typed as the internal <see cref="ILogger"/> contract, because <see cref="Graph"/> and
+        /// <see cref="StateMachine"/> declare different logger types on their public callbacks. Each wrapper casts
+        /// it back to the logger type its own callback declares.
+        /// </remarks>
+        void OnGraphChanged(ILogger logger);
 
         /// <summary>
         /// Invokes the method that builds the set of variable types offered in the blackboard for variable creation.

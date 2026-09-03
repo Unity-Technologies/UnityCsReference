@@ -28,6 +28,13 @@ namespace Unity.ProjectAuditor.Editor.Core
             return alreadyFound;
         }
 
+        public static bool UnregisterDescriptor(string id)
+        {
+            if (s_Descriptors != null)
+                return s_Descriptors.Remove(new DescriptorId(id));
+            return false;
+        }
+
         // Every currently registered descriptor. Order is unspecified.
         public static IReadOnlyCollection<Descriptor> GetAllDescriptors()
         {

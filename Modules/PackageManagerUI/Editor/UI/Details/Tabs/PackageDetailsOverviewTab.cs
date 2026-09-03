@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageDetailsOverviewTab(IUnityConnectProxy unityConnect, IResourceLoader resourceLoader, IUpmCache upmCache) : base(unityConnect)
         {
             m_Id = k_Id;
-            m_DisplayName = L10n.Tr("Overview");
+            m_DisplayName = L10n.Tr("Overview", null);
 
             name = "packageOverviewContent";
             var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsOverviewTab.uxml");
@@ -57,7 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var labels = version?.package.product?.labels;
             var hasLabels = labels?.Count > 0;
             if (hasLabels)
-                assignedLabelList.Refresh(labels.Count > 1 ? L10n.Tr("Assigned Labels") : L10n.Tr("Assigned Label"), labels);
+                assignedLabelList.Refresh(labels.Count > 1 ? L10n.Tr("Assigned Labels", null) : L10n.Tr("Assigned Label", null), labels);
             UIUtils.SetElementDisplay(assignedLabelList, hasLabels);
         }
 
@@ -65,7 +65,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var productDescription = version.package.product?.description;
             var hasProductDescription = !string.IsNullOrEmpty(productDescription);
-            var desc = hasProductDescription ? productDescription : L10n.Tr("There is no description for this package.");
+            var desc = hasProductDescription ? productDescription : L10n.Tr("There is no description for this package.", null);
             if (desc.Length > k_MaxDescriptionCharacters)
                 desc = desc.Substring(0, k_MaxDescriptionCharacters);
             detailDescription.EnableInClassList(k_EmptyDescriptionClass, !hasProductDescription);

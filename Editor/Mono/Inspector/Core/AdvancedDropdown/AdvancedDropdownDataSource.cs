@@ -10,7 +10,7 @@ namespace UnityEditor.IMGUI.Controls
 {
     internal abstract class AdvancedDropdownDataSource
     {
-        private static readonly string kSearchHeader = L10n.Tr("Search");
+        private static readonly string kSearchHeader = L10n.Tr("Search", null);
 
         private AdvancedDropdownItem m_MainTree;
         private AdvancedDropdownItem m_SearchTree;

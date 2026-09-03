@@ -396,8 +396,10 @@ namespace UnityEngine
         ///<summary>Amount of time that has passed since the last recorded change in Touch values.</summary>
         ///<remarks>Values for the various touch properties are updated periodically. The deltaTime value is simply the amount of time that elapsed between the previous update and the current one. This is primarily useful for determining the movement speed of the touch position with reference to <see cref="deltaPosition" />.</remarks>
         public float deltaTime { get { return m_TimeDelta; } set { m_TimeDelta = value; }  }
-        ///<summary>Number of taps.</summary>
-        ///<remarks>This is intended as a way to detect "double-clicks", etc, from the finger in a particular position. In some circumstances, two fingers may be tapped alternately and this may incorrectly register as a single finger tapping and simultaneously moving.</remarks>
+        ///<summary>Number of consecutive taps that the touch is part of.</summary>
+        ///<remarks>The value is 1 for a single tap. Each additional tap that occurs within a short time and distance of the previous tap increases the value by 1, so a double tap reports a value of 2. Use this property to detect double taps and other multi-tap gestures at a particular position.
+        ///
+        ///In some circumstances, the device might incorrectly register two fingers tapped alternately as a single finger tapping and simultaneously moving.</remarks>
         public int tapCount { get { return m_TapCount; } set { m_TapCount = value; }  }
         ///<summary>Describes the phase of the touch.</summary>
         ///<remarks>The touch <c>phase</c> refers to the action the finger has taken on the most recent frame update. Since a touch is tracked over its "lifetime" by the device, the start and end of a touch and movements in between can be reported on the frames they occur. The <c>phase</c> property can be used as the basis of a "switch' statement or as part of a more sophisticated state handling system.</remarks>
@@ -1029,7 +1031,12 @@ namespace UnityEngine
         public float horizontalAccuracy { get { return m_HorizontalAccuracy; } }
         ///<summary>Vertical accuracy radius of the location in meters.</summary>
         public float verticalAccuracy { get { return m_VerticalAccuracy; } }
-        ///<summary>Timestamp (in milliseconds from 1970) of when location data was last updated.</summary>
+        ///<summary>Timestamp of when the location data was last updated.</summary>
+        ///<remarks>The unit and epoch of the timestamp value vary per platform:
+        ///
+        ///* **Android**, **iOS**: The timestamp is the number of seconds since the Unix epoch (January 1, 1970, UTC).
+        ///* **Web**: The timestamp is the number of milliseconds since the Unix epoch (January 1, 1970, UTC).
+        ///* **UWP**: The timestamp is the number of 100-nanosecond intervals since January 1, 1601 (UTC).</remarks>
         public double timestamp { get { return m_Timestamp; } }
     }
 
@@ -1113,10 +1120,10 @@ namespace UnityEngine
         ///<summary>Starts location service updates.</summary>
         ///<remarks>After you call this function, you can access the device's last location coordinates by checking <see cref="LocationService.lastData">lastData</see> in <see cref="Input.location" />.
         ///
-        ///**Note**: The location service doesn't start to send location data immediately. Therefore, check the <see cref="LocationService.status">current service status</see> in <see cref="Input.location" />.
+        ///**Note**: The location service doesn't start to send location data immediately. The <see cref="LocationService.status">service status</see> in <see cref="Input.location" /> remains <see cref="LocationServiceStatus.Initializing" /> until the device returns the first location update. The time this takes depends on the device and how quickly it can determine its position. If the user denies location access, the status changes to <see cref="LocationServiceStatus.Failed" /> instead. Check the status before you query <see cref="LocationService.lastData">lastData</see>.
         ///
         ///
-        ///On Android, using this method in scripts automatically adds the <c>ACCESS_FINE_LOCATION</c> permission to the android manifest. If you use low accuracy values like 500 or higher, select **Low Accuracy Location** in [Player Settings](xref:class-PlayerSettings) to add the <c>ACCESS_COARSE_LOCATION</c> permission instead.
+        ///On Android, using this method in scripts automatically adds the <c>ACCESS_FINE_LOCATION</c> permission to the Android manifest. If you use low accuracy values like 500 or higher, select **Low Accuracy Location** in [Player Settings](xref:class-PlayerSettings) to add the <c>ACCESS_COARSE_LOCATION</c> permission instead.
         ///
         ///On WebGL, this method must be invoked as a response to a user gesture (such as a mouse click) within a coroutine.  **Note:** Geolocation services are available only with an HTTPS connection, except during development when you might use http://localhost. The use of <c>desiredAccuracyInMeters</c> and <c>updateDistanceInMeters</c> isn't supported since the user device determines those two values.</remarks>
         ///<param name="desiredAccuracyInMeters">The service accuracy you want to use, in meters. This determines the accuracy of the device's last location coordinates. Higher values like 500 don't require the device to use its GPS chip and
@@ -1185,10 +1192,10 @@ namespace UnityEngine
         ///<summary>Starts location service updates.</summary>
         ///<remarks>After you call this function, you can access the device's last location coordinates by checking <see cref="LocationService.lastData">lastData</see> in <see cref="Input.location" />.
         ///
-        ///**Note**: The location service doesn't start to send location data immediately. Therefore, check the <see cref="LocationService.status">current service status</see> in <see cref="Input.location" />.
+        ///**Note**: The location service doesn't start to send location data immediately. The <see cref="LocationService.status">service status</see> in <see cref="Input.location" /> remains <see cref="LocationServiceStatus.Initializing" /> until the device returns the first location update. The time this takes depends on the device and how quickly it can determine its position. If the user denies location access, the status changes to <see cref="LocationServiceStatus.Failed" /> instead. Check the status before you query <see cref="LocationService.lastData">lastData</see>.
         ///
         ///
-        ///On Android, using this method in scripts automatically adds the <c>ACCESS_FINE_LOCATION</c> permission to the android manifest. If you use low accuracy values like 500 or higher, select **Low Accuracy Location** in [Player Settings](xref:class-PlayerSettings) to add the <c>ACCESS_COARSE_LOCATION</c> permission instead.
+        ///On Android, using this method in scripts automatically adds the <c>ACCESS_FINE_LOCATION</c> permission to the Android manifest. If you use low accuracy values like 500 or higher, select **Low Accuracy Location** in [Player Settings](xref:class-PlayerSettings) to add the <c>ACCESS_COARSE_LOCATION</c> permission instead.
         ///
         ///On WebGL, this method must be invoked as a response to a user gesture (such as a mouse click) within a coroutine.  **Note:** Geolocation services are available only with an HTTPS connection, except during development when you might use http://localhost. The use of <c>desiredAccuracyInMeters</c> and <c>updateDistanceInMeters</c> isn't supported since the user device determines those two values.</remarks>
         ///<param name="desiredAccuracyInMeters">The service accuracy you want to use, in meters. This determines the accuracy of the device's last location coordinates. Higher values like 500 don't require the device to use its GPS chip and
@@ -1254,10 +1261,10 @@ namespace UnityEngine
         ///<summary>Starts location service updates.</summary>
         ///<remarks>After you call this function, you can access the device's last location coordinates by checking <see cref="LocationService.lastData">lastData</see> in <see cref="Input.location" />.
         ///
-        ///**Note**: The location service doesn't start to send location data immediately. Therefore, check the <see cref="LocationService.status">current service status</see> in <see cref="Input.location" />.
+        ///**Note**: The location service doesn't start to send location data immediately. The <see cref="LocationService.status">service status</see> in <see cref="Input.location" /> remains <see cref="LocationServiceStatus.Initializing" /> until the device returns the first location update. The time this takes depends on the device and how quickly it can determine its position. If the user denies location access, the status changes to <see cref="LocationServiceStatus.Failed" /> instead. Check the status before you query <see cref="LocationService.lastData">lastData</see>.
         ///
         ///
-        ///On Android, using this method in scripts automatically adds the <c>ACCESS_FINE_LOCATION</c> permission to the android manifest. If you use low accuracy values like 500 or higher, select **Low Accuracy Location** in [Player Settings](xref:class-PlayerSettings) to add the <c>ACCESS_COARSE_LOCATION</c> permission instead.
+        ///On Android, using this method in scripts automatically adds the <c>ACCESS_FINE_LOCATION</c> permission to the Android manifest. If you use low accuracy values like 500 or higher, select **Low Accuracy Location** in [Player Settings](xref:class-PlayerSettings) to add the <c>ACCESS_COARSE_LOCATION</c> permission instead.
         ///
         ///On WebGL, this method must be invoked as a response to a user gesture (such as a mouse click) within a coroutine.  **Note:** Geolocation services are available only with an HTTPS connection, except during development when you might use http://localhost. The use of <c>desiredAccuracyInMeters</c> and <c>updateDistanceInMeters</c> isn't supported since the user device determines those two values.</remarks>
         ///<example>
@@ -1319,6 +1326,7 @@ namespace UnityEngine
         }
 
         ///<summary>Stops location service updates. This is useful to save battery power when the application doesn't require the location service.</summary>
+        ///<remarks>Do not drive the location service from both this legacy API and the Input System <c>LocationSensor</c> in the same project. Both share the same underlying platform location service, so stopping it here also stops updates for the <c>LocationSensor</c> (and vice versa). Use a single location API per project.</remarks>
         public void Stop()
         {
             StopUpdatingLocation();

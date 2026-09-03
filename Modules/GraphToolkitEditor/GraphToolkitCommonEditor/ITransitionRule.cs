@@ -36,5 +36,10 @@ namespace Unity.GraphToolkit.Editor
         /// The root condition group for this rule.
         /// </summary>
         IGroupCondition RootCondition { get; }
+
+        /// <summary>
+        /// The transition this rule is stacked on, or <c>null</c> when the rule is not part of one.
+        /// </summary>
+        ITransition Transition { get; }
     }
 }

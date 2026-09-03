@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
@@ -181,6 +180,8 @@ namespace Unity.VectorGraphics
 
             Texture2D copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
             copy.hideFlags = HideFlags.HideAndDontSave;
+            copy.wrapMode = TextureWrapMode.Clamp;
+            copy.anisoLevel = 0; // gradient LUT atlas: wrap or aniso taps would sample the wrong entry or ramp end
             copy.ReadPixels(new Rect(0, 0, width, height), 0, 0);
 
             // This encoding procedure is duplicated a few times, do something about it
@@ -512,4 +513,3 @@ namespace Unity.VectorGraphics
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

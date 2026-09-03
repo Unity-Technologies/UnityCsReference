@@ -9,10 +9,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class RegistryItem : VisualElement
     {
-        private static readonly string k_AddNewScopedRegistryText = L10n.Tr("New Scoped Registry");
+        private static readonly string k_AddNewScopedRegistryText = L10n.Tr("New Scoped Registry", null);
         private const string k_SelectedRegistryClass = "selectedRegistry";
         private readonly string[] k_ErrorIconClasses = new [] { "unity__icon", "unity__icon--error" };
-        private readonly string k_NonCompliantRegistry = L10n.Tr("Restricted scoped registry");
+        private readonly string k_NonCompliantRegistry = L10n.Tr("Restricted scoped registry", null);
 
         private readonly Label m_Label;
         private readonly VisualElement m_NonCompliantErrorIcon;

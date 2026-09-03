@@ -16,7 +16,7 @@ namespace Unity.UIToolkit.Editor
         protected static readonly string k_DataSourcePathString = nameof(DataBinding.dataSourcePathString);
         protected static readonly string k_Property = nameof(DataBinding.property);
 
-        public static readonly string BindingWindowLocalConverterNotApplicableMessage = L10n.Tr("It is not applicable for the specified binding mode");
+        public static readonly string BindingWindowLocalConverterNotApplicableMessage = L10n.Tr("It is not applicable for the specified binding mode", null);
 
         private BindingConvertersField m_ConvertersField;
 

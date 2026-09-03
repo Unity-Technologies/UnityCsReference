@@ -53,15 +53,15 @@ namespace UnityEditorInternal.Profiling
             }
             static class Content
             {
-                public static readonly string NoFrameDataAvailable = L10n.Tr("No frame data available. Select a frame from the charts above to see its details here.");
-                public static readonly string Textures = L10n.Tr("Textures");
-                public static readonly string Meshes = L10n.Tr("Meshes");
-                public static readonly string Materials = L10n.Tr("Materials");
-                public static readonly string AnimationClips = L10n.Tr("Animation Clips");
-                public static readonly string Assets = L10n.Tr("Assets");
-                public static readonly string GameObjects = L10n.Tr("Game Objects");
-                public static readonly string SceneObjects = L10n.Tr("Scene Objects");
-                public static readonly string GCAlloc = L10n.Tr("GC allocated in frame");
+                public static readonly string NoFrameDataAvailable = L10n.Tr("No frame data available. Select a frame from the charts above to see its details here.", null);
+                public static readonly string Textures = L10n.Tr("Textures", null);
+                public static readonly string Meshes = L10n.Tr("Meshes", null);
+                public static readonly string Materials = L10n.Tr("Materials", null);
+                public static readonly string AnimationClips = L10n.Tr("Animation Clips", null);
+                public static readonly string Assets = L10n.Tr("Assets", null);
+                public static readonly string GameObjects = L10n.Tr("Game Objects", null);
+                public static readonly string SceneObjects = L10n.Tr("Scene Objects", null);
+                public static readonly string GCAlloc = L10n.Tr("GC allocated in frame", null);
             }
 
             struct ObjectTableRow
@@ -460,8 +460,8 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent gatherObjectReferences = EditorGUIUtility.TrTextContent("Gather object references", "Collect reference information to see where objects are referenced from. Disable this to save memory");
             public static readonly GUIContent takeSample = EditorGUIUtility.TrTextContent("Take Sample {0}", "Warning: this may freeze the Editor and the connected Player for a moment!");
             public static readonly GUIContent memoryUsageInEditorDisclaimer = EditorGUIUtility.TrTextContent("Memory usage in the Editor is not the same as it would be in a Player.");
-            public static readonly string packageInstallSuggestion = L10n.Tr("Install Memory Profiler Package{0}");
-            public static readonly string packageInstallSuggestionVersionPart = L10n.Tr(" (Version {0})");
+            public static readonly string packageInstallSuggestion = L10n.Tr("Install Memory Profiler Package{0}", null);
+            public static readonly string packageInstallSuggestionVersionPart = L10n.Tr(" (Version {0})", null);
             [NoAutoStaticsCleanup] // Not readonly: updated with version info when package search results arrive
             public static GUIContent packageInstallSuggestionButton = new GUIContent(string.Format(packageInstallSuggestion, ""));
         }

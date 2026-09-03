@@ -217,12 +217,12 @@ namespace UnityEditorInternal
             public GUIStyle rollUpArrow = "ProfilerTimelineRollUpArrow";
             public GUIStyle bottomShadow = "BottomShadowInwards";
 
-            public string localizedStringTotalAcrossFrames = L10n.Tr("\n{0} total over {1} frames on thread '{2}'");
-            public string localizedStringTotalAcumulatedTime = L10n.Tr("\n\nCurrent frame accumulated time:");
-            public string localizedStringTotalInThread = L10n.Tr("\n{0} for {1} instances on thread '{2}'");
-            public string localizedStringTotalInFrame = L10n.Tr("\n{0} for {1} instances over {2} threads");
+            public string localizedStringTotalAcrossFrames = L10n.Tr("\n{0} total over {1} frames on thread '{2}'", null);
+            public string localizedStringTotalAcumulatedTime = L10n.Tr("\n\nCurrent frame accumulated time:", null);
+            public string localizedStringTotalInThread = L10n.Tr("\n{0} for {1} instances on thread '{2}'", null);
+            public string localizedStringTotalInFrame = L10n.Tr("\n{0} for {1} instances over {2} threads", null);
 
-            public string localizedStringUnnamedObject = L10n.Tr("<No Name>");
+            public string localizedStringUnnamedObject = L10n.Tr("<No Name>", null);
 
             public Color frameDelimiterColor = Color.white.RGBMultiplied(0.4f);
             Color m_RangeSelectionColorLight = new Color32(255, 255, 255, 90);

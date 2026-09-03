@@ -12,10 +12,9 @@ namespace UnityEngine.Bindings
     internal static partial class ExceptionMarshaller
     {
         [ThreadStatic]
-        // Cleared on code reload by ClearPendingExceptionOnCodeReload() below. [NoAutoStaticsCleanup]
-        // only suppresses the auto-cleanup source generator, which cannot run in this assembly:
-        // it emits a reference to UnityEngine.DelegateAutoCleanup (CoreModule), which the lower-level
-        // UnityEngine.ScriptingModule cannot reference. neutron uses [AutoStaticsCleanupOnCodeReload] here.
+        // Cleared on code reload by ClearPendingExceptionOnCodeReload() below; [NoAutoStaticsCleanup]
+        // opts out of the auto-cleanup source generator in favor of that manual cleanup.
+        // neutron uses [AutoStaticsCleanupOnCodeReload] here.
         [NoAutoStaticsCleanup]
         static Exception s_pendingException;
 

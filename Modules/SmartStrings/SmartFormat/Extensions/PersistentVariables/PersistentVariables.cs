@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.UIElements;
 using System;
 using Unity.SmartStrings.Core.Extensions;
 
@@ -15,7 +16,8 @@ namespace Unity.SmartStrings.PersistentVariables;
 /// </summary>
 /// <typeparam name="T">The value type to store in this variable.</typeparam>
 [Serializable]
-public class Variable<T> : IVariableValueChanged, ISerializationCallbackReceiver
+[UxmlObject]
+public partial class Variable<T> : IVariableValueChanged, ISerializationCallbackReceiver
 {
     [SerializeField]
     T m_Value;
@@ -29,6 +31,7 @@ public class Variable<T> : IVariableValueChanged, ISerializationCallbackReceiver
     /// The value for this variable.
     /// Changing this will trigger the <see cref="ValueChanged"/> event.
     /// </summary>
+    [UxmlAttribute("value")]
     public T Value
     {
         get => m_Value;
@@ -75,76 +78,76 @@ public class Variable<T> : IVariableValueChanged, ISerializationCallbackReceiver
 /// A <see cref="IVariable"/> that holds a single bool value.
 /// </summary>
 [Serializable]
-public class BoolVariable : Variable<bool> {}
+public partial class BoolVariable : Variable<bool> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single signed byte value.
 /// </summary>
 [Serializable]
-public class SByteVariable : Variable<sbyte> {}
+public partial class SByteVariable : Variable<sbyte> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single byte value.
 /// </summary>
 [Serializable]
-public class ByteVariable : Variable<byte> {}
+public partial class ByteVariable : Variable<byte> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single short value.
 /// </summary>
 [Serializable]
-public class ShortVariable : Variable<short> {}
+public partial class ShortVariable : Variable<short> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single unsigned short value.
 /// </summary>
 [Serializable]
-public class UShortVariable : Variable<ushort> {}
+public partial class UShortVariable : Variable<ushort> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single integer value.
 /// </summary>
 [Serializable]
-public class IntVariable : Variable<int> {}
+public partial class IntVariable : Variable<int> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single unsigned integer value.
 /// </summary>
 [Serializable]
-public class UIntVariable : Variable<uint> {}
+public partial class UIntVariable : Variable<uint> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single long value.
 /// </summary>
 [Serializable]
-public class LongVariable : Variable<long> {}
+public partial class LongVariable : Variable<long> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single unsigned long value.
 /// </summary>
 [Serializable]
-public class ULongVariable : Variable<ulong> {}
+public partial class ULongVariable : Variable<ulong> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single string value.
 /// </summary>
 [Serializable]
-public class StringVariable : Variable<string> {}
+public partial class StringVariable : Variable<string> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single float value.
 /// </summary>
 [Serializable]
-public class FloatVariable : Variable<float> {}
+public partial class FloatVariable : Variable<float> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that holds a single double value.
 /// </summary>
 [Serializable]
-public class DoubleVariable : Variable<double> {}
+public partial class DoubleVariable : Variable<double> {}
 
 /// <summary>
 /// A <see cref="IVariable"/> that can reference an <see cref="UnityEngine.Object"/> instance.
 /// </summary>
 [Serializable]
-public class ObjectVariable : Variable<UnityEngine.Object> {}
+public partial class ObjectVariable : Variable<UnityEngine.Object> {}

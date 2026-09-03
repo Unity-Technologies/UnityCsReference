@@ -31,7 +31,7 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent selectionHighlightLabelBaseText = EditorGUIUtility.TrTextContent("Selected: {0}", "Selected Sample Stack: {0}");
             public static readonly GUIContent selectionHighlightNonMainThreadLabelBaseText = EditorGUIUtility.TrTextContent("Selected: {0} (Thread: {1})", "Selected Sample Stack: {0} (Thread: {1})");
             public static readonly string gpuModulePerformanceWarning = L10n.Tr("The GPU Module is currently enabled, thus disabling graphics jobs. This greatly reduces the accuracy of the CPU Module and increases the load on main and render thread.\n\n" +
-                "Close the GPU module to access accurate data about your application's CPU performance. ");
+                "Close the GPU module to access accurate data about your application's CPU performance. ", null);
         }
 
         GUIContent selectionHighlightLabel = new GUIContent();
@@ -95,7 +95,7 @@ namespace UnityEditorInternal.Profiling
             new()
             {
                 m_Name = "UI",
-                m_Description = string.Format(ChartModelBuilder.k_LocalizedTooltipFormat, "UI") + L10n.Tr(" Includes UI systems such as UI Toolkit and Canvas (if applicable)."),
+                m_Description = string.Format(ChartModelBuilder.k_LocalizedTooltipFormat, "UI") + L10n.Tr(" Includes UI systems such as UI Toolkit and Canvas (if applicable).", null),
                 m_Category = ProfilerCategory.Scripts.Name,
             },
             new()

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTemplate not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -130,8 +131,8 @@ namespace UnityEditor.SceneTemplate
         const string k_HeaderItem = "dependency-list-view-header";
         const string k_SearchFieldItem = "dependency-list-view-search-field";
         const string k_DependencyRowElementName = "scene-template-asset-inspector-dependency-row";
-        static readonly string k_BaseDependenciesLabel = L10n.Tr("Dependencies");
-        static readonly string k_BaseTypeLabel = L10n.Tr("Type");
+        static readonly string k_BaseDependenciesLabel = L10n.Tr("Dependencies", null);
+        static readonly string k_BaseTypeLabel = L10n.Tr("Type", null);
 
         public ListView listView { get; }
         public VisualElement header { get; }
@@ -181,7 +182,9 @@ namespace UnityEditor.SceneTemplate
             searchField.RegisterValueChangedCallback(evt =>
             {
                 m_CurrentSearchString = evt.newValue;
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 FilterItems(evt.newValue);
+                #pragma warning restore UAL0015
             });
             var textField = searchField.Q<TextField>();
             if (textField != null)
@@ -214,19 +217,19 @@ namespace UnityEditor.SceneTemplate
             {
                 UpdateSortingMode(DependencySortMode.Name);
             });
-            dependenciesLabelField.tooltip = L10n.Tr("Scene dependencies");
+            dependenciesLabelField.tooltip = L10n.Tr("Scene dependencies", null);
             changeAllRowElement.Add(dependenciesLabelField);
 
             var typeLabelField = new SortableHeaderElement(k_BaseTypeLabel, "scene-template-asset-inspector-dependency-header-type-column");
-            typeLabelField.tooltip = L10n.Tr("Dependency type");
+            typeLabelField.tooltip = L10n.Tr("Dependency type", null);
             typeLabelField.RegisterCallback<ClickEvent>(evt =>
             {
                 UpdateSortingMode(DependencySortMode.Type);
             });
             changeAllRowElement.Add(typeLabelField);
 
-            var cloneLabel = new Label(L10n.Tr("Clone"));
-            cloneLabel.tooltip = L10n.Tr("Is the dependency cloned on scene template instantiation or is it referenced?");
+            var cloneLabel = new Label(L10n.Tr("Clone", null));
+            cloneLabel.tooltip = L10n.Tr("Is the dependency cloned on scene template instantiation or is it referenced?", null);
             cloneLabel.AddToClassList("dependency-list-view-header-item-label-common");
             changeAllRowElement.Add(cloneLabel);
             m_CloneHeaderToggle = new Toggle();
@@ -472,3 +475,4 @@ namespace UnityEditor.SceneTemplate
         }
     }
 }
+#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

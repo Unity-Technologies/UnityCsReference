@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: TimelineFoundation not yet converted
+using Unity.Scripting.LifecycleManagement;
 using Unity.Timeline.Foundation.ViewModel;
 using Unity.Timeline.Foundation.Widgets;
 using UnityEngine;
@@ -12,6 +12,7 @@ namespace Unity.Timeline.Foundation.View
     class MarkerElement : ItemElement, ISelectableElement
     {
         const string k_ClassName = "markerElement";
+        [NoAutoStaticsCleanup] // Immutable USS stylesheet-path descriptor; holds only fixed path strings, safe to persist across reload.
         static readonly StylesheetResource k_Stylesheet = Internals.UIResources.StylesheetFactory.Get<MarkerElement>();
 
         protected Item marker => item;
@@ -36,4 +37,3 @@ namespace Unity.Timeline.Foundation.View
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

@@ -11,7 +11,7 @@ namespace Unity.Timeline.Foundation.View.Internals
 {
     class DurationTooltipOverlay : TimeTooltipOverlay
     {
-        static readonly string k_DurationText = L10n.Tr("Duration:");
+        static readonly string k_DurationText = L10n.Tr("Duration:", null);
 
         DiscreteTime m_Duration;
 

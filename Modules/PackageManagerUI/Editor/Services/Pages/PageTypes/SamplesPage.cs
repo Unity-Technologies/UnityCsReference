@@ -17,7 +17,7 @@ internal class SamplesPage : SimplePage
     public const string k_Id = "Samples";
 
     public override string id => k_Id;
-    public override string displayName => L10n.Tr("All Samples");
+    public override string displayName => L10n.Tr("All Samples", null);
     public override Icon icon => Icon.SamplesPage;
 
     public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.ImportedSamples;
@@ -117,10 +117,10 @@ internal class SamplesPage : SimplePage
     {
         var version = sample.package?.versions.primary;
         if (version?.HasTag(PackageTag.Unity) == true)
-            return L10n.Tr("Unity");
+            return L10n.Tr("Unity", null);
 
         var authorName = version?.author?.name;
-        return !string.IsNullOrEmpty(authorName) ? authorName : L10n.Tr("Other");
+        return !string.IsNullOrEmpty(authorName) ? authorName : L10n.Tr("Other", null);
     }
 
     private class Comparer : IComparer<(Sample sample, VisualState visualState)>

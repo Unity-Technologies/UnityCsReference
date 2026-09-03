@@ -84,7 +84,7 @@ namespace UnityEditor.AssetImporters
 
             if (paths.Length == 0)
                 additionalWarning =
-                    L10n.Tr("Unable to locate a corresponding file for this type. Check your project for instances where multiple classes are defined in a single file, with one class sharing the file name.");
+                    L10n.Tr("Unable to locate a corresponding file for this type. Check your project for instances where multiple classes are defined in a single file, with one class sharing the file name.", null);
         }
 
         private static void TryExtractInfoForWarningMessage(string[] foundGUIDs, string containingClassFullName, Regex regEx, FieldInfo curField, out string scriptPath, out int lineNumber, out int columnNumber)

@@ -4,160 +4,198 @@
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
-internal abstract class DisableCondition
+internal interface IDisableCondition<in TItem>
 {
-    public string tooltip { get; protected set; }
-
-    public bool active { get; protected set; }
+    bool IsActive(TItem item, out string tooltip);
 }
 
-internal class DisableIfCompiling : DisableCondition
+internal class DisableIfCompiling : IDisableCondition<IPackageVersion>
 {
-    private static readonly string k_Tooltip = L10n.Tr("You need to wait until the compilation is finished to perform this action.");
+    private static readonly string k_Tooltip = L10n.Tr("You need to wait until the compilation is finished to perform this action.", null);
+    private readonly IApplicationProxy m_Application;
     public DisableIfCompiling(IApplicationProxy application)
     {
-        active = application.isCompiling;
+        m_Application = application;
+    }
+
+    public bool IsActive(IPackageVersion version, out string tooltip)
+    {
         tooltip = k_Tooltip;
+        return m_Application.isCompiling;
     }
 }
 
-internal class DisableIfNoNetwork : DisableCondition
+internal class DisableIfNoNetwork : IDisableCondition<IPackageVersion>
 {
-    private static readonly string k_Tooltip = L10n.Tr("You need to restore your network connection to perform this action.");
+    private static readonly string k_Tooltip = L10n.Tr("You need to restore your network connection to perform this action.", null);
+    private readonly IApplicationProxy m_Application;
     public DisableIfNoNetwork(IApplicationProxy application)
     {
-        active = !application.isInternetReachable;
+        m_Application = application;
+    }
+
+    public bool IsActive(IPackageVersion version, out string tooltip)
+    {
         tooltip = k_Tooltip;
+        return !m_Application.isInternetReachable;
     }
 }
 
-internal class DisableIfInstallOrEmbedOrUninstallInProgress : DisableCondition
+internal class DisableIfInstallOrEmbedOrUninstallInProgress : IDisableCondition<IPackageVersion>
 {
-    private static readonly string k_Tooltip = L10n.Tr("You need to wait until other install, embed or uninstall operations are finished to perform this action.");
+    private static readonly string k_Tooltip = L10n.Tr("You need to wait until other install, embed or uninstall operations are finished to perform this action.", null);
+    private readonly IPackageOperationDispatcher m_OperationDispatcher;
     public DisableIfInstallOrEmbedOrUninstallInProgress(IPackageOperationDispatcher operationDispatcher)
     {
-        active = operationDispatcher.isInstallOrUninstallInProgress || operationDispatcher.isEmbedInProgress;
+        m_OperationDispatcher = operationDispatcher;
+    }
+
+    public bool IsActive(IPackageVersion version, out string tooltip)
+    {
         tooltip = k_Tooltip;
+        return m_OperationDispatcher.isInstallOrUninstallInProgress || m_OperationDispatcher.isEmbedInProgress;
     }
 }
 
-internal class DisableIfExportingInProgress : DisableCondition
+internal class DisableIfExportingInProgress : IDisableCondition<IPackageVersion>
 {
-    private static readonly string k_Tooltip = L10n.Tr("You need to wait until the export operation is finished to perform this action.");
-    public DisableIfExportingInProgress(IPackage package)
+    private static readonly string k_Tooltip = L10n.Tr("You need to wait until the export operation is finished to perform this action.", null);
+
+    public bool IsActive(IPackageVersion version, out string tooltip)
     {
-        active = package.progress == PackageProgress.Exporting;
         tooltip = k_Tooltip;
+        return version is { package.progress: PackageProgress.Exporting };
     }
 }
 
-internal class DisableIfVersionDeprecated : DisableCondition
+internal class DisableIfVersionDeprecated : IDisableCondition<IPackageVersion>
 {
-    private static readonly string k_Tooltip = L10n.Tr("This version is deprecated.");
-    public DisableIfVersionDeprecated(IPackageVersion version)
+    private static readonly string k_Tooltip = L10n.Tr("This version is deprecated.", null);
+
+    public bool IsActive(IPackageVersion item, out string tooltip)
     {
-        active = version != null && version.HasTag(PackageTag.Deprecated) && version.availableRegistry != RegistryType.MyRegistries;
         tooltip = k_Tooltip;
+        var version = GetVersionToCheck(item);
+        return version is { availableRegistry: not RegistryType.MyRegistries } && version.HasTag(PackageTag.Deprecated);
+    }
+
+    // Allows derived conditions (e.g. update actions) to check a version other than the item itself.
+    protected virtual IPackageVersion GetVersionToCheck(IPackageVersion item) => item;
+}
+
+internal class DisableIfEnterpriseEntitlementsError : IDisableCondition<IPackageVersion>
+{
+    private static readonly string k_Tooltip = L10n.Tr("You need to sign in with a licensed account to perform this action.", null);
+
+    public bool IsActive(IPackageVersion version, out string tooltip)
+    {
+        tooltip = k_Tooltip;
+        return version is { package.hasEntitlementsError: true, package.isEnterprise: true };
     }
 }
 
-internal class DisableIfEnterpriseEntitlementsError : DisableCondition
+internal class DisableIfEntitlementsError : IDisableCondition<IPackageVersion>, IDisableCondition<Sample>
 {
-    private static readonly string k_Tooltip = L10n.Tr("You need to sign in with a licensed account to perform this action.");
-    public DisableIfEnterpriseEntitlementsError(IPackageVersion version)
+    private static readonly string k_Tooltip = L10n.Tr("You need to sign in with a licensed account to perform this action.", null);
+
+    public bool IsActive(IPackageVersion version, out string tooltip)
     {
-        active = version != null && version.package.hasEntitlementsError && version.package.isEnterprise;
         tooltip = k_Tooltip;
+        return version is { package.hasEntitlementsError: true };
+    }
+
+    public bool IsActive(Sample sample, out string tooltip)
+    {
+        tooltip = k_Tooltip;
+        return sample is { isDefault: false, package.versions.primary.hasEntitlementsError: true };
     }
 }
 
-internal class DisableIfEntitlementsError : DisableCondition
+internal class DisableIfPackageIsNotLoaded : IDisableCondition<IPackageVersion>, IDisableCondition<Sample>
 {
-    private static readonly string k_Tooltip = L10n.Tr("You need to sign in with a licensed account to perform this action.");
-    public DisableIfEntitlementsError(IPackageVersion version)
+    private static readonly string k_Tooltip = L10n.Tr("This package isn't loaded in your project.", null);
+    private static readonly string k_SampleTooltip = L10n.Tr("The package this sample belongs to isn't loaded in your project.", null);
+
+    public bool IsActive(IPackageVersion version, out string tooltip)
     {
-        active = version != null && version.package.hasEntitlementsError;
         tooltip = k_Tooltip;
+        return PackageIsNotLoaded(version);
     }
 
-    public DisableIfEntitlementsError(Sample sample)
+    public bool IsActive(Sample sample, out string tooltip)
     {
-        active = !sample.isDefault && sample.package?.versions.primary.hasEntitlementsError == true;
-        tooltip = k_Tooltip;
-    }
-}
-
-internal class DisableIfPackageIsNotLoaded : DisableCondition
-{
-    public DisableIfPackageIsNotLoaded(IPackageVersion version)
-    {
-        active = PackageIsNotLoaded(version);
-        tooltip = L10n.Tr("This package isn't loaded in your project.");
+        tooltip = k_SampleTooltip;
+        return sample is { isDefault: false, package: not null }
+               && PackageIsNotLoaded(sample.package.versions.primary);
     }
 
-    public DisableIfPackageIsNotLoaded(Sample sample)
-    {
-        active = sample is { isDefault: false, package: not null }
-                 && PackageIsNotLoaded(sample.package.versions.primary);
-        tooltip = L10n.Tr("The package this sample belongs to isn't loaded in your project.");
-    }
-
-    private bool PackageIsNotLoaded(IPackageVersion version)
+    private static bool PackageIsNotLoaded(IPackageVersion version)
     {
         return version?.errors?.AnyMatches(i => i.errorCode == UIErrorCode.UpmError_PackageNotLoaded) == true;
     }
 }
 
-internal class DisableIfPackageIsInInvalidLocation : DisableCondition
+internal class DisableIfPackageIsInInvalidLocation : IDisableCondition<IPackageVersion>, IDisableCondition<Sample>
 {
-    public DisableIfPackageIsInInvalidLocation(IPackageVersion version)
+    private static readonly string k_Tooltip = L10n.Tr("This package is stored in an invalid location.", null);
+    private static readonly string k_SampleTooltip = L10n.Tr("The package this sample belongs to is stored in an invalid location.", null);
+
+    public bool IsActive(IPackageVersion version, out string tooltip)
     {
-        active = PackageIsInInvalidLocation(version);
-        tooltip = L10n.Tr("This package is stored in an invalid location.");
+        tooltip = k_Tooltip;
+        return PackageIsInInvalidLocation(version);
     }
 
-    public DisableIfPackageIsInInvalidLocation(Sample sample)
+    public bool IsActive(Sample sample, out string tooltip)
     {
-        active = PackageIsInInvalidLocation(sample.package?.versions?.primary);
-        tooltip = L10n.Tr("The package this sample belongs to is stored in an invalid location.");
+        tooltip = k_SampleTooltip;
+        return PackageIsInInvalidLocation(sample.package?.versions?.primary);
     }
 
-    private bool PackageIsInInvalidLocation(IPackageVersion version)
+    private static bool PackageIsInInvalidLocation(IPackageVersion version)
     {
         var error = version?.errors?.FirstMatch(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI));
         return error is { errorCode: UIErrorCode.UpmError_InvalidSourcePath };
     }
 }
 
-internal class DisableIfSampleHasNoPath : DisableCondition
+internal class DisableIfSampleHasNoPath : IDisableCondition<Sample>
 {
-    private static readonly string k_Tooltip = L10n.Tr("The path property for this sample is missing.");
-    public DisableIfSampleHasNoPath(Sample sample)
+    private static readonly string k_Tooltip = L10n.Tr("The path property for this sample is missing.", null);
+
+    public bool IsActive(Sample sample, out string tooltip)
     {
-        active = sample is { isDefault: false, package: not null }
-                 && string.IsNullOrEmpty(sample.resolvedPath);
         tooltip = k_Tooltip;
+        return sample is { isDefault: false, package: not null }
+               && string.IsNullOrEmpty(sample.resolvedPath);
     }
 }
 
-internal class DisableIfSamplePathDoesNotExist : DisableCondition
+internal class DisableIfSamplePathDoesNotExist : IDisableCondition<Sample>
 {
-    private static readonly string k_Tooltip = L10n.Tr("The path specified for this sample doesn't exist.");
-    public DisableIfSamplePathDoesNotExist(Sample sample, IIOProxy ioProxy)
+    private static readonly string k_Tooltip = L10n.Tr("The path specified for this sample doesn't exist.", null);
+    private readonly IIOProxy m_IOProxy;
+    public DisableIfSamplePathDoesNotExist(IIOProxy ioProxy)
     {
-        active = sample is { isDefault: false, package: not null }
-                 && !string.IsNullOrEmpty(sample.resolvedPath)
-                 && !ioProxy.DirectoryExists(sample.resolvedPath);
+        m_IOProxy = ioProxy;
+    }
+
+    public bool IsActive(Sample sample, out string tooltip)
+    {
         tooltip = k_Tooltip;
+        return sample is { isDefault: false, package: not null }
+               && !string.IsNullOrEmpty(sample.resolvedPath)
+               && !m_IOProxy.DirectoryExists(sample.resolvedPath);
     }
 }
 
-internal class DisableIfPackageDisabled : DisableCondition
+internal class DisableIfPackageDisabled : IDisableCondition<IPackageVersion>
 {
-    private static readonly string k_Tooltip = L10n.Tr("This package is no longer available.");
-    public DisableIfPackageDisabled(IPackageVersion version)
+    private static readonly string k_Tooltip = L10n.Tr("This package is no longer available.", null);
+
+    public bool IsActive(IPackageVersion version, out string tooltip)
     {
-        active = version != null && version.HasTag(PackageTag.Disabled);
         tooltip = k_Tooltip;
+        return version != null && version.HasTag(PackageTag.Disabled);
     }
 }

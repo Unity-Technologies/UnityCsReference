@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UnityConnectHub not yet converted
 using System;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -12,6 +11,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Connect
 {
@@ -162,9 +162,11 @@ namespace UnityEditor.Connect
     internal delegate void ProjectRefreshedDelegate(ProjectInfo state);
     internal delegate void UserStateChangedDelegate(UserInfo state);
 
-    public static class UnityOAuth
+    public static partial class UnityOAuth
     {
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action UserLoggedIn;
+        [AutoStaticsCleanupOnCodeReload]
         public static event Action UserLoggedOut;
 
         public struct AuthCodeResponse
@@ -274,7 +276,8 @@ namespace UnityEditor.Connect
 
         Action<bool> m_AccessTokenRefreshed;
 
-        private static readonly UnityConnect s_Instance;
+        [AutoStaticsCleanupOnCodeReload]
+        private static UnityConnect s_Instance = new();
 
         [Flags]
         internal enum UnityErrorPriority
@@ -396,11 +399,6 @@ namespace UnityEditor.Connect
             {
                 return s_Instance;
             }
-        }
-
-        static UnityConnect()
-        {
-            s_Instance = new UnityConnect();
         }
 
         [RequiredByNativeCode]
@@ -788,4 +786,3 @@ namespace UnityEditor.Connect
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

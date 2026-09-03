@@ -85,10 +85,12 @@ namespace UnityEditor
             }
 
             // The Highlighter matches the drawn label, so translate here where the editor's localization group applies.
-            var localizedLabel = L10n.Tr(settingLabel);
+            var localizedLabel = L10n.Tr(settingLabel, null);
 
             if (s_ActiveReveal != null)
+                #pragma warning disable UAL0018 // unregistering a possibly-stale delegate is a harmless no-op; nothing is retained past this call
                 EditorApplication.update -= s_ActiveReveal;
+                #pragma warning restore UAL0018
 
             // Retry until the freshly opened window has laid out and painted the player settings.
             double deadline = EditorApplication.timeSinceStartup + 5.0;
