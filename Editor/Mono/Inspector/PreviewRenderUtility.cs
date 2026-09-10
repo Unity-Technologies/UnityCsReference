@@ -92,6 +92,9 @@ namespace UnityEditor
         private bool m_PixelPerfect;
         private Material m_InvisibleMaterial;
         private bool m_previewOpened;
+        private bool m_IsRendering;
+        private bool m_CleanupPending;
+        private bool m_CleanedUp;
 
         private string m_Type;
 
@@ -214,6 +217,23 @@ namespace UnityEditor
 
         public void Cleanup()
         {
+            if (m_CleanedUp)
+                return;
+
+            // Reentered from our own camera.Render(); tearing down now would corrupt the in-progress render.
+            if (m_IsRendering)
+            {
+                if (!m_CleanupPending)
+                {
+                    m_CleanupPending = true;
+                    EditorApplication.delayCall += DeferredCleanup;
+                }
+                return;
+            }
+
+            m_CleanupPending = false;
+            m_CleanedUp = true;
+
             if (m_previewOpened)
             {
                 Debug.LogError("Missing EndPreview() before cleanup of PreviewRenderUtility");
@@ -234,6 +254,12 @@ namespace UnityEditor
 
             previewScene.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void DeferredCleanup()
+        {
+            m_CleanupPending = false;
+            Cleanup();
         }
 
         public void BeginPreview(Rect r, GUIStyle previewBackground)
@@ -532,33 +558,53 @@ namespace UnityEditor
 
         public void Render(bool allowScriptableRenderPipeline = false, bool updatefov = true)
         {
-            if (!EditorApplication.isUpdating && Unsupported.SetOverrideLightingSettings(previewScene.scene))
-            {
-                // User can set an ambientColor if they want to override the default black color
-                // Cannot grab the main scene light probe/color instead as this is sometimes run on a worker without access to the original probe/color.
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = ambientColor;
-            }
-
-            foreach (var light in lights)
-                light.enabled = true;
             var oldAllowPipes = Unsupported.useScriptableRenderPipeline;
-            Unsupported.useScriptableRenderPipeline = allowScriptableRenderPipeline;
-
             float saveFieldOfView = camera.fieldOfView;
 
-            if (updatefov)
+            try
             {
-                // Calculate a view multiplier to avoid clipping when the preview width is smaller than the height.
-                float viewMultiplier = (m_RenderTexture.width <= 0 ? 1.0f : Mathf.Max(1.0f, (float)m_RenderTexture.height / m_RenderTexture.width));
-                // Multiply the viewing area by the viewMultiplier - it requires some conversions since the camera view is expressed as an angle.
-                camera.fieldOfView = Mathf.Atan(viewMultiplier * Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad)) * Mathf.Rad2Deg * 2.0f;
+                if (!EditorApplication.isUpdating && Unsupported.SetOverrideLightingSettings(previewScene.scene))
+                {
+                    // User can set an ambientColor if they want to override the default black color
+                    // Cannot grab the main scene light probe/color instead as this is sometimes run on a worker without access to the original probe/color.
+                    RenderSettings.ambientMode = AmbientMode.Flat;
+                    RenderSettings.ambientLight = ambientColor;
+                }
+
+                foreach (var light in lights)
+                    light.enabled = true;
+
+                Unsupported.useScriptableRenderPipeline = allowScriptableRenderPipeline;
+
+                if (updatefov)
+                {
+                    // Calculate a view multiplier to avoid clipping when the preview width is smaller than the height.
+                    float viewMultiplier = (m_RenderTexture.width <= 0 ? 1.0f : Mathf.Max(1.0f, (float)m_RenderTexture.height / m_RenderTexture.width));
+                    // Multiply the viewing area by the viewMultiplier - it requires some conversions since the camera view is expressed as an angle.
+                    camera.fieldOfView = Mathf.Atan(viewMultiplier * Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad)) * Mathf.Rad2Deg * 2.0f;
+                }
+
+                RenderCamera();
             }
+            finally
+            {
+                camera.fieldOfView = saveFieldOfView;
+                Unsupported.useScriptableRenderPipeline = oldAllowPipes;
+            }
+        }
 
-            camera.Render();
-
-            camera.fieldOfView = saveFieldOfView;
-            Unsupported.useScriptableRenderPipeline = oldAllowPipes;
+        // Guards Cleanup() against tearing down the camera/render texture while this call is on the stack.
+        internal void RenderCamera()
+        {
+            m_IsRendering = true;
+            try
+            {
+                camera.Render();
+            }
+            finally
+            {
+                m_IsRendering = false;
+            }
         }
     }
 

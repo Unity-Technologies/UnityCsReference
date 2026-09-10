@@ -237,7 +237,8 @@ namespace UnityEngine.UIElements
             {
                 hideFlags = HideFlags.HideAndDontSave,
                 name = "UIR Dynamic Atlas " + s_TextureCounter++,
-                filterMode = m_FilterMode
+                filterMode = m_FilterMode,
+                anisoLevel = 0, // entries carry only a 1-texel border; aniso taps would sample neighboring entries
             };
         }
     }

@@ -715,10 +715,21 @@ namespace UnityEngine.UIElements
             gradientSettings.radialFocus = Vector2.zero;
         }
 
+        // Gradient textures are lookup tables: wrap or aniso taps past their edges would sample the opposite end of the ramp.
+        private static Texture2D CreateGradientLutTexture(int width, int height)
+        {
+            return new Texture2D(width, height, TextureFormat.RGBA32, false)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                anisoLevel = 0,
+            };
+        }
+
         private static void CreateTextureAndGradientSettings(ref FillGradient fillGradient, out Texture2D texture, out GradientSettings gradientSettings)
         {
             const int width = 64;
-            texture = new Texture2D(width, 1, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
+            texture = CreateGradientLutTexture(width, 1);
+            texture.hideFlags = HideFlags.HideAndDontSave;
             SetGradientTextureData(texture, width, 0, 0, fillGradient.gradient);
             texture.Apply(false, true);
             SetupGradient(ref fillGradient, width, 0, 0, out gradientSettings);
@@ -1111,7 +1122,7 @@ namespace UnityEngine.UIElements
                 }
 
                 RenderTexture.active = atlasTexture;
-                Texture2D atlasTexture2D = new Texture2D(atlasTexture.width, atlasTexture.height, TextureFormat.RGBA32, false);
+                Texture2D atlasTexture2D = CreateGradientLutTexture(atlasTexture.width, atlasTexture.height);
                 atlasTexture2D.ReadPixels(new Rect(0, 0, atlasTexture.width, atlasTexture.height), 0, 0);
                 atlasTexture2D.Apply();
                 RenderTexture.active = null;

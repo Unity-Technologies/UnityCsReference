@@ -205,6 +205,18 @@ namespace UnityEditor
             public int m_Position;
         }
 
+        // Helper method to elide text for menu items
+        private static string ElideText(string text, int maxLength = 50, string ellipsis = "...")
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+                return text;
+
+            if (maxLength <= ellipsis.Length)
+                return ellipsis;
+
+            return text.Substring(0, maxLength - ellipsis.Length) + ellipsis;
+        }
+
         private Dragging m_Dragging;
         private bool m_ShouldAddNewLevel;
         private int m_DeleteLevel = -1;
@@ -381,7 +393,7 @@ namespace UnityEditor
                 if (!platformDefaultQualitySettings.TryGetValue(platform.name, out position))
                     platformDefaultQualitySettings.Add(platform.name, 0);
 
-                position = EditorGUI.Popup(iconRect, position, qualitySettings.Select(x => x.m_Name).ToArray(), Styles.kDefaultDropdown);
+                position = EditorGUI.Popup(iconRect, position, qualitySettings.Select(x => ElideText(x.m_Name)).ToArray(), Styles.kDefaultDropdown);
                 platformDefaultQualitySettings[platform.name] = position;
             }
 

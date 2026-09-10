@@ -52,75 +52,75 @@ namespace UnityEditor
         // Set target API level to latest installed
         AndroidApiLevelAuto = 0,
 
-        // Android 4.1, "Jelly Bean", API level 16
+        // Android 4.1, API level 16
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel16 = 16,
 
-        // Android 4.2, "Jelly Bean", API level 17
+        // Android 4.2, API level 17
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel17 = 17,
 
-        // Android 4.3, "Jelly Bean", API level 18
+        // Android 4.3, API level 18
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel18 = 18,
 
-        // Android 4.4, "KitKat", API level 19
+        // Android 4.4, API level 19
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel19 = 19,
 
-        // Android 5.0, "Lollipop", API level 21
+        // Android 5.0, API level 21
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel21 = 21,
 
-        // Android 5.1, "Lollipop", API level 22
+        // Android 5.1, API level 22
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarning, true)]
         AndroidApiLevel22 = 22,
 
-        // Android 6.0, "Marshmallow", API level 23
+        // Android 6.0, API level 23
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarningGracePeriod, false)]
         AndroidApiLevel23 = 23,
 
-        // Android 7.0, "Nougat", API level 24
+        // Android 7.0, API level 24
         [Obsolete(PlayerSettings.Android.MinSupportedAPILevelWarningGracePeriod, false)]
         AndroidApiLevel24 = 24,
 
-        // Android 7.1, "Nougat", API level 25
+        // Android 7.1, API level 25
         AndroidApiLevel25 = 25,
 
-        // Android 8.0, "Oreo", API level 26
+        // Android 8.0, API level 26
         AndroidApiLevel26 = 26,
 
-        // Android 8.1, "Oreo", API level 27
+        // Android 8.1, API level 27
         AndroidApiLevel27 = 27,
 
-        // Android 9.0, "Pie", API level 28
+        // Android 9, API level 28
         AndroidApiLevel28 = 28,
 
-        // Android 10.0, API level 29
+        // Android 10, API level 29
         AndroidApiLevel29 = 29,
 
-        // Android 11.0, API level 30
+        // Android 11, API level 30
         AndroidApiLevel30 = 30,
 
-        // Android 12.0, API level 31
+        // Android 12, API level 31
         AndroidApiLevel31 = 31,
 
         // Android 12L, API level 32
         AndroidApiLevel32 = 32,
 
-        // Android 13.0, API level 33
+        // Android 13, API level 33
         AndroidApiLevel33 = 33,
 
-        // Android 14.0, API level 34
+        // Android 14, API level 34
         AndroidApiLevel34 = 34,
 
-        // Android 15.0, API level 35
+        // Android 15, API level 35
         AndroidApiLevel35 = 35,
 
-        // Android 16.0, API level 36
+        // Android 16, API level 36
         AndroidApiLevel36 = 36,
 
-        // Android 17.0, API level 37.0
+        // Android 17, API level 37
         AndroidApiLevel37 = 37,
     }
 
@@ -279,7 +279,7 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         public partial class Android
         {
-            internal const string MinSupportedAPILevelWarning = "Minimum supported Android API level is 25 (Android 7.1 Nougat). Please use AndroidApiLevel25 or higher.";
+            internal const string MinSupportedAPILevelWarning = "Minimum supported Android API level is 25 (Android 7.1). Please use AndroidApiLevel25 or higher.";
             internal const string MinSupportedAPILevelWarningGracePeriod = MinSupportedAPILevelWarning + " This warning will become an error on a next release.";
 
             // Disable Depth and Stencil Buffers
@@ -291,7 +291,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    // Minimum supported Android API level is 25 (Android 7.1 Nougat).
+                    // Minimum supported Android API level is 25 (Android 7.1).
                     return AndroidSdkVersions.AndroidApiLevel25;
                 }
             }
