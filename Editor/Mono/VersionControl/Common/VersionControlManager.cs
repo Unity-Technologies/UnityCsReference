@@ -31,19 +31,31 @@ namespace UnityEditor.VersionControl
 
         static VersionControlManager()
         {
+            // Deferred version control mode validation to ensure packages are loaded and TypeCache is ready.
+            EditorApplication.delayCall += ValidateVersionControlMode;
+        }
+
+        static void ValidateVersionControlMode()
+        {
+            // Clear cached descriptors to ensure we read fresh TypeCache data
+            s_Descriptors = null;
+
             if (Provider.enabled)
                 return;
 
             var mode = VersionControlSettings.mode;
+
+            // Skip validation for internal modes
             if (mode == ExternalVersionControl.Disabled || mode == ExternalVersionControl.Generic || mode == ExternalVersionControl.AutoDetect)
                 return;
 
-            // This can be true even if !Provider.enabled. It happens when this method is invoked from VCProvider::UpdateSettings.
+            // Skip validation for native executable plugins (Perforce, PlasticSCM)
+            // Note: PlasticSCM is the old DLL plugin, different from "Unity Version Control" (managed)
             if (mode == "Perforce" || mode == "PlasticSCM")
                 return;
 
-            if (!HasDescriptor(mode))
-                SetVersionControl(ExternalVersionControl.Disabled);
+            // Validate managed providers and ensure activation if the provider exists
+            SetVersionControl(HasDescriptor(mode) ? mode : ExternalVersionControl.Disabled);
         }
 
         static VersionControlDescriptor[] GetDescriptors()

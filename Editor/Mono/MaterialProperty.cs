@@ -54,6 +54,11 @@ namespace UnityEditor
             ShaderUtil.ApplyMaterialPropertyToMaterialPropertyBlock(this, changedPropertyMask, materialblock);
         }
 
+        internal void WriteToMaterialPropertyBlockInEditor(MaterialPropertyBlock materialblock, int changedPropertyMask)
+        {
+            ShaderUtil.ApplyMaterialPropertyToMaterialPropertyBlockInEditor(this, changedPropertyMask, materialblock);
+        }
+
         public Color colorValue
         {
             get
