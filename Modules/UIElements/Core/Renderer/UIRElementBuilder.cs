@@ -224,10 +224,13 @@ namespace UnityEngine.UIElements.UIR
 
             var veRect = new Rect(0, 0, veSize.x, veSize.y);
 
-            // Compute texture size from world bound (same calculation as in UpdateBackdropFilterUVCorners)
+            // Only the extents are consumed, so map the size directly: the render-time rect mapping
+            // reads the active viewport, which means nothing during mesh generation.
             Rect worldBound = ve.worldBound;
-            RectInt pixelRect = RenderChainCommand.RectPointsToPixelsAndFlipYAxis(worldBound, Vector2.zero, ve.scaledPixelsPerPoint);
-            var texSize = new Vector2(pixelRect.width, pixelRect.height);
+            float pixelsPerPoint = ve.scaledPixelsPerPoint;
+            var texSize = new Vector2(
+                Mathf.RoundToInt(worldBound.width * pixelsPerPoint),
+                Mathf.RoundToInt(worldBound.height * pixelsPerPoint));
 
             var rectParams = new MeshGenerator.RectangleParams
             {

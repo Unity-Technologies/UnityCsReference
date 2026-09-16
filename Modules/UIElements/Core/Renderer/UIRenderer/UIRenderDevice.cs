@@ -715,9 +715,9 @@ namespace UnityEngine.UIElements.UIR
 
             var drawParams = m_DrawParams;
             drawParams.Reset();
-            drawParams.drawBounds = drawBounds;
+            drawParams.SetProjection(drawBounds, pixelsPerPoint);
 
-            RenderChainCommand.PushScissor(drawParams, scissor ?? DrawParams.k_UnlimitedRect, pixelsPerPoint);
+            RenderChainCommand.PushScissor(drawParams, scissor ?? DrawParams.k_UnlimitedRect);
 
             m_TextureSlotManager.Reset();
             m_TextureSlotManager.StartNewBatch((int)defaultTextureSlotCount);
@@ -971,7 +971,7 @@ namespace UnityEngine.UIElements.UIR
                             m_DrawStats.immediateDraws++;
                         }
 
-                        head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
+                        head.ExecuteNonDrawMesh(drawParams, ref immediateException);
                         if ((head.type & (CommandType.AnyImmediate | CommandType.AnyDefaultMaterial)) != 0)
                         {
                             st.material = null; // A value that is unique to force material reset on next draw command
@@ -1023,7 +1023,7 @@ namespace UnityEngine.UIElements.UIR
 
             Debug.Assert(disableCounter == 0, "Rendering disabled counter is not 0, indicating a mismatch of commands");
 
-            RenderChainCommand.PopScissor(drawParams, pixelsPerPoint);
+            RenderChainCommand.PopScissor(drawParams);
 
             UpdateFenceValue(); // TODO: Replace by GPU fence.
 

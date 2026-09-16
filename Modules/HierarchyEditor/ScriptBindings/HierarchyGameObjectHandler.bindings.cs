@@ -169,8 +169,21 @@ namespace Unity.Hierarchy.Editor
             HierarchyViewPrefabStyleUtility.ClearNavigationButton(item);
         }
 
+        // A stage with no scene, such as the UI Toolkit authoring stage, has nowhere to put a GameObject.
+        static bool StageHasGameObjects
+        {
+            get
+            {
+                var stage = StageNavigationManager.instance.currentStage;
+                return stage is MainStage || (stage is PreviewSceneStage previewStage && previewStage.scene.IsValid());
+            }
+        }
+
         void IHierarchyExtendCreateMenu.PopulateCreateMenu(DropdownMenu menu)
         {
+            if (!StageHasGameObjects)
+                return;
+
             PopulateCreateMenu(menu, null, null);
         }
 
@@ -199,7 +212,9 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.CanPaste(HierarchyView view)
         {
-            return CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard();
+            // HierarchyView.OnPaste asks every handler, so without this a paste in a scene-less stage would
+            // create the pasteboard's GameObjects in the main stage's active scene.
+            return StageHasGameObjects && (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard());
         }
 
         bool IHierarchyEditorNodeTypeHandler.OnPaste(HierarchyView view)
@@ -210,7 +225,7 @@ namespace Unity.Hierarchy.Editor
 
         bool IHierarchyEditorNodeTypeHandler.CanPasteAsChild(HierarchyView view)
         {
-            return ClipboardUtility.CanPasteAsChild();
+            return StageHasGameObjects && ClipboardUtility.CanPasteAsChild();
         }
 
         bool IHierarchyEditorNodeTypeHandler.OnPasteAsChild(HierarchyView view, bool keepWorldPos)
@@ -305,6 +320,9 @@ namespace Unity.Hierarchy.Editor
 
         void IHierarchyEditorNodeTypeHandler.PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
         {
+            if (!StageHasGameObjects)
+                return;
+
             HierarchyWindowContextMenuUtility.PopulateCommonContextMenuItems(view, item?.Node ?? HierarchyNode.Null, this, menu);
             BuildGameObjectContextMenu(view, item?.Node ?? HierarchyNode.Null, GetGameObject(item?.Node ?? HierarchyNode.Null), menu);
         }

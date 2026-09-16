@@ -90,7 +90,7 @@ namespace UnityEditorInternal.Profiling
         {
             // m_Frames is kept sorted by LogicalFrame, so the lower bound is the split between the
             // hidden entries and the shown ones.
-            get => m_Frames.Count - LowerBoundByLogicalFrame(FirstSelectableFrameIndex());
+            get => m_Frames.Count - LowerBoundByLogicalFrame(m_Frames, FirstSelectableFrameIndex());
         }
 
         public event Action Changed;
@@ -344,7 +344,7 @@ namespace UnityEditorInternal.Profiling
         // Performs a binary search against the LogicalFrame-sorted m_Frames.
         public bool TryGetEmissionFrame(int logicalFrame, out int emissionFrame)
         {
-            var index = LowerBoundByLogicalFrame(logicalFrame);
+            var index = LowerBoundByLogicalFrame(m_Frames, logicalFrame);
             if (index < m_Frames.Count && m_Frames[index].LogicalFrame == logicalFrame)
             {
                 emissionFrame = m_Frames[index].EmissionFrame;
@@ -360,7 +360,7 @@ namespace UnityEditorInternal.Profiling
         // already holds the full LogicalFrame list in memory.
         public bool TryGetNearestPriorLogicalFrame(int logicalFrame, out ScreenshotFrame match)
         {
-            var index = LowerBoundByLogicalFrame(logicalFrame);
+            var index = LowerBoundByLogicalFrame(m_Frames, logicalFrame);
             // Exact hit at index, or the element just before (lower_bound returns the first ≥).
             if (index < m_Frames.Count && m_Frames[index].LogicalFrame == logicalFrame)
             {
@@ -376,13 +376,54 @@ namespace UnityEditorInternal.Profiling
             return false;
         }
 
-        int LowerBoundByLogicalFrame(int logicalFrame)
+        // Resolves which screenshot to display for a requested logical frame: the screenshot captured
+        // on that exact frame if one exists, otherwise the most recent prior screenshot still inside
+        // the display window. firstDisplayedFrame bounds the fallback so a screenshot that has been
+        // trimmed out of the window is never surfaced. Shared by the large preview
+        // (ScreenshotDetailsViewController) and the info panel (ScreenshotInfoPanelViewController) so
+        // the two never disagree about which screenshot is on screen.
+        public bool TryResolveDisplayedScreenshot(int requestedLogicalFrame, int firstDisplayedFrame, out ScreenshotFrame source)
         {
-            int lo = 0, hi = m_Frames.Count;
+            return TryResolveDisplayedScreenshot(m_Frames, requestedLogicalFrame, firstDisplayedFrame, out source);
+        }
+
+        // Pure resolution over a LogicalFrame-sorted list. Static so the behaviour can be unit tested
+        // without a live catalogue (which is populated from the native profiler stream).
+        internal static bool TryResolveDisplayedScreenshot(IReadOnlyList<ScreenshotFrame> frames, int requestedLogicalFrame, int firstDisplayedFrame, out ScreenshotFrame source)
+        {
+            source = default;
+
+            if (frames == null || requestedLogicalFrame < 0)
+                return false;
+
+            var index = LowerBoundByLogicalFrame(frames, requestedLogicalFrame);
+
+            // Exact hit on the requested frame.
+            if (index < frames.Count && frames[index].LogicalFrame == requestedLogicalFrame)
+            {
+                source = frames[index];
+                return true;
+            }
+
+            // Otherwise the most recent prior screenshot, if it's still inside the display window.
+            if (index == 0)
+                return false;
+
+            var nearest = frames[index - 1];
+            if (nearest.LogicalFrame < firstDisplayedFrame)
+                return false;
+
+            source = nearest;
+            return true;
+        }
+
+        static int LowerBoundByLogicalFrame(IReadOnlyList<ScreenshotFrame> frames, int logicalFrame)
+        {
+            int lo = 0, hi = frames.Count;
             while (lo < hi)
             {
                 var mid = (lo + hi) >> 1;
-                if (m_Frames[mid].LogicalFrame < logicalFrame)
+                if (frames[mid].LogicalFrame < logicalFrame)
                     lo = mid + 1;
                 else
                     hi = mid;

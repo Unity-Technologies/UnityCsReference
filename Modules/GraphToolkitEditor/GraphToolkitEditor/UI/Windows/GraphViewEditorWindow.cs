@@ -1473,14 +1473,15 @@ Would you like to save these changes?
 
             foreach (var window in windows)
             {
-                if (window.GetEntityId() != s_LastFocusedEditor)
+                // Skip self and the currently focused window; only check other background windows.
+                if (window == this || window.GetEntityId() == s_LastFocusedEditor)
+                    continue;
+
+                var otherGraph = window.GraphTool?.ToolState?.GraphModel;
+                if (otherGraph != null && currentAsset.GraphModel == otherGraph)
                 {
-                    var otherGraph = window.GraphTool?.ToolState?.GraphModel;
-                    if (otherGraph != null && currentAsset.GraphModel == otherGraph)
-                    {
-                        m_HasMultipleWindowsForSameGraph = true;
-                        break;
-                    }
+                    m_HasMultipleWindowsForSameGraph = true;
+                    break;
                 }
             }
 

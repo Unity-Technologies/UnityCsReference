@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Hierarchy;
+using Unity.Hierarchy.Editor;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -16,7 +17,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
 
-internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, IVisualElementEditingManager
+internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, IVisualElementEditingManager, IHierarchyExtendCreateMenu
 {
     [NonSerialized]
     private VisualElementEditingStage m_Stage;
@@ -1016,6 +1017,16 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         DropdownMenu menu)
     {
         StageContextMenuUtility.PopulateMenu(view, in node, element, menu, this);
+    }
+
+    protected override void PopulateStageContextMenu(HierarchyView view, DropdownMenu menu)
+    {
+        StageContextMenuUtility.PopulateStageMenu(view, menu, this);
+    }
+
+    void IHierarchyExtendCreateMenu.PopulateCreateMenu(DropdownMenu menu)
+    {
+        StageContextMenuUtility.PopulateElementOperations(menu);
     }
 
     void OnClassAddedToElement(in CommandContext context)

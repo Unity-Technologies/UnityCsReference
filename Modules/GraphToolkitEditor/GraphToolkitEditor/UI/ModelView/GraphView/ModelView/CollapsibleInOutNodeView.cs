@@ -197,10 +197,11 @@ namespace Unity.GraphToolkit.Editor
             if (ports == null)
                 return;
 
+            var hasNodeOptions = NodeModel is InputOutputPortsNodeModel ioNode && ioNode.NodeOptions.Count > 0;
+
             if (ports.Count == 0)
             {
                 // No ports: enable the button only if there are node options to collapse.
-                var hasNodeOptions = NodeModel is InputOutputPortsNodeModel ioNode && ioNode.NodeOptions.Count > 0;
                 collapseButton.SetEnabled(hasNodeOptions);
                 return;
             }
@@ -215,7 +216,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            collapseButton.SetEnabled(!allPortConnected);
+            collapseButton.SetEnabled(!allPortConnected || hasNodeOptions);
         }
 
         protected void OnSetVisible()

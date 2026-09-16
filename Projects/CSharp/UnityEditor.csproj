@@ -11852,8 +11852,14 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotDetailsViewController.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotDetailsViewController.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotFrameTimings.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotFrameTimings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotIndexCatalogue.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotIndexCatalogue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotInfoPanelViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotInfoPanelViewController.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotTextureInfo.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerModules\Screenshots\ScreenshotTextureInfo.cs</Link>
@@ -17146,7 +17152,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_66z5jybg/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_uan24_xr/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

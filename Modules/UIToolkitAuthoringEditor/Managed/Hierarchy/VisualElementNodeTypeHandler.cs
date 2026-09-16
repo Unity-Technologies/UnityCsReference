@@ -556,7 +556,10 @@ internal abstract class VisualElementNodeTypeHandler :
     void IHierarchyEditorNodeTypeHandler.PopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
     {
         if (item == null)
+        {
+            PopulateStageContextMenu(view, menu);
             return;
+        }
 
         if (m_Mappings.TryGetValue(item.Node, out var element))
             PopulateContextMenu(view, in item.Node, element, menu);
@@ -1052,6 +1055,15 @@ internal abstract class VisualElementNodeTypeHandler :
     /// <param name="element">The <see cref="VisualElement"/>.</param>
     /// <param name="menu">The <see cref="DropdownMenu"/> to populate with.</param>
     protected virtual void PopulateContextMenu(HierarchyView view, in HierarchyNode node, VisualElement element, DropdownMenu menu)
+    {
+    }
+
+    /// <summary>
+    /// Append context menu for a right-click that missed every row.
+    /// </summary>
+    /// <param name="view">The selected <see cref="HierarchyView"/>.</param>
+    /// <param name="menu">The <see cref="DropdownMenu"/> to populate with.</param>
+    protected virtual void PopulateStageContextMenu(HierarchyView view, DropdownMenu menu)
     {
     }
 

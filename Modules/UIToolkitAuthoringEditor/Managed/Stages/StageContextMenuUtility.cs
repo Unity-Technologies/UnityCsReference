@@ -44,6 +44,20 @@ internal static class StageContextMenuUtility
         PopulateElementOperations(menu);
     }
 
+    /// <summary>
+    /// The UI Stage menu for a right-click that missed every row. There is no element to act on, so it offers
+    /// only what applies to the document as a whole: paste, the selection commands, and the element library.
+    /// </summary>
+    public static void PopulateStageMenu(HierarchyView view, DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
+    {
+        var pasteMenu = k_EditFolderName + "/" + k_Paste;
+        AppendAction(menu, k_Paste, Menu.GetHotkey(pasteMenu), view.OnPaste, handler.CanPaste(view));
+        menu.AppendSeparator();
+        PopulateSelectionOperations(view, menu);
+        menu.AppendSeparator();
+        PopulateElementOperations(menu);
+    }
+
     static void PopulateOpenActions(VisualElement element, DropdownMenu menu)
     {
         var vtaSource = element.visualTreeAssetSource
@@ -187,6 +201,11 @@ internal static class StageContextMenuUtility
         AppendAction(menu, k_Delete, Menu.GetHotkey(deleteMenu), view.OnDelete, handler.CanDelete(view));
 
         menu.AppendSeparator();
+        PopulateSelectionOperations(view, menu);
+    }
+
+    static void PopulateSelectionOperations(HierarchyView view, DropdownMenu menu)
+    {
         var selectAllMenu = k_EditFolderName + "/" + k_SelectAll;
         AppendAction(menu, k_SelectAll, Menu.GetHotkey(selectAllMenu), () => { view.SelectAll(exposedOnly:true); });
         var deselectAllMenu = k_EditFolderName + "/" + k_DeselectAll;

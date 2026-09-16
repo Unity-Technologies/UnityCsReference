@@ -865,6 +865,14 @@ namespace Unity.Hierarchy.Editor
 
         void OnAfterSuccessfullySwitchedToStage(Stage currentStage)
         {
+            // The search text follows the stage navigation like a stack: drilling into a newly opened
+            // stage starts a new empty search, while returning to a stage already in the stage history
+            // (e.g. going back up the breadcrumbs) restores the search it had when it was left (UUM-142149).
+            OnAfterSuccessfullySwitchedToStage(currentStage, restoreSearchText: currentStage.setSelectionAndScrollWhenBecomingCurrentStage);
+        }
+
+        void OnAfterSuccessfullySwitchedToStage(Stage currentStage, bool restoreSearchText)
+        {
             // Keep a reference to the current hierarchy to dispose it later
             var oldHierarchy = m_Hierarchy;
 
@@ -884,7 +892,7 @@ namespace Unity.Hierarchy.Editor
             }
 
             // Set the stage view state
-            LoadStageViewState(currentStage);
+            LoadStageViewState(currentStage, restoreSearchText);
         }
 
         void OnPrefabStageReloading(PrefabStage stage)
@@ -894,7 +902,9 @@ namespace Unity.Hierarchy.Editor
 
         void OnPrefabStageReloaded(PrefabStage stage)
         {
-            OnAfterSuccessfullySwitchedToStage(stage);
+            // A reload keeps the user in the same stage, so the search saved in OnPrefabStageReloading
+            // is always restored.
+            OnAfterSuccessfullySwitchedToStage(stage, restoreSearchText: true);
         }
 
         void OnCutGameObjects(GameObject[] gameObjects)
@@ -1272,7 +1282,9 @@ namespace Unity.Hierarchy.Editor
             if (stage == null)
                 return;
             var key = StageUtility.CreateWindowAndStageIdentifier(m_WindowGUID, stage);
-            var state = m_HierarchyView.GetState(HierarchyViewState.Content.Stage);
+            // The search text is saved along with the stage content so it can be restored when
+            // returning to this stage through the stage history; see LoadStageViewState.
+            var state = m_HierarchyView.GetState(HierarchyViewState.Content.Stage | HierarchyViewState.Content.SearchText);
             s_StateCache.SetState(key, state);
         }
 
@@ -1282,15 +1294,35 @@ namespace Unity.Hierarchy.Editor
             return s_StateCache.GetState(key);
         }
 
-        internal void LoadStageViewState(Stage stage)
+        internal void LoadStageViewState(Stage stage, bool restoreSearchText)
         {
             if (stage == null)
                 return;
+
+            // A newly opened stage always starts with a new, empty search; only returning to a stage
+            // restores the search it had when it was left (see OnAfterSuccessfullySwitchedToStage).
+            if (!restoreSearchText)
+                SetSearchText(string.Empty);
+
             var state = GetStageViewState(stage);
-            if (state != null)
+            if (state == null)
+                return;
+
+            if (!restoreSearchText)
             {
-                SetViewState(state);
+                // Apply a copy without the search text; the cached state keeps its search text so
+                // that later returns to this stage can still restore it.
+                state = new HierarchyViewState
+                {
+                    ValidContent = state.ValidContent & ~HierarchyViewState.Content.SearchText,
+                    ViewModelState = state.ViewModelState,
+                    Columns = state.Columns,
+                    ScrollPositionX = state.ScrollPositionX,
+                    ScrollPositionY = state.ScrollPositionY
+                };
             }
+
+            SetViewState(state);
         }
         #endregion
 
