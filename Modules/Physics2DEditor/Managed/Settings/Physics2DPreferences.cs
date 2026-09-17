@@ -12,17 +12,17 @@ namespace UnityEditor
     {
         public class SettingsContent
         {
-            public static readonly GUIContent ColliderAwakeOutlineContent = EditorGUIUtility.TrTextContent("Awake Color (Outline)");
-            public static readonly GUIContent ColliderAsleepOutlineContent = EditorGUIUtility.TrTextContent("Asleep Color (Outline)");
-            public static readonly GUIContent ColliderAwakeFilledContent = EditorGUIUtility.TrTextContent("Awake Color (Filled)");
-            public static readonly GUIContent ColliderAsleepFilledContent = EditorGUIUtility.TrTextContent("Asleep Color (Filled)");
-            public static readonly GUIContent ColliderBoundsContent = EditorGUIUtility.TrTextContent("Bounds Color");
-            public static readonly GUIContent CompositedColorContent = EditorGUIUtility.TrTextContent("Composited Color");
-            public static readonly GUIContent ColliderContactContent = EditorGUIUtility.TrTextContent("Contact Color");
-            public static readonly GUIContent ContactArrowScaleContent = EditorGUIUtility.TrTextContent("Contact Arrow Scale");
+            public static readonly GUIContent ColliderAwakeOutlineContent = L10n.TextContent("Awake Color (Outline)", null, null, null);
+            public static readonly GUIContent ColliderAsleepOutlineContent = L10n.TextContent("Asleep Color (Outline)", null, null, null);
+            public static readonly GUIContent ColliderAwakeFilledContent = L10n.TextContent("Awake Color (Filled)", null, null, null);
+            public static readonly GUIContent ColliderAsleepFilledContent = L10n.TextContent("Asleep Color (Filled)", null, null, null);
+            public static readonly GUIContent ColliderBoundsContent = L10n.TextContent("Bounds Color", null, null, null);
+            public static readonly GUIContent CompositedColorContent = L10n.TextContent("Composited Color", null, null, null);
+            public static readonly GUIContent ColliderContactContent = L10n.TextContent("Contact Color", null, null, null);
+            public static readonly GUIContent ContactArrowScaleContent = L10n.TextContent("Contact Arrow Scale", null, null, null);
 
-            public static readonly GUIContent CollidersLabelContent = EditorGUIUtility.TrTextContent("Colliders");
-            public static readonly GUIContent ContactsLabelContent = EditorGUIUtility.TrTextContent("Contacts");
+            public static readonly GUIContent CollidersLabelContent = L10n.TextContent("Colliders", null, null, null);
+            public static readonly GUIContent ContactsLabelContent = L10n.TextContent("Contacts", null, null, null);
         }
 
         // These must match "GizmoDrawing.cpp" for the Physics2DEditor!

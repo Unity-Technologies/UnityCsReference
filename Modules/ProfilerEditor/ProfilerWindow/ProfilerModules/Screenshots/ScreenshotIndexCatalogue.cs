@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -15,23 +14,10 @@ using UnityEngine.UIElements;
 
 namespace UnityEditorInternal.Profiling
 {
-    // Window-scoped service that owns the canonical list of frames that have screenshots, and the
-    // native event subscription that keeps it fresh. Both the details panel scroll strip
-    // (ScreenshotsTimelineViewController) and the chart area mini strip
-    // (ScreenshotsChartTimelineViewController) consume Frames and subscribe to Changed, so the
-    // scan + cache write + debounce happen once per quiet period rather than once per controller.
-    // The cache backing is BottlenecksChartViewModel.ScreenshotFrames (the only chart-side store
-    // that survives the Profiler window being closed and re-opened) — the catalogue writes full
-    // (LogicalFrame, EmissionFrame) pairs to it, so cache load doesn't need to re-read
-    // kFramesSinceScreenshotRequested per entry.
-    //
-    // Frame index spaces — every entry tracks both:
-    //   LogicalFrame  — the frame the screenshot DEPICTS (request time). User-facing identity.
-    //   EmissionFrame — the frame at which the GPU readback completed and the pixel + texture-info
-    //                   metadata was written into the profiler stream (typically LogicalFrame + 1..3).
-    //                   This is the frame to query with ProfilerDriver.GetRawFrameDataView.
-    // For legacy captures (recorded before kFramesSinceScreenshotRequested was introduced),
-    // the offset metadata is absent and LogicalFrame defaults to EmissionFrame (identity).
+    // Two index spaces per entry: LogicalFrame is the frame the screenshot DEPICTS (its user-facing
+    // identity), EmissionFrame is the frame the readback landed on and the only index valid for
+    // ProfilerDriver reads. Legacy captures carry no offset metadata, so LogicalFrame falls back to
+    // EmissionFrame.
     internal readonly struct ScreenshotFrame
     {
         public readonly int LogicalFrame;
@@ -44,23 +30,20 @@ namespace UnityEditorInternal.Profiling
         }
     }
 
+    // Window-scoped service owning the canonical list of frames that have screenshots, scanned once
+    // per quiet period rather than once per consuming strip.
     internal sealed class ScreenshotIndexCatalogue : IDisposable
     {
-        // Rebuilding on every NewProfilerFrameRecorded would thrash consumers and re-hit the native
-        // scan every frame; instead, defer until recording quiets.
+        // Rebuilding on every NewProfilerFrameRecorded would re-hit the native scan every frame.
         const long k_RecordingQuietPeriodMs = 1500;
 
-        // Captures written at this version have a bug where each screenshot was re-emitted on every frame,
-        // instead of only when a new capture completed, so the same image would repeat until the next real capture.
-        // The fix landed at the same time as the metadata version bump.
+        // Captures written at this version re-emitted the same screenshot on every frame until the
+        // next real capture; the fix landed with the metadata version bump.
         const int k_BuggyRepeatMetadataVersion = (int)ProfilingSessionMetaDataEntryVersion.ScreenshotVersion;
-        // It was possible to change the capture rate from the original screenshots PR, but only via an API call.
-        // Combined with the narrow affected versions range (6000.3.0a5 to 6000.3.0b6, 6000.4.0a1 to 6000.4.0a3),
-        // it's fair to assume everyone of the few users this will affect will have had the (then) default capture rate.
-        // Used as the sampling stride when collapsing them.
+        // Stride when collapsing those repeats: the then-default rate, which the few affected users
+        // (6000.3.0a5-b6, 6000.4.0a1-a3) could only have changed via script.
         const int k_BuggyCaptureScreenshotInterval = 15;
-        // Side length of the down-scaled image compared to confirm where the picture actually changes
-        // between sampled frames. Small enough to be cheap, large enough to distinguish frames.
+        // Cheap enough to decode, large enough to tell two screenshots apart.
         const int k_RepeatCompareImageSize = 32;
 
         readonly ProfilerWindow m_ProfilerWindow;
@@ -69,48 +52,31 @@ namespace UnityEditorInternal.Profiling
         IVisualElementScheduledItem m_PendingRefresh;
         IVisualElementScheduledItem m_PendingBurstEndCheck;
         bool m_IsDisposed;
-        // Timestamp (EditorApplication.timeSinceStartup) of the most recent OnNewFrameRecorded.
-        // 0 means "never". Drives IsRecordingBurst, which the chart strip checks to decide
-        // whether to take its lightweight append-only layout path. timeSinceStartup is
-        // paused-aware, so a debugger break or modal dialogue can't strand the flag true.
+        // 0 for "never". Pause-aware, so a debugger break can't strand IsRecordingBurst true.
         double m_LastFrameRecordedTime;
-        // DisplayedFrameCount as of the last Changed we raised. Lets Refresh notice that the visible
-        // set moved even when m_Frames itself did not.
+        // Keeps BurstEnded to exactly one raise per recording run.
+        bool m_BurstEndPending;
         // -1 means "never reported", so the first Refresh always notifies.
         int m_LastNotifiedDisplayedFrameCount = -1;
 
         public IReadOnlyList<ScreenshotFrame> Frames => m_Frames;
 
-        // How many entries in Frames the user can actually see. Both thumbnail strips hide entries
-        // whose depicted (logical) frame sits below FirstSelectableFrameIndex: frames evicted from
-        // memory, frames trimmed by the frame-count setting, and entries whose LogicalFrame resolved
-        // negative because the frame they depict predates the capture. Anything reporting a
-        // screenshot count to the user wants this rather than Frames.Count, or it claims more
-        // screenshots than are on screen.
+        // Report this rather than Frames.Count, or the count overstates what's on screen.
         public int DisplayedFrameCount
         {
-            // m_Frames is kept sorted by LogicalFrame, so the lower bound is the split between the
-            // hidden entries and the shown ones.
             get => m_Frames.Count - LowerBoundByLogicalFrame(m_Frames, FirstSelectableFrameIndex());
         }
 
         public event Action Changed;
-        // Fires the moment OnNewFrameRecorded arrives and IsRecordingBurst was false beforehand —
-        // i.e. the transition from "not recording" to "actively recording". Consumers that need
-        // to swap to a recording-aware presentation (e.g. the details strip hides itself behind a
-        // placeholder) hook this so the swap happens at recording-start, not at first throttle.
+        // Raised at recording-start, not at the first throttle.
         public event Action BurstStarted;
-        // Fires once after recording stops (k_RecordingQuietPeriodMs after the final throttled
-        // Refresh, when no new OnNewFrameRecorded came in to re-arm the throttle). Consumers
-        // that took lightweight burst-mode shortcuts use this to do a one-shot full
-        // reconciliation back to canonical layout. Not raised during sustained recording.
+        // Recording stopped: raised as it happens for the stops we can see (the recording toggle and
+        // capture loads, via EndRecordingBurstNow), otherwise a quiet period after the final throttled
+        // Refresh. The details strip drops its placeholder here, so a delay is a stale banner.
         public event Action BurstEnded;
 
-        // True while we're inside the throttle window of an active recording — i.e. an
-        // OnNewFrameRecorded fired within the last k_RecordingQuietPeriodMs. Consumers (chart
-        // strip) use this to choose a low-disturbance "append" layout instead of the full
-        // re-pick during sustained recording. Self-clears: once recording stops and no new
-        // frames arrive, IsRecordingBurst goes false after the quiet period elapses.
+        // Lets consumers pick a low-disturbance append layout over a full re-pick. Goes false as soon
+        // as a stop is observed, otherwise once the quiet period elapses.
         public bool IsRecordingBurst
         {
             get
@@ -129,15 +95,15 @@ namespace UnityEditorInternal.Profiling
             ProfilerDriver.profileLoaded += OnDataLoaded;
             ProfilerDriver.profileCleared += OnDataCleared;
             ProfilerDriver.NewProfilerFrameRecorded += OnNewFrameRecorded;
+            // Reports a toolbar stop as it happens; capture loads stop recording without it, and are
+            // covered by OnDataLoaded. See EndRecordingBurstNow.
+            if (m_ProfilerWindow != null)
+                m_ProfilerWindow.recordingStateChanged += OnRecordingStateChanged;
 
-            // Initial scan picks up whatever capture is already loaded — including the case where
-            // the window was just opened with a previous session capture still resident. Subscribers
-            // attach after the constructor returns, so they read Frames directly the first time.
+            // Subscribers attach after this returns, so they read Frames directly for initial state.
             Refresh();
         }
 
-        // Re-scan from the current driver frame range. Cheap if nothing has changed: the
-        // m_LastScannedFrameIndex == currentLast branch just prunes evicted frames.
         public void Refresh()
         {
             if (m_IsDisposed)
@@ -168,7 +134,6 @@ namespace UnityEditorInternal.Profiling
             }
             else
             {
-                // Incremental: drop evicted frames, append any new ones since the last scan.
                 changed |= PruneBefore(currentFirst);
 
                 if (currentLast > m_LastScannedFrameIndex)
@@ -184,8 +149,7 @@ namespace UnityEditorInternal.Profiling
                 }
                 else if (currentLast < m_LastScannedFrameIndex)
                 {
-                    // Capture got shorter without a clear event (e.g., the user loaded a smaller
-                    // capture file). Reset and rescan from scratch.
+                    // Capture got shorter without a clear event (a smaller capture file was loaded).
                     ScanAllFramesIntoList(currentFirst, currentLast);
                     m_LastScannedFrameIndex = currentLast;
                     changed = true;
@@ -202,29 +166,21 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        // Full (re)scan of [currentFirst, currentLast] into m_Frames. Captures affected by the V1
-        // every-frame repeat bug bypass the cache and are collapsed down to one entry per real
-        // screenshot; all others use the normal cache-then-tail-scan path.
         void ScanAllFramesIntoList(int currentFirst, int currentLast)
         {
             m_Frames.Clear();
 
             if (ReadScreenshotMetadataVersion(currentLast) == k_BuggyRepeatMetadataVersion)
             {
-                // The cache stores the already-collapsed (sparse) list, which can't be safely
-                // tail-extended, and affected captures are always static file loads — so skip the
-                // cache, raw-scan every frame, then discard the repeats.
+                // The cache holds the already-collapsed list, which can't be tail-extended safely.
                 AppendEmissionFrames(ProfilerDriver.GetFramesWithScreenshots(currentFirst, currentLast));
                 SortByLogicalFrame();
                 DiscardBuggyRepeatScreenshots();
                 return;
             }
 
-            // Consult the persisted cache first for instant population on previously seen captures,
-            // then scan any tail past the highest cached frame. The Bottlenecks cache survives the
-            // Profiler window being closed and reopened, but the native capture may keep recording in
-            // the background; screenshots taken between close and reopen wouldn't be in the cache and
-            // would be silently dropped if we treated it as covering everything up to currentLast.
+            // The capture can keep recording while the window is closed, so the cache never covers
+            // everything up to currentLast.
             var scanFrom = currentFirst;
             if (TryPopulateFromCache(currentFirst, currentLast) && m_Frames.Count > 0)
                 scanFrom = HighestEmissionFrame() + 1;
@@ -233,8 +189,7 @@ namespace UnityEditorInternal.Profiling
             SortByLogicalFrame();
         }
 
-        // Reads the screenshot session-metadata version off any valid frame (session metadata is
-        // global, so any frame carries it). Returns -1 when unavailable.
+        // Session metadata is global, so any valid frame carries it. -1 when unavailable.
         static int ReadScreenshotMetadataVersion(int frameIndex)
         {
             using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, 0))
@@ -248,13 +203,8 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        // Collapses the every-frame repeats in a V1 capture down to one entry per real screenshot.
-        // Hybrid strategy: sample one frame per k_BuggyCaptureScreenshotInterval (cheap — the repeats
-        // come in runs of that length), and keep a sample only when its down-scaled image differs from
-        // the last kept one (robust — confirms the picture actually changed, and collapses runs longer
-        // than the interval if the capture used the old script API to slow the rate). Images are
-        // compared directly with ReadOnlySpan<byte>. m_Frames is assumed sorted by emission frame,
-        // which holds here: V1 has no request-offset metadata so LogicalFrame == EmissionFrame.
+        // Collapses V1's every-frame repeats to one entry per real screenshot: sample one frame per
+        // interval, keeping it only when its image differs from the last kept one.
         void DiscardBuggyRepeatScreenshots()
         {
             if (m_Frames.Count <= 1)
@@ -266,15 +216,13 @@ namespace UnityEditorInternal.Profiling
 
             foreach (var frame in m_Frames)
             {
-                // Skip frames inside the current sampling window without reading their pixels.
                 if (lastKeptImage != null && frame.EmissionFrame < nextSampleEmission)
                     continue;
                 nextSampleEmission = frame.EmissionFrame + k_BuggyCaptureScreenshotInterval;
 
                 if (!TryReadScaledImage(frame.EmissionFrame, out var image))
                 {
-                    // Couldn't read the pixels — keep the frame rather than risk dropping a real one,
-                    // and force the next sample to be kept too (unknown content can't be compared).
+                    // Keep unreadable frames rather than risk dropping a real one.
                     kept.Add(frame);
                     lastKeptImage = null;
                     continue;
@@ -291,17 +239,13 @@ namespace UnityEditorInternal.Profiling
             m_Frames.AddRange(kept);
         }
 
-        // Reads a small, fixed-size down-scaled RGBA copy of the screenshot, used to compare frames
-        // for equality. Reuses the same native scaler as the thumbnails. The fixed target size means
-        // every returned buffer has the same length, so SequenceEqual comparisons are well-defined.
+        // Fixed target size, so SequenceEqual comparisons are well-defined.
         static bool TryReadScaledImage(int emissionFrame, out byte[] image)
         {
             return TryScaleScreenshot(emissionFrame, k_RepeatCompareImageSize, k_RepeatCompareImageSize,
                        out image, out _, out _) && image != null;
         }
 
-        // Reads kFramesSinceScreenshotRequested from each emission frame and pushes a ScreenshotFrame
-        // entry. Legacy captures (no such metadata) → identity (LogicalFrame = EmissionFrame).
         void AppendEmissionFrames(int[] emissionFrames)
         {
             for (var i = 0; i < emissionFrames.Length; i++)
@@ -310,10 +254,7 @@ namespace UnityEditorInternal.Profiling
 
         static ScreenshotFrame BuildFrame(int emissionFrame)
         {
-            // TryReadSingleIntMetadata returns false (with value=0) when the metadata is absent —
-            // e.g. captures recorded before kFramesSinceScreenshotRequested was added. The
-            // false-path gives LogicalFrame = EmissionFrame, which is the correct identity fallback
-            // (legacy captures have no readback offset to compensate for in the UI).
+            // Absent metadata leaves this 0 — the identity fallback legacy captures need.
             TryReadSingleIntMetadata(emissionFrame,
                 ProfilingSessionMetaDataEntry.FramesSinceScreenshotRequested, out int framesSinceRequested);
             return new ScreenshotFrame(emissionFrame - framesSinceRequested, emissionFrame);
@@ -321,12 +262,24 @@ namespace UnityEditorInternal.Profiling
 
         void SortByLogicalFrame()
         {
-            // Steady-state with a fixed request rate produces monotonic LogicalFrame order naturally,
-            // but a varying readback latency between consecutive screenshots can flip a pair
-            // (request A at frame 5, emitted 8; request B at frame 6, emitted 7 — LogicalFrame
-            // order is A,B but EmissionFrame order is B,A). Sort explicitly so the strip always
-            // displays in depicted-frame order regardless of readback jitter.
+            // Varying readback latency can invert a pair (5 emitted on 8, 6 emitted on 7), so
+            // emission order is not depicted order. The lookups below assume the latter.
             m_Frames.Sort((a, b) => a.LogicalFrame.CompareTo(b.LogicalFrame));
+        }
+
+        // internal for tests: populating m_Frames for real needs a play-mode capture.
+        internal void SetFramesForTests(IEnumerable<ScreenshotFrame> frames)
+        {
+            m_Frames.Clear();
+            m_Frames.AddRange(frames);
+            SortByLogicalFrame();
+        }
+
+        // internal for tests: entering a burst for real needs live frame callbacks.
+        internal void MarkRecordingBurstForTests()
+        {
+            m_LastFrameRecordedTime = EditorApplication.timeSinceStartup;
+            m_BurstEndPending = true;
         }
 
         int HighestEmissionFrame()
@@ -340,9 +293,6 @@ namespace UnityEditorInternal.Profiling
             return highest;
         }
 
-        // LogicalFrame-keyed lookup for the details panel. EmissionFrame is what
-        // ProfilerDriver.GetRawFrameDataView accepts; LogicalFrame is what the user sees on screen.
-        // Performs a binary search against the LogicalFrame-sorted m_Frames.
         public bool TryGetEmissionFrame(int logicalFrame, out int emissionFrame)
         {
             var index = LowerBoundByLogicalFrame(m_Frames, logicalFrame);
@@ -355,10 +305,7 @@ namespace UnityEditorInternal.Profiling
             return false;
         }
 
-        // Largest entry with LogicalFrame ≤ logicalFrame. Replaces the metadata-driven
-        // FindPreviousFrameWithScreenshot — works for any frame regardless of whether
-        // kFramesSinceLastScreenshot exists on it (e.g. legacy captures), since the catalogue
-        // already holds the full LogicalFrame list in memory.
+        // Largest entry with LogicalFrame ≤ logicalFrame. Works on legacy captures too.
         public bool TryGetNearestPriorLogicalFrame(int logicalFrame, out ScreenshotFrame match)
         {
             var index = LowerBoundByLogicalFrame(m_Frames, logicalFrame);
@@ -379,10 +326,9 @@ namespace UnityEditorInternal.Profiling
 
         // Resolves which screenshot to display for a requested logical frame: the screenshot captured
         // on that exact frame if one exists, otherwise the most recent prior screenshot still inside
-        // the display window. firstDisplayedFrame bounds the fallback so a screenshot that has been
-        // trimmed out of the window is never surfaced. Shared by the large preview
-        // (ScreenshotDetailsViewController) and the info panel (ScreenshotInfoPanelViewController) so
-        // the two never disagree about which screenshot is on screen.
+        // the display window. firstDisplayedFrame bounds both, so a screenshot trimmed out of the
+        // window is never surfaced. Shared by the large preview and the info panel, so the two can
+        // never disagree about which screenshot is on screen.
         public bool TryResolveDisplayedScreenshot(int requestedLogicalFrame, int firstDisplayedFrame, out ScreenshotFrame source)
         {
             return TryResolveDisplayedScreenshot(m_Frames, requestedLogicalFrame, firstDisplayedFrame, out source);
@@ -395,6 +341,11 @@ namespace UnityEditorInternal.Profiling
             source = default;
 
             if (frames == null || requestedLogicalFrame < 0)
+                return false;
+
+            // Bounded before the lookups so it covers an exact hit too: reducing the frame-count
+            // preference can shrink the window under an already-selected frame that has one.
+            if (requestedLogicalFrame < firstDisplayedFrame)
                 return false;
 
             var index = LowerBoundByLogicalFrame(frames, requestedLogicalFrame);
@@ -434,8 +385,10 @@ namespace UnityEditorInternal.Profiling
 
         void OnDataLoaded()
         {
-            // profileLoaded fires for both initial loads and shift+load appends — Refresh() handles
-            // both via its m_LastScannedFrameIndex check.
+            // Fires for both initial loads and shift+load appends; Refresh handles both. Not a stop
+            // signal, deliberately: ProfilerDriver.LoadProfile raises this before ProfilerWindow
+            // disables recording, and it is public — a load can leave recording running, so ending the
+            // burst here would drop the placeholder and the next frame would put it straight back.
             Refresh();
         }
 
@@ -461,26 +414,24 @@ namespace UnityEditorInternal.Profiling
             if (m_IsDisposed || newFrameIndex <= m_LastScannedFrameIndex)
                 return;
 
-            // Stamp regardless of whether we end up arming a fresh throttle below — this drives
-            // IsRecordingBurst, which the chart consults independently of the throttle pipeline.
-            // Detect the no-burst → burst transition before stamping so BurstStarted fires exactly
-            // once per recording run, at recording-start (used by the details strip to swap to its
-            // "paused while recording" placeholder immediately, not after the first throttle).
-            var wasInBurst = IsRecordingBurst;
-            m_LastFrameRecordedTime = EditorApplication.timeSinceStartup;
-            if (!wasInBurst)
-                BurstStarted?.Invoke();
+            // Tail frames already in flight keep landing after the user stops; stamping on those puts
+            // the details strip's placeholder back up. The throttled Refresh below still runs.
+            if (ProfilerDriver.enabled)
+            {
+                // Read the transition before stamping, so BurstStarted fires once per run.
+                var wasInBurst = IsRecordingBurst;
+                m_LastFrameRecordedTime = EditorApplication.timeSinceStartup;
+                m_BurstEndPending = true;
+                if (!wasInBurst)
+                    BurstStarted?.Invoke();
+            }
 
-            // Throttle Refresh to at most once per k_RecordingQuietPeriodMs during sustained
-            // recording: arm the timer on the first frame of a burst, coalesce subsequent frames
-            // into the same window, then clear m_PendingRefresh inside the callback so the next
-            // post-fire frame re-arms a fresh timer. The earlier debounce form (re-arming on
-            // every frame) never fired during sustained recording — new screenshots wouldn't
-            // appear on the strip until the user stopped capturing.
             var host = m_ProfilerWindow?.rootVisualElement;
             if (host == null)
                 return;
 
+            // A throttle, not a debounce: frames after the first are absorbed into the armed window,
+            // so a sustained recording still refreshes periodically instead of only at the end.
             if (m_PendingRefresh == null)
             {
                 m_PendingRefresh = host.schedule.Execute(() =>
@@ -488,11 +439,7 @@ namespace UnityEditorInternal.Profiling
                     m_PendingRefresh = null;
                     Refresh();
 
-                    // Schedule a follow-up "did the burst end?" check. If no further
-                    // OnNewFrameRecorded arrives in the next k_RecordingQuietPeriodMs,
-                    // m_PendingRefresh stays null and we fire BurstEnded so consumers can
-                    // reconcile back to canonical layout. If recording is still active, a new
-                    // OnNewFrameRecorded re-arms m_PendingRefresh and the check below no-ops.
+                    // Follow-up "did the burst end?" check; a still-active recording no-ops it.
                     if (m_IsDisposed)
                         return;
                     var burstEndHost = m_ProfilerWindow?.rootVisualElement;
@@ -504,8 +451,11 @@ namespace UnityEditorInternal.Profiling
                         m_PendingBurstEndCheck = null;
                         if (m_IsDisposed)
                             return;
-                        if (m_PendingRefresh == null)
+                        if (m_PendingRefresh == null && m_BurstEndPending)
+                        {
+                            m_BurstEndPending = false;
                             BurstEnded?.Invoke();
+                        }
                     });
                     m_PendingBurstEndCheck.ExecuteLater(k_RecordingQuietPeriodMs);
                 });
@@ -513,12 +463,51 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        bool PruneBefore(int currentFirstFrame)
+        void OnRecordingStateChanged(bool recording)
         {
-            // Use EmissionFrame for the bound: ProfilerDriver.firstFrameIndex moves forward as
-            // older frames are evicted from the ring buffer, so any entry whose EmissionFrame
-            // (the frame metadata actually lives on) has fallen out of range is gone — even if
-            // its LogicalFrame would still nominally fit.
+            // Trust the driver over the argument: this also fires on connection-target changes with
+            // whatever m_Recording currently holds, which can lag the driver when something else set
+            // ProfilerDriver.enabled. Winding down a live burst would flash the placeholder off and on.
+            if (recording || ProfilerDriver.enabled)
+                return;
+            EndRecordingBurstNow();
+        }
+
+        // Collapses the rest of the quiet period the moment we learn recording has stopped: left to the
+        // timers, IsRecordingBurst stays true for a quiet period after the final frame and BurstEnded
+        // lands up to another after that — seconds of stale placeholder.
+        // internal for tests: the production trigger is ProfilerWindow.recordingStateChanged.
+        internal void EndRecordingBurstNow()
+        {
+            if (m_IsDisposed)
+                return;
+
+            // recordingStateChanged also fires with the state unchanged, so this runs while idle.
+            if (!m_BurstEndPending)
+                return;
+            m_BurstEndPending = false;
+
+            m_PendingRefresh?.Pause();
+            m_PendingRefresh = null;
+            m_PendingBurstEndCheck?.Pause();
+            m_PendingBurstEndCheck = null;
+
+            // Refresh with the burst stamp still set, so the strips take their cheap burst path for
+            // this Changed and reconcile once from BurstEnded below instead of reloading fully twice
+            // — the second reload cancels the details strip's thumbnail load mid-flight.
+            Refresh();
+
+            // Cleared before BurstEnded: IsRecordingBurst must read false by the time the strips
+            // reconcile, or they keep the placeholder up.
+            m_LastFrameRecordedTime = 0.0;
+            BurstEnded?.Invoke();
+        }
+
+        // internal for tests: otherwise only reachable through live ring-buffer eviction.
+        internal bool PruneBefore(int currentFirstFrame)
+        {
+            // Bound on EmissionFrame: an entry whose metadata frame was evicted is gone regardless
+            // of where its LogicalFrame sits.
             var removed = m_Frames.RemoveAll(f => f.EmissionFrame < currentFirstFrame);
             return removed > 0;
         }
@@ -529,12 +518,8 @@ namespace UnityEditorInternal.Profiling
             if (cached == null || cached.Count == 0)
                 return false;
 
-            // Verify every in-range cached frame still has a screenshot. A single-frame probe
-            // would accept a stale cache whenever two unrelated captures happened to share even
-            // one screenshot frame index (e.g. both have one at frame 0) — populating the
-            // timeline with ghost markers for every other frame from the old capture.
-            // FrameHasScreenshot is a sub-millisecond metadata read; running it on the
-            // capture-load path (not interactive) for the cached count is acceptable.
+            // Verify EVERY in-range cached frame: a single-frame probe accepts a stale cache whenever
+            // two captures share one screenshot frame index, ghosting the old one onto the timeline.
             var sawInRange = false;
             foreach (var frame in cached)
             {
@@ -547,9 +532,7 @@ namespace UnityEditorInternal.Profiling
             if (!sawInRange)
                 return false;
 
-            // Trust the cached LogicalFrame as-is — it was derived at scan time from the same
-            // kFramesSinceScreenshotRequested metadata that's still on the frame. Skipping the
-            // re-read here is the whole point of persisting both halves of the pair.
+            // Trust the cached LogicalFrame; skipping the re-read is why both halves are persisted.
             foreach (var frame in cached)
             {
                 if (frame.EmissionFrame >= firstFrame && frame.EmissionFrame <= lastFrame)
@@ -571,10 +554,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        // Reads the screenshot texture descriptor (format / width / height) from an already-open
-        // frame view. Returns false (with zero outs) when the frame is invalid or carries no
-        // screenshot texture-info metadata. Centralises the GetRawFrameDataView + texture-info guard
-        // shared by the dimension read, the has-screenshot probe, and the details panel's extract.
+        // Shared by the dimension read, the has-screenshot probe, and the details panel's extract.
         internal static bool TryGetScreenshotTextureInfo(RawFrameDataView frameData, out int width, out int height, out TextureFormat format)
         {
             width = 0;
@@ -605,15 +585,13 @@ namespace UnityEditorInternal.Profiling
 
         void SaveToCache()
         {
-            // SetScreenshotFrames does its own defensive copy; no need to pre-copy here.
             var model = m_ProfilerWindow?.GetBottlenecksChartViewController()?.Model;
             if (model == null)
                 return;
             model.SetScreenshotFrames(m_Frames);
         }
 
-        // Worst-case RGBA32 buffer; native scaler writes only the aspect-preserving subset at the start
-        // and reports its actual dimensions in width/height.
+        // Worst-case RGBA32 buffer; the scaler fills the aspect-preserving subset at the start only.
         public static bool TryScaleScreenshot(int frameIndex, int maxWidth, int maxHeight,
                                               out byte[] bytes, out int width, out int height)
         {
@@ -627,15 +605,13 @@ namespace UnityEditorInternal.Profiling
             return false;
         }
 
-        // Reads the source screenshot's stored width/height/format from per-frame metadata.
-        // Returns false (with zero outs) if the frame is invalid or has no screenshot metadata.
+        // Metadata only, no pixel decode.
         public static bool TryReadScreenshotDimensions(int frameIndex, out int width, out int height, out TextureFormat format)
         {
             using (var frameData = ProfilerDriver.GetRawFrameDataView(frameIndex, 0))
                 return TryGetScreenshotTextureInfo(frameData, out width, out height, out format);
         }
 
-        // Reads a single int profiler session metadata entry from a frame. Returns false with 0 value on any failure path.
         public static bool TryReadSingleIntMetadata(int frameIndex, ProfilingSessionMetaDataEntry entry, out int value)
         {
             value = 0;
@@ -659,8 +635,7 @@ namespace UnityEditorInternal.Profiling
             return ApplyRawTextureDataOrDestroy(texture, () => texture.LoadRawTextureData(bytes));
         }
 
-        // Overload for screenshot pixel data read straight from a frame's NativeArray slice, avoiding
-        // a managed copy. Shares the create/apply/destroy-on-failure path with the byte[] overload.
+        // Overload for pixel data read straight from a frame's NativeArray slice, no managed copy.
         public static Texture2D CreateScreenshotTexture(NativeArray<byte> bytes, int width, int height, TextureFormat format)
         {
             var texture = new Texture2D(width, height, format, mipChain: false);
@@ -676,16 +651,13 @@ namespace UnityEditorInternal.Profiling
             }
             catch
             {
-                // Native Texture2D memory survives GC — destroy explicitly so a partially
-                // initialised texture from a size/format mismatch doesn't leak.
+                // Native Texture2D memory survives GC, so a partly initialised one leaks.
                 UnityEngine.Object.DestroyImmediate(texture);
                 throw;
             }
             return texture;
         }
 
-        // The lowest frame index currently shown in the Profiler window.
-        // Used to hide screenshots that are beyond the range of what's accessible to the user.
         public static int FirstDisplayedFrameIndex()
         {
             var firstInMemory = ProfilerDriver.firstFrameIndex;
@@ -693,19 +665,13 @@ namespace UnityEditorInternal.Profiling
             return Mathf.Max(firstInMemory, firstDisplayed);
         }
 
-        // FirstDisplayedFrameIndex as a lower bound for deciding whether a screenshot is shown:
-        // clamped so it is never negative, which also excludes entries whose LogicalFrame resolved
-        // below zero (the frame they depict predates the capture) when no data is loaded and
-        // FirstDisplayedFrameIndex is itself -1. Every site that decides whether a screenshot is
-        // visible shares this, so the strips and the reported count cannot drift apart.
+        // Shared by every visibility decision, so the strips and the reported count can't drift.
         public static int FirstSelectableFrameIndex()
         {
             return Mathf.Max(0, FirstDisplayedFrameIndex());
         }
 
-        // Cancels and disposes an existing CTS, then either reallocates it (recreate: true — for sites
-        // that keep the field non-null at all times) or sets it to null (recreate: false — for sites
-        // that allocate lazily when work appears).
+        // recreate: true for sites that keep the field non-null; false for lazy allocators.
         public static void ReplaceCts(ref CancellationTokenSource cts, bool recreate)
         {
             cts?.Cancel();
@@ -722,6 +688,8 @@ namespace UnityEditorInternal.Profiling
             ProfilerDriver.profileLoaded -= OnDataLoaded;
             ProfilerDriver.profileCleared -= OnDataCleared;
             ProfilerDriver.NewProfilerFrameRecorded -= OnNewFrameRecorded;
+            if (m_ProfilerWindow != null)
+                m_ProfilerWindow.recordingStateChanged -= OnRecordingStateChanged;
 
             m_PendingRefresh?.Pause();
             m_PendingRefresh = null;
@@ -730,4 +698,3 @@ namespace UnityEditorInternal.Profiling
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

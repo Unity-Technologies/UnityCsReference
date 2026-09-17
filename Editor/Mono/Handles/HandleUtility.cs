@@ -2224,7 +2224,9 @@ namespace UnityEditor
         public delegate UnityObject ResolvePickingWithWorldPositionCallback(int localPickingIndex, Vector3 worldPos, float depth);
         public delegate RenderPickingResult RenderPickingCallback(in RenderPickingArgs args);
 
+        // Re-registered on every code load by UIToolkitSceneViewPicking's [InitializeOnLoad] static constructor.
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Callbacks re-registered on every code load by UIToolkitSceneViewPicking's [InitializeOnLoad] static constructor")]
         private static readonly List<RenderPickingCallback> s_RenderPickingCallbacks = new();
         [AutoStaticsCleanupOnCodeReload]
         private static readonly List<(int PickingIndexBegin, int PickingIndexEnd, ResolvePickingCallback Resolver, ResolvePickingWithWorldPositionCallback ResolverWithWorldPos)> s_RenderPickingResults = new();

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEngine;
 using UnityEditor.SceneManagement;
 using UnityEngine.UIElements;
@@ -81,8 +82,7 @@ internal sealed class SetInlineStylePropertyCommand<T> : Command<SetInlineStyleP
         var property = GetOrCreateStyleProperty(rule, StylePropertyId);
         ValueSetter(property, inlineStyleSheet, Value);
 
-        Element.UpdateInlineRule(inlineStyleSheet, rule);
-        Element.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
+        VisualElementUtility.UpdateInlineRuleOnAllClones(Element, inlineStyleSheet, rule);
 
         return CommandExecutionStatus.Success;
     }

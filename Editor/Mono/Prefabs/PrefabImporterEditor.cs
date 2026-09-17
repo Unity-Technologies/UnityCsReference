@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System.Collections.Generic;
 using UnityEditor.AssetImporters;
 using UnityEditor.SceneManagement;
@@ -18,11 +17,11 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static readonly GUIContent missingScriptsHelpText = EditorGUIUtility.TrTextContent("Prefab has missing scripts. Open Prefab to fix the issue.");
-            public static readonly GUIContent missingSerializeReferenceHelpText = EditorGUIUtility.TrTextContent("Prefab has missing SerializeReference Types. Open Prefab to fix the issue. Changing the Prefab directly will cause those types to be lost.");
-            public static readonly GUIContent multiSelectionMissingScriptsHelpText = EditorGUIUtility.TrTextContent("Some of the selected Prefabs have missing scripts and needs to be fixed before editing them. Click to Open Prefab to fix the issue.");
-            public static readonly GUIContent savingFailedHelpText = EditorGUIUtility.TrTextContent("Saving has failed. Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nOpen Prefab to fix the issue.");
-            public static readonly GUIContent variantOfText = EditorGUIUtility.TrTextContent("Variant Parent");
+            public static readonly GUIContent missingScriptsHelpText = L10n.TextContent("Prefab has missing scripts. Open Prefab to fix the issue.", null, null, null);
+            public static readonly GUIContent missingSerializeReferenceHelpText = L10n.TextContent("Prefab has missing SerializeReference Types. Open Prefab to fix the issue. Changing the Prefab directly will cause those types to be lost.", null, null, null);
+            public static readonly GUIContent multiSelectionMissingScriptsHelpText = L10n.TextContent("Some of the selected Prefabs have missing scripts and needs to be fixed before editing them. Click to Open Prefab to fix the issue.", null, null, null);
+            public static readonly GUIContent savingFailedHelpText = L10n.TextContent("Saving has failed. Check the Console window to get more insight into what needs to be fixed on the Prefab Asset.\n\nOpen Prefab to fix the issue.", null, null, null);
+            public static readonly GUIContent variantOfText = L10n.TextContent("Variant Parent", null, null, null);
             public static readonly string localizedTitleMultiplePrefabs = L10n.Tr("Prefab Assets", null);
             public static readonly string localizedTitleSinglePrefab = L10n.Tr("Prefab Asset", null);
             public static readonly GUIStyle openButtonStyle = "AC Button";
@@ -446,4 +445,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

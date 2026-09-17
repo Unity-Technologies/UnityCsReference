@@ -646,7 +646,7 @@ namespace UnityEngine.Rendering
 
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
 
-            Internal_DrawProceduralIndirect(matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, properties);
+            Internal_DrawProceduralIndirect(matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, 1, null, 0, properties);
         }
 
         public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset)
@@ -669,7 +669,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentNullException("material");
             if (bufferWithArgs == null)
                 throw new ArgumentNullException("bufferWithArgs");
-            Internal_DrawProceduralIndexedIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, properties);
+            Internal_DrawProceduralIndexedIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, 1, null, 0, properties);
         }
 
         public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset)
@@ -693,7 +693,7 @@ namespace UnityEngine.Rendering
 
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
 
-            Internal_DrawProceduralIndirectGraphicsBuffer(matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, properties);
+            Internal_DrawProceduralIndirectGraphicsBuffer(matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, 1, null, 0, properties);
         }
 
         public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset)
@@ -716,7 +716,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentNullException("material");
             if (bufferWithArgs == null)
                 throw new ArgumentNullException("bufferWithArgs");
-            Internal_DrawProceduralIndexedIndirectGraphicsBuffer(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, properties);
+            Internal_DrawProceduralIndexedIndirectGraphicsBuffer(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, 1, null, 0, properties);
         }
 
         public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset)
@@ -727,6 +727,90 @@ namespace UnityEngine.Rendering
         public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs)
         {
             DrawProceduralIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, 0);
+        }
+
+        public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset, uint drawCount, ComputeBuffer countBuffer = null, int countBufferOffset = 0, MaterialPropertyBlock properties = null)
+        {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+            if (drawCount > 1 && !SystemInfo.supportsMultiDrawIndirect)
+                throw new InvalidOperationException("Multi-draw-indirect (drawCount > 1) requires SystemInfo.supportsMultiDrawIndirect.");
+            if (drawCount > SystemInfo.maxDrawIndirectCount)
+                throw new InvalidOperationException($"The drawCount exceeds SystemInfo.maxDrawIndirectCount ({SystemInfo.maxDrawIndirectCount}).");
+            if (countBuffer != null && !SystemInfo.supportsMultiDrawIndirectCountBuffer)
+                throw new InvalidOperationException("Count buffer for multi-draw-indirect requires SystemInfo.supportsMultiDrawIndirectCountBuffer.");
+            if (material == null)
+                throw new ArgumentNullException("material");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
+            Internal_DrawProceduralIndirect(matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, drawCount, countBuffer, countBufferOffset, properties);
+        }
+
+        public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset, uint drawCount, ComputeBuffer countBuffer = null, int countBufferOffset = 0, MaterialPropertyBlock properties = null)
+        {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+            if (drawCount > 1 && !SystemInfo.supportsMultiDrawIndirect)
+                throw new InvalidOperationException("Multi-draw-indirect (drawCount > 1) requires SystemInfo.supportsMultiDrawIndirect.");
+            if (drawCount > SystemInfo.maxDrawIndirectCount)
+                throw new InvalidOperationException($"The drawCount exceeds SystemInfo.maxDrawIndirectCount ({SystemInfo.maxDrawIndirectCount}).");
+            if (countBuffer != null && !SystemInfo.supportsMultiDrawIndirectCountBuffer)
+                throw new InvalidOperationException("Count buffer for multi-draw-indirect requires SystemInfo.supportsMultiDrawIndirectCountBuffer.");
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            if (material == null)
+                throw new ArgumentNullException("material");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
+            Internal_DrawProceduralIndexedIndirect(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, drawCount, countBuffer, countBufferOffset, properties);
+        }
+
+        public void DrawProceduralIndirect(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset, uint drawCount, GraphicsBuffer countBuffer = null, int countBufferOffset = 0, MaterialPropertyBlock properties = null)
+        {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+            if (drawCount > 1 && !SystemInfo.supportsMultiDrawIndirect)
+                throw new InvalidOperationException("Multi-draw-indirect (drawCount > 1) requires SystemInfo.supportsMultiDrawIndirect.");
+            if (drawCount > SystemInfo.maxDrawIndirectCount)
+                throw new InvalidOperationException($"The drawCount exceeds SystemInfo.maxDrawIndirectCount ({SystemInfo.maxDrawIndirectCount}).");
+            if (countBuffer != null && !SystemInfo.supportsMultiDrawIndirectCountBuffer)
+                throw new InvalidOperationException("Count buffer for multi-draw-indirect requires SystemInfo.supportsMultiDrawIndirectCountBuffer.");
+            if (material == null)
+                throw new ArgumentNullException("material");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
+            Internal_DrawProceduralIndirectGraphicsBuffer(matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, drawCount, countBuffer, countBufferOffset, properties);
+        }
+
+        public void DrawProceduralIndirect(GraphicsBuffer indexBuffer, Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, GraphicsBuffer bufferWithArgs, int argsOffset, uint drawCount, GraphicsBuffer countBuffer = null, int countBufferOffset = 0, MaterialPropertyBlock properties = null)
+        {
+            if (!SystemInfo.supportsIndirectArgumentsBuffer)
+                throw new InvalidOperationException("Indirect argument buffers are not supported.");
+            if (drawCount > 1 && !SystemInfo.supportsMultiDrawIndirect)
+                throw new InvalidOperationException("Multi-draw-indirect (drawCount > 1) requires SystemInfo.supportsMultiDrawIndirect.");
+            if (drawCount > SystemInfo.maxDrawIndirectCount)
+                throw new InvalidOperationException($"The drawCount exceeds SystemInfo.maxDrawIndirectCount ({SystemInfo.maxDrawIndirectCount}).");
+            if (countBuffer != null && !SystemInfo.supportsMultiDrawIndirectCountBuffer)
+                throw new InvalidOperationException("Count buffer for multi-draw-indirect requires SystemInfo.supportsMultiDrawIndirectCountBuffer.");
+            if (indexBuffer == null)
+                throw new ArgumentNullException("indexBuffer");
+            if (material == null)
+                throw new ArgumentNullException("material");
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
+            Internal_DrawProceduralIndexedIndirectGraphicsBuffer(indexBuffer, matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, drawCount, countBuffer, countBufferOffset, properties);
         }
 
         public void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, int shaderPass, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties)

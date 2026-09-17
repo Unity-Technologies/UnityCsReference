@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -155,8 +154,8 @@ abstract class LocalizedReferenceElement : VisualElement
         m_ExtrasSlot = this.Q("extras-slot");
 
         // Static text lives in UXML but must translate with the editor language, so set it through L10n.Tr here.
-        this.Q<Label>("entry-name-label").text = L10n.Tr("Entry name", null);
-        this.Q<Label>("values-label").text = L10n.Tr("Values", null);
+        this.Q<Label>("entry-name-label").text = LocLabels.EntryName;
+        this.Q<Label>("values-label").text = LocLabels.Values;
         m_EntryNameWarning.tooltip = L10n.Tr("Name is empty or already used; the key was not renamed.", null);
 
         ConfigureRail();
@@ -370,14 +369,14 @@ abstract class LocalizedReferenceElement : VisualElement
 
         if (m_Collection != null)
         {
-            var edit = new Button(() => ResourceTablesWindow.ShowWindow(m_Collection)) { text = L10n.Tr("Edit", null) };
+            var edit = new Button(() => ResourceTablesWindow.ShowWindow(m_Collection)) { text = LocLabels.Edit };
             edit.tooltip = L10n.Tr("Open the referenced collection in the Resource Tables window.", null);
             edit.AddToClassList(LocClasses.LsCreateRowTrailing);
             m_CreateRow.Add(edit);
         }
         else
         {
-            var create = new Button(() => ResourceTablesWindow.ShowWindow(null)) { text = L10n.Tr("Create table collection", null) };
+            var create = new Button(() => ResourceTablesWindow.ShowWindow(null)) { text = LocLabels.CreateTableCollection };
             create.AddToClassList(LocClasses.LsCreateRowTrailing);
             m_CreateRow.Add(create);
         }
@@ -403,7 +402,7 @@ abstract class LocalizedReferenceElement : VisualElement
     {
         m_TogglesRow.Clear();
 
-        var fallback = new Toggle(L10n.Tr("Enable fallback", null)) { tooltip = L10n.Tr("When the selected locale has no value, resolve through its fallback chain.", null) };
+        var fallback = new Toggle(LocLabels.EnableFallback) { tooltip = L10n.Tr("When the selected locale has no value, resolve through its fallback chain.", null) };
         fallback.BindProperty(m_EnableFallback);
         m_TogglesRow.Add(fallback);
     }
@@ -508,7 +507,7 @@ abstract class LocalizedReferenceElement : VisualElement
         if (table == null)
         {
             detail.Add(new HelpBox(string.Format(L10n.Tr("No {0} table exists in this collection yet.", null), locale.Code), HelpBoxMessageType.Warning));
-            var createTable = new Button(() => { LocalizationTableAuthoring.EnsureLocaleTable(m_Collection, locale); RebuildBody(); }) { text = L10n.Tr("Create table", null) };
+            var createTable = new Button(() => { LocalizationTableAuthoring.EnsureLocaleTable(m_Collection, locale); RebuildBody(); }) { text = LocLabels.CreateTable };
             createTable.AddToClassList(LocClasses.LsDetailCreateTable);
             detail.Add(createTable);
             return;
@@ -517,7 +516,7 @@ abstract class LocalizedReferenceElement : VisualElement
         if (m_Collection.SharedData.IsVariant(m_SharedEntry.Id))
         {
             detail.Add(new HelpBox(L10n.Tr("This entry uses variants. Edit its per-variant values in the Resource Tables window.", null), HelpBoxMessageType.Info));
-            var open = new Button(() => ResourceTablesWindow.ShowWindow(m_Collection)) { text = L10n.Tr("Open Resource Tables", null) };
+            var open = new Button(() => ResourceTablesWindow.ShowWindow(m_Collection)) { text = LocLabels.OpenResourceTables };
             open.AddToClassList(LocClasses.LsDetailCreateTable);
             detail.Add(open);
             return;
@@ -600,7 +599,16 @@ abstract class LocalizedReferenceElement : VisualElement
     protected IReadOnlyList<Locale> ProjectLocales()
     {
         var settings = LocalizationEditorSettings.ActiveSettings;
-        return settings != null ? settings.AvailableLocales : Array.Empty<Locale>();
+        if (settings == null)
+            return Array.Empty<Locale>();
+        // A pseudo locale transforms another locale's values, so it holds no values of its own to edit.
+        var locales = new List<Locale>(settings.AvailableLocales.Count);
+        foreach (var locale in settings.AvailableLocales)
+        {
+            if (locale != null && locale is not IPostProcessValueLocale)
+                locales.Add(locale);
+        }
+        return locales;
     }
 
     string DefaultLocaleCode(List<Locale> source)
@@ -648,4 +656,3 @@ static class LocalizedDrawerExtensions
         return element;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

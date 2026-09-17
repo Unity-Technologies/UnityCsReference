@@ -76,8 +76,8 @@ namespace UnityEditor
 
         internal static void Show(SerializedProperty prop)
         {
-            GUIContent copy = EditorGUIUtility.TrTextContent("Copy");
-            GUIContent paste = EditorGUIUtility.TrTextContent("Paste");
+            GUIContent copy = L10n.TextContent("Copy", null, null, null);
+            GUIContent paste = L10n.TextContent("Paste", null, null, null);
 
             GenericMenu menu = new GenericMenu();
             var gradientMenu = new GradientContextMenu(prop);
@@ -123,8 +123,8 @@ namespace UnityEditor
         static internal void Show(Rect position, SerializedProperty property, SerializedProperty property2, SerializedProperty scalar, Rect curveRanges, ParticleSystemCurveEditor curveEditor)
         {
             // Curve context menu
-            GUIContent copy = EditorGUIUtility.TrTextContent("Copy");
-            GUIContent paste = EditorGUIUtility.TrTextContent("Paste");
+            GUIContent copy = L10n.TextContent("Copy", null, null, null);
+            GUIContent paste = L10n.TextContent("Paste", null, null, null);
 
             GenericMenu menu = new GenericMenu();
 

@@ -310,11 +310,8 @@ namespace Unity.UIToolkit.Editor
             return bounds;
         }
 
-        // IPanelComponent is an interface, so a non-null managed reference can still wrap a destroyed
-        // Unity object (UIDocument/PanelRenderer). Unity's overloaded == detects the destroyed case;
-        // a reference-null check on the interface does not. Use this before touching .gameObject etc.
         internal static bool IsAlive(IPanelComponent panelComponent)
-            => panelComponent is UnityEngine.Object obj ? obj != null : panelComponent != null;
+            => PanelComponentUtils.IsAlive(panelComponent);
 
         static bool IsUsableBounds(Bounds b)
         {

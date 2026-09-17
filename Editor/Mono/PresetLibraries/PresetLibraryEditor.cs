@@ -77,10 +77,10 @@ namespace UnityEditor
             public GUIStyle innerShadowBg = GetStyle("InnerShadowBg");
             public GUIStyle optionsButton = GetStyle("PaneOptions");
             public GUIStyle newPresetStyle = new GUIStyle(EditorStyles.boldLabel);
-            public GUIContent plusButtonText = EditorGUIUtility.TrTextContent("", "Add new preset");
-            public GUIContent plusButtonTextNotCheckedOut = EditorGUIUtility.TrTextContent("", "To add presets you need to press the 'Check out' button below");
-            public GUIContent header = EditorGUIUtility.TrTextContent("Presets");
-            public GUIContent newPreset = EditorGUIUtility.TrTextContent("New");
+            public GUIContent plusButtonText = L10n.TextContent("", "Add new preset", null, null);
+            public GUIContent plusButtonTextNotCheckedOut = L10n.TextContent("", "To add presets you need to press the 'Check out' button below", null, null);
+            public GUIContent header = L10n.TextContent("Presets", null, null, null);
+            public GUIContent newPreset = L10n.TextContent("New", null, null, null);
 
             // We need a fixed id as the generated one can change when we are in the middle of renaming a gradient (UUM-148458)
             public static readonly int settingsControlId = GUIUtility.GetPermanentControlID();
@@ -889,10 +889,10 @@ namespace UnityEditor
                 s_Caller = caller;
                 s_PresetIndex = presetIndex;
 
-                GUIContent replaceText = EditorGUIUtility.TrTextContent("Replace");
-                GUIContent deleteText = EditorGUIUtility.TrTextContent("Delete");
-                GUIContent renameText = EditorGUIUtility.TrTextContent("Rename");
-                GUIContent moveToText = EditorGUIUtility.TrTextContent("Move To First");
+                GUIContent replaceText = L10n.TextContent("Replace", null, null, null);
+                GUIContent deleteText = L10n.TextContent("Delete", null, null, null);
+                GUIContent renameText = L10n.TextContent("Rename", null, null, null);
+                GUIContent moveToText = L10n.TextContent("Move To First", null, null, null);
 
                 GenericMenu menu = new GenericMenu();
                 if (isOpenForEdit)

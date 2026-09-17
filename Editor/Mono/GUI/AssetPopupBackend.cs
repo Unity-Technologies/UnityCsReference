@@ -130,7 +130,7 @@ namespace UnityEditor
             {
                 // Create item
                 gm.AddSeparator("");
-                gm.AddItem(EditorGUIUtility.TrTextContent("Create New..."), false, delegate
+                gm.AddItem(L10n.TextContent("Create New...", null, null, null), false, delegate
                 {
                     var newAsset = Activator.CreateInstance<T>();
                     var doCreate = ScriptableObject.CreateInstance<DoCreateNewAsset>();

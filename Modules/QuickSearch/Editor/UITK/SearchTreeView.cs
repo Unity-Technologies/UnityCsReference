@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -46,6 +45,9 @@ namespace UnityEditor.Search
         public static readonly string SearchTreeViewItemButtonContainerClassName = SearchTreeViewItemUssClassName.WithUssElement("button-container");
         public static readonly string SearchTreeViewItemButtonContainerDisabledClassName = SearchTreeViewItemButtonContainerClassName.WithUssModifier("disabled");
         public static readonly string MoreActionButtonClassName = SearchTreeViewItemUssClassName.WithUssElement("more-action-button");
+        // Rendered only when HierarchySearchItemHandler.RowToggleStateProvider is set; unset by default.
+        public static readonly string RowToggleButtonClassName = SearchTreeViewItemUssClassName.WithUssElement("row-toggle-button");
+        internal const string RowToggleButtonName = "SearchTreeViewRowToggleButton";
 
         internal const string ResultViewId = "SearchTreeView";
         public string ViewId => ResultViewId;
@@ -53,6 +55,8 @@ namespace UnityEditor.Search
         public bool UpdateNeeded => m_SearchItemHandler.UpdateNeeded || m_HierarchyView.UpdateNeeded;
         public event IResultView.SelectionChangedEventHandler SelectionChanged;
         public event IResultView.PopulateItemsContextMenuHandler PopulateItemsContextMenu;
+        // Fires for folder/category nodes instead of PopulateItemsContextMenu.
+        public event IResultView.PopulateItemsContextMenuHandler PopulateFolderContextMenu;
 
         public HierarchyView HierarchyView => m_HierarchyView;
         public HierarchySearchItemHandler SearchItemHandler => m_SearchItemHandler;
@@ -115,9 +119,17 @@ namespace UnityEditor.Search
             return EditorGUIUtility.LoadIconRequired("UnityEditor.SceneHierarchyWindow");
         }
 
-        public static SearchResultViewDescriptor GetDescriptor()
+        // onCreated runs synchronously right after construction, before the view can bind any row.
+        public static SearchResultViewDescriptor GetDescriptor(Action<SearchTreeView> onCreated = null)
         {
-            return new SearchResultViewDescriptor(ResultViewId, Create, FetchIcon,
+            IResultView CreateAndConfigure(ISearchView viewModel)
+            {
+                var treeView = Create(viewModel);
+                onCreated?.Invoke(treeView);
+                return treeView;
+            }
+
+            return new SearchResultViewDescriptor(ResultViewId, onCreated != null ? CreateAndConfigure : Create, FetchIcon,
                 (float)DisplayMode.Table + 1,
                 description: "Tree View",
                 buttonClassName: "search-statusbar__tree-mode-button");
@@ -152,16 +164,18 @@ namespace UnityEditor.Search
         #region IResultView
         public void Refresh(RefreshFlags refreshFlags = RefreshFlags.Default)
         {
-            if (refreshFlags.HasAny(RefreshFlags.ItemsChanged))
-            {
-                m_SearchItemHandler.IntegrateNewSearchItems();
-            }
-            else if (refreshFlags.HasAny(RefreshFlags.QueryStarted))
+            if (refreshFlags.HasAny(RefreshFlags.QueryStarted))
             {
                 m_SearchItemHandler.CanSort = false;
                 m_SearchItemHandler.RebuildHierarchy();
             }
-            else if (refreshFlags.HasAny(RefreshFlags.QueryCompleted))
+
+            if (refreshFlags.HasAny(RefreshFlags.ItemsChanged))
+            {
+                m_SearchItemHandler.IntegrateNewSearchItems();
+            }
+
+            if (refreshFlags.HasAny(RefreshFlags.QueryCompleted))
             {
                 m_SearchItemHandler.CanSort = true;
             }
@@ -224,6 +238,8 @@ namespace UnityEditor.Search
             m_HierarchyView.Update();
 
             m_HierarchyView.ViewModel.BeginFlagsChange();
+            // Clear the previous selection first, or a row stays highlighted after it's no longer selected.
+            m_HierarchyView.ViewModel.ClearFlags(HierarchyNodeFlags.Selected);
             HierarchyNode firstSelection = HierarchyNode.Null;
             foreach (var selectedItem in selection)
             {
@@ -277,15 +293,24 @@ namespace UnityEditor.Search
 
         void OnHierarchyPopulateContextMenu(HierarchyView view, HierarchyViewItem item, DropdownMenu menu)
         {
-            if (m_SearchItemHandler.TryGetSearchItem(in item.Node, out var searchItem) &&
-                !m_SearchItemHandler.IsBuiltinParentSearchItem(searchItem))
-            {
+            if (!m_SearchItemHandler.TryGetSearchItem(in item.Node, out var searchItem))
+                return;
+
+            if (HierarchySearchItemHandler.IsBuiltinParentSearchItem(searchItem))
+                PopulateFolderContextMenu?.Invoke(searchItem, menu);
+            else
                 PopulateItemsContextMenu?.Invoke(searchItem, menu);
-            }
         }
 
         void OnSearchItemDoubleClicked(SearchItem searchItem)
         {
+            if (HierarchySearchItemHandler.IsBuiltinParentSearchItem(searchItem))
+            {
+                // Folder/category nodes don't exist in ISearchView.results, so act on the node directly.
+                m_ViewModel.ExecuteAction(null, new[] { searchItem }, true);
+                return;
+            }
+
             // We care about the selected items, not only the item that is double-clicked.
             m_ViewModel.ExecuteAction(null, m_ViewModel.selection.ToArray(), true);
         }
@@ -434,6 +459,22 @@ namespace UnityEditor.Search
             return m_SearchItemHandler.TryGetSearchItem(in currentNode, out var searchItem) ? searchItem : null;
         }
 
+        internal bool TryGetSearchItemAtPosition(Vector2 worldPosition, out SearchItem item)
+        {
+            item = null;
+
+            // GetIndexFromWorldPosition truncates toward zero, so a position above the list maps to row 0, not -1.
+            if (!m_HierarchyView.ListView.worldBound.Contains(worldPosition))
+                return false;
+
+            var nodeIndex = m_HierarchyView.GetIndexFromWorldPosition(worldPosition);
+            if (nodeIndex < 0 || nodeIndex >= m_HierarchyView.ViewModel.Count)
+                return false;
+
+            var currentNode = m_HierarchyView.ViewModel[nodeIndex];
+            return m_SearchItemHandler.TryGetSearchItem(in currentNode, out item);
+        }
+
         void StartDrag(SearchItem searchItem)
         {
             DragAndDrop.PrepareStartDrag();
@@ -461,4 +502,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

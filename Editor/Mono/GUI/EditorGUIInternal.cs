@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -23,7 +22,7 @@ namespace UnityEditor
         private static GUIStyle s_MixedToggleStyle = EditorStyles.toggleMixed;
 
         const float kExposureSliderAbsoluteMax = 23.0f;
-        static readonly GUIContent s_ExposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the texture.");
+        static readonly GUIContent s_ExposureIcon = L10n.IconContent("Exposure", "Controls the number of stops to over or under expose the texture.", null);
 
         static internal Rect GetTooltipRect() { return tooltipRect; }
         static internal string GetMouseTooltip() { return mouseTooltip; }
@@ -110,4 +109,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

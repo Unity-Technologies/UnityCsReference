@@ -16,8 +16,8 @@ namespace Unity.GraphToolkit.Editor
     /// A transition can hold several rules, and each rule has its own condition list, so
     /// <see cref="Rule"/> is what the clicked list belongs to and <see cref="Transition"/> is the
     /// transition that rule is part of. Neither is ever <c>null</c>, unlike
-    /// <see cref="MenuContext.ClickedObject"/>, which is <c>null</c> when the user right-clicks
-    /// empty space in the list.
+    /// <see cref="MenuContext.ClickedObject"/>, which is <c>null</c> only when the click doesn't land
+    /// on any condition or group row, including the root group's row.
     /// </remarks>
     /// <example>
     /// <code lang="cs">

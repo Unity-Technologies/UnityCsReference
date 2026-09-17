@@ -129,7 +129,7 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
     }
 
     // An activated clone slot left behind on remove/switch orphans the virtual player (UUM-138111).
-    internal override bool NeedsTearDown(Instance instance, out string reason)
+    internal override bool NeedsTearDown(ControllerRuntime instance, out string reason)
     {
         if (IsActiveCloneSlot())
         {
@@ -141,7 +141,7 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
         return false;
     }
 
-    internal override void TearDown(Instance instance)
+    internal override void TearDown(ControllerRuntime instance)
     {
         if (IsActiveCloneSlot())
             MultiplayerPlaymode.Players[Settings.PlayerInstanceIndex].Deactivate(out _);
@@ -165,12 +165,12 @@ class CloneEditorController : EditorController<CloneEditorController.InstanceSet
         return player.PlayerState is PlayerState.Launched or PlayerState.Launching;
     }
 
-    protected internal override VisualElement CreateControllerUI(Instance instance)
+    protected internal override VisualElement CreateControllerUI(ControllerRuntime instance)
     {
         return new CloneEditorInstanceStatusElement(instance, Settings, GetUserSettingsSerializedProperty(new UserSettings { KeepAliveEnabled = k_DefaultKeepAliveEnabled }));
     }
 
-    protected internal override VisualElement CreateTitleBarUI(Instance instance)
+    protected internal override VisualElement CreateTitleBarUI(ControllerRuntime instance)
     {
         var focusButton = new VisualElement();
         focusButton.AddToClassList("focus-icon");

@@ -122,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packagesInProgress.Count > 0)
             {
                 m_PageManager.activePage = page;
-                page.LoadExtraItems(packagesInProgress);
+                page.LoadTemporaryItems(packagesInProgress);
                 page.SetNewSelection(packagesInProgress, false);
             }
             Close();

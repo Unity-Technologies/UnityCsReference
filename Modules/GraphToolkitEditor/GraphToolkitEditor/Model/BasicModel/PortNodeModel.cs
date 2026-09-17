@@ -15,10 +15,61 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal abstract class PortNodeModel : AbstractNodeModel
     {
+        protected List<NodeOption> m_NodeOptions = new List<NodeOption>();
+        protected Dictionary<string, NodeOption> m_NodeOptionsByName = new Dictionary<string, NodeOption>();
+
+        internal bool IsPortBeingReused { get; set; }
+
         /// <inheritdoc />
         #pragma warning disable UAC2001 // Avoid Linq
         public override IEnumerable<GraphElementModel> DependentModels => base.DependentModels.Concat(GetPorts());
 #pragma warning restore UAC2001
+
+        /// <summary>
+        /// The list of <see cref="NodeOption"/>.
+        /// </summary>
+        /// <remarks>The options in this list are created without the use of the <see cref="NodeOptionAttribute"/>.</remarks>
+        public IReadOnlyList<NodeOption> NodeOptions => m_NodeOptions;
+
+        /// <summary>
+        /// The list of <see cref="NodeOption"/> indexed by a string unique to the option.
+        /// </summary>
+        /// <remarks>The options in this dictionary are created without the use of the <see cref="NodeOptionAttribute"/>.</remarks>
+        public IReadOnlyDictionary<string, NodeOption> NodeOptionsByName => m_NodeOptionsByName;
+
+        /// <summary>
+        /// The constants backing this node's input ports and node options, indexed by <see cref="PortModel.UniqueName"/>.
+        /// </summary>
+        /// <remarks>Null when the model stores no embedded constant. Implementations must return a stored field: this
+        /// property is on the hot path of <see cref="PortModel.EmbeddedValue"/>.</remarks>
+        internal virtual IDictionary<string, Constant> ConstantsByPortName => null;
+
+        /// <summary>
+        /// Instantiates the ports and the node options of this node.
+        /// </summary>
+        /// <remarks>Does nothing by default.</remarks>
+        public virtual void DefineNode() { }
+
+        /// <summary>
+        /// Adds a node option to this node.
+        /// </summary>
+        /// <param name="nodeOption">The node option to add.</param>
+        /// <returns>The added node option.</returns>
+        internal NodeOption AddNodeOption(NodeOption nodeOption)
+        {
+            m_NodeOptions.Add(nodeOption);
+            m_NodeOptionsByName[nodeOption.Id] = nodeOption;
+            return m_NodeOptions[^1];
+        }
+
+        /// <summary>
+        /// Removes every node option from this node.
+        /// </summary>
+        internal void ClearNodeOptions()
+        {
+            m_NodeOptions.Clear();
+            m_NodeOptionsByName.Clear();
+        }
 
         /// <summary>
         /// Retrieves all port models of this node.
@@ -73,7 +124,57 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="inputPort">The port to update.</param>
         /// <param name="initializationCallback">An initialization method for the constant, called right after the constant is created.</param>
         /// <param name="setterAction">The method called after the constant value changes.</param>
-        protected internal virtual void UpdateConstantForInput(PortModel inputPort, Action<Constant> initializationCallback = null, Action<object> setterAction = null) { }
+        /// <remarks>Does nothing when the node stores no embedded constant, that is when <see cref="ConstantsByPortName"/> is null.</remarks>
+        protected internal virtual void UpdateConstantForInput(PortModel inputPort, Action<Constant> initializationCallback = null, Action<object> setterAction = null)
+        {
+            var constantsByPortName = ConstantsByPortName;
+            if (constantsByPortName == null)
+                return;
+
+            var id = inputPort.UniqueName;
+            if ((inputPort.Options & PortModelOptions.NoEmbeddedConstant) != 0)
+            {
+                constantsByPortName.Remove(id);
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Unspecified);
+                return;
+            }
+
+            Constant newConstant = null;
+            if (constantsByPortName.TryGetValue(id, out var existingConstant))
+            {
+                newConstant = GraphModel?.CreateConstantValue(inputPort.DataTypeHandle);
+                var portDefinitionType = newConstant != null ? newConstant.Type : inputPort.DataTypeHandle.Resolve();
+
+                if (!existingConstant.IsAssignableFrom(portDefinitionType))
+                {
+                    // Destroy incompatible constant
+                    constantsByPortName.Remove(id);
+                    GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Unspecified);
+                }
+                else
+                {
+                    // Reuse compatible constant.
+                    existingConstant.OwnerModel = inputPort;
+                    existingConstant.SetterMethod = setterAction;
+                    return;
+                }
+            }
+
+            // Create new constant if needed
+            if (inputPort.CreateEmbeddedValueIfNeeded
+                && inputPort.DataTypeHandle != TypeHandle.Unknown)
+            {
+                newConstant ??= GraphModel?.CreateConstantValue(inputPort.DataTypeHandle);
+                if (newConstant != null)
+                {
+                    newConstant.OwnerModel = inputPort;
+                    initializationCallback?.Invoke(newConstant);
+                    newConstant.SetterMethod = setterAction;
+                    constantsByPortName[id] = newConstant;
+                    GraphModel.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Unspecified);
+                }
+            }
+        }
 
         /// <summary>
         /// Gets the model of a port that would be fit to connect to another port model.

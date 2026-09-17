@@ -19,7 +19,7 @@ namespace Unity.Localization;
 /// collection assigns key ids, or implement <see cref="IKeyGenerator"/> for a different scheme.
 /// </remarks>
 /// <example>
-/// <para>Generate two ids and confirm they differ.</para>
+/// Generate two ids and confirm they differ.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/DistributedUIDGeneratorOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="IKeyGenerator"/>
@@ -84,7 +84,7 @@ public class DistributedUIDGenerator : IKeyGenerator
     /// overload to pin the epoch to a fixed point instead.
     /// </remarks>
     /// <example>
-    /// <para>Assign a default generator to a collection's shared data.</para>
+    /// Assign a default generator to a collection's shared data.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/DistributedUIDGeneratorConstructorExample.cs"/>
     /// </example>
     public DistributedUIDGenerator() {}
@@ -98,7 +98,7 @@ public class DistributedUIDGenerator : IKeyGenerator
     /// </remarks>
     /// <param name="customEpoch">The epoch, in Unix milliseconds, that timestamps are measured from.</param>
     /// <example>
-    /// <para>Create a generator pinned to a fixed epoch.</para>
+    /// Create a generator pinned to a fixed epoch.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/DistributedUIDGeneratorCustomEpochExample.cs"/>
     /// </example>
     public DistributedUIDGenerator(long customEpoch) => m_CustomEpoch = customEpoch;
@@ -113,7 +113,7 @@ public class DistributedUIDGenerator : IKeyGenerator
     /// </remarks>
     /// <returns>A distributed unique id suitable for a table key.</returns>
     /// <example>
-    /// <para>Generate a single id.</para>
+    /// Generate a single id.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/DistributedUIDGeneratorGetNextKeyExample.cs"/>
     /// </example>
     public long GetNextKey()

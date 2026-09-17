@@ -312,6 +312,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Reflection memo: GetMethodsWithAttribute re-scans and re-adds an entry on every miss, so entries
+        // dropped on reload are recomputed from the currently loaded assemblies.
+        [IgnoreForUAL0015("Reflection memo, entries recomputed on demand by GetMethodsWithAttribute")]
         static Dictionary<Type, MethodInfoSorter> s_DecoratedMethodsByAttrTypeCache = new Dictionary<Type, MethodInfoSorter>();
         private const BindingFlags kAllStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 

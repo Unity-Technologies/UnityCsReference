@@ -21,8 +21,8 @@ namespace UnityEditor.TerrainTools
 
         class Styles
         {
-            public readonly GUIContent description = EditorGUIUtility.TrTextContent("Click to smooth the terrain height.");
-            public readonly GUIContent direction = EditorGUIUtility.TrTextContent("Blur Direction", "Blur only up (1.0), only down (-1.0) or both (0.0)");
+            public readonly GUIContent description = L10n.TextContent("Click to smooth the terrain height.", null, null, null);
+            public readonly GUIContent direction = L10n.TextContent("Blur Direction", "Blur only up (1.0), only down (-1.0) or both (0.0)", null, null);
         }
 
         [NoAutoStaticsCleanup] // lazy GUIContent/GUIStyle styles holder; editor infra, no user refs

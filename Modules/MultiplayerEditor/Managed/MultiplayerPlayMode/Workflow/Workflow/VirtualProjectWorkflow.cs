@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: HeadlessRuntime not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,7 +15,6 @@ using UnityEngine;
 
 namespace Unity.Multiplayer.PlayMode.Editor
 {
-    [InitializeOnLoad]
     static partial class VirtualProjectWorkflow
     {
         public static event Action<bool> OnInitialized
@@ -47,8 +44,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
         public static event Action<bool> OnDisabled;
 
         [AutoStaticsCleanupOnCodeReload] // init gate; must reset so initialization re-runs after reload
+        // Re-established on every code load by Initialize() below, so the reset gate makes the workflow
+        // initialize again rather than staying half-configured.
+        [IgnoreForUAL0015("Init gate re-run on every code load by Initialize()")]
         public static bool IsInitialized { get; private set; }
         [AutoStaticsCleanupOnCodeReload] // set during init; must reset so it's re-evaluated after reload
+        // Re-evaluated on every code load by the initialization Initialize() drives.
+        [IgnoreForUAL0015("Re-evaluated on every code load by the workflow initialization")]
         public static bool IsMainEditor { get; private set; }
 
         public static readonly string k_MppmPackageJson = "Library/VP/MPPMVersion.json";
@@ -56,20 +58,34 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal const string k_ReactivateAfterPackageChangeKey = "vp_ReactivatePlayersAfterPackageChange";
 
         [AutoStaticsCleanupOnCodeReload] // version info read from file; must re-read after reload
+        // Every read path goes through HasVersionChanged, which calls ReadVersionInfo first, so the
+        // version strings are re-read from ProjectVersion.txt before they are compared.
+        [IgnoreForUAL0015("Re-read from ProjectVersion.txt by ReadVersionInfo before every comparison")]
         private static string s_EditorVersion;
         [AutoStaticsCleanupOnCodeReload]
+        // Re-read from ProjectVersion.txt by ReadVersionInfo at the start of every HasVersionChanged.
+        [IgnoreForUAL0015("Re-read from ProjectVersion.txt by ReadVersionInfo before every comparison")]
         private static string s_EditorChangeset;
         [AutoStaticsCleanupOnCodeReload]
+        // Re-read from the package manager by ReadVersionInfo at the start of every HasVersionChanged.
+        [IgnoreForUAL0015("Re-read from the package manager by ReadVersionInfo before every comparison")]
         private static string s_PackageVersion;
 
 
 
         [AutoStaticsCleanupOnCodeReload] // pending callbacks delegate; stale handlers after reload pin old ALC
+        // Queue of not-yet-invoked initialization callbacks. Initialize() runs on every code load and
+        // re-subscribes, so the drained queue refills for the new scope.
+        [IgnoreForUAL0015("Pending-callback queue refilled by Initialize() on the next code load")]
         static Action<bool> s_PendingOnInitializedCallbacks;
 
         [AutoStaticsCleanupOnCodeReload] // workflow context; stale after reload
+        // Recreated by InitializeMPPMContexts, which Initialize() drives on every code load.
+        [IgnoreForUAL0015("Workflow context recreated on every code load by InitializeMPPMContexts")]
         static WorkflowMainEditorContext s_WorkflowMainEditorContext;
         [AutoStaticsCleanupOnCodeReload] // workflow context; stale after reload
+        // Recreated by InitializeMPPMContexts, which Initialize() drives on every code load.
+        [IgnoreForUAL0015("Workflow context recreated on every code load by InitializeMPPMContexts")]
         static WorkflowCloneContext s_WorkflowCloneContext;
 
         [InitializeOnLoadMethod]
@@ -155,7 +171,12 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
 
-        static VirtualProjectWorkflow()
+        // The state set up here (the workflow contexts and SystemDataStore's file-system delegates) is
+        // cleared on code reload, so it has to be re-established on every load. A static constructor
+        // would only run once per domain, leaving SystemDataStore.s_FileSystemDelegates null while every
+        // read path dereferences it unguarded.
+        [OnCodeLoaded]
+        static void Initialize()
         {
             if (MigrationUtility.ShouldDisableMultiplayerPlayMode())
                 return;
@@ -208,9 +229,11 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 ClearVirtualProjectFolder();
                 VersionInfo versionInfo = new VersionInfo
                 {
+#pragma warning disable UAL0018 // versionInfo is a local descriptor serialized to JSON on the next line and discarded; the version strings do not outlive this call
                     PackageVersion = s_PackageVersion,
                     EditorVersion = s_EditorVersion,
                     EditorChangeset = s_EditorChangeset,
+#pragma warning restore UAL0018
                 };
                 string json = JsonUtility.ToJson(versionInfo, prettyPrint: true);
 
@@ -337,5 +360,3 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

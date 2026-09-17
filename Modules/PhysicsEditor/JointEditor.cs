@@ -147,7 +147,7 @@ namespace UnityEditor
         {
             T joint = (T)target;
             EditorGUI.BeginDisabledGroup(joint.gameObject.activeInHierarchy == false);
-            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Angular Limits"), this);
+            EditorGUILayout.EditorToolbarForTarget(L10n.TempContent("Edit Angular Limits", null), this);
             EditorGUI.EndDisabledGroup();
         }
 

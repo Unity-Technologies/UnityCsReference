@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ScriptingBuildtime not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -208,6 +207,7 @@ namespace UnityEditor.Compilation
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.BurstModule")]
     internal struct CompilationDoneResult
     {
         internal CompilationDoneResult(bool isForEditor, bool isSuccessful, IReadOnlyList<string> updatedFiles, IReadOnlyList<string> deletedFiles, IReadOnlyDictionary<string, IReadOnlyList<string>> assemblyDefines)
@@ -251,6 +251,11 @@ namespace UnityEditor.Compilation
 
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<CodeOptimization> codeOptimizationChanged;
+
+        [AutoStaticsCleanupOnCodeReload]
+        // New MSBuild events
+        [VisibleToOtherModules("UnityEditor.BurstModule")]
+        internal static event Action<CompilationDoneResult> buildFinished;
 
         public static CodeOptimization codeOptimization
         {
@@ -298,7 +303,7 @@ namespace UnityEditor.Compilation
 
         internal static void ReportBuildFinished(CompileTarget target, CompilationDoneResult compilationDoneResult)
         {
-
+            buildFinished?.Invoke(compilationDoneResult);
         }
 
         static CompilationPipeline()
@@ -772,4 +777,3 @@ namespace UnityEditor.Compilation
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

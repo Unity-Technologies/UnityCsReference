@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.GraphToolkit.Editor.Implementation;
 using UnityEngine;
@@ -49,6 +50,19 @@ namespace Unity.GraphToolkit.Editor
         /// The highlight color of the state. The highlight is located on the upper border of the state.
         /// </summary>
         public Color DefaultColor { get; set; }
+
+        /// <summary>
+        /// The progress fill amount displayed on the state's accent bar, expressed as a percentage.
+        /// </summary>
+        /// <remarks>
+        /// Accepted values range from -100f to 100f. A positive value fills the bar from left to right.
+        /// A negative value fills it from right to left. A value of <c>0</c> hides the bar.
+        /// </remarks>
+        public float FillAmount
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
 
         /// <summary>
         /// The globally unique identifier for this state.
@@ -106,6 +120,39 @@ namespace Unity.GraphToolkit.Editor
         /// the results of both <see cref="GetIncomingTransitions"/> and <see cref="GetOutgoingTransitions"/>.
         /// </remarks>
         public IEnumerable<ITransition> GetOutgoingTransitions() => StateMachineImp.GetTransitionsOnPort(StateModel.GetOutPort());
+
+        /// <summary>
+        /// The number of options defined in the state.
+        /// </summary>
+        public int OptionCount => StateModel.NodeOptions.Count;
+
+        /// <summary>
+        /// Retrieves a state option using its zero-based index.
+        /// </summary>
+        /// <param name="index">Index of the option, based on the order in which the options were declared.</param>
+        /// <returns>The option at the specified index.</returns>
+        /// <remarks>
+        /// The index is zero-based.
+        ///
+        /// Throws <see cref="ArgumentOutOfRangeException"/> when the index is out of bounds.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if the index is out of bounds.
+        /// </exception>
+        public IStateOption GetOption(int index) => StateModel.NodeOptions[index];
+
+        /// <summary>
+        /// The options defined on this state.
+        /// </summary>
+        public IEnumerable<IStateOption> Options => StateModel.NodeOptions;
+
+        /// <summary>
+        /// Retrieves a state option using its name.
+        /// </summary>
+        /// <param name="name">The unique name of the option.</param>
+        /// <returns>The option with the specified name, or null if none is found.</returns>
+        /// <remarks>The option's name is unique within the state's options.</remarks>
+        public IStateOption GetOptionByName(string name) => StateModel.NodeOptionsByName.GetValueOrDefault(name);
 
         internal StateModel StateModel => (StateModel)this;
     }

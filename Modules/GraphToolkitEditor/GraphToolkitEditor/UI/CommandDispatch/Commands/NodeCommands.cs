@@ -363,6 +363,7 @@ namespace Unity.GraphToolkit.Editor
     {
         const string k_UndoStringSingular = "Disconnect Wires";
         const string k_UndoStringPlural = "Disconnect Wires";
+        const string k_UndoStringTransitions = "Disconnect All Transitions";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DisconnectWiresCommand"/> class.
@@ -375,7 +376,12 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="nodeModels">The nodes to disconnect.</param>
         public DisconnectWiresCommand(IReadOnlyList<AbstractNodeModel> nodeModels)
-            : base(k_UndoStringSingular, k_UndoStringPlural, nodeModels) { }
+            : base(k_UndoStringSingular, k_UndoStringPlural, nodeModels)
+        {
+            // States and regular nodes never live in the same graph, so the first model decides the wording.
+            if (nodeModels is { Count: > 0 } && nodeModels[0] is StateModel)
+                UndoString = k_UndoStringTransitions;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DisconnectWiresCommand"/> class.

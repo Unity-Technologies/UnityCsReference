@@ -21,7 +21,7 @@ namespace Unity.Localization;
 /// through the value interface that matches its kind, <see cref="IStringEntry"/> or <see cref="IAssetEntry"/>.
 /// </remarks>
 /// <example>
-/// <para>Read the key id and metadata of an entry fetched from a table.</para>
+/// Read the key id and metadata of an entry fetched from a table.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/IResourceEntryOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="ResourceTable"/>
@@ -81,7 +81,7 @@ public interface IResourceEntry
 /// <see cref="StringEntry"/> as the type argument.
 /// </remarks>
 /// <example>
-/// <para>Read the localized text through the string entry view.</para>
+/// Read the localized text through the string entry view.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/IStringEntryOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="StringEntry"/>
@@ -113,7 +113,7 @@ public interface IStringEntry : IResourceEntry
 /// with <see cref="ResourceTable.GetEntry{T}(string)"/> using <see cref="IAssetEntry"/> as the type argument.
 /// </remarks>
 /// <example>
-/// <para>Check whether an asset entry has a value assigned.</para>
+/// Check whether an asset entry has a value assigned.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/IAssetEntryOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="AssetEntry"/>
@@ -131,7 +131,7 @@ public interface IAssetEntry : IResourceEntry
     /// </remarks>
     /// <returns><c>true</c> when an asset is assigned; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Skip the load when the entry has no asset.</para>
+    /// Skip the load when the entry has no asset.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/IAssetEntryHasAssetExample.cs"/>
     /// </example>
     /// <seealso cref="ReleaseAsset(UnityEngine.Object)"/>
@@ -147,7 +147,7 @@ public interface IAssetEntry : IResourceEntry
     /// </remarks>
     /// <param name="asset">The asset to release.</param>
     /// <example>
-    /// <para>Release an asset once you are finished with it.</para>
+    /// Release an asset once you are finished with it.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/IAssetEntryReleaseAssetExample.cs"/>
     /// </example>
     /// <seealso cref="HasAsset()"/>
@@ -164,7 +164,7 @@ public interface IAssetEntry : IResourceEntry
 /// entries are synchronous only.
 /// </remarks>
 /// <example>
-/// <para>Load an asset entry and log the result.</para>
+/// Load an asset entry and log the result.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/IAsyncAssetEntryLoadAssetAsyncExample.cs"/>
 /// </example>
 /// <seealso cref="IAssetEntry"/>
@@ -195,7 +195,7 @@ public interface IAsyncAssetEntry : IAssetEntry
 /// package) does not implement this interface, and the synchronous path falls back to whatever is already cached.
 /// </remarks>
 /// <example>
-/// <para>The built-in asset entries implement this, so a localized asset backed by them resolves synchronously.</para>
+/// The built-in asset entries implement this, so a localized asset backed by them resolves synchronously.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/SynchronousAssetEntryExample.cs"/>
 /// </example>
 /// <seealso cref="IAssetEntry"/>
@@ -228,7 +228,7 @@ public interface ISynchronousAssetEntry
 /// <see cref="AssetEntry"/> does not, because it holds a direct object reference.
 /// </remarks>
 /// <example>
-/// <para>Check whether an entry can be exported to a localization data file.</para>
+/// Check whether an entry can be exported to a localization data file.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/IFileDataEntryOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="IResourceEntry"/>

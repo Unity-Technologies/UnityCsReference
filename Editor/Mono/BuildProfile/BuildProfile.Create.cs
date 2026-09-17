@@ -134,7 +134,7 @@ namespace UnityEditor.Build.Profile
 
             BuildProfileModuleUtil.EnsureCustomBuildProfileFolderExists();
             string assetPath = BuildProfileModuleUtil.GetProfilePathWithProvidedName(platformId, profileName);
-            var packagesToInstall = BuildTargetDiscovery.GetAllMissingRequiredPlatformPackageNames(platformId);
+            var packagesToInstall = BuildTargetDiscovery.GetAllMissingRequiredPlatformPackageIdentifiers(platformId);
 
             return CreateInstance(platformId, assetPath, -1, packagesToInstall, onProfileReady);
         }
@@ -146,7 +146,7 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal static BuildProfile CreateInstance(GUID platformId, string assetPath)
         {
-            return CreateInstance(platformId, assetPath, -1, Array.Empty<string>());
+            return CreateInstance(platformId, assetPath, -1, Array.Empty<BuildTargetDiscovery.PlatformPackageIdentifier>());
         }
 
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
@@ -154,7 +154,7 @@ namespace UnityEditor.Build.Profile
             GUID platformId,
             string assetPath,
             int preconfiguredSettingsVariant,
-            string[] packagesToAdd,
+            BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd,
             UnityAction<BuildProfile> onProfileReady = null,
             GUID selectedPlatformGuid = default)
         {

@@ -40,8 +40,15 @@ class PlayModeControllerItemDrawer : PropertyDrawer
         return container;
     }
 
+    // A scenario item is one per registered controller type and named after it, so it gets no name row by default.
+    protected virtual bool ShowNameField(SerializedProperty property)
+        => !property.propertyPath.StartsWith(ScenarioConfigEditor.k_ScenarioListPropertyPath);
+
     protected virtual VisualElement CreateNameField(SerializedProperty property)
     {
+        if (!ShowNameField(property))
+            return null;
+
         var nameProperty = property.FindPropertyRelative(IPlayModeControllerItem.k_NamePropertyPath);
         var nameField = new TextField(nameProperty.displayName);
         nameField.BindProperty(nameProperty);

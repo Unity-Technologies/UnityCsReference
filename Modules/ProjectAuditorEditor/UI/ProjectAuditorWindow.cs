@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 //#define PA_DRAW_LOGO
 
 using System;
@@ -88,9 +87,13 @@ namespace Unity.ProjectAuditor.Editor.UI
         [SerializeField] internal Report m_Report;
         [SerializeField] AnalysisState m_AnalysisState = AnalysisState.Initializing;
         [SerializeField] ViewStates m_ViewStates = new ViewStates();
-        [SerializeField] ViewManager m_ViewManager;
+        [SerializeField] internal ViewManager m_ViewManager;
 
         static readonly string k_ReportAutoSaveFilename = "projectauditor-report-autosave.projectauditor";
+
+        const ProjectAreaFlags k_MigrationToURPAreas =
+            ProjectAreaFlags.ProjectSettings | ProjectAreaFlags.Code |
+            ProjectAreaFlags.Assets | ProjectAreaFlags.GameObjects;
 
         // The navigation tree shown in the view selection tree view.
         // Rebuilt from code in OnEnable, so it doesn't need to be serialized.
@@ -189,7 +192,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                                 Leaf("Assemblies", IssueCategory.Assembly),
                                 Leaf("Precompiled Assemblies", IssueCategory.PrecompiledAssembly),
                                 Leaf("Compiler Messages", IssueCategory.CodeCompilerMessage),
-                                Leaf("Domain Reload", IssueCategory.DomainReload),
                                 Leaf("Obsolete API", IssueCategory.ObsoleteAPI),
                             ]
                         },
@@ -336,10 +338,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             ];
 
             // Apply page filters.
-            ApplyGroupFilter(pages, PageId.Optimization, issue => !HasAnyAreas(issue, Areas.Upgrade));
-            ApplyGroupFilter(pages, PageId.Upgrade, issue => HasAnyAreas(issue, Areas.Upgrade));
-            ApplyGroupFilter(pages, PageId.MigrationToURP, issue => HasAnyAreas(issue, Areas.MigrationToURP));
-            ApplyGroupFilter(pages, PageId.MigrationToCoreCLR, issue => HasAnyAreas(issue, Areas.MigrationToCoreCLR));
+            ApplyGroupFilter(pages, PageId.Optimization, issue => !issue.IsIssue() || SummaryView.IssueHasAnyAreas(issue, ~AreasExtensions.AllUpgradeAreas));
+            ApplyGroupFilter(pages, PageId.Upgrade, issue => SummaryView.HasAnyAreas(issue, Areas.Upgrade));
+            ApplyGroupFilter(pages, PageId.MigrationToURP, issue => SummaryView.HasAnyAreas(issue, Areas.MigrationToURP));
+            ApplyGroupFilter(pages, PageId.MigrationToCoreCLR, issue => SummaryView.HasAnyAreas(issue, Areas.MigrationToCoreCLR));
 
             // Upgrade pages additionally offer a target-version selector in the Filters panel.
             ApplyGroupDrawFilters(pages, PageId.Upgrade, DiagnosticView.DrawUpgradeTargetVersionFilter);
@@ -374,12 +376,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        // True if the issue is flagged with the specified areas.
-        static bool HasAnyAreas(ReportItem issue, Areas areas)
-        {
-            return issue.Id.IsValid() && (issue.Id.GetDescriptor().Areas & areas) != 0;
-        }
-
         public bool Match(ReportItem issue)
         {
             // return false if the issue does not match one of these criteria:
@@ -398,7 +394,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             var matchAssembly = !viewDesc.ShowAssemblySelection ||
                 m_AssemblySelection != null &&
                 (m_AssemblySelection.Contains(viewDesc.GetAssemblyName(issue)) ||
-                    m_AssemblySelection.ContainsGroup("All"));
+                    m_AssemblySelection.ContainsGroup("All:All"));
             if (!matchAssembly)
                 return false;
 
@@ -572,7 +568,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_ViewManager.OnAnalysisRequested += category =>
             {
-                AuditCategories(ProjectAreaFlags.None, [category]);
+                AuditCategories(ProjectAreaFlags.None, GetAnalysisCategoriesFor(category));
                 var page = FindPageForCategory(category);
                 if (page != null)
                     OnSelectedNonAnalyzedPage(page);
@@ -816,13 +812,16 @@ namespace Unity.ProjectAuditor.Editor.UI
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     DrawViewSelection();
-                    if (m_ShowHomePage || !IsAnalysisValid())
+
+                    var migrationWorkflow = ShowsMigrationWorkflow();
+
+                    if (m_ShowHomePage || (!IsAnalysisValid() && !migrationWorkflow))
                     {
                         DrawHome();
                     }
                     else
                     {
-                        if (!m_IsNonAnalyzedViewSelected)
+                        if (!m_IsNonAnalyzedViewSelected || migrationWorkflow)
                         {
                             using (new EditorGUILayout.VerticalScope())
                             {
@@ -843,6 +842,24 @@ namespace Unity.ProjectAuditor.Editor.UI
                     }
                 }
             }
+        }
+
+        // Unlike every other page, the migration workflow drives the project rather than reading a
+        // report, so it is drawn instead of Home before an analysis has been run. Initializing is
+        // excluded because the window has not finished setting its views up.
+        bool ShowsMigrationWorkflow()
+        {
+            return m_AnalysisState == AnalysisState.Initialized &&
+                !m_ShowHomePage &&
+                m_ViewManager != null &&
+                m_ViewManager.IsValid() &&
+                m_ViewManager.GetActiveView() is MigrationWorkflowView;
+        }
+
+        internal void GoToHomePage()
+        {
+            m_ShowHomePage = true;
+            m_ViewSelectionTreeView?.SelectPage(FindPage(PageId.Home), true);
         }
 
         // Draw the panel that appears when you select a page that has not yet been analyzed.
@@ -1055,7 +1072,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 Category = IssueCategory.MigrateToURPSummary,
                 DisplayName = "Migrate to URP",
-                Type = typeof(MigrateToURPSummaryView),
+                Type = typeof(MigrationWorkflowView),
             });
             ViewDescriptor.Register(new ViewDescriptor
             {
@@ -1352,20 +1369,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             });
             ViewDescriptor.Register(new ViewDescriptor
             {
-                Category = IssueCategory.DomainReload,
-                DisplayName = "Domain Reload",
-                ShowAssemblySelection = true,
-                ShowFilters = true,
-                ShowInfoPanel = true,
-                ShowDetails = true,
-                GetAssemblyName = issue => issue.GetCustomProperty(CompilerMessageProperty.Assembly),
-                OnOpenIssue = EditorInterop.OpenTextFile<TextAsset>,
-                OnOpenManual = EditorInterop.OpenCodeDescriptor,
-                Type = typeof(CodeDomainReloadView),
-                AnalyticsEventId = (int)AnalyticsReporter.UIButton.DomainReload
-            });
-            ViewDescriptor.Register(new ViewDescriptor
-            {
                 Category = IssueCategory.ObsoleteAPI,
                 DisplayName = "Obsolete API Database",
                 ShowFilters = true,
@@ -1403,6 +1406,14 @@ namespace Unity.ProjectAuditor.Editor.UI
         bool IsAnalysisInProgress()
         {
             return m_AnalysisState == AnalysisState.InProgress;
+        }
+
+        // A cancelled analysis invalidates its report, but the pending state the views wait on still has to end here.
+        internal void OnAnalysisAborted()
+        {
+            m_ViewManager.OnAnalysisCompleted();
+            m_AnalysisState = AnalysisState.Initialized;
+            Repaint();
         }
 
         void Analyze()
@@ -1443,7 +1454,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     if (!report.IsValid())
                     {
-                        m_AnalysisState = AnalysisState.Initialized;
+                        OnAnalysisAborted();
                         return;
                     }
                     m_ViewManager.OnAnalysisCompleted();
@@ -1529,7 +1540,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     if (!report.IsValid())
                     {
-                        m_AnalysisState = AnalysisState.Initialized;
+                        OnAnalysisAborted();
                         return;
                     }
                     m_ViewManager.OnAnalysisCompleted();
@@ -1649,6 +1660,41 @@ namespace Unity.ProjectAuditor.Editor.UI
                 requestedCategories.AddRange(FindPage(PageId.Build).AllCategories);
 
             return requestedCategories.ToArray();
+        }
+
+        internal static IReadOnlyList<IssueCategory> GetAnalysisCategoriesFor(IssueCategory category)
+        {
+            if (category == IssueCategory.MigrateToURPSummary)
+            {
+                return new[]
+                {
+                    IssueCategory.ProjectSetting,
+                    IssueCategory.Code,
+                    IssueCategory.AssetIssue,
+                    IssueCategory.GameObject,
+                };
+            }
+
+            return new[] { category };
+        }
+
+        // Re-audits the full category set, not just the user's selected areas. False means no analysis started
+        internal bool ReanalyzeMigrationToURP()
+        {
+            if (m_Report == null)
+                return false;
+
+            // A report loaded from another project is read-only here: the analysis audits the open project, and its
+            // results would be written into that report.
+            if (!m_Report.IsForCurrentProject())
+                return false;
+
+            if (m_AnalysisState == AnalysisState.InProgress || m_ViewManager.HasPendingCategories())
+                return false;
+
+            AuditCategories(k_MigrationToURPAreas,
+                GetAnalysisCategoriesFor(IssueCategory.MigrateToURPSummary));
+            return true;
         }
 
         ProjectAreaFlags GetPageProjectArea(PageId id)
@@ -2556,17 +2602,17 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent SaveButton = Utility.GetIcon(Utility.IconType.Save, "Save current report to projectauditor file");
             public static readonly GUIContent LoadButton = Utility.GetIcon(Utility.IconType.Load, "Load report from projectauditor file");
             public static readonly GUIContent LoadButtonDisabled = Utility.GetIcon(Utility.IconType.Load, $"Please install the rules package to load reports ({ProjectAuditorRulesPackage.Name}).");
-            public static readonly GUIContent NewAnalysisButton = EditorGUIUtility.TrTextContentWithIcon("New Analysis", "Return to the Home page to start a new analysis. If you start a new analysis, the current report will be discarded.", "Refresh");
-            public static readonly GUIContent CancelButton = EditorGUIUtility.TrTextContentWithIcon("Cancel Analysis", "Cancel the in-progress analysis", "Clear");
+            public static readonly GUIContent NewAnalysisButton = L10n.TextContentWithIcon("New Analysis", "Return to the Home page to start a new analysis. If you start a new analysis, the current report will be discarded.", "Refresh", null);
+            public static readonly GUIContent CancelButton = L10n.TextContentWithIcon("Cancel Analysis", "Cancel the in-progress analysis", "Clear", null);
 
             public static readonly GUIContent HelpButton = Utility.GetIcon(Utility.IconType.Help, "Open Manual (in a web browser)");
-            public static readonly GUIContent PreferencesMenuItem = EditorGUIUtility.TrTextContent("Preferences", $"Open User Preferences for {ProjectAuditor.DisplayName}");
+            public static readonly GUIContent PreferencesMenuItem = L10n.TextContent("Preferences", $"Open User Preferences for {ProjectAuditor.DisplayName}", null, null);
 
-            public static readonly GUIContent AssemblyFilter = EditorGUIUtility.TrTextContent("Assembly:", "Select assemblies to examine");
-            public static readonly GUIContent AssemblyFilterSelect = EditorGUIUtility.TrTextContent("Select", "Select assemblies to examine");
-            public static readonly GUIContent AreaFilter = EditorGUIUtility.TrTextContent("Areas:", "Select performance areas to display");
-            public static readonly GUIContent AreaFilterSelect = EditorGUIUtility.TrTextContent("Select", "Select performance areas to display");
-            public static readonly GUIContent FiltersFoldout = EditorGUIUtility.TrTextContent("Filters", "Filtering Criteria");
+            public static readonly GUIContent AssemblyFilter = L10n.TextContent("Assembly:", "Select assemblies to examine", null, null);
+            public static readonly GUIContent AssemblyFilterSelect = L10n.TextContent("Select", "Select assemblies to examine", null, null);
+            public static readonly GUIContent AreaFilter = L10n.TextContent("Areas:", "Select performance areas to display", null, null);
+            public static readonly GUIContent AreaFilterSelect = L10n.TextContent("Select", "Select performance areas to display", null, null);
+            public static readonly GUIContent FiltersFoldout = L10n.TextContent("Filters", "Filtering Criteria", null, null);
 
 
             public static readonly GUIContent WelcomeTextTitle = new GUIContent($"Welcome to {ProjectAuditor.DisplayName}");
@@ -2585,7 +2631,7 @@ To generate a report, select the project area, platform, and code to analyze the
             public static readonly string AnalyzeInfoText = L10n.Tr("{0} analysis is not yet included in this report. Run analysis now?", null);
             public static readonly string AnalyzeButtonText = L10n.Tr("Start {0} Analysis", null);
 
-            public static readonly GUIContent OpenBackgroundTasks = EditorGUIUtility.TrTextContent("Open Background Tasks");
+            public static readonly GUIContent OpenBackgroundTasks = L10n.TextContent("Open Background Tasks", null, null, null);
             public static readonly GUIContent ProjectAreaSelection = new GUIContent("Project Areas", "Select project areas to analyze.");
             public static readonly GUIContent PlatformSelection = new GUIContent("Platform", "Select the target platform.");
             public static readonly GUIContent CompilationModeSelection = new GUIContent("Compilation Mode", "Select the compilation mode.");
@@ -2594,9 +2640,8 @@ To generate a report, select the project area, platform, and code to analyze the
             {
                 UpdateRulesButtonInProgress = new GUIContent[12];
                 for (int i = 0; i < 12; i++)
-                    UpdateRulesButtonInProgress[i] = EditorGUIUtility.TrTextContentWithIcon(" Installing Rules...", "WaitSpin" + i.ToString("00"));
+                    UpdateRulesButtonInProgress[i] = L10n.TextContentWithIcon(" Installing Rules...", null, "WaitSpin" + i.ToString("00"), null);
             }
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

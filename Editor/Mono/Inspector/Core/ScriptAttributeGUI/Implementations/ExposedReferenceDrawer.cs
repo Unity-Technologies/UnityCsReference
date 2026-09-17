@@ -19,10 +19,10 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
     protected static readonly string kClearExposedPropertyMsg = "Clear Exposed Property";
     internal  const string kVisualElementName = "ExposedReference";
 
-    internal readonly GUIContent ExposePropertyContent = EditorGUIUtility.TrTextContent("Expose Property");
-    internal readonly GUIContent UnexposePropertyContent = EditorGUIUtility.TrTextContent("Unexpose Property");
-    protected readonly GUIContent NotFoundOn = EditorGUIUtility.TrTextContent("not found on");
-    protected readonly GUIContent OverridenByContent = EditorGUIUtility.TrTextContent("Overridden by ");
+    internal readonly GUIContent ExposePropertyContent = L10n.TextContent("Expose Property", null, null, null);
+    internal readonly GUIContent UnexposePropertyContent = L10n.TextContent("Unexpose Property", null, null, null);
+    protected readonly GUIContent NotFoundOn = L10n.TextContent("not found on", null, null, null);
+    protected readonly GUIContent OverridenByContent = L10n.TextContent("Overridden by ", null, null, null);
 
     private GUIContent m_ModifiedLabel = new GUIContent();
 

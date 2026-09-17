@@ -757,16 +757,4 @@ namespace Unity.Collections
             return result;
         }
     }
-
-    [VisibleToOtherModules]
-    internal static class ListExtensions
-    {
-        public static List<T> CreateWithDefaultValue<T>(T value, int count)
-        {
-            var result = new List<T>(count);
-            for (int i = 0; i < count; i++)
-                result.Add(value);
-            return result;
-        }
-    }
 }

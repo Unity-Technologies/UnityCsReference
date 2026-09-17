@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -33,6 +34,7 @@ internal abstract class UIInspector : VisualElement, IDisposable
     protected InspectorSearchField SearchField { get; private set; }
 
     PostUpdateBinding m_PostUpdater;
+    readonly HashSet<ITrackablePropertyProvider> m_SearchProviders = new();
 
     internal void InitializeSearchField(InspectorSearchField searchField)
     {
@@ -43,14 +45,17 @@ internal abstract class UIInspector : VisualElement, IDisposable
         this.Q(k_PostUpdateElementName).SetBinding(k_PostUpdateBindingId, m_PostUpdater);
     }
 
-    protected void MarkSearchDirty()
+    internal void MarkSearchDirty()
     {
         m_PostUpdater?.MarkDirty();
     }
 
-    [EventInterest(typeof(FocusInEvent), typeof(BlurEvent))]
+    [EventInterest(typeof(FocusInEvent), typeof(BlurEvent), typeof(TrackPropertyEvent))]
     protected override void HandleEventBubbleUp(EventBase evt)
     {
+        if (evt is TrackPropertyEvent trackPropertyEvent)
+            TrackSearchProvider(trackPropertyEvent.provider);
+
         if (SearchField != null)
         {
             switch (evt)
@@ -72,6 +77,43 @@ internal abstract class UIInspector : VisualElement, IDisposable
         base.HandleEventBubbleUp(evt);
     }
 
+    void TrackSearchProvider(ITrackablePropertyProvider provider)
+    {
+        if (provider == null || !m_SearchProviders.Add(provider))
+            return;
+
+        provider.OnTrackedPropertyChanged += OnTrackedPropertyChanged;
+        provider.OnTrackedPropertySourceChanged += OnTrackedPropertySourceChanged;
+    }
+
+    void UntrackSearchProvider(ITrackablePropertyProvider provider)
+    {
+        if (!m_SearchProviders.Remove(provider))
+            return;
+
+        provider.OnTrackedPropertyChanged -= OnTrackedPropertyChanged;
+        provider.OnTrackedPropertySourceChanged -= OnTrackedPropertySourceChanged;
+    }
+
+    void OnTrackedPropertyChanged(ITrackablePropertyProvider provider, string propertyName, TrackedPropertyType type)
+    {
+        if (type == TrackedPropertyType.StopTracking)
+            UntrackSearchProvider(provider);
+
+        RequestSearchUpdate();
+    }
+
+    void OnTrackedPropertySourceChanged(ITrackablePropertyProvider provider, string propertyName, bool hasVariable,
+        bool hasBinding, bool isAnimationDriven) => RequestSearchUpdate();
+
+    // The providers notify while the rows are still updating their filterable classes, so the filter is
+    // marked dirty here and re-applied by the post-update binding once those classes have settled.
+    void RequestSearchUpdate()
+    {
+        if (SearchField is { IsFiltering: true })
+            MarkSearchDirty();
+    }
+
     internal void ResetSearch() => SearchField?.ResetSearch();
 
     // Arms/clears the inspector's style fields for animation recording. No-op by default; selection
@@ -80,6 +122,14 @@ internal abstract class UIInspector : VisualElement, IDisposable
 
     public virtual void Dispose()
     {
+        foreach (var provider in m_SearchProviders)
+        {
+            provider.OnTrackedPropertyChanged -= OnTrackedPropertyChanged;
+            provider.OnTrackedPropertySourceChanged -= OnTrackedPropertySourceChanged;
+        }
+
+        m_SearchProviders.Clear();
+
         if (SearchField != null)
         {
             SearchField.ClearSearch();

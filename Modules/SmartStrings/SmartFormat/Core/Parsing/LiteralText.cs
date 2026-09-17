@@ -73,7 +73,7 @@ public class LiteralText : FormatItem
 
     /// <summary>
     /// Clears the <see cref="LiteralText"/> item.
-    /// <para>This method gets called by <see cref="LiteralTextPool"/> when it releases an instance.</para>
+    /// This method gets called by <see cref="LiteralTextPool"/> when it releases an instance.
     /// </summary>
     public override void Clear()
     {

@@ -33,7 +33,7 @@ namespace UnityEditor
             bool previousIsProportionalScale = m_ConstrainProportionsScale;
             uint mixedValues = property != null ? GetMixedValueFields(property) : 0;
             Vector3 scale = EditorGUI.LinkedVector3Field(rect,
-                scaleContent, EditorGUIUtility.TrTextContent("", (constrainProportionsScale ? "Disable" : "Enable") + " constrained proportions"), value,
+                scaleContent, L10n.TextContent("", (constrainProportionsScale ? "Disable" : "Enable") + " constrained proportions", null, null), value,
                 ref m_ConstrainProportionsScale, m_InitialScale, mixedValues, ref axisModified, property, constrainProportionsProperty);
 
             if (previousIsProportionalScale != m_ConstrainProportionsScale)

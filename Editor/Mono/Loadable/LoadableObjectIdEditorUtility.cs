@@ -56,8 +56,8 @@ namespace UnityEditor
         /// <seealso cref="AssetDatabase.TryGetGUIDAndLocalFileIdentifier"/>
         public static bool TryDeconstructLoadableObjectId(LoadableObjectId loadableObjectId, out GUID guid, out long localId, out FileIdentifierType fileType)
         {
-            // If this is a runtime handle (has ObjectIdHash), we cannot extract GUID/lfid/type
-            if (loadableObjectId.m_ObjectIdHash.isValid)
+            // If this is a baked runtime handle (has a stable file id), we cannot extract GUID/lfid/type
+            if (loadableObjectId.m_StableFileId.isValid)
             {
                 guid = new GUID();
                 localId = 0;
@@ -142,7 +142,7 @@ namespace UnityEditor
             loadableObjectId.m_GUID = guid;
             loadableObjectId.m_FileIdentifierType = fileType;
             loadableObjectId.m_LocalIdentifierInFile = localId;
-            loadableObjectId.m_ObjectIdHash = new Hash128();
+            loadableObjectId.m_StableFileId = new Hash128();
             return loadableObjectId;
         }
 

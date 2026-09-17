@@ -85,6 +85,9 @@ namespace UnityEditor.Rendering
             => TagManager.Internal_TryRemoveLastRenderingLayerName();
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static Action onRenderingLayerCountChanged;
 
         /// <summary>

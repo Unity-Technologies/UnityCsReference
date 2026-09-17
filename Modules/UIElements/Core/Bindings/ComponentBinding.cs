@@ -95,7 +95,9 @@ namespace UnityEngine.UIElements
             var dispatcher = element.GetComponentBindingDispatcher(handle);
             if (dispatcher == null)
             {
-                returnCode = VisitReturnCode.NullContainer;   // component removed since the path resolved
+                // No dispatcher: nothing on the component is bindable, or it was removed since the path
+                // resolved. InvalidPath, not NullContainer -- the latter reaches an internal-error throw.
+                returnCode = VisitReturnCode.InvalidPath;
                 return false;
             }
             return dispatcher.SetUI(group, element, subPath, value, out returnCode);
@@ -148,7 +150,7 @@ namespace UnityEngine.UIElements
         internal override bool SetUI<TValue>(ConverterGroup group, VisualElement element, in PropertyPath subPath,
             TValue value, out VisitReturnCode returnCode)
         {
-            // ref into the live component data (unmanaged slot, or StrongBox for a managed component).
+            // ref into the live component data in the type's per-type store.
             ref var component = ref element.GetComponent<T>();
             var didSet = group.TrySetValue(ref component, subPath, value, out returnCode);
 

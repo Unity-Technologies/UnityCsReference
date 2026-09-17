@@ -11,9 +11,9 @@ namespace UnityEditor.Modules
     {
         internal class Styles
         {
-            public GUIContent runLastBuild = EditorGUIUtility.TrTextContent("Run Last Build", "Run the most recent build");
-            public static readonly GUIContent patch = EditorGUIUtility.TrTextContent("Patch", "Compiles only the scripts and patches the previous build with the updated code.");
-            public static readonly GUIContent patchAndRun = EditorGUIUtility.TrTextContent("Patch And Run", "Compiles only the scripts, patches the previous build with the updated code, then runs the build.");
+            public GUIContent runLastBuild = L10n.TextContent("Run Last Build", "Run the most recent build", null, null);
+            public static readonly GUIContent patch = L10n.TextContent("Patch", "Compiles only the scripts and patches the previous build with the updated code.", null, null);
+            public static readonly GUIContent patchAndRun = L10n.TextContent("Patch And Run", "Compiles only the scripts, patches the previous build with the updated code, then runs the build.", null, null);
         }
 
         [NoAutoStaticsCleanup] // lazy GUIContent Styles cache; content survives reload, re-inits on first access

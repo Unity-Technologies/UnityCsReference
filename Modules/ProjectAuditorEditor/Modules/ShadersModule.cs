@@ -381,6 +381,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
             sortedShaders.Sort((s1, s2) => string.Compare(s1.name, s2.name));
 
             var analyzers = GetCompatibleAnalyzers(context.Params);
+            foreach (var analyzer in analyzers)
+                analyzer.OnAnalysisStarted();
+
             foreach (var shader in sortedShaders)
             {
                 var assetPath = shaderPathMap[shader];

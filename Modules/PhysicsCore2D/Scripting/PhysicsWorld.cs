@@ -21,6 +21,56 @@ namespace Unity.U2D.Physics
     /// The number of worlds allocated up-front is defined by <see cref="PhysicsCoreSettings2D.initialWorldCapacity"/>, after which more are allocated on demand as required.
     /// A world is completely isolated from all other worlds.
     /// </summary>
+    /// <remarks>
+    /// Unity automatically creates a default world (<see cref="PhysicsWorld.defaultWorld"/>) so you don't need to create a world before adding bodies to it, although you can create additional, isolated worlds that run in parallel.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Create a body in the world, with a definition object that sets the position
+    /// // and enables physics, then attach a circle shape to it.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class Example2DPhysics : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         // Get the default world.
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///
+    ///         // Create a body in the world, with a definition object that sets the
+    ///         // position and enables physics.
+    ///         PhysicsBody object1 = world.CreateBody(new PhysicsBodyDefinition
+    ///         {
+    ///             position = new Vector2(0.5f, 8f),
+    ///             type = PhysicsBody.BodyType.Dynamic
+    ///         });
+    ///
+    ///         // Attach a circle shape to the first body.
+    ///         PhysicsShape objectShape1 = object1.CreateShape(new CircleGeometry());
+    ///
+    ///         // Create a second body in the world, with a definition object that
+    ///         // sets the position and disables physics.
+    ///         PhysicsBody object2 = world.CreateBody(new PhysicsBodyDefinition
+    ///         {
+    ///             position = new Vector2(0f, 0f),
+    ///             type = PhysicsBody.BodyType.Static
+    ///         });
+    ///
+    ///         // Attach a circle shape to the second body.
+    ///         object2.CreateShape(new CircleGeometry
+    ///         {
+    ///             radius = 3f,
+    ///         });
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsBody"/>
+    /// <seealso cref="PhysicsShape"/>
+    /// <seealso cref="PhysicsBodyDefinition"/>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
     public readonly partial struct PhysicsWorld : IEquatable<PhysicsWorld>
@@ -285,7 +335,7 @@ namespace Unity.U2D.Physics
         /// A transformation applied to the transform write if <see cref="PhysicsWorld.transformPlane"/> is set to <see cref="PhysicsWorld.TransformPlane.Custom"/>.
         /// </summary>
         [Serializable]
-        public record struct TransformPlaneCustom : ISerializationCallbackReceiver
+        public partial record struct TransformPlaneCustom : ISerializationCallbackReceiver
         {
             /// <summary>
             /// Create a transform plane custom as identity.
@@ -294,7 +344,6 @@ namespace Unity.U2D.Physics
             {
                 m_Translate = default;
                 m_Rotate = default;
-                m_Scale = 1.0f;
 
                 CalculatePlaneCustom();
             }
@@ -304,12 +353,10 @@ namespace Unity.U2D.Physics
             /// </summary>
             /// <param name="translate">The custom translation.</param>
             /// <param name="rotate">The custom EULER rotation.</param>
-            /// <param name="scale">The custom scale.</param>
-            public TransformPlaneCustom(Vector3 translate, Vector3 rotate, float scale = 1.0f)
+            public TransformPlaneCustom(Vector3 translate, Vector3 rotate)
             {
                 m_Translate = translate;
                 m_Rotate = rotate;
-                m_Scale = Mathf.Clamp(scale, 0.001f, 10f);
 
                 CalculatePlaneCustom();
             }
@@ -323,11 +370,6 @@ namespace Unity.U2D.Physics
             /// Get the custom rotation.
             /// </summary>
             public readonly Vector3 rotate => m_Rotate;
-
-            /// <summary>
-            /// Get the uniform scale.
-            /// </summary>
-            public readonly float scale => m_Scale;
 
             /// <summary>
             /// Get the custom matrix defining how to transform from <see cref="PhysicsWorld"/> space to the custom world-space.
@@ -381,7 +423,7 @@ namespace Unity.U2D.Physics
                 m_CustomRotation = Quaternion.Euler(m_Rotate);
 
                 // Calculate the matrices.
-                m_ToCustom = Matrix4x4.TRS(m_Translate, m_CustomRotation, new Vector3(m_Scale, m_Scale, m_Scale));
+                m_ToCustom = Matrix4x4.TRS(m_Translate, m_CustomRotation, Vector3.one);
                 m_FromCustom = m_ToCustom.inverse;
             }
 
@@ -393,7 +435,6 @@ namespace Unity.U2D.Physics
 
             [SerializeField] internal Vector3 m_Translate;
             [SerializeField] internal Vector3 m_Rotate;
-            [SerializeField][Range(0.001f, 10f)] internal float m_Scale;
             Matrix4x4 m_ToCustom;
             Matrix4x4 m_FromCustom;
             Quaternion m_CustomRotation;
@@ -499,7 +540,7 @@ namespace Unity.U2D.Physics
         public enum DrawContactType
         {
             /// <summary>
-            /// This will draw <see cref="PhysicsShape.ContactManifold.ManifoldPoint.point"/>.
+            /// This will draw <see cref="PhysicsShape.ContactManifold.ManifoldPoint.pointA"/>.
             /// </summary>
             Point = 1,
 
@@ -841,8 +882,36 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Create a PhysicsWorld.
         /// </summary>
-        /// <param name="definition">The world definition to use.</param>
+        /// <remarks>
+        /// You don't need to create a world before you add physics objects, because Unity automatically creates one you can fetch with <see cref="PhysicsWorld.defaultWorld"/>.
+        /// This method isn't thread-safe. Call it only from the main thread.
+        /// A world starts running as soon as you create it. Set <see cref="PhysicsWorld.paused"/> to `true` to pause its simulation.
+        /// </remarks>
+        /// <param name="definition">The world definition to use when creating the new physics world.</param>
         /// <returns>The created world.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create a public world definition so its properties display in the
+        /// // Inspector window, then create a world from it.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateWorld : MonoBehaviour
+        /// {
+        ///     public PhysicsWorldDefinition worldDefinition = new PhysicsWorldDefinition();
+        ///     public PhysicsWorld world;
+        ///
+        ///     void Awake()
+        ///     {
+        ///         world = PhysicsWorld.Create(worldDefinition);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsWorld.defaultWorld"/>
+        /// <seealso cref="PhysicsWorldDefinition"/>
         public static PhysicsWorld Create(PhysicsWorldDefinition definition) => PhysicsWorld_Create(definition);
 
         /// <summary>
@@ -1094,6 +1163,47 @@ namespace Unity.U2D.Physics
         public readonly void SetOwnerUserData(PhysicsUserData physicsUserData, int ownerKey = 0) => PhysicsWorld_SetOwnerUserData(this, physicsUserData, ownerKey);
 
         /// <summary>
+        /// Get the name of the world, or "World #N" where N is the <see cref="index"/> when no name has been set.
+        /// The <see cref="PhysicsWorld.defaultWorld"/> is always named "Default World".
+        /// </summary>
+        /// <remarks>
+        /// A new string is allocated each call, as with any API returning a string such as <see cref="ToString"/>.
+        /// See <see cref="SetName"/>.
+        /// </remarks>
+        /// <returns>The name of the world.</returns>
+        public readonly string GetName()
+        {
+            var name = PhysicsWorld_GetName(this);
+            return string.IsNullOrEmpty(name) ? $"World #{index}" : name;
+        }
+
+        /// <summary>
+        /// Set the name of the world, truncated to <see cref="PhysicsConstants.MaxWorldNameLength"/> characters.
+        /// The name of the <see cref="PhysicsWorld.defaultWorld"/> cannot be set and will always be "Default World".
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="GetName"/>.
+        /// </remarks>
+        /// <param name="name">The name to set.</param>
+        /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsWorld.SetOwner(UnityEngine.Object)"/>.</param>
+        public readonly void SetName(string name, int ownerKey = 0)
+        {
+            // Truncate here rather than natively, where the name is encoded as bytes and the limit could not be applied in characters.
+            if (name != null && name.Length > PhysicsConstants.MaxWorldNameLength)
+            {
+                var length = PhysicsConstants.MaxWorldNameLength;
+
+                // Don't split a character that is encoded as a surrogate pair.
+                if (char.IsHighSurrogate(name[length - 1]))
+                    --length;
+
+                name = name.Substring(0, length);
+            }
+
+            PhysicsWorld_SetName(this, name, ownerKey);
+        }
+
+        /// <summary>
         /// Reset the world to a canonical state so that it will reproduce identical results each time. The world must be empty for this to be called otherwise a warning is produced.
         /// </summary>
         public readonly void Reset() => PhysicsWorld_Reset(this);
@@ -1133,6 +1243,16 @@ namespace Unity.U2D.Physics
         public readonly bool continuousAllowed { get => PhysicsWorld_GetContinuousAllowed(this); set => PhysicsWorld_SetContinuousAllowed(this, value); }
 
         /// <summary>
+        /// A hash of the whole simulation state, covering every body's pose and velocity and every contact's manifold.
+        /// Two worlds that have simulated identically produce the same value, so comparing it across runs or machines is a way to check that a simulation is deterministic.
+        /// </summary>
+        /// <remarks>
+        /// This is recomputed from scratch over the entire world every time it is read, and is never cached, so treat it as a diagnostic rather than something to read every frame.
+        /// The value identifies a state, not an object, so it is not stable across engine versions and should not be stored as a persistent identifier.
+        /// </remarks>
+        public readonly ulong stateHash => PhysicsWorld_GetStateHash(this);
+
+        /// <summary>
         /// Controls if contact and trigger begin/end events for shapes assigned a group are marked as being the first or last event between the two groups involved.
         /// This allows the many events produced between two groups of shapes to be reduced to a single begin and end, such as when treating multiple shapes as a single object.
         /// The marking is only calculated for shapes assigned a group and only when a begin or end event is produced, so the cost of leaving this enabled is minor.
@@ -1152,12 +1272,15 @@ namespace Unity.U2D.Physics
         public readonly bool contactFilterCallbacks { get => PhysicsWorld_GetContactFilterCallbacks(this); set => PhysicsWorld_SetContactFilterCallbacks(this, value); }
 
         /// <summary>
-        /// Controls if pre-solve callbacks will be called.
+        /// Controls if pre-contact and pre-continuous callbacks will be called.
         /// This only applies to Dynamic bodies and is ignored for triggers.
         /// These are relatively expensive so disabling them can provide a significant performance benefit.
-        /// A pre-solve callback will call the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="PhysicsCallbacks.IPreSolveCallback"/>.
         /// </summary>
-        public readonly bool preSolveCallbacks { get => PhysicsWorld_GetPreSolveCallbacks(this); set => PhysicsWorld_SetPreSolveCallbacks(this, value); }
+        /// <remarks>
+        /// A shape only produces these callbacks if its own <see cref="PhysicsShape.preContactCallbacks"/> is also set.
+        /// The deprecated <see cref="PhysicsCallbacks.IPreSolveCallback"/> is also driven by this switch, for targets that only implement it.
+        /// </remarks>
+        public readonly bool preContactCallbacks { get => PhysicsWorld_GetPreContactCallbacks(this); set => PhysicsWorld_SetPreContactCallbacks(this, value); }
 
         /// <summary>
         /// Controls if body update callback targets are automatically called.
@@ -1258,6 +1381,64 @@ namespace Unity.U2D.Physics
         /// Controls the transform plane that the world uses when writing transforms.
         /// See <see cref="PhysicsWorld.transformWriteMode"/>.
         /// </summary>
+        /// <remarks>
+        /// Set this property to run 2D physics in 3D space, for example to lay a 2D world flat on the ground.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// using Unity.Collections;
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateXZPlane : MonoBehaviour
+        /// {
+        ///     public PhysicsWorld world;
+        ///
+        ///     private void Start()
+        ///     {
+        ///         // Create a world with a transform plane of XZ, which is the floor in 3D space.
+        ///         PhysicsWorldDefinition worldProperties = new PhysicsWorldDefinition
+        ///         {
+        ///             transformPlane = PhysicsWorld.TransformPlane.XZ,
+        ///             gravity = Vector2.zero
+        ///         };
+        ///         world = PhysicsWorld.Create(worldProperties);
+        ///
+        ///         // Create a square boundary.
+        ///         PhysicsBody boundary = world.CreateBody();
+        ///         using NativeList<Vector2> extentPoints = new NativeList<Vector2>(Allocator.Temp)
+        ///         {
+        ///             new(-4f, 4f),
+        ///             new(4f, 4f),
+        ///             new(4f, -4f),
+        ///             new(-4f, -4f)
+        ///         };
+        ///         ChainGeometry boundaryWalls = new ChainGeometry(extentPoints.AsArray());
+        ///         boundary.CreateChain(boundaryWalls, PhysicsChainDefinition.defaultDefinition);
+        ///
+        ///         // Create a body and set it moving.
+        ///         PhysicsBodyDefinition bodyDefinition = new PhysicsBodyDefinition();
+        ///         bodyDefinition.type = PhysicsBody.BodyType.Dynamic;
+        ///         bodyDefinition.linearVelocity = new Vector2(7.3f, 5.7f);
+        ///         bodyDefinition.angularVelocity = 0f;
+        ///         PhysicsBody body = world.CreateBody(bodyDefinition);
+        ///
+        ///         // Add a shape with a bouncy material.
+        ///         body.transformObject = transform;
+        ///         PhysicsShapeDefinition shapeDefinition = new PhysicsShapeDefinition();
+        ///         shapeDefinition.surfaceMaterial = new PhysicsShape.SurfaceMaterial { bounciness = 1f, friction = 0f };
+        ///         body.CreateShape(new CircleGeometry { radius = 1f }, shapeDefinition);
+        ///     }
+        ///
+        ///     private void OnDisable()
+        ///     {
+        ///         world.Destroy();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public readonly TransformPlane transformPlane { get => PhysicsWorld_GetTransformPlane(this); set => PhysicsWorld_SetTransformPlane(this, value); }
 
         /// <summary>
@@ -1397,6 +1578,14 @@ namespace Unity.U2D.Physics
             /// </summary>
             public float impulsePerLength { readonly get => m_ImpulsePerLength; set => m_ImpulsePerLength = Mathf.Clamp(value, -MaxImpulse, MaxImpulse); }
 
+            /// <summary>
+            /// Whether trigger shapes receive the explosion impulse alongside non-trigger shapes.
+            /// A trigger shape reports overlaps rather than producing a physical response, so it is skipped by default and only a non-trigger shape is pushed by the explosion.
+            /// Set this to true when a trigger shape should be pushed as well, for instance when the same shape is used both to detect an overlap and to be thrown by a blast.
+            /// Defaults to false.
+            /// </summary>
+            public bool useTriggers { readonly get => m_UseTriggers; set => m_UseTriggers = value; }
+
             #region Internal
 
             [SerializeField] PhysicsMask m_HitCategories;
@@ -1404,6 +1593,7 @@ namespace Unity.U2D.Physics
             [SerializeField] [Min(0.0f)] float m_Radius;
             [SerializeField] [Min(0.0f)] float m_Falloff;
             [SerializeField] float m_ImpulsePerLength;
+            [SerializeField] bool m_UseTriggers;
 
             #endregion
         }
@@ -2106,10 +2296,34 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Create a batch of bodies in the world.
         /// </summary>
+        /// <remarks>
+        /// Use this method to create many bodies that share the same configuration, instead of calling <see cref="PhysicsWorld.CreateBody(PhysicsBodyDefinition)"/> in a loop.
+        /// </remarks>
         /// <param name="definition">The body definition to use.</param>
         /// <param name="bodyCount">The number of bodies to create.</param>
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <returns>The created bodies. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create 500 bodies using a single definition.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateBodyBatchExample : MonoBehaviour
+        /// {
+        ///     public PhysicsBodyDefinition bodyDefinition = PhysicsBodyDefinition.defaultDefinition;
+        ///
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         using NativeArray<PhysicsBody> fiveHundredBodies = world.CreateBodyBatch(bodyDefinition, 500);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public NativeArray<PhysicsBody> CreateBodyBatch(PhysicsBodyDefinition definition, int bodyCount, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsBody.CreateBatch(this, definition, bodyCount, allocator);
 
         /// <summary>
@@ -2148,7 +2362,33 @@ namespace Unity.U2D.Physics
         /// Any invalid bodies will be ignored.
         /// Owned bodies will produce a warning and will not be destroyed (See <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>).
         /// </summary>
+        /// <remarks>
+        /// Use this method to destroy the bodies you create with <see cref="PhysicsWorld.CreateBodyBatch(PhysicsBodyDefinition, int, Allocator)"/>.
+        /// </remarks>
         /// <param name="bodies">The bodies to destroy.</param>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Destroy a batch of bodies created with CreateBodyBatch.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DestroyBodyBatchExample : MonoBehaviour
+        /// {
+        ///     public PhysicsBodyDefinition bodyDefinition = PhysicsBodyDefinition.defaultDefinition;
+        ///
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         NativeArray<PhysicsBody> bodies = world.CreateBodyBatch(bodyDefinition, 500);
+        ///         PhysicsWorld.DestroyBodyBatch(bodies);
+        ///         bodies.Dispose();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public static void DestroyBodyBatch(ReadOnlySpan<PhysicsBody> bodies) => PhysicsBody.DestroyBatch(bodies);
 
         /// <summary>
@@ -2168,8 +2408,36 @@ namespace Unity.U2D.Physics
         /// Owned shapes will produce a warning and will not be destroyed (<see cref="PhysicsShape.SetOwner(UnityEngine.Object)"/>).
         /// See <see cref="PhysicsBody.MassConfiguration"/>.
         /// </summary>
+        /// <remarks>
+        /// Use this method to destroy the shapes you create with <see cref="PhysicsBody.CreateShapeBatch(ReadOnlySpan{CircleGeometry}, PhysicsShapeDefinition, Allocator)"/>.
+        /// </remarks>
         /// <param name="shapes">The shapes to destroy.</param>
         /// <param name="updateBodyMass">Whether to update the body mass configuration. Not doing so is faster, especially when destroying multiple shapes.</param>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Destroy a batch of shapes created with CreateShapeBatch.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DestroyShapeBatchExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         PhysicsBody body = world.CreateBody();
+        ///         using NativeArray<CircleGeometry> circleGeometries = new NativeArray<CircleGeometry>(
+        ///             new[] { new CircleGeometry { radius = 1f } }, Allocator.Temp);
+        ///
+        ///         NativeArray<PhysicsShape> shapes = body.CreateShapeBatch(circleGeometries, PhysicsShapeDefinition.defaultDefinition);
+        ///         PhysicsWorld.DestroyShapeBatch(shapes, updateBodyMass: true);
+        ///         shapes.Dispose();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public static void DestroyShapeBatch(ReadOnlySpan<PhysicsShape> shapes, bool updateBodyMass) => PhysicsShape.DestroyBatch(shapes, updateBodyMass);
 
         /// <summary>
@@ -2207,8 +2475,39 @@ namespace Unity.U2D.Physics
         /// Create a PhysicsDistanceJoint in the world.
         /// See <see cref="PhysicsDistanceJoint.Create(PhysicsWorld, PhysicsDistanceJointDefinition)"/>.
         /// </summary>
+        /// <remarks>
+        /// Use this method to connect two bodies with a distance constraint, keeping them a set distance apart, similarly to a spring or a rope.
+        /// </remarks>
         /// <param name="definition">The joint definition to use.</param>
         /// <returns>The created joint.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Connect two existing bodies with a distance joint.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateDistanceJointExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         PhysicsBody body1 = world.CreateBody();
+        ///         PhysicsBody body2 = world.CreateBody();
+        ///
+        ///         PhysicsDistanceJointDefinition jointDefinition = new PhysicsDistanceJointDefinition
+        ///         {
+        ///             bodyA = body1,
+        ///             bodyB = body2,
+        ///             autoDistance = false,
+        ///             distance = 2f
+        ///         };
+        ///         PhysicsJoint distanceJoint = world.CreateJoint(jointDefinition);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public readonly PhysicsDistanceJoint CreateJoint(PhysicsDistanceJointDefinition definition) => PhysicsDistanceJoint.Create(this, definition);
 
         /// <summary>
@@ -2569,11 +2868,6 @@ namespace Unity.U2D.Physics
 	        public float relaxImpulses { readonly get => m_RelaxImpulses; set => m_RelaxImpulses = value; }
 
             /// <summary>
-            /// Time spent applying bounciness.
-            /// </summary>
-            public float applyBounciness { readonly get => m_ApplyBounciness; set => m_ApplyBounciness = value; }
-
-            /// <summary>
             /// Time spent storing impulses.
             /// </summary>
 	        public float storeImpulses { readonly get => m_StoreImpulses; set => m_StoreImpulses = value; }
@@ -2651,7 +2945,6 @@ namespace Unity.U2D.Physics
                     solveImpulses = profileA.solveImpulses + profileB.solveImpulses,
                     integrateTransforms = profileA.integrateTransforms + profileB.integrateTransforms,
                     relaxImpulses = profileA.relaxImpulses + profileB.relaxImpulses,
-                    applyBounciness = profileA.applyBounciness + profileB.applyBounciness,
                     storeImpulses = profileA.storeImpulses + profileB.storeImpulses,
                     splitIslands = profileA.splitIslands + profileB.splitIslands,
                     bodyTransforms = profileA.bodyTransforms + profileB.bodyTransforms,
@@ -2688,7 +2981,6 @@ namespace Unity.U2D.Physics
                     solveImpulses = Mathf.Max(profileA.solveImpulses, profileB.solveImpulses),
                     integrateTransforms = Mathf.Max(profileA.integrateTransforms, profileB.integrateTransforms),
                     relaxImpulses = Mathf.Max(profileA.relaxImpulses, profileB.relaxImpulses),
-                    applyBounciness = Mathf.Max(profileA.applyBounciness, profileB.applyBounciness),
                     storeImpulses = Mathf.Max(profileA.storeImpulses, profileB.storeImpulses),
                     splitIslands = Mathf.Max(profileA.splitIslands, profileB.splitIslands),
                     bodyTransforms = Mathf.Max(profileA.bodyTransforms, profileB.bodyTransforms),
@@ -2717,7 +3009,6 @@ namespace Unity.U2D.Physics
 	        [SerializeField] float m_SolveImpulses;
 	        [SerializeField] float m_IntegrateTransforms;
 	        [SerializeField] float m_RelaxImpulses;
-            [SerializeField] float m_ApplyBounciness;
 	        [SerializeField] float m_StoreImpulses;
 	        [SerializeField] float m_SplitIslands;
 	        [SerializeField] float m_BodyTransforms;
@@ -3599,6 +3890,21 @@ namespace Unity.U2D.Physics
         public readonly int drawOrder { get => PhysicsWorld_GetDrawOrder(this); set => PhysicsWorld_SetDrawOrder(this, value); }
 
         /// <summary>
+        /// Draws a body, its shapes and its joints at its assigned Transform's current world pose instead of its
+        /// simulated physics pose, whenever that body is writing its pose to the Transform.
+        /// Turning this on costs extra computation for every body drawn, and what gets drawn is no longer a picture
+        /// of the simulation: shapes can appear to be touching, overlapping, or separated from each other when the
+        /// simulation itself says otherwise.
+        /// </summary>
+        /// <remarks>
+        /// Only affects a body whose write mode produces a pose that can differ from the simulated one,
+        /// <see cref="PhysicsBody.TransformWriteMode.Interpolate"/> or <see cref="PhysicsBody.TransformWriteMode.Extrapolate"/>.
+        /// A body left at <see cref="PhysicsBody.TransformWriteMode.Current"/> or <see cref="PhysicsBody.TransformWriteMode.Off"/>
+        /// keeps drawing from its simulated pose either way. See <see cref="PhysicsBody.transformWriteMode"/>.
+        /// </remarks>
+        public readonly bool drawAtTransform { get => PhysicsWorld_GetDrawAtTransform(this); set => PhysicsWorld_SetDrawAtTransform(this, value); }
+
+        /// <summary>
         /// Controls whether this world's custom draw is automatically cleared each frame.
         /// When enabled (the default), custom draw elements with a lifetime of zero are cleared each frame so they must be submitted every frame to remain visible.
         /// When disabled, custom draw is retained until <see cref="PhysicsWorld.ClearDraw"/> is called, so it persists across frames and repaints without being resubmitted.
@@ -3805,10 +4111,46 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Draw a Line.
         /// </summary>
+        /// <remarks>
+        /// Use this method, and the other `Draw` methods of <see cref="PhysicsWorld"/>, to draw your own debug shapes.
+        /// A drawn shape only lasts for one frame unless you set `lifetime` to keep it visible for longer.
+        /// </remarks>
         /// <param name="point0">The start of the line.</param>
         /// <param name="point1">The end of the line.</param>
         /// <param name="color">The color to draw with.</param>
         /// <param name="lifetime">How long the element should be drawn for, in seconds. The default is zero indicating that it should only be drawn once. Lifetime is only used when the world is playing.</param>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Get the main physics world.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DrawDebugShapesExample : MonoBehaviour
+        /// {
+        ///     void Update()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///
+        ///         // Draw a line from the origin to (30, 40) in "cornflower blue".
+        ///         world.DrawLine(Vector2.zero, new Vector2(30f, 40f), Color.cornflowerBlue);
+        ///
+        ///         // Draw a circle from the origin to (30, 40) in "forest green".
+        ///         world.DrawCircle(new Vector2(30f, 40f), 2f, Color.forestGreen);
+        ///
+        ///         // Draw a point with a 3 pixel radius at (-5, 10) in "gold".
+        ///         world.DrawPoint(new Vector2(-5f, 10f), 3f, Color.gold);
+        ///
+        ///         // Draw a circle for 5 seconds instead of a single frame.
+        ///         const float lifeTime = 5f;
+        ///         world.DrawGeometry(new CircleGeometry { radius = 2f }, PhysicsTransform.identity, Color.cornflowerBlue, lifeTime);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsWorld.DrawCircle"/>
+        /// <seealso cref="PhysicsWorld.DrawPoint"/>
         public readonly void DrawLine(Vector2 point0, Vector2 point1, Color color, float lifetime = 0.0f) => PhysicsWorld_DrawLine(this, point0, point1, color, lifetime);
 
         /// <summary>

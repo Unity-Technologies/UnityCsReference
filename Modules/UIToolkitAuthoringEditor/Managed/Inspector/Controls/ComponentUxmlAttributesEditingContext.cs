@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Reflection;
-using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -25,12 +23,6 @@ namespace Unity.UIToolkit.Editor;
 /// </remarks>
 sealed class ComponentUxmlAttributesEditingContext : UxmlAttributesEditingContext
 {
-    // The component type is known only at runtime, so the live value is read by reflection
-    // through ComponentValueReflection (a cold path, once per selection / sync).
-    [NoAutoStaticsCleanup]
-    static readonly MethodInfo k_HasComponentMethod =
-        typeof(VisualElement).GetMethod(nameof(VisualElement.HasComponent));
-
     readonly UxmlSerializedDataDescription m_Description;
     readonly Type m_ComponentDataType;
 
@@ -101,10 +93,10 @@ sealed class ComponentUxmlAttributesEditingContext : UxmlAttributesEditingContex
     {
         get
         {
-            if (element == null || componentType == null)
+            if (!ComponentValueReflection.HasComponent(element, componentType))
                 return null;
-            var hasComponent = (bool)k_HasComponentMethod.MakeGenericMethod(componentType).Invoke(element, null);
-            return hasComponent ? ComponentValueReflection.GetComponentValueMethod.MakeGenericMethod(componentType).Invoke(null, new object[] { element }) : null;
+
+            return ComponentValueReflection.GetComponentValueMethod.MakeGenericMethod(componentType).Invoke(null, new object[] { element });
         }
     }
 

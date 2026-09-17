@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneHierarchy not yet converted
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -36,13 +35,13 @@ namespace UnityEditor
             const string kWarningSymbol = "console.warnicon.sml";
             const string kWarningMessage = "The current sorting method is taking a lot of time. Consider using 'Transform Sort' in playmode for better performance.";
 
-            public static readonly GUIContent defaultSortingContent = EditorGUIUtility.TrIconContent(kCustomSorting);
-            public static readonly GUIContent createContent = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Create new GameObject");
+            public static readonly GUIContent defaultSortingContent = L10n.IconContent(kCustomSorting, null, null);
+            public static readonly GUIContent createContent = L10n.IconContent("Toolbar Plus More", "Create new GameObject", null);
             public static readonly GUIContent fetchWarning = new GUIContent("", EditorGUIUtility.FindTexture(kWarningSymbol), kWarningMessage);
 
             public static readonly GUIStyle lockButton = "IN LockButton";
 
-            public static readonly GUIContent renamingEnabledContent = EditorGUIUtility.TrTextContent("Rename New Objects");
+            public static readonly GUIContent renamingEnabledContent = L10n.TextContent("Rename New Objects", null, null, null);
             public static readonly GUIContent setOriginLabel = new GUIContent("Set as Default Parent");
             public static readonly GUIContent clearOriginLabel = new GUIContent("Clear Default Parent");
         }
@@ -1102,26 +1101,26 @@ namespace UnityEditor
             // For Sub Scenes GameObjects, have menu items for cut, paste and delete.
             // Not copy or duplicate, since multiple of the same Sub Scene is not supported anyway.
 
-            menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemCut), false, ClipboardUtility.CutGO);
+            menu.AddItem(L10n.TextContent(kContextMenuItemCut, null, null, null), false, ClipboardUtility.CutGO);
             if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
-                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPaste), false, PasteGO);
+                menu.AddItem(L10n.TextContent(kContextMenuItemPaste, null, null, null), false, PasteGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemPaste));
+                menu.AddDisabledItem(L10n.TextContent(kContextMenuItemPaste, null, null, null));
 
             if (ClipboardUtility.CanPasteAsChild())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPasteAsChildKeepLocalTransform), false, () => ClipboardUtility.PasteGOAsChild(false));
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
+                menu.AddItem(L10n.TextContent(kContextMenuItemPasteAsChildKeepLocalTransform, null, null, null), false, () => ClipboardUtility.PasteGOAsChild(false));
+                menu.AddItem(L10n.TextContent("Paste as Child (Keep World Transform)", null, null, null), false, () => ClipboardUtility.PasteGOAsChild(true));
             }
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste Special"));
+                menu.AddDisabledItem(L10n.TextContent("Paste Special", null, null, null));
 
             menu.AddSeparator("");
 
             if (IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects))
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete GameObject"));
+                menu.AddDisabledItem(L10n.TextContent("Delete GameObject", null, null, null));
             else
-                menu.AddItem(EditorGUIUtility.TrTextContent("Delete GameObject"), false, DeleteGO);
+                menu.AddItem(L10n.TextContent("Delete GameObject", null, null, null), false, DeleteGO);
         }
 
         void PopulateGenericMenuWithPrefabMenuItems(GenericMenu menu, EntityId contextClickedItemID)
@@ -1150,18 +1149,18 @@ namespace UnityEditor
             {
                 if (PrefabUtility.IsPartOfModelPrefab(prefabAsset))
                 {
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Open Model"), false, () =>
+                    menu.AddItem(L10n.TextContent("Prefab/Open Model", null, null, null), false, () =>
                     {
                         AssetDatabase.OpenAsset(prefabAsset);
                     });
                 }
                 else
                 {
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Open Asset in Context"), false, () =>
+                    menu.AddItem(L10n.TextContent("Prefab/Open Asset in Context", null, null, null), false, () =>
                     {
                         PrefabStageUtility.OpenPrefab(assetPath, go, PrefabStage.Mode.InContext, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
                     });
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Open Asset in Isolation"), false, () =>
+                    menu.AddItem(L10n.TextContent("Prefab/Open Asset in Isolation", null, null, null), false, () =>
                     {
                         PrefabStageUtility.OpenPrefab(assetPath, go, PrefabStage.Mode.InIsolation, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
                     });
@@ -1171,7 +1170,7 @@ namespace UnityEditor
             if (!string.IsNullOrEmpty(assetPath))
             {
                 menu.AddSeparator("Prefab/");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Asset"), false, () =>
+                menu.AddItem(L10n.TextContent("Prefab/Select Asset", null, null, null), false, () =>
                 {
                     Selection.activeObject = prefabAsset;
                     EditorGUIUtility.PingObject(prefabAsset.GetEntityId());
@@ -1180,14 +1179,14 @@ namespace UnityEditor
 
             if (isSelectPrefabRootAvailable)
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Root"), false, SelectPrefabRoot);
+                menu.AddItem(L10n.TextContent("Prefab/Select Root", null, null, null), false, SelectPrefabRoot);
             }
 
             GameObject sourceRoot = PrefabUtility.GetSourceRootWhereGameObjectIsAddedAsOverride(go);
             if (sourceRoot != null)
             {
                 var s = PrefabUtility.GetOriginalSourceRootWhereGameObjectIsAdded(go);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Go to Added GameObject in '" + sourceRoot.name + "'"), false, () =>
+                menu.AddItem(L10n.TextContent("Prefab/Go to Added GameObject in '" + sourceRoot.name + "'", null, null, null), false, () =>
                 {
                     PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(sourceRoot), PrefabUtility.GetNearestPrefabInstanceRoot(go), PrefabStage.Mode.InIsolation);
                 });
@@ -1210,10 +1209,10 @@ namespace UnityEditor
             if (PrefabUtility.AnyOutermostPrefabRoots(Selection.gameObjects))
             {
                 menu.AddSeparator("Prefab/");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack"), false, () => PrefabUtility.UnpackPrefab(Selection.gameObjects));
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack Completely"), false, () => PrefabUtility.UnpackPrefabCompletely(Selection.gameObjects));
+                menu.AddItem(L10n.TextContent("Prefab/Unpack", null, null, null), false, () => PrefabUtility.UnpackPrefab(Selection.gameObjects));
+                menu.AddItem(L10n.TextContent("Prefab/Unpack Completely", null, null, null), false, () => PrefabUtility.UnpackPrefabCompletely(Selection.gameObjects));
                 menu.AddSeparator("Prefab/");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, () => PrefabUtility.RemoveSelectedPrefabInstanceUnusedOverrides(Selection.gameObjects));
+                menu.AddItem(L10n.TextContent("Prefab/Remove Unused Overrides...", null, null, null), false, () => PrefabUtility.RemoveSelectedPrefabInstanceUnusedOverrides(Selection.gameObjects));
             }
         }
 
@@ -1226,69 +1225,69 @@ namespace UnityEditor
                                             || !IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects.parent);
 
             if (itemIsSelected && allowCutCopyAndDuplicate)
-                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemCut), false, ClipboardUtility.CutGO);
+                menu.AddItem(L10n.TextContent(kContextMenuItemCut, null, null, null), false, ClipboardUtility.CutGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemCut));
+                menu.AddDisabledItem(L10n.TextContent(kContextMenuItemCut, null, null, null));
             if (itemIsSelected && allowCutCopyAndDuplicate)
-                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemCopy), false, ClipboardUtility.CopyGO);
+                menu.AddItem(L10n.TextContent(kContextMenuItemCopy, null, null, null), false, ClipboardUtility.CopyGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemCopy));
+                menu.AddDisabledItem(L10n.TextContent(kContextMenuItemCopy, null, null, null));
             if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
-                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPaste), false, PasteGO);
+                menu.AddItem(L10n.TextContent(kContextMenuItemPaste, null, null, null), false, PasteGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemPaste));
+                menu.AddDisabledItem(L10n.TextContent(kContextMenuItemPaste, null, null, null));
             if (ClipboardUtility.CanPasteAsChild())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemPasteAsChildKeepLocalTransform), false, () => ClipboardUtility.PasteGOAsChild(false));
-                menu.AddItem(EditorGUIUtility.TrTextContent("Paste Special/Paste as Child (Keep World Transform)"), false, () => ClipboardUtility.PasteGOAsChild(true));
+                menu.AddItem(L10n.TextContent(kContextMenuItemPasteAsChildKeepLocalTransform, null, null, null), false, () => ClipboardUtility.PasteGOAsChild(false));
+                menu.AddItem(L10n.TextContent("Paste Special/Paste as Child (Keep World Transform)", null, null, null), false, () => ClipboardUtility.PasteGOAsChild(true));
             }
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste Special"));
+                menu.AddDisabledItem(L10n.TextContent("Paste Special", null, null, null));
 
             if (itemIsSelected && !hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1 && !GetIsNotEditable())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameGO);
+                menu.AddItem(L10n.TextContent("Rename", null, null, null), false, RenameGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
+                menu.AddDisabledItem(L10n.TextContent("Rename", null, null, null));
 
             if (itemIsSelected && allowCutCopyAndDuplicate)
-                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemDuplicate), false, DuplicateGO);
+                menu.AddItem(L10n.TextContent(kContextMenuItemDuplicate, null, null, null), false, DuplicateGO);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemDuplicate));
+                menu.AddDisabledItem(L10n.TextContent(kContextMenuItemDuplicate, null, null, null));
 
             if (m_CustomParentForNewGameObjects != null && IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects) || !itemIsSelected)
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent(kContextMenuItemDelete));
+                menu.AddDisabledItem(L10n.TextContent(kContextMenuItemDelete, null, null, null));
             else
-                menu.AddItem(EditorGUIUtility.TrTextContent(kContextMenuItemDelete), false, DeleteGO);
+                menu.AddItem(L10n.TextContent(kContextMenuItemDelete, null, null, null), false, DeleteGO);
 
 
             menu.AddSeparator("");
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Select All"), false, SelectAll);
+            menu.AddItem(L10n.TextContent("Select All", null, null, null), false, SelectAll);
 
             if (itemIsSelected)
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Deselect All"), false, DeselectAll);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Invert Selection"), false, InvertSelection);
+                menu.AddItem(L10n.TextContent("Deselect All", null, null, null), false, DeselectAll);
+                menu.AddItem(L10n.TextContent("Invert Selection", null, null, null), false, InvertSelection);
             }
             else
             {
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Deselect All"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Invert Selection"));
+                menu.AddDisabledItem(L10n.TextContent("Deselect All", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Invert Selection", null, null, null));
             }
 
             if (IsSelectChildrenAvailable())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Select Children"), false, SelectChildren);
+                menu.AddItem(L10n.TextContent("Select Children", null, null, null), false, SelectChildren);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Select Children"));
+                menu.AddDisabledItem(L10n.TextContent("Select Children", null, null, null));
 
             menu.AddSeparator("");
             if (Selection.activeGameObject)
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Find References in Scene"), false, FindReferenceInScene);
+                menu.AddItem(L10n.TextContent("Find References in Scene", null, null, null), false, FindReferenceInScene);
             }
             else
             {
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Find References in Scene"));
+                menu.AddDisabledItem(L10n.TextContent("Find References in Scene", null, null, null));
             }
 
             menu.AddSeparator("");
@@ -1427,7 +1426,7 @@ namespace UnityEditor
             // Set active
             if (scene.isLoaded)
             {
-                var content = EditorGUIUtility.TrTextContent("Set Active Scene");
+                var content = L10n.TextContent("Set Active Scene", null, null, null);
                 if (hasMultipleScenes && SceneManager.CanSetAsActiveScene(scene))
                     menu.AddItem(content, false, SetSceneActive, scene);
                 else
@@ -1440,19 +1439,19 @@ namespace UnityEditor
             {
                 if (!EditorApplication.isPlaying || EditorSceneManager.IsAuthoringScene(scene))
                 {
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Save Scene"), false, SaveSelectedScenes, scene);
+                    menu.AddItem(L10n.TextContent("Save Scene", null, null, null), false, SaveSelectedScenes, scene);
                     if (!scene.isSubScene)
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Save Scene As"), false, SaveSceneAs, scene);
+                        menu.AddItem(L10n.TextContent("Save Scene As", null, null, null), false, SaveSceneAs, scene);
                     if (hasMultipleScenes)
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Save All"), false, SaveAllScenes, scene);
+                        menu.AddItem(L10n.TextContent("Save All", null, null, null), false, SaveAllScenes, scene);
                     else
-                        menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Save All"));
+                        menu.AddDisabledItem(L10n.TextContent("Save All", null, null, null));
                 }
                 else
                 {
-                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Save Scene"));
-                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Save Scene As"));
-                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Save All"));
+                    menu.AddDisabledItem(L10n.TextContent("Save Scene", null, null, null));
+                    menu.AddDisabledItem(L10n.TextContent("Save Scene As", null, null, null));
+                    menu.AddDisabledItem(L10n.TextContent("Save All", null, null, null));
                 }
                 menu.AddSeparator("");
             }
@@ -1464,7 +1463,7 @@ namespace UnityEditor
                 if (scene.isLoaded)
                 {
                     // Unload
-                    var content = EditorGUIUtility.TrTextContent("Unload Scene");
+                    var content = L10n.TextContent("Unload Scene", null, null, null);
                     bool canUnloadScenes = isUnloadOrRemoveValid && !EditorApplication.isPlaying && !string.IsNullOrEmpty(scene.path);
                     if (canUnloadScenes)
                         menu.AddItem(content, false, UnloadSelectedScenes, scene);
@@ -1474,7 +1473,7 @@ namespace UnityEditor
                 else
                 {
                     // Load
-                    var content = EditorGUIUtility.TrTextContent("Load Scene");
+                    var content = L10n.TextContent("Load Scene", null, null, null);
                     bool canLoadScenes = !EditorApplication.isPlaying;
                     if (canLoadScenes)
                         menu.AddItem(content, false, LoadSelectedScenes, scene);
@@ -1483,7 +1482,7 @@ namespace UnityEditor
                 }
 
                 // Remove
-                var removeContent = EditorGUIUtility.TrTextContent("Remove Scene");
+                var removeContent = L10n.TextContent("Remove Scene", null, null, null);
                 bool selectedAllScenes = GetSelectedScenes().Count == EditorSceneManager.sceneCount;
                 bool canRemoveScenes = isUnloadOrRemoveValid && !selectedAllScenes && !EditorApplication.isPlaying;
                 if (canRemoveScenes)
@@ -1495,7 +1494,7 @@ namespace UnityEditor
             // Discard changes
             if (scene.isLoaded)
             {
-                var content = EditorGUIUtility.TrTextContent("Discard changes");
+                var content = L10n.TextContent("Discard changes", null, null, null);
                 var selectedSceneHandles = GetSelectedScenes();
                 var modifiedScenes = GetModifiedScenes(selectedSceneHandles);
                 bool canReload = modifiedScenes.Length > 0 && CanScenesBeReloaded(modifiedScenes);
@@ -1508,7 +1507,7 @@ namespace UnityEditor
 
             // Ping Scene Asset
             menu.AddSeparator("");
-            var selectAssetContent = EditorGUIUtility.TrTextContent("Find In Project");
+            var selectAssetContent = L10n.TextContent("Find In Project", null, null, null);
             if (!string.IsNullOrEmpty(scene.path))
                 menu.AddItem(selectAssetContent, false, SelectSceneAsset, scene);
             else
@@ -1516,7 +1515,7 @@ namespace UnityEditor
 
             if (!scene.isSubScene)
             {
-                var addSceneContent = EditorGUIUtility.TrTextContent("Add New Scene");
+                var addSceneContent = L10n.TextContent("Add New Scene", null, null, null);
                 if (!EditorApplication.isPlaying)
                     menu.AddItem(addSceneContent, false, AddNewScene, scene);
                 else
@@ -1525,9 +1524,9 @@ namespace UnityEditor
 
             menu.AddSeparator("");
             if(scene.isLoaded)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, PrefabUtility.RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem, scene);
+                menu.AddItem(L10n.TextContent("Prefab/Remove Unused Overrides...", null, null, null), false, PrefabUtility.RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem, scene);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."));
+                menu.AddDisabledItem(L10n.TextContent("Prefab/Remove Unused Overrides...", null, null, null));
 
             // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
             // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)
@@ -1909,8 +1908,8 @@ namespace UnityEditor
             Scene untitledScene = EditorSceneManager.GetSceneByPath("");
             if (untitledScene.IsValid())
             {
-                var title = EditorGUIUtility.TrTextContent("Save Untitled Scene").text;
-                var subTitle = EditorGUIUtility.TrTextContent("Existing Untitled scene needs to be saved before creating a new scene. Only one untitled scene is supported at a time.").text;
+                var title = L10n.TextContent("Save Untitled Scene", null, null, null).text;
+                var subTitle = L10n.TextContent("Existing Untitled scene needs to be saved before creating a new scene. Only one untitled scene is supported at a time.", null, null, null).text;
                 if (EditorUtility.DisplayDialog(title, subTitle, "Save", "Cancel"))
                 {
                     if (!EditorSceneManager.SaveScene(untitledScene))
@@ -2079,7 +2078,7 @@ namespace UnityEditor
 
         public virtual void AddItemsToWindowMenu(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Collapse All"), false, CollapseAll);
+            menu.AddItem(L10n.TextContent("Collapse All", null, null, null), false, CollapseAll);
             menu.AddSeparator("");
             m_LockTracker.AddItemsToMenu(menu);
 
@@ -2210,4 +2209,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

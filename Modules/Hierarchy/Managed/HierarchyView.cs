@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -75,6 +74,7 @@ namespace Unity.Hierarchy
         Unity.Hierarchy.Hierarchy m_Hierarchy;
         HierarchyFlattened m_HierarchyFlattened;
         HierarchyViewModel m_HierarchyViewModel;
+        bool m_OwnsHierarchyFlattened;
         int m_Version;
 
         // Data update state
@@ -420,8 +420,24 @@ namespace Unity.Hierarchy
         /// <param name="hierarchy">The <see cref="Hierarchy"/> to set as the source.</param>
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
         public void SetSourceHierarchy(Unity.Hierarchy.Hierarchy hierarchy, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
+            => SetSource(hierarchy, null, true, defaultFlags);
+
+        /// <summary>
+        /// Sets the source hierarchy and a <see cref="HierarchyFlattened"/> owned by the caller, so that several
+        /// views can share one packed hierarchy instead of each packing its own.
+        /// </summary>
+        /// <param name="hierarchy">The <see cref="Hierarchy"/> backing <paramref name="hierarchyFlattened"/>.</param>
+        /// <param name="hierarchyFlattened">The <see cref="HierarchyFlattened"/> to read from. The caller keeps ownership.</param>
+        /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        internal void SetSourceHierarchyFlattened(Unity.Hierarchy.Hierarchy hierarchy, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
+            => SetSource(hierarchy, hierarchyFlattened, false, defaultFlags);
+
+        void SetSource(Unity.Hierarchy.Hierarchy hierarchy, HierarchyFlattened hierarchyFlattened, bool ownsHierarchyFlattened, HierarchyNodeFlags defaultFlags)
         {
-            if (m_Hierarchy == hierarchy)
+            // Rebinding the very same source is a no-op. For a borrowed flattened the identity that matters is
+            // the flattened itself, since a new one can be handed over for the same hierarchy.
+            if (ownsHierarchyFlattened ? m_Hierarchy == hierarchy : m_HierarchyFlattened == hierarchyFlattened)
                 return;
 
             m_CollectionView.animation?.SkipAnimation();
@@ -468,10 +484,11 @@ namespace Unity.Hierarchy
             }
             if (m_HierarchyFlattened != null)
             {
-                if (m_HierarchyFlattened.IsCreated)
+                if (m_OwnsHierarchyFlattened && m_HierarchyFlattened.IsCreated)
                     m_HierarchyFlattened.Dispose();
                 m_HierarchyFlattened = null;
             }
+            m_OwnsHierarchyFlattened = false;
             m_Hierarchy = null; // User is responsible for disposing the hierarchy
 
             // If setting to null, we're done
@@ -480,7 +497,8 @@ namespace Unity.Hierarchy
 
             // Set the new hierarchy source
             m_Hierarchy = hierarchy;
-            m_HierarchyFlattened = new HierarchyFlattened(m_Hierarchy);
+            m_HierarchyFlattened = ownsHierarchyFlattened ? new HierarchyFlattened(m_Hierarchy) : hierarchyFlattened;
+            m_OwnsHierarchyFlattened = ownsHierarchyFlattened;
             m_HierarchyViewModel = new HierarchyViewModel(m_HierarchyFlattened, defaultFlags);
 
             // Force update data to ensure list view reads valid data when we set the items source
@@ -1278,6 +1296,27 @@ namespace Unity.Hierarchy
             m_PostUpdateActionQueue.PushBack(action);
         }
 
+        // Deferred because the caller is inside the update that creates the node, and held in m_ScheduledItem so
+        // the existing rename cancellation applies.
+        [VisibleToOtherModules]
+        internal void ScheduleFrameAndBeginRename(in HierarchyNode node)
+        {
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).ScheduleFrameAndBeginRename({node})");
+            CancelScheduledRename();
+
+            var target = node;
+            m_ScheduledItem = schedule.Execute(() =>
+            {
+                m_ScheduledItem = null;
+
+                if (m_Hierarchy is not { IsCreated: true } || !m_Hierarchy.Exists(in target))
+                    return;
+
+                Frame(in target);
+                BeginRename(in target);
+            });
+        }
+
         [VisibleToOtherModules]
         internal void BeginRename(in HierarchyNode node)
         {
@@ -1332,6 +1371,23 @@ namespace Unity.Hierarchy
             }
         }
 
+        /// <summary>
+        /// Cancels any pending or ongoing rename. Used to make sure a rename does not stay active
+        /// while an unrelated action (e.g. a keyboard shortcut like Duplicate) is executed.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        internal void CancelRename()
+        {
+            CancelScheduledRename();
+
+            if (!m_IsRenamingItem)
+                return;
+
+            var itemName = m_RenamingItem.Q<HierarchyViewItemName>();
+            itemName?.CancelRename();
+            SetRenamingItem(null);
+        }
+
         internal void InvokePopulateContextMenu(ContextualMenuPopulateEvent evt)
         {
             // Cancel any pending rename when right-clicking to show context menu
@@ -1341,12 +1397,11 @@ namespace Unity.Hierarchy
             if (hierarchyView == null)
                 return;
 
-            if (m_IsRenamingItem)
-            {
-                var itemName = m_RenamingItem.Q<HierarchyViewItemName>();
-                itemName?.CancelRename();
-                SetRenamingItem(null);
-            }
+            CancelRename();
+
+            // The native context menu is modal, so without a repaint before it opens the cancelled
+            // rename field stays visible behind the open menu (UUM-150371).
+            evt.menu.repaintPanelBeforeDisplay = true;
 
             evt.StopImmediatePropagation();
 
@@ -2299,4 +2354,3 @@ namespace Unity.Hierarchy
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ExCSS;
+using ParseError = ExCSS.ParseError;
 using Unity.Collections;
 using UnityEditor.AssetImporters;
 using UnityEngine;
@@ -538,7 +539,7 @@ namespace UnityEditor.UIElements.StyleSheets
                     {
                         string hiResImageLocation = URIHelpers.InjectFileNameSuffix(projectRelativePath, "@2x");
 
-                        if (File.Exists(FileUtil.PathToAbsolutePath(hiResImageLocation)))
+                        if (File.Exists(FileUtil.PathToAbsolutePathForFileIO(hiResImageLocation)))
                         {
                             UnityEngine.Object hiResImage = DeclareDependencyAndLoad(hiResImageLocation);
 
@@ -1044,7 +1045,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
         internal static void PopulateDependencies(string assetPath, List<string> dependencies)
         {
-            var contents = File.ReadAllText(FileUtil.PathToAbsolutePath(assetPath));
+            var contents = File.ReadAllText(FileUtil.PathToAbsolutePathForFileIO(assetPath));
 
             if (string.IsNullOrEmpty(contents))
                 return;

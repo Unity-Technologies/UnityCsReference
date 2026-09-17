@@ -20,6 +20,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
     static partial class EditorCompilationInterface
     {
         [AutoStaticsCleanupOnCodeReload] // this object has events
+        // Lazy singleton: the Instance getter constructs a new EditorCompilation on the next access after
+        // cleanup nulls it.
+        [IgnoreForUAL0015("Lazy singleton recreated on demand by the Instance getter")]
         static EditorCompilation editorCompilation;
 
         public static EditorCompilation Instance

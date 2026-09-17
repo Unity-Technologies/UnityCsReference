@@ -22,6 +22,9 @@ namespace Unity.UI.Builder
             int selectedStyleSheetIndex = selectedStyleSheet == null ? -1 : (int)documentElement.GetProperty(BuilderConstants.ElementLinkedStyleSheetIndexVEPropertyName);
             var isStyleSheet = documentElement != null && BuilderSharedStyles.IsStyleSheetElement(documentElement);
             var styleSheetBelongsToParent = !string.IsNullOrEmpty(documentElement?.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string);
+            // In StyleSheet Editing Mode the stylesheet set is fixed to the opened sheet: the host is a
+            // throwaway preview copy, so adding to or removing from it would not stick.
+            var editingStyleSheet = paneWindow.document.isStyleSheetEditingMode;
             if (isStyleSheet)
                 evt.StopImmediatePropagation();
 
@@ -33,7 +36,7 @@ namespace Unity.UI.Builder
                 {
                     BuilderStyleSheetsUtilities.CreateNewUSSAsset(paneWindow);
                 },
-                DropdownMenuAction.Status.Normal);
+                editingStyleSheet ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
 
             evt.menu.AppendAction(
                 BuilderConstants.ExplorerStyleSheetsPaneAddExistingUSSMenu,
@@ -41,7 +44,7 @@ namespace Unity.UI.Builder
                 {
                     BuilderStyleSheetsUtilities.AddExistingUSSToAsset(paneWindow);
                 },
-                DropdownMenuAction.Status.Normal);
+                editingStyleSheet ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
 
             evt.menu.AppendAction(
                 BuilderConstants.ExplorerStyleSheetsPaneRemoveUSSMenu,
@@ -49,7 +52,7 @@ namespace Unity.UI.Builder
                 {
                     BuilderStyleSheetsUtilities.RemoveUSSFromAsset(paneWindow, selection, documentElement);
                 },
-                isStyleSheet && !styleSheetBelongsToParent
+                isStyleSheet && !styleSheetBelongsToParent && !editingStyleSheet
                 ? DropdownMenuAction.Status.Normal
                 : DropdownMenuAction.Status.Disabled);
 

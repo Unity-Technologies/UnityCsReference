@@ -16,14 +16,13 @@ namespace UnityEditor.IMGUI.Controls
     {
         private static class Styles
         {
-            public static readonly GUIStyle itemStyle = "DD ItemStyle";
-            public static readonly GUIStyle header = "DD HeaderStyle";
-            [NoAutoStaticsCleanup] // mutated in static ctor (padding/clipping), cannot be readonly
-            public static GUIStyle headerEllipsis = "DD HeaderStyle";
-            public static readonly GUIStyle checkMark = "DD ItemCheckmark";
-            public static readonly GUIStyle lineSeparator = "DefaultLineSeparator";
-            public static readonly GUIStyle rightArrow = "ArrowNavigationRight";
-            public static readonly GUIStyle leftArrow = "ArrowNavigationLeft";
+            public static GUIStyle itemStyle => EditorStyles.advancedDropdownItem;
+            public static GUIStyle header => EditorStyles.advancedDropdownHeader;
+            public static GUIStyle headerEllipsis => EditorStyles.advancedDropdownHeader;
+            public static GUIStyle checkMark => EditorStyles.advancedDropdownCheckmark;
+            public static GUIStyle lineSeparator => EditorStyles.defaultLineSeparator;
+            public static GUIStyle rightArrow => EditorStyles.arrowNavigationRight;
+            public static GUIStyle leftArrow => EditorStyles.arrowNavigationLeft;
             public static readonly GUIStyle searchFieldStyle = new GUIStyle(EditorStyles.toolbarSearchField)
             {
                 margin = new RectOffset(5, 4, 4, 5)
@@ -39,8 +38,6 @@ namespace UnityEditor.IMGUI.Controls
 
             static Styles()
             {
-                headerEllipsis.padding.left = 20;
-                headerEllipsis.clipping = TextClipping.Ellipsis;
                 helpBox = new GUIStyle(EditorStyles.helpBox)
                 {
                     padding = new RectOffset(8, 8, 8, 8),
@@ -294,39 +291,43 @@ namespace UnityEditor.IMGUI.Controls
 
         internal Vector2 CalculateContentSize(AdvancedDropdownDataSource dataSource, AdvancedDropdownItem currentLevel)
         {
-            float maxWidth = 0;
-            float maxHeight = 0;
-            bool includeArrow = false;
-            float arrowWidth = Styles.rightArrow.fixedWidth;
-
-            // Calculate size for the specified level
-            CalculateTreeSize(currentLevel, ref maxWidth, ref maxHeight, ref includeArrow);
-
-            if (includeArrow)
+            // Icons are drawn at iconSize, so they have to be measured at iconSize too
+            using (new EditorGUIUtility.IconSizeScope(iconSize))
             {
-                maxWidth += arrowWidth;
-            }
+                float maxWidth = 0;
+                float maxHeight = 0;
+                bool includeArrow = false;
+                float arrowWidth = Styles.rightArrow.fixedWidth;
 
-            // other size calculations may rely on m_HeaderRect and m_SearchRect, which wont be populated until the first time they are drawn
-            // so they need to be calculated here if needed.
-            if (m_HeaderRect == default(Rect))
-            {
-                var headerContent = GUIContent.Temp(dataSource.mainTree.name, dataSource.mainTree.icon);
-                var headerSize = Styles.header.CalcSize(headerContent);
-                if (maxWidth > headerSize.x)
-                    headerSize.x = maxWidth;
-                headerSize.y = Styles.header.CalcHeight(headerContent, maxWidth);
-                m_HeaderRect = new Rect(0, 0, headerSize.x, headerSize.y);
-            }
-            if (m_SearchRect == default(Rect))
-            {
-                var controlRectSize = Styles.searchFieldStyle.CalcSize(GUIContent.none);
-                controlRectSize.x = maxWidth;
-                var controlRect = new Rect(0, 0, controlRectSize.x, controlRectSize.y);
-                m_SearchRect = CalculateSearchRect(ref controlRect);
-            }
+                // Calculate size for the specified level
+                CalculateTreeSize(currentLevel, ref maxWidth, ref maxHeight, ref includeArrow);
 
-            return new Vector2(maxWidth, maxHeight);
+                if (includeArrow)
+                {
+                    maxWidth += arrowWidth;
+                }
+
+                // other size calculations may rely on m_HeaderRect and m_SearchRect, which wont be populated until the first time they are drawn
+                // so they need to be calculated here if needed.
+                if (m_HeaderRect == default(Rect))
+                {
+                    var headerContent = GUIContent.Temp(dataSource.mainTree.name, dataSource.mainTree.icon);
+                    var headerSize = Styles.header.CalcSize(headerContent);
+                    if (maxWidth > headerSize.x)
+                        headerSize.x = maxWidth;
+                    headerSize.y = Styles.header.CalcHeight(headerContent, maxWidth);
+                    m_HeaderRect = new Rect(0, 0, headerSize.x, headerSize.y);
+                }
+                if (m_SearchRect == default(Rect))
+                {
+                    var controlRectSize = Styles.searchFieldStyle.CalcSize(GUIContent.none);
+                    controlRectSize.x = maxWidth;
+                    var controlRect = new Rect(0, 0, controlRectSize.x, controlRectSize.y);
+                    m_SearchRect = CalculateSearchRect(ref controlRect);
+                }
+
+                return new Vector2(maxWidth, maxHeight);
+            }
         }
 
         private void CalculateTreeSize(AdvancedDropdownItem level, ref float maxWidth, ref float maxHeight, ref bool includeArrow)
@@ -369,22 +370,26 @@ namespace UnityEditor.IMGUI.Controls
             if (state.GetSelectedIndex(dataSource.mainTree) == -1)
                 return 0;
             float height = 0;
-            for (int i = 0; i < dataSource.mainTree.childList.Count; i++)
+
+            using (new EditorGUIUtility.IconSizeScope(iconSize))
             {
-                var child = dataSource.mainTree.childList[i];
-                var content = child.content;
-                if (state.GetSelectedIndex(dataSource.mainTree) == i)
+                for (int i = 0; i < dataSource.mainTree.childList.Count; i++)
                 {
-                    var diff = (CalcItemHeight(content, 0) - buttonRect.height) / 2f;
-                    return height + diff;
-                }
-                if (child.IsSeparator())
-                {
-                    height += Styles.lineSeparator.CalcHeight(content, 0) + Styles.lineSeparator.margin.vertical;
-                }
-                else
-                {
-                    height += CalcItemHeight(content, 0);
+                    var child = dataSource.mainTree.childList[i];
+                    var content = child.content;
+                    if (state.GetSelectedIndex(dataSource.mainTree) == i)
+                    {
+                        var diff = (CalcItemHeight(content, 0) - buttonRect.height) / 2f;
+                        return height + diff;
+                    }
+                    if (child.IsSeparator())
+                    {
+                        height += Styles.lineSeparator.CalcHeight(content, 0) + Styles.lineSeparator.margin.vertical;
+                    }
+                    else
+                    {
+                        height += CalcItemHeight(content, 0);
+                    }
                 }
             }
             return height;

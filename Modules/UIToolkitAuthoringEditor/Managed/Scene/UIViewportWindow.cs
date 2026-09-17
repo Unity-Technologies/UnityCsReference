@@ -69,7 +69,6 @@ partial class UIViewportWindow : EditorWindow
     VisualElement m_EnterStageModeOverlay;
     Label m_EnterStageModeLabel;
     VisualElement m_ViewportOverlay;
-    Button m_OpenSettingsButton;
 
     [OnCodeLoaded]
     static void Initialize()
@@ -95,12 +94,14 @@ partial class UIViewportWindow : EditorWindow
         var command = (RequestFramingCommand)context.Command;
         if (command.Element != null)
         {
-            // RequestFramingCommand is broadcast — ignore elements that don't live in this viewport's
-            // sub-panel, otherwise we'd read worldBound from a foreign panel and jump to bogus coords.
-            var subRoot = m_Canvas?.PanelElement?.subRootVisualElement;
-            if (command.Element.panel == null || command.Element.panel != subRoot?.panel)
+            // RequestFramingCommand is broadcast, and outside the UI Stage it names the live element while this
+            // canvas shows a clone of it — so it is resolved onto our own panel rather than matched against it.
+            // One that maps onto nothing here is still ignored: reading worldBound from a foreign panel would
+            // frame bogus coords.
+            var target = m_Canvas?.DocumentRoot?.ResolveCanvasElement(command.Element);
+            if (target == null)
                 return;
-            m_Viewport.FitViewport(command.Element);
+            m_Viewport.FitViewport(target);
         }
         else
         {
@@ -134,9 +135,7 @@ partial class UIViewportWindow : EditorWindow
     {
         titleContent.text = "UI Viewport";
         titleContent.image = UIResources.GetIconForType(typeof(UIViewportWindow), UIResources.RequestSize.Px16, GetPixelsPerPoint(rootVisualElement)).texture;
-        StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnAuthoringSettingChanged;
-        UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnAuthoringSettingChanged;
+        UIStageNavigation.StageSettled += OnStageChanged;
         EditorApplication.projectChanged += OnProjectChanged;
         EditorApplication.hierarchyChanged += OnHierarchyChanged;
         ObjectChangeEvents.changesPublished += OnObjectChangesPublished;
@@ -147,14 +146,12 @@ partial class UIViewportWindow : EditorWindow
 
     void OnDisable()
     {
-        StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
+        UIStageNavigation.StageSettled -= OnStageChanged;
         EditorApplication.projectChanged -= OnProjectChanged;
         EditorApplication.hierarchyChanged -= OnHierarchyChanged;
         ObjectChangeEvents.changesPublished -= OnObjectChangesPublished;
         Selection.selectionChanged -= OnSelectionChanged;
         UICommandQueue.UnregisterHandler<RequestFramingCommand>(OnFramingRequested);
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnAuthoringSettingChanged;
-        UIToolkitAuthoringSettings.MainStageAuthoringChanged -= OnAuthoringSettingChanged;
         s_OpenWindows.Remove(this);
         if (s_LastFocusedWindow == this)
             s_LastFocusedWindow = null;
@@ -186,9 +183,6 @@ partial class UIViewportWindow : EditorWindow
         m_EnterStageModeOverlay = rootVisualElement.Q(className: EnterStageModeWarningContainerUssClass);
         m_EnterStageModeLabel = rootVisualElement.Q<Label>(className: EnterStageModeWarningLabelUssClass);
         m_ViewportOverlay = rootVisualElement.Q(className: ViewportWrapperContainerUssClass);
-        m_OpenSettingsButton = rootVisualElement.Q<Button>("unity-ui-viewport__open-settings-button");
-        m_OpenSettingsButton.clicked += UIToolkitAuthoringSettingsProvider.OpenSettings;
-        UpdateOpenSettingsButton();
         m_Canvas = rootVisualElement.Q<UICanvas>(CanvasUssClass);
         m_Viewport = rootVisualElement.Q<UIViewport>(ViewportUssClass);
         m_UxmlPreview = rootVisualElement.Q<UxmlCodePreview>();
@@ -214,8 +208,6 @@ partial class UIViewportWindow : EditorWindow
     void OnHierarchyChanged() => RefreshContext();
 
     // What the viewport may author into follows these, without the document on screen changing.
-    void OnAuthoringSettingChanged(bool enabled) => RefreshContext();
-
     void OnProjectChanged()
     {
         RefreshContext();
@@ -326,11 +318,6 @@ partial class UIViewportWindow : EditorWindow
         if (StageUtility.GetCurrentStage() is VisualElementEditingStage stage)
             return new StageViewportContext(stage);
 
-        // Previewing a scene document is part of in-scene authoring: it is picked from the Hierarchy, which
-        // that switch is what turns on.
-        if (!UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
-            return null;
-
         if (m_PanelComponentSource is IPanelComponent panelComponent && panelComponent.visualTreeAsset != null)
             return new DocumentViewportContext(panelComponent);
 
@@ -398,6 +385,9 @@ partial class UIViewportWindow : EditorWindow
 
         m_Canvas.HeaderTitle = m_Context.HeaderTitle;
         m_Canvas.RequestRefresh = m_Context.RequestRefresh;
+        // Before SetContext: acquiring the panel rebuilds the handles from the current selection, which already
+        // needs to know whether what it holds is a live element this canvas only previews.
+        m_Canvas.DocumentRoot.AuthoritativeRootProvider = () => m_Context?.AuthoritativeRoot;
         m_Canvas.SetContext(m_Context.PanelElement, m_Context.CanvasStorageKey);
 
         m_ThemeState = PreviewThemeState.ForDocument(m_Context.RootVisualTreeAsset);
@@ -426,6 +416,7 @@ partial class UIViewportWindow : EditorWindow
         // The canvas has to let go of the panel before the context destroys it.
         m_Canvas.PanelElement = null;
         m_Canvas.RequestRefresh = null;
+        m_Canvas.DocumentRoot.AuthoritativeRootProvider = null;
         ClearThemeMenu();
 
         m_UxmlPreview.Asset = null;
@@ -482,25 +473,7 @@ partial class UIViewportWindow : EditorWindow
         m_ViewportOverlay.EnableInClassList(HiddenViewportWrapperContainerUssClass, !hasContext);
 
         if (!hasContext && m_EnterStageModeLabel != null)
-        {
-            // Without in-scene authoring there is nothing to pick a document from, so the stage is the only
-            // way in — which is what the button below the message offers to change.
-            m_EnterStageModeLabel.text = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring
-                ? L10n.Tr("Select a UI document in the Hierarchy to preview it.", null)
-                : L10n.Tr("Enter visual element editing stage to have access to this feature.", null);
-        }
-
-        UpdateOpenSettingsButton();
-    }
-
-    void UpdateOpenSettingsButton()
-    {
-        if (m_OpenSettingsButton == null)
-            return;
-
-        m_OpenSettingsButton.style.display = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring
-            ? DisplayStyle.None
-            : DisplayStyle.Flex;
+            m_EnterStageModeLabel.text = L10n.Tr("Select a UI document in the Hierarchy to preview it.", null);
     }
 
     void SetupThemeMenu(PanelSettings panelSettings, ThemeStyleSheet selectedTheme)

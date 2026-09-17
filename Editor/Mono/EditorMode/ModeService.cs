@@ -133,6 +133,9 @@ namespace UnityEditor
 
         public static string currentId => currentIndex == -1 || modes.Length == 0 ? k_DefaultModeId : modes[currentIndex].id;
         [AutoStaticsCleanupOnCodeReload]
+        // Re-derived on code load: Initialize calls LoadModes, which resolves the mode from session and
+        // project prefs and calls SetModeIndex again.
+        [IgnoreForUAL0015("Current mode index re-derived by LoadModes on every code load")]
         public static int currentIndex { get; private set; }
         [AutoStaticsCleanupOnCodeReload]
         private static ModeEntry[] modes { get; set; } = Array.Empty<ModeEntry>();
@@ -145,6 +148,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Initialize re-adds the mode service handlers on every code load and other subscribers attach
+        // through their own lifecycle, so the cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event re-subscribed by Initialize on code load and by subscribers own lifecycle")]
         public static event Action<ModeChangedArgs> modeChanged;
 
         [OnCodeLoaded]

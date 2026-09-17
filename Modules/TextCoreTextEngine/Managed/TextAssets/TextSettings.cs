@@ -366,7 +366,7 @@ namespace UnityEngine.TextCore.Text
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal FontAsset GetCachedFontAsset(Font font)
+        internal FontAsset GetCachedFontAsset(Font font, bool isIMGUI = true)
         {
             if (ReferenceEquals(font, null))
                 return null;
@@ -378,6 +378,8 @@ namespace UnityEngine.TextCore.Text
             }
 
             int id = font.GetHashCode();
+            if (!isIMGUI)
+                id = ~id;
 
             if (m_FontLookup.ContainsKey(id))
                 return m_FontLookup[id];
@@ -386,12 +388,13 @@ namespace UnityEngine.TextCore.Text
                 return null;
 
             FontAsset fontAsset = IsLegacyRuntimeFont(font)
-                ? GetLegacyRuntimeFontAsset(font)
-                : FontAssetFactory.ConvertFontToFontAsset(font, persistsFontAssetCaches);
+                ? GetLegacyRuntimeFontAsset(font, isIMGUI)
+                : FontAssetFactory.ConvertFontToFontAsset(font, persistsFontAssetCaches, isIMGUI);
 
             if (fontAsset != null)
             {
-                m_FontReferences.Add(new FontReferenceMap(font, fontAsset));
+                if (isIMGUI)
+                    m_FontReferences.Add(new FontReferenceMap(font, fontAsset));
                 m_FontLookup.Add(id, fontAsset);
             }
 
@@ -402,15 +405,15 @@ namespace UnityEngine.TextCore.Text
 
         static bool IsLegacyRuntimeFont(Font font) => font.name == k_LegacyRuntimeFontName;
 
-        FontAsset GetLegacyRuntimeFontAsset(Font font)
+        FontAsset GetLegacyRuntimeFontAsset(Font font, bool isIMGUI = true)
         {
             var osFallbacks = fallbackOSFontAssets;
             if (osFallbacks is not { Count: > 0 })
-                return FontAssetFactory.ConvertFontToFontAsset(font, persistsFontAssetCaches);
+                return FontAssetFactory.ConvertFontToFontAsset(font, persistsFontAssetCaches, isIMGUI);
 
             if (font.includeFontData)
             {
-                var embeddedFontAsset = FontAssetFactory.ConvertFontToFontAsset(font, persistsFontAssetCaches);
+                var embeddedFontAsset = FontAssetFactory.ConvertFontToFontAsset(font, persistsFontAssetCaches, isIMGUI);
                 if (embeddedFontAsset != null)
                 {
                     embeddedFontAsset.fallbackFontAssetTable = new List<FontAsset>(osFallbacks);
@@ -459,6 +462,10 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        // Native fallbacks provided by an external text system (TMP) whose font assets are not
+        // TextCore FontAssets. Appended to this instance's global fallback list, before OS fallbacks.
+        internal Func<IntPtr[]> externalGlobalFallbackProvider;
+
         IntPtr[] GetGlobalFallbacks()
         {
             List<IntPtr> globalFontAssetFallbacks = new List<IntPtr>();
@@ -503,6 +510,10 @@ namespace UnityEngine.TextCore.Text
                     }
                 }
             }
+
+            var externalFallbacks = externalGlobalFallbackProvider?.Invoke();
+            if (externalFallbacks != null)
+                globalFontAssetFallbacks.AddRange(externalFallbacks);
 
             if (isFallbackOSFontAssetsInitialized && fallbackOSFontAssets != null)
             {

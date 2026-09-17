@@ -38,7 +38,7 @@ namespace UnityEditor
 
         class Styles
         {
-            public static readonly GUIContent browse = EditorGUIUtility.TrTextContent("Browse...");
+            public static readonly GUIContent browse = L10n.TextContent("Browse...", null, null, null);
             public static readonly GUIStyle clearBindingButton = new GUIStyle(GUI.skin.button);
 
             static Styles()
@@ -49,64 +49,64 @@ namespace UnityEditor
 
         class GeneralPropertiesNonSearchable
         {
-            public static readonly GUIContent packageManagerLogLevelOverridden = EditorGUIUtility.TrTextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.");
-            public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
+            public static readonly GUIContent packageManagerLogLevelOverridden = L10n.TextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.", null, null, null);
+            public static readonly GUIContent changingThisSettingRequiresRestart = L10n.TextContent("Changing this setting requires a restart to take effect.", null, null, null);
         }
 
         class GICachePropertiesNonSearchable
         {
-            public static readonly GUIContent cantChangeCacheSettings = EditorGUIUtility.TrTextContent("Cache settings can't be changed while lightmapping is being computed.");
-            public static readonly GUIContent pleaseWait = EditorGUIUtility.TrTextContent("Please wait...");
+            public static readonly GUIContent cantChangeCacheSettings = L10n.TextContent("Cache settings can't be changed while lightmapping is being computed.", null, null, null);
+            public static readonly GUIContent pleaseWait = L10n.TextContent("Please wait...", null, null, null);
         }
 
         class UIScalingPropertiesNonSearchable
         {
-            public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
+            public static readonly GUIContent changingThisSettingRequiresRestart = L10n.TextContent("Changing this setting requires a restart to take effect.", null, null, null);
         }
 
         class GeneralProperties
         {
-            public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
-            public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics");
-            public static readonly GUIContent autoSaveScenesBeforeBuilding = EditorGUIUtility.TrTextContent("Auto-save scenes before building");
-            public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
-            public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
-            public static readonly GUIContent editorTextRenderingMode = EditorGUIUtility.TrTextContent("Editor Default Text Rendering Mode");
-            public static readonly GUIContent editorTextSharpness = EditorGUIUtility.TrTextContent("Editor Text Sharpness");
-            public static readonly GUIContent editorTextGeneration = EditorGUIUtility.TrTextContent("Editor Text Generator Type");
-            public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme","Choose between light and dark themes for the Editor.\nThe Editor theme cannot be changed while in Play mode.");
-            public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
-            public static readonly GUIContent hierarchyHeader = EditorGUIUtility.TrTextContent("Hierarchy window");
-            public static readonly GUIContent renameNewObjects = EditorGUIUtility.TrTextContent("Rename new objects");
-            public static readonly GUIContent defaultPrefabMode = EditorGUIUtility.TrTextContent("Default Prefab Mode", "This mode will be used when opening Prefab Mode from a Prefab instance in the Hierarchy.");
-            public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting", "If enabled then you can choose between Transform sorting and Alphabetical sorting in the Hierarchy.");
-            public static readonly GUIContent syncSearchInSceneView = EditorGUIUtility.TrTextContent("Synchronize search in Scene View");
-            public static readonly GUIContent queryBuilder = EditorGUIUtility.TrTextContent("Enable Query Builder", "When enabled, the search field will use auto-completion and group queries as pills. When disabled, the search field will be in plain text mode.");
-            public static readonly GUIContent alternatingRowBackground = EditorGUIUtility.TrTextContent("Enable Alternating Row Background", "When enabled, even and odd rows will have different background colors.");
-            public static readonly GUIContent nameColumnStretchable = EditorGUIUtility.TrTextContent("Auto stretch Name Column", "When enabled, the name column will automatically stretch to take as much space as possible.");
-            public static readonly GUIContent gameObjectIconMode = EditorGUIUtility.TrTextContent("GameObject Icons", "Controls how the new Hierarchy window replaces GameObject icons.");
+            public static readonly GUIContent loadPreviousProjectOnStartup = L10n.TextContent("Load Previous Project on Startup", null, null, null);
+            public static readonly GUIContent disableEditorAnalytics = L10n.TextContent("Disable Editor Analytics", null, null, null);
+            public static readonly GUIContent autoSaveScenesBeforeBuilding = L10n.TextContent("Auto-save scenes before building", null, null, null);
+            public static readonly GUIContent scriptChangesDuringPlay = L10n.TextContent("Script Changes While Playing", null, null, null);
+            public static readonly GUIContent editorFont = L10n.TextContent("Editor Font", null, null, null);
+            public static readonly GUIContent editorTextRenderingMode = L10n.TextContent("Editor Default Text Rendering Mode", null, null, null);
+            public static readonly GUIContent editorTextSharpness = L10n.TextContent("Editor Text Sharpness", null, null, null);
+            public static readonly GUIContent editorTextGeneration = L10n.TextContent("Editor Text Generator Type", null, null, null);
+            public static readonly GUIContent editorSkin = L10n.TextContent("Editor Theme","Choose between light and dark themes for the Editor.\nThe Editor theme cannot be changed while in Play mode.", null, null);
+            public static readonly GUIContent[] editorSkinOptions = { L10n.TextContent("Light", null, null, null), L10n.TextContent("Dark", null, null, null) };
+            public static readonly GUIContent hierarchyHeader = L10n.TextContent("Hierarchy window", null, null, null);
+            public static readonly GUIContent renameNewObjects = L10n.TextContent("Rename new objects", null, null, null);
+            public static readonly GUIContent defaultPrefabMode = L10n.TextContent("Default Prefab Mode", "This mode will be used when opening Prefab Mode from a Prefab instance in the Hierarchy.", null, null);
+            public static readonly GUIContent enableAlphaNumericSorting = L10n.TextContent("Enable Alphanumeric Sorting", "If enabled then you can choose between Transform sorting and Alphabetical sorting in the Hierarchy.", null, null);
+            public static readonly GUIContent syncSearchInSceneView = L10n.TextContent("Synchronize search in Scene View", null, null, null);
+            public static readonly GUIContent queryBuilder = L10n.TextContent("Enable Query Builder", "When enabled, the search field will use auto-completion and group queries as pills. When disabled, the search field will be in plain text mode.", null, null);
+            public static readonly GUIContent alternatingRowBackground = L10n.TextContent("Enable Alternating Row Background", "When enabled, even and odd rows will have different background colors.", null, null);
+            public static readonly GUIContent nameColumnStretchable = L10n.TextContent("Auto stretch Name Column", "When enabled, the name column will automatically stretch to take as much space as possible.", null, null);
+            public static readonly GUIContent gameObjectIconMode = L10n.TextContent("GameObject Icons", "Controls how the new Hierarchy window replaces GameObject icons.", null, null);
             public static readonly GUIContent[] gameObjectIconModeOptions =
             {
-                EditorGUIUtility.TrTextContent("Use components and custom icons"),
-                EditorGUIUtility.TrTextContent("Use components only"),
-                EditorGUIUtility.TrTextContent("Do not change GameObject icons"),
+                L10n.TextContent("Use components and custom icons", null, null, null),
+                L10n.TextContent("Use components only", null, null, null),
+                L10n.TextContent("Do not change GameObject icons", null, null, null),
             };
-            public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
-            public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
-            public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
-            public static readonly GUIContent enterPlayModeSettingsFocusGameView = EditorGUIUtility.TrTextContent("Open Game View On Play", "Open a Game view window when you enter Play mode.");
-            public static readonly GUIContent enableExtendedDynamicHints = EditorGUIUtility.TrTextContent("Enable extended Dynamic Hints", "Check this to enable extended Dynamic Hints. If available, extended Dynamic Hints will display more information when a property, object or tool is hovered for enough time, or when a Dynamic Hint is displayed");
+            public static readonly GUIContent applicationFrameThrottling = L10n.TextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.", null, null);
+            public static readonly GUIContent inputMaxProcessTime = L10n.TextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.", null, null);
+            public static readonly GUIContent interactionMode = L10n.TextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.", null, null);
+            public static readonly GUIContent enterPlayModeSettingsFocusGameView = L10n.TextContent("Open Game View On Play", "Open a Game view window when you enter Play mode.", null, null);
+            public static readonly GUIContent enableExtendedDynamicHints = L10n.TextContent("Enable extended Dynamic Hints", "Check this to enable extended Dynamic Hints. If available, extended Dynamic Hints will display more information when a property, object or tool is hovered for enough time, or when a Dynamic Hint is displayed", null, null);
             public static readonly GUIContent[] interactionModes =
             {
-                EditorGUIUtility.TrTextContent("Default", "The Editor can idle up to 4 ms per frame."),
-                EditorGUIUtility.TrTextContent("No Throttling", "The Editor does not idle. It runs as fast as possible."),
-                EditorGUIUtility.TrTextContent("Monitor Refresh Rate", "The Editor can idle up to whatever the monitor's refresh rate is, in milliseconds."),
-                EditorGUIUtility.TrTextContent("Custom", "You specify how many milliseconds per frame the Editor can idle."),
+                L10n.TextContent("Default", "The Editor can idle up to 4 ms per frame.", null, null),
+                L10n.TextContent("No Throttling", "The Editor does not idle. It runs as fast as possible.", null, null),
+                L10n.TextContent("Monitor Refresh Rate", "The Editor can idle up to whatever the monitor's refresh rate is, in milliseconds.", null, null),
+                L10n.TextContent("Custom", "You specify how many milliseconds per frame the Editor can idle.", null, null),
             };
-            public static readonly GUIContent progressDialogDelay = EditorGUIUtility.TrTextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.");
-            public static readonly GUIContent enableSnapping = EditorGUIUtility.TrTextContent("Graph Snapping", "If enabled, GraphElements in Graph Views (such as Shader Graph) align with one another when you move them. If disabled, GraphElements move freely.");
+            public static readonly GUIContent progressDialogDelay = L10n.TextContent("Busy Progress Delay", "Delay in seconds before 'Unity is busy' progress bar shows up.", null, null);
+            public static readonly GUIContent enableSnapping = L10n.TextContent("Graph Snapping", "If enabled, GraphElements in Graph Views (such as Shader Graph) align with one another when you move them. If disabled, GraphElements move freely.", null, null);
 
-            public static readonly GUIContent packageManagerLogLevel = EditorGUIUtility.TrTextContent("Package Manager Log Level",
+            public static readonly GUIContent packageManagerLogLevel = L10n.TextContent("Package Manager Log Level",
                 "Determines the level of detail when the Package Manager writes information to log files.\n"
                 + "\nFrom least detailed to most detailed:"
                 + "\n* Error: unexpected errors and failures only."
@@ -114,84 +114,84 @@ namespace UnityEditor
                 + "\n* Info: high-level informational messages."
                 + "\n* Verbose: detailed informational messages."
                 + "\n* Debug: high-level debugging messages."
-                + "\n* Silly: detailed debugging messages.");
-            public static readonly GUIContent logging = EditorGUIUtility.TrTextContent("Logging");
-            public static readonly GUIContent enableLoggingFramework = EditorGUIUtility.TrTextContent("Enable logging framework", "Enable the new logging framework (introduced in Unity 6.6) for high-performance logging with enhanced customisation options. Requires Editor restart to take effect.");
-            public static readonly GUIContent enableJSONLogging = EditorGUIUtility.TrTextContent("Enable JSON logging", "Output JSON logs to Editor.jsonl in addition to the standard Editor.log. Requires the logging framework to be enabled. Requires Editor restart to take effect.");
-            public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
-            public static readonly GUIContent useGlobalEditorLog = EditorGUIUtility.TrTextContent("Use Global Editor Log", "If enabled, all Unity projects use the same global Editor log file located at the default path for the operating system. If disabled, each project uses its own separate Editor log located in the project folder. Changes to this setting require an Editor restart to take effect.");
-            public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
-            public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
-            public static readonly GUIContent resetAllDialogBoxes = EditorGUIUtility.TrTextContent("\"Don't ask me again\" checkboxes", "Dialog boxes that can be opted out by checking a \"Don't ask me again\" checkbox.");
-            public static readonly GUIContent hideDeprecationWarnings = EditorGUIUtility.TrTextContent("Hide deprecation warnings", "Hides warning boxes for deprecated components in the Inspector window.");
-            public static readonly GUIContent showSecondaryWindowsInTaskbar = EditorGUIUtility.TrTextContent("Show All Windows in Taskbar",
+                + "\n* Silly: detailed debugging messages.", null, null);
+            public static readonly GUIContent logging = L10n.TextContent("Logging", null, null, null);
+            public static readonly GUIContent enableLoggingFramework = L10n.TextContent("Enable logging framework", "Enable the new logging framework (introduced in Unity 6.6) for high-performance logging with enhanced customisation options. Requires Editor restart to take effect.", null, null);
+            public static readonly GUIContent enableJSONLogging = L10n.TextContent("Enable JSON logging", "Output JSON logs to Editor.jsonl in addition to the standard Editor.log. Requires the logging framework to be enabled. Requires Editor restart to take effect.", null, null);
+            public static readonly GUIContent enableExtendedLogging = L10n.TextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.", null, null);
+            public static readonly GUIContent useGlobalEditorLog = L10n.TextContent("Use Global Editor Log", "If enabled, all Unity projects use the same global Editor log file located at the default path for the operating system. If disabled, each project uses its own separate Editor log located in the project folder. Changes to this setting require an Editor restart to take effect.", null, null);
+            public static readonly GUIContent enableShortcutHelperBar = L10n.TextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.", null, null);
+            public static readonly GUIContent enablePlayModeTooltips = L10n.TextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.", null, null);
+            public static readonly GUIContent resetAllDialogBoxes = L10n.TextContent("\"Don't ask me again\" checkboxes", "Dialog boxes that can be opted out by checking a \"Don't ask me again\" checkbox.", null, null);
+            public static readonly GUIContent hideDeprecationWarnings = L10n.TextContent("Hide deprecation warnings", "Hides warning boxes for deprecated components in the Inspector window.", null, null);
+            public static readonly GUIContent showSecondaryWindowsInTaskbar = L10n.TextContent("Show All Windows in Taskbar",
                 @"Enabling this setting allows undocked windows to be minimized in the OS taskbar.
-By default, Windows will combine these under a single taskbar item.");
-            public static readonly GUIContent useProjectPathInTitle = EditorGUIUtility.TrTextContent("Use Project Path in Window Title", "If enabled the Project's name is replaced in the main window title with the Project's path on disk.");
+By default, Windows will combine these under a single taskbar item.", null, null);
+            public static readonly GUIContent useProjectPathInTitle = L10n.TextContent("Use Project Path in Window Title", "If enabled the Project's name is replaced in the main window title with the Project's path on disk.", null, null);
         }
 
         class ExternalProperties
         {
-            public static readonly GUIContent codeOptimizationOnStartup = EditorGUIUtility.TrTextContent("Code Optimization On Startup");
-            public static readonly GUIContent revisionControlDiffMerge = EditorGUIUtility.TrTextContent("Revision Control Diff/Merge");
-            public static readonly GUIContent externalScriptEditor = EditorGUIUtility.TrTextContent("External Script Editor");
-            public static readonly GUIContent imageApplication = EditorGUIUtility.TrTextContent("Image application");
+            public static readonly GUIContent codeOptimizationOnStartup = L10n.TextContent("Code Optimization On Startup", null, null, null);
+            public static readonly GUIContent revisionControlDiffMerge = L10n.TextContent("Revision Control Diff/Merge", null, null, null);
+            public static readonly GUIContent externalScriptEditor = L10n.TextContent("External Script Editor", null, null, null);
+            public static readonly GUIContent imageApplication = L10n.TextContent("Image application", null, null, null);
         }
 
         class UIScalingProperties
         {
-            public static readonly GUIContent editorContentScaling = EditorGUIUtility.TrTextContent("Editor icons and text scaling");
-            public static readonly GUIContent defaultContentScaling = EditorGUIUtility.TrTextContent("Use default desktop setting");
-            public static readonly GUIContent currentContentScaling = EditorGUIUtility.TrTextContent("Current scaling");
-            public static readonly GUIContent customContentScaling = EditorGUIUtility.TrTextContent("Use custom scaling value");
+            public static readonly GUIContent editorContentScaling = L10n.TextContent("Editor icons and text scaling", null, null, null);
+            public static readonly GUIContent defaultContentScaling = L10n.TextContent("Use default desktop setting", null, null, null);
+            public static readonly GUIContent currentContentScaling = L10n.TextContent("Current scaling", null, null, null);
+            public static readonly GUIContent customContentScaling = L10n.TextContent("Use custom scaling value", null, null, null);
         }
 
         class ColorsProperties
         {
-            public static readonly GUIContent userDefaults = EditorGUIUtility.TrTextContent("Reset All to Default");
+            public static readonly GUIContent userDefaults = L10n.TextContent("Reset All to Default", null, null, null);
             public static readonly string lazyLoadingInfo = L10n.Tr("Some colors may not be available until you open their associated tool or window at least once.", null);
         }
 
         class GICacheProperties
         {
-            public static readonly GUIContent maxCacheSize = EditorGUIUtility.TrTextContent("Maximum Cache Size (GB)", "The size of the GI Cache folder will be kept below this maximum value when possible. A background job will periodically clean up the oldest unused files.");
-            public static readonly GUIContent customCacheLocation = EditorGUIUtility.TrTextContent("Custom cache location", "Specify the GI Cache folder location.");
-            public static readonly GUIContent cacheFolderLocation = EditorGUIUtility.TrTextContent("Cache Folder Location", "The GI Cache folder is shared between all projects.");
-            public static readonly GUIContent cacheCompression = EditorGUIUtility.TrTextContent("Cache compression", "Use fast realtime compression for the GI cache files to reduce the size of generated data. Disable it and clean the cache if you need access to the raw data generated by Enlighten.");
-            public static readonly GUIContent cleanCache = EditorGUIUtility.TrTextContent("Clean Cache");
-            public static readonly GUIContent browseGICacheLocation = EditorGUIUtility.TrTextContent("Browse for GI Cache location");
-            public static readonly GUIContent cacheSizeIs = EditorGUIUtility.TrTextContent("Cache size is");
+            public static readonly GUIContent maxCacheSize = L10n.TextContent("Maximum Cache Size (GB)", "The size of the GI Cache folder will be kept below this maximum value when possible. A background job will periodically clean up the oldest unused files.", null, null);
+            public static readonly GUIContent customCacheLocation = L10n.TextContent("Custom cache location", "Specify the GI Cache folder location.", null, null);
+            public static readonly GUIContent cacheFolderLocation = L10n.TextContent("Cache Folder Location", "The GI Cache folder is shared between all projects.", null, null);
+            public static readonly GUIContent cacheCompression = L10n.TextContent("Cache compression", "Use fast realtime compression for the GI cache files to reduce the size of generated data. Disable it and clean the cache if you need access to the raw data generated by Enlighten.", null, null);
+            public static readonly GUIContent cleanCache = L10n.TextContent("Clean Cache", null, null, null);
+            public static readonly GUIContent browseGICacheLocation = L10n.TextContent("Browse for GI Cache location", null, null, null);
+            public static readonly GUIContent cacheSizeIs = L10n.TextContent("Cache size is", null, null, null);
         }
 
         class SceneViewProperties
         {
-            public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
-            public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
-            public static readonly GUIContent useGridColor = EditorGUIUtility.TrTextContent("Use axis colors on main grid axes", "If enabled, the grid will show the axis colors on the main axes");
-            public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines");
-            public static readonly GUIContent placementMode = EditorGUIUtility.TrTextContent("3D Placement Mode", "Select where newly created 3D objects are placed in the scene.");
-            public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("World Origin");
-            public static readonly GUIContent createObjectsAtRaycastToScenePivot = EditorGUIUtility.TrTextContent("Scene Intersection");
-            public static readonly GUIContent createObjectsAtScenePivot = EditorGUIUtility.TrTextContent("Scene Pivot");
-            public static readonly GUIContent createObjectsAtPrefabPosition = EditorGUIUtility.TrTextContent("Use prefab asset position when dropping on the Hierarchy window", "If enabled, prefabs dropped on the Hierarchy window are placed in the scene at the position serialized in the prefab's root transform. If disabled, prefabs are placed based on the 3D Placement Mode");
-            public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = EditorGUIUtility.TrTextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default");
-            public static readonly GUIContent useInspectorExpandedStateContent = EditorGUIUtility.TrTextContent("Auto-hide gizmos", "Automatically hide gizmos of Components collapsed in the Inspector");
-            public static readonly GUIContent ignoreAlwaysRefreshWhenNotFocused = EditorGUIUtility.TrTextContent("Refresh the Scene view only when the Editor is in focus.", "If enabled, ignore the \"Always Refresh\" flag on the Scene view when the Editor is not the foregrounded application.");
+            public static readonly GUIContent enableFilteringWhileSearching = L10n.TextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out", null, null);
+            public static readonly GUIContent enableFilteringWhileLodGroupEditing = L10n.TextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out", null, null);
+            public static readonly GUIContent useGridColor = L10n.TextContent("Use axis colors on main grid axes", "If enabled, the grid will show the axis colors on the main axes", null, null);
+            public static readonly GUIContent handlesLineThickness = L10n.TextContent("Line Thickness", "Thickness of manipulator tool handle lines", null, null);
+            public static readonly GUIContent placementMode = L10n.TextContent("3D Placement Mode", "Select where newly created 3D objects are placed in the scene.", null, null);
+            public static readonly GUIContent createObjectsAtWorldOrigin = L10n.TextContent("World Origin", null, null, null);
+            public static readonly GUIContent createObjectsAtRaycastToScenePivot = L10n.TextContent("Scene Intersection", null, null, null);
+            public static readonly GUIContent createObjectsAtScenePivot = L10n.TextContent("Scene Pivot", null, null, null);
+            public static readonly GUIContent createObjectsAtPrefabPosition = L10n.TextContent("Use prefab asset position when dropping on the Hierarchy window", "If enabled, prefabs dropped on the Hierarchy window are placed in the scene at the position serialized in the prefab's root transform. If disabled, prefabs are placed based on the 3D Placement Mode", null, null);
+            public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = L10n.TextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default", null, null);
+            public static readonly GUIContent useInspectorExpandedStateContent = L10n.TextContent("Auto-hide gizmos", "Automatically hide gizmos of Components collapsed in the Inspector", null, null);
+            public static readonly GUIContent ignoreAlwaysRefreshWhenNotFocused = L10n.TextContent("Refresh the Scene view only when the Editor is in focus.", "If enabled, ignore the \"Always Refresh\" flag on the Scene view when the Editor is not the foregrounded application.", null, null);
         }
 
         class LanguageProperties
         {
-            public static readonly GUIContent editorLanguageExperimental = EditorGUIUtility.TrTextContent("Editor Language (Experimental)");
-            public static readonly GUIContent editorLanguage = EditorGUIUtility.TrTextContent("Editor language");
-            public static readonly GUIContent localizeCompileMessages = EditorGUIUtility.TrTextContent("Localize compiler messages");
+            public static readonly GUIContent editorLanguageExperimental = L10n.TextContent("Editor Language (Experimental)", null, null, null);
+            public static readonly GUIContent editorLanguage = L10n.TextContent("Editor language", null, null, null);
+            public static readonly GUIContent localizeCompileMessages = L10n.TextContent("Localize compiler messages", null, null, null);
         }
 
         class DeveloperModeProperties
         {
-            public static readonly GUIContent developerMode = EditorGUIUtility.TrTextContent("Developer Mode", "Enable or disable developer mode features.");
-            public static readonly GUIContent generateOnPostprocessAllAssets = EditorGUIUtility.TrTextContent("Generate OnPostprocessAllAssets Dependency Diagram", "Generates a graphviz diagram to show OnPostprocessAllAssets dependencies.");
-            public static readonly GUIContent showRepaintDots = EditorGUIUtility.TrTextContent("Show Repaint Dots", "Enable or disable the colored dots that flash when an EditorWindow repaints.");
-            public static readonly GUIContent redirectionServer = EditorGUIUtility.TrTextContent("Documentation Server", "Select the documentation redirection server.");
+            public static readonly GUIContent developerMode = L10n.TextContent("Developer Mode", "Enable or disable developer mode features.", null, null);
+            public static readonly GUIContent generateOnPostprocessAllAssets = L10n.TextContent("Generate OnPostprocessAllAssets Dependency Diagram", "Generates a graphviz diagram to show OnPostprocessAllAssets dependencies.", null, null);
+            public static readonly GUIContent showRepaintDots = L10n.TextContent("Show Repaint Dots", "Enable or disable the colored dots that flash when an EditorWindow repaints.", null, null);
+            public static readonly GUIContent redirectionServer = L10n.TextContent("Documentation Server", "Select the documentation redirection server.", null, null);
         }
 
         private List<IPreferenceWindowExtension> prefWinExtensions;
@@ -329,6 +329,9 @@ By default, Windows will combine these under a single taskbar item.");
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers are inspector helpers that subscribe and unsubscribe with their own lifecycle, so
+        // the cleared invocation list refills as they are recreated.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static Action<bool> hideDeprecationWarningsChanged;
 
         internal static bool hideDeprecationWarnings

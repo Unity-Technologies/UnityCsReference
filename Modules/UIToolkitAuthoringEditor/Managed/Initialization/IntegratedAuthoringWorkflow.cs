@@ -15,13 +15,13 @@ static class IntegratedAuthoringWorkflow
     [InitializeOnLoadMethod, UsedImplicitly]
     private static void RegisterStageHandlers()
     {
-        StageNavigationManager.instance.stageChanging += OnStageWillChange;
+        UIStageNavigation.StageChanging += OnStageWillChange;
     }
 
     [/*BeforeManagedObjectsDisabled,*/ UsedImplicitly]
     private static void UnregisterStageHandlers()
     {
-        StageNavigationManager.instance.stageChanging -= OnStageWillChange;
+        UIStageNavigation.StageChanging -= OnStageWillChange;
     }
 
     private static void OnStageWillChange(Stage previousStage, Stage nextStage)

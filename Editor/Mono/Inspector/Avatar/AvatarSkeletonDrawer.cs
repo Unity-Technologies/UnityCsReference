@@ -71,7 +71,7 @@ namespace UnityEditor
                 style.alignment = TextAnchor.MiddleLeft;
                 style.fontSize = 20;
 
-                GUIContent content = EditorGUIUtility.TrTextContent("Character is not in T pose");
+                GUIContent content = L10n.TextContent("Character is not in T pose", null, null, null);
 
                 Rect rect = GUILayoutUtility.GetRect(content, style);
 

@@ -65,6 +65,7 @@ namespace Unity.GraphToolkit.Editor
         Color m_DisabledColor;
         Color m_OptionsBkgndColor;
         bool m_Attached;
+        bool m_FillAmountOverridden;
 
         /// <summary>
         /// The color line element on the block.
@@ -278,14 +279,21 @@ namespace Unity.GraphToolkit.Editor
 
         void ColorLineOnGeometryChanged(GeometryChangedEvent e)
         {
-            if (BlockNodeModel.FillAmount != 0.0f)
+            if (!m_FillAmountOverridden)
                 m_GradientAnimator.SetFillAmount(BlockNodeModel.FillAmount, m_ColorLine.MarkDirtyRepaint);
         }
 
-        public override void SetFillAmount(float percentage)
+        public override void OverrideFillAmount(float percentage)
         {
-            float effective = percentage == 0f ? BlockNodeModel.FillAmount : percentage;
-            m_GradientAnimator.SetFillAmount(effective, m_ColorLine.MarkDirtyRepaint);
+            m_FillAmountOverridden = true;
+            m_GradientAnimator.SetFillAmount(percentage, m_ColorLine.MarkDirtyRepaint);
+        }
+
+        /// <inheritdoc />
+        public override void ClearFillAmountOverride()
+        {
+            m_FillAmountOverridden = false;
+            m_GradientAnimator.SetFillAmount(BlockNodeModel.FillAmount, m_ColorLine.MarkDirtyRepaint);
         }
         public override void BeginAnimating(float animationSpeed) => m_GradientAnimator.Play(animationSpeed);
 
@@ -449,8 +457,9 @@ namespace Unity.GraphToolkit.Editor
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Style) && BlockNodeModel.IsColorable() && m_ColorLine != null)
             {
-                if (BlockNodeModel.FillAmount != 0.0f)
+                if (!m_FillAmountOverridden)
                     m_GradientAnimator.SetFillAmount(BlockNodeModel.FillAmount, null);
+
                 m_ColorLine.MarkDirtyRepaint();
             }
         }

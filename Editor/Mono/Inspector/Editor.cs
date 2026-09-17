@@ -531,7 +531,7 @@ namespace UnityEditor
 
         static class BaseStyles
         {
-            public static readonly GUIContent open = EditorGUIUtility.TrTextContent("Open");
+            public static readonly GUIContent open = L10n.TextContent("Open", null, null, null);
             public static readonly GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
             public static readonly GUIStyle centerStyle = new GUIStyle();
             public static readonly GUIStyle postLargeHeaderBackground = "IN BigTitle Post";

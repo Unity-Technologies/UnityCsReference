@@ -183,21 +183,21 @@ namespace UnityEditor
 
         new static class Styles
         {
-            static public readonly GUIContent sketchUpLabel = EditorGUIUtility.TrTextContent("SketchUp", "SketchUp import settings");
-            static public readonly GUIContent generateBackFaceLabel = EditorGUIUtility.TrTextContent("Generate Back Face", "Enable/disable generation of back facing polygons");
-            static public readonly GUIContent mergeCoplanarFaces = EditorGUIUtility.TrTextContent("Merge Coplanar Faces", "Enable/disable merging of coplanar faces when generating meshes");
-            static public readonly GUIContent selectNodeButton = EditorGUIUtility.TrTextContent("Select Nodes...", "Brings up the node selection dialog box");
-            static public readonly GUIContent fileUnitLabel = EditorGUIUtility.TrTextContent("Unit conversion", "Length measurement to unit conversion. The value in Scale Factor is calculated based on the value here");
-            static public readonly GUIContent longitudeLabel = EditorGUIUtility.TrTextContent("Longitude", "Longitude Geo-location");
-            static public readonly GUIContent latitudeLabel = EditorGUIUtility.TrTextContent("Latitude", "Latitude Geo-location");
-            static public readonly GUIContent northCorrectionLabel = EditorGUIUtility.TrTextContent("North Correction", "The angle which will rotate the north direction to the z-axis for the model");
+            static public readonly GUIContent sketchUpLabel = L10n.TextContent("SketchUp", "SketchUp import settings", null, null);
+            static public readonly GUIContent generateBackFaceLabel = L10n.TextContent("Generate Back Face", "Enable/disable generation of back facing polygons", null, null);
+            static public readonly GUIContent mergeCoplanarFaces = L10n.TextContent("Merge Coplanar Faces", "Enable/disable merging of coplanar faces when generating meshes", null, null);
+            static public readonly GUIContent selectNodeButton = L10n.TextContent("Select Nodes...", "Brings up the node selection dialog box", null, null);
+            static public readonly GUIContent fileUnitLabel = L10n.TextContent("Unit conversion", "Length measurement to unit conversion. The value in Scale Factor is calculated based on the value here", null, null);
+            static public readonly GUIContent longitudeLabel = L10n.TextContent("Longitude", "Longitude Geo-location", null, null);
+            static public readonly GUIContent latitudeLabel = L10n.TextContent("Latitude", "Latitude Geo-location", null, null);
+            static public readonly GUIContent northCorrectionLabel = L10n.TextContent("North Correction", "The angle which will rotate the north direction to the z-axis for the model", null, null);
             static public readonly GUIContent[] measurementOptions =
             {
-                EditorGUIUtility.TrTextContent("Meters"),
-                EditorGUIUtility.TrTextContent("Centimeters"),
-                EditorGUIUtility.TrTextContent("Millimeters"),
-                EditorGUIUtility.TrTextContent("Feet"),
-                EditorGUIUtility.TrTextContent("Inches"),
+                L10n.TextContent("Meters", null, null, null),
+                L10n.TextContent("Centimeters", null, null, null),
+                L10n.TextContent("Millimeters", null, null, null),
+                L10n.TextContent("Feet", null, null, null),
+                L10n.TextContent("Inches", null, null, null),
             };
         }
     }

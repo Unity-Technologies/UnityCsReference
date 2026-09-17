@@ -10,11 +10,14 @@ namespace UnityEditor
     [NativeHeader("Editor/Mono/GameObjectUtility.bindings.h")]
     public sealed partial class GameObjectUtility
     {
+        [System.Obsolete("AreStaticEditorFlagsSet has been deprecated. Use AnyStaticEditorFlagsSet to check whether ANY of the requested flags are set, or AllStaticEditorFlagsSet to check whether ALL of them are set. (UnityUpgradable) -> AnyStaticEditorFlagsSet(*)", false)]
+        public static bool AreStaticEditorFlagsSet(GameObject go, StaticEditorFlags flags) => AnyStaticEditorFlagsSet(go, flags);
+
         [System.Obsolete("GetNavMeshArea has been deprecated. To relate a GameObject to an area type and retrieve their relation later, create a NavMeshBuildMarkup and pass it into UnityEngine.AI.NavMeshBuilder.CollectSources().")]
-        public static extern int GetNavMeshArea(GameObject go);
+        public static extern int GetNavMeshArea([NotNull] GameObject go);
 
         [System.Obsolete("SetNavMeshArea has been deprecated. To relate a GameObject to an area type, create a NavMeshBuildMarkup and pass it into UnityEngine.AI.NavMeshBuilder.CollectSources().")]
-        public static extern void SetNavMeshArea(GameObject go, int areaIndex);
+        public static extern void SetNavMeshArea([NotNull] GameObject go, int areaIndex);
 
         [System.Obsolete("GetNavMeshAreaFromName has been deprecated. Use NavMesh.GetAreaFromName instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.AI.NavMesh.GetAreaFromName(*)")]
         [StaticAccessor("GetNavMeshProjectSettings()")]
@@ -28,11 +31,11 @@ namespace UnityEditor
 
         [System.Obsolete("GetNavMeshLayer has been deprecated. To relate a GameObject to an area type and retrieve their relation later, create a NavMeshBuildMarkup and pass it into UnityEngine.AI.NavMeshBuilder.CollectSources(). (UnityUpgradable) -> GetNavMeshArea(*)")]
         [NativeName("GetNavMeshArea")]
-        public static extern int GetNavMeshLayer(GameObject go);
+        public static extern int GetNavMeshLayer([NotNull] GameObject go);
 
         [System.Obsolete("SetNavMeshLayer has been deprecated. To relate a GameObject to an area type, create a NavMeshBuildMarkup and pass it into UnityEngine.AI.NavMeshBuilder.CollectSources(). (UnityUpgradable) -> SetNavMeshArea(*)")]
         [NativeName("SetNavMeshArea")]
-        public static extern void SetNavMeshLayer(GameObject go, int areaIndex);
+        public static extern void SetNavMeshLayer([NotNull] GameObject go, int areaIndex);
 
         [System.Obsolete("GetNavMeshLayerFromName has been deprecated. Use NavMesh.GetAreaFromName instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.AI.NavMesh.GetAreaFromName(*)")]
         [StaticAccessor("GetNavMeshProjectSettings()")]

@@ -99,6 +99,9 @@ namespace UnityEditor.Build.Profile
         const string k_ProjectSettingsAssetPath = "ProjectSettings/ProjectSettings.asset";
 
         [AutoStaticsCleanupOnCodeReload]
+        // Handle to the global player settings object; TryLoadProjectSettingsAssetPlayerSettings fetches
+        // it again on the next access while it is null.
+        [IgnoreForUAL0015("Lazily re-fetched by TryLoadProjectSettingsAssetPlayerSettings when null")]
         static PlayerSettings s_GlobalPlayerSettings;
 
         [AutoStaticsCleanupOnCodeReload]

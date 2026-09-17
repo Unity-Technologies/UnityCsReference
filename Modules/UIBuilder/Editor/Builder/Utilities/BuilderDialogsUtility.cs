@@ -23,6 +23,12 @@ namespace Unity.UI.Builder
         [NoAutoStaticsCleanup] // Plain int test hook reset explicitly by tests before use; holds no managed references, safe to persist across code reload.
         internal static int CannotOpenDisplayDialogComplexDefaultValue = 0;
 
+        // Used for testing: records the default file name requested for the most recent save-file dialog,
+        // captured even when the dialog itself cannot be shown (e.g. in tests), so tests can assert on it
+        // without a real dialog ever appearing.
+        [NoAutoStaticsCleanup] // Plain string test hook overwritten on every call; holds no managed references, safe to persist across code reload.
+        internal static string s_LastSaveFileDialogDefaultName;
+
         public static bool DisplayDialog(string title, string message)
         {
             return DisplayDialog(title, message, BuilderConstants.DialogOkOption);
@@ -30,7 +36,9 @@ namespace Unity.UI.Builder
 
         public static bool DisplayDialog(string title, string message, string ok)
         {
-            return DisplayDialog(title, message, ok, string.Empty);
+            if (!cannotOpenDialogs)
+                EditorDialog.DisplayAlertDialog(title, message, ok, DialogIconType.Warning);
+            return true;
         }
 
         public static bool DisplayDialog(string title, string message, string ok, string cancel)
@@ -95,6 +103,8 @@ namespace Unity.UI.Builder
 
         public static string DisplaySaveFileDialog(string title, string directory, string defaultName, string extension)
         {
+            s_LastSaveFileDialogDefaultName = defaultName;
+
             if (cannotOpenDialogs)
                 return null;
 

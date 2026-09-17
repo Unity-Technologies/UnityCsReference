@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ContentBuild not yet converted
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -54,12 +53,16 @@ namespace UnityEditor.Build.Analysis
         private BuildListPanel m_BuildListPanel;
 
         private BuildAnalysisService m_Service;
+        private DependencyGraphService m_GraphService;
         private BuildAnalysisTabHost m_TabHost;
+        private ExternalViewRouter m_ExternalViews;
         private BuildHistoryWatcher m_Watcher;
 
         private SelectionGate m_Gate;
 
         private GUID m_PendingSelection;
+
+        private bool m_WasProSkin;
 
         [MenuItem("Window/Analysis/Build Analysis")]
         internal static void ShowWindow()
@@ -117,9 +120,11 @@ namespace UnityEditor.Build.Analysis
             var enumerator = new BuildEnumerator(buildHistory);
             var converter = new BuildReportConverter();
             var assetResolver = new SourceBuildAssetResolver(buildHistory, converter);
-            var analyzer = new BuildAnalyzer(converter, fileSystem, buildHistory, assetResolver);
+            var graphStore = new DependencyGraphStore();
+            var analyzer = new BuildAnalyzer(converter, fileSystem, buildHistory, assetResolver, graphStore);
             var logReader = new BuildLogReader();
             m_Service = new BuildAnalysisService(enumerator, analyzer, fileSystem, buildHistory, logReader);
+            m_GraphService = new DependencyGraphService(graphStore, fileSystem);
 
             m_Watcher = new BuildHistoryWatcher(buildHistory);
             m_Watcher.BuildHistoryChanged += RefreshBuildList;
@@ -131,6 +136,9 @@ namespace UnityEditor.Build.Analysis
         private void OnDisable()
         {
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
+
+            m_ExternalViews?.Release();
+
             m_Service?.Dispose();
             m_Watcher.Disable();
             m_Watcher.BuildHistoryChanged -= RefreshBuildList;
@@ -142,6 +150,20 @@ namespace UnityEditor.Build.Analysis
         private void OnBeforeAssemblyReload()
         {
             m_Service?.CancelPending();
+        }
+
+        // UUM-142206: no event fires when the Editor Theme preference changes, so poll for it.
+        private void Update()
+        {
+            if (rootVisualElement == null)
+                return;
+
+            var isProSkin = EditorGUIUtility.isProSkin;
+            if (isProSkin == m_WasProSkin)
+                return;
+
+            m_WasProSkin = isProSkin;
+            ApplyThemeClass(rootVisualElement);
         }
 
         public void CreateGUI()
@@ -156,6 +178,7 @@ namespace UnityEditor.Build.Analysis
 
             var styleSheet = EditorGUIUtility.LoadRequired(k_UssPath) as StyleSheet;
             rootVisualElement.styleSheets.Add(styleSheet);
+            m_WasProSkin = EditorGUIUtility.isProSkin;
             ApplyThemeClass(rootVisualElement);
 
             m_SplitView = rootVisualElement.Q<TwoPaneSplitView>("build-analysis-split");
@@ -229,9 +252,12 @@ namespace UnityEditor.Build.Analysis
             m_TabHost = new BuildAnalysisTabHost(m_TabView);
             m_TabHost.Register(m_OverviewTab, new OverviewTabView());
 
-            var assetsTabView = new AssetsTabView();
+            var assetsTabView = new AssetsTabView(m_GraphService);
             assetsTabView.InspectorOpenRequested += () => m_InspectorToggle.value = true;
             m_TabHost.Register(m_AssetsTab, assetsTabView);
+
+            m_ExternalViews = new ExternalViewRouter(m_TabView.parent, m_TabView);
+            m_ExternalViews.Enable();
 
             // Only the Assets tab has an inspector; disable the toggle on tabs that don't.
             m_TabView.activeTabChanged += (_, activeTab) => UpdateInspectorToggleEnabled(activeTab);
@@ -272,6 +298,7 @@ namespace UnityEditor.Build.Analysis
             {
                 // Invalidate any in-flight load (so its continuation is dropped as stale) and clear the view.
                 m_Gate.Clear();
+                m_ExternalViews.Release();
                 m_TabHost.Apply(null);
                 m_LoadingOverlay.Hide();
                 return;
@@ -281,7 +308,25 @@ namespace UnityEditor.Build.Analysis
             if (m_Gate.IsCurrentTarget(selection.BuildSessionGUID))
                 return;
 
+            if (TryShowExternalView(selection))
+                return;
+
+            m_ExternalViews.Release();
             await LoadAndApplyAsync(selection, () => m_Service.GetBuildAnalysisAsync(selection.BuildSessionGUID));
+        }
+
+        private bool TryShowExternalView(BuildEntry selection)
+        {
+            if (!m_Service.TryGetBuildSummary(selection.BuildSessionGUID, out var summary))
+                return false;
+
+            if (!m_ExternalViews.TryClaim(summary))
+                return false;
+
+            m_Gate.Begin(selection.BuildSessionGUID);
+            m_TabHost.Apply(null);
+            m_LoadingOverlay.Hide();
+            return true;
         }
 
         // Apply for both selection and regenerate: show the overlay, await the result, and
@@ -419,6 +464,16 @@ namespace UnityEditor.Build.Analysis
         {
             if (build == null)
                 return;
+
+            if (!m_Service.HasBuildReport(build.BuildSessionGUID))
+            {
+                Debug.LogWarning($"{BuildAnalysisConstants.k_ConsoleLogPrefix} '{build.BuildName}' has no build report, so there is no analysis to regenerate.");
+                return;
+            }
+
+            // Before the reload: the Apply it triggers prefetches the graph, which must not be
+            // served from the cache the regeneration is about to make stale.
+            m_GraphService.Invalidate(build.BuildSessionGUID);
             await LoadAndApplyAsync(build, () => m_Service.RegenerateBuildAnalysisAsync(build.BuildSessionGUID));
         }
     }
@@ -449,4 +504,3 @@ namespace UnityEditor.Build.Analysis
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

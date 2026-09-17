@@ -19,6 +19,9 @@ namespace UnityEditor
     internal partial class PropertyHandler : IDisposable
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Reflection memo of a drawer type's default Object references: the miss path re-reads the fields and
+        // re-adds the entry, and it must be cleared so it does not hold the previous scope's types.
+        [IgnoreForUAL0015("Drawer default-reference reflection memo, re-read on the next miss")]
         readonly static Dictionary<Type, List<(FieldInfo fieldInfo, Object objectReference)>> s_DefaultObjectReferenceCache = new();
 
         List<PropertyDrawer> m_PropertyDrawers;
@@ -46,6 +49,9 @@ namespace UnityEditor
         bool isCurrentlyNested => m_NestingLevel > 0;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Per-property list wrappers, re-created on the next miss while drawing; the dictionary is already
+        // cleared between inspector rebuilds, so an empty one just costs one recreate.
+        [IgnoreForUAL0015("Per-property list wrappers, re-created on the next draw after cleanup")]
         internal static Dictionary<string, ReorderableListWrapper> s_reorderableLists = new Dictionary<string, ReorderableListWrapper>();
         [NoAutoStaticsCleanup] // transient inspector state counters, safe to persist
         static EntityId s_LastInspectionTarget;

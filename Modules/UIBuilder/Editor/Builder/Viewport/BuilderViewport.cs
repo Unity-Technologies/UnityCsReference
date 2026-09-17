@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -759,7 +758,13 @@ namespace Unity.UI.Builder
 
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
         {
-            m_Canvas.editorExtensionsLabel.style.display = paneWindow.document.fileSettings.editorExtensionMode
+            // The canvas mode tag doubles as the StyleSheet Editing Mode indicator.
+            var styleSheetEditing = paneWindow.document.isStyleSheetEditingMode;
+            m_Canvas.editorExtensionsLabel.text = styleSheetEditing
+                ? BuilderConstants.CanvasStyleSheetEditingModeTagText
+                : BuilderConstants.CanvasEditorModeTagText;
+            m_Canvas.editorExtensionsLabel.style.display =
+                styleSheetEditing || paneWindow.document.fileSettings.editorExtensionMode
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
 
@@ -777,4 +782,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

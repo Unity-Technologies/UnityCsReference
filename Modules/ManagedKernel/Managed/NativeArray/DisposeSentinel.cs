@@ -10,8 +10,10 @@ using UnityEngine;
 
 namespace Unity.Collections
 {
+    ///<summary>Contains settings for native leak detection.</summary>
     public static class NativeLeakDetection
     {
+        ///<summary>Set whether native memory leak detection should be enabled or disabled.</summary>
         public static NativeLeakDetectionMode Mode
         {
             get
@@ -34,6 +36,18 @@ namespace Unity.Collections
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
+    ///<summary>Contains methods that automatically detect memory leaks.</summary>
+    ///<remarks>The methods in <c>DisposeSentinel</c> are used by NativeContainer instances to automatically track memory leaks, and report them to you. However, you should use the <see cref="UnsafeUtility.MallocTracked" />
+    ///method over <c>DisposeSentinel</c> where possible.
+    ///
+    ///<c>DisposeSentinel</c> is a managed object that's only referenced by the <c>NativeContainer</c> that holds the native data that you don't want to leak. The <c>DisposeSentinel</c> 
+    ///finalizer is invoked when there aren't any references to the NativeContainer that owns it, and checks if the referenced data has been disposed correctly. If the data 
+    ///hasn't been disposed of correctly, <c>DisposeSentinel</c> logs an error containing the information about when the initial allocation happened.
+    ///
+    ///<c>DisposeSentinel</c> creates garbage for the garbage collector to pick up, and any memory leaks are reported upon domain shutdown or reload.
+    ///
+    ///You can only use the <c>DisposeSentinel</c> class when ENABLE_UNITY_COLLECTIONS_CHECKS is defined.</remarks>
+    ///<seealso cref="Unity.Collections.LowLevel.Unsafe.NativeContainerAttribute" />
     [StructLayout(LayoutKind.Sequential)]
     public sealed class DisposeSentinel
     {
@@ -47,6 +61,11 @@ namespace Unity.Collections.LowLevel.Unsafe
         {
         }
 
+        ///<summary>Releases the <c>AtomicSafetyHandle</c> and clears the <c>DisposeSentinel</c>.</summary>
+        ///<remarks>If the <c>AtomicSafetyHandle</c> can't be released, which usually happens either because a job is accessing the data or because the handle 
+        ///has already been released, an exception is thrown.</remarks>
+        ///<param name="safety">The <c>AtomicSafetyHandle</c> returned when invoking the **Create** method.</param>
+        ///<param name="sentinel">The <c>DisposeSentinel</c> to clear.</param>
         public static void Dispose(ref AtomicSafetyHandle safety, ref DisposeSentinel sentinel)
         {
             AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
@@ -62,6 +81,12 @@ namespace Unity.Collections.LowLevel.Unsafe
             Clear(ref sentinel);
         }
 
+        ///<summary>Creates a new <see cref="AtomicSafetyHandle" /> and a new <see cref="DisposeSentinel" />, to be used to track safety and leaks on native data.</summary>
+        ///<remarks>When <see cref="DisposeSentinel" /> is created, the call stack is stored in it to log a descriptive error when a memory leak is detected.</remarks>
+        ///<param name="safety">The <see cref="AtomicSafetyHandle" /> to control access to the data related to the newly created <see cref="DisposeSentinel" />.</param>
+        ///<param name="sentinel">The new <see cref="DisposeSentinel" />.</param>
+        ///<param name="callSiteStackDepth">The stack depth where to extract the logging information from.</param>
+        ///<param name="allocator">The allocator used for the native data being tracked.</param>
         public static void Create(out AtomicSafetyHandle safety, out DisposeSentinel sentinel, int callSiteStackDepth, Allocator allocator)
         {
             safety = (allocator == Allocator.Temp) ? AtomicSafetyHandle.GetTempMemoryHandle() : AtomicSafetyHandle.Create();
@@ -133,6 +158,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 #pragma warning restore UA5000
 
+        ///<summary>Clears the <c>DisposeSentinel</c>.</summary>
+        ///<remarks>A <c>DisposeSentinel</c> is usually cleared when the related <c>NativeContainer</c> is disposed.</remarks>
+        ///<param name="sentinel">The <c>DisposeSentinel</c> to clear.</param>
         [Unity.Burst.BurstDiscard]
         public static void Clear(ref DisposeSentinel sentinel)
         {

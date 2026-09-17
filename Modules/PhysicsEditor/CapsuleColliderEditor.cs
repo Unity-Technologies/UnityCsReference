@@ -113,7 +113,7 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent directionContent = EditorGUIUtility.TrTextContent("Direction", "The axis of the capsule’s lengthwise orientation in the GameObject’s local space.");
+            public static readonly GUIContent directionContent = L10n.TextContent("Direction", "The axis of the capsule’s lengthwise orientation in the GameObject’s local space.", null, null);
         }
 
         public override void OnEnable()
@@ -130,7 +130,7 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
+            EditorGUILayout.EditorToolbarForTarget(L10n.TempContent("Edit Collider", null), this);
             GUILayout.Space(5);
             EditorGUILayout.PropertyField(m_IsTrigger, BaseStyles.triggerContent);
             EditorGUILayout.PropertyField(m_ProvidesContacts, BaseStyles.providesContacts);

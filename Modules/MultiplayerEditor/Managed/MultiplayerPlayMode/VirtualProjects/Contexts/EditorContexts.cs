@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: HeadlessRuntime not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
@@ -37,6 +35,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         [AutoStaticsCleanupOnCodeReload] // pending callbacks delegate; stale handlers after reload pin old ALC
+        // Queue of not-yet-invoked initialization callbacks; subscribers re-register from their own
+        // [OnCodeLoaded] initialization, so the drained queue refills for the new scope.
+        [IgnoreForUAL0015("Pending-callback queue refilled as subscribers re-register after a code load")]
         static Action s_PendingOnInitializedCallbacks;
 
         [AutoStaticsCleanupOnCodeReload] // init gate; must reset to false so SendReadyEvent re-runs after reload
@@ -105,5 +106,3 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

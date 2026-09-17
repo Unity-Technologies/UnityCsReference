@@ -48,7 +48,6 @@ namespace UnityEditor.AssetImporters
 
         public extern BuildTarget selectedBuildTarget { get; }
 
-        [NativeMethod(ThrowsException = true)]
         public extern void SetMainObject(Object obj);
         public extern Object mainObject { get; }
 
@@ -105,7 +104,7 @@ namespace UnityEditor.AssetImporters
             DependsOnImportedAssetInternal(path);
         }
 
-        [NativeName("GetArtifactFilePath")]
+        [NativeName("GetArtifactFilePath_Binding")]
         private extern string GetArtifactFilePath_Internal(string path, string fileName);
 
         [Obsolete("GetArtifactFilePath has been deprecated. Use GetArtifactData to get the data instead.")]
@@ -121,6 +120,7 @@ namespace UnityEditor.AssetImporters
         }
 
         [Obsolete("GetArtifactFilePath has been deprecated. Use GetArtifactData to get the data instead.")]
+        [NativeName("GetArtifactFilePath_Binding")]
         public extern string GetArtifactFilePath(ArtifactKey key, string fileName);
 
         [NativeName("GetArtifactData")]

@@ -218,14 +218,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return arguments;
         }
 
-        protected internal override VisualElement CreateControllerUI(Instance instance)
+        protected internal override VisualElement CreateControllerUI(ControllerRuntime instance)
         {
             var userSettings = GetUserSettings(DefaultUserSettings);
             var userSettingsProperty = GetUserSettingsSerializedProperty(DefaultUserSettings);
             return new LocalPlayerInstanceStatusElement(instance, Settings, userSettings, userSettingsProperty);
         }
 
-        internal override bool NeedsTearDown(Instance instance, out string reason)
+        internal override bool NeedsTearDown(ControllerRuntime instance, out string reason)
         {
             if (instance.IsFreeRunMode() && instance.HasStartedAsFreeRunning())
             {
@@ -237,7 +237,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return false;
         }
 
-        internal override void TearDown(Instance instance)
+        internal override void TearDown(ControllerRuntime instance)
         {
             if (instance.IsFreeRunMode() && instance.HasStartedAsFreeRunning())
             {

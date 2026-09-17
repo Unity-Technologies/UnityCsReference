@@ -212,7 +212,9 @@ namespace UnityEngine.UIElements
 
             tgs.text = string.Empty;
             tgs.isIMGUI = false;
+#pragma warning disable UAL0018 // tgs is a per-call settings struct consumed by this generation pass; the captured settings do not outlive it
             tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
+#pragma warning restore UAL0018
             if (tgs.textSettings == null)
                 return false;
 
@@ -264,7 +266,9 @@ namespace UnityEngine.UIElements
             tgs.wordSpacing = style.wordSpacing.value;
             tgs.paragraphSpacing = style.unityParagraphSpacing.value;
             tgs.color = style.color;
+#pragma warning disable UAL0018 // tgs is a per-call settings struct consumed by this generation pass; the tint does not outlive it
             tgs.color *= m_TextElement.playModeTintColor;
+#pragma warning restore UAL0018
             tgs.shouldConvertToLinearSpace = false;
             tgs.parseControlCharacters = m_TextElement.parseEscapeSequences;
             tgs.isRightToLeft = m_TextElement.localLanguageDirection == LanguageDirection.RTL;

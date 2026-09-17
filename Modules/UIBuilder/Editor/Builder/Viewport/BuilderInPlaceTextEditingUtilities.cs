@@ -137,6 +137,10 @@ namespace Unity.UI.Builder
             var viewport = element.GetFirstAncestorOfType<BuilderViewport>();
             var textEditor = viewport.textEditor;
 
+            // In-place text editing writes to the UXML; blocked on a read-only canvas.
+            if (viewport.paneWindow.document.isCanvasReadOnly)
+                return;
+
             var context = GetAttributeToEdit(element, k_TextAttributeName);
             context.editorLayer = viewport.editorLayer;
 

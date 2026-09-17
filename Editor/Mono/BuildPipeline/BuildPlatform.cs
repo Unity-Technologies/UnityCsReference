@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ContentBuild not yet converted
 using UnityEngine;
 using System;
 using System.Collections.Generic;
@@ -227,6 +226,8 @@ namespace UnityEditor.Build
         // re-created on first access rather than eagerly, so it never runs before native
         // BuildTargetDiscovery is ready during a build.
         [AutoStaticsCleanupOnCodeReload]
+        // Lazy singleton created by the instance property on the next access after cleanup nulls it.
+        [IgnoreForUAL0015("Lazy singleton recreated by the instance property after cleanup nulls it")]
         static BuildPlatforms s_Instance;
 
         public static BuildPlatforms instance => s_Instance ??= new BuildPlatforms();
@@ -358,4 +359,3 @@ namespace UnityEditor.Build
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEditor;
@@ -1332,7 +1331,7 @@ namespace UnityEditor
         public void AddButton(Rect rect, UnityEditorInternal.ReorderableList list)
         {
             GenericMenu menu = new GenericMenu();
-            menu.AddItem(EditorGUIUtility.TrTextContent("Add Motion Field"), false, AddChildAnimation);
+            menu.AddItem(L10n.TextContent("Add Motion Field", null, null, null), false, AddChildAnimation);
             menu.AddItem(EditorGUIUtility.TempContent("New Blend Tree"), false, AddBlendTreeCallback);
             menu.Popup(rect, 0);
         }
@@ -1581,8 +1580,8 @@ namespace UnityEditor
                     }
                     else
                     {
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Velocity XZ"), false, ComputePositionsFromVelocity);
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Speed And Angular Speed"), false, ComputePositionsFromSpeedAndAngularSpeed);
+                        menu.AddItem(L10n.TextContent("Velocity XZ", null, null, null), false, ComputePositionsFromVelocity);
+                        menu.AddItem(L10n.TextContent("Speed And Angular Speed", null, null, null), false, ComputePositionsFromSpeedAndAngularSpeed);
                         AddComputeMenuItems(menu, "X Position From/", ChildPropertyToCompute.PositionX);
                         AddComputeMenuItems(menu, "Y Position From/", ChildPropertyToCompute.PositionY);
                     }
@@ -1599,8 +1598,8 @@ namespace UnityEditor
                 if (EditorGUI.DropdownButton(controlRect, EditorGUIUtility.TempContent("Select"), FocusType.Passive, EditorStyles.popup))
                 {
                     GenericMenu menu = new GenericMenu();
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Homogeneous Speed"), false, ComputeTimeScaleFromSpeed);
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Reset Time Scale"), false, ResetTimeScale);
+                    menu.AddItem(L10n.TextContent("Homogeneous Speed", null, null, null), false, ComputeTimeScaleFromSpeed);
+                    menu.AddItem(L10n.TextContent("Reset Time Scale", null, null, null), false, ResetTimeScale);
                     menu.DropDown(controlRect);
                 }
             }
@@ -2271,4 +2270,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

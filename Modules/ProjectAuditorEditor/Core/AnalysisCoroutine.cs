@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -101,11 +100,17 @@ namespace Unity.ProjectAuditor.Editor.Core
         Action<long> m_ElapsedTimeDelegate; // Returns how long each invocation of the coroutine took
 
         const int kParallelCoroutineCount = 2; // Not really parallel, just number we allow to run at the same time (if you change it, consider changing kDuration too to balance overall fps)
-        [AutoStaticsCleanupOnCodeReload] // Active coroutine processing stack; must be reset on code reload to avoid stale state
+        // These three hold pending analysis work, and the same callbacks they track are also subscribed to
+        // EditorApplication.update. Emptying them would desynchronize the two bookkeeping halves: the
+        // MoveNext handlers stay live on EditorApplication.update while the in-progress list reports Count
+        // == 0, so Enqueue() admits unbounded extra coroutines in parallel and Dequeue()'s Remove() and
+        // TryDequeue() no-op, so queued work is never started and the running work is never accounted for.
+        // Keeping them means the in-flight analysis simply finishes as it was scheduled.
+        [NoAutoStaticsCleanup]
         static Stack<IEnumerator> kIEnumeratorProcessingStack = new Stack<IEnumerator>(32);
-        [AutoStaticsCleanupOnCodeReload] // Active EditorApplication callbacks in-flight; must be reset on code reload
+        [NoAutoStaticsCleanup]
         static List<EditorApplication.CallbackFunction> kIEnumeratorProcessingInProgress = new List<EditorApplication.CallbackFunction>(kParallelCoroutineCount);
-        [AutoStaticsCleanupOnCodeReload] // Queued EditorApplication callbacks; must be reset on code reload to avoid stale callbacks
+        [NoAutoStaticsCleanup]
         static Queue<EditorApplication.CallbackFunction> kIEnumeratorProcessingQueue = new Queue<EditorApplication.CallbackFunction>(32);
 
         internal AnalysisCoroutine(IEnumerator routine, object owner, Action<long> elapsedTimeDelegate, bool async = true)
@@ -119,11 +124,14 @@ namespace Unity.ProjectAuditor.Editor.Core
             m_Status = Status.Running;
             m_ElapsedTimeDelegate = elapsedTimeDelegate;
 
+#pragma warning disable UAL0015 // same finding as inside Enqueue, reported again at this call site: the coroutine and the processing statics it registers into share the same code-loaded lifetime
             Enqueue(async);
+#pragma warning restore UAL0015
         }
 
         private void Enqueue(bool async)
         {
+#pragma warning disable UAL0015 // reachable from the instance ctor; scoped to this coroutine's own code-loaded lifetime
             if (async && kIEnumeratorProcessingInProgress.Count < kParallelCoroutineCount)
             {
                 kIEnumeratorProcessingInProgress.Add(MoveNext);
@@ -133,6 +141,7 @@ namespace Unity.ProjectAuditor.Editor.Core
             {
                 kIEnumeratorProcessingQueue.Enqueue(MoveNext);
             }
+#pragma warning restore UAL0015
         }
 
         private void Dequeue()
@@ -230,4 +239,3 @@ namespace Unity.ProjectAuditor.Editor.Core
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -33,8 +33,8 @@ namespace UnityEditor
         public static readonly float k_SpaceBetweenModules = 5;
 
         public static readonly GUIStyle s_ControlRectStyle = new GUIStyle { margin = new RectOffset(0, 0, 2, 2) };
-        public static readonly GUIContent s_AddItem = EditorGUIUtility.TrTextContent(string.Empty, "Add Item");
-        public static readonly GUIContent s_RemoveItem = EditorGUIUtility.TrTextContent(string.Empty, "Remove Item");
+        public static readonly GUIContent s_AddItem = L10n.TextContent(string.Empty, "Add Item", null, null);
+        public static readonly GUIContent s_RemoveItem = L10n.TextContent(string.Empty, "Remove Item", null, null);
 
         // Alternative to BeginProperty when dealing with properties that should be logically combined but are not parent child properties.
         public class PropertyGroupScope : GUI.Scope
@@ -1145,10 +1145,10 @@ namespace UnityEditor
                 if (minMaxCurves.Length == 0)
                     return;
 
-                GUIContent[] texts =        {   EditorGUIUtility.TrTextContent("Constant"),
-                                                EditorGUIUtility.TrTextContent("Curve"),
-                                                EditorGUIUtility.TrTextContent("Random Between Two Constants"),
-                                                EditorGUIUtility.TrTextContent("Random Between Two Curves") };
+                GUIContent[] texts =        {   L10n.TextContent("Constant", null, null, null),
+                                                L10n.TextContent("Curve", null, null, null),
+                                                L10n.TextContent("Random Between Two Constants", null, null, null),
+                                                L10n.TextContent("Random Between Two Curves", null, null, null) };
                 MinMaxCurveState[] states = {   MinMaxCurveState.k_Scalar,
                                                 MinMaxCurveState.k_Curve,
                                                 MinMaxCurveState.k_TwoScalars,
@@ -1196,11 +1196,11 @@ namespace UnityEditor
         {
             if (EditorGUI.DropdownButton(rect, GUIContent.none, FocusType.Passive, ParticleSystemStyles.Get().minMaxCurveStateDropDown))
             {
-                GUIContent[] texts = {  EditorGUIUtility.TrTextContent("Color"),
-                                        EditorGUIUtility.TrTextContent("Gradient"),
-                                        EditorGUIUtility.TrTextContent("Random Between Two Colors"),
-                                        EditorGUIUtility.TrTextContent("Random Between Two Gradients"),
-                                        EditorGUIUtility.TrTextContent("Random Color")};
+                GUIContent[] texts = {  L10n.TextContent("Color", null, null, null),
+                                        L10n.TextContent("Gradient", null, null, null),
+                                        L10n.TextContent("Random Between Two Colors", null, null, null),
+                                        L10n.TextContent("Random Between Two Gradients", null, null, null),
+                                        L10n.TextContent("Random Color", null, null, null)};
                 MinMaxGradientState[] states = {    MinMaxGradientState.k_Color,
                                                     MinMaxGradientState.k_Gradient,
                                                     MinMaxGradientState.k_RandomBetweenTwoColors,
@@ -1251,7 +1251,7 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(rect, GUIContent.none, FocusType.Passive, ParticleSystemStyles.Get().minMaxCurveStateDropDown))
             {
                 GenericMenu menu = new GenericMenu();
-                GUIContent[] texts = { EditorGUIUtility.TrTextContent("Constant Color"), EditorGUIUtility.TrTextContent("Random Between Two Colors") };
+                GUIContent[] texts = { L10n.TextContent("Constant Color", null, null, null), L10n.TextContent("Random Between Two Colors", null, null, null) };
                 bool[] states = { false, true };
 
                 for (int i = 0; i < texts.Length; ++i)

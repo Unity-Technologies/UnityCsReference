@@ -22,7 +22,7 @@ namespace Unity.Localization.Providers;
 /// from the inspector.
 /// </remarks>
 /// <example>
-/// <para>Register a texture by address and load it back through the provider.</para>
+/// Register a texture by address and load it back through the provider.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ReferencedAssetProviderOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="IAssetProvider"/>
@@ -48,7 +48,7 @@ public sealed class ReferencedAssetProvider : IAssetProvider, ISynchronousAssetP
     /// <param name="address">The address callers request through an <see cref="AssetKey"/>.</param>
     /// <param name="asset">The asset to return for that address.</param>
     /// <example>
-    /// <para>Register an asset under an address.</para>
+    /// Register an asset under an address.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ReferencedAssetProviderAddExample.cs"/>
     /// </example>
     public void Add(string address, Object asset)
@@ -69,7 +69,7 @@ public sealed class ReferencedAssetProvider : IAssetProvider, ISynchronousAssetP
     /// <param name="address">The address to clear.</param>
     /// <returns><c>true</c> if an entry was removed; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Remove a registered asset and confirm it is gone.</para>
+    /// Remove a registered asset and confirm it is gone.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ReferencedAssetProviderRemoveExample.cs"/>
     /// </example>
     public bool Remove(string address)
@@ -129,7 +129,7 @@ public sealed class ReferencedAssetProvider : IAssetProvider, ISynchronousAssetP
     /// <param name="address">The address to test.</param>
     /// <returns><c>true</c> if an asset is registered under the address; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Test whether an address is registered before and after adding it.</para>
+    /// Test whether an address is registered before and after adding it.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ReferencedAssetProviderContainsExample.cs"/>
     /// </example>
     public bool Contains(string address) => !string.IsNullOrEmpty(address) && m_ByAddress.ContainsKey(address);
@@ -148,7 +148,7 @@ public sealed class ReferencedAssetProvider : IAssetProvider, ISynchronousAssetP
     /// <param name="asset">The resolved asset, or <see langword="null"/> on a miss.</param>
     /// <returns><see langword="true"/> when the asset resolved; otherwise <see langword="false"/>.</returns>
     /// <example>
-    /// <para>Register a texture by address and resolve it back through the provider.</para>
+    /// Register a texture by address and resolve it back through the provider.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ReferencedAssetProviderLoadAssetGenericExample.cs"/>
     /// </example>
     public bool TryLoadAsset<T>(AssetKey key, out T asset) where T : Object
@@ -166,7 +166,7 @@ public sealed class ReferencedAssetProvider : IAssetProvider, ISynchronousAssetP
     /// </remarks>
     /// <param name="asset">The asset to release. Ignored.</param>
     /// <example>
-    /// <para>Call release on a referenced asset. Nothing is unloaded.</para>
+    /// Call release on a referenced asset. Nothing is unloaded.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/ReferencedAssetProviderReleaseExample.cs"/>
     /// </example>
     public void Release(Object asset) { }

@@ -53,45 +53,45 @@ namespace UnityEditor
 
         private class Styles
         {
-            public static readonly GUIContent mass = EditorGUIUtility.TrTextContent("Mass", "Mass of this articulation body.");
-            public static readonly GUIContent immovable = EditorGUIUtility.TrTextContent("Immovable", "Is this articulation body immovable by forces and torques? Only applies to the root body of the articulation.");
-            public static readonly GUIContent useGravity = EditorGUIUtility.TrTextContent("Use Gravity", "Controls whether gravity affects this articulation body.");
+            public static readonly GUIContent mass = L10n.TextContent("Mass", "Mass of this articulation body.", null, null);
+            public static readonly GUIContent immovable = L10n.TextContent("Immovable", "Is this articulation body immovable by forces and torques? Only applies to the root body of the articulation.", null, null);
+            public static readonly GUIContent useGravity = L10n.TextContent("Use Gravity", "Controls whether gravity affects this articulation body.", null, null);
 
-            public static readonly GUIContent implicitCom = EditorGUIUtility.TrTextContent("Automatic Center Of Mass", "Use the calculated center of mass or set it directly.");
-            public static readonly GUIContent implicitTensor = EditorGUIUtility.TrTextContent("Automatic Tensor", "Use the calculated tensor or set it directly.");
+            public static readonly GUIContent implicitCom = L10n.TextContent("Automatic Center Of Mass", "Use the calculated center of mass or set it directly.", null, null);
+            public static readonly GUIContent implicitTensor = L10n.TextContent("Automatic Tensor", "Use the calculated tensor or set it directly.", null, null);
 
-            public static readonly GUIContent centerOfMass = EditorGUIUtility.TrTextContent("Center Of Mass", "The local space coordinates of the center of mass.");
-            public static readonly GUIContent inertiaTensor = EditorGUIUtility.TrTextContent("Inertia Tensor", "The diagonal inertia tensor of mass relative to the center of mass.");
-            public static readonly GUIContent inertiaRotation = EditorGUIUtility.TrTextContent("Inertia Tensor Rotation", "The rotation of the inertia tensor.");
+            public static readonly GUIContent centerOfMass = L10n.TextContent("Center Of Mass", "The local space coordinates of the center of mass.", null, null);
+            public static readonly GUIContent inertiaTensor = L10n.TextContent("Inertia Tensor", "The diagonal inertia tensor of mass relative to the center of mass.", null, null);
+            public static readonly GUIContent inertiaRotation = L10n.TextContent("Inertia Tensor Rotation", "The rotation of the inertia tensor.", null, null);
 
-            public static readonly GUIContent collisionDetectionMode = EditorGUIUtility.TrTextContent("Collision Detection", "The method to use to detect collisions for child colliders: discrete (default) or various modes of continuous collision detection that can help solving fast moving object issues.");
+            public static readonly GUIContent collisionDetectionMode = L10n.TextContent("Collision Detection", "The method to use to detect collisions for child colliders: discrete (default) or various modes of continuous collision detection that can help solving fast moving object issues.", null, null);
 
-            public static readonly GUIContent linearDamping = EditorGUIUtility.TrTextContent("Linear Damping", "Damping factor that affects how this body resists linear motion.");
-            public static readonly GUIContent angularDamping = EditorGUIUtility.TrTextContent("Angular Damping", "Damping factor that affects how this body resists rotations.");
-            public static readonly GUIContent jointFriction = EditorGUIUtility.TrTextContent("Joint Friction", "Amount of friction that is applied as a result of connected bodies moving relative to this body.");
+            public static readonly GUIContent linearDamping = L10n.TextContent("Linear Damping", "Damping factor that affects how this body resists linear motion.", null, null);
+            public static readonly GUIContent angularDamping = L10n.TextContent("Angular Damping", "Damping factor that affects how this body resists rotations.", null, null);
+            public static readonly GUIContent jointFriction = L10n.TextContent("Joint Friction", "Amount of friction that is applied as a result of connected bodies moving relative to this body.", null, null);
 
-            public static readonly GUIContent matchAnchors = EditorGUIUtility.TrTextContent("Match Anchors", "Controls whether to set the anchor relative to the parent to be the same as the anchor relative to this body.");
-            public static readonly GUIContent anchorPosition = EditorGUIUtility.TrTextContent("Anchor Position", "Position of the anchor relative to this body.");
-            public static readonly GUIContent parentAnchorPosition = EditorGUIUtility.TrTextContent("Parent Anchor Position", "Position of the anchor relative to the parent body.");
-            public static readonly GUIContent anchorRotation =  EditorGUIUtility.TrTextContent("Anchor Rotation", "Rotation of the anchor relative to this body.");
-            public static readonly GUIContent parentAnchorRotation = EditorGUIUtility.TrTextContent("Parent Anchor Rotation", "Rotation of the anchor relative to the parent body.");
+            public static readonly GUIContent matchAnchors = L10n.TextContent("Match Anchors", "Controls whether to set the anchor relative to the parent to be the same as the anchor relative to this body.", null, null);
+            public static readonly GUIContent anchorPosition = L10n.TextContent("Anchor Position", "Position of the anchor relative to this body.", null, null);
+            public static readonly GUIContent parentAnchorPosition = L10n.TextContent("Parent Anchor Position", "Position of the anchor relative to the parent body.", null, null);
+            public static readonly GUIContent anchorRotation =  L10n.TextContent("Anchor Rotation", "Rotation of the anchor relative to this body.", null, null);
+            public static readonly GUIContent parentAnchorRotation = L10n.TextContent("Parent Anchor Rotation", "Rotation of the anchor relative to the parent body.", null, null);
 
-            public static readonly GUIContent prismaticAxis = EditorGUIUtility.TrTextContent("Axis", "The only axis the joint allows linear motion along.");
-            public static readonly GUIContent unlockedMotionType = EditorGUIUtility.TrTextContent("Motion", "Controls whether the motion is free or limited.");
+            public static readonly GUIContent prismaticAxis = L10n.TextContent("Axis", "The only axis the joint allows linear motion along.", null, null);
+            public static readonly GUIContent unlockedMotionType = L10n.TextContent("Motion", "Controls whether the motion is free or limited.", null, null);
 
-            public static readonly GUIContent lowerLimit = EditorGUIUtility.TrTextContent("Lower limit", "Limit the minimum linear or angular coordinate this drive allows.");
-            public static readonly GUIContent upperLimit = EditorGUIUtility.TrTextContent("Upper limit", "Limit the maximum linear or angular coordinate this drive allows.");
+            public static readonly GUIContent lowerLimit = L10n.TextContent("Lower limit", "Limit the minimum linear or angular coordinate this drive allows.", null, null);
+            public static readonly GUIContent upperLimit = L10n.TextContent("Upper limit", "Limit the maximum linear or angular coordinate this drive allows.", null, null);
 
-            public static readonly GUIContent stiffness = EditorGUIUtility.TrTextContent("Stiffness", "The stiffness of the spring connected to this drive.");
-            public static readonly GUIContent damping = EditorGUIUtility.TrTextContent("Damping", "The damping of the spring attached to this drive.");
-            public static readonly GUIContent forceLimit = EditorGUIUtility.TrTextContent("Force Limit", "The maximum force this drive can apply to a body.");
-            public static readonly GUIContent target = EditorGUIUtility.TrTextContent("Target", "The target value for the drive to try reaching.");
-            public static readonly GUIContent targetVelocity = EditorGUIUtility.TrTextContent("Target Velocity", "The target velocity for the drive to try reaching.");
+            public static readonly GUIContent stiffness = L10n.TextContent("Stiffness", "The stiffness of the spring connected to this drive.", null, null);
+            public static readonly GUIContent damping = L10n.TextContent("Damping", "The damping of the spring attached to this drive.", null, null);
+            public static readonly GUIContent forceLimit = L10n.TextContent("Force Limit", "The maximum force this drive can apply to a body.", null, null);
+            public static readonly GUIContent target = L10n.TextContent("Target", "The target value for the drive to try reaching.", null, null);
+            public static readonly GUIContent targetVelocity = L10n.TextContent("Target Velocity", "The target velocity for the drive to try reaching.", null, null);
 
-            public static readonly GUIContent includeLayers = EditorGUIUtility.TrTextContent("Include Layers", "Layers to include when producing collisions");
-            public static readonly GUIContent excludeLayers = EditorGUIUtility.TrTextContent("Exclude Layers", "Layers to exclude when producing collisions");
+            public static readonly GUIContent includeLayers = L10n.TextContent("Include Layers", "Layers to include when producing collisions", null, null);
+            public static readonly GUIContent excludeLayers = L10n.TextContent("Exclude Layers", "Layers to exclude when producing collisions", null, null);
 
-            public static readonly GUIContent driveType = EditorGUIUtility.TrTextContent("Drive Type", "The drive type");
+            public static readonly GUIContent driveType = L10n.TextContent("Drive Type", "The drive type", null, null);
         }
 
         internal enum NonLockedMotion
@@ -167,7 +167,7 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(body.gameObject.activeInHierarchy == false))
                 {
-                    EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Joints"), target);
+                    EditorGUILayout.EditorToolbarForTarget(L10n.TempContent("Edit Joints", null), target);
                 }
             }
 

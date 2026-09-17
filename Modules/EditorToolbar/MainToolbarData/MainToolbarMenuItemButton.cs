@@ -11,6 +11,8 @@ namespace UnityEditor.Toolbars
     {
         static readonly string k_TooltipStart = L10n.Tr("Triggers menu item ", null);
 
+        const string k_MenuItemButtonClassName = "unity-editor-toolbar-menu-item-button";
+
         readonly string m_MenuPath;
 
         public MainToolbarMenuItemButton(string menuPath)
@@ -24,6 +26,7 @@ namespace UnityEditor.Toolbars
         {
             var button = new EditorToolbarButton(content.text, content.image, () => EditorApplication.ExecuteMenuItem(m_MenuPath));
             button.AddToClassList(EditorToolbar.elementClassName);
+            button.AddToClassList(k_MenuItemButtonClassName);
             button.text = content.text;
             button.icon = content.image;
             button.tooltip = content.tooltip;

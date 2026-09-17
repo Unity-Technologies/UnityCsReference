@@ -9,11 +9,11 @@ namespace UnityEditor
 {
     /// <summary>
     /// Model builder specialization for UGUI UI profiler.
-    /// 
+    ///
     /// It builds extra mini-model for UI events and adds extra
     /// track to chart's series. This extra track is only used
     /// for legend item visualization and series activation.
-    /// 
+    ///
     /// UI model is consumed by UI extra controller, which adds
     /// events on top of the normal chart view.
     /// </summary>

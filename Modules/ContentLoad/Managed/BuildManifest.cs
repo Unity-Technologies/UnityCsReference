@@ -11,15 +11,12 @@ using UnityEngine.Scripting;
 namespace Unity.Loading
 {
 
-    // Record the mapping from Loadable's guid to the serialized file + LFID for the root of that Asset.
-    // Scenes are a special case, with only a single scene per serialized file.
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct LoadableMapEntry
+    internal struct RootAssetEntry
     {
-        public string ObjectIdHash;
         public int SerializedFile; // Index into BuildManifest.SerializedFiles
-        public long Identifier; // LocalIdentifierInFileType
+        public long Identifier; // LocalIdentifierInFileType of the root's main object
     }
 
     [Serializable]
@@ -55,10 +52,10 @@ namespace Unity.Loading
     {
         public int Index;           // Index of this entry in BuildManifest.SerializedFiles
 
-        // Stable id, used to reference the file from other SerializedFile in a way that doesn't break when the content changes.
-        // Currently based on the cluster or guid of the source
-        public string ID;
-        public bool IsBuiltIn;      // Whether to use the PersistentManager fallback for Content Files
+        // Stable identity hash, used to reference the file from other SerializedFiles in a way that
+        // doesn't break when the content changes. The built-in entry carries its resource path instead.
+        public string StableId;
+        public bool IsBuiltIn;      // Whether to use the PersistentManager fallback for Content Files. Only written when true.
         // Xxhash3 of the content of the SerializedFile. Used for the filename(+".cf") and for lookup into UDS
         public string ContentHash;
 
@@ -78,8 +75,7 @@ namespace Unity.Loading
     {
         public int Version;
         public BuildInfo BuildInfo;
-        public string[] RootAssets;
-        public LoadableMapEntry[] Loadables;
+        public RootAssetEntry[] RootAssets;
         public LoadableSceneEntry[] LoadableScenes;
         public SerializedFile[] SerializedFiles;
 

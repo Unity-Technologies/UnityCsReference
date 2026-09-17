@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -31,7 +30,9 @@ namespace UnityEditor
             {
                 var operation = ScriptableObject.CreateInstance<ObjectSelectorOperation>();
                 operation.m_Owner = owner;
+#pragma warning disable UAL0018 // m_Selector lives on this ObjectSelectorOperation ScriptableObject, which a code reload recreates along with the picker session it drives; a reload closes the picker, so the operation never outlives the selector it captured
                 operation.m_Selector = ObjectSelector.get;
+#pragma warning restore UAL0018
                 operation.Execute();
             }
 
@@ -196,10 +197,10 @@ namespace UnityEditor
 
         private class Styles
         {
-            public GUIContent pivot = EditorGUIUtility.TrIconContent("AvatarPivot", "Displays avatar's pivot and mass center");
-            public GUIContent ik = EditorGUIUtility.TrTextContent("IK", "Toggles feet IK preview");
-            public GUIContent is2D = EditorGUIUtility.TrIconContent("SceneView2D", "Toggles 2D preview mode");
-            public GUIContent avatarIcon = EditorGUIUtility.TrIconContent("AvatarSelector", "Changes the model to use for previewing.");
+            public GUIContent pivot = L10n.IconContent("AvatarPivot", "Displays avatar's pivot and mass center", null);
+            public GUIContent ik = L10n.TextContent("IK", "Toggles feet IK preview", null, null);
+            public GUIContent is2D = L10n.IconContent("SceneView2D", "Toggles 2D preview mode", null);
+            public GUIContent avatarIcon = L10n.IconContent("AvatarSelector", "Changes the model to use for previewing.", null);
 
             public GUIStyle preButton = "toolbarbutton";
             public GUIStyle preSlider = "preSlider";
@@ -562,9 +563,9 @@ namespace UnityEditor
             if (EditorGUILayout.DropdownButton(styles.avatarIcon, FocusType.Passive, EditorStyles.toolbarDropDownRight))
             {
                 GenericMenu menu = new GenericMenu();
-                menu.AddItem(EditorGUIUtility.TrTextContent("Auto"), false, SetPreviewAvatarOption, PreviewPopupOptions.Auto);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Unity Model"), false, SetPreviewAvatarOption, PreviewPopupOptions.DefaultModel);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Other..."), false, SetPreviewAvatarOption, PreviewPopupOptions.Other);
+                menu.AddItem(L10n.TextContent("Auto", null, null, null), false, SetPreviewAvatarOption, PreviewPopupOptions.Auto);
+                menu.AddItem(L10n.TextContent("Unity Model", null, null, null), false, SetPreviewAvatarOption, PreviewPopupOptions.DefaultModel);
+                menu.AddItem(L10n.TextContent("Other...", null, null, null), false, SetPreviewAvatarOption, PreviewPopupOptions.Other);
                 menu.ShowAsContext();
             }
         }
@@ -877,7 +878,7 @@ namespace UnityEditor
             sliderControlRect.xMin = sliderControlRect.xMax - kSliderWidth + kSpacing;
 
             timeControl.DoTimeControl(timeControlRect);
-            Rect labelRect = new Rect(new Vector2(rect.x, rect.y), EditorStyles.toolbarLabel.CalcSize(EditorGUIUtility.TrTempContent("xxxxxx")));;
+            Rect labelRect = new Rect(new Vector2(rect.x, rect.y), EditorStyles.toolbarLabel.CalcSize(L10n.TempContent("xxxxxx", null)));;
             labelRect.x = rect.xMax - labelRect.width;
             labelRect.yMin = rect.yMin;
             labelRect.yMax = rect.yMax;
@@ -1094,9 +1095,9 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(choserRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
             {
                 GenericMenu menu = new GenericMenu();
-                menu.AddItem(EditorGUIUtility.TrTextContent("Auto"), false, SetPreviewAvatarOption, PreviewPopupOptions.Auto);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Unity Model"), false, SetPreviewAvatarOption, PreviewPopupOptions.DefaultModel);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Other..."), false, SetPreviewAvatarOption, PreviewPopupOptions.Other);
+                menu.AddItem(L10n.TextContent("Auto", null, null, null), false, SetPreviewAvatarOption, PreviewPopupOptions.Auto);
+                menu.AddItem(L10n.TextContent("Unity Model", null, null, null), false, SetPreviewAvatarOption, PreviewPopupOptions.DefaultModel);
+                menu.AddItem(L10n.TextContent("Other...", null, null, null), false, SetPreviewAvatarOption, PreviewPopupOptions.Other);
                 menu.ShowAsContext();
             }
 
@@ -1186,4 +1187,3 @@ namespace UnityEditor
         }
     } // class AvatarPreview
 } // namespace UnityEditor
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

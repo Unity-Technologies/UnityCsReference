@@ -261,7 +261,10 @@ namespace UnityEngine.Rendering
             aabbBuffer = null;
             aabbCount = 0;
             material = null;
+            rayTracingMode = RayTracingMode.Static;
+#pragma warning disable CS0618 // Type or member is obsolete
             dynamicGeometry = false;
+#pragma warning restore CS0618
             opaqueMaterial = true;
             aabbOffset = 0;
             materialProperties = null;
@@ -271,12 +274,32 @@ namespace UnityEngine.Rendering
             accelerationStructureBuildFlagsOverride = false;
         }
 
+        [Obsolete("RayTracingAABBsInstanceConfig(GraphicsBuffer, int, bool, Material) is deprecated and will be removed in a future release. Use RayTracingAABBsInstanceConfig(GraphicsBuffer, int, RayTracingMode, Material) instead.", false)]
         public RayTracingAABBsInstanceConfig(GraphicsBuffer aabbBuffer, int aabbCount, bool dynamicGeometry, Material material)
         {
             this.aabbBuffer = aabbBuffer;
             this.aabbCount = aabbCount;
             this.material = material;
+            rayTracingMode = RayTracingMode.Static;
             this.dynamicGeometry = dynamicGeometry;
+            opaqueMaterial = true;
+            aabbOffset = 0;
+            materialProperties = null;
+            layer = 0;
+            mask = 0xFF;
+            accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+            accelerationStructureBuildFlagsOverride = false;
+        }
+
+        public RayTracingAABBsInstanceConfig(GraphicsBuffer aabbBuffer, int aabbCount, RayTracingMode rayTracingMode, Material material)
+        {
+            this.aabbBuffer = aabbBuffer;
+            this.aabbCount = aabbCount;
+            this.material = material;
+            this.rayTracingMode = rayTracingMode;
+#pragma warning disable CS0618 // Type or member is obsolete
+            dynamicGeometry = false;
+#pragma warning restore CS0618
             opaqueMaterial = true;
             aabbOffset = 0;
             materialProperties = null;
@@ -288,7 +311,8 @@ namespace UnityEngine.Rendering
         public GraphicsBuffer aabbBuffer { get; set; }
         public int aabbCount { get; set; }
         public uint aabbOffset { get; set; }
-        public bool dynamicGeometry { get; set; }
+        public RayTracingMode rayTracingMode { get; set; }
+        [Obsolete("RayTracingAABBsInstanceConfig.dynamicGeometry is deprecated and will be removed in a future release. Use RayTracingAABBsInstanceConfig.rayTracingMode instead.", false)] public bool dynamicGeometry { get; set; }
         public bool opaqueMaterial { get; set; }
         public Material material { get; set; }
         public MaterialPropertyBlock materialProperties { get; set; }
@@ -597,8 +621,13 @@ namespace UnityEngine.Rendering
             if (config.aabbBuffer.target != GraphicsBuffer.Target.Structured)
                 throw new ArgumentException("config.aabbBuffer.target must be GraphicsBuffer.Target.Structured.");
 
-            if (config.aabbBuffer.stride != 6 * sizeof(float))
-                throw new ArgumentException("config.aabbBuffer.stride must be 6 floats.");
+            // A larger stride is allowed so that an AABB can be part of a bigger struct. The AABB must be at the beginning of the struct.
+            if (config.aabbBuffer.stride < 6 * sizeof(float))
+                throw new ArgumentException("config.aabbBuffer.stride must be at least 6 floats.");
+
+            // Ray tracing backends (DXR and VK) require the stride to be a multiple of 8 bytes. Metal requires 4 bytes multiples.
+            if (config.aabbBuffer.stride % 8 != 0)
+                throw new ArgumentException("config.aabbBuffer.stride must be a multiple of 8 bytes.");
 
             if (config.aabbCount == 0)
                 throw new ArgumentException("config.aabbCount cannot be 0.");

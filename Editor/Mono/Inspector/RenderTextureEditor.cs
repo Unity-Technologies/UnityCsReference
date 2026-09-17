@@ -18,29 +18,29 @@ namespace UnityEditor
 
         private class Styles
         {
-            public readonly GUIContent size = EditorGUIUtility.TrTextContent("Size", "Size of the render texture in pixels.");
+            public readonly GUIContent size = L10n.TextContent("Size", "Size of the render texture in pixels.", null, null);
             public readonly GUIContent cross = EditorGUIUtility.TextContent("x");
-            public readonly GUIContent antiAliasing = EditorGUIUtility.TrTextContent("Anti-aliasing", "Number of anti-aliasing samples.");
-            public readonly GUIContent colorFormat = EditorGUIUtility.TrTextContent("Color Format", "Format of the color buffer.");
-            public readonly GUIContent depthStencilFormat = EditorGUIUtility.TrTextContent("Depth Stencil Format", "Format of the depth stencil buffer.");
-            public readonly GUIContent enableCompatibleFormat = EditorGUIUtility.TrTextContent("Enable Compatible Format", "Lets the color and depth stencil formats be changed to compatible and supported formats for the target platform automatically, if the target platform doesn't support the input format.");
-            public readonly GUIContent dimension = EditorGUIUtility.TrTextContent("Dimension", "Is the texture 2D, Cube or 3D?");
-            public readonly GUIContent enableMipmaps = EditorGUIUtility.TrTextContent("Mipmap", "This render texture will have a mipmap.");
-            public readonly GUIContent autoGeneratesMipmaps = EditorGUIUtility.TrTextContent("Auto-generate", "This render texture automatically generate its mipmap.");
-            public readonly GUIContent useDynamicScale = EditorGUIUtility.TrTextContent("Dynamic Scaling", "Allow the texture to be automatically resized by ScalableBufferManager, to support dynamic resolution.");
-            public readonly GUIContent enableRandomWrite = EditorGUIUtility.TrTextContent("Random Write", "Enable/disable random access write into the color buffer of this render texture.");
-            public readonly GUIContent shadowSamplingMode = EditorGUIUtility.TrTextContent("Shadow Sampling Mode", "Enable/disable shadow depth-compare sampling and percentage closer filtering.");
+            public readonly GUIContent antiAliasing = L10n.TextContent("Anti-aliasing", "Number of anti-aliasing samples.", null, null);
+            public readonly GUIContent colorFormat = L10n.TextContent("Color Format", "Format of the color buffer.", null, null);
+            public readonly GUIContent depthStencilFormat = L10n.TextContent("Depth Stencil Format", "Format of the depth stencil buffer.", null, null);
+            public readonly GUIContent enableCompatibleFormat = L10n.TextContent("Enable Compatible Format", "Lets the color and depth stencil formats be changed to compatible and supported formats for the target platform automatically, if the target platform doesn't support the input format.", null, null);
+            public readonly GUIContent dimension = L10n.TextContent("Dimension", "Is the texture 2D, Cube or 3D?", null, null);
+            public readonly GUIContent enableMipmaps = L10n.TextContent("Mipmap", "This render texture will have a mipmap.", null, null);
+            public readonly GUIContent autoGeneratesMipmaps = L10n.TextContent("Auto-generate", "This render texture automatically generate its mipmap.", null, null);
+            public readonly GUIContent useDynamicScale = L10n.TextContent("Dynamic Scaling", "Allow the texture to be automatically resized by ScalableBufferManager, to support dynamic resolution.", null, null);
+            public readonly GUIContent enableRandomWrite = L10n.TextContent("Random Write", "Enable/disable random access write into the color buffer of this render texture.", null, null);
+            public readonly GUIContent shadowSamplingMode = L10n.TextContent("Shadow Sampling Mode", "Enable/disable shadow depth-compare sampling and percentage closer filtering.", null, null);
 
             public readonly GUIContent[] renderTextureAntiAliasing =
             {
-                EditorGUIUtility.TrTextContent("None"),
-                EditorGUIUtility.TrTextContent("2 samples"),
-                EditorGUIUtility.TrTextContent("4 samples"),
-                EditorGUIUtility.TrTextContent("8 samples")
+                L10n.TextContent("None", null, null, null),
+                L10n.TextContent("2 samples", null, null, null),
+                L10n.TextContent("4 samples", null, null, null),
+                L10n.TextContent("8 samples", null, null, null)
             };
             public readonly int[] renderTextureAntiAliasingValues = { 1, 2, 4, 8 };
 
-            public readonly GUIContent[] dimensionStrings = { EditorGUIUtility.TextContent("2D"), EditorGUIUtility.TextContent("2D Array"), EditorGUIUtility.TrTextContent("Cube"), EditorGUIUtility.TrTextContent("3D") };
+            public readonly GUIContent[] dimensionStrings = { EditorGUIUtility.TextContent("2D"), EditorGUIUtility.TextContent("2D Array"), L10n.TextContent("Cube", null, null, null), L10n.TextContent("3D", null, null, null) };
             public readonly int[] dimensionValues = { (int)UnityEngine.Rendering.TextureDimension.Tex2D, (int)UnityEngine.Rendering.TextureDimension.Tex2DArray, (int)UnityEngine.Rendering.TextureDimension.Cube, (int)UnityEngine.Rendering.TextureDimension.Tex3D };
         }
 

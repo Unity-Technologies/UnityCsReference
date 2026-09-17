@@ -66,10 +66,6 @@ namespace UnityEditor.TextCore.Text
         bool m_MissingCodePointsFoldout;
         Vector2 m_MissingCodePointsScroll;
         long m_SubsetSizePreview;
-        // Disabled until the conversion flow ships with its legal notice.
-        /*
-        // Loads a font face, so computed once per inspector instance rather than per repaint.
-        bool? m_StaleGlyphIndices;
 
         void DrawStaticMigrationSection()
         {
@@ -78,43 +74,15 @@ namespace UnityEditor.TextCore.Text
 
             EditorGUILayout.HelpBox(FontAssetStaticMigrator.StaticNotSupportedMessage, MessageType.Warning, true);
 
-            bool canMigrate = FontAssetStaticMigrator.CanMigrate(m_fontAsset, out string reason);
-            bool outOfSync = canMigrate && (m_StaleGlyphIndices ??= FontAssetStaticMigrator.HasStaleGlyphIndices(m_fontAsset));
-
-            if (outOfSync)
-                EditorGUILayout.HelpBox(FontAssetStaticMigrator.OutOfSyncMessage, MessageType.Warning);
-            else if (!canMigrate)
-                EditorGUILayout.HelpBox(reason, MessageType.Info);
-
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.FlexibleSpace();
-                using (new EditorGUI.DisabledScope(!canMigrate || outOfSync))
-                {
-                    if (GUILayout.Button("Convert to Dynamic", GUILayout.Width(160)))
-                        ConvertStaticToDynamic();
-                }
+                if (GUILayout.Button("Open Font Asset Migration Window", GUILayout.Width(220)))
+                    FontAssetMigrationWindow.ShowWindow(m_fontAsset);
             }
 
             EditorGUILayout.Space();
         }
-
-        void ConvertStaticToDynamic()
-        {
-            if (FontAssetStaticMigrator.Convert(m_fontAsset, out string error))
-            {
-                serializedObject.Update();
-                m_SubsetSectionInitialized = false;
-                UI_PanelState.fontSubsettingPanel = true;
-            }
-            else
-            {
-                Debug.LogError($"Font asset conversion failed: {error}", m_fontAsset);
-            }
-
-            GUIUtility.ExitGUI();
-        }
-        */
 
         void DrawFontSubsettingSection()
         {
@@ -258,7 +226,7 @@ namespace UnityEditor.TextCore.Text
         // Returns null when the baked character set exceeds the Characters field limit.
         internal static string CharactersFromBakedAtlas(FontAsset fontAsset)
         {
-            var ranges = UnicodeRanges.FromCodePoints(FontAssetStaticMigrator.GetBakedCodePoints(fontAsset));
+            var ranges = UnicodeRanges.FromCodePoints(FontAssetMigrationProvider.Default.GetBakedCodePoints(fontAsset));
             return UnicodeRanges.ToCharacters(ranges, k_SubsetInputMaxLength);
         }
 

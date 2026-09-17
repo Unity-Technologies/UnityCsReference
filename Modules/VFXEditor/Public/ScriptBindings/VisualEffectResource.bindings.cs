@@ -572,28 +572,6 @@ namespace UnityEditor.VFX
         internal static Func<GUID[], string[], bool, GUID[]> onFilterImportDependencies;
 
         [UsedByNativeCode]
-        internal static bool EarlyGetAuthoringCompileData(AssetImportContext context, GUID sourceGUID, IntPtr outDesc)
-        {
-            if (onEarlyGetAuthoringCompileData != null)
-            {
-                VisualEffectAssetDesc desc;
-                if (onEarlyGetAuthoringCompileData(sourceGUID, context, out desc))
-                {
-                    var descInternal = VisualEffectAssetUtility.ConvertDescToInternal(desc);
-                    VisualEffectAssetUtility.CopyVisualEffectAssetDesc(outDesc, descInternal);
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        // Use actual delegate declaration instead of Func to be able to have out parameter
-        internal delegate bool EarlyGetAuthoringCompileDataFunc(GUID id, AssetImportContext ctx, out VisualEffectAssetDesc outDesc);
-        [AutoStaticsCleanupOnCodeReload]
-        internal static EarlyGetAuthoringCompileDataFunc onEarlyGetAuthoringCompileData;
-
-        [UsedByNativeCode]
         internal void CompileResource(AssetImportContext context, IntPtr outDesc)
         {
             if (onCompileResource != null)

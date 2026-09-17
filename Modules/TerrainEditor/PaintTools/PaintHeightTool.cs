@@ -26,7 +26,7 @@ namespace UnityEditor.TerrainTools
 
         class Styles
         {
-            public readonly GUIContent description = EditorGUIUtility.TrTextContent("Left click to raise.\n\nHold shift and left click to lower.");
+            public readonly GUIContent description = L10n.TextContent("Left click to raise.\n\nHold shift and left click to lower.", null, null, null);
         }
 
         [NoAutoStaticsCleanup] // lazy GUIContent/GUIStyle styles holder; editor infra, no user refs

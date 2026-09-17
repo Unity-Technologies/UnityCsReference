@@ -29,7 +29,7 @@ namespace Unity.UIToolkit.Editor
             AnimationMode.onAnimationRecordingStop += OnRecordingStateChanged;
             m_LastInAnimationMode = AnimationMode.InAnimationMode();
             EditorApplication.update += OnEditorUpdate;
-            StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
+            UIStageNavigation.StageSettled += OnStageChanged;
         }
 
         protected virtual void OnDisable()
@@ -37,7 +37,7 @@ namespace Unity.UIToolkit.Editor
             AnimationMode.onAnimationRecordingStart -= OnRecordingStateChanged;
             AnimationMode.onAnimationRecordingStop -= OnRecordingStateChanged;
             EditorApplication.update -= OnEditorUpdate;
-            StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
+            UIStageNavigation.StageSettled -= OnStageChanged;
         }
 
         protected virtual void OnDestroy() => Inspector?.Dispose();
@@ -55,17 +55,13 @@ namespace Unity.UIToolkit.Editor
             ApplyState();
         }
 
-        // Recording is only armed when the panel-renderer animation feature is enabled.
-        protected StyleInspectorAnimationRecordingContext CreateRecordingContextIfEnabled()
-            => UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? CreateRecordingContext() : null;
-
         // Pushes the current recording context onto the inspector. Subclasses override to also apply
         // target-specific state (edit flags, header visibility, ...).
         protected virtual void ApplyState()
         {
             if (Inspector == null)
                 return;
-            Inspector.RefreshRecordingState(CreateRecordingContextIfEnabled());
+            Inspector.RefreshRecordingState(CreateRecordingContext());
         }
 
         public override bool UseDefaultMargins() => false; // no artificial padding

@@ -29,6 +29,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        // Neutral, translucent track drawn behind an all-zero bar.
+        static readonly Color k_EmptyBarColor = new Color(0.5f, 0.5f, 0.5f, 0.2f);
+
         const int k_NumberLabelWidth = 60;
         const int k_RowSize = 22;
         const int k_LabelWidth = 80;
@@ -70,6 +73,13 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
                     x += barWidth;
                 }
+            }
+
+            // Nothing to draw: still show the empty bar instead of a blank gap.
+            if (totalValue <= 0 && draw2D.DrawStart(rect))
+            {
+                draw2D.DrawFilledBox(0, 1, rect.width - 2, rect.height - 1, k_EmptyBarColor);
+                draw2D.DrawEnd();
             }
 
             if (oneColumnLayout)

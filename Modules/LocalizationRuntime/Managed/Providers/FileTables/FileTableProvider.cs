@@ -221,7 +221,7 @@ public abstract class FileTableProvider : IAsyncAssetProvider, ILocaleDiscovery
     /// <param name="guid">The guid of the collection to remove.</param>
     /// <returns><see langword="true"/> if a collection was removed; otherwise, <see langword="false"/>.</returns>
     /// <example>
-    /// <para>Stop serving a collection.</para>
+    /// Stop serving a collection.
     /// <code source="../../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/FileTableProviderRemoveCollectionExample.cs"/>
     /// </example>
     /// <seealso cref="AddCollection"/>
@@ -242,7 +242,7 @@ public abstract class FileTableProvider : IAsyncAssetProvider, ILocaleDiscovery
     /// reassigned collection does not linger. Leaves the baked tables and the configured sub path alone.
     /// </remarks>
     /// <example>
-    /// <para>Drop every record before rebuilding them.</para>
+    /// Drop every record before rebuilding them.
     /// <code source="../../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/FileTableProviderClearCollectionsExample.cs"/>
     /// </example>
     /// <seealso cref="AddCollection"/>

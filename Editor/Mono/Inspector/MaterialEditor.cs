@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Materials not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,13 +29,13 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent reflectionProbePickerIcon = EditorGUIUtility.TrIconContent("ReflectionProbeSelector");
-            public static readonly GUIContent lightmapEmissiveLabelRealtimeGISupport = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime uses Realtime Global Illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
-            public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime won't light up other objects since Realtime Global Illumination is not supported.");
+            public static readonly GUIContent reflectionProbePickerIcon = L10n.IconContent("ReflectionProbeSelector", null, null);
+            public static readonly GUIContent lightmapEmissiveLabelRealtimeGISupport = L10n.TextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime uses Realtime Global Illumination if enabled in the scene. Otherwise the emission won't light up other objects.", null, null);
+            public static readonly GUIContent lightmapEmissiveLabel = L10n.TextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime won't light up other objects since Realtime Global Illumination is not supported.", null, null);
 
-            public static readonly GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
+            public static readonly GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), L10n.TextContent("Baked", null, null, null), L10n.TextContent("None", null, null, null) };
             public static readonly int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeIndirectEmission, (int)MaterialGlobalIlluminationFlags.BakedEmission, (int)MaterialGlobalIlluminationFlags.None };
-            public static readonly string propBlockInfo = EditorGUIUtility.TrTextContent("MaterialPropertyBlock is used to modify these values").text;
+            public static readonly string propBlockInfo = L10n.TextContent("MaterialPropertyBlock is used to modify these values", null, null, null).text;
 
             public static readonly string builtInDeprecated = L10n.Tr("Built-in (Deprecated)/", null);
             public static readonly string notSupported = L10n.Tr("\"Not supported/\"", null);
@@ -47,13 +46,13 @@ namespace UnityEditor
 
             public const int kNewShaderQueueValue = -1;
             public const int kCustomQueueIndex = 4;
-            public static readonly GUIContent queueLabel = EditorGUIUtility.TrTextContent("Render Queue");
+            public static readonly GUIContent queueLabel = L10n.TextContent("Render Queue", null, null, null);
             public static readonly GUIContent[] queueNames =
             {
-                EditorGUIUtility.TrTextContent("From Shader"),
-                EditorGUIUtility.TrTextContent("Geometry", "Queue 2000"),
-                EditorGUIUtility.TrTextContent("AlphaTest", "Queue 2450"),
-                EditorGUIUtility.TrTextContent("Transparent", "Queue 3000"),
+                L10n.TextContent("From Shader", null, null, null),
+                L10n.TextContent("Geometry", "Queue 2000", null, null),
+                L10n.TextContent("AlphaTest", "Queue 2450", null, null),
+                L10n.TextContent("Transparent", "Queue 3000", null, null),
             };
             public static readonly int[] queueValues =
             {
@@ -79,14 +78,14 @@ namespace UnityEditor
                 0, // This value will be overriden during runtime
             };
 
-            public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TrTextContent("Enable GPU Instancing");
-            public static readonly GUIContent doubleSidedGILabel = EditorGUIUtility.TrTextContent("Double Sided Global Illumination", "When enabled, the lightmapper accounts for both sides of the geometry when calculating Global Illumination. Backfaces are not rendered or added to lightmaps, but get treated as valid when seen from other objects. When using the Progressive Lightmapper backfaces bounce light using the same emission and albedo as frontfaces.");
-            public static readonly GUIContent emissionLabel = EditorGUIUtility.TrTextContent("Emission");
+            public static readonly GUIContent enableInstancingLabel = L10n.TextContent("Enable GPU Instancing", null, null, null);
+            public static readonly GUIContent doubleSidedGILabel = L10n.TextContent("Double Sided Global Illumination", "When enabled, the lightmapper accounts for both sides of the geometry when calculating Global Illumination. Backfaces are not rendered or added to lightmaps, but get treated as valid when seen from other objects. When using the Progressive Lightmapper backfaces bounce light using the same emission and albedo as frontfaces.", null, null);
+            public static readonly GUIContent emissionLabel = L10n.TextContent("Emission", null, null, null);
 
             public const string undoAssignMaterial = "Assign Material";
             public const string undoAssignSkyboxMaterial = "Assign Skybox Material";
 
-            public static readonly GUIContent parentContent = EditorGUIUtility.TrTextContent("Parent", "Specify the parent of this material.");
+            public static readonly GUIContent parentContent = L10n.TextContent("Parent", "Specify the parent of this material.", null, null);
             public static readonly GUIContent hierarchyIcon = EditorGUIUtility.IconContent("UnityEditor.SceneHierarchyWindow", "|Open Material Hierarchy Popup."); // right of | means tooltip
             public static readonly GUIContent convertIcon = EditorGUIUtility.IconContent("d_RotateTool", "|This material is in a conversion process."); // right of | means tooltip
 
@@ -155,8 +154,8 @@ namespace UnityEditor
         private int                  m_SelectedMesh;
         private int                         m_TimeUpdate;
         private int                         m_LightMode = 1;
-        private static readonly GUIContent  s_TilingText = EditorGUIUtility.TrTextContent("Tiling");
-        private static readonly GUIContent  s_OffsetText = EditorGUIUtility.TrTextContent("Offset");
+        private static readonly GUIContent  s_TilingText = L10n.TextContent("Tiling", null, null, null);
+        private static readonly GUIContent  s_OffsetText = L10n.TextContent("Offset", null, null, null);
         bool m_PreviewUpdateNeeded = false;
 
         const string kDefaultMaterialPreviewMesh = "DefaultMaterialPreviewMesh";
@@ -920,18 +919,9 @@ namespace UnityEditor
 
                 private static class Styles
                 {
-                    internal static readonly GUIStyle lineStyleFaint = new GUIStyle("DD ItemStyle");
-                    internal static readonly GUIStyle checkMark = "DD ItemCheckmark";
+                    internal static GUIStyle lineStyleFaint => EditorStyles.advancedDropdownItemFaint;
+                    internal static GUIStyle checkMark => EditorStyles.advancedDropdownCheckmark;
                     public static readonly GUIContent checkMarkContent = new GUIContent("✔");
-
-                    static Styles()
-                    {
-                        float val = EditorGUIUtility.isProSkin ? 0.5f : 0.25f;
-                        lineStyleFaint.active.textColor = new Color(val, val, val, 1f);
-                        lineStyleFaint.focused.textColor = new Color(val, val, val, 1f);
-                        lineStyleFaint.hover.textColor = new Color(val, val, val, 1f);
-                        lineStyleFaint.normal.textColor = new Color(val, val, val, 1f);
-                    }
                 }
 
                 internal override void DrawItem(AdvancedDropdownItem item, string name, Texture2D icon, bool enabled, bool drawArrow, bool selected, bool hasSearch)
@@ -1721,8 +1711,8 @@ namespace UnityEditor
             if (InternalEditorUtility.BumpMapTextureNeedsFixing(prop))
             {
                 if (HelpBoxWithButton(
-                    EditorGUIUtility.TrTextContent("This texture is not marked as a normal map"),
-                    EditorGUIUtility.TrTextContent("Fix Now")))
+                    L10n.TextContent("This texture is not marked as a normal map", null, null, null),
+                    L10n.TextContent("Fix Now", null, null, null)))
                 {
                     InternalEditorUtility.FixNormalmapTexture(prop);
                 }
@@ -2713,17 +2703,17 @@ namespace UnityEditor
                     }
                 }
 
-                s_MeshIcons[0] = EditorGUIUtility.TrIconContent("PreMatSphere");
-                s_MeshIcons[1] = EditorGUIUtility.TrIconContent("PreMatCube");
-                s_MeshIcons[2] = EditorGUIUtility.TrIconContent("PreMatCylinder");
-                s_MeshIcons[3] = EditorGUIUtility.TrIconContent("PreMatTorus");
-                s_MeshIcons[4] = EditorGUIUtility.TrIconContent("PreMatQuad");
+                s_MeshIcons[0] = L10n.IconContent("PreMatSphere", null, null);
+                s_MeshIcons[1] = L10n.IconContent("PreMatCube", null, null);
+                s_MeshIcons[2] = L10n.IconContent("PreMatCylinder", null, null);
+                s_MeshIcons[3] = L10n.IconContent("PreMatTorus", null, null);
+                s_MeshIcons[4] = L10n.IconContent("PreMatQuad", null, null);
 
-                s_LightIcons[0] = EditorGUIUtility.TrIconContent("PreMatLight0");
-                s_LightIcons[1] = EditorGUIUtility.TrIconContent("PreMatLight1");
+                s_LightIcons[0] = L10n.IconContent("PreMatLight0", null, null);
+                s_LightIcons[1] = L10n.IconContent("PreMatLight1", null, null);
 
-                s_TimeIcons[0] = EditorGUIUtility.TrIconContent("PlayButton");
-                s_TimeIcons[1] = EditorGUIUtility.TrIconContent("PauseButton");
+                s_TimeIcons[0] = L10n.IconContent("PlayButton", null, null);
+                s_TimeIcons[1] = L10n.IconContent("PauseButton", null, null);
 
                 Mesh quadMesh = Resources.GetBuiltinResource(typeof(Mesh), "Quad.fbx") as Mesh;
                 s_Meshes[4] = quadMesh;
@@ -3163,9 +3153,9 @@ namespace UnityEditor
                 }
 
                 if (!hasRevert)
-                    #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // restores the pre-drag materials onto the renderer at the end of a single drag gesture, which cannot span a code reload; the renderer then owns the materials and ClearDragMaterialRendering() drops this copy immediately after
                     s_previousDraggedUponRenderer.sharedMaterials = s_previousMaterialValue;
-                    #pragma warning restore UAL0018
+#pragma warning restore UAL0018
             }
 
             if (s_previousDraggedUponTerrain != null)
@@ -3180,9 +3170,9 @@ namespace UnityEditor
                 }
 
                 if (!hasRevert)
-                    #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // restores the pre-drag material onto the terrain at the end of a single drag gesture, which cannot span a code reload; the terrain then owns the material and ClearDragMaterialRendering() drops this copy immediately after
                     s_previousDraggedUponTerrain.materialTemplate = s_previousTerrainMaterialTemplate;
-                    #pragma warning restore UAL0018
+#pragma warning restore UAL0018
             }
 
             MaterialEditorForCanvasRendererUtility.RevertCanvasRendererDragChanges();
@@ -3521,4 +3511,3 @@ namespace UnityEditor
         }
     }
 } // namespace UnityEditor
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

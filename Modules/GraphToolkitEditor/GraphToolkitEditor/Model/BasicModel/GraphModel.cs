@@ -3730,7 +3730,7 @@ namespace Unity.GraphToolkit.Editor
         void RecurseDefineNode(AbstractNodeModel nodeModel)
         {
             nodeModel?.SyncNodePreview();
-            (nodeModel as NodeModel)?.DefineNode();
+            (nodeModel as PortNodeModel)?.DefineNode();
             if (nodeModel is IGraphElementContainer container)
             {
                 #pragma warning disable UAC2001 // Avoid Linq
@@ -3839,7 +3839,7 @@ namespace Unity.GraphToolkit.Editor
 
             // The goal of this is to create the missing ports when subgraph variables get deleted.
             #pragma warning disable UAC2001 // Avoid Linq
-            foreach (var nodeModel in NodeModels.OfType<NodeModel>())
+            foreach (var nodeModel in NodeModels.OfType<PortNodeModel>())
 #pragma warning restore UAC2001
                 nodeModel.DefineNode();
 
@@ -5124,7 +5124,7 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <param name="dataType">The data type.</param>
         /// <returns>The icon and color associated with the provided data type. Null if not available.</returns>
-        public virtual (Texture2D icon, Color color)? GetDataTypeStyle(Type dataType)
+        public virtual (Texture2D icon, Color color, bool suppressIcon)? GetDataTypeStyle(Type dataType)
         {
             return BaseDataTypeStyleMapper.GetDataTypeStyle(dataType, GetType());
         }

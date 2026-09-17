@@ -10,7 +10,7 @@ namespace UnityEngine.AdaptivePerformance
     internal class AdaptivePerformanceManager
         : MonoBehaviour
         , IAdaptivePerformance
-        , IThermalStatus, IPerformanceStatus, IDevicePerformanceControl, IDevelopmentSettings, IPerformanceModeStatus, IOperationModeStatus
+        , IThermalStatus, IPerformanceStatus, IDevicePerformanceControl, IDevelopmentSettings, IPerformanceModeStatus, IOperationModeStatus, IEnergyUsageControl
     {
         public event ThermalEventHandler ThermalEvent;
         public event PerformanceBottleneckChangeHandler PerformanceBottleneckChangeEvent;
@@ -63,6 +63,41 @@ namespace UnityEngine.AdaptivePerformance
         private PerformanceMode m_PerformanceMode = PerformanceMode.Unknown;
 
         public PerformanceMode PerformanceMode { get { return m_PerformanceMode; } }
+
+        private bool m_EnergyUsageTrackingActive = false;
+
+        public bool EnergyUsageTrackingSupported
+        {
+            get { return SupportedFeature(Provider.Feature.EnergyUsage) && m_Subsystem.EnergyUsageControl != null; }
+        }
+
+        public bool EnergyUsageTrackingActive { get { return m_EnergyUsageTrackingActive; } }
+
+        public bool StartEnergyUsageTracking()
+        {
+            // Tracking is only operational while Adaptive Performance is active, because Update()
+            // (which fans readings out to PerformanceMetrics) early-returns otherwise. Guard here so a
+            // true result means tracking is actually running rather than a started-but-unobserved monitor.
+            if (!Active)
+                return false;
+
+            var control = m_Subsystem?.EnergyUsageControl;
+            if (control == null)
+                return false;
+
+            m_EnergyUsageTrackingActive = control.StartEnergyUsageTracking();
+            return m_EnergyUsageTrackingActive;
+        }
+
+        public void StopEnergyUsageTracking()
+        {
+            if (!m_EnergyUsageTrackingActive)
+                return;
+
+            m_Subsystem?.EnergyUsageControl?.StopEnergyUsageTracking();
+            m_EnergyUsageTrackingActive = false;
+            m_PerformanceMetrics.EnergyUsage = default;
+        }
 
         public bool Logging
         {
@@ -323,6 +358,22 @@ namespace UnityEngine.AdaptivePerformance
                      .Append(" Little Cores: ")
                      .Append(m_PerformanceMetrics.ClusterInfo.LittleCore)
                      .AppendLine();
+
+                 if(m_EnergyUsageTrackingActive) {
+                    APLog.s_LogBuilder.Append("Energy Usage = CPU: ")
+                     .Append(m_PerformanceMetrics.EnergyUsage.Get(EnergyUsageSubsystem.Cpu).Energy)
+                     .Append(" GPU: ")
+                     .Append(m_PerformanceMetrics.EnergyUsage.Get(EnergyUsageSubsystem.Gpu).Energy)
+                     .Append(" TPU: ")
+                     .Append(m_PerformanceMetrics.EnergyUsage.Get(EnergyUsageSubsystem.Tpu).Energy)
+                     .Append(" Display: ")
+                     .Append(m_PerformanceMetrics.EnergyUsage.Get(EnergyUsageSubsystem.Display).Energy)
+                     .Append(" Memory: ")
+                     .Append(m_PerformanceMetrics.EnergyUsage.Get(EnergyUsageSubsystem.Memory).Energy)
+                     .AppendLine();
+                 } else {
+                    APLog.s_LogBuilder.Append("Energy Usage = Not Active").AppendLine();
+                 }
 
                  if (m_FrameTiming.AverageFrameTime > 0.0f)
                  {
@@ -630,6 +681,14 @@ namespace UnityEngine.AdaptivePerformance
             if (HasFeature(updateResult.ChangeFlags, Provider.Feature.GpuUtilization))
                 m_PerformanceMetrics.GpuUtilization = updateResult.GpuUtilization;
 
+            if (HasFeature(updateResult.ChangeFlags, Provider.Feature.EnergyUsage))
+                m_PerformanceMetrics.EnergyUsage = updateResult.EnergyUsage;
+
+            // The provider can revoke energy-usage support at runtime (for example, once it discovers the device has no usable power monitors).
+            // Stopping energy-usage tracking in this case.
+            if (m_EnergyUsageTrackingActive && !EnergyUsageTrackingSupported)
+                StopEnergyUsageTracking();
+
             // PerformanceLevelChangeEvent and BoostModeChangeEvent triggers before those since it's useful for the user to know when the auto cpu/gpu level controller already made adjustments
             if (triggerThermalEventEvent)
                 ThermalEvent.Invoke(m_ThermalMetrics);
@@ -823,6 +882,11 @@ namespace UnityEngine.AdaptivePerformance
         {
             if (!Initialized)
                 return;
+
+            // Stop energy-usage tracking and clear its state before the loader tears the subsystem
+            // down, so the provider's monitor is shut down and a later initialization doesn't report
+            // stale tracking as active.
+            StopEnergyUsageTracking();
 
             AdaptivePerformanceGeneralSettings.Instance.DeInitAdaptivePerformance();
 

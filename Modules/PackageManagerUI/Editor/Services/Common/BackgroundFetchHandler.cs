@@ -220,8 +220,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             foreach (var productId in m_FetchStatusTracker.trackedProductIds)
                 // We don't want to create a InternetReachability specific error code because that API is unreliable.
-                // However, we check these 2 errors only because they are the only ones possible in an offline case.
-                if (m_FetchStatusTracker.GetProductInfoFetchStatus(productId).error?.errorCode is UIErrorCode.AssetStoreAuthorizationError or UIErrorCode.AssetStoreRestApiError)
+                // However, we check RestAPI error only because it is the only one possible in an offline case.
+                if (m_FetchStatusTracker.GetProductInfoFetchStatus(productId).error?.errorCode is UIErrorCode.AssetStoreRestApiError)
                     AddToFetchProductInfoQueue(productId);
         }
 

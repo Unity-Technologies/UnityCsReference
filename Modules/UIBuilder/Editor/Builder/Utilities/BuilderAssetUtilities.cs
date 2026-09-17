@@ -13,6 +13,7 @@ using Unity.UIToolkit.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.StyleSheets;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -32,9 +33,20 @@ namespace Unity.UI.Builder
 
         internal static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
 
+        // The UXML previewed while editing a stylesheet: the project setting when it points at a usable
+        // document, otherwise the built-in preview of common controls.
+        public static VisualTreeAsset FindStyleSheetEditingPreviewDocument()
+        {
+            var previewDocument = UIToolkitProjectSettings.styleSheetEditingPreviewDocument;
+            if (previewDocument != null && previewDocument.visualTree != null)
+                return previewDocument;
+
+            return BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.StyleSheetEditingPreviewUxmlPath);
+        }
+
         static string GetFullPath(string path)
         {
-            return Path.GetFullPath(path).Replace("\\", "/");
+            return Path.GetFullPath(path).ConvertSeparatorsToUnity();
         }
 
         public static bool IsPathInProject(string path, bool allowImmutable = true)
@@ -45,7 +57,7 @@ namespace Unity.UI.Builder
         public static string GetPathRelativeToProject(string path, bool allowImmutable = true)
         {
             var fullPath = Path.GetFullPath(path);
-            var fullPathWithUnitySeparators = fullPath.Replace("\\", "/");
+            var fullPathWithUnitySeparators = fullPath.ConvertSeparatorsToUnity();
 
             if (fullPathWithUnitySeparators.StartsWith(Application.dataPath))
             {
@@ -735,6 +747,10 @@ namespace Unity.UI.Builder
         /// <returns></returns>
         public static SynchronizePathResult SynchronizePath(BuilderUxmlAttributesEditingContext context, string propertyPath, bool changeUxmlAssets)
         {
+            // The context object survives a clear; these do not.
+            if (context?.element == null || context.rootSerializedObject == null)
+                return default;
+
             s_DocumentUndoRecorded = false;
 
             Action<VisualTreeAsset, VisualElement> handleTemplateOverride = null;

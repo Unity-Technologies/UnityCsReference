@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -24,16 +23,16 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public readonly GUIContent terrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
-            public readonly GUIContent btnEditTerrainLayers = EditorGUIUtility.TrTextContentWithIcon("Edit Terrain Layers...", "Allows adding / replacing or removing terrain layers", EditorGUIUtility.IconContent("SettingsIcon").image);
-            public readonly GUIContent errNoLayersFound = EditorGUIUtility.TrTextContent("No terrain layers founds. You can create a new terrain layer using the Asset/Create/Terrain Layer menu command.");
+            public readonly GUIContent terrainLayers = L10n.TextContent("Terrain Layers", null, null, null);
+            public readonly GUIContent btnEditTerrainLayers = L10n.TextContentWithIcon("Edit Terrain Layers...", "Allows adding / replacing or removing terrain layers", EditorGUIUtility.IconContent("SettingsIcon").image, null);
+            public readonly GUIContent errNoLayersFound = L10n.TextContent("No terrain layers founds. You can create a new terrain layer using the Asset/Create/Terrain Layer menu command.", null, null, null);
             public readonly GUIContent textureAssign = EditorGUIUtility.TrTextContent("Assign a tiling texture", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public readonly GUIContent textureMustHaveRepeatWrapMode = EditorGUIUtility.TrTextContent("Texture wrap mode must be set to Repeat", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public readonly GUIContent textureMustHaveMips = EditorGUIUtility.TrTextContent("Texture must have mip maps", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public readonly GUIContent normalMapIncorrectTextureType = EditorGUIUtility.TrTextContent("Normal texture should be imported as Normal Map", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
-            public readonly GUIContent tilingSettings = EditorGUIUtility.TrTextContent("Tiling Settings");
-            public readonly GUIContent tilingSize = EditorGUIUtility.TrTextContent("Size");
-            public readonly GUIContent tilingOffset = EditorGUIUtility.TrTextContent("Offset");
+            public readonly GUIContent tilingSettings = L10n.TextContent("Tiling Settings", null, null, null);
+            public readonly GUIContent tilingSize = L10n.TextContent("Size", null, null, null);
+            public readonly GUIContent tilingOffset = L10n.TextContent("Offset", null, null, null);
         }
         [NoAutoStaticsCleanup] // GUIContent styles holder; editor infra, no user refs
         private static readonly Styles s_Styles = new Styles();
@@ -132,8 +131,16 @@ namespace UnityEditor
         public static void TilingSettingsUI(TerrainLayer terrainLayer)
         {
             GUILayout.Label(s_Styles.tilingSettings, EditorStyles.boldLabel);
-            terrainLayer.tileSize = EditorGUILayout.Vector2Field(s_Styles.tilingSize, terrainLayer.tileSize);
-            terrainLayer.tileOffset = EditorGUILayout.Vector2Field(s_Styles.tilingOffset, terrainLayer.tileOffset);
+
+            EditorGUI.BeginChangeCheck();
+            var tileSize = EditorGUILayout.Vector2Field(s_Styles.tilingSize, terrainLayer.tileSize);
+            var tileOffset = EditorGUILayout.Vector2Field(s_Styles.tilingOffset, terrainLayer.tileOffset);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(terrainLayer, "Terrain Layer Tiling Settings");
+                terrainLayer.tileSize = tileSize;
+                terrainLayer.tileOffset = tileOffset;
+            }
         }
 
         public static void TilingSettingsUI(SerializedProperty tileSize, SerializedProperty tileOffset)
@@ -314,4 +321,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

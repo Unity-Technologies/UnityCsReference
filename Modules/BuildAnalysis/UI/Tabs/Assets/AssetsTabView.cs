@@ -40,6 +40,23 @@ namespace UnityEditor.Build.Analysis
         private BuildAnalysisImporterType[] m_CachedImporterTypes = Array.Empty<BuildAnalysisImporterType>();
         private BuildAnalysisAsset[] m_CachedAssets = Array.Empty<BuildAnalysisAsset>();
 
+        private readonly IDependencyGraphService m_GraphService;
+
+        // The dependency graph is per build, not per asset: Apply prefetches it once and asset
+        // clicks bind synchronously from m_GraphResult (null = still loading, section shows the
+        // spinner). m_GraphSeq is a miniature of the window's SelectionGate — Apply bumps it, and
+        // a load continuation that comes back under an older seq drops itself.
+        private int m_GraphSeq;
+        private DependencyGraphResult m_GraphResult;
+        private int m_InspectedAssetId = -1;
+        private bool m_IsContentDirectory;
+        private GUID m_AppliedBuildGuid;
+
+        public AssetsTabView(IDependencyGraphService graphService)
+        {
+            m_GraphService = graphService ?? throw new ArgumentNullException(nameof(graphService));
+        }
+
         public VisualElement Root => m_Root;
 
         public void Initialize()
@@ -91,7 +108,13 @@ namespace UnityEditor.Build.Analysis
                 m_RootAssetTable.ClearSelection();
                 m_SuppressSelectionClear = false;
 
-                m_AssetInspector.ShowAsset(asset.Value, ResolveImporterType(asset.Value.ImporterTypeId));
+                m_AssetInspector.ShowAsset(asset.Value, ResolveImporterType(asset.Value.ImporterTypeId),
+                    showReferences: m_IsContentDirectory);
+                if (m_IsContentDirectory)
+                {
+                    m_InspectedAssetId = asset.Value.Id;
+                    BindReferenceSection(m_InspectedAssetId);
+                }
                 InspectorOpenRequested?.Invoke();
                 return;
             }
@@ -122,7 +145,11 @@ namespace UnityEditor.Build.Analysis
             m_AssetInspector.ShowEmpty();
         }
 
-        private void ResetInspector() => m_AssetInspector.ShowEmpty();
+        private void ResetInspector()
+        {
+            m_InspectedAssetId = -1;
+            m_AssetInspector.ShowEmpty();
+        }
 
         private BuildAnalysisImporterType? ResolveImporterType(int id)
         {
@@ -140,6 +167,10 @@ namespace UnityEditor.Build.Analysis
 
         public void Apply(BuildAnalysisView view)
         {
+            // Whatever graph load is in flight is for the previous selection now.
+            m_GraphSeq++;
+            m_GraphResult = null;
+
             var hasSelection = view?.Entry != null && view.Analysis != null;
             m_NoSelection.style.display = hasSelection ? DisplayStyle.None : DisplayStyle.Flex;
             m_Body.style.display = hasSelection ? DisplayStyle.Flex : DisplayStyle.None;
@@ -150,6 +181,8 @@ namespace UnityEditor.Build.Analysis
 
                 m_CachedImporterTypes = Array.Empty<BuildAnalysisImporterType>();
                 m_CachedAssets = Array.Empty<BuildAnalysisAsset>();
+                m_IsContentDirectory = false;
+                m_AppliedBuildGuid = default;
                 m_RootAssetsCard.style.display = DisplayStyle.None;
                 m_RootAssetTable.style.display = DisplayStyle.None;
                 m_AssetSourceBanner.style.display = DisplayStyle.None;
@@ -157,10 +190,49 @@ namespace UnityEditor.Build.Analysis
                 return;
             }
 
+            // The active reference tab is interactive state, kept across re-applies of the same
+            // build (a regenerate) and reset only on a genuinely new selection.
+            if (view.Entry.BuildSessionGUID != m_AppliedBuildGuid)
+                m_AssetInspector.References.ResetActiveTab();
+            m_AppliedBuildGuid = view.Entry.BuildSessionGUID;
+
+            // Set before the tables rebind so any selection event they raise sees the new value.
+            m_IsContentDirectory = view.Entry.BuildType == BuildType.ContentDirectory;
+
             // A new selection discards the inspector's contents: it was showing an asset from the old build.
             ResetInspector();
             BindRootAssets(view.Entry, view.Analysis);
             BindAssets(view.Entry, view.Analysis);
+
+            // Prefetch the dependency graph so asset clicks usually bind synchronously. Skipped
+            // for build types that never record one (the section is hidden for those anyway).
+            if (m_IsContentDirectory)
+                LoadGraphAsync(view);
+        }
+
+        // Awaiting an already-completed task continues synchronously, so a cached graph is bound
+        // before Apply returns and no loading state is ever shown for it.
+        private async void LoadGraphAsync(BuildAnalysisView view)
+        {
+            var seq = m_GraphSeq;
+            var result = await m_GraphService.LoadAsync(view.Entry, view.Analysis);
+            if (seq != m_GraphSeq || m_Root.panel == null)
+                return;
+
+            m_GraphResult = result;
+            if (m_AssetInspector.CurrentMode == AssetInspector.Mode.Asset && m_InspectedAssetId >= 0)
+                BindReferenceSection(m_InspectedAssetId);
+        }
+
+        private void BindReferenceSection(int assetId)
+        {
+            var section = m_AssetInspector.References;
+            if (m_GraphResult == null)
+                section.SetLoading();
+            else if (m_GraphResult.Status == DependencyGraphStatus.Loaded)
+                section.Bind(m_GraphResult.References, assetId, m_CachedAssets);
+            else
+                section.SetUnavailable(m_GraphResult.Status);
         }
 
         private void BindRootAssets(BuildEntry selection, BuildAnalysis analysis)

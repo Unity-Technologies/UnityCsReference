@@ -5,6 +5,12 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.Scripting;
 
+internal enum StackTraceFormat
+{
+    Mono,
+    CoreCLR,
+}
+
 internal static class StackTrace
 {
     const string k_HideInCallstackAttributeTypeName = "UnityEngine.HideInCallstackAttribute";
@@ -27,14 +33,8 @@ internal static class StackTrace
         }
     }
 
-    // This code is shared between Mono and CoreCLR, so we cannot conditionally compile the frame format.
-    // We use by default the Mono format as long as it's supported. This value is overridden on CoreCLR
-    // initialization. To be removed once Mono support is fully removed.
-    // Host-installed backend trace format, set once at initialization; not tied to any scope.
-    [NoAutoStaticsCleanup]
-    internal static bool UseMonoFormat { get; set; } = true;
+    internal const StackTraceFormat DefaultFormat = StackTraceFormat.Mono;
 
-    [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
     internal static void GetMessageAndStackTrace(Exception? exception, out string message, out string stackTrace)
     {
         if (exception == null)
@@ -127,12 +127,14 @@ internal static class StackTrace
         return true;
     }
 
-    // Renders a managed stack trace. The frame shape depends on UseMonoFormat:
-    // Mono keeps the historical "Type:Method(...) (at path:N)"; CoreCLR emits the native .NET
-    // "Type.Method(...) in path:line N". Mono's log path normally uses the native quick path in
-    // MonoManager.cpp, but this method still runs on Mono via the exception path, so it must stay backend-aware.
-    [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
-    internal static string Format(System.Diagnostics.StackTrace stackTrace)
+    // Renders a managed stack trace. The frame depends on the backend: Mono keeps the historical
+    // "Type:Method(...) (at path:N)"; CoreCLR emits the native .NET "Type.Method(...) in path:line N".
+    // Mono's log path normally uses the native quick path in MonoManager.cpp, but this method still runs
+    // on Mono via the exception path, so it must stay backend-aware.
+    internal static string Format(System.Diagnostics.StackTrace stackTrace) => Format(stackTrace, DefaultFormat);
+
+    // format is a parameter only so the tests can cover both frame formats in a single run.
+    internal static string Format(System.Diagnostics.StackTrace stackTrace, StackTraceFormat format)
     {
         const char k_TypeMethodSeparator = '.';
         const string k_LocationPrefix = " in ";
@@ -144,6 +146,7 @@ internal static class StackTrace
         const string k_LineNumberSeparatorMono = ":";
         const string k_LocationSuffixMono = ")";
 
+        var useMonoFormat = format == StackTraceFormat.Mono;
         var basePath = BasePath;
         var sb = new StringBuilder(255);
         int iIndex;
@@ -174,7 +177,7 @@ internal static class StackTrace
             }
 
             sb.Append(classType.Name);
-            sb.Append(UseMonoFormat ? k_TypeMethodSeparatorMono : k_TypeMethodSeparator);
+            sb.Append(useMonoFormat ? k_TypeMethodSeparatorMono : k_TypeMethodSeparator);
             sb.Append(mb.Name);
             sb.Append('(');
 
@@ -203,7 +206,7 @@ internal static class StackTrace
                 // part that allows us to generate hyperlinks and code pointers.
                 if (!ShouldStripLineNumbers(mb))
                 {
-                    sb.Append(UseMonoFormat ? k_LocationPrefixMono : k_LocationPrefix);
+                    sb.Append(useMonoFormat ? k_LocationPrefixMono : k_LocationPrefix);
 
                     if (!string.IsNullOrEmpty(basePath))
                     {
@@ -214,9 +217,9 @@ internal static class StackTrace
                     }
 
                     sb.Append(path);
-                    sb.Append(UseMonoFormat ? k_LineNumberSeparatorMono : k_LineNumberSeparator);
+                    sb.Append(useMonoFormat ? k_LineNumberSeparatorMono : k_LineNumberSeparator);
                     sb.Append(frame.GetFileLineNumber());
-                    sb.Append(UseMonoFormat ? k_LocationSuffixMono : k_LocationSuffix);
+                    sb.Append(useMonoFormat ? k_LocationSuffixMono : k_LocationSuffix);
                 }
             }
 

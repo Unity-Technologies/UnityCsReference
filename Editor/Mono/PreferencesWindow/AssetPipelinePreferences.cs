@@ -21,13 +21,13 @@ namespace UnityEditor
     {
         class Properties
         {
-            public static readonly GUIContent autoRefresh = EditorGUIUtility.TrTextContent("Auto Refresh", "Automatically import changed assets.");
-            public static readonly GUIContent desiredImportWorkerCountPctOfLogicalCPUs = EditorGUIUtility.TrTextContent("Import Worker Count %", "Desired asset import worker count for new projects in percentage of available logical CPU cores.");
+            public static readonly GUIContent autoRefresh = L10n.TextContent("Auto Refresh", "Automatically import changed assets.", null, null);
+            public static readonly GUIContent desiredImportWorkerCountPctOfLogicalCPUs = L10n.TextContent("Import Worker Count %", "Desired asset import worker count for new projects in percentage of available logical CPU cores.", null, null);
             public static readonly GUIContent desiredImportWorkerCountPctOfLogicalCPUsLearnMore = new GUIContent("Learn more...", "Go to import worker documentation.");
-            public static readonly GUIContent directoryMonitoring = EditorGUIUtility.TrTextContent("Directory Monitoring", "Monitor directories instead of scanning all project files to detect asset changes.");
-            public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Textures on Import", "Disable to skip texture compression during import process (textures will be imported into uncompressed formats, and compressed when making a build). This preference is per project and local to a single user, to prevent cross project pollution.");
-            public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets", "Show confirmation dialog whenever Unity saves any assets.");
-            public static readonly GUIContent enterSafeModeDialog = EditorGUIUtility.TrTextContent("Show Enter Safe Mode Dialog", "Show confirmation dialog when Unity would enter Safe Mode due to script compilation errors.");
+            public static readonly GUIContent directoryMonitoring = L10n.TextContent("Directory Monitoring", "Monitor directories instead of scanning all project files to detect asset changes.", null, null);
+            public static readonly GUIContent compressAssetsOnImport = L10n.TextContent("Compress Textures on Import", "Disable to skip texture compression during import process (textures will be imported into uncompressed formats, and compressed when making a build). This preference is per project and local to a single user, to prevent cross project pollution.", null, null);
+            public static readonly GUIContent verifySavingAssets = L10n.TextContent("Verify Saving Assets", "Show confirmation dialog whenever Unity saves any assets.", null, null);
+            public static readonly GUIContent enterSafeModeDialog = L10n.TextContent("Show Enter Safe Mode Dialog", "Show confirmation dialog when Unity would enter Safe Mode due to script compilation errors.", null, null);
 
             public static readonly GUIContent cacheServer = new GUIContent("Unity Accelerator (Cache Server)");
             public static readonly GUIContent cacheServerDefaultMode = new GUIContent("Default Mode", "Specifies if Accelerator should be enabled or disabled by default. This can be overridden per project in editor settings.");

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using Unity.Properties;
 using UnityEngine;
@@ -18,10 +17,12 @@ namespace Unity.UI.Builder
     {
         public BuilderTransitionData(StyleSheet styleSheet, StyleRule styleRule, VisualElement element, bool editorExtensionMode)
         {
+#pragma warning disable UAL0015 // Transient struct constructed and disposed within a single call; never persists across a code-reload boundary.
             transitionProperty = styleSheet.GetStylePropertyManipulator(element, styleRule, StylePropertyId.TransitionProperty.UssName(), editorExtensionMode);
             transitionDuration = styleSheet.GetStylePropertyManipulator(element, styleRule, StylePropertyId.TransitionDuration.UssName(), editorExtensionMode);
             transitionTimingFunction = styleSheet.GetStylePropertyManipulator(element, styleRule, StylePropertyId.TransitionTimingFunction.UssName(), editorExtensionMode);
             transitionDelay = styleSheet.GetStylePropertyManipulator(element, styleRule, StylePropertyId.TransitionDelay.UssName(), editorExtensionMode);
+#pragma warning restore UAL0015
         }
 
         public readonly StylePropertyManipulator transitionProperty;
@@ -111,4 +112,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

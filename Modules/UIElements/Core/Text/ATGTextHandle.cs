@@ -19,14 +19,13 @@ namespace UnityEngine.UIElements
         internal ATGTextEventHandler m_ATGTextEventHandler;
         bool uvsAreGenerated = false;
 
-        // Buffer for processed text that differs from TextElement.textBuffer
-        // (password-masked, placeholder, elided)
-        NativeTextBuffer m_ProcessedTextBuffer;
+        // Processed text that differs from TextElement.textBuffer (password-masked, placeholder,
+        // elided). Stored and freed with the element's other text buffers in TextBufferStore.
+        ref NativeTextBuffer processedTextBuffer => ref m_TextElement.processedTextBuffer;
 
-#pragma warning disable UA5000 // Only finalizer-thread-safe work: the buffer is handed to the reclaimer and TextGenerationInfo.Destroy is thread-safe.
+#pragma warning disable UA5000 // Only finalizer-thread-safe work: TextGenerationInfo.Destroy is thread-safe.
         ~UITKTextHandle()
         {
-            NativeTextBufferReclaimer.EnqueueForDisposal(ref m_ProcessedTextBuffer);
             DestroyPermanentCachedGenerationInfo();
         }
 #pragma warning restore UA5000
@@ -60,8 +59,8 @@ namespace UnityEngine.UIElements
         {
             if (nativeSettings.textBufferLength == 0 && m_TextElement.isInputField)
             {
-                m_ProcessedTextBuffer.CopyFrom(TextElement.ZeroWidthSpace);
-                nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
+                processedTextBuffer.CopyFrom(TextElement.ZeroWidthSpace);
+                nativeSettings.SetTextBuffer(processedTextBuffer.buffer, processedTextBuffer.length);
             }
         }
 
@@ -234,12 +233,12 @@ namespace UnityEngine.UIElements
             // When the backing NativeArray is not created (element attached with empty
             // text, or buffer disposed during a lifecycle transition) the direct-buffer
             // path in ConvertUssToNativeTextGenerationSettings falls through and copies
-            // renderedTextString into m_ProcessedTextBuffer instead.  Pre-allocate
+            // renderedTextString into processedTextBuffer instead.  Pre-allocate
             // enough for that text so the Job never triggers a Persistent allocation.
             if (!m_TextElement.textBuffer.isCreated)
                 preAllocLength = Math.Max(preAllocLength, m_TextElement.renderedTextString?.Length ?? 0);
 
-            m_ProcessedTextBuffer.EnsureCapacity(preAllocLength);
+            processedTextBuffer.EnsureCapacity(preAllocLength);
         }
 
 #nullable enable
@@ -274,7 +273,9 @@ namespace UnityEngine.UIElements
             nativeSettings.paragraphSpacing = (int)(style.unityParagraphSpacing.value * 64.0f);
 
             nativeSettings.color = style.color;
+#pragma warning disable UAL0018 // nativeSettings is a per-call settings struct consumed by this generation pass; the tint does not outlive it
             nativeSettings.color *= m_TextElement.playModeTintColor;
+#pragma warning restore UAL0018
 
             nativeSettings.languageDirection = m_TextElement.localLanguageDirection.toTextCore();
 
@@ -332,7 +333,7 @@ namespace UnityEngine.UIElements
             if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
             #pragma warning restore CS0618
             {
-                Debug.LogError($"Advanced text system cannot render using static font asset {fa.faceInfo.familyName}. See <a href=\"https://docs.unity3d.com/Manual/ui-systems/migrate-static-font-assets.html\">migration guidance</a>.");
+                TextUtilities.LogStaticFontAssetError(fa);
                 return false;
             }
 
@@ -354,22 +355,22 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    m_ProcessedTextBuffer.CopyFrom(string.Empty);
-                    nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
+                    processedTextBuffer.CopyFrom(string.Empty);
+                    nativeSettings.SetTextBuffer(processedTextBuffer.buffer, processedTextBuffer.length);
                 }
                 return true;
             }
 
             // Placeholder / password: build the masked or placeholder representation directly into the processed-text buffer
-            if (text == null && m_TextElement.TryGetProcessedRenderedText(ref m_ProcessedTextBuffer))
+            if (text == null && m_TextElement.TryGetProcessedRenderedText(ref processedTextBuffer))
             {
-                nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
+                nativeSettings.SetTextBuffer(processedTextBuffer.buffer, processedTextBuffer.length);
                 return true;
             }
 
             // Explicit measured string (MeasureTextSize call): copy the managed string into the processed-text buffer.
-            m_ProcessedTextBuffer.CopyFrom(text ?? string.Empty);
-            nativeSettings.SetTextBuffer(m_ProcessedTextBuffer.buffer, m_ProcessedTextBuffer.length);
+            processedTextBuffer.CopyFrom(text ?? string.Empty);
+            nativeSettings.SetTextBuffer(processedTextBuffer.buffer, processedTextBuffer.length);
             return true;
         }
 
@@ -453,7 +454,7 @@ namespace UnityEngine.UIElements
             {
                 m_ATGTextEventHandler?.UnRegisterHyperlinkCallbacks();
             }
-            m_ProcessedTextBuffer.Dispose();
+            m_TextElement.DisposeProcessedTextBuffer();
             base.RemoveFromPermanentCacheATG();
         }
 

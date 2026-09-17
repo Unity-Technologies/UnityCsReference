@@ -491,7 +491,7 @@ namespace UnityEditor.Build.Profile
             platformSettings.development = development;
             platformSettings.connectProfiler = connectProfiler;
             platformSettings.buildWithDeepProfilingSupport = buildWithDeepProfilingSupport;
-            if (!BuildProfileModuleUtil.IsStandalonePlatform(buildTarget))
+            if (!BuildProfileModuleUtil.IsPlatformSupportedByCoverage(buildTarget))
                 platformSettings.buildWithCodeCoverage = false;
             else
                 platformSettings.buildWithCodeCoverage = buildWithCodeCoverage;

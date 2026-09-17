@@ -460,8 +460,10 @@ namespace UnityEditor
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.bindings.h")]
     [global::UnityEngine.NativeClass("ModelImporter", PersistentTypeId = 1040)]
     [NativeHeader("Modules/Animation/ScriptBindings/AvatarBuilder.bindings.h")]
+    [UnityEngine.ExtensionOfNativeClass]
     public partial class ModelImporter : AssetImporter
     {
+
         public extern ModelImporterMaterialName materialName
         {
             get;

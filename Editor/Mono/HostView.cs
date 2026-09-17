@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: EditorWindowManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -53,18 +52,18 @@ namespace UnityEditor
                 static readonly Texture2D k_MixedModeIcon = EditorGUIUtility.LoadIcon("DataMode.Mixed");
                 static readonly Texture2D k_RuntimeModeIcon = EditorGUIUtility.LoadIcon("DataMode.Runtime");
 
-                public static readonly GUIContent authoringModeContent = EditorGUIUtility.TrIconContent(k_AuthoringModeIcon, k_AutomaticAuthoringString);
-                public static readonly GUIContent mixedModeContent = EditorGUIUtility.TrIconContent(k_MixedModeIcon, k_AutomaticMixedString);
-                public static readonly GUIContent runtimeModeContent = EditorGUIUtility.TrIconContent(k_RuntimeModeIcon, k_AutomaticRuntimeString);
+                public static readonly GUIContent authoringModeContent = L10n.IconContent(k_AuthoringModeIcon, k_AutomaticAuthoringString, null);
+                public static readonly GUIContent mixedModeContent = L10n.IconContent(k_MixedModeIcon, k_AutomaticMixedString, null);
+                public static readonly GUIContent runtimeModeContent = L10n.IconContent(k_RuntimeModeIcon, k_AutomaticRuntimeString, null);
 
                 // Sticky data mode icons
                 static readonly Texture2D k_StickyAuthoringModeIcon = EditorGUIUtility.LoadIcon("DataMode.Authoring.Sticky");
                 static readonly Texture2D k_StickyMixedModeIcon = EditorGUIUtility.LoadIcon("DataMode.Mixed.Sticky");
                 static readonly Texture2D k_StickyRuntimeModeIcon = EditorGUIUtility.LoadIcon("DataMode.Runtime.Sticky");
 
-                public static readonly GUIContent stickyAuthoringModeContent = EditorGUIUtility.TrIconContent(k_StickyAuthoringModeIcon, k_AuthoringString);
-                public static readonly GUIContent stickyMixedModeContent = EditorGUIUtility.TrIconContent(k_StickyMixedModeIcon, k_MixedString);
-                public static readonly GUIContent stickyRuntimeModeContent = EditorGUIUtility.TrIconContent(k_StickyRuntimeModeIcon, k_RuntimeString);
+                public static readonly GUIContent stickyAuthoringModeContent = L10n.IconContent(k_StickyAuthoringModeIcon, k_AuthoringString, null);
+                public static readonly GUIContent stickyMixedModeContent = L10n.IconContent(k_StickyMixedModeIcon, k_MixedString, null);
+                public static readonly GUIContent stickyRuntimeModeContent = L10n.IconContent(k_StickyRuntimeModeIcon, k_RuntimeString, null);
 
                 // Use an empty style to avoid the hover effect of normal buttons
                 public static readonly GUIStyle switchStyle = new GUIStyle();
@@ -854,7 +853,7 @@ namespace UnityEditor
                     }
                     else if (item.icon != null)
                     {
-                        if (EditorGUI.Button(itemRect, EditorGUIUtility.TrIconContent(item.icon, item.menuPath), EditorStyles.iconButton))
+                        if (EditorGUI.Button(itemRect, L10n.IconContent(item.icon, item.menuPath, null), EditorStyles.iconButton))
                             item.executeHandler(actualView, item);
                     }
                 }
@@ -1017,13 +1016,12 @@ namespace UnityEditor
 
             if (window && Unsupported.IsDeveloperMode())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Inspect Window"), false, Inspect, window);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Inspect View"), false, Inspect, window.m_Parent);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Reload Window _f5"), false, Reload, window);
+                menu.AddItem(L10n.TextContent("Inspect Window", null, null, null), false, Inspect, window);
+                menu.AddItem(L10n.TextContent("Inspect View", null, null, null), false, Inspect, window.m_Parent);
+                menu.AddItem(L10n.TextContent("Reload Window _f5", null, null, null), false, Reload, window);
 
                 menu.AddSeparator("");
             }
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

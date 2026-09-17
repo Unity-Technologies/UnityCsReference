@@ -14,7 +14,7 @@ namespace Unity.Localization;
 /// different scheme, then assign it through <see cref="SharedTableData.KeyGenerator"/>.
 /// </remarks>
 /// <example>
-/// <para>A simple generator that hands out increasing ids.</para>
+/// A simple generator that hands out increasing ids.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/IKeyGeneratorExample.cs"/>
 /// </example>
 /// <seealso cref="DistributedUIDGenerator"/>
@@ -31,7 +31,7 @@ public interface IKeyGenerator
     /// </remarks>
     /// <returns>The id to assign to the next key.</returns>
     /// <example>
-    /// <para>Request an id from the default generator.</para>
+    /// Request an id from the default generator.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/IKeyGeneratorGetNextKeyExample.cs"/>
     /// </example>
     long GetNextKey();

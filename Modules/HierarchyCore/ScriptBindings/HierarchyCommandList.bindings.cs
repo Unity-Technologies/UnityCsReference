@@ -201,6 +201,33 @@ namespace Unity.Hierarchy
         public bool SetParent(in HierarchyNode node, in HierarchyNode parent, int index) => SetNodeParentAt(in node, in parent, index);
 
         /// <summary>
+        /// Severs a hierarchy node from its parent, without removing it from the hierarchy.
+        /// </summary>
+        /// <remarks>
+        /// A detached node keeps its own children but is no longer reachable from <see cref="Hierarchy.Root"/>. Nothing
+        /// reclaims it: the caller must either re-attach it with
+        /// <see cref="SetParent(in HierarchyNode, in HierarchyNode)"/> or delete it with <see cref="Remove"/>.
+        /// </remarks>
+        /// <param name="node">The hierarchy node to detach.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern bool Detach(in HierarchyNode node);
+
+        /// <summary>
+        /// Severs every child of a hierarchy node from it, without removing them from the hierarchy.
+        /// </summary>
+        /// <remarks>
+        /// Equivalent to calling <see cref="Detach"/> on each child, but the node's children are severed in a single
+        /// operation. Each detached child keeps its own children and is no longer reachable from
+        /// <see cref="Hierarchy.Root"/>. Nothing reclaims them: the caller must either re-attach them with
+        /// <see cref="SetParent(in HierarchyNode, in HierarchyNode)"/> or delete them with <see cref="Remove"/>.
+        /// </remarks>
+        /// <param name="node">The hierarchy node whose children are detached.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern bool DetachChildren(in HierarchyNode node);
+
+        /// <summary>
         /// Sets the sorting index for a hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node to set a sorting index for.</param>
@@ -287,7 +314,7 @@ namespace Unity.Hierarchy
         /// Force an update of the hierarchy, even if no changes are pending.
         /// </summary>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
-        [NativeMethod(IsThreadSafe = true)]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool SetDirty();
 
         /// <summary>

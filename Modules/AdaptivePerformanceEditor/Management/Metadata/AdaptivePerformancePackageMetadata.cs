@@ -125,8 +125,13 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
 
         const float k_TimeOutDelta = 30f;
         [AutoStaticsCleanup]
+        // Gate for InitKnownPluginPackages: back at false, the next settings-manager or build-profile
+        // access re-registers every known package and sets it again.
+        [IgnoreForUAL0015("Lazy-init gate; InitKnownPluginPackages re-registers the known packages")]
         static bool s_KnowPackageInitialized = false;
         [AutoStaticsCleanup]
+        // Set by InitKnownPluginPackages, which runs again because the gate above is back at false.
+        [IgnoreForUAL0015("Set again by InitKnownPluginPackages after the init gate resets")]
         static bool s_EnableLogging = false;
 
 
@@ -228,6 +233,9 @@ namespace UnityEditor.AdaptivePerformance.Editor.Metadata
         [AutoStaticsCleanup]
         static List<LoaderAssignmentRequest> m_AddRequests = new List<LoaderAssignmentRequest>();
         [AutoStaticsCleanup]
+        // Registry of provider packages: InitKnownPluginPackages re-adds every known package once the
+        // init gate resets, and it must be cleared so it does not hold providers from the old scope.
+        [IgnoreForUAL0015("Provider registry re-populated by InitKnownPluginPackages after the gate resets")]
         static Dictionary<string, IAdaptivePerformancePackage> s_Packages = new Dictionary<string, IAdaptivePerformancePackage>();
         [AutoStaticsCleanup]
         static SearchRequest s_SearchRequest = null;

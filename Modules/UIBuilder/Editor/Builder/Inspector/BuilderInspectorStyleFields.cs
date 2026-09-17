@@ -438,6 +438,11 @@ namespace Unity.UI.Builder
                     textAlignStripField.userData = enumValue.GetType();
                     textAlignStripField.RegisterValueChangedCallback(e => OnFieldToggleButtonGroupChange(e, styleName));
                 }
+                else if (fieldElement is ToggleButtonGroup displayStrip && IsDisplayStrip(styleName))
+                {
+                    // Grid-aware strip bound by button name, so it bypasses the generic enum path.
+                    SetupDisplayStrip(displayStrip);
+                }
                 else if (fieldElement is ToggleButtonGroup)
                 {
                     var uiField = fieldElement as ToggleButtonGroup;
@@ -1344,6 +1349,11 @@ namespace Unity.UI.Builder
                     }
                     case ToggleButtonGroup group:
                     {
+                        if (IsDisplayStrip(styleName))
+                        {
+                            RefreshDisplayStrip(group, (DisplayStyle)enumValue);
+                            break;
+                        }
                         var uiField = group;
                         var options = new ToggleButtonGroupState(0, 64);
                         options[Convert.ToInt32(enumValue)] = true;

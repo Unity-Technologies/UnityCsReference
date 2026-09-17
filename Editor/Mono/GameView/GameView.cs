@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GameView not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -102,19 +101,19 @@ namespace UnityEditor
 
         internal static class Styles
         {
-            public static readonly GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Activate / Deactivate gizmos in the GameView");
-            public static readonly GUIContent zoomSliderContent = EditorGUIUtility.TrTextContent("Scale", "Size of the game view on the screen.");
-            public static readonly GUIContent muteOffContent = EditorGUIUtility.TrIconContent("GameViewAudio On", "Mute Audio");
-            public static readonly GUIContent muteOnContent = EditorGUIUtility.TrIconContent("GameViewAudio", "Mute Audio");
-            public static readonly GUIContent shortcutsOnContent = EditorGUIUtility.TrIconContent("Keyboard", "Unity Shortcuts");
-            public static readonly GUIContent shortcutsOffContent = EditorGUIUtility.TrIconContent("KeyboardShortcutsDisabled", "Unity Shortcuts");
-            public static readonly GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
-            public static readonly GUIContent frameDebuggerOnContent = EditorGUIUtility.TrTextContent("Frame Debugger On");
-            public static readonly GUIContent noCameraWarningContextMenuContent = EditorGUIUtility.TrTextContent("Warn if No Cameras Rendering");
-            public static readonly GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
-            public static readonly GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
-            public static readonly GUIContent metalFrameCaptureContent = EditorGUIUtility.TrIconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger");
-            public static readonly GUIContent frameDebuggerContent = EditorGUIUtility.TrIconContent("Debug", "Opens the Frame Debugger");
+            public static readonly GUIContent gizmosContent = L10n.TextContent("Gizmos", "Activate / Deactivate gizmos in the GameView", null, null);
+            public static readonly GUIContent zoomSliderContent = L10n.TextContent("Scale", "Size of the game view on the screen.", null, null);
+            public static readonly GUIContent muteOffContent = L10n.IconContent("GameViewAudio On", "Mute Audio", null);
+            public static readonly GUIContent muteOnContent = L10n.IconContent("GameViewAudio", "Mute Audio", null);
+            public static readonly GUIContent shortcutsOnContent = L10n.IconContent("Keyboard", "Unity Shortcuts", null);
+            public static readonly GUIContent shortcutsOffContent = L10n.IconContent("KeyboardShortcutsDisabled", "Unity Shortcuts", null);
+            public static readonly GUIContent statsContent = L10n.TextContent("Stats", null, null, null);
+            public static readonly GUIContent frameDebuggerOnContent = L10n.TextContent("Frame Debugger On", null, null, null);
+            public static readonly GUIContent noCameraWarningContextMenuContent = L10n.TextContent("Warn if No Cameras Rendering", null, null, null);
+            public static readonly GUIContent clearEveryFrameContextMenuContent = L10n.TextContent("Clear Every Frame in Edit Mode", null, null, null);
+            public static readonly GUIContent lowResAspectRatiosContextMenuContent = L10n.TextContent("Low Resolution Aspect Ratios", null, null, null);
+            public static readonly GUIContent metalFrameCaptureContent = L10n.IconContent("FrameCapture", "Capture the current view and open in Xcode frame debugger", null);
+            public static readonly GUIContent frameDebuggerContent = L10n.IconContent("Debug", "Opens the Frame Debugger", null);
 
             public const string k_StatsShortcutID = "Game View/Toggle Stats";
             public const string k_StatsTooltip = "View general rendering information";
@@ -129,7 +128,7 @@ namespace UnityEditor
             static Styles()
             {
                 gameViewBackgroundStyle = "GameViewBackground";
-                renderdocContent = EditorGUIUtility.TrIconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip);
+                renderdocContent = L10n.IconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip, null);
             }
         }
 
@@ -1307,4 +1306,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

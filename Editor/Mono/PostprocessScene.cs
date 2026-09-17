@@ -3,18 +3,28 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor.Build;
+using UnityEditor.Build.Content;
 
 namespace UnityEditor
 {
-    internal class UnityBuildPostprocessor : IProcessSceneWithReport
+    internal class UnityBuildPostprocessor : AssetPostprocessor
     {
-        public int callbackOrder { get { return 0; } }
+        // Has to be keep in sync with "EditorOnlyPlayerSettings::kAssetDependencyKey_BuildPipelineStaticBatching"
+        const string kAssetDependencyKey_BuildPipelineStaticBatching = "BP/StaticBatching";
 
-        public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, Build.Reporting.BuildReport report)
+        public override uint GetVersion()
         {
-            int staticBatching, dynamicBatching;
-            PlayerSettings.GetBatchingForPlatform(EditorUserBuildSettings.activeBuildTarget, out staticBatching, out dynamicBatching);
+            return 1;
+        }
+
+        public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, SceneImportContext sceneContext)
+        {
+            context.DependsOnCustomDependency(kAssetDependencyKey_BuildPipelineStaticBatching);
+
+            // This is explicitly using EditorUserBuildSettings.activeBuildTarget instead of context.selectedBuildTarget
+            // Because we do not want the postprocessor to depend on the buildtarget.
+            // Depending on kAssetDependencyKey_BuildPipelineStaticBatching satisfies the implicit platform change dependency.
+            PlayerSettings.GetBatchingForPlatform(EditorUserBuildSettings.activeBuildTarget, out var staticBatching, out _);
             if (staticBatching != 0)
             {
                 using (StaticBatchingUtility.s_CombineMarker.Auto())

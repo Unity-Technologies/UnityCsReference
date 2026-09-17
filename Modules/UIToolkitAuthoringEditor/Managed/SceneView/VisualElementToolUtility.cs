@@ -50,15 +50,10 @@ namespace Unity.UIToolkit.Editor
         // Prevent scientific notation values for UXML/USS serialization
         const float k_CleanFloatEpsilon = 1e-4f;
 
-        // Transform gizmos operate wherever the element's document is editable: in the authoring
-        // stage, and in a scene stage when in-scene authoring is enabled.
+        // Transform gizmos operate wherever the element's document is editable: the authoring stage and
+        // the scene stages.
         public static bool CanUseTransformTools()
-            => StageUtility.GetCurrentStage() switch
-            {
-                VisualElementEditingStage => true,
-                MainStage or PrefabStage => UIToolkitStageUtility.IsAuthoringEnabledInMainStage,
-                _ => false,
-            };
+            => StageUtility.GetCurrentStage() is VisualElementEditingStage or MainStage or PrefabStage;
 
         // In a scene stage only world-space panels give their elements a meaningful 3D transform.
         public static bool IsGizmoTarget(IPanelComponent panelComponent)

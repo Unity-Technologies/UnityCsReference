@@ -64,7 +64,7 @@ namespace UnityEditor
                 m_ArchitectureNames = new GUIContent[enumLength];
                 for (int i = 0; i < enumLength; i++)
                 {
-                    m_ArchitectureNames[i] = EditorGUIUtility.TrTextContent(GetArchitectureName(currentOS, (EditorPluginCPUArchitecture)i));
+                    m_ArchitectureNames[i] = L10n.TextContent(GetArchitectureName(currentOS, (EditorPluginCPUArchitecture)i), null, null, null);
                 }
             }
 
@@ -109,7 +109,7 @@ namespace UnityEditor
                     int enumLength = Enum.GetNames(typeof(EditorPluginCPUArchitecture)).Length;
                     for (int i = 0; i < enumLength; i++)
                     {
-                        m_ArchitectureNames[i] = EditorGUIUtility.TrTextContent(GetArchitectureName(osValue, (EditorPluginCPUArchitecture)i));
+                        m_ArchitectureNames[i] = L10n.TextContent(GetArchitectureName(osValue, (EditorPluginCPUArchitecture)i), null, null, null);
                     }
                     currentOS = osValue;
                 }
@@ -139,8 +139,8 @@ namespace UnityEditor
 
         public EditorPluginImporterExtension() : base(null)
         {
-            editorCPUProperty = new CPUProperty(EditorGUIUtility.TrTextContent("CPU", "The processor architectiure that this plugin is compatible with"), "CPU", EditorPluginCPUArchitecture.AnyCPU, (Enum e) => CanSelectArch(e));
-            editorOSProperty = new EditorProperty(EditorGUIUtility.TrTextContent("OS", "The Editor operating system that this plugin is compatible with"), "OS", EditorPluginOSArchitecture.AnyOS);
+            editorCPUProperty = new CPUProperty(L10n.TextContent("CPU", "The processor architectiure that this plugin is compatible with", null, null), "CPU", EditorPluginCPUArchitecture.AnyCPU, (Enum e) => CanSelectArch(e));
+            editorOSProperty = new EditorProperty(L10n.TextContent("OS", "The Editor operating system that this plugin is compatible with", null, null), "OS", EditorPluginOSArchitecture.AnyOS);
 
             properties = new Property[] { editorOSProperty, editorCPUProperty };
         }

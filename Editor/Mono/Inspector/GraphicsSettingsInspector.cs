@@ -30,7 +30,7 @@ namespace UnityEditor
         internal static class GraphicsSettingsData
         {
             internal static readonly GUIContent builtInWarningText =
-                EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
+                L10n.TextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.", null, null, null);
             internal const string builtIn = "Built-In";
             internal const string bodyTemplateBuiltInOnly = "UXML/ProjectSettings/GraphicsSettingsEditor-Builtin.uxml";
             internal const string bodyTemplateSRP = "UXML/ProjectSettings/GraphicsSettingsEditor-SRP.uxml";
@@ -205,7 +205,7 @@ namespace UnityEditor
                 shaderPreloadProperty.serializedObject.Update();
                 EditorGUI.BeginChangeCheck();
                 //for some reason, converting the display of this native array to UITK make MacOS crash when domain reload after user add a new script
-                EditorGUILayout.PropertyField(shaderPreloadProperty, EditorGUIUtility.TrTextContent("Preload Shaders"));
+                EditorGUILayout.PropertyField(shaderPreloadProperty, L10n.TextContent("Preload Shaders", null, null, null));
                 if (EditorGUI.EndChangeCheck())
                 {
                     shaderPreloadProperty.serializedObject.ApplyModifiedProperties();

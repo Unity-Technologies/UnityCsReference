@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -19,7 +18,7 @@ namespace UnityEditorInternal.Profiling
         protected static class Styles
         {
             public static readonly GUIContent emptyText = new GUIContent("");
-            public static readonly GUIContent selectLineText = EditorGUIUtility.TrTextContent("Select Line for the detailed information");
+            public static readonly GUIContent selectLineText = L10n.TextContent("Select Line for the detailed information", null, null, null);
 
             public static readonly GUIContent askAssistantTooltip = EditorGUIUtility.TrTextContent("Ask Assistant", "Ask the Profiler Assistant for help understanding this sample", EditorGUIUtility.LoadIcon("AISparkle"));
 
@@ -97,4 +96,3 @@ namespace UnityEditorInternal.Profiling
         public abstract void OnDisable();
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

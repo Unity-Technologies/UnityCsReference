@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UniversalWindowsPlatform not yet converted
 using System;
 using UnityEngine;
 using UnityEditor;
@@ -43,7 +42,7 @@ namespace UnityEditor
             }
             else
             {
-                window.titleContent = EditorGUIUtility.TrTextContent("Enter Windows Store Certificate Password");
+                window.titleContent = L10n.TextContent("Enter Windows Store Certificate Password", null, null, null);
 
                 window.position = new Rect(100, 100, 350, 90);
                 window.minSize = new Vector2(window.position.width, window.position.height);
@@ -75,7 +74,7 @@ namespace UnityEditor
 
                     using (HorizontalLayout.DoLayout())
                     {
-                        GUILayout.Label(EditorGUIUtility.TrTextContent("Password", "Certificate password."), kLabelWidth);
+                        GUILayout.Label(L10n.TextContent("Password", "Certificate password.", null, null), kLabelWidth);
                         GUI.SetNextControlName(kPasswordId);
                         password = GUILayout.PasswordField(password, kPasswordChar);
                     }
@@ -88,7 +87,7 @@ namespace UnityEditor
 
                         GUILayout.FlexibleSpace();
 
-                        if (GUILayout.Button(EditorGUIUtility.TrTextContent("OK"), kButtonWidth) || enter)
+                        if (GUILayout.Button(L10n.TextContent("OK", null, null, null), kButtonWidth) || enter)
                         {
                             message = GUIContent.none;
 
@@ -100,7 +99,7 @@ namespace UnityEditor
                                 }
                                 else
                                 {
-                                    message = EditorGUIUtility.TrTextContent("Invalid password.");
+                                    message = L10n.TextContent("Invalid password.", null, null, null);
                                 }
                             }
                             catch (UnityException ex)
@@ -128,4 +127,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

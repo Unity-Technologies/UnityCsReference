@@ -8,11 +8,11 @@ namespace UnityEditor.Build
 {
     class BuildPipelineSettingsProvider : SettingsProvider
     {
-        static readonly GUIContent k_ResetBuildHistoryFolderText = EditorGUIUtility.TrTextContent("Reset Build History folder Location");
-        static readonly GUIContent k_ChangeBuildHistoryFolderLocationText = EditorGUIUtility.TrTextContent("Change Build History Folder Location", "Change the build history path to a new path on your device. Note that this does not move any existing history. ");
-        static readonly GUIContent k_BuildHistoryLimitText = EditorGUIUtility.TrTextContent(
+        static readonly GUIContent k_ResetBuildHistoryFolderText = L10n.TextContent("Reset Build History folder Location", null, null, null);
+        static readonly GUIContent k_ChangeBuildHistoryFolderLocationText = L10n.TextContent("Change Build History Folder Location", "Change the build history path to a new path on your device. Note that this does not move any existing history. ", null, null);
+        static readonly GUIContent k_BuildHistoryLimitText = L10n.TextContent(
             "Build History Limit",
-            "Maximum number of builds to retain in Build History. 0 disables automatic deletion. Changes take effect on the next build.");
+            "Maximum number of builds to retain in Build History. 0 disables automatic deletion. Changes take effect on the next build.", null, null);
         private static readonly string k_OpenFolder = L10n.Tr("Open Containing Folder", null);
 
         private BuildPipelineSettingsProvider()
@@ -47,7 +47,7 @@ namespace UnityEditor.Build
             {
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(k_ChangeBuildHistoryFolderLocationText, false, ChangeFolderLocation);
-                menu.AddItem(EditorGUIUtility.TrTextContent(k_OpenFolder), false, OpenInExplorer);
+                menu.AddItem(L10n.TextContent(k_OpenFolder, null, null, null), false, OpenInExplorer);
                 if (buildHistoryFolderPath.Equals(BuildHistory.DefaultRootDirectory))
                 {
                     menu.AddDisabledItem(k_ResetBuildHistoryFolderText);

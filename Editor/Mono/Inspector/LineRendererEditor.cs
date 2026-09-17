@@ -17,28 +17,28 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly GUIContent alignment = EditorGUIUtility.TrTextContent("Alignment", "Lines can rotate to face their transform component or the camera. When using Local mode, lines face the XY plane of the Transform.");
-            public static readonly GUIContent colorGradient = EditorGUIUtility.TrTextContent("Color", "The gradient describing the color along the line.");
+            public static readonly GUIContent alignment = L10n.TextContent("Alignment", "Lines can rotate to face their transform component or the camera. When using Local mode, lines face the XY plane of the Transform.", null, null);
+            public static readonly GUIContent colorGradient = L10n.TextContent("Color", "The gradient describing the color along the line.", null, null);
             public static readonly string disabledEditMessage = L10n.Tr("Editing is only available when editing a single LineRenderer in a scene.", null);
-            public static readonly GUIContent inputMode = EditorGUIUtility.TrTextContent("Input", "Use mouse position or physics raycast to determine where to create points.");
-            public static readonly GUIContent layerMask = EditorGUIUtility.TrTextContent("Layer Mask", "The layer mask to use when performing raycasts.");
-            public static readonly GUIContent normalOffset = EditorGUIUtility.TrTextContent("Offset", "The offset applied to created points either from the scene camera or raycast normal, when using physics.");
-            public static readonly GUIContent numCapVertices = EditorGUIUtility.TrTextContent("End Cap Vertices", "How many vertices to add at each end.");
-            public static readonly GUIContent numCornerVertices = EditorGUIUtility.TrTextContent("Corner Vertices", "How many vertices to add for each corner.");
-            public static readonly GUIContent pointSeparation = EditorGUIUtility.TrTextContent("Min Vertex Distance", "When dragging the mouse, a new point will be created after the distance has been exceeded.");
-            public static readonly GUIContent positions = EditorGUIUtility.TrTextContent("Positions");
-            public static readonly GUIContent propertyMenuContent = EditorGUIUtility.TrTextContent("Delete Selected Array Elements");
-            public static readonly GUIContent showWireframe = EditorGUIUtility.TrTextContent("Show Wireframe", "Show the wireframe visualizing the line.");
-            public static readonly GUIContent simplify = EditorGUIUtility.TrTextContent("Simplify", "Generates a simplified version of the original line by removing points that fall within the specified tolerance.");
-            public static readonly GUIContent simplifyPreview = EditorGUIUtility.TrTextContent("Simplify Preview", "Show a preview of the simplified version of the line.");
-            public static readonly GUIContent subdivide = EditorGUIUtility.TrTextContent("Subdivide Selected" , "Inserts a new point in between selected adjacent points.");
-            public static readonly GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
-            public static readonly GUIContent textureScale = EditorGUIUtility.TrTextContent("Texture Scale", "Scale the texture along the UV coordinates using this multiplier.");
-            public static readonly GUIContent tolerance = EditorGUIUtility.TrTextContent("Tolerance", "Used to evaluate which points should be removed from the line. A higher value results in a simpler line (fewer points). A value of 0 results in the exact same line with little to no reduction.");
-            public static readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the line width at each segment.");
-            public static readonly GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
-            public static readonly GUIContent sceneTools = EditorGUIUtility.TrTextContent("Scene Tools");
-            public static readonly GUIContent applyActiveColorSpace = EditorGUIUtility.TrTextContent("Apply Active Color Space", "When using Linear Rendering, colors will be converted appropriately before being passed to the GPU.");
+            public static readonly GUIContent inputMode = L10n.TextContent("Input", "Use mouse position or physics raycast to determine where to create points.", null, null);
+            public static readonly GUIContent layerMask = L10n.TextContent("Layer Mask", "The layer mask to use when performing raycasts.", null, null);
+            public static readonly GUIContent normalOffset = L10n.TextContent("Offset", "The offset applied to created points either from the scene camera or raycast normal, when using physics.", null, null);
+            public static readonly GUIContent numCapVertices = L10n.TextContent("End Cap Vertices", "How many vertices to add at each end.", null, null);
+            public static readonly GUIContent numCornerVertices = L10n.TextContent("Corner Vertices", "How many vertices to add for each corner.", null, null);
+            public static readonly GUIContent pointSeparation = L10n.TextContent("Min Vertex Distance", "When dragging the mouse, a new point will be created after the distance has been exceeded.", null, null);
+            public static readonly GUIContent positions = L10n.TextContent("Positions", null, null, null);
+            public static readonly GUIContent propertyMenuContent = L10n.TextContent("Delete Selected Array Elements", null, null, null);
+            public static readonly GUIContent showWireframe = L10n.TextContent("Show Wireframe", "Show the wireframe visualizing the line.", null, null);
+            public static readonly GUIContent simplify = L10n.TextContent("Simplify", "Generates a simplified version of the original line by removing points that fall within the specified tolerance.", null, null);
+            public static readonly GUIContent simplifyPreview = L10n.TextContent("Simplify Preview", "Show a preview of the simplified version of the line.", null, null);
+            public static readonly GUIContent subdivide = L10n.TextContent("Subdivide Selected" , "Inserts a new point in between selected adjacent points.", null, null);
+            public static readonly GUIContent textureMode = L10n.TextContent("Texture Mode", "Should the U coordinate be stretched or tiled?", null, null);
+            public static readonly GUIContent textureScale = L10n.TextContent("Texture Scale", "Scale the texture along the UV coordinates using this multiplier.", null, null);
+            public static readonly GUIContent tolerance = L10n.TextContent("Tolerance", "Used to evaluate which points should be removed from the line. A higher value results in a simpler line (fewer points). A value of 0 results in the exact same line with little to no reduction.", null, null);
+            public static readonly GUIContent shadowBias = L10n.TextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the line width at each segment.", null, null);
+            public static readonly GUIContent generateLightingData = L10n.TextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.", null, null);
+            public static readonly GUIContent sceneTools = L10n.TextContent("Scene Tools", null, null, null);
+            public static readonly GUIContent applyActiveColorSpace = L10n.TextContent("Apply Active Color Space", "When using Linear Rendering, colors will be converted appropriately before being passed to the GPU.", null, null);
         }
 
         abstract class LineRendererTool : EditorTool
@@ -99,7 +99,7 @@ namespace UnityEditor
         {
             public override GUIContent toolbarIcon
             {
-                get { return EditorGUIUtility.TrIconContent("EditCollider", "Edit LineRenderer Points in the Scene View."); }
+                get { return L10n.IconContent("EditCollider", "Edit LineRenderer Points in the Scene View.", null); }
             }
 
             public override void OnToolGUI(EditorWindow window)
@@ -189,7 +189,7 @@ namespace UnityEditor
         {
             public override GUIContent toolbarIcon
             {
-                get { return EditorGUIUtility.TrIconContent("Toolbar Plus", "Create LineRenderer Points in the Scene View."); }
+                get { return L10n.IconContent("Toolbar Plus", "Create LineRenderer Points in the Scene View.", null); }
             }
 
             public override void OnToolGUI(EditorWindow window)

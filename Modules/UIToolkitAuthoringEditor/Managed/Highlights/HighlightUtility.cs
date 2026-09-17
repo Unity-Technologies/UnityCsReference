@@ -23,9 +23,9 @@ static class HighlightUtility
         RequestHighlightsCommand.Execute(source, element);
     }
 
-    public static void RequestHighlights(int elementId, CommandSources.CommandSource source)
+    public static void RequestHighlights(int elementId, VisualTreeAsset elementDocument, CommandSources.CommandSource source)
     {
-        RequestHighlightsCommand.Execute(source, elementId);
+        RequestHighlightsCommand.Execute(source, elementId, elementDocument);
     }
 
     public static void ClearHighlights()

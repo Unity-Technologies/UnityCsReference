@@ -79,9 +79,9 @@ class VisualElementSelectionEditor : UISelectionEditor
         if (m_Inspector == null)
             return;
 
-        var controller = CreateRecordingContextIfEnabled();
+        var controller = CreateRecordingContext();
 
-        // The controller will be null if the project setting is disabled or when we are not recording.
+        // The controller will be null when we are not recording.
         // When the controller exists, we need to change the inspector visibility in two cases:
         // - When something can be animated and we are not in staging, we need to unlock the style section (everything disabled by default).
         // - When in staging and recording, we disable the sections other than the styles, locking sections that can't be recorded.

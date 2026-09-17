@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections;
 using System.Text.RegularExpressions;
@@ -382,19 +381,19 @@ namespace Unity.Profiling.Editor.UI
                 return false;
             }
 
-            if (!m_CaptureDataService.ValidateName(newCaptureName))
+            if (!CaptureDataService.ValidateName(newCaptureName))
             {
                 ShowRenameWarning("Name contains invalid characters");
                 return false;
             }
 
-            if (!m_CaptureDataService.PathLengthIsValid(Model.FullPath, newCaptureName))
+            if (!CaptureDataService.PathLengthIsValid(Model.FullPath, newCaptureName))
             {
                 ShowRenameWarning("File path is too long");
                 return false;
             }
 
-            if (!m_CaptureDataService.CanRename(Model.FullPath, newCaptureName) && Model.Name != newCaptureName)
+            if (!CaptureDataService.CanRename(Model.FullPath, newCaptureName) && Model.Name != newCaptureName)
             {
                 ShowRenameWarning("Capture with the same name already exists");
                 return false;
@@ -421,13 +420,13 @@ namespace Unity.Profiling.Editor.UI
             if (string.IsNullOrEmpty(newCaptureName) || newCaptureName == Model.Name)
                 return;
 
-            if (!m_CaptureDataService.ValidateName(newCaptureName))
+            if (!CaptureDataService.ValidateName(newCaptureName))
                 return;
 
-            if (!m_CaptureDataService.PathLengthIsValid(Model.FullPath, newCaptureName))
+            if (!CaptureDataService.PathLengthIsValid(Model.FullPath, newCaptureName))
                 return;
 
-            if (!m_CaptureDataService.CanRename(Model.FullPath, newCaptureName))
+            if (!CaptureDataService.CanRename(Model.FullPath, newCaptureName))
                 return;
 
             m_CaptureDataService.Rename(Model.FullPath, newCaptureName);
@@ -525,4 +524,3 @@ namespace Unity.Profiling.Editor.UI
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

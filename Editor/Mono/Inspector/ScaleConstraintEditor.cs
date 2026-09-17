@@ -28,10 +28,10 @@ namespace UnityEditor
 
         private class Styles : ConstraintStyleBase
         {
-            GUIContent m_ScaleAtRest = EditorGUIUtility.TrTextContent("Scale At Rest");
-            GUIContent m_ScaleOffset = EditorGUIUtility.TrTextContent("Scale Offset");
+            GUIContent m_ScaleAtRest = L10n.TextContent("Scale At Rest", null, null, null);
+            GUIContent m_ScaleOffset = L10n.TextContent("Scale Offset", null, null, null);
 
-            GUIContent m_ScalingAxes = EditorGUIUtility.TrTextContent("Freeze Scaling Axes");
+            GUIContent m_ScalingAxes = L10n.TextContent("Freeze Scaling Axes", null, null, null);
 
             public override GUIContent AtRest { get { return m_ScaleAtRest; } }
             public override GUIContent Offset { get { return m_ScaleOffset; } }

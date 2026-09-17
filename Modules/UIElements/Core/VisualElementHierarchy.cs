@@ -5,6 +5,7 @@
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -23,7 +24,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Hierarchy hierarchy
         {
-            get;
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => new Hierarchy(this);
         }
 
         /// <summary>
@@ -36,7 +38,7 @@ namespace UnityEngine.UIElements
         }
 
         [Obsolete("VisualElement.cacheAsBitmap is deprecated and has no effect")]
-        public bool cacheAsBitmap { get; set; }
+        public bool cacheAsBitmap { get => false; set {} }
 
         internal bool disableClipping
         {
@@ -601,7 +603,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Hierarchy is a struct allowing access to the hierarchy of visual elements
         /// </summary>
-        public struct Hierarchy
+        public readonly struct Hierarchy
         {
             private const string k_InvalidHierarchyChangeMsg = "Cannot modify VisualElement hierarchy during layout calculation";
 

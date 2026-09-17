@@ -54,6 +54,9 @@ namespace Unity.GraphToolkit
         // hot paths; Type.GetType(AQN) does string manipulation and a lookup on every call, so caching the
         // resolved Type by Identification string collapses repeat calls to a single dictionary probe.
         [AutoStaticsCleanupOnCodeReload]
+        // Type-resolution memo keyed by TypeHandle identification: ResolveType re-resolves and re-adds any
+        // missing entry, and the cache is already cleared whenever the type database changes.
+        [IgnoreForUAL0015("Type-resolution memo re-resolved on the next miss")]
         static Dictionary<string, Type> s_ResolveCache = new();
 
         // For tests only

@@ -42,7 +42,7 @@ namespace UnityEditorInternal
         internal static bool RenderDocCaptureButton(EditorWindow view, WindowAction self, Rect r)
         {
             if (s_RenderDocContent == null)
-                s_RenderDocContent = EditorGUIUtility.TrIconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip);
+                s_RenderDocContent = L10n.IconContent("FrameCapture", RenderDocUtil.openInRenderDocTooltip, null);
 
             Rect r2 = new Rect(r.xMax - r.width, r.y, r.width, r.height);
             return GUI.Button(r2, s_RenderDocContent, EditorStyles.iconButton);

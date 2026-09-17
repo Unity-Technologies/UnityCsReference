@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
@@ -254,6 +253,8 @@ namespace Unity.UI.Builder
         // the default document; the regular OnAfterBuilderDeserialize pass then reloads it into the canvas.
         internal void ReopenAsset(VisualTreeAsset asset) => activeOpenUXMLFile.ReopenAsset(asset);
 
+        internal void ReopenStyleSheet(StyleSheet styleSheet) => activeOpenUXMLFile.ReopenStyleSheet(styleSheet);
+
         // Called when the owning secondary window closes for good: release what the open files hold (registry
         // references, backups) and destroy the document. The default document is never destroyed; it lingers so
         // the next primary window can restore it.
@@ -384,6 +385,24 @@ namespace Unity.UI.Builder
             ClearUsingDeprecatedAPINotification();
             CheckForUsingDeprecatedAPI(documentElement);
         }
+
+        // Opens a .uss/.tss by itself, hosted in a read-only copy of the preview document.
+        public void LoadStyleSheetDocument(VisualTreeAsset previewDocument, StyleSheet styleSheet, VisualElement documentElement)
+        {
+            activeOpenUXMLFile.LoadStyleSheetDocument(previewDocument, styleSheet, documentElement);
+            SaveToDisk();
+            ClearUsingDeprecatedAPINotification();
+        }
+
+        // True while a .uss/.tss is open by itself (StyleSheet Editing Mode).
+        public bool isStyleSheetEditingMode => activeOpenUXMLFile.isStyleSheetEditingMode;
+
+        // True while the sheet open by itself is a .tss: it IS a theme, so the canvas previews it bare.
+        public bool isEditingThemeStyleSheet => activeOpenUXMLFile.openedStyleSheet is ThemeStyleSheet;
+
+        // In StyleSheet Editing Mode the canvas and hierarchy are a read-only preview: structural
+        // operations on their elements route through this to be blocked; selector editing is unaffected.
+        public bool isCanvasReadOnly => isStyleSheetEditingMode;
 
         void OnDoNotShowAgainButtonPressed()
         {
@@ -772,13 +791,22 @@ namespace Unity.UI.Builder
             var registry = UIAssetRegistry.instance;
 
             using var _ = ListPool<StyleSheet>.Get(out var sheets);
-            UIAssetRegistry.CollectDocumentStyleSheets(vta, sheets);
+            if (isStyleSheetEditingMode)
+            {
+                // The mode's registry footprint is its open-USS list (the opened sheet): the host may
+                // also carry its own, never-tracked sheets when the preview document is a user UXML.
+                foreach (var openUSS in openUSSFiles)
+                    sheets.Add(openUSS.styleSheet);
+            }
+            else
+                UIAssetRegistry.CollectDocumentStyleSheets(vta, sheets);
 
             // The registry can only vouch for assets it tracks: IsDirty answers false for an untracked one,
             // which is "I don't know", not "clean". Treating that as clean would clear a "*" that our own
             // in-memory edits have earned — and the registry's open set does not survive a domain reload until
-            // every tool has re-reported. So only ever CLEAR the marker when the whole document is accounted for.
-            var allTracked = registry.IsTracked(vta);
+            // every tool has re-reported. So only ever CLEAR the marker when the whole document is accounted
+            // for. The StyleSheet Editing host is a non-persistent copy the registry never tracks.
+            var allTracked = isStyleSheetEditingMode || registry.IsTracked(vta);
             var dirty = registry.IsDirty(vta);
             foreach (var sheet in sheets)
             {
@@ -830,4 +858,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

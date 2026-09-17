@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -65,9 +64,18 @@ namespace Unity.GraphToolkit.Editor
         SerializedValueDictionary<(Hash128, uint), SerializedChangeset> m_ToNextVersionChangesets = new();
         SerializedValueDictionary<(Hash128, uint), SerializedChangeset> m_FromPreviousVersionChangesets = new();
 
-        [AutoStaticsCleanupOnCodeReload]
+        // These index the changesets held in the serialized dictionaries above, and the recorder itself
+        // is a ScriptableObject that survives a code reload with its m_OperationId intact, so they have
+        // to share that lifetime rather than the code-loaded scope:
+        //  - resetting s_LastOperationId to 0 while a serialized m_OperationId is still, say, 42 stops
+        //    the "m_OperationId < s_LastOperationId" prune check in BeginRecording from ever firing, and
+        //    re-issues operation ids that are already in use.
+        //  - clearing s_Operations orphans the serialized changesets it points at, so RemoveOperation
+        //    and PurgeOldChangesets can no longer reach them and they leak.
+        // Only uint and Hash128 value data is retained, so keeping these pins nothing reloadable.
+        [NoAutoStaticsCleanup]
         static List<OperationRecord> s_Operations = new();
-        [AutoStaticsCleanupOnCodeReload]
+        [NoAutoStaticsCleanup]
         static uint s_LastOperationId;
 
         // For use in tests, to get a clean state.
@@ -518,4 +526,3 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

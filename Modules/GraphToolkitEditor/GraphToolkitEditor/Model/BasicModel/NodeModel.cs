@@ -244,7 +244,7 @@ namespace Unity.GraphToolkit.Editor
                     initializationCallback = c => c.ObjectValue = defaultValue;
                 return AddNodeOption(optionDisplayName ?? optionName, dataType.GenerateTypeHandle(), optionDisplayName != null ? optionName : null, tooltip, showInInspectorOnly, order, attributes, initializationCallback, _ =>
                 {
-                    if (!m_NodeModel.m_InDefineNode)
+                    if (!m_NodeModel.IsInDefineNode)
                         m_NodeModel.DefineNode();
                 });
             }
@@ -341,6 +341,15 @@ namespace Unity.GraphToolkit.Editor
         [SerializeField, HideInInspector]
         SerializedReferenceDictionary<string, Constant> m_InputConstantsById;
 
+        [SerializeField, HideInInspector]
+        SerializedValueDictionary<string, TypeHandle> m_PolymorphicPortSelections = new();
+
+        internal bool TryGetPolymorphicPortSelection(string uniqueName, out TypeHandle selection)
+        {
+            selection = default;
+            return m_PolymorphicPortSelections?.TryGetValue(uniqueName, out selection) ?? false;
+        }
+
         [Serializable]
         struct PortInfos
         {
@@ -385,13 +394,13 @@ namespace Unity.GraphToolkit.Editor
         [SerializeField, HideInInspector]
         protected ElementColor m_ElementColor;
 
-        bool m_InDefineNode;
-
         SubPortDefinition m_SubPortDefinition;
 
         // indicates whether we have migrated node option constants to have the correct id (with the NodeOption.k_OptionIdPrefix prefix).
         [NonSerialized]
         bool m_NodeOptionConstantsMigrated;
+
+        internal bool IsInDefineNode { get; private set; }
 
         /// <inheritdoc />
         public override string IconTypeString
@@ -480,6 +489,9 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         /// <remarks>Each port in the node has a <see cref="PortModel.UniqueName"/> for identification.</remarks>
         public IReadOnlyDictionary<string, Constant> InputConstantsById => m_InputConstantsById;
+
+        /// <inheritdoc />
+        internal override IDictionary<string, Constant> ConstantsByPortName => m_InputConstantsById;
 
         /// <inheritdoc />
         /// <remarks>Setter implementations for <see cref="GraphElementModel"/> subclasses must set the <see cref="ChangeHint.Layout"/> change hint.</remarks>
@@ -681,9 +693,9 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Instantiates the ports of the nodes.
         /// </summary>
-        public void DefineNode()
+        public override void DefineNode()
         {
-            m_InDefineNode = true;
+            IsInDefineNode = true;
             using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
 
             OnPreDefineNode();
@@ -697,8 +709,7 @@ namespace Unity.GraphToolkit.Editor
 
             m_InputPortInfos.orderedVisiblePorts.Clear();
             m_OutputPortInfos.orderedVisiblePorts.Clear();
-            m_NodeOptions.Clear();
-            m_NodeOptionsByName.Clear();
+            ClearNodeOptions();
 
             m_InputPortInfos.portsById = new OrderedPorts(m_InputPortInfos.portsById?.Count ?? 0);
             m_OutputPortInfos.portsById = new OrderedPorts(m_OutputPortInfos.portsById?.Count ?? 0);
@@ -711,7 +722,43 @@ namespace Unity.GraphToolkit.Editor
 
             RemoveObsoleteNodeOptionPorts();
             RemoveObsoleteWiresAndConstants();
-            m_InDefineNode = false;
+            PrunePolymorphicPortSelections();
+            IsInDefineNode = false;
+        }
+
+        void PrunePolymorphicPortSelections()
+        {
+            if (m_PolymorphicPortSelections == null || m_PolymorphicPortSelections.Count == 0)
+                return;
+
+            using var pool = ListPool<string>.Get(out var toRemove);
+            foreach (var key in m_PolymorphicPortSelections.Keys)
+            {
+                if (IsCurrentPolymorphicPort(key))
+                    continue;
+                toRemove.Add(key);
+            }
+
+            if (toRemove.Count == 0)
+                return;
+
+            foreach (var key in toRemove)
+                m_PolymorphicPortSelections.Remove(key);
+
+            GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
+        }
+
+        bool IsCurrentPolymorphicPort(string uniqueName)
+        {
+            if (m_InputPortInfos.portsById != null
+                && m_InputPortInfos.portsById.TryGetValue(uniqueName, out var input)
+                && input.IsPolymorphic)
+                return true;
+            if (m_OutputPortInfos.portsById != null
+                && m_OutputPortInfos.portsById.TryGetValue(uniqueName, out var output)
+                && output.IsPolymorphic)
+                return true;
+            return false;
         }
 
         void RedefinePort(PortModel port)
@@ -999,27 +1046,36 @@ namespace Unity.GraphToolkit.Editor
         /// <remarks>Given the same parameters, <see cref="GetReusablePort"/> must return an equivalent PortModel to <see cref="CreatePort"/></remarks>
         public virtual PortModel GetReusablePort(IReadOnlyDictionary<string, PortModel> previousPorts, PortDirection direction, string portName, PortType portType, TypeHandle dataType, string portId, PortModel parentPort)
         {
-            var hash = PortModel.ComputePortHash(this, direction, portName, portType, dataType, portId, parentPort);
-            if (GraphModel != null && (GraphModel.TryGetModelFromGuid(hash, out PortModel result) || (previousPorts != null && previousPorts.TryGetValue(PortModel.ComputeUniqueName(portId, portName, hash, parentPort?.UniqueName), out result))))
+            try
             {
-                if (result is IHasTitle toAddHasTitle)
+                IsPortBeingReused = true;
+                var hash = PortModel.ComputePortHash(this, direction, portName, portType, dataType, portId, parentPort);
+                if (GraphModel != null && (GraphModel.TryGetModelFromGuid(hash, out PortModel result) || (previousPorts != null && previousPorts.TryGetValue(PortModel.ComputeUniqueName(portId, portName, hash, parentPort?.UniqueName), out result))))
                 {
-                    toAddHasTitle.Title = portName ?? "";
+                    if (result is IHasTitle toAddHasTitle)
+                    {
+                        toAddHasTitle.Title = portName ?? "";
+                    }
+
+                    result.DataTypeHandle = dataType;
+                    result.PortType = portType;
+
+                    return result;
                 }
-                result.DataTypeHandle = dataType;
-                result.PortType = portType;
 
-                return result;
+                return null;
             }
-
-            return null;
+            finally
+            {
+                IsPortBeingReused = false;
+            }
         }
 
         PortModel ReuseOrCreatePortModel(PortDirection direction, PortOrientation orientation, string portName, PortType portType,
             TypeHandle dataType, string portId, PortModelOptions options, Attribute[] attributes, IReadOnlyDictionary<string, PortModel> previousPorts, OrderedPorts newPorts, PortModel parentPort)
         {
             // If a port is added outside OnDefineNode, clear the visible ports list to force a rebuild. ( Case of missing ports )
-            if (!m_InDefineNode)
+            if (!IsInDefineNode)
                 GetPortInfos(direction).orderedVisiblePorts.Clear();
 
             // reuse existing ports when ids match, otherwise add port
@@ -1123,13 +1179,6 @@ namespace Unity.GraphToolkit.Editor
 
             return AddOutputPort(portName ?? portId, TypeHandle.MissingPort, PortType.MissingPort, portId, orientation,
                 PortModelOptions.NoEmbeddedConstant);
-        }
-
-        NodeOption AddNodeOption(NodeOption nodeOption)
-        {
-            m_NodeOptions.Add(nodeOption);
-            m_NodeOptionsByName[nodeOption.Id] = nodeOption;
-            return m_NodeOptions[^1];
         }
 
         internal PortModel AddOutputPort(string portName, TypeHandle dataType, PortType portType = null,
@@ -1276,6 +1325,12 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
+            if (m_PolymorphicPortSelections != null && m_PolymorphicPortSelections.TryGetValue(oldUniqueName, out var selection))
+            {
+                m_PolymorphicPortSelections.Remove(oldUniqueName);
+                m_PolymorphicPortSelections[newUniqueName] = selection;
+            }
+
             GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Unspecified);
         }
 
@@ -1302,7 +1357,7 @@ namespace Unity.GraphToolkit.Editor
                 throw new ArgumentException("SetPortExpanded called on another port's node.");
             }
 
-            if (!m_InDefineNode && !portModel.IsExpandable)
+            if (!IsInDefineNode && !portModel.IsExpandable)
             {
                 // If we are in DefineNode, we might not know yet if the port is expandable or not.
                 throw new ArgumentException("SetPortExpanded called on a not expandable node.");
@@ -1324,7 +1379,7 @@ namespace Unity.GraphToolkit.Editor
             }
             portModel.SetPortExpanded(expanded);
 
-            if (!m_InDefineNode)
+            if (!IsInDefineNode)
             {
                 if (portModel.SubPorts.Count > 0)
                 {
@@ -1360,64 +1415,27 @@ namespace Unity.GraphToolkit.Editor
 
         internal override void OnPortDataTypeChanged(PortModel portModel, TypeHandle previousType, TypeHandle dataTypeHandle)
         {
-            if (!m_InDefineNode)
+            // Record the selection whenever a polymorphic port's type changes, including changes user code makes inside
+            // OnDefinePorts (e.g. TrySetDataType). Framework-driven writes from GetReusablePort resetting the port to its
+            // declared default are already filtered out at the setter level (IsPortBeingReused), and SetAllowedTypes'
+            // restore path writes the same value the dict already holds, so this remains idempotent during DefineNode.
+            if (portModel.IsPolymorphic)
+            {
+                m_PolymorphicPortSelections[portModel.UniqueName] = dataTypeHandle;
+
+                // The port setter's own AddChangedModel doesn't mark the graph asset dirty (see GraphChangeDescription.AddChangedModel:
+                // PortModel changes are excluded from SetGraphObjectDirty). The polymorphic selection lives on this NodeModel, so
+                // marking the node as changed ensures the asset is flagged for save. Skip this side-effect during DefineNode to
+                // avoid churn on the change description while the node is still being set up.
+                if (!IsInDefineNode)
+                    GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
+            }
+
+            if (!IsInDefineNode)
             {
                 RedefinePort(portModel);
             }
             UpdateConstantForInput(portModel);
-        }
-
-        /// <summary>
-        /// Updates an input port's constant.
-        /// </summary>
-        /// <param name="inputPort">The port to update.</param>
-        /// <param name="initializationCallback">An initialization method for the constant to be called right after the constant is created.</param>
-        /// <param name="setterAction">A method to be called after the constant value changes.</param>
-        protected internal override void UpdateConstantForInput(PortModel inputPort, Action<Constant> initializationCallback = null, Action<object> setterAction = null)
-        {
-            var id = inputPort.UniqueName;
-            if ((inputPort.Options & PortModelOptions.NoEmbeddedConstant) != 0)
-            {
-                m_InputConstantsById.Remove(id);
-                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Unspecified);
-                return;
-            }
-
-            Constant newConstant = null;
-            if (m_InputConstantsById.TryGetValue(id, out var existingConstant))
-            {
-                newConstant = GraphModel?.CreateConstantValue(inputPort.DataTypeHandle);
-                var portDefinitionType = newConstant != null ? newConstant.Type : inputPort.DataTypeHandle.Resolve();
-
-                if (!existingConstant.IsAssignableFrom(portDefinitionType))
-                {
-                    // Destroy incompatible constant
-                    m_InputConstantsById.Remove(id);
-                    GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Unspecified);
-                }
-                else
-                {
-                    // Reuse compatible constant.
-                    existingConstant.OwnerModel = inputPort;
-                    existingConstant.SetterMethod = setterAction;
-                    return;
-                }
-            }
-
-            // Create new constant if needed
-            if (inputPort.CreateEmbeddedValueIfNeeded
-                && inputPort.DataTypeHandle != TypeHandle.Unknown)
-            {
-                newConstant ??= GraphModel?.CreateConstantValue(inputPort.DataTypeHandle);
-                if (newConstant != null)
-                {
-                    newConstant.OwnerModel = inputPort;
-                    initializationCallback?.Invoke(newConstant);
-                    newConstant.SetterMethod = setterAction;
-                    m_InputConstantsById[id] = newConstant;
-                    GraphModel.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Unspecified);
-                }
-            }
         }
 
         void CopyInputConstantValues(List<KeyValuePair<string, Constant>> otherInputConstants)

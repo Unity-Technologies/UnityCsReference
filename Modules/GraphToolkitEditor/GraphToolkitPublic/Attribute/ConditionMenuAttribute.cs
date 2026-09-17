@@ -24,9 +24,10 @@ namespace Unity.GraphToolkit.Editor
     /// machine types.
     /// <br/>
     /// <br/>
-    /// <see cref="MenuContext.ClickedObject"/> is the clicked <see cref="ICondition"/>, or <c>null</c>
-    /// when the click landed on empty space in the condition list. A condition defined by deriving
-    /// from <see cref="Condition"/> or <see cref="Condition{T}"/> is passed as that derived type.
+    /// <see cref="MenuContext.ClickedObject"/> is the clicked <see cref="ICondition"/>. It is the
+    /// root group condition when the root row is clicked. It is <c>null</c> when the click doesn't
+    /// land on any condition or group row. A condition defined by deriving from
+    /// <see cref="Condition"/> or <see cref="Condition{T}"/> is passed as that derived type.
     /// </remarks>
     /// <example>
     /// <code lang="cs">

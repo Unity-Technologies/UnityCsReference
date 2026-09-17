@@ -22,7 +22,7 @@ namespace Unity.Localization;
 /// Store a reference in a serialized field to expose it in the Inspector, then read the localized value at runtime.
 /// </remarks>
 /// <example>
-/// <para>Configure a reference through the derived <see cref="LocalizedString"/> type and choose the locale it resolves in.</para>
+/// Configure a reference through the derived <see cref="LocalizedString"/> type and choose the locale it resolves in.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedReferenceConfigureExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedString"/>

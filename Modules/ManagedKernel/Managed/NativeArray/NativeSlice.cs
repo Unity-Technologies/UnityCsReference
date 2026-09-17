@@ -13,18 +13,31 @@ using UnityEngine.Internal;
 
 namespace Unity.Collections
 {
+    ///<exclude />
     public static class NativeSliceExtensions
     {
+        ///<summary>[[NativeArray] extension methods for creating a <see cref="NativeSlice{T}" />.</summary>
+        ///<param name="thisArray">NativeArray to slice.</param>
+        ///<returns>NativeSlice.</returns>
         public static NativeSlice<T> Slice<T>(this NativeArray<T> thisArray) where T : struct
         {
             return new NativeSlice<T>(thisArray);
         }
 
+        ///<summary>[[NativeArray] extension methods for creating a <see cref="NativeSlice{T}" />.</summary>
+        ///<param name="thisArray">NativeArray to slice.</param>
+        ///<param name="start">Slice start index.</param>
+        ///<returns>NativeSlice.</returns>
         public static NativeSlice<T> Slice<T>(this NativeArray<T> thisArray, int start) where T : struct
         {
             return new NativeSlice<T>(thisArray, start);
         }
 
+        ///<summary>[[NativeArray] extension methods for creating a <see cref="NativeSlice{T}" />.</summary>
+        ///<param name="thisArray">NativeArray to slice.</param>
+        ///<param name="length">Slice length.</param>
+        ///<param name="start">Slice start index.</param>
+        ///<returns>NativeSlice.</returns>
         public static NativeSlice<T> Slice<T>(this NativeArray<T> thisArray, int start, int length) where T : struct
         {
             return new NativeSlice<T>(thisArray, start, length);
@@ -46,6 +59,15 @@ namespace Unity.Collections
         }
     }
 
+    ///<summary>Provides a view on a buffer of native memory most commonly acquired from a <see cref="Unity.Collections.NativeArray{T}" />.</summary>
+    ///<remarks>A <c>NativeSlice</c> includes safety mechanisms for use with the job system. A <c>NativeSlice</c> doesn't own any memory allocations and can't be disposed, unlike a <c>NativeArray</c><see cref="Unity.Collections.NativeArray{T}" />. 
+    ///                
+    ///A <c>NativeSlice</c> supports a stride value and doesn't necessarily represent a contiguous memory range. The stride value 
+    ///determines the number of bytes from the first byte of the element to the first byte of the next element. The stride value 
+    ///must always be a multiple of the size of the type of the slice in bytes. The stride value allows you to skip elements from the underlying buffer.
+    ///                
+    ///By default, the stride is set to the size of the type of slice in bytes. This means that the slice represents a contiguous memory range.
+    ///If you don't need a stride and are only working with contiguous memory ranges, use <see cref="Unity.Collections.NativeArray{T}" /> instead.</remarks>
     [StructLayout(LayoutKind.Sequential)]
     [NativeContainer]
     [NativeContainerSupportsMinMaxWriteRestriction]
@@ -63,8 +85,17 @@ namespace Unity.Collections
         [VisibleToOtherModules("UnityEngine.CoreModule")]
         internal AtomicSafetyHandle                      m_Safety;
 
+        ///<summary>Constructs a new NativeSlice from another NativeSlice, with a defined start index.</summary>
+        ///<remarks>Constructs a new <c>NativeSlice</c> that provides a view over the memory of another existing <c>NativeSlice</c>, beginning at a specified starting index.</remarks>
+        ///<param name="slice">The <see cref="Unity.Collections.NativeSlice{T}" /> to use.</param>
+        ///<param name="start">The index of the first element from the source slice to include in the new slice.</param>
         public NativeSlice(NativeSlice<T> slice, int start) : this(slice, start, slice.Length - start) {}
 
+        ///<summary>Constructs a new NativeSlice of defined length <c>length</c>, from another NativeSlice, with a defined start index.</summary>
+        ///<remarks>Constructs a new <c>NativeSlice</c> that provides a view over a defined sub-region of another existing <c>NativeSlice</c>, beginning at a specified starting index and covering an exact number of elements.</remarks>
+        ///<param name="slice">The <see cref="Unity.Collections.NativeSlice{T}" /> to use.</param>
+        ///<param name="start">The index of the first element from the source slice to include in the new slice.</param>
+        ///<param name="length">The number of elements that the new NativeSlice will have.</param>
         public NativeSlice(NativeSlice<T> slice, int start, int length)
         {
             if (start < 0)
@@ -85,14 +116,28 @@ namespace Unity.Collections
             m_Length = length;
         }
 
+        ///<summary>Constructs a new NativeSlice from a NativeArray.</summary>
+        ///<remarks>Constructs a new <c>NativeSlice</c> that provides a view over the memory of the specified <c>NativeArray</c>.</remarks>
+        ///<param name="array">The <see cref="Unity.Collections.NativeArray{T}" /> to use.</param>
         public NativeSlice(NativeArray<T> array) : this(array, 0, array.Length) {}
+        ///<summary>Constructs a new NativeSlice from a NativeArray, with a defined start index.</summary>
+        ///<remarks>Constructs a new <c>NativeSlice</c> that provides a view over the memory of the specified <c>NativeArray</c>, beginning at a specified starting index.</remarks>
+        ///<param name="array">The <see cref="Unity.Collections.NativeArray{T}" /> to use.</param>
+        ///<param name="start">The index of the first element from the source to include in the slice.</param>
         public NativeSlice(NativeArray<T> array, int start) : this(array, start, array.Length - start) {}
 
+        ///<summary>Implicit operator to create a <see cref="Unity.Collections.NativeSlice{T}" /> from a <see cref="Unity.Collections.NativeArray{T}" />.</summary>
+        ///<param name="array">The <see cref="Unity.Collections.NativeArray{T}" /> to use.</param>
         public static implicit operator NativeSlice<T>(NativeArray<T> array)
         {
             return new NativeSlice<T>(array);
         }
 
+        ///<summary>Constructs a new NativeSlice of defined length <c>length</c>, from a NativeArray with a defined start index.</summary>
+        ///<remarks>Constructs a new <c>NativeSlice</c> that provides a view over a sub-region of the specified <c>NativeArray</c>, beginning at a specified starting index and covering a specific number of elements.</remarks>
+        ///<param name="array">The <see cref="Unity.Collections.NativeArray{T}" /> to use.</param>
+        ///<param name="start">The index of the first element from the source to include in the slice.</param>
+        ///<param name="length">The number of elements that the new NativeSlice will have.</param>
         public NativeSlice(NativeArray<T> array, int start, int length)
         {
             if (start < 0)
@@ -117,6 +162,8 @@ namespace Unity.Collections
         }
 
         // Keeps stride, changes length
+        ///<summary>Reinterprets a NativeSlice with a different data type (type punning).</summary>
+        ///<returns>A new <see cref="Unity.Collections.NativeSlice{T}" /> that views the same memory, but is reinterpreted as the target type.</returns>
         public NativeSlice<U> SliceConvert<U>() where U : struct
         {
             var sizeofU = UnsafeUtility.SizeOf<U>();
@@ -140,6 +187,9 @@ namespace Unity.Collections
         }
 
         // Keeps length, changes stride
+        ///<summary>SliceWithStride.</summary>
+        ///<param name="offset">Stride offset.</param>
+        ///<returns>NativeSlice.</returns>
         public NativeSlice<U> SliceWithStride<U>(int offset) where U : struct
         {
             NativeSlice<U> outputSlice;
@@ -158,6 +208,8 @@ namespace Unity.Collections
             return outputSlice;
         }
 
+        ///<summary>SliceWithStride.</summary>
+        ///<returns>NativeSlice.</returns>
         public NativeSlice<U> SliceWithStride<U>() where U : struct
         {
             return SliceWithStride<U>(0);
@@ -186,6 +238,8 @@ namespace Unity.Collections
                 AtomicSafetyHandle.CheckWriteAndThrowNoEarlyOut(m_Safety);
         }
 
+        ///<summary>Accesses <see cref="Unity.Collections.NativeSlice{T}" /> elements by index.</summary>
+        ///<remarks>Structs are returned by value and not by reference. This property also takes the NativeSlice's stride into account.</remarks>
         public T this[int index]
         {
             get
@@ -216,6 +270,8 @@ namespace Unity.Collections
         }
 
 
+        ///<summary>Copies all the elements from a <see cref="Unity.Collections.NativeSlice{T}" /> or managed array of the same length.</summary>
+        ///<param name="slice">The <see cref="Unity.Collections.NativeSlice{T}" /> to copy the elements from.</param>
         [WriteAccessRequired]
         public void CopyFrom(NativeSlice<T> slice)
         {
@@ -225,6 +281,8 @@ namespace Unity.Collections
             UnsafeUtility.MemCpyStride(this.GetUnsafePtr(), Stride, slice.GetUnsafeReadOnlyPtr(), slice.Stride, UnsafeUtility.SizeOf<T>(), m_Length);
         }
 
+        ///<summary>Copies all the elements from a <see cref="Unity.Collections.NativeSlice{T}" /> or managed array of the same length.</summary>
+        ///<param name="array">The array to copy elements from.</param>
         [WriteAccessRequired]
         public void CopyFrom(T[] array)
         {
@@ -242,6 +300,8 @@ namespace Unity.Collections
             }
         }
 
+        ///<summary>Copies all the elements of a <see cref="Unity.Collections.NativeSlice{T}" /> to a <see cref="Unity.Collections.NativeArray{T}" /> or managed array of the same length.</summary>
+        ///<param name="array">The array to copy elements to.</param>
         public void CopyTo(NativeArray<T> array)
         {
             if (Length != array.Length)
@@ -251,6 +311,8 @@ namespace Unity.Collections
             UnsafeUtility.MemCpyStride(array.GetUnsafePtr(), sizeOf, this.GetUnsafeReadOnlyPtr(), Stride, sizeOf, m_Length);
         }
 
+        ///<summary>Copies all the elements of a <see cref="Unity.Collections.NativeSlice{T}" /> to a <see cref="Unity.Collections.NativeArray{T}" /> or managed array of the same length.</summary>
+        ///<param name="array">The array to copy elements to.</param>
         public void CopyTo(T[] array)
         {
             if (Length != array.Length)
@@ -267,6 +329,8 @@ namespace Unity.Collections
             }
         }
 
+        ///<summary>Converts a <see cref="Unity.Collections.NativeSlice{T}" /> to managed array.</summary>
+        ///<returns>A managed array with a copy of the contents of the NativeSlice.</returns>
         public T[] ToArray()
         {
             var array = new T[Length];
@@ -274,7 +338,10 @@ namespace Unity.Collections
             return array;
         }
 
+        ///<summary>Gets the stride value for the <see cref="Unity.Collections.NativeSlice{T}" /> instance.</summary>
+        ///<remarks>The stride value allows a NativeSlice to represent non-contiguous memory ranges.</remarks>
         public int      Stride => m_Stride;
+        ///<summary>Represents the number of elements in a <see cref="Unity.Collections.NativeSlice{T}" />.</summary>
         public int      Length
         {
             get
@@ -283,6 +350,8 @@ namespace Unity.Collections
             }
         }
 
+        ///<summary>Gets an enumerator to iterate through the elements of a <see cref="Unity.Collections.NativeSlice{T}" />.</summary>
+        ///<returns>An enumerator that can iterate through the elements of a NativeSlice.</returns>
         public Enumerator GetEnumerator()
         {
             return new Enumerator(ref this);
@@ -331,17 +400,20 @@ namespace Unity.Collections
             object IEnumerator.Current => Current;
         }
 
+        ///<exclude />
         public bool Equals(NativeSlice<T> other)
         {
             return m_Buffer == other.m_Buffer && m_Stride == other.m_Stride && m_Length == other.m_Length;
         }
 
+        ///<exclude />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             return obj is NativeSlice<T> && Equals((NativeSlice<T>)obj);
         }
 
+        ///<exclude />
         public override int GetHashCode()
         {
             unchecked
@@ -353,11 +425,13 @@ namespace Unity.Collections
             }
         }
 
+        ///<exclude />
         public static bool operator==(NativeSlice<T> left, NativeSlice<T> right)
         {
             return left.Equals(right);
         }
 
+        ///<exclude />
         public static bool operator!=(NativeSlice<T> left, NativeSlice<T> right)
         {
             return !left.Equals(right);
@@ -385,19 +459,31 @@ namespace Unity.Collections
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
+    ///<summary>Contains unsafe methods for working with <see cref="NativeSlice{T}" /> instances.</summary>
     public static class NativeSliceUnsafeUtility
     {
+        ///<summary>Gets the <see cref="AtomicSafetyHandle" /> for a <see cref="NativeSlice{T}" />.</summary>
+        ///<param name="slice">The <see cref="NativeSlice{T}" /> to check.</param>
+        ///<returns>The <see cref="AtomicSafetyHandle" /> of <c>slice</c>.</returns>
         public static AtomicSafetyHandle GetAtomicSafetyHandle<T>(NativeSlice<T> slice) where T : struct
         {
             return slice.m_Safety;
         }
 
+        ///<summary>Set the <see cref="AtomicSafetyHandle" /> on <see cref="NativeSlice{T}" />.</summary>
+        ///<param name="slice">The NativeSlice to set.</param>
+        ///<param name="safety">The AtomicSafetyHandle to use.</param>
         public static void SetAtomicSafetyHandle<T>(ref NativeSlice<T> slice, AtomicSafetyHandle safety) where T : struct
         {
             slice.m_Safety = safety;
         }
 
 
+        ///<summary>Creates a new <see cref="NativeSlice{T}" /> from existing data.</summary>
+        ///<param name="length">Number of elements in the data set.</param>
+        ///<param name="dataPointer">Memory pointer to the data.</param>
+        ///<param name="stride">Stride in bytes.</param>
+        ///<returns>The created NativeSlice.</returns>
         public static unsafe NativeSlice<T> ConvertExistingDataToNativeSlice<T>(void* dataPointer, int stride, int length) where T : struct
         {
             if (length < 0)
@@ -418,12 +504,18 @@ namespace Unity.Collections.LowLevel.Unsafe
             return newSlice;
         }
 
+        ///<summary>Gets a <see cref="NativeSlice{T}" /> memory buffer pointer and checks whether the native array can be written to.</summary>
+        ///<param name="nativeSlice">The NativeSlice to check.</param>
+        ///<returns>The memory buffer pointer of <c>nativeSlice</c>.</returns>
         public static unsafe void* GetUnsafePtr<T>(this NativeSlice<T> nativeSlice) where T : struct
         {
             AtomicSafetyHandle.CheckWriteAndThrow(nativeSlice.m_Safety);
             return nativeSlice.m_Buffer;
         }
 
+        ///<summary>Gets a <see cref="NativeSlice{T}" /> memory buffer pointer and checks whether the native array can be read from.</summary>
+        ///<param name="nativeSlice">The NativeSlice to check.</param>
+        ///<returns>The memory buffer pointer of <c>nativeSlice</c>.</returns>
         public static unsafe void* GetUnsafeReadOnlyPtr<T>(this NativeSlice<T> nativeSlice) where T : struct
         {
             AtomicSafetyHandle.CheckReadAndThrow(nativeSlice.m_Safety);

@@ -20,7 +20,6 @@ internal interface ISDKPlatformExtension
     bool shouldShowBuildActions { get; }
     Type[] requiredComponents { get; }
     Type[] customFooterActions { get; }
-    PreconfiguredSettingsVariant[] preconfiguredSettingsVariants { get; }
 
     void OnMultiTargetBuildProfileCreated(BuildProfile buildProfile, int preconfiguredSettingsVariant);
 }

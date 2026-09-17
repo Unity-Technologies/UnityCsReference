@@ -37,7 +37,7 @@ namespace UnityEditor.UIElements
 
             try
             {
-                doc = XDocument.Parse(File.ReadAllText(FileUtil.PathToAbsolutePath(assetPath)), LoadOptions.SetLineInfo);
+                doc = XDocument.Parse(File.ReadAllText(FileUtil.PathToAbsolutePathForFileIO(assetPath)), LoadOptions.SetLineInfo);
             }
             catch (Exception)
             {
@@ -288,7 +288,7 @@ namespace UnityEditor.UIElements
         internal static Hash128 GenerateHash(string uxmlPath)
         {
             var h = new Hash128();
-            using (var stream = File.OpenRead(FileUtil.PathToAbsolutePath(uxmlPath)))
+            using (var stream = File.OpenRead(FileUtil.PathToAbsolutePathForFileIO(uxmlPath)))
             {
                 int readCount = 0;
                 byte[] b = new byte[1024 * 16];
@@ -316,7 +316,8 @@ namespace UnityEditor.UIElements
 
             try
             {
-                doc = XDocument.Load(FileUtil.PathToAbsolutePath(xmlPath), LoadOptions.SetLineInfo);
+                using var stream = File.OpenRead(FileUtil.PathToAbsolutePathForFileIO(xmlPath));
+                doc = XDocument.Load(stream, LoadOptions.SetLineInfo);
             }
             catch (Exception e)
             {
@@ -601,7 +602,7 @@ namespace UnityEditor.UIElements
 
             try
             {
-                var doc = XDocument.Parse(File.ReadAllText(FileUtil.PathToAbsolutePath(templateAssetPath)), LoadOptions.SetLineInfo);
+                var doc = XDocument.Parse(File.ReadAllText(FileUtil.PathToAbsolutePathForFileIO(templateAssetPath)), LoadOptions.SetLineInfo);
 
                 if (doc != null)
                 {

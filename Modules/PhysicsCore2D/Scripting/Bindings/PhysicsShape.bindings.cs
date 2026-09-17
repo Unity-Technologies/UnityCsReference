@@ -77,8 +77,8 @@ namespace Unity.U2D.Physics
         [NativeMethod(Name = "PhysicsShape::GetHitEvents", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetHitEvents(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::SetContactFilterCallbacks", IsThreadSafe = true)] extern internal static void PhysicsShape_SetContactFilterCallbacks(PhysicsShape shape, bool flag);
         [NativeMethod(Name = "PhysicsShape::GetContactFilterCallbacks", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetContactFilterCallbacks(PhysicsShape shape);
-        [NativeMethod(Name = "PhysicsShape::SetPreSolveCallbacks", IsThreadSafe = true)] extern internal static void PhysicsShape_SetPreSolveCallbacks(PhysicsShape shape, bool flag);
-        [NativeMethod(Name = "PhysicsShape::GetPreSolveCallbacks", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetPreSolveCallbacks(PhysicsShape shape);
+        [NativeMethod(Name = "PhysicsShape::SetPreContactCallbacks", IsThreadSafe = true)] extern internal static void PhysicsShape_SetPreContactCallbacks(PhysicsShape shape, bool flag);
+        [NativeMethod(Name = "PhysicsShape::GetPreContactCallbacks", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetPreContactCallbacks(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::GetStartStaticContacts", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetStartStaticContacts(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::GetStartMassUpdate", IsThreadSafe = true)] extern internal static bool PhysicsShape_GetStartMassUpdate(PhysicsShape shape);
         [NativeMethod(Name = "PhysicsShape::OverlapPoint", IsThreadSafe = true)] extern internal static bool PhysicsShape_OverlapPoint(PhysicsShape shape, Vector2 point);

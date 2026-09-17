@@ -21,8 +21,8 @@ namespace UnityEditorInternal.Profiling
     {
         internal static class Styles
         {
-            public static readonly GUIContent frameDebugger = EditorGUIUtility.TrTextContent("Open Frame Debugger", "Frame Debugger for current game view");
-            public static readonly GUIContent noFrameDebugger = EditorGUIUtility.TrTextContent("Frame Debugger", "Open Frame Debugger (Current frame needs to be selected)");
+            public static readonly GUIContent frameDebugger = L10n.TextContent("Open Frame Debugger", "Frame Debugger for current game view", null, null);
+            public static readonly GUIContent noFrameDebugger = L10n.TextContent("Frame Debugger", "Open Frame Debugger (Current frame needs to be selected)", null, null);
         }
 
         internal enum ChartMode { Default, PipelineTiming, Coverage, InstanceCounts, BatchStats }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -635,7 +634,9 @@ namespace UnityEditor.Search
 
                 SearchSettings.SortActionsPriority();
 
+#pragma warning disable UAL0018 // the view is held by this window, which is rebuilt from scratch on reload and takes a fresh view here while disposing the old one
                 m_SearchMonitorView = SearchMonitor.GetView();
+#pragma warning restore UAL0018
                 m_SearchView = new SearchView(m_ViewState, GetEntityId());
 
                 UpdateWindowTitle();
@@ -793,7 +794,9 @@ namespace UnityEditor.Search
 
             // This debounce can be kept since it is only used to update the UI
             m_DebounceOff?.Invoke();
+#pragma warning disable UAL0018 // the stored handle only cancels the pending call against the live tick list; it snapshots nothing, so a reload that drops the pending call leaves it a no-op
             m_DebounceOff = Utils.CallDelayed(UpdateAsyncResults, 0.1d);
+#pragma warning restore UAL0018
         }
 
         internal bool ToggleFilter(string providerId)
@@ -1693,4 +1696,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ProgressWindow not yet converted
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Scripting.LifecycleManagement;
@@ -15,9 +14,6 @@ namespace UnityEditor
 {
     partial class ProgressWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        public ProgressWindow() {}
-        #pragma warning restore UAL0015
 
         internal const string ussBasePath = "StyleSheets/ProgressWindow";
         internal static readonly string ussPath = $"{ussBasePath}/ProgressWindow.uss";
@@ -111,7 +107,7 @@ namespace UnityEditor
 
         void CreateGUI()
         {
-            titleContent = EditorGUIUtility.TrTextContent("Background Tasks");
+            titleContent = L10n.TextContent("Background Tasks", null, null, null);
 
             rootVisualElement.AddStyleSheetPath(ussPath);
             if (EditorGUIUtility.isProSkin)
@@ -503,4 +499,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

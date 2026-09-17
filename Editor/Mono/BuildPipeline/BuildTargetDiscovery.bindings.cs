@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ContentBuild not yet converted
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -96,6 +95,7 @@ namespace UnityEditor
         static readonly string k_CreateIPlatformProviderFailedError = L10n.Tr("Failed to create IPlatformProvider instance for type '{0}'.", null);
         static readonly string k_PlatformDeprecatedDefaultWithDisplayName = L10n.Tr("The {0} platform is deprecated.", null);
         static readonly string k_DerivedPlatformUsesDeprecatedBase = L10n.Tr("This platform is based on {0}, which is deprecated.", null);
+        static readonly string k_PinnedPackageVersionNotInstalledWarning = L10n.Tr("Package '{0}' is installed at version {1}, but the platform requires version {2}. The installed version was kept.", null);
 
         public static extern bool PlatformHasFlag(BuildTarget platform, TargetAttributes flag);
 
@@ -349,6 +349,35 @@ namespace UnityEditor
             public PlatformPackageInfo[] recommendedPackages = Array.Empty<PlatformPackageInfo>();
         }
 
+        /// <summary>
+        /// Identifies a package to install: a bare package name plus an optional pinned version.
+        /// The two are kept apart so every lookup and comparison can use <see cref="name"/>
+        /// directly, and only <see cref="GetInstallIdentifier"/> combines them.
+        /// </summary>
+        [Serializable]
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal struct PlatformPackageIdentifier
+        {
+            public string name;
+
+            /// <summary>
+            /// Pinned package version, or empty when the registry should resolve the latest version.
+            /// </summary>
+            public string version;
+
+            public PlatformPackageIdentifier(string name, string version = "")
+            {
+                this.name = name;
+                this.version = version;
+            }
+
+            /// <summary>
+            /// Identifier for a Package Manager installation request.
+            /// </summary>
+            public string GetInstallIdentifier() =>
+                string.IsNullOrEmpty(version) ? name : $"{name}@{version}";
+        }
+
         [Serializable]
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal class PlatformPackageInfo
@@ -371,16 +400,26 @@ namespace UnityEditor
             /// </summary>
             public string deprecationMessage;
 
+            /// <summary>
+            /// Optional pinned package version. When empty the registry resolves the latest version,
+            /// which is the behaviour for every package that does not specify one.
+            /// </summary>
+            public string version;
+
             public PlatformPackageInfo() {}
 
-            public PlatformPackageInfo(string displayName, string qualifiedName, string description, string publisher = "", bool hasThumbnail = false)
+            public PlatformPackageInfo(string displayName, string qualifiedName, string description, string publisher = "", bool hasThumbnail = false, string version = "")
             {
                 this.displayName = displayName;
                 this.qualifiedName = qualifiedName;
                 this.description = description;
                 this.publisher = publisher;
                 this.hasThumbnail = hasThumbnail;
+                this.version = version;
             }
+
+            public PlatformPackageIdentifier GetPackageIdentifier() =>
+                new PlatformPackageIdentifier(qualifiedName, version);
         }
 
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
@@ -764,6 +803,14 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Unity Render Service for Android™",
+                    downloadLinkName = "Android",
+                    description = L10n.Tr(
+                        "Unity Render Service for Android™ lets you integrate Unity as a service in Android applications developed with Android Studio, " +
+                        "so that Java and Kotlin applications can display Unity's 3D graphics within their own user interface. " +
+                        "A single render service can drive multiple screens, or multiple windows per screen, which helps optimize CPU and memory " +
+                        "consumption for use cases such as automotive dashboards. " +
+                        "This platform offers pre-configured settings for building Unity as a render service."
+                    , null),
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Android",
                     internalPackages = new PlatformPackageList
@@ -773,7 +820,7 @@ namespace UnityEditor
                             new PlatformPackageInfo(L10n.Tr("Unity Render Service for Android™ Support", null), "com.unity.android.render-service", L10n.Tr("Enables building the Unity Render Service for Android™. Contact your sales representative for access.", null))
                         }
                     },
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsVisibleInPlatformBrowserOnly
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
                 }
             },
             {
@@ -848,22 +895,15 @@ namespace UnityEditor
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget,
                     buildProfilePlatformBannerBgColorHex = "#FF443A"
                 }
-            },
-            {
-               new("f8c7649c24f344129a97cf9854e2d582"),
-               new PlatformInfo
-               {
-                    displayName = "Kepler",
-                    buildTarget = BuildTarget.Kepler,
-                    iconName = "BuildSettings.EmbeddedLinux",
-                    flags = PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsHidden
-                }
             }
         };
 
         [NoAutoStaticsCleanup] // GUID->bool install map, value types only, repopulated by Initialize; no user-code refs
         static readonly Dictionary<GUID, bool> k_PlatformInstalledData = new();
-        [AutoStaticsCleanupOnCodeReload]
+        // Filled only from the static constructor below, which runs once per domain and not again on a code
+        // reload, so emptying this map would make every reader behave as if no SDK platform is installed.
+        // Same static-constructor path as k_PlatformInstalledData above, so the two are kept consistent.
+        [NoAutoStaticsCleanup]
         static readonly Dictionary<GUID, ISDKPlatformExtension> k_SDKPlatformExtensions = new();
 
         [NoAutoStaticsCleanup] // immutable static platform-group config (strings + GUID arrays), no user-code refs
@@ -929,8 +969,7 @@ namespace UnityEditor
                     new("f1d7bec2fd7f42f481c66ef512f47845"), // EmbeddedLinux
                     new("f188349a68c441ec9e3eb4c6f59abd41"), // LinuxHeadlessSimulation
                     new("99ef95e1e9b048fa9628d7eed27a8646"), // QNX
-                    // new("1e09bd9b55c8d45e9a11b4727bf18e88"), // Android Render Service will come here, but is hidden until entitlements are available.
-                    new("f8c7649c24f344129a97cf9854e2d582"), // Kepler
+                    new("1e09bd9b55c8d45e9a11b4727bf18e88"), // Unity Render Service for Android™
                 }
             },
             new PlatformGroup
@@ -1650,32 +1689,71 @@ namespace UnityEditor
         }
 
         /// <summary>
-        /// Returns all required package names for a given platform. A required package
-        /// is any package (internal or partner) that must be installed for a build to succeed.
+        /// Warns when a package pins a version but a different one is already installed. Installing
+        /// the pin would override a version the user may have chosen deliberately, so the installed
+        /// version is kept and the mismatch is only reported.
+        ///
+        /// Only plain version pins are comparable. The version slot may also carry a source such as
+        /// a "file:" path or a git URL, which has no version to compare against.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static void WarnIfPinnedVersionNotInstalled(PlatformPackageIdentifier identifier)
+        {
+            var installedVersion = PackageManager.PackageInfo.FindForPackageName(identifier.name)?.version;
+            if (!ShouldWarnAboutPinnedVersion(identifier.version, installedVersion))
+                return;
+
+            Debug.LogWarning(string.Format(
+                k_PinnedPackageVersionNotInstalledWarning, identifier.name, installedVersion, identifier.version));
+        }
+
+        /// <summary>
+        /// True when a pinned version is comparable to what is installed and the two differ. Only a
+        /// plain version pin is comparable: the version slot may also carry a source such as a
+        /// "file:" path or a git URL, which has no version to compare against.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static bool ShouldWarnAboutPinnedVersion(string pinnedVersion, string installedVersion)
+        {
+            if (string.IsNullOrEmpty(pinnedVersion) || !char.IsDigit(pinnedVersion[0]))
+                return false;
+
+            return !string.IsNullOrEmpty(installedVersion) && installedVersion != pinnedVersion;
+        }
+
+        /// <summary>
+        /// Returns identifiers for all required packages a given platform is still missing. A
+        /// required package is any package (internal or partner) that must be installed for a
+        /// build to succeed. The result feeds a Package Manager installation request, so each
+        /// identifier carries the package's pinned version when the catalog specifies one.
         /// </summary>
         /// <param name="platformId">Platform identifier.</param>
-        /// <returns>Set of required package names. </returns>
-        public static string[] GetAllMissingRequiredPlatformPackageNames(GUID platformId)
+        /// <returns>Set of required package identifiers. </returns>
+        public static PlatformPackageIdentifier[] GetAllMissingRequiredPlatformPackageIdentifiers(GUID platformId)
         {
-            var allPackageNames = new HashSet<string>();
+            var seenPackageNames = new HashSet<string>();
+            var result = new List<PlatformPackageIdentifier>();
             var internalPackages = BuildTargetDiscovery.BuildPlatformInternalPackages(platformId);
             var partnerPackages = BuildTargetDiscovery.BuildPlatformPartnerPackages(platformId);
 
-            foreach (var package in internalPackages.requiredPackages)
-            {
-                if (!PackageManager.PackageInfo.IsPackageRegistered(package.qualifiedName))
-                     allPackageNames.Add(package.qualifiedName);
-            }
+            AddMissingRequiredPackages(internalPackages);
+            AddMissingRequiredPackages(partnerPackages);
 
-            foreach (var package in partnerPackages.requiredPackages)
-            {
-                if (!PackageManager.PackageInfo.IsPackageRegistered(package.qualifiedName))
-                     allPackageNames.Add(package.qualifiedName);
-            }
+            return result.ToArray();
 
-            var result = new string[allPackageNames.Count];
-            allPackageNames.CopyTo(result);
-            return result;
+            void AddMissingRequiredPackages(PlatformPackageList packageList)
+            {
+                foreach (var package in packageList.requiredPackages)
+                {
+                    if (!seenPackageNames.Add(package.qualifiedName))
+                        continue;
+
+                    if (PackageManager.PackageInfo.IsPackageRegistered(package.qualifiedName))
+                        WarnIfPinnedVersionNotInstalled(package.GetPackageIdentifier());
+                    else
+                        result.Add(package.GetPackageIdentifier());
+                }
+            }
         }
 
         [System.Obsolete("BuildPlatformDescription(BuildTarget) is obsolete. Use BuildPlatformDescription(IBuildTarget) instead.", false)]
@@ -1891,4 +1969,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Hub not yet converted
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -29,7 +28,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            titleContent = EditorGUIUtility.TrTextContent("Save Template");
+            titleContent = L10n.TextContent("Save Template", null, null, null);
         }
 
         string ReadJsonString(JSONValue json, string key)
@@ -78,4 +77,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -12,7 +12,7 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly GUIContent cullTransparentMeshContent = EditorGUIUtility.TrTextContent("Cull Transparent Mesh", "Cull if the vertex color alpha is close to zero for every vertex of the mesh.");
+            public static readonly GUIContent cullTransparentMeshContent = L10n.TextContent("Cull Transparent Mesh", "Cull if the vertex color alpha is close to zero for every vertex of the mesh.", null, null);
         }
 
         private SerializedProperty m_CullTransparentMeshProperty;

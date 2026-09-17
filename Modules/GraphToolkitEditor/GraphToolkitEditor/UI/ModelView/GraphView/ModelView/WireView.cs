@@ -342,7 +342,10 @@ namespace Unity.GraphToolkit.Editor
                 else
                     GraphView.Animator.Stop(this);
 
-                m_WireControl.IsDashed = appearance.IsDashed;
+                if (appearance.IsDashed.HasValue)
+                    m_WireControl.IsDashed = appearance.IsDashed.Value;
+                else
+                    m_WireControl.ResetIsDashed();
 
                 if (appearance.WidthOverride == 0)
                     m_WireControl.ResetLineWidth();

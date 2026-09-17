@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor.Rendering;
@@ -173,7 +172,9 @@ namespace UnityEditor
 
                 OnDisableTabsAndExtension();
 
+#pragma warning disable UAL0018 // the extension is held by this window, which is recreated on code reload, and UpdateTabs re-resolves it on the next enable
                 m_CurrentLightingExplorerExtension = GetLightExplorerExtension(SRPType);
+#pragma warning restore UAL0018
                 m_CurrentLightingExplorerExtension.OnEnable();
 
                 m_SelectedTab = EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D ? /* 2D Lights */ 1 : /* Lights */ 0;
@@ -208,4 +209,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

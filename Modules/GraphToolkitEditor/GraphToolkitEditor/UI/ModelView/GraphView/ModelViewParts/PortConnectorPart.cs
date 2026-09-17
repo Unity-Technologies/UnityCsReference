@@ -120,6 +120,7 @@ namespace Unity.GraphToolkit.Editor
         public Toggle ExpandToggle => m_ExpandToggle;
 
         VisualElement m_HitBoxLimitElement;
+        bool m_IsPolymorphic;
 
         internal VisualElement ExpandSpacer => m_ExpandSpacer;
 
@@ -300,6 +301,13 @@ namespace Unity.GraphToolkit.Editor
                 if (portModel.Orientation == PortOrientation.Vertical)
                 {
                     m_CreateFromPortHitBox.tooltip = portModel.ToolTip;
+                }
+
+                var isPolymorphic = portModel.IsPolymorphic;
+                if (m_IsPolymorphic != isPolymorphic)
+                {
+                    m_IsPolymorphic = isPolymorphic;
+                    m_Root.schedule.Execute(UpdateHitBox).ExecuteLater(0);
                 }
             }
             else if (m_ConnectorLabel != null && visitor.ChangeHints.HasChange(ChangeHint.Data))

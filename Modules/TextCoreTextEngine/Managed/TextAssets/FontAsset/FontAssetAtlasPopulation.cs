@@ -24,8 +24,13 @@ namespace UnityEngine.TextCore.Text
     {
         // List and HashSet used for tracking font assets whose font atlas texture and character data needs updating.
         [AutoStaticsCleanupOnCodeReload]
+        // Pending-work queue: RegisterFontAssetForFontFeatureUpdate re-adds entries and the update pass
+        // drains it, so a queue cleared on reload refills from the assets that still need work.
+        [IgnoreForUAL0015("Pending-work queue, re-populated by the Register path and drained each update")]
         static List<FontAsset> k_FontAssets_FontFeaturesUpdateQueue = new List<FontAsset>();
         [AutoStaticsCleanupOnCodeReload]
+        // Membership index for the queue above; cleared and refilled in step with it.
+        [IgnoreForUAL0015("Membership index for the font-features update queue, refilled in step with it")]
         static HashSet<EntityId> k_FontAssets_FontFeaturesUpdateQueueLookup = new HashSet<EntityId>();
 
         uint GetGlyphIndexWithFallback(uint unicode)
@@ -48,13 +53,23 @@ namespace UnityEngine.TextCore.Text
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Pending-work queue: the Register path re-adds entries and the update pass drains it, so a queue
+        // cleared on reload refills from the assets that still need work.
+        [IgnoreForUAL0015("Pending-work queue, re-populated by the Register path and drained each update")]
         static List<FontAsset> k_FontAssets_KerningUpdateQueue = new List<FontAsset>();
         [AutoStaticsCleanupOnCodeReload]
+        // Membership index for the queue above; cleared and refilled in step with it.
+        [IgnoreForUAL0015("Membership index for the kerning update queue, refilled in step with it")]
         static HashSet<EntityId> k_FontAssets_KerningUpdateQueueLookup = new HashSet<EntityId>();
 
         [AutoStaticsCleanupOnCodeReload]
+        // Pending-work queue: the Register path re-adds entries and the update pass drains it, so a queue
+        // cleared on reload refills from the atlas textures that still need work.
+        [IgnoreForUAL0015("Pending-work queue, re-populated by the Register path and drained each update")]
         static List<Texture2D> k_FontAssets_AtlasTexturesUpdateQueue = new List<Texture2D>();
         [AutoStaticsCleanupOnCodeReload]
+        // Membership index for the queue above; cleared and refilled in step with it.
+        [IgnoreForUAL0015("Membership index for the atlas-textures update queue, refilled in step with it")]
         static HashSet<EntityId> k_FontAssets_AtlasTexturesUpdateQueueLookup = new HashSet<EntityId>();
 
         internal static void RegisterFontAssetForFontFeatureUpdate(FontAsset fontAsset)

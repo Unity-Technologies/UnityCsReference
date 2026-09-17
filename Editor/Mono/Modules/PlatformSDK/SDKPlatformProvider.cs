@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEditor.Build.Profile;
 using UnityEngine;
 
@@ -30,7 +29,6 @@ class SDKPlatformProvider
     public bool shouldShowBuildActions { get; private set; } = true;
     public Type[] requiredComponents { get; private set; } = [];
     public Type[] customFooterActions { get; private set; } = [];
-    public PreconfiguredSettingsVariant[] preconfiguredSettingsVariants { get; private set; } = [];
 
     public Action<BuildProfile, int> onMultiTargetPlatformBuildProfileCreated { get; private set; }
     public Action<BuildProfile, int, Action<BuildProfile, int>> onDerivedPlatformBuildProfileCreated { get; private set; }
@@ -44,7 +42,6 @@ class SDKPlatformProvider
     const string k_ShouldShowBuildActions = "shouldShowBuildActions";
     const string k_RequiredComponents = "requiredComponents";
     const string k_FooterActions = "customFooterActions";
-    const string k_PreconfiguredSettingsVariants = "preconfiguredSettingsVariants";
     const string k_OnMultiTargetPlatformBuildProfileCreated = "OnMultiTargetPlatformBuildProfileCreated";
     const string k_OnDerivedPlatformBuildProfileCreated = "OnDerivedPlatformBuildProfileCreated";
 
@@ -55,9 +52,6 @@ class SDKPlatformProvider
     static readonly string k_UnrecognizedVersionError = L10n.Tr("unrecognized version {0}.", null);
     static readonly string k_RequiredPropertyError = L10n.Tr("required property '{0}' is missing.", null);
     static readonly string k_PropertyTypeError = L10n.Tr("property '{0}' must be of type {1}.", null);
-    static readonly string k_DuplicatePreconfiguredSettingsVariantsError = L10n.Tr(
-        "{0} declares preconfigured settings variants while SDK platform '{1}' also declares them in its manifest. " +
-        "The manifest variants are used; remove the '{2}' property from the provider.", null);
 
     SDKPlatformProvider(IPlatformProvider provider, SDKPlatformType platformType)
     {
@@ -90,26 +84,6 @@ class SDKPlatformProvider
 
         requiredComponents = GetProp(k_RequiredComponents, Array.Empty<Type>());
         customFooterActions = GetProp(k_FooterActions, Array.Empty<Type>());
-
-        preconfiguredSettingsVariants = BuildTargetDiscovery.BuildPlatformPreconfiguredSettingsVariants(guid);
-        var extractedVariants = GetProp(k_PreconfiguredSettingsVariants, Array.Empty<SDKPreconfiguredSettingsVariant>());
-        if (preconfiguredSettingsVariants.Length > 0)
-        {
-            if (extractedVariants.Length > 0)
-                Debug.LogError(string.Format(k_DuplicatePreconfiguredSettingsVariantsError, providerType.FullName, guid, k_PreconfiguredSettingsVariants));
-        }
-        else
-        {
-            var variantList = new List<PreconfiguredSettingsVariant>();
-            foreach (var variant in extractedVariants)
-            {
-                if (variant == null)
-                    continue;
-                var newVariant = new PreconfiguredSettingsVariant(variant.displayName, variant.selectedInitially, variant.description, variant.tooltip, variant.platformGuid);
-                variantList.Add(newVariant);
-            }
-            preconfiguredSettingsVariants = variantList.ToArray();
-        }
 
         T GetProp<T>(string propName, T defaultValue)
         {

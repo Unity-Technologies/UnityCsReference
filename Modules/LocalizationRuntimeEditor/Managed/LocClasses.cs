@@ -57,8 +57,6 @@ static class LocClasses
     internal static readonly UniqueStyleString LsVarType = new("ls-var-type");
     internal static readonly UniqueStyleString LsVarValue = new("ls-var-value");
     internal static readonly UniqueStyleString LsVarlist = new("ls-varlist");
-    internal static readonly UniqueStyleString LocDefaultRow = new("loc-default-row");
-    internal static readonly UniqueStyleString LocDefaultRowLabel = new("loc-default-row__label");
     internal static readonly UniqueStyleString LocDropdownGrow = new("loc-dropdown-grow");
     internal static readonly UniqueStyleString LocFallbackDropdown = new("loc-fallback-dropdown");
     internal static readonly UniqueStyleString LocList = new("loc-list");
@@ -66,4 +64,8 @@ static class LocClasses
     internal static readonly UniqueStyleString LocProjectLocaleWarning = new("loc-project-locale-warning");
     internal static readonly UniqueStyleString LocRepairButton = new("loc-repair-button");
     internal static readonly UniqueStyleString LsPopupCollection = new("ls-popup__collection");
+    internal static readonly UniqueStyleString LocExtensionHeader = new("loc-extension-header");
+    internal static readonly UniqueStyleString LocExtensionHeaderIcon = new("loc-extension-header__icon");
+    internal static readonly UniqueStyleString LocExtensionHeaderTitle = new("loc-extension-header__title");
+    internal static readonly UniqueStyleString LocExtensionRow = new("loc-extension-row");
 }

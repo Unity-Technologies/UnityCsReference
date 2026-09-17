@@ -25,18 +25,29 @@ internal class BuildProfilePlayerSettings : UnityEngine.Object
         Internal_Create(this);
     }
 
-    [NativeMethod("GetPlatformGraphicsAPIs")]
-    internal extern GraphicsDeviceType[] GetGraphicsAPIs(BuildTarget platform);
+    [NativeMethod("GetPlatformGraphicsAPIsWithUGKVariants")]
+    internal extern GraphicsDeviceType[] GetGraphicsAPIsWithUGKVariants(BuildTarget platform);
+
+    [NativeMethod("GetPlatformGraphicsAPIUGKFlags")]
+    internal extern int[] GetGraphicsAPIUGKFlags(BuildTarget platform);
 
     [NativeMethod("SetPlatformGraphicsAPIs")]
-    private extern void SetGraphicsAPIsImpl(BuildTarget platform, GraphicsDeviceType[] apis, bool skipValidation);
+    private extern void SetGraphicsAPIsImpl(BuildTarget platform, GraphicsDeviceType[] apis, bool skipValidation, int[] ugkFlags);
 
-    internal void SetGraphicsAPIs(BuildTarget platform, GraphicsDeviceType[] apis, bool shouldSync)
+    internal void SetGraphicsAPIs(BuildTarget platform, GraphicsDeviceType[] apis, int[] ugkFlags, bool shouldSync)
     {
-        SetGraphicsAPIsImpl(platform, apis, false);
+        SetGraphicsAPIsImpl(platform, apis, false, ugkFlags);
         // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
         if (shouldSync)
             PlayerSettingsEditor.SyncEditors(platform);
+    }
+
+    [NativeMethod("GetPlatformGraphicsAPIs")]
+    internal extern GraphicsDeviceType[] GetGraphicsAPIs(BuildTarget platform);
+
+    internal void SetGraphicsAPIs(BuildTarget platform, GraphicsDeviceType[] apis, bool shouldSync)
+    {
+        SetGraphicsAPIs(platform, apis, null, shouldSync);
     }
 
     [NativeMethod("GetPlatformAutomaticGraphicsAPIs")]

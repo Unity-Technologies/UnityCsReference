@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _2D not yet converted
 using System.Collections.Generic;
 using System.IO;
 using Unity.Jobs;
@@ -50,38 +49,38 @@ namespace UnityEditor.U2D
             public readonly GUIStyle previewSliderThumb = "preSliderThumb";
             public readonly GUIStyle previewLabel = "preLabel";
 
-            public readonly GUIContent textureSettingLabel = EditorGUIUtility.TrTextContent("Texture");
-            public readonly GUIContent variantSettingLabel = EditorGUIUtility.TrTextContent("Variant");
-            public readonly GUIContent packingParametersLabel = EditorGUIUtility.TrTextContent("Packing");
-            public readonly GUIContent atlasTypeLabel = EditorGUIUtility.TrTextContent("Type");
-            public readonly GUIContent defaultPlatformLabel = EditorGUIUtility.TrTextContent("Default");
-            public readonly GUIContent masterAtlasLabel = EditorGUIUtility.TrTextContent("Master Atlas", "Assigning another Sprite Atlas asset will make this atlas a variant of it.");
-            public readonly GUIContent packerLabel = EditorGUIUtility.TrTextContent("Scriptable Packer", "Scriptable Object that implements custom packing for Sprite-Atlas.");
-            public readonly GUIContent bindAsDefaultLabel = EditorGUIUtility.TrTextContent("Include in Build", "Packed textures will be included in the build by default.");
-            public readonly GUIContent enableRotationLabel = EditorGUIUtility.TrTextContent("Allow Rotation", "Try rotating the sprite to fit better during packing.");
-            public readonly GUIContent enableTightPackingLabel = EditorGUIUtility.TrTextContent("Tight Packing", "Use the mesh outline to fit instead of the whole texture rect during packing.");
-            public readonly GUIContent enableAlphaDilationLabel = EditorGUIUtility.TrTextContent("Alpha Dilation", "Enable Alpha Dilation for SpriteAtlas padding pixels.");
-            public readonly GUIContent paddingLabel = EditorGUIUtility.TrTextContent("Padding", "The amount of extra padding between packed sprites.");
+            public readonly GUIContent textureSettingLabel = L10n.TextContent("Texture", null, null, null);
+            public readonly GUIContent variantSettingLabel = L10n.TextContent("Variant", null, null, null);
+            public readonly GUIContent packingParametersLabel = L10n.TextContent("Packing", null, null, null);
+            public readonly GUIContent atlasTypeLabel = L10n.TextContent("Type", null, null, null);
+            public readonly GUIContent defaultPlatformLabel = L10n.TextContent("Default", null, null, null);
+            public readonly GUIContent masterAtlasLabel = L10n.TextContent("Master Atlas", "Assigning another Sprite Atlas asset will make this atlas a variant of it.", null, null);
+            public readonly GUIContent packerLabel = L10n.TextContent("Scriptable Packer", "Scriptable Object that implements custom packing for Sprite-Atlas.", null, null);
+            public readonly GUIContent bindAsDefaultLabel = L10n.TextContent("Include in Build", "Packed textures will be included in the build by default.", null, null);
+            public readonly GUIContent enableRotationLabel = L10n.TextContent("Allow Rotation", "Try rotating the sprite to fit better during packing.", null, null);
+            public readonly GUIContent enableTightPackingLabel = L10n.TextContent("Tight Packing", "Use the mesh outline to fit instead of the whole texture rect during packing.", null, null);
+            public readonly GUIContent enableAlphaDilationLabel = L10n.TextContent("Alpha Dilation", "Enable Alpha Dilation for SpriteAtlas padding pixels.", null, null);
+            public readonly GUIContent paddingLabel = L10n.TextContent("Padding", "The amount of extra padding between packed sprites.", null, null);
 
-            public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TrTextContent("Generate Mip Maps");
-            public readonly GUIContent packPreviewLabel = EditorGUIUtility.TrTextContent("Pack Preview", "Pack and preview Sprite Atlas textures when Enabled for Builds. Previews shown may not be upto-date.");
-            public readonly GUIContent sRGBLabel = EditorGUIUtility.TrTextContent("sRGB", "Texture content is stored in gamma space.");
-            public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
-            public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TrTextContent("Scale", "Down scale ratio.");
-            public readonly GUIContent copyMasterButton = EditorGUIUtility.TrTextContent("Copy Master's Settings", "Copy all master's settings into this variant.");
+            public readonly GUIContent generateMipMapLabel = L10n.TextContent("Generate Mip Maps", null, null, null);
+            public readonly GUIContent packPreviewLabel = L10n.TextContent("Pack Preview", "Pack and preview Sprite Atlas textures when Enabled for Builds. Previews shown may not be upto-date.", null, null);
+            public readonly GUIContent sRGBLabel = L10n.TextContent("sRGB", "Texture content is stored in gamma space.", null, null);
+            public readonly GUIContent readWrite = L10n.TextContent("Read/Write", "Enable to be able to access the raw pixel data from code.", null, null);
+            public readonly GUIContent variantMultiplierLabel = L10n.TextContent("Scale", "Down scale ratio.", null, null);
+            public readonly GUIContent copyMasterButton = L10n.TextContent("Copy Master's Settings", "Copy all master's settings into this variant.", null, null);
 
             public readonly GUIContent disabledPackLabel = EditorGUIUtility.TrTextContent("Sprite Atlas packing is disabled. Enable it in Edit > Project Settings > Editor.", null, EditorGUIUtility.GetHelpIcon(MessageType.Info));
-            public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accepts Folders, Sprite Sheet (Texture) and Sprite.");
+            public readonly GUIContent packableListLabel = L10n.TextContent("Objects for Packing", "Only accepts Folders, Sprite Sheet (Texture) and Sprite.", null, null);
 
-            public readonly GUIContent notPowerOfTwoWarning = EditorGUIUtility.TrTextContent("This scale will produce a Variant Sprite Atlas with a packed Texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/Texture formats.");
-            public readonly GUIContent secondaryTextureNameLabel = EditorGUIUtility.TrTextContent("Secondary Texture Name", "The name of the Secondary Texture to apply the following settings to.");
-            public readonly GUIContent platformSettingsDropDownLabel = EditorGUIUtility.TrTextContent("Show Platform Settings For");
+            public readonly GUIContent notPowerOfTwoWarning = L10n.TextContent("This scale will produce a Variant Sprite Atlas with a packed Texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/Texture formats.", null, null, null);
+            public readonly GUIContent secondaryTextureNameLabel = L10n.TextContent("Secondary Texture Name", "The name of the Secondary Texture to apply the following settings to.", null, null);
+            public readonly GUIContent platformSettingsDropDownLabel = L10n.TextContent("Show Platform Settings For", null, null, null);
 
             public readonly GUIContent smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
             public readonly GUIContent largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
             public readonly GUIContent alphaIcon = EditorGUIUtility.IconContent("PreTextureAlpha");
             public readonly GUIContent RGBIcon = EditorGUIUtility.IconContent("PreTextureRGB");
-            public readonly GUIContent trashIcon = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete currently selected settings.");
+            public readonly GUIContent trashIcon = L10n.IconContent("TreeEditor.Trash", "Delete currently selected settings.", null);
 
             public readonly int packableElementHash = "PackableElement".GetHashCode();
             public readonly int packableSelectorHash = "PackableSelector".GetHashCode();
@@ -94,8 +93,8 @@ namespace UnityEditor.U2D
             public readonly int[] atlasTypeValues = { 0, 1 };
             public readonly GUIContent[] atlasTypeOptions =
             {
-                EditorGUIUtility.TrTextContent("Master"),
-                EditorGUIUtility.TrTextContent("Variant"),
+                L10n.TextContent("Master", null, null, null),
+                L10n.TextContent("Variant", null, null, null),
             };
 
             public readonly int[] paddingValues = { 2, 4, 8 };
@@ -1080,4 +1079,3 @@ namespace UnityEditor.U2D
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

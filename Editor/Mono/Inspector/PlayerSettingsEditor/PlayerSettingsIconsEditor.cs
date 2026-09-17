@@ -16,9 +16,9 @@ namespace UnityEditor
     {
         internal class SettingsContent
         {
-            public static readonly GUIContent iconTitle = EditorGUIUtility.TrTextContent("Icon");
-            public static readonly GUIContent defaultIcon = EditorGUIUtility.TrTextContent("Default Icon");
-            public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TrTextContent("Prerendered Icon");
+            public static readonly GUIContent iconTitle = L10n.TextContent("Icon", null, null, null);
+            public static readonly GUIContent defaultIcon = L10n.TextContent("Default Icon", null, null, null);
+            public static readonly GUIContent UIPrerenderedIcon = L10n.TextContent("Prerendered Icon", null, null, null);
             public static string undoChangedIconString { get { return LocalizationDatabase.GetLocalizedString("Changed Icon"); } }
         }
 

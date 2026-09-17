@@ -91,5 +91,26 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         [EditorBrowsable(EditorBrowsableState.Never)]
         bool __InvokeComponentRemoved(VisualElement owner);
+
+        // Generator-emitted; do not call directly. Returns the component's [ReleaseComponentResources]
+        // method as a ComponentResourceReleaseHandler<T>, or null when the component declares none.
+        // ComponentManager<T> caches the delegate once per type.
+        /// <undoc/>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        System.Delegate __GetComponentResourceReleaseHandler();
     }
+
+    /// <summary>
+    /// The signature of a <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see>
+    /// method: it receives the released component's own data by reference and frees what that component
+    /// allocated.
+    /// </summary>
+    /// <remarks>
+    /// You don't write this delegate yourself. Unity's source generator wraps the component's
+    /// <c>[ReleaseComponentResources]</c> method in one and hands it to the runtime, which invokes it on
+    /// the main thread once per released component instance.
+    /// </remarks>
+    /// <param name="component">The component data being released.</param>
+    /// <typeparam name="T">A component struct declared with <see cref="VisualElementComponentAttribute"/>.</typeparam>
+    public delegate void ComponentResourceReleaseHandler<T>(ref T component) where T : struct, IVisualElementComponent;
 }

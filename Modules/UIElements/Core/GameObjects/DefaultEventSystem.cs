@@ -18,6 +18,9 @@ namespace UnityEngine.UIElements
 
 
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Func<bool> IsEditorRemoteConnected = () => false;
 
         private bool ShouldIgnoreEventsOnAppNotFocused()

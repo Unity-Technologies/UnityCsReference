@@ -13,49 +13,131 @@ using UnityEngine.UIElements.Unmanaged;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// One record per registered unmanaged component type. Owned canonically by
+    /// One record per registered component type, holding the type's store: an
+    /// <see cref="UnmanagedDataStore"/> when the type carries no managed reference, a
+    /// <see cref="ManagedComponentRegistry{T}"/> otherwise. Owned canonically by
     /// <see cref="ComponentManager"/> (for disposal and enumeration) and cached on
-    /// <see cref="ComponentManager{T}"/> and on each native-stored <see cref="ComponentSlot"/> so the
-    /// per-element teardown path can free a slot without a dictionary lookup (which matters on the
-    /// GC finalizer thread).
+    /// <see cref="ComponentManager{T}"/> and on each <see cref="ComponentSlot"/> so the per-element
+    /// teardown path can free a slot without a dictionary lookup (which matters on the GC finalizer thread).
     /// </summary>
     class PerTypeStore
     {
-        public UnmanagedDataStore store;
+        public UnmanagedDataStore store;             // valid when managedRegistry == null
+        public ManagedComponentRegistry managedRegistry;
         public RuntimeTypeHandle typeHandle;
 
-        // Number of live native-store allocations for this type. Mutated on the main thread only:
-        // incremented by AddComponent, decremented when the deferred free is drained by Collect().
+        // Number of live slots for this type. Mutated on the main thread only: incremented by
+        // AddComponent, decremented when the deferred free is drained by Collect().
         public int liveCount;
+
+        // Trampoline into the type's [ReleaseComponentResources] method; null when it declares none.
+        // Unmanaged types only — a managed component's box calls the typed handler with a ref into itself.
+        public unsafe delegate* managed<void*, void> releaseResources;
+
+        public bool isValid => managedRegistry != null ? managedRegistry.IsValid : store.IsValid;
+
+        // Runs the type's [ReleaseComponentResources] method, then frees the slot — the free overwrites the
+        // slot with the default value, so the hook has to see it first. False when the handle is already free.
+        // Unmanaged types only: a managed component is released through its box, not through a handle.
+        public unsafe bool ReleaseSlot(in UnmanagedDataHandle handle)
+        {
+            // The slot may already be gone if the store was disposed (domain reload); guard with Exists.
+            if (!store.IsValid || !store.Exists(handle))
+                return false;
+
+            try
+            {
+                if (releaseResources != null)
+                    releaseResources(store.GetComponentDataPtr(handle.Index, 0));
+            }
+            finally
+            {
+                store.Free(handle);   // free even when the method threw
+            }
+
+            return true;
+        }
+
+        // A slot is allocated exactly when it is not on the store's free list.
+        public unsafe void ReleaseLiveSlots()
+        {
+            if (managedRegistry != null)
+            {
+                managedRegistry.ReleaseLiveBoxes();
+                return;
+            }
+
+            if (releaseResources == null)
+                return;
+
+            var capacity = store.Capacity;
+            for (var i = 0; i < capacity; i++)
+            {
+                if (store.IsFree(i))
+                    continue;
+
+                try
+                {
+                    releaseResources(store.GetComponentDataPtr(i, 0));
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+        }
+
+        // Unmanaged data is held by the store itself, so only the weakly-tracked managed boxes need this.
+        public void PinLiveComponents()
+        {
+            managedRegistry?.PinLiveBoxes();
+        }
+
+        public void Dispose()
+        {
+            if (managedRegistry != null)
+                managedRegistry.Dispose();
+            else
+                store.Dispose();
+        }
     }
 
     /// <summary>
-    /// Per-element slot. A discriminated union: it holds one of two shapes, never both.
-    /// For an unmanaged component, <see cref="record"/> is non-null and <see cref="handle"/> indexes
-    /// the per-type store. For a component with any managed field, <see cref="managedBox"/> holds a
-    /// <see cref="ManagedComponentBox{T}"/> and the other fields are default.
+    /// Per-element slot: the per-type store the component lives in, and the handle indexing it.
     /// </summary>
     struct ComponentSlot
     {
-        public UnmanagedDataHandle handle;   // valid when record != null
-        public PerTypeStore record;          // non-null => blittable
-        public object managedBox;            // non-null => managed (ManagedComponentBox<T>)
+        public UnmanagedDataHandle handle;
+        public PerTypeStore record;
+
+        // Storage for a component that carries a managed reference; null for an unmanaged one, whose
+        // data lives in the per-type store addressed by handle. Element-held on purpose: see
+        // ManagedComponentBox.
+        public IManagedComponentBox managedBox;
 
         // The component's shared [OnComponentChanged] dispatcher, or null when it declares no handler.
-        // Set at AddComponent from the generated hooks; travel with the slot through the remove-swap.
+        // Set at AddComponent from the generated hooks; travels with the slot through the shifts.
         public Action<VisualElement> onChanged;
         public ComponentBindingDispatcher bindingDispatcher;
     }
 
     /// <summary>
-    /// Process-wide owner of the per-type unmanaged component stores. Mirrors
+    /// Process-wide owner of the per-type component stores. Mirrors
     /// <c>LayoutManager.SharedManager</c>: a lazily created singleton with a concurrent free-queue
     /// drained on the main thread by <see cref="Collect"/>.
     /// </summary>
     partial class ComponentManager
     {
         // Small default: enough for one chunk's worth of slots without an immediate resize.
-        const int k_DefaultInitialCapacity = 32;
+        internal const int k_DefaultInitialCapacity = 32;
+
+        // Read [VisualElementComponent(initialCapacity)] by reflection (cold path): v1 has no source
+        // generator to emit it into the caller yet.
+        internal static int ResolveInitialCapacity(Type componentType)
+        {
+            var attribute = (VisualElementComponentAttribute)Attribute.GetCustomAttribute(componentType, typeof(VisualElementComponentAttribute));
+            return attribute != null && attribute.initialCapacity > 0 ? attribute.initialCapacity : k_DefaultInitialCapacity;
+        }
 
         // Three-state so teardown is one-way within a code-loaded scope: after Shutdown the manager is not
         // re-created. The code-reload cleanup resets both fields, so the next scope re-creates on demand.
@@ -67,9 +149,15 @@ namespace UnityEngine.UIElements
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Cleanup resets this to Uninitialized and SharedManager re-creates on demand, so a constructor
+        // that trips the gate leaves nothing stale behind for the next code-loaded scope.
+        [IgnoreForUAL0015("Initialization gate re-evaluated on demand by SharedManager after cleanup resets it")]
         static SharedManagerState s_State;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Initialize() recreates the shared manager on the next SharedManager access after cleanup nulls
+        // this, so a constructor that forces the shared instance leaves nothing stale behind.
+        [IgnoreForUAL0015("Shared instance recreated on demand by Initialize() after cleanup nulls it")]
         static ComponentManager s_SharedManager;
 
         public static ComponentManager SharedManager
@@ -91,10 +179,16 @@ namespace UnityEngine.UIElements
 
         readonly ConcurrentQueue<FreeRequest> m_ToFree = new();
 
+        // Non-zero while a [ReleaseComponentResources] method is running. See IsRunningReleaseHook.
+        int m_ReleaseHookDepth;
+
         struct FreeRequest
         {
             public PerTypeStore record;
             public UnmanagedDataHandle handle;
+
+            // Set instead of handle when the component's data lives in an element-held box.
+            public IManagedComponentBox box;
         }
 
         ComponentManager() { }
@@ -119,10 +213,9 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Returns the per-type store for <typeparamref name="T"/>, creating and registering it on
-        /// first use. Idempotent. Only called for unmanaged components (the caller checks
-        /// <see cref="ComponentManager{T}.IsUnmanaged"/> first).
+        /// first use. Idempotent.
         /// </summary>
-        internal unsafe PerTypeStore GetOrCreateStore<T>(int initialCapacity = k_DefaultInitialCapacity) where T : struct
+        internal PerTypeStore GetOrCreateStore<T>(bool isUnmanaged, int initialCapacity) where T : struct, IVisualElementComponent
         {
             var typeHandle = typeof(T).TypeHandle;
 
@@ -133,34 +226,49 @@ namespace UnityEngine.UIElements
                 if (m_StoresByComponentType.TryGetValue(typeHandle, out var existing))
                     return existing;
 
-                var size = UnsafeUtility.SizeOf<T>();
-                var align = UnsafeUtility.AlignOf<T>();
+                var record = new PerTypeStore { typeHandle = typeHandle };
+                if (isUnmanaged)
+                    record.store = CreateUnmanagedStore<T>(initialCapacity);
+                else
+                    record.managedRegistry = new ManagedComponentRegistry<T>();
 
-                // UnmanagedDataStore requires a minimum element size of sizeof(int); pad sub-4-byte
-                // components up to a 4-byte storage stride. Real-field bytes are unaffected.
-                var storeSize = Math.Max(size, sizeof(int));
-                var storeAlign = Math.Max(align, sizeof(int));
-
-                // Default-value template (real T bytes, zero padding) used to initialise and clear slots.
-                var initial = stackalloc byte[storeSize];
-                UnsafeUtility.MemClear(initial, storeSize);
-                var template = default(T);
-                UnsafeUtility.CopyStructureToPtr(ref template, initial);
-                var initialData = stackalloc byte*[1];
-                initialData[0] = initial;
-
-                var components = new[] { new UnmanagedComponentType { Size = storeSize, Align = storeAlign } };
-                var labels = new[] { new MemoryLabel("UIElements", $"Components.{typeof(T).Name}", Allocator.Persistent) };
-
-                var store = new UnmanagedDataStore(components, labels, initialData, initialCapacity, Allocator.Persistent, $"Components.{typeof(T).Name}");
-                var record = new PerTypeStore { store = store, typeHandle = typeHandle };
                 m_StoresByComponentType.Add(typeHandle, record);
                 return record;
             }
         }
 
+        static unsafe UnmanagedDataStore CreateUnmanagedStore<T>(int initialCapacity) where T : struct
+        {
+            var size = UnsafeUtility.SizeOf<T>();
+
+            // Default-value template (real T bytes, zero padding) used to initialise and clear slots.
+            var initial = stackalloc byte[Math.Max(size, sizeof(int))];
+            UnsafeUtility.MemClear(initial, Math.Max(size, sizeof(int)));
+            var template = default(T);
+            UnsafeUtility.CopyStructureToPtr(ref template, initial);
+
+            return CreateUnmanagedStore(typeof(T), size, UnsafeUtility.AlignOf<T>(), initial, initialCapacity);
+        }
+
+        static unsafe UnmanagedDataStore CreateUnmanagedStore(Type componentType, int size, int align, byte* initial, int initialCapacity)
+        {
+            // UnmanagedDataStore requires a minimum element size of sizeof(int); pad sub-4-byte
+            // components up to a 4-byte storage stride. Real-field bytes are unaffected.
+            var storeSize = Math.Max(size, sizeof(int));
+            var storeAlign = Math.Max(align, sizeof(int));
+
+            var initialData = stackalloc byte*[1];
+            initialData[0] = initial;
+
+            var components = new[] { new UnmanagedComponentType { Size = storeSize, Align = storeAlign } };
+            var name = $"Components.{componentType.Name}";
+            var labels = new[] { new MemoryLabel("UIElements", name, Allocator.Persistent) };
+
+            return new UnmanagedDataStore(components, labels, initialData, initialCapacity, Allocator.Persistent, name);
+        }
+
         /// <summary>
-        /// Enqueues a native-store slot handle for deferred freeing. Thread-safe: it is also called from
+        /// Enqueues a slot handle for deferred freeing. Thread-safe: it is also called from
         /// <c>~VisualElement</c> on the GC finalizer thread, so it only enqueues — the actual
         /// <c>Free</c> and the <see cref="PerTypeStore.liveCount"/> decrement happen on the main
         /// thread in <see cref="Collect"/>.
@@ -171,6 +279,25 @@ namespace UnityEngine.UIElements
                 return;
 
             m_ToFree.Enqueue(new FreeRequest { record = record, handle = handle });
+        }
+
+        /// <summary>
+        /// Enqueues an element-held box for deferred release. Thread-safe like
+        /// <see cref="EnqueueFree(PerTypeStore, in UnmanagedDataHandle)"/>: the
+        /// <c>[ReleaseComponentResources]</c> method runs on the main thread when
+        /// <see cref="Collect"/> drains the queue.
+        /// </summary>
+        /// <remarks>
+        /// Holding the box strongly on the queue cannot re-root its element. The two callers are
+        /// <c>RemoveComponent</c>, where the element is alive and holds the box anyway, and
+        /// <c>~VisualElement</c>, by which point the element is already unreachable.
+        /// </remarks>
+        internal void EnqueueFree(PerTypeStore record, IManagedComponentBox box)
+        {
+            if (record == null || box == null)
+                return;
+
+            m_ToFree.Enqueue(new FreeRequest { record = record, box = box });
         }
 
         // Per-call cap so a mass teardown doesn't spike a frame. Only safe because the AddComponent
@@ -196,10 +323,9 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Frees one pending slot, if any. Called from the <c>AddComponent</c> allocate path so
-        /// allocation pays down the deferred-free queue — the invariant that keeps
-        /// <see cref="Collect"/>'s per-call cap from letting the queue grow unbounded under churn.
-        /// Mirrors <c>LayoutManager.TryRecycleSingleNode</c>.
+        /// Frees one pending slot, if any. Called once per slot allocated so an allocation pays down the
+        /// deferred-free queue — the invariant that keeps <see cref="Collect"/>'s per-call cap from letting
+        /// the queue grow unbounded under churn. Mirrors <c>LayoutManager.TryRecycleSingleNode</c>.
         /// </summary>
         internal void TryRecycleSingleFree()
         {
@@ -207,14 +333,69 @@ namespace UnityEngine.UIElements
                 FreeOne(in request);
         }
 
+        /// <summary>
+        /// True while a <c>[ReleaseComponentResources]</c> method is on the stack. The component mutators on
+        /// <see cref="VisualElement"/> refuse to run then: a release is deferred work, driven by a frame
+        /// pump, by an unrelated element's <c>AddComponent</c>, or by code unload, so it can land in the
+        /// middle of another add — between that add's duplicate check and the point its slot is appended.
+        /// </summary>
+        internal bool IsRunningReleaseHook => m_ReleaseHookDepth > 0;
+
+        // Releases every component of this type still attached at code unload. Guarded like the queued
+        // path: an add from a hook here would register a store while DisposeAll enumerates them, and each
+        // slot's failure is contained so the walk still reaches the rest.
+        internal void ReleaseLiveSlots(PerTypeStore record)
+        {
+            m_ReleaseHookDepth++;
+            try
+            {
+                record.ReleaseLiveSlots();
+            }
+            finally
+            {
+                m_ReleaseHookDepth--;
+            }
+        }
+
         void FreeOne(in FreeRequest request)
         {
-            // The slot may already be gone if the store was disposed (domain reload); guard with Exists.
-            if (request.record.store.IsValid && request.record.store.Exists(request.handle))
+            m_ReleaseHookDepth++;
+            try
             {
-                request.record.store.Free(request.handle);
-                request.record.liveCount--;
+                if (request.box != null)
+                    FreeOneBox(request.box, request.record);
+                else if (request.record.ReleaseSlot(request.handle))
+                    request.record.liveCount--;
             }
+            catch (Exception e)
+            {
+                // The drain runs from the frame pump and from unrelated AddComponent calls, neither of which
+                // can carry a [ReleaseComponentResources] method's exception. ReleaseSlot recycles the slot
+                // even when the method throws, and the throw can only come from the method itself — reached
+                // only once the handle was found live — so the count still has to come down here.
+                request.record.liveCount--;
+                Debug.LogException(e);
+            }
+            finally
+            {
+                m_ReleaseHookDepth--;
+            }
+        }
+
+        // Unregisters and pools the box whether or not the release method threw, so a throw reaches
+        // FreeOne's handler with the box already recycled and the live count decremented exactly once.
+        static void FreeOneBox(IManagedComponentBox box, PerTypeStore record)
+        {
+            try
+            {
+                box.ReleaseResources();
+            }
+            finally
+            {
+                box.Recycle();
+            }
+
+            record.liveCount--;
         }
 
         /// <summary>
@@ -224,8 +405,7 @@ namespace UnityEngine.UIElements
         internal int PendingFreeCount => m_ToFree.Count;
 
         /// <summary>
-        /// Test-only leak assertion helper: the number of live native-store allocations for
-        /// <typeparamref name="T"/>. Returns 0 for managed component types (those are GC-tracked).
+        /// Test-only leak assertion helper: the number of live slots for <typeparamref name="T"/>.
         /// </summary>
         internal int LiveCount<T>() where T : struct, IVisualElementComponent
         {
@@ -238,15 +418,37 @@ namespace UnityEngine.UIElements
             // runs before the code-reload statics cleanup, which resets both fields.
             s_State = SharedManagerState.Shutdown;
 
-            // Drop pending frees; the stores own the memory and are about to be disposed wholesale.
-            while (m_ToFree.TryDequeue(out _)) { }
+            // Pin the weakly-tracked managed boxes before any hook runs. From here on a finalizer drops its
+            // slots without enqueueing (the state above closed that road), so a box's element is no longer
+            // holding it, and the hooks below allocate — one collection would take a box the sweep has not
+            // reached yet and silently skip its release.
+            lock (m_StoresByComponentType)
+            {
+                foreach (var record in m_StoresByComponentType.Values)
+                {
+                    record.PinLiveComponents();
+                }
+            }
+
+            // A component may own an allocation that only its [ReleaseComponentResources] method can free.
+            while (m_ToFree.TryDequeue(out var request))
+                FreeOne(in request);
 
             lock (m_StoresByComponentType)
             {
                 foreach (var record in m_StoresByComponentType.Values)
                 {
-                    if (record.store.IsValid)
-                        record.store.Dispose();
+                    if (!record.isValid)
+                        continue;
+
+                    try
+                    {
+                        ReleaseLiveSlots(record);
+                    }
+                    finally
+                    {
+                        record.Dispose();   // the store owns native memory; never leave it behind
+                    }
                 }
 
                 m_StoresByComponentType.Clear();
@@ -256,9 +458,9 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// Per-type cache. The runtime creates one closed generic per component type, and its static
-    /// constructor computes the type's facts: whether it can live in the unmanaged store, and
-    /// (if so) its per-type store record. The component API on <see cref="VisualElement"/> reads
-    /// these statics directly, with no per-call dictionary lookup.
+    /// constructor computes the type's facts: which storage shape it takes, and its per-type store
+    /// record. The component API on <see cref="VisualElement"/> reads these statics directly, with
+    /// no per-call dictionary lookup.
     /// </summary>
     /// <remarks>
     /// Registration is self-contained in this constructor and relies only on the single-type
@@ -273,17 +475,25 @@ namespace UnityEngine.UIElements
         [NoAutoStaticsCleanup]
         static PerTypeStore s_Record;
 
-        /// <summary>Non-null only when <see cref="IsUnmanaged"/>.</summary>
+        [NoAutoStaticsCleanup]
+        static ManagedComponentRegistry<T> s_Registry;
+
         public static PerTypeStore Record
         {
             get
             {
-                // An engine-defined type's closed generic outlives a code reload, so the static constructor
-                // never re-runs; re-acquiring while shut down would leak a store nothing will dispose.
-                if (s_Record != null && !s_Record.store.IsValid && !ComponentManager.IsSharedManagerShutDown)
-                    s_Record = CreateRecord();
-
+                EnsureLiveRecord();
                 return s_Record;
+            }
+        }
+
+        /// <summary>Non-null only when <see cref="IsUnmanaged"/> is false.</summary>
+        public static ManagedComponentRegistry<T> Registry
+        {
+            get
+            {
+                EnsureLiveRecord();
+                return s_Registry;
             }
         }
 
@@ -294,18 +504,22 @@ namespace UnityEngine.UIElements
         [NoAutoStaticsCleanup]
         public static readonly Func<T> CreateInstanceFactory;
 
+        // The component's [ReleaseComponentResources] method, cached once per type; null when it declares none.
+        [NoAutoStaticsCleanup]
+        public static readonly ComponentResourceReleaseHandler<T> ReleaseResourcesHandler;
+
         static ComponentManager()
         {
             TypeHandle = typeof(T).TypeHandle;
             // The store is a raw byte copy between managed structs, never a marshaling boundary, so
             // the gate is "no managed references": bool and char fields stay in the native store.
             IsUnmanaged = UnsafeUtility.IsUnmanaged(typeof(T));
-#pragma warning disable UAL0015 // s_Record/CreateInstanceFactory are already [NoAutoStaticsCleanup]: this closed generic's static ctor never re-runs after reload (see class remarks), so re-acquiring here would be unsafe, not the assignment itself
-            if (IsUnmanaged)
-                s_Record = CreateRecord();
-
-            // The hook ignores instance state, so default(T) is a valid receiver; no boxing.
+#pragma warning disable UAL0015 // the statics assigned here are already [NoAutoStaticsCleanup]: this closed generic's static ctor never re-runs after reload (see class remarks), so re-acquiring here would be unsafe, not the assignment itself
+            // The hooks ignore instance state, so default(T) is a valid receiver; no boxing.
             CreateInstanceFactory = default(T).__GetComponentCreateInstanceFactory() as Func<T>;
+            ReleaseResourcesHandler = default(T).__GetComponentResourceReleaseHandler() as ComponentResourceReleaseHandler<T>;
+
+            AcquireRecord();
 #pragma warning restore UAL0015
 
             // Register the required types for the editor-only RemoveComponent warning. Every
@@ -315,15 +529,26 @@ namespace UnityEngine.UIElements
 #pragma warning restore UAL0015
         }
 
-        static PerTypeStore CreateRecord()
+        static void EnsureLiveRecord()
         {
-            // Read [VisualElementComponent(initialCapacity)] by reflection (cold path): v1 has no source
-            // generator to emit it into this call yet.
-            var attribute = (VisualElementComponentAttribute)Attribute.GetCustomAttribute(typeof(T), typeof(VisualElementComponentAttribute));
-            return attribute != null && attribute.initialCapacity > 0
-                ? ComponentManager.SharedManager.GetOrCreateStore<T>(attribute.initialCapacity)
-                : ComponentManager.SharedManager.GetOrCreateStore<T>();
+            // An engine-defined type's closed generic outlives a code reload, so the static constructor
+            // never re-runs; re-acquiring while shut down would leak a store nothing will dispose.
+            if (!s_Record.isValid && !ComponentManager.IsSharedManagerShutDown)
+                AcquireRecord();
         }
+
+        static void AcquireRecord()
+        {
+            var initialCapacity = ComponentManager.ResolveInitialCapacity(typeof(T));
+
+            s_Record = ComponentManager.SharedManager.GetOrCreateStore<T>(IsUnmanaged, initialCapacity);
+            s_Registry = s_Record.managedRegistry as ManagedComponentRegistry<T>;
+
+            if (IsUnmanaged && ReleaseResourcesHandler != null)
+                unsafe { s_Record.releaseResources = &ReleaseResourcesAt; }
+        }
+
+        static unsafe void ReleaseResourcesAt(void* data) => ReleaseResourcesHandler(ref UnsafeUtility.AsRef<T>(data));
     }
 
     /// <summary>

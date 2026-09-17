@@ -124,7 +124,7 @@ sealed partial class UIViewport : VisualElement
 
     void OnContextMenuPointerUp(PointerUpEvent evt)
     {
-        if (m_PanManipulator.IsPanning)
+        if (m_PanManipulator.IsPanning || m_Canvas.PreviewMode)
             return;
 
         var isSecondaryClick = evt.button == 1;
@@ -141,43 +141,11 @@ sealed partial class UIViewport : VisualElement
 
     void OnContextualMenuPopulate(ContextualMenuPopulateEvent evt)
     {
-        using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-        FilterSelection(filteredSelection);
-        var selection = filteredSelection.ToArray();
-
-        // Collect live elements without the fully-editable restriction so that elements inside
-        // template instances (read-only in the parent doc) are included for open actions and
-        // template operations, which navigate by element context rather than mutate by asset.
-        using var liveElementsHandle = ListPool<VisualElement>.Get(out var liveElements);
-        using var liveElementsAssetsHandle = ListPool<VisualElementAsset>.Get(out var liveElementsAssets);
-        FilterSelection(liveElementsAssets, liveElements, requireFullyEditable: false);
-
-        StageContextMenuUtility.AppendActionWithHotKey(evt.menu, StageContextMenuUtility.Cut,
-            () => CutElementsCommand.Execute(CommandSources.Menus, selection),
-            CutElementsCommand.Validate(CommandSources.Menus, selection));
-        using var copySelectionHandle = ListPool<VisualElementAsset>.Get(out var copyFilteredSelection);
-        FilterSelection(copyFilteredSelection, requireFullyEditable: false);
-        var copySelection = copyFilteredSelection.ToArray();
-        StageContextMenuUtility.AppendActionWithHotKey(evt.menu, StageContextMenuUtility.Copy,
-            () => CopyElementsCommand.Execute(CommandSources.Menus, copySelection),
-            CopyElementsCommand.Validate(CommandSources.Menus, copySelection));
-        StageContextMenuUtility.AppendActionWithHotKey(evt.menu, StageContextMenuUtility.Paste,
-            () => DoPaste(),
-            CanPasteInViewport());
-        StageContextMenuUtility.AppendActionWithHotKey(evt.menu, StageContextMenuUtility.Duplicate,
-            () => DuplicateElementsCommand.Execute(CommandSources.Menus, selection),
-            DuplicateElementsCommand.Validate(CommandSources.Menus, selection));
-        StageContextMenuUtility.AppendActionWithHotKey(evt.menu, StageContextMenuUtility.Delete,
-            () => RemoveElementsCommand.Execute(CommandSources.Menus, selection),
-            RemoveElementsCommand.Validate(CommandSources.Menus, selection));
-
-        if (liveElements.Count > 0)
-        {
-            evt.menu.AppendSeparator();
-            StageContextMenuUtility.PopulateOpenActions(liveElements[0], evt.menu);
-        }
-        evt.menu.AppendSeparator();
-        StageContextMenuUtility.PopulateTemplateOperations(evt.menu, liveElements, CommandSources.Menus, includeShowInProject: false);
+        if (m_Canvas.PreviewMode)
+            return;
+        UIViewportContextMenuUtility.PopulateMenu(evt.menu,
+            CommandSources.Viewport, m_Canvas.DocumentRoot.InPlaceEditor,
+            m_Canvas.PanelElement?.subRootVisualElement?.panel);
     }
 
     void OnValidateCommand(ValidateCommandEvent evt)
@@ -187,7 +155,7 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.Cut:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
                 if (CutElementsCommand.Validate(CommandSources.Viewport, NoAllocHelpers.CreateSpan(filteredSelection)))
                     evt.StopPropagation();
                 break;
@@ -195,19 +163,19 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.Copy:
             {
                 using var copyHandle = ListPool<VisualElementAsset>.Get(out var copySelection);
-                FilterSelection(copySelection, requireFullyEditable: false);
+                UIViewportContextMenuUtility.FilterSelection(copySelection, requireFullyEditable: false);
                 if (CopyElementsCommand.Validate(NoAllocHelpers.CreateSpan(copySelection)))
                     evt.StopPropagation();
                 break;
             }
             case EventCommandNames.Paste:
-                if (CanPasteInViewport())
+                if (UIViewportContextMenuUtility.CanPaste(m_Canvas.PanelElement?.subRootVisualElement?.panel))
                     evt.StopPropagation();
                 break;
             case EventCommandNames.Duplicate:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
                 if (DuplicateElementsCommand.Validate(NoAllocHelpers.CreateSpan(filteredSelection)))
                     evt.StopPropagation();
                 break;
@@ -216,7 +184,7 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.SoftDelete:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
                 if (RemoveElementsCommand.Validate(NoAllocHelpers.CreateSpan(filteredSelection)))
                     evt.StopPropagation();
                 break;
@@ -231,7 +199,7 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.Cut:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
                 if (filteredSelection.Count > 0 &&
                     CutElementsCommand.Execute(CommandSources.Viewport, filteredSelection.ToArray()) == CommandExecutionStatus.Success)
                     evt.StopPropagation();
@@ -240,20 +208,20 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.Copy:
             {
                 using var copyHandle = ListPool<VisualElementAsset>.Get(out var copySelection);
-                FilterSelection(copySelection, requireFullyEditable: false);
+                UIViewportContextMenuUtility.FilterSelection(copySelection, requireFullyEditable: false);
                 if (copySelection.Count > 0 &&
                     CopyElementsCommand.Execute(CommandSources.Viewport, copySelection.ToArray()) == CommandExecutionStatus.Success)
                     evt.StopPropagation();
                 break;
             }
             case EventCommandNames.Paste:
-                if (DoPaste())
+                if (UIViewportContextMenuUtility.DoPaste(CommandSources.Viewport, m_Canvas.PanelElement?.subRootVisualElement?.panel))
                     evt.StopPropagation();
                 break;
             case EventCommandNames.Duplicate:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
                 if (DuplicateElementsCommand.Execute(CommandSources.Viewport, filteredSelection.ToArray()) == CommandExecutionStatus.Success)
                     evt.StopPropagation();
                 break;
@@ -262,7 +230,7 @@ sealed partial class UIViewport : VisualElement
             case EventCommandNames.SoftDelete:
             {
                 using var selectionHandle = ListPool<VisualElementAsset>.Get(out var filteredSelection);
-                FilterSelection(filteredSelection);
+                UIViewportContextMenuUtility.FilterSelection(filteredSelection);
                 if (RemoveElementsCommand.Execute(CommandSources.Viewport, filteredSelection.ToArray()) == CommandExecutionStatus.Success)
                     evt.StopPropagation();
                 break;
@@ -270,55 +238,6 @@ sealed partial class UIViewport : VisualElement
         }
     }
 
-    bool CanPasteInViewport()
-    {
-        if (!VisualElementEditingUtility.TryResolvePasteParent(GetFirstSelectedElement(), out _, out _))
-            return false;
-        return VisualElementEditingUtility.CanPasteContent();
-    }
-
-    bool DoPaste()
-    {
-        var selected = GetFirstSelectedElement();
-        if (!VisualElementEditingUtility.TryResolvePasteParent(selected, out var parentElement, out var parentAsset))
-            return false;
-
-        var targetDocument = parentAsset.visualTreeAsset;
-
-        // Move (cut) branch — checked first: Cut fills both SystemCopyBuffer and cut elements.
-        var clipboard = Clipboard.GetClipboardForStage();
-        var cutElements = clipboard?.GetCutElements();
-        if (cutElements != null && cutElements.Count > 0)
-        {
-            for (var i = 0; i < cutElements.Count; ++i)
-            {
-                var cutAsset = cutElements[i];
-                if (cutAsset == null || cutAsset.visualTreeAsset == targetDocument)
-                    continue;
-                if (VisualElementEditingUtility.WouldCauseCircularDependency(targetDocument, parentElement, cutAsset))
-                    return false;
-            }
-
-            using var toPasteHandle = ListPool<VisualElementAsset>.Get(out var toPasteList);
-            for (var i = 0; i < cutElements.Count; ++i)
-            {
-                if (cutElements[i] != null)
-                    toPasteList.Add(cutElements[i]);
-            }
-            if (toPasteList.Count == 0)
-                return false;
-
-            var arr = toPasteList.ToArray();
-            UIToolkitStageUtility.RequestSelectionOnNextUpdate(arr);
-            ReparentElementsCommand.Execute(CommandSources.Viewport, parentAsset, -1, arr);
-            UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parentElement);
-            clipboard.ClearCutElements();
-            return true;
-        }
-
-        // Copy branch: recreate content from the UXML in the buffer.
-        return VisualElementEditingUtility.TryPasteCopied(CommandSources.Viewport, parentElement, parentAsset);
-    }
 
     protected override void HandleEventBubbleUp(EventBase evt)
     {
@@ -617,40 +536,4 @@ sealed partial class UIViewport : VisualElement
         EditorUserSettings.SetConfigValue(key, value ? "true" : "false");
     }
 
-    void FilterSelection(List<VisualElementAsset> assets, bool requireFullyEditable = true)
-        => FilterSelection(assets, null, requireFullyEditable);
-
-    void FilterSelection(List<VisualElementAsset> assets, List<VisualElement> liveElements, bool requireFullyEditable = true)
-    {
-        using var elementsHandle = ListPool<VisualElement>.Get(out var elements);
-
-        foreach (var selectedId in Selection.entityIds)
-        {
-            if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection { Element: { } element })
-            {
-                if (element.panel != null && element.visualElementAsset != null)
-                    elements.Add(element);
-            }
-        }
-
-        using var seenAssetsHandle = HashSetPool<VisualElementAsset>.Get(out var seenAssets);
-        using var selectionSetHandle = HashSetPool<VisualElement>.Get(out var selectionSet);
-        foreach (var e in elements)
-            selectionSet.Add(e);
-        foreach (var element in elements)
-        {
-            if (requireFullyEditable && !UIToolkitStageUtility.GetEditFlags(element).IsFullyEditable())
-                continue;
-
-            var parent = element.hierarchy.parent;
-            while (parent != null && !selectionSet.Contains(parent))
-                parent = parent.hierarchy.parent;
-
-            if (parent == null && seenAssets.Add(element.visualElementAsset))
-            {
-                assets.Add(element.visualElementAsset);
-                liveElements?.Add(element);
-            }
-        }
-    }
 }

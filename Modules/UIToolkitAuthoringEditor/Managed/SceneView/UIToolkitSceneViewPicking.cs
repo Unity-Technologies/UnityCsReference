@@ -37,11 +37,6 @@ namespace Unity.UIToolkit.Editor
 
         static RenderPickingResult RenderForPicking(in RenderPickingArgs args)
         {
-            // Per-element picking only makes sense when the user has opted into the hierarchy
-            // integration; otherwise the SceneView should just select the panel GameObject as a whole.
-            if (!UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
-                return default;
-
             // Store system ignore/filter set and type for use in resolve callback
             // The resolve callback doesn't receive the args, so we need to store it here
             s_SystemIgnoreSet = args.renderObjectSetInternal as HashSet<Object>;

@@ -182,6 +182,20 @@ namespace UnityEngine.Networking
             DownloadHandlerStream downloadHandler = null;
             UnityWebRequest unityWebRequest = null;
 
+            // The request is torn down from either the completion callback or the cancellation catch
+            // below, whichever runs first; UnityWebRequest.Dispose() frees the native object and is not
+            // safe to run twice.
+            bool requestDisposed = false;
+            void DisposeRequest()
+            {
+                if (requestDisposed)
+                    return;
+                requestDisposed = true;
+
+                downloadHandler?.Close();
+                unityWebRequest?.Dispose();
+            }
+
             try
             {
                 await Awaitable.MainThreadAsync(); // UnityWebRequest must be created on the main thread
@@ -222,8 +236,11 @@ namespace UnityEngine.Networking
                 };
 
                 TaskCompletionSource<HttpResponseMessage> httpResponseTask = new TaskCompletionSource<HttpResponseMessage>();
-                downloadHandler.headersCompleted += () =>
+                void CompleteHttpResponse()
                 {
+                    if (httpResponseTask.Task.IsCompleted)
+                        return;
+
                     var headers = unityWebRequest.GetResponseHeaders();
                     if (headers != null)
                     {
@@ -236,10 +253,12 @@ namespace UnityEngine.Networking
                     }
 
                     httpResponseMessage.StatusCode = (HttpStatusCode)unityWebRequest.responseCode;
-                    httpResponseMessage.Version = unityWebRequest.responseVersion;
-                    if (!httpResponseTask.Task.IsCompleted)
-                        httpResponseTask.SetResult(httpResponseMessage);
-                };
+                    var responseVersion = unityWebRequest.responseVersion;
+                    if (responseVersion != null)
+                        httpResponseMessage.Version = responseVersion;
+                    httpResponseTask.TrySetResult(httpResponseMessage);
+                }
+                downloadHandler.headersCompleted += CompleteHttpResponse;
 
                 if (httpRequest.Content != null)
                 {
@@ -249,18 +268,45 @@ namespace UnityEngine.Networking
                 cancellationToken.ThrowIfCancellationRequested();
                 unityWebRequest.SendWebRequest().completed += (_) =>
                 {
-                    var trailers = unityWebRequest.GetResponseTrailers();
-                    if (trailers != null)
+                    try
                     {
-                        foreach (var key in trailers.Keys)
+                        var trailers = unityWebRequest.GetResponseTrailers();
+                        if (trailers != null)
                         {
-                            var val = trailers[key];
-                            httpResponseMessage.TrailingHeaders.TryAddWithoutValidation(key, val);
+                            foreach (var key in trailers.Keys)
+                            {
+                                var val = trailers[key];
+                                httpResponseMessage.TrailingHeaders.TryAddWithoutValidation(key, val);
+                            }
+                        }
+
+                        // This fires for every terminal outcome, not just a received response: an abort
+                        // or a transport failure gets here with no response to describe. Settle the task
+                        // to match, rather than handing back an HttpResponseMessage built from metadata
+                        // that was never received.
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            httpResponseTask.TrySetCanceled(cancellationToken);
+                        }
+                        else if (unityWebRequest.result == UnityWebRequest.Result.ConnectionError ||
+                                 unityWebRequest.result == UnityWebRequest.Result.DataProcessingError)
+                        {
+                            httpResponseTask.TrySetException(new HttpRequestException(unityWebRequest.error));
+                        }
+                        else
+                        {
+                            // A response with an empty body never triggers downloadHandler.headersCompleted,
+                            // since that requires at least one body byte to arrive from the transport.
+                            // Complete the response here as a fallback once the request has finished.
+                            CompleteHttpResponse();
                         }
                     }
-
-                    downloadHandler.Close();
-                    unityWebRequest.Dispose();
+                    finally
+                    {
+                        // Must run even if completing the response threw, otherwise the native request
+                        // leaks and the caller is left awaiting a task nothing will ever complete.
+                        DisposeRequest();
+                    }
                 };
 
                 return await httpResponseTask.Task;
@@ -268,8 +314,7 @@ namespace UnityEngine.Networking
             catch (OperationCanceledException)
             {
                 uploadHandler?.Close();
-                downloadHandler?.Close();
-                unityWebRequest?.Dispose();
+                DisposeRequest();
                 throw;
             }
         }

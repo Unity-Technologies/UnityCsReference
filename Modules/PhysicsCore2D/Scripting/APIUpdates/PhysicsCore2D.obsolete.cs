@@ -4,6 +4,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Internal;
 using static Unity.U2D.Physics.Scripting2D;
@@ -57,6 +58,27 @@ namespace Unity.U2D.Physics
         [Obsolete("PhysicsWorld.autoTriggerCallbacks is obsolete. There is no longer a performance benefit to disabling automatic trigger callback dispatch, so trigger callbacks are now always sent every simulation step. Individual shapes can still control whether they generate trigger events at all via PhysicsShape.triggerEvents.", true)]
         public readonly bool autoTriggerCallbacks { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsWorld.preSolveCallbacks is deprecated, please use PhysicsWorld.preContactCallbacks instead. (UnityUpgradable) -> preContactCallbacks", false)]
+        public readonly bool preSolveCallbacks { get => preContactCallbacks; set => preContactCallbacks = value; }
+
+        public partial record struct TransformPlaneCustom
+        {
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsWorld.TransformPlaneCustom(translate, rotate, scale) is deprecated, please use PhysicsWorld.TransformPlaneCustom(translate, rotate) instead. The scale is ignored: it scaled the drawing of a shape but also the geometry an authoring component built from a Transform, so a shape simulated at a different size than it appeared. Scale the authored geometry instead.", false)]
+            public TransformPlaneCustom(Vector3 translate, Vector3 rotate, float scale)
+                : this(translate, rotate)
+            {
+            }
+
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsWorld.TransformPlaneCustom.scale is deprecated and always reads as one. It scaled the drawing of a shape but also the geometry an authoring component built from a Transform, so a shape simulated at a different size than it appeared. Scale the authored geometry instead.", false)]
+            public readonly float scale => 1.0f;
+        }
+
         public partial record struct WorldProfile
         {
             [ExcludeFromDocs]
@@ -68,6 +90,11 @@ namespace Unity.U2D.Physics
             [EditorBrowsable(EditorBrowsableState.Never)]
             [Obsolete("PhysicsWorld.WorldProfile.solveConstraints is deprecated, please use PhysicsWorld.WorldProfile.constraints instead. (UnityUpgradable) -> constraints", false)]
             public float solveConstraints { readonly get => constraints; set => constraints = value; }
+
+            [ExcludeFromDocs]
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            [Obsolete("PhysicsWorld.WorldProfile.applyBounciness is deprecated. Bounciness is no longer a separate solver stage so this always reads as zero.", false)]
+            public float applyBounciness { readonly get => 0.0f; set {} }
         }
 
         public partial record struct WorldCounters
@@ -115,6 +142,19 @@ namespace Unity.U2D.Physics
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("PhysicsWorldDefinition.autoTriggerCallbacks is obsolete. There is no longer a performance benefit to disabling automatic trigger callback dispatch, so trigger callbacks are now always sent every simulation step. Individual shapes can still control whether they generate trigger events at all via PhysicsShape.triggerEvents.", true)]
         public bool autoTriggerCallbacks { readonly get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsWorldDefinition.preSolveCallbacks is deprecated, please use PhysicsWorldDefinition.preContactCallbacks instead. (UnityUpgradable) -> preContactCallbacks", false)]
+        public bool preSolveCallbacks { readonly get => preContactCallbacks; set => preContactCallbacks = value; }
+    }
+
+    public partial record struct PhysicsShapeDefinition
+    {
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsShapeDefinition.preSolveCallbacks is deprecated, please use PhysicsShapeDefinition.preContactCallbacks instead. (UnityUpgradable) -> preContactCallbacks", false)]
+        public bool preSolveCallbacks { readonly get => preContactCallbacks; set => preContactCallbacks = value; }
     }
 
     public readonly partial struct PhysicsBody
@@ -173,6 +213,11 @@ namespace Unity.U2D.Physics
             var input = new PhysicsBody.WindInput { force = force, drag = drag, lift = lift, mask = PhysicsMask.All, useTriggers = true };
             ApplyWind(input);
         }
+
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsShape.preSolveCallbacks is deprecated, please use PhysicsShape.preContactCallbacks instead. (UnityUpgradable) -> preContactCallbacks", false)]
+        public readonly bool preSolveCallbacks { get => preContactCallbacks; set => preContactCallbacks = value; }
 
         public partial record struct SurfaceMaterial
         {
@@ -275,6 +320,84 @@ namespace Unity.U2D.Physics
             [EditorBrowsable(EditorBrowsableState.Never)]
             [Obsolete("PhysicsEvents.TransformTweenWriteEvent.transfomPlaneCustom is deprecated, please use PhysicsEvents.TransformTweenWriteEvent.transformPlaneCustom instead. (UnityUpgradable) -> transformPlaneCustom", false)]
             public readonly PhysicsWorld.TransformPlaneCustom transfomPlaneCustom => transformPlaneCustom;
+        }
+
+        /// <summary>
+        /// An event produced when a contact between a pair of shapes is updated, used to decide if the contact should be disabled.
+        /// </summary>
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsEvents.PreSolveEvent is deprecated. Use PhysicsEvents.PreContactEvent with PhysicsCallbacks.IPreContactCallback, or PhysicsEvents.PreContinuousEvent with PhysicsCallbacks.IPreContinuousCallback.", false)]
+        [StructLayout(LayoutKind.Sequential)]
+        public readonly record struct PreSolveEvent
+        {
+            /// <summary>
+            /// The physics world both shapes are within.
+            /// </summary>
+            public readonly PhysicsWorld physicsWorld => m_PhysicsWorld;
+
+            /// <summary>
+            /// One of the shapes involved in the event.
+            /// </summary>
+            public readonly PhysicsShape shapeA => m_ShapeA;
+
+            /// <summary>
+            /// The other shape involved in the event.
+            /// </summary>
+            public readonly PhysicsShape shapeB => m_ShapeB;
+
+            /// <summary>
+            /// The point of contact.
+            /// </summary>
+            public readonly Vector2 point => m_Point;
+
+            /// <summary>
+            /// The surface normal at the point of contact.
+            /// </summary>
+            public readonly Vector2 normal => m_Normal;
+
+            /// <undoc/>
+            public override readonly string ToString() => $"PreSolveEvent: physicsWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}, point={point}, normal={normal}";
+
+            // Built on the managed side when a target only implements the deprecated callback, mapping the new events back onto the old shape.
+            internal PreSolveEvent(PhysicsWorld physicsWorld, PhysicsShape shapeA, PhysicsShape shapeB, Vector2 point, Vector2 normal)
+            {
+                m_PhysicsWorld = physicsWorld;
+                m_ShapeA = shapeA;
+                m_ShapeB = shapeB;
+                m_Point = point;
+                m_Normal = normal;
+            }
+
+            #region Internal
+
+            readonly PhysicsWorld m_PhysicsWorld;
+            readonly PhysicsShape m_ShapeA;
+            readonly PhysicsShape m_ShapeB;
+            readonly Vector2 m_Point;
+            readonly Vector2 m_Normal;
+
+            #endregion
+        }
+    }
+
+    public readonly partial record struct PhysicsCallbacks
+    {
+        /// <summary>
+        /// An interface that when implemented, is called as a target when a shape and its world both have their pre-contact callbacks enabled.
+        /// </summary>
+        [ExcludeFromDocs]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("PhysicsCallbacks.IPreSolveCallback is deprecated. Implement PhysicsCallbacks.IPreContactCallback to modify or cancel a contact, and PhysicsCallbacks.IPreContinuousCallback to control continuous collision stops. This interface keeps working but is only used when neither new interface is implemented on the same target.", false)]
+        public interface IPreSolveCallback
+        {
+            /// <summary>
+            /// Called when a contact between a pair of shapes is updated, allowing the contact to be disabled before it goes to the solver.
+            /// Returning false disables the contact this simulation step, and returning true allows it.
+            /// </summary>
+            /// <param name="preSolveEvent">The event that occurred.</param>
+            /// <returns>Return false to disable the contact this simulation step, or true to allow it.</returns>
+            bool OnPreSolve2D(PhysicsEvents.PreSolveEvent preSolveEvent);
         }
     }
 

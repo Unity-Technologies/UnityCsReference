@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -19,10 +18,6 @@ namespace UnityEditor
     [EditorWindowTitle(title = k_InspectorWindowTitle, useTypeNameAsIconName = true)]
     internal partial class InspectorWindow : PropertyEditor, IPropertyView, IHasCustomMenu
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal InspectorWindow() { }
-        #pragma warning restore UAL0015
-
         const string k_InspectorWindowTitle = "Inspector";
         const string k_InspectorWindowTitleDebug = "Inspector (Debug)";
         const string k_InspectorWindowTitleDebugInternal = "Inspector (Debug Internal)";
@@ -303,7 +298,7 @@ namespace UnityEditor
         public override void AddItemsToMenu(GenericMenu menu)
         {
             m_LockTracker.AddItemsToMenu(menu);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Properties..."), false, () => OpenPropertyEditor(GetInspectedObjects()));
+            menu.AddItem(L10n.TextContent("Properties...", null, null, null), false, () => OpenPropertyEditor(GetInspectedObjects()));
             menu.AddSeparator(String.Empty);
             base.AddItemsToMenu(menu);
         }
@@ -419,9 +414,9 @@ namespace UnityEditor
                 {
                     GenericMenu menu = new GenericMenu();
                     menu.AddItem(
-                        EditorGUIUtility.TrTextContent(m_PreviewWindow == null
+                        L10n.TextContent(m_PreviewWindow == null
                             ? "Convert to Floating Window"
-                            : "Dock Preview to Inspector"), false,
+                            : "Dock Preview to Inspector", null, null, null), false,
                         () =>
                         {
                             if (m_PreviewWindow == null)
@@ -434,9 +429,9 @@ namespace UnityEditor
                             }
                         });
                     menu.AddItem(
-                        EditorGUIUtility.TrTextContent(m_PreviewResizer.GetExpanded()
+                        L10n.TextContent(m_PreviewResizer.GetExpanded()
                             ? "Minimize in Inspector"
-                            : "Restore in Inspector"), false,
+                            : "Restore in Inspector", null, null, null), false,
                         () =>
                         {
                             m_PreviewResizer.SetExpanded(position, k_InspectorPreviewMinTotalHeight,
@@ -694,4 +689,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

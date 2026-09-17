@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using UnityEngine;
 using UnityEngine.UIElements;
 using System;
@@ -71,12 +70,9 @@ namespace UnityEditor.UIElements.Samples
 
         void OnGridLayoutSettingChanged(bool enabled) => CreateGUI();
 
-        void OnZIndexSettingChanged() => CreateGUI();
-
         void OnDisable()
         {
             UIToolkitProjectSettings.onEnableGridLayoutChanged -= OnGridLayoutSettingChanged;
-            UIToolkitProjectSettings.onEnableZIndexChanged -= OnZIndexSettingChanged;
         }
 
         public void CreateGUI()
@@ -85,8 +81,6 @@ namespace UnityEditor.UIElements.Samples
             root.Clear();
             UIToolkitProjectSettings.onEnableGridLayoutChanged -= OnGridLayoutSettingChanged;
             UIToolkitProjectSettings.onEnableGridLayoutChanged += OnGridLayoutSettingChanged;
-            UIToolkitProjectSettings.onEnableZIndexChanged -= OnZIndexSettingChanged;
-            UIToolkitProjectSettings.onEnableZIndexChanged += OnZIndexSettingChanged;
             root.disablePlayModeTint = true;
 
             var styleSheet = EditorGUIUtility.Load(s_StyleSheetPath) as StyleSheet;
@@ -189,22 +183,19 @@ namespace UnityEditor.UIElements.Samples
                 //}),
             };
 
-            if (UIToolkitProjectSettings.enableZIndex)
+            items.Add(new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Z-Index", MakeEmpty), new List<TreeViewItemData<SampleTreeItem>>()
             {
-                items.Add(new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Z-Index", MakeEmpty), new List<TreeViewItemData<SampleTreeItem>>()
-                {
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Hover Layering", ZIndexHoverLayeringDemo.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Drag and Drop", ZIndexDragAndDropDemo.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Popup", ZIndexPopupDemo.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Overlays", ZIndexOverlaysDemo.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Window Manager", ZIndexWindowManagerDemo.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Sticky Headers", ZIndexStickyHeadersDemo.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Navigation Bars", ZIndexNavigationBarsDemo.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Animated Z-Index", ZIndexTransitionsDemo.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Animated Overlay", ZIndexAnimationDemo.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Layer Splitting", ZIndexLayerSplittingDemo.Create)),
-                }));
-            }
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Hover Layering", ZIndexHoverLayeringDemo.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Drag and Drop", ZIndexDragAndDropDemo.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Popup", ZIndexPopupDemo.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Overlays", ZIndexOverlaysDemo.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Window Manager", ZIndexWindowManagerDemo.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Sticky Headers", ZIndexStickyHeadersDemo.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Navigation Bars", ZIndexNavigationBarsDemo.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Animated Z-Index", ZIndexTransitionsDemo.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Animated Overlay", ZIndexAnimationDemo.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Layer Splitting", ZIndexLayerSplittingDemo.Create)),
+            }));
 
             if (UIToolkitProjectSettings.enableGridLayout)
                 items.Insert(1, new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Grid", GridSnippet.Create)));
@@ -424,4 +415,3 @@ namespace UnityEditor.UIElements.Samples
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

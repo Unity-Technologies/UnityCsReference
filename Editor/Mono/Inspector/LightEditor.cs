@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using Object = UnityEngine.Object;
 
 using UnityEditor.AnimatedValues;
@@ -79,64 +78,64 @@ namespace UnityEditor
 
             private static class Styles
             {
-                public static readonly GUIContent Type = EditorGUIUtility.TrTextContent("Type", "Specifies the current type of light. Possible types are Directional, Spot, Point, and Area lights.");
-                public static readonly GUIContent Shape = EditorGUIUtility.TrTextContent("Shape", "Specifies the shape of the Area light. Possible types are Rectangle and Disc.");
-                public static readonly GUIContent Range = EditorGUIUtility.TrTextContent("Range", "Controls how far the light is emitted from the center of the object.");
-                public static readonly GUIContent SpotAngle = EditorGUIUtility.TrTextContent("Spot Angle", "Controls the angle in degrees at the base of a Spot light's cone.");
-                public static readonly GUIContent InnerOuterSpotAngle = EditorGUIUtility.TrTextContent("Inner / Outer Spot Angle", "Controls the inner and outer angles in degrees, at the base of a Spot light's cone.");
-                public static readonly GUIContent Color = EditorGUIUtility.TrTextContent("Color", "Controls the color being emitted by the light.");
-                public static readonly GUIContent UseColorTemperature = EditorGUIUtility.TrTextContent("Use color temperature mode", "Choose between RGB and temperature mode for light's color.");
-                public static readonly GUIContent ColorFilter = EditorGUIUtility.TrTextContent("Filter", "A colored gel can be put in front of the light source to tint the light.");
-                public static readonly GUIContent ColorTemperature = EditorGUIUtility.TrTextContent("Temperature", "Also known as CCT (Correlated color temperature). The color temperature of the electromagnetic radiation emitted from an ideal black body is defined as its surface temperature in Kelvin. White is 6500K");
-                public static readonly GUIContent Intensity = EditorGUIUtility.TrTextContent("Intensity", "Controls the brightness of the light. Light color is multiplied by this value.");
-                public static readonly GUIContent LightmappingMode = EditorGUIUtility.TrTextContent("Mode", "Specifies the light mode used to determine if and how a light will be baked. Possible modes are Baked, Mixed, and Realtime.");
-                public static readonly GUIContent LightBounceIntensityRealtimeGISupport = EditorGUIUtility.TrTextContent("Indirect Multiplier", "Determines the intensity of indirect light being contributed to the scene. Has no effect when both Realtime and Baked Global Illumination are disabled. If this value is 0, Realtime lights to be removed from realtime global illumination and Baked and Mixed lights to no longer emit indirect lighting.");
-                public static readonly GUIContent LightBounceIntensity = EditorGUIUtility.TrTextContent("Indirect Multiplier", "Determines the intensity of indirect light being contributed to to the scene. Has no effect when Baked Global Illumination is disabled. If this value is 0, Baked and Mixed lights no longer emit indirect lighting.");
-                public static readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadow Type", "Specifies whether Hard Shadows, Soft Shadows, or No Shadows will be cast by the light.");
-                public static readonly GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether Soft Shadows or No Shadows will be cast by the light.");
-                public static readonly GUIContent ShapeRadius = EditorGUIUtility.TrTextContent("Shape Radius", "Controls the amount of artificial softening applied to the edges of shadows cast by the Point or Spot light.");
+                public static readonly GUIContent Type = L10n.TextContent("Type", "Specifies the current type of light. Possible types are Directional, Spot, Point, and Area lights.", null, null);
+                public static readonly GUIContent Shape = L10n.TextContent("Shape", "Specifies the shape of the Area light. Possible types are Rectangle and Disc.", null, null);
+                public static readonly GUIContent Range = L10n.TextContent("Range", "Controls how far the light is emitted from the center of the object.", null, null);
+                public static readonly GUIContent SpotAngle = L10n.TextContent("Spot Angle", "Controls the angle in degrees at the base of a Spot light's cone.", null, null);
+                public static readonly GUIContent InnerOuterSpotAngle = L10n.TextContent("Inner / Outer Spot Angle", "Controls the inner and outer angles in degrees, at the base of a Spot light's cone.", null, null);
+                public static readonly GUIContent Color = L10n.TextContent("Color", "Controls the color being emitted by the light.", null, null);
+                public static readonly GUIContent UseColorTemperature = L10n.TextContent("Use color temperature mode", "Choose between RGB and temperature mode for light's color.", null, null);
+                public static readonly GUIContent ColorFilter = L10n.TextContent("Filter", "A colored gel can be put in front of the light source to tint the light.", null, null);
+                public static readonly GUIContent ColorTemperature = L10n.TextContent("Temperature", "Also known as CCT (Correlated color temperature). The color temperature of the electromagnetic radiation emitted from an ideal black body is defined as its surface temperature in Kelvin. White is 6500K", null, null);
+                public static readonly GUIContent Intensity = L10n.TextContent("Intensity", "Controls the brightness of the light. Light color is multiplied by this value.", null, null);
+                public static readonly GUIContent LightmappingMode = L10n.TextContent("Mode", "Specifies the light mode used to determine if and how a light will be baked. Possible modes are Baked, Mixed, and Realtime.", null, null);
+                public static readonly GUIContent LightBounceIntensityRealtimeGISupport = L10n.TextContent("Indirect Multiplier", "Determines the intensity of indirect light being contributed to the scene. Has no effect when both Realtime and Baked Global Illumination are disabled. If this value is 0, Realtime lights to be removed from realtime global illumination and Baked and Mixed lights to no longer emit indirect lighting.", null, null);
+                public static readonly GUIContent LightBounceIntensity = L10n.TextContent("Indirect Multiplier", "Determines the intensity of indirect light being contributed to to the scene. Has no effect when Baked Global Illumination is disabled. If this value is 0, Baked and Mixed lights no longer emit indirect lighting.", null, null);
+                public static readonly GUIContent ShadowType = L10n.TextContent("Shadow Type", "Specifies whether Hard Shadows, Soft Shadows, or No Shadows will be cast by the light.", null, null);
+                public static readonly GUIContent CastShadows = L10n.TextContent("Cast Shadows", "Specifies whether Soft Shadows or No Shadows will be cast by the light.", null, null);
+                public static readonly GUIContent ShapeRadius = L10n.TextContent("Shape Radius", "Controls the amount of artificial softening applied to the edges of shadows cast by the Point or Spot light.", null, null);
                 //realtime
-                public static readonly GUIContent ShadowRealtimeSettings = EditorGUIUtility.TrTextContent("Realtime Shadows", "Settings for realtime direct shadows.");
-                public static readonly GUIContent ShadowStrength = EditorGUIUtility.TrTextContent("Strength", "Controls how dark the shadows cast by the light will be.");
-                public static readonly GUIContent ShadowResolution = EditorGUIUtility.TrTextContent("Resolution", "Controls the rendered resolution of the shadow maps. A higher resolution will increase the fidelity of shadows at the cost of GPU performance and memory usage.");
-                public static readonly GUIContent ShadowBias = EditorGUIUtility.TrTextContent("Bias", "Controls the distance at which the shadows will be pushed away from the light. Useful for avoiding false self-shadowing artifacts.");
-                public static readonly GUIContent ShadowNormalBias = EditorGUIUtility.TrTextContent("Normal Bias", "Controls distance at which the shadow casting surfaces will be shrunk along the surface normal. Useful for avoiding false self-shadowing artifacts.");
-                public static readonly GUIContent ShadowNearPlane = EditorGUIUtility.TrTextContent("Near Plane", "Controls the value for the near clip plane when rendering shadows. Currently clamped to 0.1 units or 1% of the lights range property, whichever is lower.");
+                public static readonly GUIContent ShadowRealtimeSettings = L10n.TextContent("Realtime Shadows", "Settings for realtime direct shadows.", null, null);
+                public static readonly GUIContent ShadowStrength = L10n.TextContent("Strength", "Controls how dark the shadows cast by the light will be.", null, null);
+                public static readonly GUIContent ShadowResolution = L10n.TextContent("Resolution", "Controls the rendered resolution of the shadow maps. A higher resolution will increase the fidelity of shadows at the cost of GPU performance and memory usage.", null, null);
+                public static readonly GUIContent ShadowBias = L10n.TextContent("Bias", "Controls the distance at which the shadows will be pushed away from the light. Useful for avoiding false self-shadowing artifacts.", null, null);
+                public static readonly GUIContent ShadowNormalBias = L10n.TextContent("Normal Bias", "Controls distance at which the shadow casting surfaces will be shrunk along the surface normal. Useful for avoiding false self-shadowing artifacts.", null, null);
+                public static readonly GUIContent ShadowNearPlane = L10n.TextContent("Near Plane", "Controls the value for the near clip plane when rendering shadows. Currently clamped to 0.1 units or 1% of the lights range property, whichever is lower.", null, null);
                 //baked
-                public static readonly GUIContent BakedShadowAngle = EditorGUIUtility.TrTextContent("Baked Shadow Angle", "Controls the amount of artificial softening applied to the edges of shadows cast by directional lights.");
+                public static readonly GUIContent BakedShadowAngle = L10n.TextContent("Baked Shadow Angle", "Controls the amount of artificial softening applied to the edges of shadows cast by directional lights.", null, null);
 
-                public static readonly GUIContent Cookie = EditorGUIUtility.TrTextContent("Cookie", "Specifies the Texture mask to cast shadows, create silhouettes, or patterned illumination for the light.");
-                public static readonly GUIContent CookieSize = EditorGUIUtility.TrTextContent("Size", "Controls the size of the cookie mask currently assigned to the light.");
-                public static readonly GUIContent CookieTexture = EditorGUIUtility.TrTextContent("Cookie", "Texture to use for the light cookie.");
+                public static readonly GUIContent Cookie = L10n.TextContent("Cookie", "Specifies the Texture mask to cast shadows, create silhouettes, or patterned illumination for the light.", null, null);
+                public static readonly GUIContent CookieSize = L10n.TextContent("Size", "Controls the size of the cookie mask currently assigned to the light.", null, null);
+                public static readonly GUIContent CookieTexture = L10n.TextContent("Cookie", "Texture to use for the light cookie.", null, null);
 
-                public static readonly GUIContent DrawHalo = EditorGUIUtility.TrTextContent("Draw Halo", "When enabled, draws a spherical halo of light with a radius equal to the lights range value.");
-                public static readonly GUIContent Flare = EditorGUIUtility.TrTextContent("Flare", "Specifies the flare object to be used by the light to render lens flares in the scene.");
-                public static readonly GUIContent RenderMode = EditorGUIUtility.TrTextContent("Render Mode", "Specifies the importance of the light which impacts lighting fidelity and performance. Options are Auto, Important, and Not Important. This only affects Forward Rendering.");
-                public static readonly GUIContent CullingMask = EditorGUIUtility.TrTextContent("Culling Mask", "Specifies which layers will be affected or excluded from the light's effect on objects in the scene.");
-                public static readonly GUIContent RenderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP when drawing shadows to filter renderers outside of the normal layering system.");
+                public static readonly GUIContent DrawHalo = L10n.TextContent("Draw Halo", "When enabled, draws a spherical halo of light with a radius equal to the lights range value.", null, null);
+                public static readonly GUIContent Flare = L10n.TextContent("Flare", "Specifies the flare object to be used by the light to render lens flares in the scene.", null, null);
+                public static readonly GUIContent RenderMode = L10n.TextContent("Render Mode", "Specifies the importance of the light which impacts lighting fidelity and performance. Options are Auto, Important, and Not Important. This only affects Forward Rendering.", null, null);
+                public static readonly GUIContent CullingMask = L10n.TextContent("Culling Mask", "Specifies which layers will be affected or excluded from the light's effect on objects in the scene.", null, null);
+                public static readonly GUIContent RenderingLayerMask = L10n.TextContent("Rendering Layer Mask", "Mask that can be used with SRP when drawing shadows to filter renderers outside of the normal layering system.", null, null);
 
-                public static readonly GUIContent AreaWidth = EditorGUIUtility.TrTextContent("Width", "Controls the width in units of the area light.");
-                public static readonly GUIContent AreaHeight = EditorGUIUtility.TrTextContent("Height", "Controls the height in units of the area light.");
-                public static readonly GUIContent AreaRadius = EditorGUIUtility.TrTextContent("Radius", "Controls the radius in units of the disc area light.");
+                public static readonly GUIContent AreaWidth = L10n.TextContent("Width", "Controls the width in units of the area light.", null, null);
+                public static readonly GUIContent AreaHeight = L10n.TextContent("Height", "Controls the height in units of the area light.", null, null);
+                public static readonly GUIContent AreaRadius = L10n.TextContent("Radius", "Controls the radius in units of the disc area light.", null, null);
 
-                public static readonly GUIContent BakingWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. Enable Baked Global Illumination to use Mixed or Baked light modes.");
-                public static readonly GUIContent IndirectBounceShadowWarning = EditorGUIUtility.TrTextContent("Realtime indirect bounce shadowing is only supported for Directional lights.");
-                public static readonly GUIContent CookieSpotRepeatWarning = EditorGUIUtility.TrTextContent("Cookie textures for spot lights should be set to clamp, not repeat, to avoid artifacts.");
-                public static readonly GUIContent CookieNotEnabledWarning = EditorGUIUtility.TrTextContent("Cookie support for baked lights is not enabled. Please enable it in Project Settings > Editor > Enable baked cookies support");
-                public static readonly GUIContent CookieNotEnabledInfo = EditorGUIUtility.TrTextContent("Cookie support for mixed lights is not enabled for indirect lighting. You can enable it in Project Settings > Editor > Enable baked cookies support");
-                public static readonly GUIContent CookieSpotDirectionalTextureWarning = EditorGUIUtility.TrTextContent("Spot and directional light cookie textures must be 2D.");
-                public static readonly GUIContent CookiePointCubemapTextureWarning = EditorGUIUtility.TrTextContent("Cookie support for baked lights is not enabled. Please enable it in Project Settings > Editor > Enable baked cookies support");
-                public static readonly GUIContent MixedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Mixed mode and/or any of the lighting modes.");
-                public static readonly GUIContent BakedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Baked mode.");
-                public static readonly GUIContent ShadowMaskConvertedToBakedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Baked mode because too many lights overlap in the scene. Shadowmask mode only supports a maximum of 4 overlapping lights.");
+                public static readonly GUIContent BakingWarning = L10n.TextContent("Light mode is currently overridden to Realtime mode. Enable Baked Global Illumination to use Mixed or Baked light modes.", null, null, null);
+                public static readonly GUIContent IndirectBounceShadowWarning = L10n.TextContent("Realtime indirect bounce shadowing is only supported for Directional lights.", null, null, null);
+                public static readonly GUIContent CookieSpotRepeatWarning = L10n.TextContent("Cookie textures for spot lights should be set to clamp, not repeat, to avoid artifacts.", null, null, null);
+                public static readonly GUIContent CookieNotEnabledWarning = L10n.TextContent("Cookie support for baked lights is not enabled. Please enable it in Project Settings > Editor > Enable baked cookies support", null, null, null);
+                public static readonly GUIContent CookieNotEnabledInfo = L10n.TextContent("Cookie support for mixed lights is not enabled for indirect lighting. You can enable it in Project Settings > Editor > Enable baked cookies support", null, null, null);
+                public static readonly GUIContent CookieSpotDirectionalTextureWarning = L10n.TextContent("Spot and directional light cookie textures must be 2D.", null, null, null);
+                public static readonly GUIContent CookiePointCubemapTextureWarning = L10n.TextContent("Cookie support for baked lights is not enabled. Please enable it in Project Settings > Editor > Enable baked cookies support", null, null, null);
+                public static readonly GUIContent MixedUnsupportedWarning = L10n.TextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Mixed mode and/or any of the lighting modes.", null, null, null);
+                public static readonly GUIContent BakedUnsupportedWarning = L10n.TextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Baked mode.", null, null, null);
+                public static readonly GUIContent ShadowMaskConvertedToBakedWarning = L10n.TextContent("Light mode is currently overridden to Baked mode because too many lights overlap in the scene. Shadowmask mode only supports a maximum of 4 overlapping lights.", null, null, null);
 
-                public static readonly GUIContent[] LightmapBakeTypeTitles = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Mixed"), EditorGUIUtility.TrTextContent("Baked") };
+                public static readonly GUIContent[] LightmapBakeTypeTitles = { L10n.TextContent("Realtime", null, null, null), L10n.TextContent("Mixed", null, null, null), L10n.TextContent("Baked", null, null, null) };
                 public static readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
 
-                public static readonly GUIContent[] LightTypeTitles = { EditorGUIUtility.TrTextContent("Spot"), EditorGUIUtility.TrTextContent("Directional"), EditorGUIUtility.TrTextContent("Point"), EditorGUIUtility.TrTextContent("Area (baked only)") };
+                public static readonly GUIContent[] LightTypeTitles = { L10n.TextContent("Spot", null, null, null), L10n.TextContent("Directional", null, null, null), L10n.TextContent("Point", null, null, null), L10n.TextContent("Area (baked only)", null, null, null) };
                 public static readonly int[] LightTypeValues = { (int)LightType.Spot, (int)LightType.Directional, (int)LightType.Point, (int)LightType.Rectangle };
 
-                public static readonly GUIContent[] AreaLightShapeTitles = { EditorGUIUtility.TrTextContent("Rectangle"), EditorGUIUtility.TrTextContent("Disc") };
+                public static readonly GUIContent[] AreaLightShapeTitles = { L10n.TextContent("Rectangle", null, null, null), L10n.TextContent("Disc", null, null, null) };
                 public static readonly int[] AreaLightShapeValues = { (int)AreaLightShape.Rectangle, (int)AreaLightShape.Disc };
             }
 
@@ -296,7 +295,7 @@ namespace UnityEditor
                     // would show up as a blank entry.
                     string currentTitle = ((LightType)lightType.intValue).ToString();
 #pragma warning disable UAC2001 // Avoid Linq
-                    GUIContent[] titles = Styles.LightTypeTitles.Append(EditorGUIUtility.TrTextContent(currentTitle)).ToArray();
+                    GUIContent[] titles = Styles.LightTypeTitles.Append(L10n.TextContent(currentTitle, null, null, null)).ToArray();
 #pragma warning restore UAC2001
 #pragma warning disable UAC2001 // Avoid Linq
                     int[] values = Styles.LightTypeValues.Append(lightType.intValue).ToArray();
@@ -672,8 +671,8 @@ namespace UnityEditor
 
         private static class StylesEx
         {
-            public static readonly GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove command buffer");
-            public static readonly GUIContent DisabledLightWarning = EditorGUIUtility.TrTextContent("Lighting has been disabled in at least one Scene view. Any changes applied to lights in the Scene will not be updated in these views until Lighting has been enabled again.");
+            public static readonly GUIContent iconRemove = L10n.IconContent("Toolbar Minus", "Remove command buffer", null);
+            public static readonly GUIContent DisabledLightWarning = L10n.TextContent("Lighting has been disabled in at least one Scene view. Any changes applied to lights in the Scene will not be updated in these views until Lighting has been enabled again.", null, null, null);
             public static readonly GUIStyle invisibleButton = "InvisibleButton";
         }
 
@@ -1012,4 +1011,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

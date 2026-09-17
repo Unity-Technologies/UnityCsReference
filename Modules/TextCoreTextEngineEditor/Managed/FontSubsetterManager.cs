@@ -32,31 +32,42 @@ namespace UnityEditor.TextCore.Text
             public int faceIndex;
         }
 
-        internal static string GetRecipeKey(FontAsset fontAsset)
+        // The primitives below take the consumer asset (recipe key owner) and its editor source
+        // font directly, so other font asset types (TMP) can reuse the subsetting machinery.
+        internal static string GetRecipeKey(UnityEngine.Object consumerAsset)
         {
-            string path = AssetDatabase.GetAssetPath(fontAsset);
+            string path = AssetDatabase.GetAssetPath(consumerAsset);
             return string.IsNullOrEmpty(path) ? null : AssetDatabase.AssetPathToGUID(path);
         }
 
         internal static bool TryGetSourceFontImporter(FontAsset fontAsset, out TrueTypeFontImporter importer, out string fontPath)
         {
+            return TryGetSourceFontImporter(fontAsset.SourceFont_EditorRef, out importer, out fontPath);
+        }
+
+        internal static bool TryGetSourceFontImporter(Font sourceFontEditorRef, out TrueTypeFontImporter importer, out string fontPath)
+        {
             importer = null;
             fontPath = null;
 
-            var sourceFont = fontAsset.SourceFont_EditorRef;
-            if (sourceFont == null)
+            if (sourceFontEditorRef == null)
                 return false;
 
-            fontPath = AssetDatabase.GetAssetPath(sourceFont);
+            fontPath = AssetDatabase.GetAssetPath(sourceFontEditorRef);
             importer = AssetImporter.GetAtPath(fontPath) as TrueTypeFontImporter;
             return importer != null;
         }
 
         internal static bool TryGetActiveRecipe(FontAsset fontAsset, out SubsetRecipe recipe)
         {
+            return TryGetActiveRecipe(fontAsset, fontAsset.SourceFont_EditorRef, out recipe);
+        }
+
+        internal static bool TryGetActiveRecipe(UnityEngine.Object consumerAsset, Font sourceFontEditorRef, out SubsetRecipe recipe)
+        {
             recipe = default;
-            string key = GetRecipeKey(fontAsset);
-            if (key == null || !TryGetSourceFontImporter(fontAsset, out var importer, out _))
+            string key = GetRecipeKey(consumerAsset);
+            if (key == null || !TryGetSourceFontImporter(sourceFontEditorRef, out var importer, out _))
                 return false;
 
             foreach (var candidate in ReadRecipes(importer))
@@ -98,21 +109,28 @@ namespace UnityEditor.TextCore.Text
         internal static void RemoveSubset(FontAsset fontAsset)
         {
             int faceIndex = fontAsset.faceInfo.faceIndex;
-            string key = GetRecipeKey(fontAsset);
-            if (key != null && TryGetSourceFontImporter(fontAsset, out var importer, out _))
-            {
-                var recipes = ReadRecipes(importer);
-                int index = recipes.FindIndex(r => r.key == key);
-                if (index >= 0)
-                {
-                    faceIndex = recipes[index].faceIndex;
-                    recipes.RemoveAt(index);
-                    WriteRecipes(importer, recipes);
-                    importer.SaveAndReimport();
-                }
-            }
+            RemoveRecipe(fontAsset, fontAsset.SourceFont_EditorRef, ref faceIndex);
 
             RepointSourceFont(fontAsset, fontAsset.SourceFont_EditorRef, faceIndex);
+        }
+
+        // Removes the consumer's recipe from the source font importer. When a recipe existed,
+        // faceIndex is updated to the face index it had baked before subsetting.
+        internal static void RemoveRecipe(UnityEngine.Object consumerAsset, Font sourceFontEditorRef, ref int faceIndex)
+        {
+            string key = GetRecipeKey(consumerAsset);
+            if (key == null || !TryGetSourceFontImporter(sourceFontEditorRef, out var importer, out _))
+                return;
+
+            var recipes = ReadRecipes(importer);
+            int index = recipes.FindIndex(r => r.key == key);
+            if (index < 0)
+                return;
+
+            faceIndex = recipes[index].faceIndex;
+            recipes.RemoveAt(index);
+            WriteRecipes(importer, recipes);
+            importer.SaveAndReimport();
         }
 
         static void PruneUnusedRecipes(List<SubsetRecipe> recipes)
@@ -120,38 +138,54 @@ namespace UnityEditor.TextCore.Text
             for (int i = recipes.Count - 1; i >= 0; i--)
             {
                 // GUIDToAssetPath still returns a path for deleted assets, so probe the asset itself.
+                // Consumers are not necessarily FontAssets (e.g. TMP_FontAsset), so probe as plain Object.
                 string path = AssetDatabase.GUIDToAssetPath(recipes[i].key);
-                if (string.IsNullOrEmpty(path) || AssetDatabase.LoadAssetAtPath<FontAsset>(path) == null)
+                if (string.IsNullOrEmpty(path) || AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path) == null)
                     recipes.RemoveAt(i);
             }
         }
 
         internal static Font ResolveDynamicSourceFont(FontAsset fontAsset)
         {
-            string key = GetRecipeKey(fontAsset);
-            if (key != null && TryGetSourceFontImporter(fontAsset, out var importer, out string fontPath)
+            var subsetFont = ResolveSubsetFont(fontAsset, fontAsset.SourceFont_EditorRef);
+            return subsetFont != null ? subsetFont : fontAsset.SourceFont_EditorRef;
+        }
+
+        // Returns the subset sub-asset the consumer's recipe produced, or null when none is active.
+        internal static Font ResolveSubsetFont(UnityEngine.Object consumerAsset, Font sourceFontEditorRef)
+        {
+            string key = GetRecipeKey(consumerAsset);
+            if (key != null && TryGetSourceFontImporter(sourceFontEditorRef, out var importer, out string fontPath)
                 && Array.IndexOf(importer.GetSubsetRecipeKeys(), key) >= 0)
             {
-                var subsetFont = FindSubsetFont(fontPath, key);
-                if (subsetFont != null)
-                    return subsetFont;
+                return FindSubsetFont(fontPath, key);
             }
 
-            return fontAsset.SourceFont_EditorRef;
+            return null;
         }
 
         internal static long GetSubsetSizePreview(FontAsset fontAsset, string ranges, int faceIndex)
         {
-            if (string.IsNullOrEmpty(ranges) || !TryGetSourceFontImporter(fontAsset, out _, out string fontPath))
+            return GetSubsetSizePreview(fontAsset.SourceFont_EditorRef, ranges, faceIndex, HintingFlags(fontAsset));
+        }
+
+        internal static long GetSubsetSizePreview(Font sourceFontEditorRef, string ranges, int faceIndex, FontSubsetFlags flags)
+        {
+            if (string.IsNullOrEmpty(ranges) || !TryGetSourceFontImporter(sourceFontEditorRef, out _, out string fontPath))
                 return 0;
 
-            return (long)TrueTypeFontImporter.GetSubsetFontSize(fontPath, faceIndex, ranges, (uint)HintingFlags(fontAsset));
+            return (long)TrueTypeFontImporter.GetSubsetFontSize(fontPath, faceIndex, ranges, (uint)flags);
+        }
+
+        internal static string GetMissingCodePoints(FontAsset fontAsset, string ranges, int faceIndex)
+        {
+            return GetMissingCodePoints(fontAsset.SourceFont_EditorRef, ranges, faceIndex);
         }
 
         // hb-subset silently drops requested code points the font has no glyph for; this reports them.
-        internal static string GetMissingCodePoints(FontAsset fontAsset, string ranges, int faceIndex)
+        internal static string GetMissingCodePoints(Font sourceFontEditorRef, string ranges, int faceIndex)
         {
-            var sourceFont = fontAsset.SourceFont_EditorRef;
+            var sourceFont = sourceFontEditorRef;
             if (sourceFont == null || string.IsNullOrEmpty(ranges))
                 return string.Empty;
 
@@ -176,9 +210,13 @@ namespace UnityEditor.TextCore.Text
 
         static bool TryGenerateSubsetFont(FontAsset fontAsset, string ranges, int faceIndex, out Font subsetFont, out string error)
         {
+            return TryGenerateSubsetFont(fontAsset, fontAsset.SourceFont_EditorRef, ranges, faceIndex, HintingFlags(fontAsset), out subsetFont, out error);
+        }
+
+        internal static bool TryGenerateSubsetFont(UnityEngine.Object consumerAsset, Font sourceFontEditorRef, string ranges, int faceIndex, FontSubsetFlags flags, out Font subsetFont, out string error)
+        {
             subsetFont = null;
             error = null;
-            FontSubsetFlags flags = HintingFlags(fontAsset);
 
             if (string.IsNullOrEmpty(ranges))
             {
@@ -186,14 +224,14 @@ namespace UnityEditor.TextCore.Text
                 return false;
             }
 
-            string key = GetRecipeKey(fontAsset);
+            string key = GetRecipeKey(consumerAsset);
             if (key == null)
             {
                 error = "The font asset is not saved in the project.";
                 return false;
             }
 
-            if (!TryGetSourceFontImporter(fontAsset, out var importer, out string fontPath))
+            if (!TryGetSourceFontImporter(sourceFontEditorRef, out var importer, out string fontPath))
             {
                 error = NoSourceFontImporterMessage;
                 return false;
@@ -211,9 +249,16 @@ namespace UnityEditor.TextCore.Text
             };
             int index = recipes.FindIndex(r => r.key == key);
             if (index >= 0)
+            {
+                // Updating an active subset: the consumer's faceIndex is already 0, so keep the
+                // original face baked into the recipe.
+                recipe.faceIndex = recipes[index].faceIndex;
                 recipes[index] = recipe;
+            }
             else
+            {
                 recipes.Add(recipe);
+            }
 
             WriteRecipes(importer, recipes);
             importer.SaveAndReimport();
@@ -230,10 +275,15 @@ namespace UnityEditor.TextCore.Text
         const GlyphRasterModes k_SdfRasterModes = GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_SDFAA
             | GlyphRasterModes.RASTER_MODE_MSDF | GlyphRasterModes.RASTER_MODE_MSDFA;
 
-        // SDF rendering never executes hinting instructions, so they are dead weight in the subset.
         static FontSubsetFlags HintingFlags(FontAsset fontAsset)
         {
-            var rasterModes = (GlyphRasterModes)fontAsset.atlasRenderMode;
+            return HintingFlags(fontAsset.atlasRenderMode);
+        }
+
+        // SDF rendering never executes hinting instructions, so they are dead weight in the subset.
+        internal static FontSubsetFlags HintingFlags(GlyphRenderMode renderMode)
+        {
+            var rasterModes = (GlyphRasterModes)renderMode;
             bool sdf = (rasterModes & k_SdfRasterModes) != 0;
             bool hinted = (rasterModes & GlyphRasterModes.RASTER_MODE_HINTED) != 0;
             return sdf && !hinted ? FontSubsetFlags.NoHinting : FontSubsetFlags.None;
@@ -302,8 +352,12 @@ namespace UnityEditor.TextCore.Text
 
         internal static bool IsSubsetActive(FontAsset fontAsset)
         {
-            var source = fontAsset.sourceFontFile;
-            return source != null && !string.IsNullOrEmpty(source.subsetKey) && source.subsetKey == GetRecipeKey(fontAsset);
+            return IsSubsetActive(fontAsset, fontAsset.sourceFontFile);
+        }
+
+        internal static bool IsSubsetActive(UnityEngine.Object consumerAsset, Font currentSourceFontFile)
+        {
+            return currentSourceFontFile != null && !string.IsNullOrEmpty(currentSourceFontFile.subsetKey) && currentSourceFontFile.subsetKey == GetRecipeKey(consumerAsset);
         }
     }
 }

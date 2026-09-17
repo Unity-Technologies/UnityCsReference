@@ -25,6 +25,10 @@ sealed class StageViewportContext : IUIViewportContext
 
     public PanelElement PanelElement => m_Stage ? m_Stage.PanelElement : null;
 
+    // The stage's own panel is what the Hierarchy and the inspector already select into, so there is nothing
+    // for the viewport to resolve through.
+    public VisualElement AuthoritativeRoot => null;
+
     public VisualTreeAsset RootVisualTreeAsset => m_Stage ? m_Stage.Context.RootVisualTreeAsset : null;
 
     public VisualTreeAsset EditedVisualTreeAsset => m_Stage ? m_Stage.EditedVisualTreeAsset : null;

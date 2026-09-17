@@ -12,11 +12,17 @@ namespace Unity.Localization.Editor;
 static partial class AssetEntryEditors
 {
     [AutoStaticsCleanup] // keyed by Type and holds editor instances; both go stale on reload
+    // Lazily built entry-editor registry: the lookup paths do s_Editors ??= Build(), so it is rebuilt by
+    // reflection on the next use.
+    [IgnoreForUAL0015("Entry-editor registry rebuilt by Build() when null")]
     static Dictionary<Type, IAssetEntryEditor> s_Editors;
     [NoAutoStaticsCleanup] // stateless fallback; a readonly field cannot be reassigned anyway
     static readonly IAssetEntryEditor s_Fallback = new DirectAssetEntryEditor();
     // Resolved base-type walks, cached because Get/RegisteredKind run per cell while the table scrolls.
     [AutoStaticsCleanup] // caches Type handles a reload invalidates
+    // Memo of the entry-type to editor-kind walk; a missing entry is re-derived from the registry on the
+    // next resolve, and it must be cleared so it does not hold the previous scope's types.
+    [IgnoreForUAL0015("Entry-kind resolution memo, re-derived on the next miss")]
     static readonly Dictionary<Type, Type> s_ResolvedKind = new();
 
     public static IAssetEntryEditor Get(Type entryType)

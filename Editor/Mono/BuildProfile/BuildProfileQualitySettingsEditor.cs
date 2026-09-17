@@ -19,7 +19,7 @@ namespace UnityEditor.Build.Profile
         const string k_Uxml = "BuildProfile/UXML/BuildProfileQualitySettings.uxml";
         const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
         const string k_QualitySettingsWindow = "Project/Quality";
-        static readonly GUIContent k_qualitySettingsWindow = EditorGUIUtility.TrTextContent("Quality...");
+        static readonly GUIContent k_qualitySettingsWindow = L10n.TextContent("Quality...", null, null, null);
         static readonly string k_InvalidQualityLevelWarning =
             L10n.Tr("The Quality levels in this profile do not match those that exist in the project. This may result in unexpected results on build.", null);
         static readonly string k_EmptyQualitySettingsWarning =

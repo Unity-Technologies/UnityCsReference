@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 
 namespace UnityEditor.Build.Profile
 {
@@ -35,9 +36,20 @@ namespace UnityEditor.Build.Profile
         public bool hasCustomEditor { get; set; } = false;
 
         /// <summary>
+        /// When true, the settings type is stored as a reference to a standalone on-disk
+        /// asset rather than embedded as a sub-asset of the build profile. The build profile
+        /// editor shows an object picker for the asset reference.
+        /// </summary>
+        /// <remarks>
+        /// When <see cref="isStandaloneAsset"/> is true, <see cref="isRequired"/> is ignored as
+        /// standalone assets cannot currently be required.
+        /// </remarks>
+        public bool isStandaloneAsset { get; set; } = false;
+
+        /// <summary>
         /// Returns true if the setting is marked as required
         /// by the provider. A required setting will appear in
-        /// every build profile it is valid for as  defined by
+        /// every build profile it is valid for as defined by
         /// CanAddSettings.
         /// </summary>
         internal bool isRequired { get; set; } = false;
@@ -48,6 +60,13 @@ namespace UnityEditor.Build.Profile
         /// build profile editor; when not set, the settings will not be shown.
         /// </summary>
         public Func<BuildProfile, bool> canAddSetting { get; set; }
+
+        /// <summary>
+        /// Optional factory for the settings object created when the setting is first added through the build
+        /// profile window. Defaults to <see langword="null"/>, which preserves the default behavior
+        /// of creating a new instance of the settings type.
+        /// </summary>
+        public Func<BuildProfile, ScriptableObject> onAddSetting { get; set; } = null;
 
         internal Type settingsType { get; set; }
 

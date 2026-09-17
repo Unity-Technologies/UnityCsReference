@@ -72,8 +72,8 @@ namespace UnityEditor
         public static Color UIColliderHandleColor { get { return s_UIColliderHandleColor; } }
         internal static readonly PrefColor s_UIColliderHandleColor = new PrefColor("Scene/UI Collider Handle", 145f / 255, 244f / 255, 139f / 255, 210f / 255);
 
-        internal readonly static GUIContent s_StaticLabel = EditorGUIUtility.TrTextContent("Static");
-        internal readonly static GUIContent s_PrefabLabel = EditorGUIUtility.TrTextContent("Prefab");
+        internal readonly static GUIContent s_StaticLabel = L10n.TextContent("Static", null, null, null);
+        internal readonly static GUIContent s_PrefabLabel = L10n.TextContent("Prefab", null, null, null);
 
         internal static readonly int s_SliderHash = "SliderHash".GetHashCode();
         internal static readonly int s_Slider2DHash = "Slider2DHash".GetHashCode();

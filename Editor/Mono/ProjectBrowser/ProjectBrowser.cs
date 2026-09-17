@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ProjectBrowser not yet converted
 using System;
 using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
@@ -118,18 +117,18 @@ namespace UnityEditor
             public GUIStyle lockButton = "IN LockButton";
             public GUIStyle separator = "ArrowNavigationRight";
 
-            public GUIContent m_FilterByLabel = EditorGUIUtility.TrIconContent("FilterByLabel", "Search by Label");
-            public GUIContent m_FilterByType = EditorGUIUtility.TrIconContent("FilterByType", "Search by Type");
-            public GUIContent m_FilterByImportLogInactive = EditorGUIUtility.TrIconContent("ImportLogType_Inactive", "Search by Import Log Type");
-            public GUIContent m_FilterByImportLogError = EditorGUIUtility.TrIconContent("ImportLogType_Error", "Search by Import Log Type");
-            public GUIContent m_FilterByImportLogWarning = EditorGUIUtility.TrIconContent("ImportLogType_Warning", "Search by Import Log Type");
-            public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Create new Asset");
-            public GUIContent m_SaveFilterContent = EditorGUIUtility.TrIconContent("Favorite", "Save search");
+            public GUIContent m_FilterByLabel = L10n.IconContent("FilterByLabel", "Search by Label", null);
+            public GUIContent m_FilterByType = L10n.IconContent("FilterByType", "Search by Type", null);
+            public GUIContent m_FilterByImportLogInactive = L10n.IconContent("ImportLogType_Inactive", "Search by Import Log Type", null);
+            public GUIContent m_FilterByImportLogError = L10n.IconContent("ImportLogType_Error", "Search by Import Log Type", null);
+            public GUIContent m_FilterByImportLogWarning = L10n.IconContent("ImportLogType_Warning", "Search by Import Log Type", null);
+            public GUIContent m_CreateDropdownContent = L10n.IconContent("Toolbar Plus More", "Create new Asset", null);
+            public GUIContent m_SaveFilterContent = L10n.IconContent("Favorite", "Save search", null);
             public GUIContent m_PackageContentDefault = new GUIContent("", "");
-            public GUIContent m_PackagesContentNotVisible = EditorGUIUtility.TrIconContent("PBrowserPackagesNotVisible", "Number of hidden packages, click to display packages.");
-            public GUIContent m_PackagesContentVisible = EditorGUIUtility.TrIconContent("PBrowserPackagesVisible", "Number of displayed packages, click to hide packages.");
-            public GUIContent m_EmptyFolderText = EditorGUIUtility.TrTextContent("This folder is empty");
-            public GUIContent m_SearchIn = EditorGUIUtility.TrTextContent("Search:");
+            public GUIContent m_PackagesContentNotVisible = L10n.IconContent("PBrowserPackagesNotVisible", "Number of hidden packages, click to display packages.", null);
+            public GUIContent m_PackagesContentVisible = L10n.IconContent("PBrowserPackagesVisible", "Number of displayed packages, click to hide packages.", null);
+            public GUIContent m_EmptyFolderText = L10n.TextContent("This folder is empty", null, null, null);
+            public GUIContent m_SearchIn = L10n.TextContent("Search:", null, null, null);
 
             public Styles()
             {
@@ -261,11 +260,11 @@ namespace UnityEditor
 
         // Used by search menu bar
         [NonSerialized]
-        public GUIContent m_SearchAllAssets = EditorGUIUtility.TrTextContent("All");
+        public GUIContent m_SearchAllAssets = L10n.TextContent("All", null, null, null);
         [NonSerialized]
-        public GUIContent m_SearchInPackagesOnly = EditorGUIUtility.TrTextContent("In Packages");
+        public GUIContent m_SearchInPackagesOnly = L10n.TextContent("In Packages", null, null, null);
         [NonSerialized]
-        public GUIContent m_SearchInAssetsOnly = EditorGUIUtility.TrTextContent("In Assets");
+        public GUIContent m_SearchInAssetsOnly = L10n.TextContent("In Assets", null, null, null);
         [NonSerialized]
         public GUIContent m_SearchInFolders = new GUIContent(""); // updated when needed
 
@@ -275,10 +274,6 @@ namespace UnityEditor
         private Action m_NextSearchOffDelegate;
 
         internal static float searchUpdateDelaySeconds => SearchUtils.debounceThresholdMs / 1000f;
-
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        ProjectBrowser() { }
-        #pragma warning restore UAL0015
 
         /* Keep for debugging
         void TestProjectItemOverlayCallback (string guid, Rect selectionRect)
@@ -2508,12 +2503,12 @@ namespace UnityEditor
             {
                 if (Application.platform == RuntimePlatform.OSXEditor)
                 {
-                    GUIContent showFoldersFirstText = EditorGUIUtility.TrTextContent("Keep folders on top"); // Matches macOS preference name
+                    GUIContent showFoldersFirstText = L10n.TextContent("Keep folders on top", null, null, null); // Matches macOS preference name
                     menu.AddItem(showFoldersFirstText, k_ShowFoldersFirst.value, ToggleShowFoldersFirst);
                 }
 
-                GUIContent assetTreeText = EditorGUIUtility.TrTextContent("One Column Layout");
-                GUIContent assetBrowserText = EditorGUIUtility.TrTextContent("Two Column Layout");
+                GUIContent assetTreeText = L10n.TextContent("One Column Layout", null, null, null);
+                GUIContent assetBrowserText = L10n.TextContent("Two Column Layout", null, null, null);
 
                 menu.AddItem(assetTreeText, m_ViewMode == ViewMode.OneColumn, SetOneColumn);
                 if (position.width >= k_MinWidthTwoColumns)
@@ -2525,8 +2520,8 @@ namespace UnityEditor
 
                 if (Unsupported.IsDeveloperMode())
                 {
-                    menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Open TreeView Test Window..."), false, OpenTreeViewTestWindow);
-                    menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Use TreeView Expansion Animation"), EditorPrefs.GetBool(TreeViewController<EntityId>.kExpansionAnimationPrefKey, false), ToggleExpansionAnimationPreference);
+                    menu.AddItem(L10n.TextContent("DEVELOPER/Open TreeView Test Window...", null, null, null), false, OpenTreeViewTestWindow);
+                    menu.AddItem(L10n.TextContent("DEVELOPER/Use TreeView Expansion Animation", null, null, null), EditorPrefs.GetBool(TreeViewController<EntityId>.kExpansionAnimationPrefKey, false), ToggleExpansionAnimationPreference);
                 }
             }
         }
@@ -2712,7 +2707,9 @@ namespace UnityEditor
                 m_SearchFieldText = m_lastSearchFilter;
 
                 m_NextSearchOffDelegate?.Invoke();
+#pragma warning disable UAL0018 // the deregistration handle lives on this window, which is recreated on code reload together with the delayed call it cancels
                 m_NextSearchOffDelegate = EditorApplication.CallDelayed(UpdateSearchDelayed, searchUpdateDelaySeconds);
+#pragma warning restore UAL0018
             }
 
             SearchService.SearchService.DrawOpenSearchButton(this, m_SearchFieldText);
@@ -3386,7 +3383,7 @@ namespace UnityEditor
             static internal void Show(int filterId)
             {
                 // Curve context menu
-                GUIContent delete = EditorGUIUtility.TrTextContent("Delete");
+                GUIContent delete = L10n.TextContent("Delete", null, null, null);
 
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(delete, false, new SavedFiltersContextMenu(filterId).Delete);
@@ -3446,7 +3443,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("No sub folders..."));
+                    menu.AddDisabledItem(L10n.TextContent("No sub folders...", null, null, null));
                 }
 
                 menu.DropDown(activatorRect);
@@ -3469,4 +3466,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections;
@@ -213,6 +211,9 @@ namespace UnityEngine.UIElements
     public static partial class UxmlSerializedDataUtility
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Per-Type adapter memo, re-created by reflection on the next miss; it must be cleared on reload so
+        // it does not keep the previous scope's Type keys alive.
+        [IgnoreForUAL0015("Per-Type adapter memo, re-created by reflection on the next miss")]
         internal static Dictionary<Type, UxmlSerializableAdapterBase> s_Adapters = new Dictionary<Type, UxmlSerializableAdapterBase>();
 
         /// <summary>
@@ -291,5 +292,3 @@ namespace UnityEngine.UIElements
         public abstract object CreateInstance(VisualElement owner);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

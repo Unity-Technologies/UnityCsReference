@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.Scripting.LifecycleManagement;
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: HeadlessRuntime not yet converted
 using UnityEditor;
 using UnityEditor.PackageManager;
 
@@ -17,22 +15,44 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_TestPackageName = "com.unity.modules.multiplayer.playmode.editor.tests";
 
         [AutoStaticsCleanupOnCodeReload] // init gate; must re-query package state after reload
+        // Gate for EnsureInitialized: back at false, the next ShouldEnableMultiplayerPlayMode call
+        // re-queries the package manager and refills the flags below.
+        [IgnoreForUAL0015("Lazy-init gate; EnsureInitialized re-queries package state on the next call")]
         static bool s_Initialized;
         [AutoStaticsCleanupOnCodeReload]
+        // Re-read from PackageInfo.FindForPackageName by EnsureInitialized, which runs again because
+        // the s_Initialized gate above is back at false.
+        [IgnoreForUAL0015("Re-read from the package manager by EnsureInitialized after the gate resets")]
         static bool s_IsMppmPackageInstalled;
         [AutoStaticsCleanupOnCodeReload]
+        // Re-derived from the MPPM package version by EnsureInitialized on the next query.
+        [IgnoreForUAL0015("Re-derived from the MPPM package version by EnsureInitialized")]
         static bool s_IsVirtualProjectsInPackage;
         [AutoStaticsCleanupOnCodeReload]
+        // Re-read from PackageInfo.FindForPackageName by EnsureInitialized on the next query.
+        [IgnoreForUAL0015("Re-read from the package manager by EnsureInitialized after the gate resets")]
         static bool s_IsMultiplayerModuleInstalled;
         [AutoStaticsCleanupOnCodeReload]
+        // Re-read from PackageInfo.FindForPackageName by EnsureInitialized on the next query.
+        [IgnoreForUAL0015("Re-read from the package manager by EnsureInitialized after the gate resets")]
         static bool s_TestPackageInstalled;
 
         // Watches for the MPPM package being installed/removed so the feature can be enabled
         // or disabled without an editor restart. The package contains no scripts, so installing
         // it triggers no recompilation or domain reload on its own.
-        static MigrationUtility()
+        // registeredPackages is cleared on code reload, so this has to re-subscribe on every load: a static
+        // constructor runs once per domain, which would leave the package watch dead after the first reload
+        // and the feature unable to enable/disable itself without an editor restart.
+        [OnCodeLoaded]
+        static void Initialize()
         {
             Events.registeredPackages += OnRegisteredPackages;
+        }
+
+        [OnCodeUnloading]
+        static void Uninitialize()
+        {
+            Events.registeredPackages -= OnRegisteredPackages;
         }
 
         static void EnsureInitialized()
@@ -76,5 +96,3 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

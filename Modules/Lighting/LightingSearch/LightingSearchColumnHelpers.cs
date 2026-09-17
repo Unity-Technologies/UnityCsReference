@@ -138,6 +138,24 @@ namespace UnityEditor.Lighting.LightingSearch
             };
         }
 
+        internal static SearchColumn.BindEntry CreateBinderWithGameObject<TVisual>(Action<TVisual, GameObject, object> bind)
+            where TVisual : VisualElement
+        {
+            return (args, ve) =>
+            {
+                var go = GetGameObject(args);
+                if (go != null && args.value != null && ve is TVisual visual)
+                {
+                    visual.visible = true;
+                    bind(visual, go, args.value);
+                }
+                else
+                {
+                    ve.visible = false;
+                }
+            };
+        }
+
         internal static bool IsValidBool(object v) => v != null && (v is bool || v is int || v is long);
         internal static bool IsValidEnum(object v) => v != null && v.GetType().IsEnum;
         internal static bool IsValidInt(object v) => v is int || (v != null && (v is long || v is float));

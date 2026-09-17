@@ -16,10 +16,10 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent DelayTooltip = EditorGUIUtility.TrTextContent("Delay", "Echo delay in ms");
-            public static readonly GUIContent DecayRatioTooltip = EditorGUIUtility.TrTextContent("Decay Ratio", "Echo decay per delay");
-            public static readonly GUIContent DryMixTooltip = EditorGUIUtility.TrTextContent("Dry Mix", "Volume of original signal to pass to output");
-            public static readonly GUIContent WetMixTooltip = EditorGUIUtility.TrTextContent("Wet Mix", "Volume of echo signal to pass to output");
+            public static readonly GUIContent DelayTooltip = L10n.TextContent("Delay", "Echo delay in ms", null, null);
+            public static readonly GUIContent DecayRatioTooltip = L10n.TextContent("Decay Ratio", "Echo decay per delay", null, null);
+            public static readonly GUIContent DryMixTooltip = L10n.TextContent("Dry Mix", "Volume of original signal to pass to output", null, null);
+            public static readonly GUIContent WetMixTooltip = L10n.TextContent("Wet Mix", "Volume of echo signal to pass to output", null, null);
         }
 
         private void OnEnable()

@@ -54,6 +54,14 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
     // Reimports that a move (rename) triggered, which reconcile as a silent "keep" rather than as a conflict.
     [NonSerialized] readonly HashSet<EntityId> m_MovedReimports = new();
 
+    // Reimports the AssetDatabase cascaded out of a save or discard of ours, into the assets that depend on
+    // the file we wrote or reverted. Their own content never changed, so they reconcile as a silent "keep"
+    // like a move does.
+    [NonSerialized] readonly HashSet<EntityId> m_InternalReimports = new();
+
+    // Number of single-asset saves/discards in flight, during which a cascade reimport is internal (see above).
+    [NonSerialized] int m_InternalChangeDepth;
+
     // The exact paths suppressed for each in-flight save/discard, so the release uses the same set the suppress
     // added. Recomputing them from the asset at release time can yield a different (or empty) set when the
     // operation's own reimport replaced the managed instance, which would strand the suppression and make us
@@ -534,6 +542,212 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         };
     }
 
+    /// <summary>
+    /// Whether <paramref name="asset"/> has unsaved changes that <see cref="SaveSingleAsset"/> and
+    /// <see cref="DiscardSingleAsset"/> can settle on their own: it is tracked, modified, and backed by a
+    /// file of its own kind.
+    /// </summary>
+    public bool CanSettleSingleAsset(UnityEngine.Object asset)
+    {
+        if (!IsAuthoringAsset(asset) || !IsDirty(asset))
+            return false;
+
+        var path = AssetDatabase.GetAssetPath(asset);
+        return !string.IsNullOrEmpty(path) && PathMatchesKind(asset, path);
+    }
+
+    /// <summary>
+    /// Saves one tracked asset and nothing else — not the style sheets of a document, not the documents that
+    /// instantiate it. Every other asset keeps the unsaved changes it had, across the reimports this write
+    /// cascades into, and none of them is reported as an external-change conflict: the only content that
+    /// changed is the file being written.
+    /// </summary>
+    /// <remarks>
+    /// This is what saving a single asset from a context menu does, as opposed to
+    /// <see cref="SaveAsset"/>, which saves a document together with everything in its save scope.
+    /// </remarks>
+    public bool SaveSingleAsset(UnityEngine.Object asset, object source = null)
+    {
+        if (!IsAuthoringAsset(asset))
+            return false;
+
+        var path = AssetDatabase.GetAssetPath(asset);
+        if (string.IsNullOrEmpty(path) || !PathMatchesKind(asset, path))
+            // [TODO] Save As for a never-saved asset is not supported yet.
+            return false;
+
+        source ??= CommandSources.Registry;
+        EnsureBaselinesRestored();
+
+        using var group = UICommandQueue.BeginGroup("Save UI Asset");
+
+        // The cascade below rewrites every dependent asset from disk, so each one needs an up-to-date snapshot
+        // of its unsaved text to be restored from afterwards.
+        RefreshSnapshotsExcept(asset);
+
+        var succeeded = true;
+
+        // The depth counter gets a try/finally of its own, wrapped around BOTH command boundaries: a handler on
+        // either of them may throw (CommandSystem deliberately does not catch for handlers), and a decrement
+        // that never runs strands the counter above zero for the rest of the session — every later external
+        // reimport would then be classified as one of ours and silently resolved instead of reported.
+        m_InternalChangeDepth++;
+        try
+        {
+            PreSaveCommand.ExecuteForSingleAsset(source, asset);
+
+            try
+            {
+                // Deliberately no AssetDatabase.AssetEditingScope: one file is written, and batching would only
+                // defer its import (and the reimports it cascades) past the point this call can reconcile them.
+                if (m_Dirty.IsModified(asset))
+                {
+                    if (asset is VisualTreeAsset vta)
+                    {
+                        // Same reason as in SaveDocument: HarmonizeIds renumbers the document's element ids, so the
+                        // selection registry has to re-file its id-path caches before anything re-clones.
+                        VisualTreeAsset.HarmonizeIds(vta);
+                        VisualElementSelectionRegistry.Instance?.ResyncStablePathsForAllPanels();
+                    }
+
+                    succeeded = WriteAsset(asset, path, ImportAssetOptions.ForceSynchronousImport);
+                }
+                else
+                {
+                    EditorUtility.ClearDirty(asset);
+                }
+
+                if (succeeded)
+                {
+                    ClearUndoForSingleAsset(asset);
+                    MarkClean(asset);
+                }
+            }
+            finally
+            {
+                PostSaveCommand.ExecuteForSingleAsset(source, asset, succeeded);
+            }
+        }
+        finally
+        {
+            m_InternalChangeDepth--;
+        }
+
+        SettleViewsAfterSingleAssetChange();
+        return succeeded;
+    }
+
+    /// <summary>
+    /// Reverts one tracked asset to its on-disk state and nothing else — not the style sheets of a document,
+    /// not the documents that instantiate it. Every other asset keeps the unsaved changes it had, across the
+    /// reimports this revert cascades into, and none of them is reported as an external-change conflict.
+    /// </summary>
+    /// <remarks>
+    /// The counterpart of <see cref="SaveSingleAsset"/>, and what discarding a single asset from a context
+    /// menu does, as opposed to <see cref="DiscardAsset"/>, which reverts a document together with everything
+    /// in its save scope. Like <see cref="DiscardAsset"/> it does not ask the user anything: the changes are
+    /// gone when it returns.
+    /// </remarks>
+    public bool DiscardSingleAsset(UnityEngine.Object asset, object source = null)
+    {
+        if (!IsAuthoringAsset(asset))
+            return false;
+
+        var path = AssetDatabase.GetAssetPath(asset);
+        if (string.IsNullOrEmpty(path) || !PathMatchesKind(asset, path))
+            return false;
+
+        source ??= CommandSources.Registry;
+        EnsureBaselinesRestored();
+
+        using var group = UICommandQueue.BeginGroup("Discard Changes");
+
+        RefreshSnapshotsExcept(asset);
+
+        // Same reasoning as in SaveSingleAsset: the counter is decremented from a finally of its own, so a
+        // throwing command handler on either boundary cannot strand it above zero.
+        m_InternalChangeDepth++;
+        try
+        {
+            PreDiscardCommand.ExecuteForSingleAsset(source, asset);
+
+            try
+            {
+                // The reimport can replace the managed instance, orphaning the one we hold, so reconcile by the
+                // tracked id afterwards rather than against this (possibly stale) reference.
+                var id = asset.GetEntityId();
+
+                ClearUndoForSingleAsset(asset);
+
+                ReimportFromDisk(path);
+
+                ReconcileAfterReimportToDisk(id);
+            }
+            finally
+            {
+                PostDiscardCommand.ExecuteForSingleAsset(source, asset);
+            }
+        }
+        finally
+        {
+            m_InternalChangeDepth--;
+        }
+
+        SettleViewsAfterSingleAssetChange();
+        return true;
+    }
+
+    // Finishes a single-asset save/discard: everything it set in motion is driven to completion before it
+    // returns, so the next editor update already sees the settled state.
+    //
+    // Both steps are otherwise deferred to the next tick, and a tick is a frame the editor draws against
+    // half-applied state: the documents caught in the reimport cascade still showing their on-disk content,
+    // and every live element pointing at a VisualElementAsset the reimport has already replaced — which is
+    // what makes the hierarchy's class names flicker and the inspector repaint against a dead selection.
+    void SettleViewsAfterSingleAssetChange()
+    {
+        // Order matters: reconciling the cascade restores the other assets' unsaved edits and raises the
+        // reload notifications for them, so the re-clone below has to come after it to pick them up in the
+        // same pass rather than needing a second one.
+        FlushPendingReimports();
+        UIAssetRegistrySceneTracking.FlushPendingReloadNow();
+    }
+
+    // Re-exports the unsaved text of every tracked asset a single-asset save or discard is NOT touching. A
+    // tool that edits outside the command queue reports its snapshot on its own schedule, and one that is
+    // missing when the cascade reimport arrives is an edit silently replaced by the on-disk version.
+    void RefreshSnapshotsExcept(UnityEngine.Object saved)
+    {
+        var savedId = saved.GetEntityId();
+        using var _ = ListPool<AssetEntry>.Get(out var entries);
+        entries.AddRange(m_Entries.Values);
+
+        foreach (var entry in entries)
+        {
+            if (entry.Id == savedId || entry.Asset == null)
+                continue;
+
+            // An entry whose own reimport is still waiting to be reconciled was already rebound and re-baselined
+            // against the imported disk content (see OnAssetsPostprocessed), so it exports as clean and there is
+            // nothing here to re-snapshot. Refreshing it would delete the very snapshot the pending flush restores
+            // the user's edits from, turning their "Keep My Changes" into a silent "Use Imported".
+            if (m_PendingReimports.ContainsKey(entry.Id))
+                continue;
+
+            RefreshSnapshot(entry.Id, entry.Asset);
+            NotifyDirtyStateMaybeChanged(entry.Id, entry.Asset);
+        }
+    }
+
+    static void ClearUndoForSingleAsset(UnityEngine.Object asset)
+    {
+        Undo.ClearUndo(asset);
+
+        // An inline stylesheet is serialized into the document's own file, so it is saved with it.
+        if (asset is VisualTreeAsset vta && vta.inlineSheet != null)
+            Undo.ClearUndo(vta.inlineSheet);
+    }
+
     /// <summary>Saves every tracked asset that has unsaved changes.</summary>
     public bool SaveAll(object source = null)
     {
@@ -740,6 +954,8 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
                 if (styleSheet != null)
                     ids.Add(styleSheet.GetEntityId());
 
+            ClearUndoForDocument(vta, sheets);
+
             using (new AssetDatabase.AssetEditingScope())
             {
                 foreach (var styleSheet in sheets)
@@ -747,8 +963,6 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
                         ReimportFromDisk(AssetDatabase.GetAssetPath(styleSheet));
                 ReimportFromDisk(AssetDatabase.GetAssetPath(vta));
             }
-
-            ClearUndoForDocument(vta, sheets);
 
             // Adopt the freshly reimported instances, re-baseline them clean, and notify every holder (the UI
             // Stage directly; the UI Builder via the discard command below) to re-clone against the reverted
@@ -775,10 +989,11 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         {
             var id = styleSheet.GetEntityId();
 
+            Undo.ClearUndo(styleSheet);
+
             using (new AssetDatabase.AssetEditingScope())
                 ReimportFromDisk(AssetDatabase.GetAssetPath(styleSheet));
 
-            Undo.ClearUndo(styleSheet);
             ReconcileAfterReimportToDisk(id);
         }
         finally
@@ -854,7 +1069,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         ReleaseAutoTrackIfClean(id, asset);
     }
 
-    bool WriteAsset(UnityEngine.Object asset, string path)
+    bool WriteAsset(UnityEngine.Object asset, string path, ImportAssetOptions options = ImportAssetOptions.Default)
     {
         if (string.IsNullOrEmpty(path))
             return false;
@@ -880,7 +1095,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
 
         // The surrounding Pre/PostSaveCommand (see OnToolSaveBoundary) suppresses this reimport so it is not
         // mistaken for an external change.
-        AssetDatabase.ImportAsset(path);
+        AssetDatabase.ImportAsset(path, options);
         return true;
     }
 
@@ -1150,10 +1365,10 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         switch (context.Command)
         {
             case PreSaveCommand c:
-                SuppressToolSave(c.Asset, suppress: true);
+                SuppressToolSave(c.Asset, suppress: true, c.SingleAsset);
                 break;
             case PreDiscardCommand c:
-                SuppressToolSave(c.Asset, suppress: true);
+                SuppressToolSave(c.Asset, suppress: true, c.SingleAsset);
                 break;
 
             // Always release the suppression, but only re-baseline when the operation actually landed: the Post
@@ -1161,14 +1376,14 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
             // file) still reports here. Re-baselining then would capture the UNSAVED in-memory content as clean
             // and delete its "keep my changes" snapshot, losing the edits with no "*" left to warn about.
             case PostSaveCommand c:
-                SuppressToolSave(c.Asset, suppress: false);
+                SuppressToolSave(c.Asset, suppress: false, c.SingleAsset);
                 if (c.Succeeded)
-                    RebaselineAfterToolSave(c.Asset);
+                    RebaselineAfterToolSave(c.Asset, c.SingleAsset);
                 break;
             case PostDiscardCommand c:
-                SuppressToolSave(c.Asset, suppress: false);
+                SuppressToolSave(c.Asset, suppress: false, c.SingleAsset);
                 if (c.Succeeded)
-                    RebaselineAfterToolSave(c.Asset);
+                    RebaselineAfterToolSave(c.Asset, c.SingleAsset);
                 break;
         }
     }
@@ -1179,12 +1394,19 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
     // change is diagnosed correctly instead of being mistaken for a lingering unsaved edit. Tools that clear
     // their changes outside the command queue (the Builder's own save clears the engine dirty flag directly)
     // would otherwise leave the registry believing the asset is still dirty.
-    void RebaselineAfterToolSave(UnityEngine.Object asset)
+    void RebaselineAfterToolSave(UnityEngine.Object asset, bool singleAsset = false)
     {
         if (asset == null)
             return;
 
         MarkClean(asset);
+
+        // A single-asset save or discard settled that file and nothing else, so the document's style sheets
+        // are still unsaved. Declaring them clean here would drop their "*" and their "keep my changes"
+        // snapshot, stranding edits that were never written.
+        if (singleAsset)
+            return;
+
         if (asset is VisualTreeAsset vta)
         {
             using var _ = ListPool<StyleSheet>.Get(out var sheets);
@@ -1195,7 +1417,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         }
     }
 
-    void SuppressToolSave(UnityEngine.Object asset, bool suppress)
+    void SuppressToolSave(UnityEngine.Object asset, bool suppress, bool singleAsset = false)
     {
         if (ReferenceEquals(asset, null))
             return;
@@ -1205,7 +1427,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         if (suppress)
         {
             paths = new List<string>();
-            CollectAssetPaths(asset, paths);
+            CollectAssetPaths(asset, paths, singleAsset);
             // Remember exactly what we suppressed. The operation's own reimport can replace the managed
             // instance, so recomputing the paths at release time from a (possibly orphaned) asset can yield a
             // different or empty set — which would strand the suppression and make us ignore every later
@@ -1219,7 +1441,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         if (!m_SuppressedPathsByAsset.Remove(id, out paths))
         {
             paths = new List<string>();
-            CollectAssetPaths(asset, paths);
+            CollectAssetPaths(asset, paths, singleAsset);
         }
 
         // Release after the import settles.
@@ -1230,7 +1452,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         };
     }
 
-    void CollectAssetPaths(UnityEngine.Object asset, List<string> paths)
+    void CollectAssetPaths(UnityEngine.Object asset, List<string> paths, bool singleAsset = false)
     {
         if (asset == null)
             return;
@@ -1239,7 +1461,9 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         if (!string.IsNullOrEmpty(path))
             paths.Add(path);
 
-        if (asset is VisualTreeAsset vta)
+        // A single-asset save or discard touches no other file, so suppressing the style sheets' paths as
+        // well would blind us to a genuine external change to one of them for the duration of the operation.
+        if (!singleAsset && asset is VisualTreeAsset vta)
         {
             using var _ = ListPool<StyleSheet>.Get(out var sheets);
             CollectDocumentStyleSheets(vta, sheets);
@@ -1290,10 +1514,17 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
             // not raised from inside an import callback; the flush below reports the settled state.
             entry.WasDirty = false;
 
-            // Record under the entry's CURRENT id: rebinding can have re-keyed (or replaced) it.
-            m_PendingReimports[entry.Id] = wasDirty;
+            // Record under the entry's CURRENT id: rebinding can have re-keyed (or replaced) it. Never downgrade
+            // a record that is still awaiting its flush: that earlier reimport already re-baselined the entry
+            // against disk, so the flag recomputed above reads clean even though the user's edits are sitting in
+            // the snapshot waiting to be restored. Overwriting it with false would send the flush down the
+            // no-conflict path, which drops the snapshot and adopts the imported content silently.
+            m_PendingReimports[entry.Id] =
+                wasDirty || (m_PendingReimports.TryGetValue(entry.Id, out var stillPending) && stillPending);
             if (Array.IndexOf(moved, path) >= 0)
                 m_MovedReimports.Add(entry.Id);
+            if (m_InternalChangeDepth > 0)
+                m_InternalReimports.Add(entry.Id);
             // A fresh external change voids any conflict decision made for the previous one.
             m_ResolvedConflicts.Remove(entry.Id);
             addedPending = true;
@@ -1336,6 +1567,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         // them here cannot drop a claim for a reimport still to be processed.
         m_ClaimedReimports.Clear();
         m_MovedReimports.Clear();
+        m_InternalReimports.Clear();
     }
 
     /// <summary>
@@ -1407,6 +1639,12 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         if (m_ResolvedConflicts.TryGetValue(id, out var resolved))
             return resolved;
 
+        // A tool driving its own reload (the UI Builder) asks through here too, so the cascade out of our own
+        // save or discard has to be answered silently on this path as well — and deliberately not cached,
+        // since the set it is answered from is drained when the reimport is reconciled.
+        if (m_InternalReimports.Contains(id))
+            return UIAssetConflictChoice.Keep;
+
         var choice = ResolveConflict(asset);
         m_ResolvedConflicts[id] = choice == UIAssetConflictChoice.SaveBackupAndUseImported
             ? UIAssetConflictChoice.UseImported
@@ -1463,9 +1701,13 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
         // keep-vs-use-imported here and reconciles the content, then reports the decision so each tool that
         // holds the asset can react (rebind its live views; preserve its work on the backup choice).
         //
-        // A move is the exception: the reimport it triggers rewrites the instance from disk like any other, but
-        // the file's content never changed, so there is no conflict to put to the user — only edits to restore.
-        var choice = m_MovedReimports.Remove(entry.Id)
+        // Two reimports are the exception: a move, and the cascade out of a save or discard of one of this
+        // asset's dependencies. Both rewrite the instance from disk like any other, but neither changed this
+        // file's content, so there is no conflict to put to the user — only edits to restore. Both sets are
+        // drained rather than short-circuited, so a reimport that is both leaves nothing behind.
+        var moved = m_MovedReimports.Remove(entry.Id);
+        var internalSave = m_InternalReimports.Remove(entry.Id);
+        var choice = moved || internalSave
             ? UIAssetConflictChoice.Keep
             : ResolveConflictOnce(entry.Id, entry.Asset);
 
@@ -1541,6 +1783,11 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
             // this reimport as well, prompting the user a second time.
             if (m_ClaimedReimports.Remove(entry.Id))
                 m_ClaimedReimports.Add(newId);
+
+            // Same for a reimport our own save cascaded into: losing it would turn a silent "keep" into a
+            // conflict dialog over content the user never changed.
+            if (m_InternalReimports.Remove(entry.Id))
+                m_InternalReimports.Add(newId);
 
             // Same for an already-made conflict decision, or a later holder would be prompted anew.
             if (m_ResolvedConflicts.Remove(entry.Id, out var resolvedChoice))

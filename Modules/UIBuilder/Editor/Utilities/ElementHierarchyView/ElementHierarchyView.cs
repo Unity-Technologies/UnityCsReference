@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -89,6 +88,9 @@ namespace Unity.UI.Builder
         VisualElement m_DocumentRootElement;
         BuilderSelection m_Selection;
         [AutoStaticsCleanupOnCodeReload]
+        // Set from the ElementHierarchyView constructor, so it is reassigned when the Builder rebuilds its
+        // hierarchy view after a code reload.
+        [IgnoreForUAL0015("Assigned by the ElementHierarchyView constructor when the hierarchy view is rebuilt")]
         static BuilderClassDragger m_ClassDragger;
         BuilderExplorerDragger m_ExplorerDragger;
         BuilderElementContextMenu m_ContextMenuManipulator;
@@ -213,14 +215,14 @@ namespace Unity.UI.Builder
                             Focus();
                         else if (Application.platform == RuntimePlatform.OSXEditor)
                         {
-                            explorerItem.ActivateRenameElementMode();
+                            explorerItem.ActivateRenameElementMode(m_PaneWindow.document.isCanvasReadOnly);
                             evt.StopPropagation();
                         }
                         break;
                     case KeyCode.F2:
                         if (Application.platform != RuntimePlatform.OSXEditor)
                         {
-                            explorerItem.ActivateRenameElementMode();
+                            explorerItem.ActivateRenameElementMode(m_PaneWindow.document.isCanvasReadOnly);
                             evt.StopPropagation();
                         }
                         break;
@@ -1072,7 +1074,7 @@ namespace Unity.UI.Builder
 
                         if (explorerItem == element)
                         {
-                            element.ActivateRenameElementMode();
+                            element.ActivateRenameElementMode(m_PaneWindow.document.isCanvasReadOnly);
                         }
                     }).StartingIn(500);
                     evt.StopPropagation();
@@ -1262,4 +1264,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -20,7 +20,7 @@ namespace Unity.Localization;
 /// <see cref="PlayerPrefLocaleSelector"/>.
 /// </remarks>
 /// <example>
-/// <para>A selector that picks a locale from a value read at startup.</para>
+/// A selector that picks a locale from a value read at startup.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/SaveFileLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizationSettings"/>
@@ -53,7 +53,7 @@ public interface IStartupLocaleSelector
 /// <see cref="IStartupLocaleInitialize.PostInitialize"/>.
 /// </remarks>
 /// <example>
-/// <para>A selector that awaits a value before choosing a locale.</para>
+/// A selector that awaits a value before choosing a locale.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/AsyncLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>
@@ -85,7 +85,7 @@ public interface IStartupLocalePrepare
 /// <see cref="PlayerPrefLocaleSelector"/> uses this hook to save the selected locale.
 /// </remarks>
 /// <example>
-/// <para>A selector that logs the chosen locale after startup.</para>
+/// A selector that logs the chosen locale after startup.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/LoggingLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>

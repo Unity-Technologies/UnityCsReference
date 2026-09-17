@@ -20,9 +20,9 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly GUIContent newLightingSettings = EditorGUIUtility.TrTextContent("New", "Create a new Lighting Settings Asset with default settings.");
-            public static readonly GUIContent cloneLightingSettings = EditorGUIUtility.TrTextContent("Clone", "Create a new Lighting Settings Asset based on the current settings.");
-            public static readonly GUIContent lightingSettings = EditorGUIUtility.TrTextContent("Lighting Settings");
+            public static readonly GUIContent newLightingSettings = L10n.TextContent("New", "Create a new Lighting Settings Asset with default settings.", null, null);
+            public static readonly GUIContent cloneLightingSettings = L10n.TextContent("Clone", "Create a new Lighting Settings Asset based on the current settings.", null, null);
+            public static readonly GUIContent lightingSettings = L10n.TextContent("Lighting Settings", null, null, null);
         }
 
         SavedBool m_ShowLightingSettings;

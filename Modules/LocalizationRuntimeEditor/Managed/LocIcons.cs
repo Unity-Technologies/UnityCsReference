@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -11,7 +13,7 @@ namespace Unity.Localization.Editor;
 static class LocIcons
 {
     // USS resource() cannot pick the skin variant, so these are loaded from C# instead.
-    public const string Table = "UnityEditor.HierarchyWindow";
+    public const string Table = "LocalizationRuntime/Icons/LocalizationTablesWindow.png";
     public const string Menu = "_Menu";
     public const string Metadata = "editicon.sml";
     public const string Search = "Search Icon";
@@ -21,6 +23,12 @@ static class LocIcons
         if (string.IsNullOrEmpty(name))
             return null;
         return EditorGUIUtility.IconContent(name)?.image as Texture2D;
+    }
+
+    public static Texture2D TypeIcon(Type type)
+    {
+        var path = type?.GetCustomAttribute<IconAttribute>(true)?.path;
+        return string.IsNullOrEmpty(path) ? null : Tex(path);
     }
 
     public static void Apply(VisualElement element, string name)

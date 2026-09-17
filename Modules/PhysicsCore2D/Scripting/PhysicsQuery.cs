@@ -426,6 +426,54 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// The results from performing any Cast query against the <see cref="PhysicsWorld"/>.
         /// </summary>
+        /// <remarks>
+        /// Use <see cref="PhysicsWorld.CastGeometry(CircleGeometry, Vector2, PhysicsQuery.QueryFilter, PhysicsQuery.WorldCastMode, Allocator)"/> or <see cref="PhysicsWorld.CastRay(PhysicsQuery.CastRayInput, PhysicsQuery.QueryFilter, PhysicsQuery.WorldCastMode, Allocator)"/> to check whether a shape or ray will intersect other shapes as it moves through the world, for example to predict a collision before it happens.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Check whether a small falling circle will collide with objects underneath it.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        /// using Unity.Collections;
+        ///
+        /// public class CastGeometryExample : MonoBehaviour
+        /// {
+        ///     private PhysicsWorld world;
+        ///
+        ///     void Start()
+        ///     {
+        ///         world = PhysicsWorld.defaultWorld;
+        ///
+        ///         // Create a small falling circle.
+        ///         CircleGeometry object1Geometry = CircleGeometry.Create(0.5f, new Vector2(0.5f, 8f));
+        ///         PhysicsBody object1 = world.CreateBody(new PhysicsBodyDefinition
+        ///         {
+        ///             position = object1Geometry.center,
+        ///             type = PhysicsBody.BodyType.Dynamic
+        ///         });
+        ///         object1.CreateShape(object1Geometry);
+        ///
+        ///         // Set the translation and filter for the cast.
+        ///         Vector2 translation = new Vector2(0, -10f);
+        ///         PhysicsQuery.QueryFilter filter = new PhysicsQuery.QueryFilter();
+        ///
+        ///         // Cast the circle geometry through the world.
+        ///         // Use "using" to automatically dispose of the NativeArray once it goes out of scope.
+        ///         using NativeArray<PhysicsQuery.WorldCastResult> results = world.CastGeometry(object1Geometry, translation, filter, PhysicsQuery.WorldCastMode.Closest, Allocator.Temp);
+        ///
+        ///         if (results.Length > 0)
+        ///         {
+        ///             Debug.Log("Collision will occur!");
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsWorld.CastGeometry(CircleGeometry, Vector2, PhysicsQuery.QueryFilter, PhysicsQuery.WorldCastMode, Allocator)"/>
+        /// <seealso cref="PhysicsWorld.TestOverlapAABB(PhysicsAABB, PhysicsQuery.QueryFilter)"/>
+        /// <seealso cref="PhysicsAABB"/>
         [StructLayout(LayoutKind.Sequential)]
         public readonly record struct WorldCastResult
         {
@@ -479,6 +527,29 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// Controls what results are returned from a cast query against the <see cref="PhysicsWorld"/>.
         /// </summary>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Cast a circle and return every hit, sorted by ascending distance.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class WorldCastModeExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         CircleGeometry geometry = new CircleGeometry { radius = 0.5f };
+        ///         Vector2 translation = new Vector2(0f, -10f);
+        ///         PhysicsQuery.QueryFilter filter = new PhysicsQuery.QueryFilter();
+        ///
+        ///         using NativeArray<PhysicsQuery.WorldCastResult> results = world.CastGeometry(geometry, translation, filter, PhysicsQuery.WorldCastMode.AllSorted, Allocator.Temp);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public enum WorldCastMode
         {
             /// <summary>
@@ -941,9 +1012,16 @@ namespace Unity.U2D.Physics
             public readonly float fraction2 => m_Fraction2;
 
             /// <summary>
-            /// The distance between the closest points
+            /// The squared distance between the closest points.
+            /// Use this in place of <see cref="distance"/> when comparing against another squared distance, as it avoids a square root.
             /// </summary>
-            public readonly float distance => m_Distance;
+            public readonly float sqrDistance => m_SqrDistance;
+
+            /// <summary>
+            /// The distance between the closest points.
+            /// This is calculated from <see cref="sqrDistance"/> on each access, so prefer that when a squared distance will do.
+            /// </summary>
+            public readonly float distance => Mathf.Sqrt(m_SqrDistance);
 
             /// <summary>
             /// Ascending distance sort comparer.
@@ -951,7 +1029,7 @@ namespace Unity.U2D.Physics
             public readonly record struct SortAscendingOrder : IComparer<SegmentDistanceResult>
             {
                 /// <undoc/>
-                readonly int IComparer<SegmentDistanceResult>.Compare(SegmentDistanceResult x, SegmentDistanceResult y) => x.m_Distance.CompareTo(y.m_Distance);
+                readonly int IComparer<SegmentDistanceResult>.Compare(SegmentDistanceResult x, SegmentDistanceResult y) => x.m_SqrDistance.CompareTo(y.m_SqrDistance);
             }
 
             #region Internal
@@ -960,7 +1038,7 @@ namespace Unity.U2D.Physics
             readonly Vector2 m_Closest2;
             readonly float m_Fraction1;
             readonly float m_Fraction2;
-            readonly float m_Distance;
+            readonly float m_SqrDistance;
 
             #endregion
         }
@@ -1122,9 +1200,9 @@ namespace Unity.U2D.Physics
 
             #region Internal
 
+            readonly State m_ImpactState;
             readonly Vector2 m_Point;
             readonly Vector2 m_Normal;
-            readonly State m_ImpactState;
             readonly float m_Fraction;
 
             #endregion

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -63,8 +64,7 @@ internal sealed class UnsetAllInlineStylePropertiesCommand : Command<UnsetAllInl
 
         ClearAllStylePropertyBindingsCommand.Execute(Source, Element);
 
-        Element.UpdateInlineRule(inlineStyleSheet, rule);
-        Element.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
+        VisualElementUtility.UpdateInlineRuleOnAllClones(Element, inlineStyleSheet, rule);
 
         return CommandExecutionStatus.Success;
     }

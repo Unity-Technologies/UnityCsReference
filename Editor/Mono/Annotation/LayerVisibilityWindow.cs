@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneView not yet converted
 using UnityEngine;
 using UnityEditorInternal;
 using System.Collections.Generic;
@@ -25,7 +24,7 @@ namespace UnityEditor
             public readonly Texture2D visibleOff = EditorGUIUtility.LoadIcon("animationvisibilitytoggleoff");
             public readonly Texture2D pickable = EditorGUIUtility.LoadIcon("scenepicking_pickable");
             public readonly Texture2D notpickable = EditorGUIUtility.LoadIcon("scenepicking_notpickable");
-            public readonly GUIContent editLayers = EditorGUIUtility.TrTextContent("Edit Layers...");
+            public readonly GUIContent editLayers = L10n.TextContent("Edit Layers...", null, null, null);
             public Styles()
             {
                 listTextStyle = new GUIStyle(EditorStyles.label);
@@ -45,6 +44,9 @@ namespace UnityEditor
         const string k_LayerPickable = "Toggle Pickable status this Layer. Non-Pickable items cannot be selected in the Scene View.";
 
         [AutoStaticsCleanupOnCodeReload]
+        // ShowAtPosition recreates the popup window the next time it is opened, and OnDisable already nulls
+        // this slot as part of normal operation.
+        [IgnoreForUAL0015("Popup window slot recreated by ShowAtPosition; OnDisable already nulls it")]
         private static LayerVisibilityWindow s_LayerVisibilityWindow;
         [NoAutoStaticsCleanup] // safe: timestamp guard, intentionally persisted across reloads
         private static long s_LastClosedTime;
@@ -318,4 +320,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

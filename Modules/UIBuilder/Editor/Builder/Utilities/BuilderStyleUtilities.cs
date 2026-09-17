@@ -75,39 +75,7 @@ namespace Unity.UI.Builder
 
         public static string GenerateElementTargetedSelector(VisualElement documentElement)
         {
-            string elementTargetedSelector;
-
-            // if element has name, use that to target it
-            if (!string.IsNullOrEmpty(documentElement?.name))
-            {
-                elementTargetedSelector = $"#{documentElement.name}";
-            }
-            // if element has no name, use its class to target it
-            else if (GetLastClassFromClassList(documentElement, out var className))
-            {
-                elementTargetedSelector = $".{className}";
-            }
-            // if element has no class, use its type to target it
-            else
-            {
-                elementTargetedSelector = documentElement?.typeName;
-            }
-
-            // add its parents name or class or type to the selector
-            if (documentElement?.parent != null && !BuilderSharedStyles.IsDocumentElement(documentElement.parent))
-            {
-                elementTargetedSelector = GenerateElementTargetedSelector(documentElement.parent) + " > " + elementTargetedSelector;
-            }
-
-            return elementTargetedSelector;
-        }
-
-        private static bool GetLastClassFromClassList(VisualElement element, out string className)
-        {
-            className = null;
-            foreach (var c in element.GetClasses())
-                className = c;
-            return className != null;
+            return VisualElementSelectorUtility.GenerateTargetedSelector(documentElement, BuilderSharedStyles.IsDocumentElement);
         }
     }
 }

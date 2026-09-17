@@ -179,7 +179,7 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public virtual IReadOnlyList<ItemLibraryDatabaseBase> GetDynamicDatabases(PortModel portModel)
         {
-            return portModel != null && portModel.DataTypeHandle != TypeHandle.Automatic ? GetVariableFromPortDatabase(portModel) : k_NoDatabase;
+            return portModel != null ? GetVariableFromPortDatabase(portModel) : k_NoDatabase;
         }
 
         /// <inheritdoc />
@@ -207,7 +207,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            return firstPort != null && firstPort.DataTypeHandle != TypeHandle.Automatic && areSame ? GetVariableFromPortDatabase(firstPort) : k_NoDatabase;
+            return firstPort != null && areSame ? GetVariableFromPortDatabase(firstPort) : k_NoDatabase;
         }
 
         /// <summary>

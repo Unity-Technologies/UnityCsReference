@@ -175,11 +175,15 @@ namespace UnityEngine.UIElements
 
         public void RegisterProcessor(IVisualElementChangeProcessor processor)
         {
-            if (m_RegisteredProcessors.Contains(processor) || m_ProcessorRegistrationList.Contains(processor))
+            if (m_ProcessorRegistrationList.Contains(processor))
                 return;
 
-            m_ProcessorRegistrationList.Add(processor);
+            // A still-registered processor may carry a pending unregistration from a tick that never
+            // ran; re-registering must cancel it instead of letting it unregister the processor later.
             m_ProcessorUnregistrationList.Remove(processor);
+
+            if (!m_RegisteredProcessors.Contains(processor))
+                m_ProcessorRegistrationList.Add(processor);
         }
 
         public void UnregisterProcessor(IVisualElementChangeProcessor processor)

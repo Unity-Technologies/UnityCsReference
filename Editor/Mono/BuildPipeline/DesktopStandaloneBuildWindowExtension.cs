@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ContentBuild not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -12,8 +11,8 @@ using UnityEngine;
 
 internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtension
 {
-    private GUIContent m_StandaloneTarget = EditorGUIUtility.TrTextContent("Target Platform", "Destination platform for standalone build");
-    private GUIContent m_Architecture = EditorGUIUtility.TrTextContent("Architecture", "Build m_Architecture for standalone");
+    private GUIContent m_StandaloneTarget = L10n.TextContent("Target Platform", "Destination platform for standalone build", null, null);
+    private GUIContent m_Architecture = L10n.TextContent("Architecture", "Build m_Architecture for standalone", null, null);
     private BuildTarget[] m_StandaloneSubtargets;
     private GUIContent[] m_StandaloneSubtargetStrings;
 
@@ -68,17 +67,17 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneWindows))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneWindows);
-            standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Windows"));
+            standaloneSubtargetStringsList.Add(L10n.TextContent("Windows", null, null, null));
         }
         if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneOSX);
-            standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("macOS"));
+            standaloneSubtargetStringsList.Add(L10n.TextContent("macOS", null, null, null));
         }
         if (ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneLinux64);
-            standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Linux"));
+            standaloneSubtargetStringsList.Add(L10n.TextContent("Linux", null, null, null));
         }
 
         m_StandaloneSubtargets = standaloneSubtargetsList.ToArray();
@@ -276,4 +275,3 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         return true;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

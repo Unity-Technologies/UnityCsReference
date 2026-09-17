@@ -107,26 +107,11 @@ internal partial class StyleInspectorDefaultContent : VisualElement
         if (Application.isBuildingEditorResources)
             return;
 
-        if (!UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
-        {
-            UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnEnableHierarchyIntegration;
-            return;
-        }
-
         // A lot of time is spent on Mono.JIT during the first frame, so we'll create the elements by blocks across multiple frames.
         var defaultContent = DefaultContent;
         if (defaultContent == null || !defaultContent)
             return;
         new Initializer(new List<VisualTreeAsset>(defaultContent.templateDependencies));
-    }
-
-    static void OnEnableHierarchyIntegration(bool enabled)
-    {
-        if (!enabled || s_DefaultContent != null)
-            return;
-
-        Prepare();
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnEnableHierarchyIntegration;
     }
 
     private static StyleInspectorDefaultContent Create()
@@ -162,8 +147,14 @@ internal partial class StyleInspectorDefaultContent : VisualElement
             contentWasGenerated?.Invoke(this);
         }
 
-        // Pooled instances are re-attached on reuse; re-check so toggling the setting applies live.
-        RegisterCallback<AttachToPanelEvent>(_ => UpdateExperimentalRowVisibility());
+        // Pooled instances are re-attached on reuse, so a toggle that happened while this one sat in the
+        // pool is picked up here rather than missed.
+        RegisterCallback<AttachToPanelEvent>(_ =>
+        {
+            UpdateExperimentalRowVisibility();
+            UIToolkitProjectSettings.onEnableCurvedUIChanged += UpdateExperimentalRowVisibility;
+        });
+        RegisterCallback<DetachFromPanelEvent>(_ => UIToolkitProjectSettings.onEnableCurvedUIChanged -= UpdateExperimentalRowVisibility);
     }
 
     // Experimental style rows are hidden until their feature is enabled in Project Settings > UI Toolkit.
@@ -171,7 +162,8 @@ internal partial class StyleInspectorDefaultContent : VisualElement
     {
         var curvatureRow = this.Q("unity-curvature-row");
         if (curvatureRow != null)
-            curvatureRow.style.display = UIToolkitProjectSettings.enableCurvedUI ? DisplayStyle.Flex : DisplayStyle.None;
+            // StyleKeyword.Null, not DisplayStyle.Flex: an inline display defeats the class-based hiding of inspector search.
+            curvatureRow.style.display = UIToolkitProjectSettings.enableCurvedUI ? StyleKeyword.Null : DisplayStyle.None;
     }
 
     private void CreateTimeSlicedContent()

@@ -1069,14 +1069,6 @@ static void BurstSetup()
         {
             var combinations = new List<BurstOutputCombination>();
 
-#pragma warning disable CS0618
-            if (scriptingImplementation == ScriptingImplementation.CoreCLR
-                || (scriptingImplementation == ScriptingImplementation.IL2CPP && apiCompatibilityLevel == ApiCompatibilityLevel.NET))
-#pragma warning restore CS0618
-            {
-                return combinations;
-            }
-
             if (targetPlatform == TargetPlatform.macOS)
             {
                 // NOTE: OSX has a special folder for the plugin

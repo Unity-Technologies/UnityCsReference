@@ -112,6 +112,9 @@ namespace UnityEditorInternal.Profiling
             // own event rather than settingsChanged, so subscribe to it to keep the panel in sync.
             ProfilerUserSettings.targetFramesPerSecondChanged += OnTargetFramesPerSecondChanged;
 
+            // A clear leaves no frame to select, so nothing else resets the panels.
+            ProfilerDriver.profileCleared += OnProfileCleared;
+
             UpdateScreenshotCountAndEmptyState();
             ApplyFrameSelection((int)ProfilerWindow.selectedFrameIndex);
 
@@ -135,6 +138,15 @@ namespace UnityEditorInternal.Profiling
             // Re-apply the current selection so the info panel's over-budget timings reflect the new
             // target frame rate. Resolving to the same frame skips the expensive screenshot re-extract.
             ApplyFrameSelection((int)ProfilerWindow.selectedFrameIndex);
+        }
+
+        void OnProfileCleared()
+        {
+            // The catalogue only raises Changed when the clear actually dropped screenshots, so a
+            // session with frames but no screenshots would never reset. Pass -1 rather than the
+            // window's selected frame: it may not have reset its cached current frame yet.
+            UpdateScreenshotCountAndEmptyState();
+            ApplyFrameSelection(-1);
         }
 
         void OnPlayModeStateChanged(PlayModeStateChange stateChange)
@@ -166,7 +178,8 @@ namespace UnityEditorInternal.Profiling
             if (profilerFrame < 0)
             {
                 // No valid frame (empty capture, cleared profiler, or an empty capture loaded): reset
-                // the info panel to its empty state so it doesn't keep the previous frame's values.
+                // both panels so they don't keep the previous frame's values.
+                m_DetailsViewController?.Clear();
                 if (m_InfoPanelVisible)
                     m_InfoPanelViewController?.UpdateForFrame(-1, 0);
                 return;
@@ -287,6 +300,7 @@ namespace UnityEditorInternal.Profiling
                 EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
                 ProfilerUserSettings.settingsChanged -= OnProfilerSettingsChanged;
                 ProfilerUserSettings.targetFramesPerSecondChanged -= OnTargetFramesPerSecondChanged;
+                ProfilerDriver.profileCleared -= OnProfileCleared;
 
                 if (ProfilerWindow != null)
                     ProfilerWindow.SelectedFrameIndexChanged -= OnSelectedFrameChanged;

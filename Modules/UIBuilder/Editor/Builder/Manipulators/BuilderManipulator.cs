@@ -109,7 +109,8 @@ namespace Unity.UI.Builder
             if (m_Target.resolvedStyle.display == DisplayStyle.None ||
                 BuilderSharedStyles.IsDocumentElement(m_Target) ||
                 m_Target.GetVisualElementAsset() == null ||
-                !m_Target.IsPartOfActiveVisualTreeAsset(m_PaneWindow?.document))
+                !m_Target.IsPartOfActiveVisualTreeAsset(m_PaneWindow?.document) ||
+                (m_PaneWindow?.document?.isCanvasReadOnly ?? false))
             {
                 this.RemoveFromClassList(s_ActiveClassName);
                 return;

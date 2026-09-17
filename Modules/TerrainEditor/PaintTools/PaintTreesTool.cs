@@ -90,23 +90,23 @@ namespace UnityEditor.TerrainTools
         static class Styles
         {
             // Trees
-            public static readonly GUIContent trees = EditorGUIUtility.TrTextContent("Trees");
-            public static readonly GUIContent editTrees = EditorGUIUtility.TrTextContent("Edit Trees...", "Add/remove tree types.");
-            public static readonly GUIContent treeDensity = EditorGUIUtility.TrTextContent("Tree Density", "How dense trees are you painting");
-            public static readonly GUIContent treeHeight = EditorGUIUtility.TrTextContent("Tree Height", "The height scale of the planted trees");
-            public static readonly GUIContent treeHeightRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree height (variation)");
-            public static readonly GUIContent treeHeightRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree height (variation)");
-            public static readonly GUIContent lockWidthToHeight = EditorGUIUtility.TrTextContent("Lock Width to Height", "Let the tree width scale be equal to the tree height scale");
-            public static readonly GUIContent treeWidth = EditorGUIUtility.TrTextContent("Tree Width", "The width scale of the planted trees");
-            public static readonly GUIContent treeWidthRandomLabel = EditorGUIUtility.TrTextContent("Random?", "Enable random variation in tree width (variation)");
-            public static readonly GUIContent treeWidthRandomToggle = EditorGUIUtility.TrTextContent("", "Enable random variation in tree width (variation)");
-            public static readonly GUIContent treeColorVar = EditorGUIUtility.TrTextContent("Color Variation", "Amount of random shading applied to trees. This only works if the shader supports _TreeInstanceColor (for example, Speedtree shaders do not use this)");
-            public static readonly GUIContent treeRotation = EditorGUIUtility.TrTextContent("Random Tree Rotation", "Randomize tree rotation. This only works when the tree has an LOD group.");
-            public static readonly GUIContent treeRotationDisabled = EditorGUIUtility.TrTextContent("The selected tree does not have an LOD group, so it will use the default impostor system and will not support rotation.");
-            public static readonly GUIContent treeHasChildRenderers = EditorGUIUtility.TrTextContent("The selected tree does not have an LOD group, but has a hierarchy of MeshRenderers, only MeshRenderer on root GameObject in the trees hierarchy will be used. Use a tree with LOD group if you want a tree with hierarchy of MeshRenderers.");
-            public static readonly GUIContent massPlaceTrees = EditorGUIUtility.TrTextContent("Mass Place Trees", "The Mass Place Trees button is a very useful way to create an overall covering of trees without painting over the whole landscape. Following a mass placement, you can still use painting to add or remove trees to create denser or sparser areas.");
-            public static readonly GUIContent treeContributeGI = EditorGUIUtility.TrTextContent("Tree Contribute Global Illumination", "The state of the Contribute GI flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the value of the flag, each tree instance receives its own light probe and no lightmap texels.");
-            public static readonly GUIContent noTreesDefined = EditorGUIUtility.TrTextContent("No trees defined.");
+            public static readonly GUIContent trees = L10n.TextContent("Trees", null, null, null);
+            public static readonly GUIContent editTrees = L10n.TextContent("Edit Trees...", "Add/remove tree types.", null, null);
+            public static readonly GUIContent treeDensity = L10n.TextContent("Tree Density", "How dense trees are you painting", null, null);
+            public static readonly GUIContent treeHeight = L10n.TextContent("Tree Height", "The height scale of the planted trees", null, null);
+            public static readonly GUIContent treeHeightRandomLabel = L10n.TextContent("Random?", "Enable random variation in tree height (variation)", null, null);
+            public static readonly GUIContent treeHeightRandomToggle = L10n.TextContent("", "Enable random variation in tree height (variation)", null, null);
+            public static readonly GUIContent lockWidthToHeight = L10n.TextContent("Lock Width to Height", "Let the tree width scale be equal to the tree height scale", null, null);
+            public static readonly GUIContent treeWidth = L10n.TextContent("Tree Width", "The width scale of the planted trees", null, null);
+            public static readonly GUIContent treeWidthRandomLabel = L10n.TextContent("Random?", "Enable random variation in tree width (variation)", null, null);
+            public static readonly GUIContent treeWidthRandomToggle = L10n.TextContent("", "Enable random variation in tree width (variation)", null, null);
+            public static readonly GUIContent treeColorVar = L10n.TextContent("Color Variation", "Amount of random shading applied to trees. This only works if the shader supports _TreeInstanceColor (for example, Speedtree shaders do not use this)", null, null);
+            public static readonly GUIContent treeRotation = L10n.TextContent("Random Tree Rotation", "Randomize tree rotation. This only works when the tree has an LOD group.", null, null);
+            public static readonly GUIContent treeRotationDisabled = L10n.TextContent("The selected tree does not have an LOD group, so it will use the default impostor system and will not support rotation.", null, null, null);
+            public static readonly GUIContent treeHasChildRenderers = L10n.TextContent("The selected tree does not have an LOD group, but has a hierarchy of MeshRenderers, only MeshRenderer on root GameObject in the trees hierarchy will be used. Use a tree with LOD group if you want a tree with hierarchy of MeshRenderers.", null, null, null);
+            public static readonly GUIContent massPlaceTrees = L10n.TextContent("Mass Place Trees", "The Mass Place Trees button is a very useful way to create an overall covering of trees without painting over the whole landscape. Following a mass placement, you can still use painting to add or remove trees to create denser or sparser areas.", null, null);
+            public static readonly GUIContent treeContributeGI = L10n.TextContent("Tree Contribute Global Illumination", "The state of the Contribute GI flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the value of the flag, each tree instance receives its own light probe and no lightmap texels.", null, null);
+            public static readonly GUIContent noTreesDefined = L10n.TextContent("No trees defined.", null, null, null);
         }
 
         private TreePrototype m_LastSelectedTreePrototype;

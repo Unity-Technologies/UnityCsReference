@@ -84,17 +84,17 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static readonly GUIContent ramp = EditorGUIUtility.TrTextContent("Ramp", "Use gradient color ramp visualization");
-            public static readonly GUIContent quality = EditorGUIUtility.TrTextContent("Quality", "Sample per texture pixel modifier");
-            public static readonly GUIContent alpha = EditorGUIUtility.TrTextContent("Alpha", "Opacity of the texture visualization");
-            public static readonly GUIContent x = EditorGUIUtility.TrTextContent("X");
-            public static readonly GUIContent y = EditorGUIUtility.TrTextContent("Y");
-            public static readonly GUIContent z = EditorGUIUtility.TrTextContent("Z");
-            public static readonly GUIContent scale = EditorGUIUtility.TrTextContent("Scale", "SDF value scale (how many texels SDF value of 1 represents)");
-            public static readonly GUIContent offset = EditorGUIUtility.TrTextContent("Offset", "SDF surface is at this value");
-            public static readonly GUIContent volume = EditorGUIUtility.TrTextContent("Volume", "Volumetric rendering display");
-            public static readonly GUIContent slice = EditorGUIUtility.TrTextContent("Slice", "Display three planar slices of the texture");
-            public static readonly GUIContent sdf = EditorGUIUtility.TrTextContent("SDF", "Display texture as a Signed Distance Field surface");
+            public static readonly GUIContent ramp = L10n.TextContent("Ramp", "Use gradient color ramp visualization", null, null);
+            public static readonly GUIContent quality = L10n.TextContent("Quality", "Sample per texture pixel modifier", null, null);
+            public static readonly GUIContent alpha = L10n.TextContent("Alpha", "Opacity of the texture visualization", null, null);
+            public static readonly GUIContent x = L10n.TextContent("X", null, null, null);
+            public static readonly GUIContent y = L10n.TextContent("Y", null, null, null);
+            public static readonly GUIContent z = L10n.TextContent("Z", null, null, null);
+            public static readonly GUIContent scale = L10n.TextContent("Scale", "SDF value scale (how many texels SDF value of 1 represents)", null, null);
+            public static readonly GUIContent offset = L10n.TextContent("Offset", "SDF surface is at this value", null, null);
+            public static readonly GUIContent volume = L10n.TextContent("Volume", "Volumetric rendering display", null, null);
+            public static readonly GUIContent slice = L10n.TextContent("Slice", "Display three planar slices of the texture", null, null);
+            public static readonly GUIContent sdf = L10n.TextContent("SDF", "Display texture as a Signed Distance Field surface", null, null);
         }
 
         const float s_SliderWidth = 40;

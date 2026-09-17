@@ -17,43 +17,43 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static readonly GUIContent MeshesHeader = EditorGUIUtility.TrTextContent("Meshes");
-            public static readonly GUIContent UnitConversion = EditorGUIUtility.TrTextContent("Unit Conversion", "Select the unit conversion to apply to the imported SpeedTree asset");
-            public static readonly GUIContent ScaleFactor = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the tree model, interpreting the exported units as meters. Must be positive.");
+            public static readonly GUIContent MeshesHeader = L10n.TextContent("Meshes", null, null, null);
+            public static readonly GUIContent UnitConversion = L10n.TextContent("Unit Conversion", "Select the unit conversion to apply to the imported SpeedTree asset", null, null);
+            public static readonly GUIContent ScaleFactor = L10n.TextContent("Scale Factor", "How much to scale the tree model, interpreting the exported units as meters. Must be positive.", null, null);
 
-            public static readonly GUIContent EnableColorVariation = EditorGUIUtility.TrTextContent("Color Variation", "Color is determined by linearly interpolating between the Main Color & Color Variation values based on the world position X, Y and Z values");
-            public static readonly GUIContent EnableBump = EditorGUIUtility.TrTextContent("Normal Map", "Enable normal mapping (aka Bump mapping).");
-            public static readonly GUIContent EnableSubsurface = EditorGUIUtility.TrTextContent("Subsurface Scattering", "Enable subsurface scattering effects.");
-            public static readonly GUIContent MainColor = EditorGUIUtility.TrTextContent("Main Color", "The color modulating the diffuse lighting component.");
-            public static readonly GUIContent HueVariation = EditorGUIUtility.TrTextContent("Variation Color (RGB), Intensity (A)", "Tint the tree with the Variation Color");
-            public static readonly GUIContent AlphaTestRef = EditorGUIUtility.TrTextContent("Alpha Cutoff", "The alpha-test reference value.");
+            public static readonly GUIContent EnableColorVariation = L10n.TextContent("Color Variation", "Color is determined by linearly interpolating between the Main Color & Color Variation values based on the world position X, Y and Z values", null, null);
+            public static readonly GUIContent EnableBump = L10n.TextContent("Normal Map", "Enable normal mapping (aka Bump mapping).", null, null);
+            public static readonly GUIContent EnableSubsurface = L10n.TextContent("Subsurface Scattering", "Enable subsurface scattering effects.", null, null);
+            public static readonly GUIContent MainColor = L10n.TextContent("Main Color", "The color modulating the diffuse lighting component.", null, null);
+            public static readonly GUIContent HueVariation = L10n.TextContent("Variation Color (RGB), Intensity (A)", "Tint the tree with the Variation Color", null, null);
+            public static readonly GUIContent AlphaTestRef = L10n.TextContent("Alpha Cutoff", "The alpha-test reference value.", null, null);
 
-            public static readonly GUIContent LightingHeader = EditorGUIUtility.TrTextContent("Lighting");
-            public static readonly GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "The tree casts shadow");
-            public static readonly GUIContent ReceiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "The tree receives shadow");
-            public static readonly GUIContent UseLightProbes = EditorGUIUtility.TrTextContent("Light Probes", "The tree uses light probe for lighting"); // TODO: update help text
-            public static readonly GUIContent UseReflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes", "The tree uses reflection probe for rendering"); // TODO: update help text
+            public static readonly GUIContent LightingHeader = L10n.TextContent("Lighting", null, null, null);
+            public static readonly GUIContent CastShadows = L10n.TextContent("Cast Shadows", "The tree casts shadow", null, null);
+            public static readonly GUIContent ReceiveShadows = L10n.TextContent("Receive Shadows", "The tree receives shadow", null, null);
+            public static readonly GUIContent UseLightProbes = L10n.TextContent("Light Probes", "The tree uses light probe for lighting", null, null); // TODO: update help text
+            public static readonly GUIContent UseReflectionProbes = L10n.TextContent("Reflection Probes", "The tree uses reflection probe for rendering", null, null); // TODO: update help text
 
-            public static readonly GUIContent AdditionalSettingsHeader = EditorGUIUtility.TrTextContent("Additional Settings");
-            public static readonly GUIContent MotionVectorMode = EditorGUIUtility.TrTextContent("Motion Vectors", "Motion vector mode to set for the mesh renderer of each LOD object");
-            public static readonly GUIContent GenerateRigidBody = EditorGUIUtility.TrTextContent("Generate Rigidbody", "Generates a Rigidbody in the root game object");
-            public static readonly GUIContent GenerateColliders  = EditorGUIUtility.TrTextContent("Generate Colliders", "Generates mesh colliders for the LOD objects");
+            public static readonly GUIContent AdditionalSettingsHeader = L10n.TextContent("Additional Settings", null, null, null);
+            public static readonly GUIContent MotionVectorMode = L10n.TextContent("Motion Vectors", "Motion vector mode to set for the mesh renderer of each LOD object", null, null);
+            public static readonly GUIContent GenerateRigidBody = L10n.TextContent("Generate Rigidbody", "Generates a Rigidbody in the root game object", null, null);
+            public static readonly GUIContent GenerateColliders  = L10n.TextContent("Generate Colliders", "Generates mesh colliders for the LOD objects", null, null);
 
-            public static readonly GUIContent WindHeader = EditorGUIUtility.TrTextContent("Wind");
-            public static readonly GUIContent WindQuality = EditorGUIUtility.TrTextContent("Wind Quality", "Controls the wind effect's quality.");
+            public static readonly GUIContent WindHeader = L10n.TextContent("Wind", null, null, null);
+            public static readonly GUIContent WindQuality = L10n.TextContent("Wind Quality", "Controls the wind effect's quality.", null, null);
 
-            public static readonly GUIContent LODHeader = EditorGUIUtility.TrTextContent("LOD");
-            public static readonly GUIContent ResetLOD = EditorGUIUtility.TrTextContent("Reset LOD to...", "Unify the LOD settings for all selected assets");
-            public static readonly GUIContent SmoothLOD = EditorGUIUtility.TrTextContent("Smooth Transitions", "Toggles smooth LOD transitions");
-            public static readonly GUIContent AnimateCrossFading = EditorGUIUtility.TrTextContent("Animate Cross-fading", "Cross-fading is animated instead of being calculated by distance");
-            public static readonly GUIContent CrossFadeWidth = EditorGUIUtility.TrTextContent("Crossfade Width", "Proportion of the last 3D mesh LOD region width which is used for cross-fading to billboard tree");
-            public static readonly GUIContent FadeOutWidth = EditorGUIUtility.TrTextContent("Fade Out Width", "Proportion of the billboard LOD region width which is used for fading out the billboard");
+            public static readonly GUIContent LODHeader = L10n.TextContent("LOD", null, null, null);
+            public static readonly GUIContent ResetLOD = L10n.TextContent("Reset LOD to...", "Unify the LOD settings for all selected assets", null, null);
+            public static readonly GUIContent SmoothLOD = L10n.TextContent("Smooth Transitions", "Toggles smooth LOD transitions", null, null);
+            public static readonly GUIContent AnimateCrossFading = L10n.TextContent("Animate Cross-fading", "Cross-fading is animated instead of being calculated by distance", null, null);
+            public static readonly GUIContent CrossFadeWidth = L10n.TextContent("Crossfade Width", "Proportion of the last 3D mesh LOD region width which is used for cross-fading to billboard tree", null, null);
+            public static readonly GUIContent FadeOutWidth = L10n.TextContent("Fade Out Width", "Proportion of the billboard LOD region width which is used for fading out the billboard", null, null);
 
-            public static readonly GUIContent EnableLodCustomizationsWarn = EditorGUIUtility.TrTextContent("Customizing LOD options may help with tuning the GPU performance but will likely negatively impact the instanced draw batching, i.e. CPU performance.\nPlease use the per-LOD customizations with careful memory and performance profiling for both CPU and GPU and remember that these options are a trade-off rather than a free win.");
-            public static readonly GUIContent BillboardSettingsHelp = EditorGUIUtility.TrTextContent("Billboard options are separate from the 3D model options shown above.\nChange the options below for influencing billboard rendering.");
+            public static readonly GUIContent EnableLodCustomizationsWarn = L10n.TextContent("Customizing LOD options may help with tuning the GPU performance but will likely negatively impact the instanced draw batching, i.e. CPU performance.\nPlease use the per-LOD customizations with careful memory and performance profiling for both CPU and GPU and remember that these options are a trade-off rather than a free win.", null, null, null);
+            public static readonly GUIContent BillboardSettingsHelp = L10n.TextContent("Billboard options are separate from the 3D model options shown above.\nChange the options below for influencing billboard rendering.", null, null, null);
 
-            public static readonly GUIContent ApplyAndGenerate = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate asset materials with the new settings.");
-            public static readonly GUIContent Regenerate = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials using the current import settings.");
+            public static readonly GUIContent ApplyAndGenerate = L10n.TextContent("Apply & Generate Materials", "Apply current importer settings and generate asset materials with the new settings.", null, null);
+            public static readonly GUIContent Regenerate = L10n.TextContent("Regenerate Materials", "Regenerate materials using the current import settings.", null, null);
 
             public static readonly GUIContent[] ReflectionProbeUsageNames = Array.ConvertAll(Enum.GetNames(typeof(ReflectionProbeUsage)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
             public static readonly GUIContent[] WindQualityNames = Array.ConvertAll(SpeedTreeImporter.windQualityNames, s => new GUIContent(s));
@@ -753,7 +753,7 @@ namespace UnityEditor
             else
             {
                 // Toggle
-                GUIContent customizationLabel = EditorGUIUtility.TrTextContent(String.Format("Customize {0} options", lods[lodIndex].LODName), "To override options for a certain LOD, check this box and select the LOD from the LOD slider above");
+                GUIContent customizationLabel = L10n.TextContent(String.Format("Customize {0} options", lods[lodIndex].LODName), "To override options for a certain LOD, check this box and select the LOD from the LOD slider above", null, null);
                 EditorGUILayout.PropertyField(lodSettingOverride, customizationLabel);
 
                 // Warning

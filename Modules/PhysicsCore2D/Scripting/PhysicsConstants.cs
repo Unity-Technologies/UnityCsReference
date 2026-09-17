@@ -25,6 +25,11 @@ namespace Unity.U2D.Physics
         public const int MaxWorldCapacity = ushort.MaxValue;
 
         /// <summary>
+        /// The maximum length of a <see cref="PhysicsWorld"/> name, beyond which <see cref="PhysicsWorld.SetName"/> truncates it.
+        /// </summary>
+        public const int MaxWorldNameLength = 64;
+
+        /// <summary>
         /// The maximum number of supported vertices in <see cref="PolygonGeometry"/>.
         /// </summary>
         public const int MaxPolygonVertices = 8;

@@ -1,10 +1,10 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: GraphicsDeviceFeatures not yet converted
 using UnityEngine;
 using UnityEngine.Rendering;
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEditor;
+using Unity.Scripting.LifecycleManagement;
 
 
 namespace UnityEngine.AMD
@@ -164,6 +164,7 @@ namespace UnityEngine.AMD
     {
         #region Private
 
+        [NoAutoStaticsCleanup]
         static private GraphicsDevice sGraphicsDeviceInstance = null;
         private Stack<FSR2Context> s_ContextObjectPool_FSR2 = new Stack<FSR2Context>();
         private Stack<FSRUpscalerContext> s_ContextObjectPool_SDK = new Stack<FSRUpscalerContext>(); // FSR3/4
@@ -624,4 +625,3 @@ namespace UnityEngine.AMD
         #endregion
     };
 } // namespace AMD
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

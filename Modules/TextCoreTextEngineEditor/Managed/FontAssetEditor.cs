@@ -397,8 +397,7 @@ namespace UnityEditor.TextCore.Text
 
             serializedObject.Update();
 
-            // Disabled until the conversion flow ships with its legal notice.
-            //DrawStaticMigrationSection();
+            DrawStaticMigrationSection();
 
             if (m_ShowObsoleteProperties_prop.boolValue)
             {

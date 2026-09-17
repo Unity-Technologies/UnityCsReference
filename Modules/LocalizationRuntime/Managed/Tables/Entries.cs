@@ -20,7 +20,7 @@ namespace Unity.Localization;
 /// <see cref="ResourceTable"/>, so a new kind needs no change to the table.
 /// </remarks>
 /// <example>
-/// <para>Read the shared members through a concrete string entry.</para>
+/// Read the shared members through a concrete string entry.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceEntryBaseOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="StringEntry"/>
@@ -84,7 +84,7 @@ public abstract class ResourceEntryBase : IResourceEntry
 /// entry.
 /// </remarks>
 /// <example>
-/// <para>Add a string entry to a table and read its value.</para>
+/// Add a string entry to a table and read its value.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/StringEntryOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="IStringEntry"/>

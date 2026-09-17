@@ -17,12 +17,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action onOrganizationsChange;
         bool isUserInfoReady { get; }
         bool isUserLoggedIn { get; }
+        string projectOrgName { get; }
         string userPrimaryOrg { get; }
         string displayName { get; }
         string GetConfigurationURL(CloudConfigUrl config);
         void ShowLogin();
         void OpenAuthorizedURLInWebBrowser(string url);
         public Task<OrganizationInfo[]> ParseOrganizationInfosAsync(Action<OrganizationInfo[]> onResult);
+        void GetAccessToken(Action<string> doneCallback, Action<UIError> errorCallback);
     }
 
     [Serializable]
@@ -80,7 +82,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_IsUserInfoReady;
 
         [SerializeField]
-        private bool m_HasAccessToken;
+        private string m_AccessToken;
 
         [SerializeField]
         private string m_UserId = string.Empty;
@@ -99,7 +101,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<bool, bool> onUserLoginStateChange = delegate {};
         public event Action onOrganizationsChange = delegate {};
         public bool isUserInfoReady => m_IsUserInfoReady;
-        public bool isUserLoggedIn => m_IsUserInfoReady && m_HasAccessToken;
+        public bool isUserLoggedIn => m_IsUserInfoReady && !string.IsNullOrEmpty(m_AccessToken);
+        public string projectOrgName => UnityConnect.instance.projectInfo.organizationName;
         public string userPrimaryOrg => m_UserPrimaryOrg;
         public string displayName => m_DisplayName;
 
@@ -119,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsUserInfoReady = UnityConnect.instance.isUserInfoReady;
             m_UserPrimaryOrg = UnityConnect.instance.userInfo.valid ? UnityConnect.instance.userInfo.primaryOrg : string.Empty;
             m_OrganizationForeignKeys = UnityConnect.instance.userInfo.valid ? UnityConnect.instance.userInfo.organizationForeignKeys ?? string.Empty : string.Empty;
-            m_HasAccessToken = !string.IsNullOrEmpty(UnityConnect.instance.userInfo.accessToken);
+            m_AccessToken = UnityConnect.instance.userInfo.accessToken;
             m_UserId = UnityConnect.instance.userInfo.userId;
             m_DisplayName = UnityConnect.instance.userInfo.displayName;
         }
@@ -142,6 +145,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         public Task<OrganizationInfo[]> ParseOrganizationInfosAsync(Action<OrganizationInfo[]> onResult = null)
         {
             return m_OrganizationInfoParser.ParseAsync(onResult);
+        }
+
+        public void GetAccessToken(Action<string> doneCallback, Action<UIError> errorCallback)
+        {
+            if (string.IsNullOrEmpty(m_AccessToken))
+            {
+                if (m_IsUserInfoReady)
+                    errorCallback?.Invoke(new UIError(UIErrorCode.UserNotSignedIn,  L10n.Tr("You need to be signed in.", null), UIError.Attribute.HiddenFromUI));
+                else
+                    errorCallback?.Invoke(new UIError(UIErrorCode.UnityConnectUserStatusError, L10n.Tr("Invalid user status.", null), UIError.Attribute.HiddenFromUI));
+                return;
+            }
+            doneCallback?.Invoke(m_AccessToken);
         }
 
         private void OnUserStateChanged(UserInfo newInfo)

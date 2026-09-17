@@ -20,6 +20,9 @@ namespace UnityEngine.UIElements
     public partial class PanelTextSettings : TextSettings
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Lazy default instance: InitializeDefaultPanelTextSettingsIfNull() recreates it on the next
+        // access after cleanup nulls it, so a constructor that forces it leaves nothing stale behind.
+        [IgnoreForUAL0015("Lazy default instance recreated on demand by InitializeDefaultPanelTextSettingsIfNull()")]
         private static PanelTextSettings s_DefaultPanelTextSettings;
 
         internal static PanelTextSettings defaultPanelTextSettings

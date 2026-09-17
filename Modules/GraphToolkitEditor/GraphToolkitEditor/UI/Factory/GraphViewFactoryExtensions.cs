@@ -103,18 +103,18 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
-        /// Creates a <see cref="Transition"/> from its model.
+        /// Creates a <see cref="TransitionView"/> from its model.
         /// </summary>
         /// <param name="elementBuilder">The element builder.</param>
         /// <param name="model">The <see cref="TransitionSupportModel"/> this <see cref="ModelView"/> displays.</param>
         /// <returns>A setup <see cref="ModelView"/></returns>
         /// <remarks>
-        /// 'CreateTransition' creates a <see cref="Transition"/> from its corresponding model. This method generates a <see cref="ModelView"/> that visually represents the
+        /// 'CreateTransition' creates a <see cref="TransitionView"/> from its corresponding model. This method generates a <see cref="ModelView"/> that visually represents the
         /// transition. The <see cref="TransitionSupportModel"/> serves as the underlying data model.
         /// </remarks>
         public static ModelView CreateTransition(this ElementBuilder elementBuilder, TransitionSupportModel model)
         {
-            var ui = new Transition();
+            var ui = new TransitionView();
             ui.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
             return ui;
         }

@@ -40,7 +40,10 @@ namespace UnityEngine
             IncludeAllObsolete
         }
 
+        // Per-Type enum reflection memo, rebuilt on the next miss; it must be cleared on reload so it does
+        // not keep the previous scope's Type keys alive.
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Per-Type enum reflection memo, rebuilt on demand after cleanup")]
         private static readonly Dictionary<(CachedType, Type), EnumData> s_EnumData = new();
 
         public static EnumData GetCachedEnumData(Type enumType, CachedType cachedType = CachedType.IncludeObsoleteExceptErrors, Func<string, string> nicifyName = null)

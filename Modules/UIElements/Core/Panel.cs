@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -504,6 +502,9 @@ namespace UnityEngine.UIElements
         // Cleared on code reload: the handles die with the LayoutManager node store, and
         // panels re-register on creation.
         [AutoStaticsCleanupOnCodeReload]
+        // Live-panel registry: each panel adds itself here in its constructor and removes itself on
+        // dispose, so the registry cleared on reload refills as panels are recreated.
+        [IgnoreForUAL0015("Live-panel registry, refilled by each panel constructor and pruned on dispose")]
         internal static readonly Dictionary<UnmanagedDataHandle, BaseVisualElementPanel> PanelsByHandle = new(UnmanagedDataHandle.k_EqualityComparer);
 
         // Allows native code to call back into panel methods.
@@ -552,7 +553,15 @@ namespace UnityEngine.UIElements
             {
                 if (panelDebug != null)
                 {
-                    panelDebug.DetachAllDebuggers();
+                    try
+                    {
+                        panelDebug.DetachAllDebuggers();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
+
                     panelDebug = null;
                 }
                 if (ownerObject != null)
@@ -1335,9 +1344,15 @@ namespace UnityEngine.UIElements
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static LoadResourceFunction loadResourceFunc { private get; set; }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static InitEditorUpdaterFunction initEditorUpdaterFunc { private get; set; }
 
         [NoAutoStaticsCleanup]
@@ -1442,6 +1457,9 @@ namespace UnityEngine.UIElements
         [Obsolete("Use the non-static TimeSinceStartupFunc instead")]
         [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
         [AutoStaticsCleanupOnCodeReload]
+        // No production code installs a time provider here: null is the normal state and the panel falls back
+        // to the real time since startup. Only test scopes assign it, and they re-assign it per test.
+        [IgnoreForUAL0015("Optional time-provider override; null falls back to real time and only tests assign it")]
         internal static TimeMsFunction TimeSinceStartup { get; set; }
 
         public override IMGUIContainer rootIMGUIContainer { get; set; }
@@ -1814,6 +1832,9 @@ namespace UnityEngine.UIElements
         internal static event Action<Panel> beforeTickingAnyScheduledPanel;
 
         [AutoStaticsCleanupOnCodeReload]
+        // The editor monitor is the only subscriber and it subscribes from its constructor, which cleanup
+        // re-runs on every code load, so the subscription is back before the next repaint.
+        [IgnoreForUAL0015("Repaint hook re-subscribed by the EditorMonitor instance recreated on each code load")]
         internal static event Action<Panel> beforeAnyRepaint;
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
@@ -2169,5 +2190,3 @@ namespace UnityEngine.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

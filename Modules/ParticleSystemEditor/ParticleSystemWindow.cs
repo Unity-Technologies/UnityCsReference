@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: VisualEffects not yet converted
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -25,7 +24,7 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent lockParticleSystem = EditorGUIUtility.TrTextContent("", "Lock the current selected Particle System");
+            public GUIContent lockParticleSystem = L10n.TextContent("", "Lock the current selected Particle System", null, null);
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;
@@ -35,7 +34,7 @@ namespace UnityEditor
         static public void CreateWindow()
         {
             s_Instance = EditorWindow.GetWindow<ParticleSystemWindow>();
-            s_Instance.titleContent = EditorGUIUtility.TrTextContent("Particle Effect");
+            s_Instance.titleContent = L10n.TextContent("Particle Effect", null, null, null);
             s_Instance.minSize = ParticleEffectUI.GetMinSize();
         }
 
@@ -50,9 +49,7 @@ namespace UnityEditor
         }
 
         // Prevent created from outside
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         private ParticleSystemWindow()
-        #pragma warning restore UAL0015
         {
         }
 
@@ -318,4 +315,3 @@ namespace UnityEditor
         }
     } // ParticleSystemWindow
 } // UnityEditor
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

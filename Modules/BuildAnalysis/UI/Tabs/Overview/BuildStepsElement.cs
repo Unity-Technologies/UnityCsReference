@@ -63,7 +63,7 @@ namespace UnityEditor.Build.Analysis
                 {
                     var label = new Label();
                     label.AddToClassList("build-step-name");
-                    label.selection.isSelectable = true;
+                    label.RegisterCallback<ClickEvent>(OnNameCellClicked);
                     return label;
                 },
                 bindCell = BindNameCell,
@@ -167,7 +167,23 @@ namespace UnityEditor.Build.Analysis
         private void BindNameCell(VisualElement element, int index)
         {
             var data = m_TreeView.GetItemDataForIndex<StepItemData>(index);
-            ((Label)element).text = data.Name;
+            var label = (Label)element;
+            label.text = data.Name;
+            // Cells are recycled, so a cell's row is only known from its latest bind.
+            label.userData = m_TreeView.GetIdForIndex(index);
+        }
+
+        // UUM-142301: clicking the name does what clicking the arrow does.
+        private void OnNameCellClicked(ClickEvent evt)
+        {
+            if (evt.currentTarget is not Label label || label.userData is not int id
+                || !m_TreeView.viewController.HasChildren(id))
+                return;
+
+            if (m_TreeView.IsExpanded(id))
+                m_TreeView.CollapseItem(id);
+            else
+                m_TreeView.ExpandItem(id);
         }
 
         private void BindBadgeCell(VisualElement element, int index)

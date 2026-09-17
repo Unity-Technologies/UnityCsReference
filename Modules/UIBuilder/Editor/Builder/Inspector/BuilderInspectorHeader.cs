@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using Unity.Profiling;
 using Unity.UIToolkit.Editor;
@@ -88,7 +87,6 @@ namespace Unity.UI.Builder
             m_StackingIndicator = m_Inspector.Q<Button>("stacking-context-indicator");
             m_StackingIndicator.style.backgroundImage = EditorGUIUtility.IconContent("UnityEditor.SceneHierarchyWindow").image as Texture2D;
             m_StackingIndicator.clicked += OnStackingIndicatorClicked;
-            UIToolkitProjectSettings.onEnableZIndexChanged += RefreshStackingIndicator;
 
             // Store callbacks to reduce delegate allocations
             m_ElementNameChangeCallback = OnNameAttributeChange;
@@ -111,7 +109,6 @@ namespace Unity.UI.Builder
 
         public void Dispose()
         {
-            UIToolkitProjectSettings.onEnableZIndexChanged -= RefreshStackingIndicator;
             m_DataSourceAndPathView.Dispose();
         }
 
@@ -213,7 +210,7 @@ namespace Unity.UI.Builder
             m_StackingContextRoot = null;
 
             var element = currentVisualElement;
-            if (!UIToolkitProjectSettings.enableZIndex || element == null || m_Selection.selectionType == BuilderSelectionType.Nothing)
+            if (element == null || m_Selection.selectionType == BuilderSelectionType.Nothing)
             {
                 m_StackingIndicator.style.display = DisplayStyle.None;
                 return;
@@ -414,4 +411,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _3DPhysics not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -102,24 +101,24 @@ namespace UnityEditor
         WeakReference m_CachedMesh;
         private static class Styles
         {
-            public static readonly GUIContent editConstraintsLabel = EditorGUIUtility.TrTextContent("Edit Constraints");
-            public static readonly GUIContent editSelfInterCollisionLabel = EditorGUIUtility.TrTextContent("Edit Collision Particles");
-            public static readonly GUIContent selfInterCollisionParticleColor = EditorGUIUtility.TrTextContent("Visualization Color");
-            public static readonly GUIContent selfInterCollisionBrushColor = EditorGUIUtility.TrTextContent("Brush Color");
-            public static readonly GUIContent clothSelfCollisionAndInterCollision = EditorGUIUtility.TrTextContent("Cloth Self-Collision and Inter-Collision");
-            public static readonly GUIContent paintCollisionParticles = EditorGUIUtility.TrTextContent("Paint Collision Particles");
-            public static readonly GUIContent selectCollisionParticles = EditorGUIUtility.TrTextContent("Select Collision Particles");
-            public static readonly GUIContent brushRadiusString = EditorGUIUtility.TrTextContent("Brush Radius");
-            public static readonly GUIContent constraintSizeString = EditorGUIUtility.TrTextContent("Constraint Size");
-            public static readonly GUIContent gradientStartString = EditorGUIUtility.TrTextContent("Gradient Start");
-            public static readonly GUIContent gradientEndString = EditorGUIUtility.TrTextContent("Gradient End");
-            public static readonly GUIContent setMaxDistanceString = EditorGUIUtility.TrTextContent("Max Distance");
-            public static readonly GUIContent setCollisionSphereDistanceString = EditorGUIUtility.TrTextContent("Surface Penetration");
-            public static readonly GUIContent selfAndInterCollisionMode = EditorGUIUtility.TrTextContent("Paint or Select Particles");
-            public static readonly GUIContent backFaceManipulationMode = EditorGUIUtility.TrTextContent("Back Face Manipulation");
-            public static readonly GUIContent manipulateBackFaceString = EditorGUIUtility.TrTextContent("Manipulate Backfaces");
-            public static readonly GUIContent selfCollisionString = EditorGUIUtility.TrTextContent("Self-Collision");
-            public static readonly GUIContent setSelfAndInterCollisionString = EditorGUIUtility.TrTextContent("Self-Collision and Inter-Collision");
+            public static readonly GUIContent editConstraintsLabel = L10n.TextContent("Edit Constraints", null, null, null);
+            public static readonly GUIContent editSelfInterCollisionLabel = L10n.TextContent("Edit Collision Particles", null, null, null);
+            public static readonly GUIContent selfInterCollisionParticleColor = L10n.TextContent("Visualization Color", null, null, null);
+            public static readonly GUIContent selfInterCollisionBrushColor = L10n.TextContent("Brush Color", null, null, null);
+            public static readonly GUIContent clothSelfCollisionAndInterCollision = L10n.TextContent("Cloth Self-Collision and Inter-Collision", null, null, null);
+            public static readonly GUIContent paintCollisionParticles = L10n.TextContent("Paint Collision Particles", null, null, null);
+            public static readonly GUIContent selectCollisionParticles = L10n.TextContent("Select Collision Particles", null, null, null);
+            public static readonly GUIContent brushRadiusString = L10n.TextContent("Brush Radius", null, null, null);
+            public static readonly GUIContent constraintSizeString = L10n.TextContent("Constraint Size", null, null, null);
+            public static readonly GUIContent gradientStartString = L10n.TextContent("Gradient Start", null, null, null);
+            public static readonly GUIContent gradientEndString = L10n.TextContent("Gradient End", null, null, null);
+            public static readonly GUIContent setMaxDistanceString = L10n.TextContent("Max Distance", null, null, null);
+            public static readonly GUIContent setCollisionSphereDistanceString = L10n.TextContent("Surface Penetration", null, null, null);
+            public static readonly GUIContent selfAndInterCollisionMode = L10n.TextContent("Paint or Select Particles", null, null, null);
+            public static readonly GUIContent backFaceManipulationMode = L10n.TextContent("Back Face Manipulation", null, null, null);
+            public static readonly GUIContent manipulateBackFaceString = L10n.TextContent("Manipulate Backfaces", null, null, null);
+            public static readonly GUIContent selfCollisionString = L10n.TextContent("Self-Collision", null, null, null);
+            public static readonly GUIContent setSelfAndInterCollisionString = L10n.TextContent("Self-Collision and Inter-Collision", null, null, null);
 
             public static readonly int clothEditorWindowWidth = 300;
 
@@ -131,39 +130,39 @@ namespace UnityEditor
 
             public static readonly GUIContent[] toolIcons =
             {
-                EditorGUIUtility.TrTextContent("Select"),
-                EditorGUIUtility.TrTextContent("Paint"),
-                EditorGUIUtility.TrTextContent("Gradient Tool")
+                L10n.TextContent("Select", null, null, null),
+                L10n.TextContent("Paint", null, null, null),
+                L10n.TextContent("Gradient Tool", null, null, null)
             };
 
             public static readonly GUIContent[] drawModeStrings =
             {
-                EditorGUIUtility.TrTextContent("Fixed"),
-                EditorGUIUtility.TrTextContent("Max Distance"),
-                EditorGUIUtility.TrTextContent("Surface Penetration")
+                L10n.TextContent("Fixed", null, null, null),
+                L10n.TextContent("Max Distance", null, null, null),
+                L10n.TextContent("Surface Penetration", null, null, null)
             };
 
             public static readonly GUIContent[] toolModeStrings =
             {
-                EditorGUIUtility.TrTextContent("Select"),
-                EditorGUIUtility.TrTextContent("Paint"),
-                EditorGUIUtility.TrTextContent("Erase")
+                L10n.TextContent("Select", null, null, null),
+                L10n.TextContent("Paint", null, null, null),
+                L10n.TextContent("Erase", null, null, null)
             };
 
             public static readonly GUIContent[] collToolModeIcons =
             {
-                EditorGUIUtility.TrTextContent("Select"),
-                EditorGUIUtility.TrTextContent("Paint"),
-                EditorGUIUtility.TrTextContent("Erase")
+                L10n.TextContent("Select", null, null, null),
+                L10n.TextContent("Paint", null, null, null),
+                L10n.TextContent("Erase", null, null, null)
             };
 
             public static readonly GUIContent[] collVisModeStrings =
             {
-                EditorGUIUtility.TrTextContent("Self-Collision"),
-                EditorGUIUtility.TrTextContent("Inter-Collision"),
+                L10n.TextContent("Self-Collision", null, null, null),
+                L10n.TextContent("Inter-Collision", null, null, null),
             };
 
-            public static readonly GUIContent paintIcon = EditorGUIUtility.TrIconContent("ClothInspector.PaintValue", "Change this vertex coefficient value by painting in the scene view.");
+            public static readonly GUIContent paintIcon = L10n.IconContent("ClothInspector.PaintValue", "Change this vertex coefficient value by painting in the scene view.", null);
 
             public static readonly EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
             {
@@ -171,22 +170,22 @@ namespace UnityEditor
                 EditMode.SceneViewEditMode.ClothSelfAndInterCollisionParticles
             };
 
-            public static readonly GUIContent selfCollisionDistanceGUIContent = EditorGUIUtility.TrTextContent("Self-Collision Distance");
-            public static readonly GUIContent selfCollisionStiffnessGUIContent = EditorGUIUtility.TrTextContent("Self-Collision Stiffness");
+            public static readonly GUIContent selfCollisionDistanceGUIContent = L10n.TextContent("Self-Collision Distance", null, null, null);
+            public static readonly GUIContent selfCollisionStiffnessGUIContent = L10n.TextContent("Self-Collision Stiffness", null, null, null);
 
             static Styles()
             {
 #pragma warning disable UAL0015 // Auto cleaned up symbol assigned by constructor
                 // populating translation cache
-                toolContents[0].tooltip = EditorGUIUtility.TrTextContent("Edit cloth constraints").text;
-                toolContents[1].tooltip = EditorGUIUtility.TrTextContent("Edit cloth self/inter-collision").text;
+                toolContents[0].tooltip = L10n.TextContent("Edit cloth constraints", null, null, null).text;
+                toolContents[1].tooltip = L10n.TextContent("Edit cloth self/inter-collision", null, null, null).text;
 
-                toolIcons[0].tooltip = EditorGUIUtility.TrTextContent("Select cloth particles for use in self/inter-collision").text;
-                toolIcons[1].tooltip = EditorGUIUtility.TrTextContent("Paint cloth particles for use in self/inter-collision").text;
+                toolIcons[0].tooltip = L10n.TextContent("Select cloth particles for use in self/inter-collision", null, null, null).text;
+                toolIcons[1].tooltip = L10n.TextContent("Paint cloth particles for use in self/inter-collision", null, null, null).text;
 
-                collToolModeIcons[0].tooltip = EditorGUIUtility.TrTextContent("Select cloth particles.").text;
-                collToolModeIcons[1].tooltip = EditorGUIUtility.TrTextContent("Paint cloth particles.").text;
-                collToolModeIcons[2].tooltip = EditorGUIUtility.TrTextContent("Erase cloth particles.").text;
+                collToolModeIcons[0].tooltip = L10n.TextContent("Select cloth particles.", null, null, null).text;
+                collToolModeIcons[1].tooltip = L10n.TextContent("Paint cloth particles.", null, null, null).text;
+                collToolModeIcons[2].tooltip = L10n.TextContent("Erase cloth particles.", null, null, null).text;
 #pragma warning restore UAL0015 // Auto cleaned up symbol assigned by constructor
             }
         }
@@ -1799,7 +1798,7 @@ namespace UnityEditor
                 menu.AddItem(GetDrawModeString(DrawMode.MaxDistance), drawMode == DrawMode.MaxDistance , VisualizationMenuSetMaxDistanceMode);
                 menu.AddItem(GetDrawModeString(DrawMode.CollisionSphereDistance), drawMode == DrawMode.CollisionSphereDistance , VisualizationMenuSetCollisionSphereMode);
                 menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Manipulate Backfaces"), state.ManipulateBackfaces , VisualizationMenuToggleManipulateBackfaces);
+                menu.AddItem(L10n.TextContent("Manipulate Backfaces", null, null, null), state.ManipulateBackfaces , VisualizationMenuToggleManipulateBackfaces);
                 menu.DropDown(buttonRect);
             }
 
@@ -2015,4 +2014,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

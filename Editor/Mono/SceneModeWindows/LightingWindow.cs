@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,41 +23,41 @@ namespace UnityEditor
         {
             public static readonly GUIContent[] modeStrings =
             {
-                EditorGUIUtility.TrTextContent("Scene"),
-                EditorGUIUtility.TrTextContent("Environment"),
-                EditorGUIUtility.TrTextContent("Realtime Lightmaps"),
-                EditorGUIUtility.TrTextContent("Baked Lightmaps")
+                L10n.TextContent("Scene", null, null, null),
+                L10n.TextContent("Environment", null, null, null),
+                L10n.TextContent("Realtime Lightmaps", null, null, null),
+                L10n.TextContent("Baked Lightmaps", null, null, null)
             };
 
             public static readonly GUIStyle labelStyle = EditorStyles.wordWrappedMiniLabel;
             public static readonly GUIStyle buttonStyle = "LargeButton";
-            public static readonly GUIContent continuousBakeLabel = EditorGUIUtility.TrTextContent("Auto Generate", "Generate lighting data in the Scene when there are changes that affect Scene lighting, such as modifications to lights, materials, or geometry. This option is only available when there is a Lighting Settings Asset assigned in the Lighting Window.");
-            public static readonly GUIContent bakeLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current active scene. This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
-            public static readonly GUIContent bakeLabelAnythingCompiling = EditorGUIUtility.TrTextContent("Generate Lighting", "Generate Lighting is currently unavailable. Waiting for asynchronous shader compilation.");
-            public static readonly GUIContent cancelLabel = EditorGUIUtility.TrTextContent("Cancel");
-            public static readonly GUIContent ImageconversionModuleDisabledMessage = EditorGUIUtility.TrTextContentWithIcon("Generate Lighting is unavailable without the Image Conversion Module.", MessageType.Warning);
+            public static readonly GUIContent continuousBakeLabel = L10n.TextContent("Auto Generate", "Generate lighting data in the Scene when there are changes that affect Scene lighting, such as modifications to lights, materials, or geometry. This option is only available when there is a Lighting Settings Asset assigned in the Lighting Window.", null, null);
+            public static readonly GUIContent bakeLabel = L10n.TextContent("Generate Lighting", "Generates the lightmap data for the current active scene. This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.", null, null);
+            public static readonly GUIContent bakeLabelAnythingCompiling = L10n.TextContent("Generate Lighting", "Generate Lighting is currently unavailable. Waiting for asynchronous shader compilation.", null, null);
+            public static readonly GUIContent cancelLabel = L10n.TextContent("Cancel", null, null, null);
+            public static readonly GUIContent ImageconversionModuleDisabledMessage = L10n.TextContentWithIcon("Generate Lighting is unavailable without the Image Conversion Module.", MessageType.Warning, null);
 
             public static readonly string unityComputeLightBakerInfoBoxText = L10n.Tr("The Unity Compute Light Baker samples the environment and emissive surfaces with the direct sample count. To improve quality increase the number of Direct Samples. To reduce bake time, set GPU Baking Profile to Highest Performance.", null);
-            public static readonly GUIContent dontShowAgain = EditorGUIUtility.TrTextContent("Don't show again");
+            public static readonly GUIContent dontShowAgain = L10n.TextContent("Don't show again", null, null, null);
 
-            public static readonly GUIContent progressiveGPUBakingDevice = EditorGUIUtility.TrTextContent("GPU Baking Device", "Will list all available GPU devices.");
-            public static readonly GUIContent progressiveGPUUnknownDeviceInfo = EditorGUIUtility.TrTextContent("No devices found. Please start an initial bake to make this information available.");
-            public static readonly GUIContent progressiveGPUChangeWarning = EditorGUIUtility.TrTextContent("Changing the compute device used by the Progressive GPU Lightmapper requires the editor to be relaunched. Do you want to change device and restart?");
-            public static readonly GUIContent gpuBakingProfile = EditorGUIUtility.TrTextContent("GPU Baking Profile", "The profile chosen for trading off between performance and memory usage when baking using the GPU.");
+            public static readonly GUIContent progressiveGPUBakingDevice = L10n.TextContent("GPU Baking Device", "Will list all available GPU devices.", null, null);
+            public static readonly GUIContent progressiveGPUUnknownDeviceInfo = L10n.TextContent("No devices found. Please start an initial bake to make this information available.", null, null, null);
+            public static readonly GUIContent progressiveGPUChangeWarning = L10n.TextContent("Changing the compute device used by the Progressive GPU Lightmapper requires the editor to be relaunched. Do you want to change device and restart?", null, null, null);
+            public static readonly GUIContent gpuBakingProfile = L10n.TextContent("GPU Baking Profile", "The profile chosen for trading off between performance and memory usage when baking using the GPU.", null, null);
 
-            public static readonly GUIContent bakeOnSceneLoad = EditorGUIUtility.TrTextContent("Bake On Scene Load", "Whether to automatically generate lighting for Scenes that do not have valid lighting data when first opened.");
+            public static readonly GUIContent bakeOnSceneLoad = L10n.TextContent("Bake On Scene Load", "Whether to automatically generate lighting for Scenes that do not have valid lighting data when first opened.", null, null);
 
-            public static readonly GUIContent invalidEnvironmentLabel = EditorGUIUtility.TrTextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning);
-            public static readonly GUIContent unsupportedDenoisersLabel = EditorGUIUtility.TrTextContentWithIcon("Unsupported denoiser selected", MessageType.Error);
-            public static readonly GUIContent cannotBakeRosettaNotInstalledLabel = EditorGUIUtility.TrTextContentWithIcon("The lighting features this Scene uses require Apple Rosetta 2, which is not installed. Use a lightmapper that runs natively instead: set Default Light Baker to Unity Compute in Project Settings > Graphics.", MessageType.Error);
+            public static readonly GUIContent invalidEnvironmentLabel = L10n.TextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning, null);
+            public static readonly GUIContent unsupportedDenoisersLabel = L10n.TextContentWithIcon("Unsupported denoiser selected", MessageType.Error, null);
+            public static readonly GUIContent cannotBakeRosettaNotInstalledLabel = L10n.TextContentWithIcon("The lighting features this Scene uses require Apple Rosetta 2, which is not installed. Use a lightmapper that runs natively instead: set Default Light Baker to Unity Compute in Project Settings > Graphics.", MessageType.Error, null);
 
-            public static readonly GUIContent GPUUseHardwareRayTracing = EditorGUIUtility.TrTextContent("Hardware Ray Tracing", "Use hardware ray tracing if the GPU device supports it.");
-            public static readonly GUIContent GPUUseHardwareRayTracingNotSupported = EditorGUIUtility.TrTextContent("Hardware Ray Tracing", "Hardware ray tracing is not supported by the GPU device.");
+            public static readonly GUIContent GPUUseHardwareRayTracing = L10n.TextContent("Hardware Ray Tracing", "Use hardware ray tracing if the GPU device supports it.", null, null);
+            public static readonly GUIContent GPUUseHardwareRayTracingNotSupported = L10n.TextContent("Hardware Ray Tracing", "Hardware ray tracing is not supported by the GPU device.", null, null);
 
             public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
             public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
             {
-                EditorGUIUtility.TrTextContent("Unknown"),
+                L10n.TextContent("Unknown", null, null, null),
             };
 
             // Keep in sync with BakingProfile.h::BakingProfile
@@ -66,11 +65,11 @@ namespace UnityEditor
             public static readonly int[] bakingProfileValues = { 0, 1, 2, 3, 4 };
             public static readonly GUIContent[] bakingProfileStrings =
             {
-                EditorGUIUtility.TrTextContent("Highest Performance"),
-                EditorGUIUtility.TrTextContent("High Performance"),
-                EditorGUIUtility.TrTextContent("Automatic"),
-                EditorGUIUtility.TrTextContent("Low Memory Usage"),
-                EditorGUIUtility.TrTextContent("Lowest Memory Usage"),
+                L10n.TextContent("Highest Performance", null, null, null),
+                L10n.TextContent("High Performance", null, null, null),
+                L10n.TextContent("Automatic", null, null, null),
+                L10n.TextContent("Low Memory Usage", null, null, null),
+                L10n.TextContent("Lowest Memory Usage", null, null, null),
             };
 
             public static readonly string[] BakeModeStrings =
@@ -358,9 +357,9 @@ namespace UnityEditor
                 if (EditorGUI.DropdownButton(rect, EditorGUI.GUIContents.titleSettingsIcon, FocusType.Passive, EditorStyles.iconButton))
                 {
                     if (mode == Mode.LightingSettings)
-                        EditorUtility.DisplayCustomMenu(rect, new[] { EditorGUIUtility.TrTextContent("Reset") }, -1, ResetLightingSettings, null);
+                        EditorUtility.DisplayCustomMenu(rect, new[] { L10n.TextContent("Reset", null, null, null) }, -1, ResetLightingSettings, null);
                     else if (mode == Mode.EnvironmentSettings)
-                        EditorUtility.DisplayCustomMenu(rect, new[] { EditorGUIUtility.TrTextContent("Reset") }, -1, ResetEnvironmentSettings, null);
+                        EditorUtility.DisplayCustomMenu(rect, new[] { L10n.TextContent("Reset", null, null, null) }, -1, ResetEnvironmentSettings, null);
                 }
             }
         }
@@ -1043,4 +1042,3 @@ namespace UnityEditor
         }
     }
 } // namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

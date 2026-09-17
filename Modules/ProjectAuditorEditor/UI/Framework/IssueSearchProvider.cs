@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -36,8 +35,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             isExplicitProvider = true;
             filterId = kProviderFilterId;
             fetchItems = FetchItems;
+#pragma warning disable UAL0018 // these hold method references, not the icon: every call routes through GetSearchIcon(), which reloads the built-in icon by name whenever the cache is empty, so a reload cannot leave a stale icon behind
             fetchPropositions = FetchPropositions;
             fetchThumbnail = FetchThumbnail;
+#pragma warning restore UAL0018
             fetchColumns = FetchColumns;
             tableConfig = GetDefaultTableConfig;
         }
@@ -70,7 +71,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 var categories = new List<IssueCategory>(categoryArray.Length);
                 foreach (var category in categoryArray)
                 {
-                    if (!category.IsSummary() && category < IssueCategoryExtensions.FirstCustomCategory)
+                    if (!category.IsSummary() && !category.IsObsolete() && category < IssueCategoryExtensions.FirstCustomCategory)
                         categories.Add(category);
                 }
 
@@ -169,7 +170,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         item.SetField("Reason", match.Groups[2].Value.Trim());
                     item.SetField("Descriptor ID", issue.DescriptorIdAsString);
                     item.SetField("Path", issue.RelativePath);
+#pragma warning disable UAL0018 // the thumbnail is a built-in editor icon on an item created for this search session; the cache it came from is reloaded by name on the next request, so the item cannot be left pointing at anything the reload invalidated
                     item.thumbnail = FetchThumbnail(item, null);
+#pragma warning restore UAL0018
 
                     yield return item;
                 }
@@ -302,4 +305,3 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

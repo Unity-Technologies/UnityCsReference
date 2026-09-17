@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -278,6 +277,12 @@ namespace Unity.UI.Builder
 
             m_CameraField.SetValueWithoutNotify(FindCameraByName());
             m_EditorExtensionsModeToggle?.SetValueWithoutNotify(m_Document.fileSettings.editorExtensionMode);
+
+            // The StyleSheet Editing host is a throwaway preview copy: document settings edited on it
+            // would not stick (and would dirty a document that only saves its stylesheet), so hide them.
+            var documentSettings = root.Q("document-settings");
+            if (documentSettings != null)
+                documentSettings.style.display = m_Document.isStyleSheetEditingMode ? DisplayStyle.None : DisplayStyle.Flex;
 
             ApplyBackgroundOptions();
             RefreshMatchGameViewToggle();
@@ -565,4 +570,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -111,8 +111,14 @@ namespace UnityEditor.EditorTools
         internal static event Action<Type> activeToolChangingForOwner;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action activeToolChanged;
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static event Action<Type> activeToolChangedForOwner;
 
         [AutoStaticsCleanupOnCodeReload]
@@ -121,8 +127,14 @@ namespace UnityEditor.EditorTools
         internal static event Action<Type> activeContextChangingForOwner;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action activeContextChanged;
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static event Action<Type> activeContextChangedForOwner;
 
         internal static void ActiveToolWillChange()

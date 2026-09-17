@@ -34,8 +34,8 @@ namespace UnityEditor.Search
         static void ActivateAssetStoreMenu(Rect worldBound)
         {
             var menu = new GenericMenu();
-            menu.AddItem(EditorGUIUtility.TrTextContent("Asset Store Web"), false, () => CommandService.Execute(k_OpenAssetStoreCommand));
-            menu.AddItem(EditorGUIUtility.TrTextContent("My Assets"), false, () => PackageManager.UI.PackageManagerWindow.OpenAndSelectPage(PackageManager.UI.Internal.MyAssetsPage.k_Id));
+            menu.AddItem(L10n.TextContent("Asset Store Web", null, null, null), false, () => CommandService.Execute(k_OpenAssetStoreCommand));
+            menu.AddItem(L10n.TextContent("My Assets", null, null, null), false, () => PackageManager.UI.PackageManagerWindow.OpenAndSelectPage(PackageManager.UI.Internal.MyAssetsPage.k_Id));
 
             menu.DropDown(worldBound, true);
         }

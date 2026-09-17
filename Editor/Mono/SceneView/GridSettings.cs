@@ -187,6 +187,9 @@ namespace UnityEditor
         // state (the rotation setter clears it, the only reader null-checks and falls back), and it
         // is re-read lazily on the next UI refresh.
         [AutoStaticsCleanupOnCodeReload]
+        // Null is an ordinary state that the rotation setter itself produces, and the only reader falls back
+        // when it is null; the next "sample transform rotation" action sets it again.
+        [IgnoreForUAL0015("Sampled-transform latch; null is a normal state and the next sample action re-sets it")]
         internal static Transform lastRotationSampleTransform { get; set; }
 
         public Quaternion rotation

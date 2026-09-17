@@ -665,5 +665,8 @@ namespace UnityEngine
         ///Overlap recovery currently works with all geometries except heightfields.</remarks>
         extern public bool enableOverlapRecovery { get; set; }
         extern internal bool isSupported { get; }
+
+        [StaticAccessor("CharacterController", StaticAccessorType.DoubleColon)]
+        extern internal static float deltaTimeOverride { get; set; }
     }
 }

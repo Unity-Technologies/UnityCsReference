@@ -95,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void LoadMore(long numberOfItems);
         void Load(string itemUniqueId);
-        void LoadExtraItems(IEnumerable<string> itemUniqueIds);
+        void LoadTemporaryItems(IEnumerable<string> itemUniqueIds);
 
         bool SetNewSelection(string itemUniqueId, bool isDirectMouseSelection);
         bool SetNewSelection(IEnumerable<string> itemUniqueIds, bool isDirectMouseSelection);

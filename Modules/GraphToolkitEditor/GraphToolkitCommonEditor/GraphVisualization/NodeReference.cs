@@ -58,6 +58,8 @@ public readonly struct NodeReference : IEquatable<NodeReference>
     /// <remarks>
     /// Accepted values range from -100 to 100. A positive value fills the bar from left to right.
     /// A negative value fills it from right to left. A value of <c>0</c> hides the bar.
+    /// This field is an override applied on top of <see cref="INode.FillAmount"/>. The default value is <c>0</c>, but it has no effect.
+    /// Call the setter to start applying the override. Call <see cref="NodeReference.ClearCustomization"/> to remove the override.
     /// Setting this property has no effect when the <see cref="NodeReference"/> has no associated <see cref="Context"/>, such as when it is <c>default</c>.
     /// Throws <see cref="ObjectDisposedException"/> when you access this method after you call <see cref="Context.Dispose"/> on the context.
     /// </remarks>
@@ -86,7 +88,7 @@ public readonly struct NodeReference : IEquatable<NodeReference>
     /// </example>
     public readonly void ClearCustomization()
     {
-        Context?.NodeAccent.ClearNodeAccent(NodeID);
+        Context?.NodeAccent.ClearAccent(NodeID);
     }
 
     /// <summary>

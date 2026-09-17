@@ -12,9 +12,9 @@ namespace UnityEditor
     {
         class Texts
         {
-            public GUIContent velocityRange = EditorGUIUtility.TrTextContent("Speed Range", "Remaps speed in the defined range to a size.");
-            public GUIContent size = EditorGUIUtility.TrTextContent("Size", "Controls the size of each particle based on its speed.");
-            public GUIContent separateAxes = EditorGUIUtility.TrTextContent("Separate Axes", "If enabled, you can control the angular velocity limit separately for each axis.");
+            public GUIContent velocityRange = L10n.TextContent("Speed Range", "Remaps speed in the defined range to a size.", null, null);
+            public GUIContent size = L10n.TextContent("Size", "Controls the size of each particle based on its speed.", null, null);
+            public GUIContent separateAxes = L10n.TextContent("Separate Axes", "If enabled, you can control the angular velocity limit separately for each axis.", null, null);
             public GUIContent x = new GUIContent("X");
             public GUIContent y = new GUIContent("Y");
             public GUIContent z = new GUIContent("Z");

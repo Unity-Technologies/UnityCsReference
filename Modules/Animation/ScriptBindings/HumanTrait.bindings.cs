@@ -23,7 +23,16 @@ namespace UnityEngine
             get;
         }
 
-        extern internal static int GetBoneIndexFromMono(int humanId);
+        internal static int GetBoneIndexFromMono(int humanId)
+        {
+            if (humanId < 0 || humanId >= BoneCount)
+                throw new ArgumentOutOfRangeException(nameof(humanId));
+            return Internal_GetBoneIndexFromMono(humanId);
+        }
+
+        [NativeMethod("GetBoneIndexFromMono")]
+        extern static int Internal_GetBoneIndexFromMono(int humanId);
+
         extern internal static int GetBoneIndexToMono(int boneIndex);
 
         // Muscle's name

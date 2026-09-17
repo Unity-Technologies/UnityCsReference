@@ -14,4 +14,10 @@ interface ICanvasDropContext
 
     Vector2 WorldToContentPosition(Vector2 worldPosition);
     void PickAll(Vector2 worldPosition, List<VisualElement> results);
+
+    /// <summary>
+    /// The element the rest of the editor names for the <paramref name="element"/> picked here, which outside
+    /// the UI Stage is the live one this canvas only shows a clone of.
+    /// </summary>
+    VisualElement ResolveAuthoritativeElement(VisualElement element);
 }

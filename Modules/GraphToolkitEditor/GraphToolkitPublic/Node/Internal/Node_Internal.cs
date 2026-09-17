@@ -53,6 +53,7 @@ namespace Unity.GraphToolkit.Editor
                 List<Attribute> m_Attributes = new();
 
                 internal Type m_PortType;
+                internal List<Type> m_AllowedTypes;
                 internal object m_DefaultValue;
 
                 internal object m_TypedBuilder;
@@ -65,6 +66,7 @@ namespace Unity.GraphToolkit.Editor
                     m_DisplayName = null;
                     m_Tooltip = null;
                     m_PortType = null;
+                    m_AllowedTypes = null;
                     m_DefaultValue = null;
                     m_Orientation = PortOrientation.Horizontal;
                     m_ConnectorUI = null;
@@ -111,10 +113,14 @@ namespace Unity.GraphToolkit.Editor
 
                 IOutputPortBuilder IOutputPortBuilder.WithDataType(Type portType) => WithDataType(portType);
                 IOutputPortBuilder<T> IOutputPortBuilder.WithDataType<T>() => WithDataType<T>();
+                IOutputPortBuilder IOutputPortBuilder.WithDataTypes(params Type[] types) => WithDataTypes(types);
+                IOutputPortBuilder IOutputPortBuilder.WithDataTypes(IEnumerable<Type> types) => WithDataTypes(types);
 
                 ITypedInputPortBuilder IInputPortBuilder.WithDataType(Type portType) => WithDataType(portType);
 
                 IInputPortBuilder<T> IInputPortBuilder.WithDataType<T>() => WithDataType<T>();
+                IInputPortBuilder IInputPortBuilder.WithDataTypes(params Type[] types) => WithDataTypes(types);
+                IInputPortBuilder IInputPortBuilder.WithDataTypes(IEnumerable<Type> types) => WithDataTypes(types);
 
                 ITypedInputPortBuilder ITypedInputPortBuilder.WithDefaultValue(object defaultValue) => WithDefaultValue(defaultValue);
 
@@ -151,6 +157,31 @@ namespace Unity.GraphToolkit.Editor
                 {
                     WithDataType(typeof(T));
                     return m_PortsDefinitionContext.GetFreeTypedBuilder<T>(this);
+                }
+
+                PortBuilder WithDataTypes(IEnumerable<Type> types)
+                {
+                    if (types == null)
+                        throw new ArgumentNullException(nameof(types));
+
+                    m_AllowedTypes = new List<Type>(types);
+                    if (m_AllowedTypes.Count == 0)
+                        throw new ArgumentException("WithDataTypes requires at least one type.", nameof(types));
+
+                    for (var i = 0; i < m_AllowedTypes.Count; i++)
+                    {
+                        for (var j = i + 1; j < m_AllowedTypes.Count; j++)
+                        {
+                            if (m_AllowedTypes[i] == m_AllowedTypes[j])
+                            {
+                                UnityEngine.Debug.LogWarning($"WithDataTypes: duplicate type {m_AllowedTypes[i]} at indices {i} and {j}. Duplicates will be ignored.");
+                                break;
+                            }
+                        }
+                    }
+
+                    m_PortType = m_AllowedTypes[0];
+                    return this;
                 }
 
                 PortBuilder WithDefaultValue(object defaultValue)
@@ -218,6 +249,19 @@ namespace Unity.GraphToolkit.Editor
 
                         if (m_Capacity.HasValue)
                             portModel.Capacity = m_Capacity.Value;
+
+                        if (m_AllowedTypes != null)
+                        {
+                            var handles = new TypeHandle[m_AllowedTypes.Count];
+                            for (var i = 0; i < m_AllowedTypes.Count; i++)
+                                handles[i] = m_AllowedTypes[i].GenerateTypeHandle();
+                            portModel.SetAllowedTypes(handles);
+                        }
+                        else
+                        {
+                            // Reset any leftover polymorphic state from a previous definition.
+                            portModel.SetAllowedTypes(null);
+                        }
                     }
                     m_PortsDefinitionContext.ReleaseBuilder(this);
 
@@ -388,9 +432,11 @@ namespace Unity.GraphToolkit.Editor
             }
         }
 
-        internal class OptionDefinitionContext : IOptionDefinitionContext
+        // Drives both Node.OnDefineOptions and State.OnDefineOptions. The two option builder families differ only in
+        // their return types, so the builders implement the node family implicitly and the state family explicitly.
+        internal class OptionDefinitionContext : IOptionDefinitionContext, State.IOptionDefinitionContext
         {
-            class OptionBuilder : IOptionBuilder
+            class OptionBuilder : IOptionBuilder, IStateOptionBuilder
             {
                 OptionDefinitionContext m_OptionsDefinitionContext;
 
@@ -418,7 +464,7 @@ namespace Unity.GraphToolkit.Editor
                     m_TypedBuilder = null;
                 }
 
-                internal IOptionBuilder AddOption(OptionDefinitionContext optionsDefinition, string optionName, Type dataType)
+                internal OptionBuilder AddOption(OptionDefinitionContext optionsDefinition, string optionName, Type dataType)
                 {
                     m_OptionsDefinitionContext = optionsDefinition;
                     m_OptionName = optionName;
@@ -477,15 +523,47 @@ namespace Unity.GraphToolkit.Editor
 
                     return result;
                 }
+
+                IStateOption IStateOptionBuilder.Build() => (IStateOption)Build();
+
+                IStateOptionBuilder IStateOptionBuilder.WithDisplayName(string displayName)
+                {
+                    WithDisplayName(displayName);
+                    return this;
+                }
+
+                IStateOptionBuilder IStateOptionBuilder.WithTooltip(string tooltip)
+                {
+                    WithTooltip(tooltip);
+                    return this;
+                }
+
+                IStateOptionBuilder IStateOptionBuilder.WithDefaultValue(object defaultValue)
+                {
+                    WithDefaultValue(defaultValue);
+                    return this;
+                }
+
+                IStateOptionBuilder IStateOptionBuilder.Delayed()
+                {
+                    Delayed();
+                    return this;
+                }
+
+                IStateOptionBuilder IStateOptionBuilder.AsTextArea(int minLines, int maxLines)
+                {
+                    AsTextArea(minLines, maxLines);
+                    return this;
+                }
             }
 
-            class OptionBuilder<TData> : IOptionBuilder<TData>
+            class OptionBuilder<TData> : IOptionBuilder<TData>, IStateOptionBuilder<TData>
             {
                 public OptionBuilder parent;
 
                 internal void Reset() => parent.Reset();
 
-                internal IOptionBuilder<TData> AddOption(OptionDefinitionContext optionsDefinition, string optionName)
+                internal OptionBuilder<TData> AddOption(OptionDefinitionContext optionsDefinition, string optionName)
                 {
                     parent.AddOption(optionsDefinition, optionName, typeof(TData));
                     return this;
@@ -528,6 +606,38 @@ namespace Unity.GraphToolkit.Editor
                 }
 
                 public INodeOption Build() => parent.Build();
+
+                IStateOption IStateOptionBuilder<TData>.Build() => (IStateOption)parent.Build();
+
+                IStateOptionBuilder<TData> IStateOptionBuilder<TData>.WithDisplayName(string displayName)
+                {
+                    parent.WithDisplayName(displayName);
+                    return this;
+                }
+
+                IStateOptionBuilder<TData> IStateOptionBuilder<TData>.WithTooltip(string tooltip)
+                {
+                    parent.WithTooltip(tooltip);
+                    return this;
+                }
+
+                IStateOptionBuilder<TData> IStateOptionBuilder<TData>.WithDefaultValue(TData defaultValue)
+                {
+                    parent.WithDefaultValue(defaultValue);
+                    return this;
+                }
+
+                IStateOptionBuilder<TData> IStateOptionBuilder<TData>.Delayed()
+                {
+                    parent.Delayed();
+                    return this;
+                }
+
+                IStateOptionBuilder<TData> IStateOptionBuilder<TData>.AsTextArea(int minLines, int maxLines)
+                {
+                    parent.AsTextArea(minLines, maxLines);
+                    return this;
+                }
             }
 
             public IOptionsDefinition OptionsDefinition;
@@ -604,11 +714,33 @@ namespace Unity.GraphToolkit.Editor
                 return GetFreeTypedBuilder<T>(GetFreeBuilder()).AddOption(this, name);
             }
 
+            IStateOptionBuilder State.IOptionDefinitionContext.AddOption(string name, Type dataType)
+            {
+                return GetFreeBuilder().AddOption(this, name, dataType);
+            }
+
+            IStateOptionBuilder<T> State.IOptionDefinitionContext.AddOption<T>(string name)
+            {
+                return GetFreeTypedBuilder<T>(GetFreeBuilder()).AddOption(this, name);
+            }
+
             public void Finish()
             {
-                while (m_Used.Count > 0)
+                try
                 {
-                    m_Used[0].Build();
+                    while (m_Used.Count > 0)
+                    {
+                        m_Used[0].Build();
+                    }
+                }
+                finally
+                {
+                    // Build only releases its builder once it succeeds, so a throwing one would otherwise spin this
+                    // loop forever and leak its option onto the next model that is defined.
+                    while (m_Used.Count > 0)
+                    {
+                        ReleaseBuilder(m_Used[0]);
+                    }
                 }
             }
         }
@@ -621,15 +753,34 @@ namespace Unity.GraphToolkit.Editor
         internal void CallOnDefineNode(IPortsDefinition context)
         {
             s_PortDefinitionContext.portsDefinition = context;
-            OnDefinePorts(s_PortDefinitionContext);
-            s_PortDefinitionContext.Finish();
+            try
+            {
+                OnDefinePorts(s_PortDefinitionContext);
+            }
+            finally
+            {
+                // The context is shared by every node, so a throwing callback must not leave pending ports behind.
+                s_PortDefinitionContext.Finish();
+            }
+        }
+
+        internal void CallOnPortDataTypeChanged(IPort port, Type previousType, Type newType)
+        {
+            OnPortDataTypeChanged(port, previousType, newType);
         }
 
         internal void CallOnDefineOptions(IOptionsDefinition context)
         {
             s_OptionDefinitionContext.OptionsDefinition = context;
-            OnDefineOptions(s_OptionDefinitionContext);
-            s_OptionDefinitionContext.Finish();
+            try
+            {
+                OnDefineOptions(s_OptionDefinitionContext);
+            }
+            finally
+            {
+                // The context is shared by every node, so a throwing callback must not leave pending options behind.
+                s_OptionDefinitionContext.Finish();
+            }
         }
 
         internal void SetImplementation(NodeModel implementation)

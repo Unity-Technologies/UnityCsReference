@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using UnityEngine;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting;
@@ -18,9 +17,9 @@ namespace UnityEditor
 
         public ManagedDebuggerToggle()
         {
-            m_DebuggerAttachedContent = EditorGUIUtility.TrIconContent("DebuggerAttached", "Debugger Attached");
-            m_DebuggerDisabledContent = EditorGUIUtility.TrIconContent("DebuggerDisabled", "Debugger Disabled");
-            m_DebuggerEnabledContent = EditorGUIUtility.TrIconContent("DebuggerEnabled", "Debugger Enabled");
+            m_DebuggerAttachedContent = L10n.IconContent("DebuggerAttached", "Debugger Attached", null);
+            m_DebuggerDisabledContent = L10n.IconContent("DebuggerDisabled", "Debugger Disabled", null);
+            m_DebuggerEnabledContent = L10n.IconContent("DebuggerEnabled", "Debugger Enabled", null);
             m_PopupLocation = new[] { PopupLocation.AboveAlignRight };
         }
 
@@ -55,4 +54,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using UnityEngine;
 using UnityEditor;
 using System;
@@ -522,13 +521,13 @@ namespace UnityEditor
     internal class DetailWizardSharedStyles
     {
         public readonly GUIStyle helpBoxBig;
-        public readonly GUIContent noiseSeed = EditorGUIUtility.TrTextContent("Noise Seed", "Specifies the random seed value for detail object placement.");
-        public readonly GUIContent noiseSpread = EditorGUIUtility.TrTextContent("Noise Spread", "Controls the spatial frequency of the noise pattern used to vary the scale and color of the detail objects.");
-        public readonly GUIContent detailDensity = EditorGUIUtility.TrTextContent("Detail density", "Controls detail density for this detail prototype, relative to it's size. Only enabled in \"Coverage\" detail scatter mode.");
-        public readonly GUIContent holeEdgePadding = EditorGUIUtility.TrTextContent("Hole Edge Padding (%)", "Controls how far away detail objects are from the edge of the hole area.\n\nSpecify this value as a percentage of the detail width, which determines the radius of the circular area around the detail object used for hole testing.");
-        public readonly GUIContent useDensityScaling = EditorGUIUtility.TrTextContent("Affected by Density Scale", "Toggles whether or not this detail prototype should be affected by the global density scaling setting in the Terrain settings.");
-        public readonly GUIContent alignToGround = EditorGUIUtility.TrTextContent("Align To Ground (%)", "Rotate detail axis to ground normal direction.");
-        public readonly GUIContent positionJitter = EditorGUIUtility.TrTextContent("Position Jitter (%)", "Controls the randomness of the detail distribution, from ordered to random. Only available when legacy distribution in Quality Settings is turned off.");
+        public readonly GUIContent noiseSeed = L10n.TextContent("Noise Seed", "Specifies the random seed value for detail object placement.", null, null);
+        public readonly GUIContent noiseSpread = L10n.TextContent("Noise Spread", "Controls the spatial frequency of the noise pattern used to vary the scale and color of the detail objects.", null, null);
+        public readonly GUIContent detailDensity = L10n.TextContent("Detail density", "Controls detail density for this detail prototype, relative to it's size. Only enabled in \"Coverage\" detail scatter mode.", null, null);
+        public readonly GUIContent holeEdgePadding = L10n.TextContent("Hole Edge Padding (%)", "Controls how far away detail objects are from the edge of the hole area.\n\nSpecify this value as a percentage of the detail width, which determines the radius of the circular area around the detail object used for hole testing.", null, null);
+        public readonly GUIContent useDensityScaling = L10n.TextContent("Affected by Density Scale", "Toggles whether or not this detail prototype should be affected by the global density scaling setting in the Terrain settings.", null, null);
+        public readonly GUIContent alignToGround = L10n.TextContent("Align To Ground (%)", "Rotate detail axis to ground normal direction.", null, null);
+        public readonly GUIContent positionJitter = L10n.TextContent("Position Jitter (%)", "Controls the randomness of the detail distribution, from ordered to random. Only available when legacy distribution in Quality Settings is turned off.", null, null);
 
         public DetailWizardSharedStyles()
         {
@@ -1046,4 +1045,3 @@ namespace UnityEditor
     }
     */
 } //namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

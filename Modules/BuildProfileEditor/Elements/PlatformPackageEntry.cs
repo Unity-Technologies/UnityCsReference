@@ -5,6 +5,7 @@
 using UnityEditor.PackageManager.UI.Internal;
 using UnityEngine;
 using PlatformPackageInfo = UnityEditor.BuildTargetDiscovery.PlatformPackageInfo;
+using PlatformPackageIdentifier = UnityEditor.BuildTargetDiscovery.PlatformPackageIdentifier;
 
 namespace UnityEditor.Build.Profile
 {
@@ -14,14 +15,31 @@ namespace UnityEditor.Build.Profile
     internal class PlatformPackageEntry
     {
         /// <summary>
+        /// Covers Asset Store packages whose product info names no license of its own.
+        /// </summary>
+        internal const string k_UnityEulaUrl = "https://unity.com/legal/as-terms";
+
+        /// <summary>
+        /// Covers every other package whose product info names no license of its own. The Asset Store
+        /// terms do not apply outside the Asset Store.
+        /// </summary>
+        internal const string k_UnityTermsOfServiceUrl = "https://unity.com/legal/terms-of-service";
+
+        /// <summary>
         /// Package identifier.
         /// </summary>
         public string qualifiedName { get; private set; }
 
         /// <summary>
+        /// Optional pinned package version from the platform catalog. Empty when the registry
+        /// should resolve the latest version.
+        /// </summary>
+        public string version { get; private set; }
+
+        /// <summary>
         /// Package display name.
         /// </summary>
-        public string displayName { get; private set; }
+        public string displayName { get; set; }
 
         /// <summary>
         /// Package description.
@@ -79,9 +97,21 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public bool shouldInstalled { get; set; }
 
+        /// <summary>
+        /// URL of the license this package is distributed under. Packages whose product info names
+        /// no license fall back to Unity's EULA.
+        /// </summary>
+        public string licenseUrl { get; set; }
+
+        /// <summary>
+        /// Short name to label <see cref="licenseUrl"/> with.
+        /// </summary>
+        public string licenseName { get; set; }
+
         public PlatformPackageEntry()
         {
             qualifiedName = string.Empty;
+            version = string.Empty;
             displayName = string.Empty;
             description = string.Empty;
             publisher = string.Empty;
@@ -93,6 +123,8 @@ namespace UnityEditor.Build.Profile
             deprecationTooltip = string.Empty;
             entitled = false;
             isInstalled = false;
+            licenseUrl = k_UnityTermsOfServiceUrl;
+            licenseName = TrText.unityTermsOfServiceName;
         }
 
         /// <param name="name"><see cref="qualifiedName"/></param>
@@ -102,6 +134,7 @@ namespace UnityEditor.Build.Profile
         public PlatformPackageEntry(PlatformPackageInfo platformPackageInfo, bool selected, bool required, bool isInstalled)
         {
             qualifiedName = platformPackageInfo.qualifiedName;
+            version = platformPackageInfo.version;
             var serviceInfoProvider = BuildProfileContext.packageServiceInfoProvider;
             var packageInfo = serviceInfoProvider.GetPackageInfo(qualifiedName);
             displayName = packageInfo != null ? packageInfo.displayName : platformPackageInfo.displayName;
@@ -112,6 +145,11 @@ namespace UnityEditor.Build.Profile
             hasThumbnail = platformPackageInfo.hasThumbnail;
   
             publisher = platformPackageInfo.publisher;
+            (licenseUrl, licenseName) = ResolveLicense(
+                serviceInfoProvider.GetLicenseUrl(qualifiedName),
+                serviceInfoProvider.GetLicenseName(qualifiedName),
+                serviceInfoProvider.IsAssetStorePackage(qualifiedName));
+
             shouldInstalled = required || selected;
             this.required = required;
             this.isInstalled = isInstalled;
@@ -130,5 +168,29 @@ namespace UnityEditor.Build.Profile
                     : string.Empty;
             }
         }
+
+        /// <summary>
+        /// Picks the license to show for a package. A product that names its own license keeps it; one that
+        /// does not falls back to the Unity license covering how it was obtained.
+        /// </summary>
+        internal static (string url, string name) ResolveLicense(
+            string resolvedUrl, string resolvedName, bool isAssetStorePackage)
+        {
+            if (string.IsNullOrEmpty(resolvedUrl))
+            {
+                return isAssetStorePackage
+                    ? (k_UnityEulaUrl, TrText.unityEulaName)
+                    : (k_UnityTermsOfServiceUrl, TrText.unityTermsOfServiceName);
+            }
+
+            return (resolvedUrl, string.IsNullOrEmpty(resolvedName) ? TrText.licenseFallbackName : resolvedName);
+        }
+
+        /// <summary>
+        /// Identifies this package for installation, pairing <see cref="qualifiedName"/> with
+        /// <see cref="version"/>.
+        /// </summary>
+        public PlatformPackageIdentifier GetPackageIdentifier() =>
+            new PlatformPackageIdentifier(qualifiedName, version);
     }
 }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
@@ -43,12 +42,8 @@ namespace Unity.UI.Builder
 
             m_LocalStylesSection = m_Inspector.Q<PersistedFoldout>("inspector-local-styles-foldout");
 
-            var animationFoldout = m_LocalStylesSection.Q<PersistedFoldout>("inspector-style-section-foldout-animation");
-            if (animationFoldout != null)
-                animationFoldout.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? DisplayStyle.Flex : DisplayStyle.None;
-
-            // Unlike the animation setting, the CSS Grid flag applies live, so the section tracks
-            // onEnableGridLayoutChanged for as long as it is attached rather than reading a boot snapshot.
+            // The CSS Grid flag applies live, so the section tracks onEnableGridLayoutChanged for as
+            // long as it is attached rather than reading a boot snapshot.
             var gridFoldout = m_LocalStylesSection.Q<PersistedFoldout>("inspector-style-section-foldout-grid");
             if (gridFoldout != null)
             {
@@ -62,9 +57,6 @@ namespace Unity.UI.Builder
                 });
                 gridFoldout.RegisterCallback<DetachFromPanelEvent>(_ => UIToolkitProjectSettings.onEnableGridLayoutChanged -= ApplyGridVisibility);
             }
-
-            UpdateZIndexRowVisibility();
-            UIToolkitProjectSettings.onEnableZIndexChanged += UpdateZIndexRowVisibility;
 
             var styleCategories = m_LocalStylesSection.Query<PersistedFoldout>(
                 className: "unity-builder-inspector__style-category-foldout").Build();
@@ -148,21 +140,7 @@ namespace Unity.UI.Builder
 
         public void Dispose()
         {
-            UIToolkitProjectSettings.onEnableZIndexChanged -= UpdateZIndexRowVisibility;
             TransitionPropertyDropdownContent.Content = default;
-        }
-
-        void UpdateZIndexRowVisibility()
-        {
-            var styleRows = m_LocalStylesSection.Query<BuilderStyleRow>().Build();
-            foreach (var row in styleRows)
-            {
-                if (row.bindingPath == "z-index")
-                {
-                    row.style.display = UIToolkitProjectSettings.enableZIndex ? StyleKeyword.Null : DisplayStyle.None;
-                    break;
-                }
-            }
         }
 
         void StyleCategoryContextualMenu(ContextualMenuPopulateEvent evt)
@@ -442,4 +420,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

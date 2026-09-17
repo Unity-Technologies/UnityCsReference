@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -293,9 +292,9 @@ namespace Unity.UI.Builder
                 {
                     evt.field.recentCategoryContent = self.GetTransitionPropertyContentOverrides();
                 }, this);
-                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the dropdown field lives in the Builder window's visual tree, which is rebuilt from scratch after a code reload, so it cannot outlive the content it was given
                 foldoutField.propertyField.categoryContent = TransitionPropertyDropdownContent.Content;
-                #pragma warning restore UAL0018
+#pragma warning restore UAL0018
 
                 SetUpContextualMenuOnStyleField(foldoutField.durationField);
                 SetUpContextualMenuOnStyleField(foldoutField.timingFunctionField);
@@ -734,4 +733,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

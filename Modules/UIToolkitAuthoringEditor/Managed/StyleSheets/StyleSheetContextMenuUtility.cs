@@ -21,6 +21,8 @@ internal static class StyleSheetContextMenuUtility
     internal static readonly string k_AddExistingUss = L10n.Tr("Add Existing USS", null);
     internal static readonly string k_RemoveUss = L10n.Tr("Remove USS", null);
     internal static readonly string k_SetActiveUss = L10n.Tr("Set as Active USS", null);
+    internal static readonly string k_SaveUss = L10n.Tr("Save USS", null);
+    internal static readonly string k_DiscardUss = L10n.Tr("Discard USS", null);
 
     public static void PopulateMenu(HierarchyView view, in HierarchyNode node, DropdownMenu menu, IHierarchyEditorNodeTypeHandler handler)
     {
@@ -56,6 +58,18 @@ internal static class StyleSheetContextMenuUtility
         AppendAction(menu, k_CreateNewUss, Menu.GetHotkey(k_CreateNewUss), styleSheetHandler.Window.CreateStyleSheet, canEdit);
         AppendAction(menu, k_AddExistingUss, Menu.GetHotkey(k_AddExistingUss), styleSheetHandler.Window.AddStyleSheet, canEdit);
         AppendAction(menu, k_RemoveUss, Menu.GetHotkey(k_RemoveUss), () => styleSheetHandler.Window.RemoveStyleSheet(n), isStyleSheet && !isReadOnly);
+
+        // Only in the Main Stage: a UI Stage settles the document it edits as a whole.
+        if (isStyleSheet && UIToolkitStageUtility.IsAuthoringActiveInMainStage)
+        {
+            var canSettle = styleSheetHandler.Window?.CanSettleStyleSheet(n) ?? false;
+
+            menu.AppendSeparator();
+            AppendAction(menu, k_SaveUss, Menu.GetHotkey(k_SaveUss),
+                () => styleSheetHandler.Window.SaveStyleSheet(n), canSettle);
+            AppendAction(menu, k_DiscardUss, Menu.GetHotkey(k_DiscardUss),
+                () => styleSheetHandler.Window.DiscardStyleSheet(n), canSettle);
+        }
 
         menu.AppendSeparator();
         AppendAction(menu, k_SetActiveUss, Menu.GetHotkey(k_SetActiveUss),  () => styleSheetHandler.Window.SetActiveStyleSheet(n), isStyleSheet && !isReadOnly);

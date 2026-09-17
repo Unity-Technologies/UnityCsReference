@@ -103,7 +103,7 @@ namespace Unity.Mathematics.Editor
             var menu = new GenericMenu();
             property = property.Copy();
             menu.AddItem(
-                EditorGUIUtility.TrTextContent("Set to Zero"),
+                L10n.TextContent("Set to Zero", null, null, null),
                 false,
                 () =>
                 {
@@ -120,7 +120,7 @@ namespace Unity.Mathematics.Editor
             if (rows == cols)
             {
                 menu.AddItem(
-                    EditorGUIUtility.TrTextContent("Reset to Identity"),
+                    L10n.TextContent("Reset to Identity", null, null, null),
                     false,
                     () =>
                     {

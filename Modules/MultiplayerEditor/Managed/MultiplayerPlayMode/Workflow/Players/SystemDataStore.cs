@@ -26,10 +26,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string SystemDataKey = "SystemData";
 
         [AutoStaticsCleanupOnCodeReload] // lazy main data store singleton; stale after reload
+        // Lazy handle recreated by the ??= in GetMain; the data itself lives on disk and is re-read.
+        [IgnoreForUAL0015("Lazy data-store handle recreated by GetMain after cleanup nulls it")]
         private static SystemDataStore s_SystemDataStoreMain;
         static readonly string DataStorePathRelativeToMainEditor = Paths.CurrentProjectVirtualProjectsFolder;
         static readonly string DataStorePathRelativeToCloneEditor = Paths.GetCurrentProjectDataPath("..", "..");
         [AutoStaticsCleanupOnCodeReload] // holds delegates to local static methods; after reload they point to old ALC
+        // Installed by SystemDataStore.Initialize, which VirtualProjectWorkflow.Initialize() calls on every
+        // code load, so the delegates are in place before any read path uses them.
+        [IgnoreForUAL0015("File-system delegates reinstalled on every code load by VirtualProjectWorkflow.Initialize()")]
         static FileSystemDelegates s_FileSystemDelegates;
         [NoAutoStaticsCleanup] // delegates reference stable external Newtonsoft.Json methods; no ALC pinning concern
         static ParsingSystemDelegates s_ParsingSystemDelegates;

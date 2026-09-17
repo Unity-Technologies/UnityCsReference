@@ -13,9 +13,15 @@ namespace UnityEngine.TextCore.Text
         public static readonly FastAction<bool, Material> MATERIAL_PROPERTY_EVENT = new FastAction<bool, Material>();
 
         [AutoStaticsCleanupOnCodeReload]
+        // Notification hub: every listener adds itself from its own construction or OnEnable, both of which
+        // re-run after a code load, so the subscriber list refills as the listeners come back.
+        [IgnoreForUAL0015("Notification hub, subscriber list refilled by each listener on construction/OnEnable")]
         public static readonly FastAction<bool, Object> FONT_PROPERTY_EVENT = new FastAction<bool, Object>();
 
         [AutoStaticsCleanupOnCodeReload]
+        // Notification hub: every listener adds itself from its own construction or OnEnable, both of which
+        // re-run after a code load, so the subscriber list refills as the listeners come back.
+        [IgnoreForUAL0015("Notification hub, subscriber list refilled by each listener on construction/OnEnable")]
         public static readonly FastAction<bool, Object> SPRITE_ASSET_PROPERTY_EVENT = new FastAction<bool, Object>();
 
         [AutoStaticsCleanupOnCodeReload]
@@ -28,6 +34,9 @@ namespace UnityEngine.TextCore.Text
         public static readonly FastAction<bool> TEXT_STYLE_PROPERTY_EVENT = new FastAction<bool>();
 
         [AutoStaticsCleanupOnCodeReload]
+        // Notification hub: every listener adds itself from its own construction or OnEnable, both of which
+        // re-run after a code load, so the subscriber list refills as the listeners come back.
+        [IgnoreForUAL0015("Notification hub, subscriber list refilled by each listener on construction/OnEnable")]
         public static readonly FastAction<Object> COLOR_GRADIENT_PROPERTY_EVENT = new FastAction<Object>();
 
         [AutoStaticsCleanupOnCodeReload]

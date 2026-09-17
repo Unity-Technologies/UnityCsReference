@@ -17,7 +17,6 @@ namespace UnityEditor.Shaders
         private List<string> m_ConstantDefines = new();
         private List<string> m_InternalConstantDefines = new();
         private List<ShaderBuildSettings.ShaderCompilerSettings> m_CompilerBackendSettings = new();
-        private bool[] m_LoadedItemInitialized = Array.Empty<bool>();
         private SerializedObject m_SettingsDataStore = null;
         private SerializedProperty m_SettingsProperty = null;
         private bool m_IsTargetingBuildProfile = false;
@@ -46,6 +45,16 @@ namespace UnityEditor.Shaders
 
         private VisualTreeAsset m_ConstantDefineUXML;
         private VisualTreeAsset m_CompilerBackendRowUXML;
+
+        private VisualElement m_FastBuildSettings;
+        private DropdownField m_FastBuildDropdown;
+        private Label m_ActiveModeLabel;
+        private HelpBox m_FastBuildInfoBox;
+        private bool m_AppliedFastBuildEnabled;
+        private Func<ShaderKeywordDeclarationInfo[]> m_KeywordDeclarationSource = ShaderKeywordDeclarations.GatherFromProject;
+        private bool m_FastBuildEnabled;
+        // Shown in place of the settings data while Fast Build is on. Never saved; see BuildFastBuildDisplayedOverrides.
+        private readonly List<ShaderBuildSettings.KeywordDeclarationOverride> m_FastBuildDisplayedOverrides = new();
 
         private static string CompilerDisplayName(ShaderBuildSettings.ShaderCompilerToolchain compiler)
         {
@@ -80,7 +89,7 @@ namespace UnityEditor.Shaders
             }
         }
 
-        public bool HasUnsavedChanges => m_HasUnsavedChanges;
+        public bool HasUnsavedChanges => m_HasUnsavedChanges || m_FastBuildEnabled != m_AppliedFastBuildEnabled;
 
         public void Initialize(VisualElement root, SerializedObject settingsDataStore, bool isTargetingBuildProfile)
         {
@@ -153,6 +162,7 @@ namespace UnityEditor.Shaders
             }
 
             SetupDebugOptControls(shaderBuildSettingsUI);
+            SetupFastBuildControls(shaderBuildSettingsUI);
 
             m_ApplyButton = shaderBuildSettingsUI.Q<Button>("ApplyButton");
             m_ApplyButton.RegisterCallback<ClickEvent>(OnApplyClicked);
@@ -172,35 +182,30 @@ namespace UnityEditor.Shaders
         {
             var customFoldout = element.Q<ShaderKeywordDeclarationOverrideFoldout>();
 
+            // While Fast Build is on the displayed entries come from the computed approximation, not the settings data.
+            var rows = m_FastBuildEnabled ? m_FastBuildDisplayedOverrides : m_KeywordDeclarationOverrides;
+
             customFoldout.ParentShaderBuildSettingsUI = this;
-            customFoldout.DataSource = m_KeywordDeclarationOverrides;
+            customFoldout.DataSource = rows;
             customFoldout.DataIndex = index;
 
-            var dataItem = m_KeywordDeclarationOverrides[index];
-            string keywords = "";
+            var dataItem = rows[index];
 
             // Build up existing keyword list string for the keyword input field
-            if (dataItem.keywords != null)
-            {
-                int kwCounter = dataItem.keywords.Length;
+            string keywords = dataItem.keywords == null
+                ? string.Empty
+                : string.Join(" ", Array.ConvertAll(dataItem.keywords, kwInfo => kwInfo.name));
 
-                foreach (var kwInfo in dataItem.keywords)
-                {
-                    keywords += kwInfo.name;
-                    if (--kwCounter > 0)
-                    {
-                        keywords += ' ';
-                    }
-                }
-            }
+            // Before SetKeywords, which builds the keep-in-build toggles and needs to know whether the
+            // row is editable.
+            customFoldout.SetReadOnly(m_FastBuildEnabled);
 
-            // Set the keywords for the item (creates also children if needed)
+            // Binding must not notify: rows are recycled, and a change event here reads as a user edit.
             var keywordsField = customFoldout.Q<TextField>("KeywordListField");
-            keywordsField.value = keywords;
+            keywordsField.SetValueWithoutNotify(keywords);
             customFoldout.SetKeywords(dataItem.keywords);
 
-            var variantGenerationModeDropdown = customFoldout.Q<DropdownField>("VariantGenerationModeDropdown");
-            variantGenerationModeDropdown.index = (int)dataItem.variantGenerationMode;
+            customFoldout.SetVariantGenerationMode(dataItem.variantGenerationMode);
 
             customFoldout.RegisterChangeEventCallbacks();
         }
@@ -287,18 +292,24 @@ namespace UnityEditor.Shaders
 
         public void SettingsChanged()
         {
-            m_ApplyButton.SetEnabled(true);
-            m_RevertButton.SetEnabled(true);
             m_HasUnsavedChanges = true;
+            RefreshApplyRevertButtons();
         }
 
         private void ClearSettingsChangedState()
         {
             m_HasUnsavedChanges = false;
+            RefreshApplyRevertButtons();
+        }
+
+        private void RefreshApplyRevertButtons()
+        {
             if (m_ApplyButton == null)
                 return;
-            m_ApplyButton.SetEnabled(false);
-            m_RevertButton.SetEnabled(false);
+
+            bool hasChanges = HasUnsavedChanges;
+            m_ApplyButton.SetEnabled(hasChanges);
+            m_RevertButton.SetEnabled(hasChanges);
         }
 
         private void OnItemsAdded(IEnumerable<int> items)
@@ -318,7 +329,7 @@ namespace UnityEditor.Shaders
 
         public void HandleUnsavedChangesDialog(string buildProfileName = null)
         {
-            if (!m_HasUnsavedChanges)
+            if (!HasUnsavedChanges)
                 return;
 
             string message = string.IsNullOrEmpty(buildProfileName)
@@ -340,7 +351,7 @@ namespace UnityEditor.Shaders
             }
         }
 
-        private void ApplySettings()
+        internal void ApplySettings()
         {
             string kdoValidationErrorMsg, defineValidationErrorMsg, compilerValidationErrorMsg;
             int internalDefineCount = m_InternalConstantDefines.Count;
@@ -355,6 +366,8 @@ namespace UnityEditor.Shaders
             if (isValidData)
             {
                 SaveSettingsData(mergedCompilerSettings);
+                m_AppliedFastBuildEnabled = m_FastBuildEnabled;
+                UpdateFastBuildControls();
                 ClearSettingsChangedState();
             }
             else
@@ -377,6 +390,11 @@ namespace UnityEditor.Shaders
 
         private void OnRevertClicked(ClickEvent evt)
         {
+            RevertSettings();
+        }
+
+        internal void RevertSettings()
+        {
             LoadSettingsData();
             ClearSettingsChangedState();
         }
@@ -384,6 +402,11 @@ namespace UnityEditor.Shaders
         private SerializedProperty GetKeywordDeclarationOverridesProperty()
         {
             return m_SettingsProperty.FindPropertyRelative("keywordDeclarationOverrides");
+        }
+
+        private SerializedProperty GetFastBuildModeProperty()
+        {
+            return m_SettingsProperty.FindPropertyRelative("fastBuildMode");
         }
 
         private SerializedProperty GetConstantDefinesProperty(out int firstUserDefineIndex)
@@ -425,6 +448,72 @@ namespace UnityEditor.Shaders
             return m_SettingsProperty?.FindPropertyRelative("compilerSettings");
         }
 
+        private ShaderBuildSettings.FastBuildMode ReadFastBuildMode()
+        {
+            var modeProperty = GetFastBuildModeProperty();
+            return modeProperty == null
+                ? ShaderBuildSettings.FastBuildMode.Off
+                : (ShaderBuildSettings.FastBuildMode)modeProperty.intValue;
+        }
+
+        private void WriteFastBuildMode(ShaderBuildSettings.FastBuildMode mode)
+        {
+            var modeProperty = GetFastBuildModeProperty();
+            if (modeProperty != null)
+                modeProperty.intValue = (int)mode;
+        }
+
+        private void ReadKeywordDeclarationOverrides(SerializedProperty arrayProperty,
+            List<ShaderBuildSettings.KeywordDeclarationOverride> result)
+        {
+            if (arrayProperty == null)
+                return;
+
+            for (int i = 0, n = arrayProperty.arraySize; i < n; ++i)
+            {
+                var kwList = new List<ShaderBuildSettings.KeywordOverrideInfo>();
+                var keywordsProp = GetKeywordsProperty(arrayProperty, i);
+
+                for (int j = 0, m = keywordsProp.arraySize; j < m; ++j)
+                {
+                    GetKeywordInfoProperties(keywordsProp, j, out var nameProp, out var keepInBuildProp);
+                    kwList.Add(new ShaderBuildSettings.KeywordOverrideInfo(nameProp.stringValue, keepInBuildProp.boolValue));
+                }
+
+                result.Add(new ShaderBuildSettings.KeywordDeclarationOverride
+                {
+                    keywords = kwList.ToArray(),
+                    variantGenerationMode = (ShaderBuildSettings.ShaderVariantGenerationMode)
+                        GetVariantGenerationModeProperty(arrayProperty, i).intValue,
+                });
+            }
+        }
+
+        private void WriteKeywordDeclarationOverrides(SerializedProperty arrayProperty,
+            List<ShaderBuildSettings.KeywordDeclarationOverride> source)
+        {
+            if (arrayProperty == null)
+                return;
+
+            arrayProperty.ClearArray();
+            for (int i = 0, n = source.Count; i < n; ++i)
+            {
+                arrayProperty.InsertArrayElementAtIndex(i);
+                var keywordsProp = GetKeywordsProperty(arrayProperty, i);
+                keywordsProp.ClearArray();
+
+                for (int j = 0, m = source[i].keywords.Length; j < m; ++j)
+                {
+                    keywordsProp.InsertArrayElementAtIndex(j);
+                    GetKeywordInfoProperties(keywordsProp, j, out var nameProp, out var keepInBuildProp);
+                    nameProp.stringValue = source[i].keywords[j].name;
+                    keepInBuildProp.boolValue = source[i].keywords[j].keepInBuild;
+                }
+
+                GetVariantGenerationModeProperty(arrayProperty, i).intValue = (int)source[i].variantGenerationMode;
+            }
+        }
+
         private void LoadSettingsData()
         {
             // Clean stale selections before shrinking the list of keywords.
@@ -432,6 +521,7 @@ namespace UnityEditor.Shaders
             m_ConstantDefinesListView.ClearSelection();
 
             m_KeywordDeclarationOverrides.Clear();
+            m_FastBuildDisplayedOverrides.Clear();
             m_KeywordDeclarationOverridesListView.RefreshItems();
             m_InternalConstantDefines.Clear();
             m_ConstantDefines.Clear();
@@ -443,34 +533,12 @@ namespace UnityEditor.Shaders
             // Therefore the boxedValue etc are not usable here and we need to find the individual serialized properties manually.
             if (m_SettingsProperty != null)
             {
-                var keywordDeclarationOverridesProp = GetKeywordDeclarationOverridesProperty();
-                if (keywordDeclarationOverridesProp != null)
-                {
-                    for (int i = 0, n = keywordDeclarationOverridesProp.arraySize; i < n; ++i)
-                    {
-                        var kwList = new List<ShaderBuildSettings.KeywordOverrideInfo>();
-                        var keywordsProp = GetKeywordsProperty(keywordDeclarationOverridesProp, i);
+                ReadKeywordDeclarationOverrides(GetKeywordDeclarationOverridesProperty(), m_KeywordDeclarationOverrides);
 
-                        for (int j = 0, m = keywordsProp.arraySize; j < m; ++j)
-                        {
-                            SerializedProperty nameProp;
-                            SerializedProperty keepInBuildProp;
-                            GetKeywordInfoProperties(keywordsProp, j, out nameProp, out keepInBuildProp);
+                m_FastBuildEnabled = ReadFastBuildMode() == ShaderBuildSettings.FastBuildMode.On;
+                m_AppliedFastBuildEnabled = m_FastBuildEnabled;
 
-                            string name = nameProp.stringValue;
-                            bool keepInBuild = keepInBuildProp.boolValue;
-                            var kwInfo = new ShaderBuildSettings.KeywordOverrideInfo(name, keepInBuild);
-                            kwList.Add(kwInfo);
-                        }
-
-                        var vgmProp = GetVariantGenerationModeProperty(keywordDeclarationOverridesProp, i);
-
-                        var kwo = new ShaderBuildSettings.KeywordDeclarationOverride();
-                        kwo.keywords = kwList.ToArray();
-                        kwo.variantGenerationMode = (ShaderBuildSettings.ShaderVariantGenerationMode)vgmProp.intValue;
-                        m_KeywordDeclarationOverrides.Add(kwo);
-                    }
-                }
+                BuildFastBuildDisplayedOverrides();
 
                 int firstUserDefineIndex;
                 var constantDefinesProp = GetConstantDefinesProperty(out firstUserDefineIndex);
@@ -505,9 +573,7 @@ namespace UnityEditor.Shaders
                 }
             }
 
-            m_LoadedItemInitialized = new bool[m_KeywordDeclarationOverrides.Count]; // Defaults to false
-
-            m_KeywordDeclarationOverridesListView.RefreshItems();
+            RefreshKeywordOverridesListView();
             m_ConstantDefinesListView.RefreshItems();
             m_CompilerBackendListView?.RefreshItems();
             UpdateAddCompilerBackendButtonState();
@@ -520,31 +586,11 @@ namespace UnityEditor.Shaders
             // The same manual serialized property process and reasoning as for loading the data.
             if (m_SettingsProperty != null)
             {
-                var keywordDeclarationOverridesProp = GetKeywordDeclarationOverridesProperty();
-                if (keywordDeclarationOverridesProp != null)
-                {
-                    keywordDeclarationOverridesProp.ClearArray();
-                    for (int i = 0, n = m_KeywordDeclarationOverrides.Count; i < n; ++i)
-                    {
-                        keywordDeclarationOverridesProp.InsertArrayElementAtIndex(i);
-                        var keywordsProp = GetKeywordsProperty(keywordDeclarationOverridesProp, i);
-                        keywordsProp.ClearArray();
+                WriteKeywordDeclarationOverrides(GetKeywordDeclarationOverridesProperty(), m_KeywordDeclarationOverrides);
 
-                        for (int j = 0, m = m_KeywordDeclarationOverrides[i].keywords.Length; j < m; ++j)
-                        {
-                            keywordsProp.InsertArrayElementAtIndex(j);
-                            SerializedProperty nameProp;
-                            SerializedProperty keepInBuildProp;
-                            GetKeywordInfoProperties(keywordsProp, j, out nameProp, out keepInBuildProp);
-
-                            nameProp.stringValue = m_KeywordDeclarationOverrides[i].keywords[j].name;
-                            keepInBuildProp.boolValue = m_KeywordDeclarationOverrides[i].keywords[j].keepInBuild;
-                        }
-
-                        var vgmProp = GetVariantGenerationModeProperty(keywordDeclarationOverridesProp, i);
-                        vgmProp.intValue = (int)m_KeywordDeclarationOverrides[i].variantGenerationMode;
-                    }
-                }
+                WriteFastBuildMode(m_FastBuildEnabled
+                    ? ShaderBuildSettings.FastBuildMode.On
+                    : ShaderBuildSettings.FastBuildMode.Off);
 
                 int firstUserDefineIndex;
                 var constantDefinesProp = GetConstantDefinesProperty(out firstUserDefineIndex);
@@ -589,6 +635,146 @@ namespace UnityEditor.Shaders
                     AssetDatabase.Refresh();
                 }
             }
+        }
+
+        // --- Fast Build -----------------------------------------------------------------------
+
+        private const int k_FastBuildOff = 0;
+        private const int k_FastBuildOn = 1;
+
+        // Substituted by tests: the real gather walks every shader in the project, and the declaration
+        // sets the tests need are not the ones a fixed project happens to declare.
+        internal Func<ShaderKeywordDeclarationInfo[]> KeywordDeclarationSource
+        {
+            set => m_KeywordDeclarationSource = value;
+        }
+
+        internal bool FastBuildEnabled => m_FastBuildEnabled;
+        internal IReadOnlyList<ShaderBuildSettings.KeywordDeclarationOverride> UserOverrides => m_KeywordDeclarationOverrides;
+
+        private void SetupFastBuildControls(VisualElement shaderBuildSettingsUI)
+        {
+            m_FastBuildSettings = shaderBuildSettingsUI.Q<VisualElement>("FastBuildSettings");
+            if (m_FastBuildSettings == null)
+                return;
+
+            m_FastBuildDropdown = m_FastBuildSettings.Q<DropdownField>("FastBuildDropdown");
+            m_ActiveModeLabel = m_FastBuildSettings.Q<Label>("ActiveModeLabel");
+            m_FastBuildInfoBox = m_FastBuildSettings.Q<HelpBox>("FastBuildInfoBox");
+            m_FastBuildDropdown?.RegisterValueChangedCallback(
+                _ => SetFastBuildEnabled(m_FastBuildDropdown.index == k_FastBuildOn));
+
+            if (m_FastBuildInfoBox != null)
+            {
+                m_FastBuildInfoBox.text = L10n.Tr("In Fast Build mode, Unity converts compatible keywords to dynamic branching to reduce shader compilation time. The list below shows an approximation of the overrides in effect. Custom overrides are restored when Fast Build is disabled.", null);
+            }
+        }
+
+        internal void SetFastBuildEnabled(bool enabled)
+        {
+            if (enabled == m_FastBuildEnabled)
+                return;
+
+            m_FastBuildEnabled = enabled;
+
+            BuildFastBuildDisplayedOverrides();
+            RefreshKeywordOverridesListView();
+            // Deliberately not SettingsChanged() so that back and forth fast build mode will not leave apply button enabled
+            RefreshApplyRevertButtons();
+        }
+
+        // An approximation of what Fast Build resolves to for the project as it stands, shown instead
+        // of the user's overrides. Display data only: never saved, and the build does not read it.
+        //
+        // Follows ShaderBuildSettings::ApplyOverridesOnKeywordDeclaration as closely as a project-wide
+        // list can: an override reducing a declaration to a single keyword survives, since dynamic
+        // branching has nothing left to collapse, and any other override is taken over.
+        private void BuildFastBuildDisplayedOverrides()
+        {
+            m_FastBuildDisplayedOverrides.Clear();
+
+            if (!m_FastBuildEnabled)
+                return;
+
+            var gatheredDeclarations = m_KeywordDeclarationSource() ?? Array.Empty<ShaderKeywordDeclarationInfo>();
+            var takenOverUserOverride = new bool[m_KeywordDeclarationOverrides.Count];
+
+            foreach (var declaration in gatheredDeclarations)
+            {
+                if (declaration.IsRestrictedInEveryInstance(ShaderKeywordOverrideRestriction.NoDynamicBranch))
+                    continue;
+
+                var convertedOverride = new ShaderBuildSettings.KeywordDeclarationOverride();
+                convertedOverride.variantGenerationMode = ShaderBuildSettings.ShaderVariantGenerationMode.SingleVariantWithDynamicBranching;
+                convertedOverride.keywords = new ShaderBuildSettings.KeywordOverrideInfo[declaration.keywords.Length];
+                for (int i = 0; i < declaration.keywords.Length; ++i)
+                {
+                    convertedOverride.keywords[i] = new ShaderBuildSettings.KeywordOverrideInfo(declaration.keywords[i], true);
+                }
+
+                bool showConvertedOverride = true;
+                for (int i = 0; i < m_KeywordDeclarationOverrides.Count; ++i)
+                {
+                    if (!m_KeywordDeclarationOverrides[i].EqualKeywords(convertedOverride))
+                        continue;
+
+                    int keptKeywords = 0;
+                    foreach (var keyword in m_KeywordDeclarationOverrides[i].keywords)
+                    {
+                        if (keyword.keepInBuild)
+                            keptKeywords++;
+                    }
+
+                    if (keptKeywords == 1) // only a single variant left -> not converted, the user's row stands
+                        showConvertedOverride = false;
+                    else
+                        takenOverUserOverride[i] = true;
+
+                    break; // we expect only ever a single override with the exact same keyword set
+                }
+
+                if (showConvertedOverride)
+                    m_FastBuildDisplayedOverrides.Add(convertedOverride);
+            }
+
+            // Then the user's own rows that Fast Build did not take over. Copied so that the rows on show
+            // can never write back into the settings data.
+            for (int i = 0; i < m_KeywordDeclarationOverrides.Count; ++i)
+            {
+                if (!takenOverUserOverride[i])
+                    m_FastBuildDisplayedOverrides.Add(m_KeywordDeclarationOverrides[i].DeepCopy());
+            }
+        }
+
+        private void RefreshKeywordOverridesListView()
+        {
+            m_KeywordDeclarationOverridesListView.ClearSelection();
+            // Rebound because Fast Build shows a resolved list in place of the settings data.
+            m_KeywordDeclarationOverridesListView.itemsSource =
+                m_FastBuildEnabled ? m_FastBuildDisplayedOverrides : m_KeywordDeclarationOverrides;
+            m_KeywordDeclarationOverridesListView.reorderable = !m_FastBuildEnabled;
+            m_KeywordDeclarationOverridesListView.showAddRemoveFooter = !m_FastBuildEnabled;
+            m_KeywordDeclarationOverridesListView.RefreshItems();
+            UpdateFastBuildControls();
+        }
+
+        private void UpdateFastBuildControls()
+        {
+            if (m_FastBuildDropdown == null)
+                return;
+
+            m_FastBuildDropdown.SetValueWithoutNotify(
+                m_FastBuildDropdown.choices[m_FastBuildEnabled ? k_FastBuildOn : k_FastBuildOff]);
+
+            if (m_ActiveModeLabel != null)
+            {
+                m_ActiveModeLabel.text = m_AppliedFastBuildEnabled
+                    ? L10n.Tr("Active mode: On", null)
+                    : L10n.Tr("Active mode: Off", null);
+            }
+
+            if (m_FastBuildInfoBox != null)
+                m_FastBuildInfoBox.style.display = m_FastBuildEnabled ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         // --- Shader Compiler Backend Selection -----------------------------------------------
@@ -826,7 +1012,7 @@ namespace UnityEditor.Shaders
                 m_CompilerBackendEmptyApisHelpBox.style.display = hasSelectableApis ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
-        // --- Debug Symbols & Optimisation Level -----------------------------------------------
+        // --- Debug Symbols & Optimization Level -----------------------------------------------
 
         private void SetupDebugOptControls(VisualElement shaderBuildSettingsUI)
         {
@@ -843,7 +1029,7 @@ namespace UnityEditor.Shaders
                 OptimizationLevelDisplayName, OnOptimizationLevelChanged);
             if (m_OptimizationLevelDropdown != null)
             {
-                m_OptimizationLevelDropdown.label = L10n.Tr("Optimisation Level", null);
+                m_OptimizationLevelDropdown.label = L10n.Tr("Optimization Level", null);
                 m_OptimizationLevelDropdown.choices = new List<ShaderBuildSettings.ShaderOptimizationLevel>(s_OptimizationLevels);
                 m_OptimizationLevelDropdown.AddToClassList(BaseField<ShaderBuildSettings.ShaderOptimizationLevel>.alignedFieldUssClassName);
             }
@@ -879,7 +1065,7 @@ namespace UnityEditor.Shaders
 
         private bool ReloadDebugOptIfBuildTargetChanged()
         {
-            if (m_HasUnsavedChanges || m_LastLoadedDebugOptTarget == GetCurrentBuildTarget())
+            if (HasUnsavedChanges || m_LastLoadedDebugOptTarget == GetCurrentBuildTarget())
                 return false;
 
             LoadDebugOptAndRefreshWarnings();
@@ -917,8 +1103,8 @@ namespace UnityEditor.Shaders
                 m_OptimizationLevelDropdown.SetValueWithoutNotify(ShaderBuildSettings.ShaderOptimizationLevel.Disabled);
             m_OptimizationLevelDropdown.SetEnabled(!debugOn);
             m_OptimizationLevelDropdown.tooltip = debugOn
-                ? L10n.Tr("Optimisation is disabled while debug symbols are enabled.", null)
-                : L10n.Tr("Optimisation level is applied to shaders for graphics APIs that support it.", null);
+                ? L10n.Tr("Optimization is disabled while debug symbols are enabled.", null)
+                : L10n.Tr("Optimization level is applied to shaders for graphics APIs that support it.", null);
         }
 
         private static string OptimizationLevelDisplayName(ShaderBuildSettings.ShaderOptimizationLevel level)
@@ -1067,11 +1253,11 @@ namespace UnityEditor.Shaders
             if (unsupported.Count == 1)
                 msg = isDebug
                     ? string.Format(L10n.Tr("{0} doesn't support debug symbols and will skip this setting.", null), names)
-                    : string.Format(L10n.Tr("{0} doesn't support the selected optimisation level and will use its default optimisation level.", null), names);
+                    : string.Format(L10n.Tr("{0} doesn't support the selected optimization level and will use its default optimization level.", null), names);
             else
                 msg = isDebug
                     ? string.Format(L10n.Tr("Some Graphics APIs don't support debug symbols and will skip this setting: {0}.", null), names)
-                    : string.Format(L10n.Tr("Some Graphics APIs don't support the selected optimisation level and will use their default optimisation level: {0}.", null), names);
+                    : string.Format(L10n.Tr("Some Graphics APIs don't support the selected optimization level and will use their default optimization level: {0}.", null), names);
 
             box.text = msg;
             box.style.display = DisplayStyle.Flex;

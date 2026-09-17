@@ -73,19 +73,6 @@ public class TimeFormatter : FormatterBase
                 throw new ArgumentException($"No {nameof(TimeTextInfo)} found for language '{value}'.");
         }
     }
-
-    /// <summary>
-    /// The ISO language name, which will be used for getting the <see cref="TimeTextInfo"/>.
-    /// </summary>
-    /// <remarks>
-    /// Culture is now determined in this sequence:<br/>
-    /// 1. Get the culture from the <see cref="FormattingInfo.FormatterOptions"/>.<br/>
-    /// 2. Get the culture from the <see cref="IFormatProvider"/> argument (which may be a <see cref="CultureInfo"/>) to <see cref="SmartFormatter.Format(IFormatProvider, string, object?[])"/><br/>
-    /// 3. The <see cref="CultureInfo.CurrentUICulture"/>.<br/>
-    /// </remarks>
-    [Obsolete("This property is not supported any more. Changed process to get or set the default culture.", true)]
-    public string DefaultTwoLetterISOLanguageName { get; set; } = "en";
-
     ///<inheritdoc />
     public override bool TryEvaluateFormat(IFormattingInfo formattingInfo)
     {

@@ -16,12 +16,7 @@ namespace UnityEditor.Lighting.LightingSearch
     {
         [SceneQueryEngineFilter(LightingSearchPaths.k_RenderingLayersFilter, new[] { "=" })]
         internal static uint RenderingLayersSceneQueryEngineFilter(GameObject go)
-        {
-            if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                return 0;
-
-            return meshRenderer.renderingLayerMask;
-        }
+            => LightingSearchDataAccessors.GetRenderingLayers(go);
 
         [SearchColumnProvider(LightingSearchPaths.k_RenderingLayersPath)]
         internal static void RenderingLayersSearchColumnProvider(SearchColumn column)
@@ -51,12 +46,10 @@ namespace UnityEditor.Lighting.LightingSearch
 
         [SceneQueryEngineFilter(LightingSearchPaths.k_ContributeGIFilter, new[] { "=" })]
         internal static bool ContributeGISceneQueryEngineFilter(GameObject go)
-        {
-            return LightingSearchDataAccessors.GetContributeGI(go);
-        }
+            => LightingSearchDataAccessors.GetContributeGI(go);
 
         [SearchColumnProvider(LightingSearchPaths.k_ContributeGIPath)]
-        public static void ContributeGISearchColumnProvider(SearchColumn column)
+        internal static void ContributeGISearchColumnProvider(SearchColumn column)
         {
             column.getter = LightingSearchColumnHelpers.CreateGameObjectGetter(go => LightingSearchDataAccessors.GetContributeGI(go));
             column.setter = LightingSearchColumnHelpers.CreateGameObjectSetter(
@@ -69,21 +62,23 @@ namespace UnityEditor.Lighting.LightingSearch
         [SceneQueryEngineFilter(LightingSearchPaths.k_ReceiveGIFilter, new[] { "=" })]
         internal static ReceiveGI ReceiveGISceneQueryEngineFilter(GameObject go)
         {
-            if (!go.TryGetComponent<MeshRenderer>(out var meshRenderer))
-                return default;
-
-            return meshRenderer.receiveGI;
+            return LightingSearchDataAccessors.GetReceiveGI(go) ?? default;
         }
 
         [SearchColumnProvider(LightingSearchPaths.k_ReceiveGIPath)]
-        public static void ReceiveGISearchColumnProvider(SearchColumn column)
+        internal static void ReceiveGISearchColumnProvider(SearchColumn column)
         {
-            column.getter = LightingSearchColumnHelpers.CreateGameObjectGetter<MeshRenderer>(go => LightingSearchDataAccessors.GetReceiveGI(go));
+            column.getter = LightingSearchColumnHelpers.CreateGameObjectGetter<MeshRenderer>(go => LightingSearchDataAccessors.GetReceiveGI(go).Value);
             column.setter = LightingSearchColumnHelpers.CreateGameObjectSetter(
                 (go, v) => LightingSearchDataAccessors.SetReceiveGI(go, (ReceiveGI)v),
                 LightingSearchColumnHelpers.IsValidEnum);
             column.cellCreator = _ => new EnumField(null, ReceiveGI.Lightmaps) { style = { flexGrow = 1 } };
-            column.binder = LightingSearchColumnHelpers.CreateBinder<EnumField>((f, v) => f.SetValueWithoutNotify((ReceiveGI)v));
+            column.binder = LightingSearchColumnHelpers.CreateBinderWithGameObject<EnumField>((f, go, v) =>
+            {
+                bool contributesGI = LightingSearchDataAccessors.GetContributeGI(go);
+                f.SetEnabled(contributesGI);
+                f.SetValueWithoutNotify(contributesGI ? (ReceiveGI)v : ReceiveGI.LightProbes);
+            });
         }
 
         [SearchColumnProvider(LightingSearchPaths.k_ReflectionProbeUsagePath)]

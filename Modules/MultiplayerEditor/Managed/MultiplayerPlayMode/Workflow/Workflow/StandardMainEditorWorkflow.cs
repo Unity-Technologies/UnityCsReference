@@ -15,6 +15,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
     partial class StandardMainEditorWorkflow
     {
         [AutoStaticsCleanupOnCodeReload] // last write time for change detection; must reset so changes during reload are detected
+        // Change-detection cursor for the main data store: a cleared value simply differs from the value
+        // on disk, so the next UI poll re-reads the player state once and stores the timestamp again.
+        [IgnoreForUAL0015("Change-detection cursor; a cleared value forces one extra re-read that stores it again")]
         static string s_LastWriteTime;
 
         /*

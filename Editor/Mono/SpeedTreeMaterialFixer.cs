@@ -15,7 +15,7 @@ namespace UnityEditor
         private class Styles
         {
             public readonly string Message = "There are materials referenced by this Game Object that use the wrong version of SpeedTree shader. Do you want to fix it?";
-            public readonly GUIContent FixSpeedTreeShaders = EditorGUIUtility.TrTextContent("Fix SpeedTree Shaders");
+            public readonly GUIContent FixSpeedTreeShaders = L10n.TextContent("Fix SpeedTree Shaders", null, null, null);
         }
 
         [NoAutoStaticsCleanup] // lazy GUIContent holder; survives domain reload and re-inits on first access

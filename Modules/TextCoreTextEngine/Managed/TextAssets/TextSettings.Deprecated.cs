@@ -10,9 +10,7 @@ using UnityEngine;
 
 namespace UnityEngine.TextCore.Text
 {
-    /// <summary>
-    /// Contains deprecated TextSettings APIs that are being phased out.
-    /// </summary>
+    // Contains deprecated TextSettings APIs that are being phased out.
     public partial class TextSettings
     {
         string m_StyleSheetsResourcePath = "Text Style Sheets/";

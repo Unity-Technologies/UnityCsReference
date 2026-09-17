@@ -26,10 +26,12 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     internal const string PickerMenuPropertyKey = "unity-ui-viewport-picker-menu";
 
     readonly List<VisualElementSelection> m_ElementSelections = new();
+    readonly Dictionary<VisualElementSelection, VisualElement> m_CanvasTargets = new();
     readonly VisualElement m_HandlesContainer;
     readonly SelectionHandleManager m_HandleManager;
     readonly VisualElement m_ManipulatorsContainer;
     readonly VisualElementManipulatorOverlayManager m_ManipulatorOverlayManager;
+    readonly UICanvasInPlaceEditor m_UICanvasInPlaceEditor;
     PanelElement m_PanelElement;
 
     public float ZoomScale
@@ -128,9 +130,21 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         }
     }
 
+    /// <summary>
+    /// Supplies the root of the live tree this canvas is a preview of, or <see langword="null"/> when what it
+    /// renders is itself the tree the rest of the editor selects.
+    /// </summary>
+    /// <remarks>
+    /// A delegate rather than a stored root: live reload rebuilds the tree under the same component, so the
+    /// answer has to be re-asked rather than captured when the context is acquired.
+    /// </remarks>
+    internal Func<VisualElement> AuthoritativeRootProvider { get; set; }
+
     public override VisualElement contentContainer => null;
 
     public VisualElement OverlayLayer => m_HandlesContainer;
+    
+    public UICanvasInPlaceEditor InPlaceEditor => m_UICanvasInPlaceEditor;
 
     public UICanvasDocumentRoot()
     {
@@ -143,8 +157,9 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         m_ManipulatorsContainer = new VisualElement { name = "canvas-manipulators" };
         hierarchy.Add(m_ManipulatorsContainer);
         m_ManipulatorsContainer.StretchToParentSize();
-        m_HandleManager = new SelectionHandleManager(m_HandlesContainer);
-        m_ManipulatorOverlayManager = new VisualElementManipulatorOverlayManager(m_ManipulatorsContainer);
+        m_HandleManager = new SelectionHandleManager(m_HandlesContainer, ResolveCanvasTarget);
+        m_ManipulatorOverlayManager = new VisualElementManipulatorOverlayManager(m_ManipulatorsContainer, ResolveCanvasTarget);
+        m_UICanvasInPlaceEditor = new UICanvasInPlaceEditor(this);
     }
 
     protected override void HandleEventTrickleDown(EventBase evt)
@@ -202,6 +217,18 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
                 m_DragPointerId = pointerDownEvent.pointerId;
                 m_DragStartCanvasPosition = m_PanelElement.ConvertPosition(pointerDownEvent);
                 m_DragStartPanelPosition = pointerDownEvent.position;
+
+                if (pointerDownEvent.clickCount >= 2)
+                {
+                    using var _ = ListPool<VisualElement>.Get(out var picked);
+                    PickSelectableElements(m_DragStartCanvasPosition, picked);
+                    if (picked.Count > 0)
+                    {
+                        var element = picked[0];
+                        if (m_UICanvasInPlaceEditor.TryOpenEditorAt(element, m_PanelElement.ChangeCoordinatesTo(element, m_DragStartCanvasPosition)))
+                            m_PointerCaptured = false; // editor consumed the gesture; skip selection on pointer-up
+                    }
+                }
 
                 break;
             case PointerUpEvent pointerUpEvent when EventMode == CanvasEventMode.Pick:
@@ -309,6 +336,12 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         base.HandleEventBubbleUp(evt);
     }
 
+    public void OnCanvasChanged()
+    {
+        m_UICanvasInPlaceEditor.UpdateEditor();
+        MarkDirtyRepaint();
+    }
+    
     void OnSelectionChanged()
     {
         ClearSelection();
@@ -316,7 +349,8 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         var selectedIds = Selection.entityIds;
         foreach (var selectedId in selectedIds)
         {
-            if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection selection && ShowsElement(selection.Element))
+            if (EditorUtility.EntityIdToObject(selectedId) is VisualElementSelection selection
+                && ResolveCanvasTarget(selection) != null)
                 AddToSelection(selection);
         }
 
@@ -325,13 +359,137 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
             m_ManipulatorOverlayManager.AcquireOverlay(m_ElementSelections[0]);
     }
 
-    // The selection is global: outside the UI Stage it holds the elements of a scene panel while this canvas
-    // shows an independent clone of the same document, whose bounds are in another panel's coordinates.
-    bool ShowsElement(VisualElement element)
-        => element?.panel != null && ReferenceEquals(element.panel, m_PanelElement?.SubPanel);
+    /// <summary>
+    /// The element of this canvas's panel that <paramref name="element"/> stands for, or <see langword="null"/>
+    /// when it stands for none of them.
+    /// </summary>
+    /// <remarks>
+    /// Bounds only mean anything in the panel they come from, so everything drawn over the canvas — a handle, a
+    /// manipulator, a highlight — is placed against this and not against the element handed in. Outside the UI
+    /// Stage the selection holds the live elements of a scene panel while the canvas shows a clone of the same
+    /// document, and the in-memory id path is what picks the right clone when there is more than one.
+    /// </remarks>
+    internal VisualElement ResolveCanvasElement(VisualElement element)
+    {
+        var subPanel = m_PanelElement?.SubPanel;
+        if (element?.panel == null || subPanel == null)
+            return null;
 
-    // An injected preview panel is not selection-tracked, so none of its elements carry a selection object and
-    // there is nothing here to select — least of all the empty selection a click would otherwise write.
+        // Already ours: the UI Stage selects into the very panel it renders, and so does a preview that has no
+        // live tree standing behind it.
+        if (ReferenceEquals(element.panel, subPanel))
+            return element;
+
+        // Only the live tree this canvas previews. Two GameObjects can render one document, and the id path is
+        // built from asset ids alone — their elements correspond to the same clone — so the panel is the only
+        // thing that says whether this element is the one we stand in for.
+        var authoritativeRoot = AuthoritativeRootProvider?.Invoke();
+        if (authoritativeRoot == null || !ReferenceEquals(element.panel, authoritativeRoot.panel))
+            return null;
+
+        // The live document root stands for the clone's own root. Matched by identity because a root carries no
+        // VisualElementAsset, so correspondence has nothing to match it on.
+        if (ReferenceEquals(element, authoritativeRoot))
+            return m_PanelElement.subRootVisualElement;
+
+        return m_PanelElement.subRootVisualElement?.FindCorrespondingElement(element);
+    }
+
+    /// <summary>
+    /// <see cref="ResolveCanvasElement"/> for a selection, memoised.
+    /// </summary>
+    /// <remarks>
+    /// The answer is always an element of this canvas, so it only stops being valid when the preview is
+    /// re-cloned — which detaches it and is what the panel check below notices. Worth caching because the
+    /// geometry paths ask on every viewport resize and zoom, once per selected element, and outside the UI
+    /// Stage each miss walks the live tree looking for the clone it already found last frame.
+    /// </remarks>
+    VisualElement ResolveCanvasTarget(VisualElementSelection selection)
+    {
+        if (selection == null)
+            return null;
+
+        if (m_CanvasTargets.TryGetValue(selection, out var cached) && cached?.panel != null)
+            return cached;
+
+        var target = ResolveCanvasElement(selection.Element);
+        m_CanvasTargets[selection] = target;
+        return target;
+    }
+
+    /// <summary>
+    /// What a click on <paramref name="canvasElement"/> should write to the editor selection.
+    /// </summary>
+    /// <remarks>
+    /// The live element the preview stands in for wins, so the viewport, the Hierarchy and the inspector all
+    /// name one element rather than a clone each. The clone is the fallback: a document can be shown with no
+    /// live tree behind it, and an element may correspond to nothing in the one there is. Asked of the registry
+    /// rather than read off the element, because the live tree only carries selection objects once it has been
+    /// walked — reading the property would quietly fall back to the clone until then.
+    /// </remarks>
+    EntityId ResolveSelectionId(VisualElement canvasElement)
+    {
+        if (canvasElement == null)
+            return EntityId.None;
+
+        var authoritative = ResolveAuthoritativeElement(canvasElement);
+        if (authoritative != null)
+        {
+            var authoritativeId = SelectionIdOf(authoritative);
+            if (authoritativeId != EntityId.None)
+                return authoritativeId;
+        }
+
+        return SelectionIdOf(canvasElement);
+    }
+
+    // The element's own object first: that is the one everything else already names, and asking the registry for
+    // an element it has not filed yet mints a second one. The registry is only the fallback for a live tree that
+    // has not been walked, whose elements carry nothing to read.
+    static EntityId SelectionIdOf(VisualElement element)
+    {
+        var selectionObject = element.GetSelectionObject();
+        if (selectionObject)
+            return selectionObject.GetEntityId();
+
+        return VisualElementSelectionRegistry.Instance?.GetOrCreateEntityId(element) ?? EntityId.None;
+    }
+
+    UISelectionObject ResolveSelectionObject(VisualElement canvasElement)
+    {
+        var id = ResolveSelectionId(canvasElement);
+        return id == EntityId.None ? null : EditorUtility.EntityIdToObject(id) as UISelectionObject;
+    }
+
+    /// <summary>
+    /// The live element <paramref name="canvasElement"/> stands in for, or <see langword="null"/> when there is
+    /// no live tree behind this canvas or nothing in it corresponds.
+    /// </summary>
+    /// <remarks>
+    /// The inverse of <see cref="ResolveCanvasElement"/>, for the callers that have to name an element to
+    /// something outside this canvas: which instance of a repeated document an edit landed in, for one. It
+    /// answers <see langword="null"/> rather than handing back the clone, because a caller that reports the
+    /// clone outside the canvas names an element the rest of the editor cannot place — a Hierarchy selection
+    /// request scoped to it resolves to no instance in particular, which is the opposite of scoping.
+    /// </remarks>
+    internal VisualElement ResolveAuthoritativeElement(VisualElement canvasElement)
+    {
+        if (canvasElement == null)
+            return null;
+
+        var authoritativeRoot = AuthoritativeRootProvider?.Invoke();
+        if (authoritativeRoot == null)
+            return null;
+
+        // Mirror of the root case in ResolveCanvasElement: the clone's root stands for the live document root.
+        if (ReferenceEquals(canvasElement, m_PanelElement?.subRootVisualElement))
+            return authoritativeRoot;
+
+        return authoritativeRoot.FindCorrespondingElement(canvasElement);
+    }
+
+    // Nothing carries a selection object while the panel is untracked, so there is nothing here to select —
+    // least of all the empty selection a click would otherwise write over the user's.
     bool CanSelectContent => VisualElementSelectionRegistry.Instance?.IsTracked(m_PanelElement?.SubPanel) ?? false;
 
     void AddToSelection(VisualElementSelection selection)
@@ -346,6 +504,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     {
         var selection = m_ElementSelections[index];
         m_ElementSelections.RemoveAt(index);
+        m_CanvasTargets.Remove(selection);
         m_HandleManager.ReleaseSelectionHandle(selection);
         m_ManipulatorOverlayManager.ReleaseOverlay(selection);
     }
@@ -430,11 +589,14 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         }
     }
 
-    static void PopulateUpdateSet(List<VisualElementSelection> selectedList, HashSet<VisualElement> set, HashSet<VisualElementSelection> updateSet)
+    // Matched on the canvas side: the changes reported name this panel's elements, while a selection outside the
+    // UI Stage names the live ones it stands in for.
+    void PopulateUpdateSet(List<VisualElementSelection> selectedList, HashSet<VisualElement> set, HashSet<VisualElementSelection> updateSet)
     {
         foreach (var selected in selectedList)
         {
-            if (set.Contains(selected.Element))
+            var target = ResolveCanvasTarget(selected);
+            if (target != null && set.Contains(target))
                 updateSet.Add(selected);
         }
     }
@@ -547,23 +709,22 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         m_LastClickTimestampMs = 0;
     }
 
-    static void SetSingleSelection(VisualElement element)
+    void SetSingleSelection(VisualElement element)
     {
-        var selectionObject = element?.GetSelectionObject();
-        if (!selectionObject)
+        var id = ResolveSelectionId(element);
+        if (id == EntityId.None)
         {
             Selection.entityIds = Array.Empty<EntityId>();
             return;
         }
-        Selection.entityIds = new[] { selectionObject.GetEntityId() };
+        Selection.entityIds = new[] { id };
     }
 
-    static void ToggleSingleSelection(VisualElement element)
+    void ToggleSingleSelection(VisualElement element)
     {
-        var selectionObject = element.GetSelectionObject();
-        if (!selectionObject)
+        var id = ResolveSelectionId(element);
+        if (id == EntityId.None)
             return;
-        var id = selectionObject.GetEntityId();
 
         var currentIds = Selection.entityIds;
         if (Array.IndexOf(currentIds, id) < 0)
@@ -693,8 +854,9 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         {
             foreach (var id in Selection.entityIds)
             {
-                // Filtered like the handles are: a selection from another panel maps onto nothing here.
-                if (EditorUtility.EntityIdToObject(id) is VisualElementSelection sel && ShowsElement(sel.Element))
+                // Filtered like the handles are: a selection mapping onto nothing this canvas shows cannot be
+                // drawn, kept or subtracted here.
+                if (EditorUtility.EntityIdToObject(id) is VisualElementSelection sel && ResolveCanvasTarget(sel) != null)
                     result.Add(sel);
             }
         }
@@ -715,10 +877,11 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         {
             if (element.visualElementAsset == null)
                 return;
-            var selectionObject = element.GetSelectionObject<VisualElementSelection>();
-            if (!selectionObject)
-                return;
+            // Tested before the selection object is resolved: resolving walks the live tree looking for the
+            // counterpart, and this runs over the whole document on every pointer move of the drag.
             if (!RectIncludesElement(canvasRect, element.worldBound, mode))
+                return;
+            if (ResolveSelectionObject(element) is not VisualElementSelection selectionObject)
                 return;
             result.Add(selectionObject);
         });
@@ -746,7 +909,8 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         m_RectangleSelectionPreviewHandlesContainer = new VisualElement { pickingMode = PickingMode.Ignore };
         m_RectangleSelectionPreviewHandlesContainer.StretchToParentSize();
         hierarchy.Add(m_RectangleSelectionPreviewHandlesContainer);
-        m_RectangleSelectionPreviewHandleManager = new SelectionHandleManager(m_RectangleSelectionPreviewHandlesContainer);
+        m_RectangleSelectionPreviewHandleManager =
+            new SelectionHandleManager(m_RectangleSelectionPreviewHandlesContainer, ResolveCanvasTarget);
     }
 
     internal void UpdatePreviewSelection(Rect canvasRect, EventModifiers modifiers)

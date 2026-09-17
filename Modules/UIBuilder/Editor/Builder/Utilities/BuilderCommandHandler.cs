@@ -236,8 +236,27 @@ namespace Unity.UI.Builder
             return false;
         }
 
+        // A read-only canvas (StyleSheet Editing Mode) blocks structural operations on its preview
+        // elements; selector/stylesheet operations stay allowed — editing those is the whole point.
+        bool IsReadOnlyCanvasSelection()
+        {
+            if (!m_PaneWindow.document.isCanvasReadOnly)
+                return false;
+
+            foreach (var element in m_Selection.selection)
+            {
+                if (!BuilderSharedStyles.IsSelectorElement(element) && !BuilderSharedStyles.IsStyleSheetElement(element))
+                    return true;
+            }
+
+            return false;
+        }
+
         public void CutSelection()
         {
+            if (IsReadOnlyCanvasSelection())
+                return;
+
             m_CutElements.Clear();
 
             if (!CopySelection())
@@ -245,12 +264,13 @@ namespace Unity.UI.Builder
 
             foreach (var element in m_Selection.selection)
                 m_CutElements.Add(element);
-
-            JustNotify();
         }
 
         public void DuplicateSelection()
         {
+            if (IsReadOnlyCanvasSelection())
+                return;
+
             if (CopySelection())
                 Paste();
         }
@@ -262,11 +282,16 @@ namespace Unity.UI.Builder
 
             var element = m_Selection.selection[0];
             var explorerItemElement = element.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
-            explorerItemElement?.ActivateRenameElementMode();
+            explorerItemElement?.ActivateRenameElementMode(m_PaneWindow.document.isCanvasReadOnly);
         }
 
         void PasteUXML(string copyBuffer)
         {
+            // Pasting elements mutates the canvas hierarchy; blocked while it is a read-only preview.
+            // (USS paste routes through PasteUSS, which stays allowed.)
+            if (m_PaneWindow.document.isCanvasReadOnly)
+                return;
+
             var importer = new BuilderVisualTreeAssetImporter(); // Cannot be cached because the StyleBuilder never gets reset.
             importer.ImportXmlFromString(copyBuffer, out var pasteVta);
 
@@ -364,7 +389,7 @@ namespace Unity.UI.Builder
             if (BuilderSharedStyles.IsSelectorsContainerElement(element) ||
                 BuilderSharedStyles.IsDocumentElement(element) ||
                 !element.IsLinkedToAsset() ||
-                (!BuilderSharedStyles.IsSelectorElement(element) && !element.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document) && !BuilderSharedStyles.IsStyleSheetElement(element)) ||
+                (!BuilderSharedStyles.IsSelectorElement(element) && (!element.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document) || m_PaneWindow.document.isCanvasReadOnly) && !BuilderSharedStyles.IsStyleSheetElement(element)) ||
                 BuilderSharedStyles.IsStyleSheetElement(element) && !string.IsNullOrEmpty(element?.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string))
                 return false;
 
@@ -397,6 +422,11 @@ namespace Unity.UI.Builder
             }
             else if (BuilderSharedStyles.IsStyleSheetElement(element))
             {
+                // The mode's stylesheet set is fixed (the opened sheet IS the document): the pane's
+                // Remove action is disabled, and the Delete key must not bypass it.
+                if (m_PaneWindow.document.isStyleSheetEditingMode)
+                    return false;
+
                 BuilderStyleSheetsUtilities.RemoveUSSFromAsset(m_PaneWindow, m_Selection, element);
                 return true;
             }
@@ -647,12 +677,6 @@ namespace Unity.UI.Builder
             m_Selection.NotifyOfStylingChange(null);
         }
 
-        public void JustNotify()
-        {
-            m_Selection.NotifyOfHierarchyChange(null);
-            m_Selection.NotifyOfStylingChange(null);
-        }
-
         public void CreateTargetedSelector(VisualElement ve)
         {
             // populates the new selector field with a selector that targets the current element
@@ -803,11 +827,35 @@ namespace Unity.UI.Builder
                     {
                         assets.Add(openUSSFile.styleSheet);
                         styleSheetAssets.Add(openUSSFile.styleSheet);
+                        CollectStyleSheetImports(openUSSFile.styleSheet, dependencyAssets);
                     }
                 }
 
                 foreach (var template in visualTreeAsset.templateDependencies)
                     CollectTemplateDependencies(template, dependencyAssets);
+            }
+
+            // The canvas preview theme is not a document asset, but the canvas is styled by it: a
+            // change to the theme or to anything it imports must refresh the view too.
+            if (m_PaneWindow is IBuilderViewportWindow viewportWindow
+                && viewportWindow.documentRootElement?.GetProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName) is StyleSheet themeStyleSheet)
+            {
+                dependencyAssets.Add(themeStyleSheet);
+                CollectStyleSheetImports(themeStyleSheet, dependencyAssets);
+            }
+        }
+
+        // The @import closure of a sheet styles everything the sheet styles, but the imports are
+        // not the document's own assets: a change to one refreshes the view without unsaved marks.
+        static void CollectStyleSheetImports(StyleSheet styleSheet, HashSet<UnityEngine.Object> dependencyAssets)
+        {
+            if (styleSheet == null || styleSheet.imports == null)
+                return;
+
+            foreach (var import in styleSheet.imports)
+            {
+                if (import.styleSheet != null && dependencyAssets.Add(import.styleSheet))
+                    CollectStyleSheetImports(import.styleSheet, dependencyAssets);
             }
         }
 
@@ -824,8 +872,12 @@ namespace Unity.UI.Builder
             using var _ = ListPool<StyleSheet>.Get(out var sheets);
             template.GetAllReferencedStyleSheets(sheets);
             foreach (var sheet in sheets)
-                if (sheet != null)
-                    dependencyAssets.Add(sheet);
+            {
+                if (sheet == null)
+                    continue;
+                dependencyAssets.Add(sheet);
+                CollectStyleSheetImports(sheet, dependencyAssets);
+            }
 
             foreach (var nested in template.templateDependencies)
                 CollectTemplateDependencies(nested, dependencyAssets);

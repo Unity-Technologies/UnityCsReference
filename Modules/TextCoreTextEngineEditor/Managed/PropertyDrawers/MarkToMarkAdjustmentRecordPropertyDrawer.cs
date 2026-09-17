@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: TextTextCore not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TextCore;
@@ -197,7 +196,9 @@ namespace UnityEditor.TextCore.Text
                 return;
 
             if (m_GlyphLookupDictionary == null)
+#pragma warning disable UAL0018 // the lookup is cached per drawer instance for the SerializedObject being drawn; a code reload invalidates that SerializedObject and the inspector rebuilds its drawers, so this cache is never drawn from again
                 m_GlyphLookupDictionary = TextCorePropertyDrawerUtilities.GetGlyphProxyLookupDictionary(so);
+#pragma warning restore UAL0018
 
             // Try getting a reference to the glyph for the given glyph index.
             if (!m_GlyphLookupDictionary.TryGetValue(glyphIndex, out GlyphProxy glyph))
@@ -241,4 +242,3 @@ namespace UnityEditor.TextCore.Text
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

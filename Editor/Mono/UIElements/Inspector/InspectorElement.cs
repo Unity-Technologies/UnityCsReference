@@ -111,6 +111,12 @@ namespace UnityEditor.UIElements
         [NoAutoStaticsCleanup]
         internal static bool disabledThrottling { get; set; } = false;
 
+        internal const int k_MaxInspectorBuildDepth = 32;
+
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Per-build editor stack, pushed and popped around each custom inspector build")]
+        static readonly Stack<(Type editorType, Object[] targets)> s_InspectorBuildStack = new();
+
         /// <summary>
         /// Gets the default backend to use based on the current editor settings.
         /// </summary>
@@ -526,8 +532,7 @@ namespace UnityEditor.UIElements
                     // Always clear and re-build when dealing with custom inspectors. User code is assumed to take a reference to the ScriptableObject in `CreateInspectorGUI()`.
                     ClearInspectorElement();
 
-                    // This is a custom editor type. Try to use UI toolkit first with an IMGUI fallback.
-                    m_InspectorElement = CreateInspectorElementUsingUIToolkit(m_Editor) ?? CreateInspectorElementUsingIMGUI(m_Editor);
+                    m_InspectorElement = CreateCustomInspectorElement(m_Editor);
                     m_InspectorElement.AddToClassList(customInspectorUssClassName);
 
                     ClearObsolete();
@@ -699,6 +704,75 @@ namespace UnityEditor.UIElements
 
             m_StickyHeaderContainer.Add(m_InspectorHeaderElement);
         }
+
+        /// <summary>
+        /// Builds the inspector for a custom editor, refusing once inspectors are nested past the depth limit.
+        /// </summary>
+        /// <param name="targetEditor">The custom editor to build.</param>
+        /// <returns>The built inspector, or a help box saying why it was refused.</returns>
+        VisualElement CreateCustomInspectorElement(Editor targetEditor)
+        {
+            var editorType = targetEditor.GetType();
+            var targets = targetEditor.targets;
+
+            // A repeated frame does not prove the nesting never ends, so only the depth bound refuses a build.
+            if (s_InspectorBuildStack.Count >= k_MaxInspectorBuildDepth)
+            {
+                var error = IsBuildingInspector(editorType, targets)
+                    ? $"{editorType.Name}.CreateInspectorGUI kept creating an InspectorElement for the object it is already inspecting, so it was stopped after {k_MaxInspectorBuildDepth} levels. Use InspectorElement.FillDefaultInspector to add the default fields instead."
+                    : $"Inspectors are nested more than {k_MaxInspectorBuildDepth} deep at {editorType.Name}, so this one was not built. Check whether CreateInspectorGUI keeps creating an InspectorElement for a new object.";
+
+                Debug.LogError(error, targetEditor.target);
+                return new HelpBox(error, HelpBoxMessageType.Error);
+            }
+
+            s_InspectorBuildStack.Push((editorType, targets));
+
+            try
+            {
+                // Try to use UI toolkit first with an IMGUI fallback.
+                return CreateInspectorElementUsingUIToolkit(targetEditor) ?? CreateInspectorElementUsingIMGUI(targetEditor);
+            }
+            finally
+            {
+                s_InspectorBuildStack.Pop();
+            }
+        }
+
+        /// <summary>
+        /// Returns true when the same editor type is already building an inspector for the same objects further
+        /// up the stack.
+        /// </summary>
+        /// <param name="editorType">The type of the editor about to build its inspector.</param>
+        /// <param name="targets">The objects that editor inspects.</param>
+        /// <returns>True when this build repeats one that has not finished.</returns>
+        static bool IsBuildingInspector(Type editorType, Object[] targets)
+        {
+            foreach (var frame in s_InspectorBuildStack)
+            {
+                if (frame.editorType == editorType && SameTargets(frame.targets, targets))
+                    return true;
+            }
+
+            return false;
+        }
+
+        static bool SameTargets(Object[] lhs, Object[] rhs)
+        {
+            if (lhs.Length != rhs.Length)
+                return false;
+
+            for (var i = 0; i < lhs.Length; ++i)
+            {
+                // Compare ids rather than references: a destroyed target reads as null but keeps its id.
+                if (GetTargetId(lhs[i]) != GetTargetId(rhs[i]))
+                    return false;
+            }
+
+            return true;
+        }
+
+        static EntityId GetTargetId(Object target) => target?.GetEntityId() ?? EntityId.None;
 
         VisualElement CreateInspectorElementUsingUIToolkit(Editor targetEditor)
         {

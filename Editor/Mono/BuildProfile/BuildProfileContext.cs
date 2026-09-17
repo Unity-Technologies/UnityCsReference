@@ -34,6 +34,9 @@ namespace UnityEditor.Build.Profile
         const string k_BuildProfilePath = "Library/BuildProfiles";
         const string k_SharedProfilePath = $"{k_BuildProfilePath}/SharedProfile.asset";
         [AutoStaticsCleanupOnCodeReload]
+        // Singleton cache: the instance getter loads or creates the context when this is null, and the
+        // constructor assigns it back when the ScriptableObject is reconstructed.
+        [IgnoreForUAL0015("Singleton cache reloaded or recreated on demand by the instance getter")]
         static BuildProfileContext s_Instance;
 
         bool m_Initializing;
@@ -326,7 +329,7 @@ namespace UnityEditor.Build.Profile
 
         internal void RegisterProfileAwaitingInitialization(
             BuildProfile profile,
-            string[] packagesToAdd,
+            BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd,
             int preconfiguredSettingsVariant,
             UnityAction<BuildProfile> onProfileCreated)
         {
@@ -949,8 +952,11 @@ namespace UnityEditor.Build.Profile
             return activeProfile.qualitySettings.defaultQualityLevel;
         }
 
+        // Every field of the struct has to travel through here, or a native write drops the ones left
+        // out: the settings are rebuilt from these arguments, not merged into the existing ones.
+        // Counts and enums cross as int, which is what the proxy generator supports for by-ref values.
         [RequiredByNativeCode, UsedImplicitly]
-        static bool SetActiveShaderBuildSettings(ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, string[] defines, ShaderBuildSettings.ShaderCompilerSettings[] compilerSettings)
+        static bool SetActiveShaderBuildSettings(ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, string[] defines, int numInternalDefines, ShaderBuildSettings.ShaderCompilerSettings[] compilerSettings, int fastBuildMode)
         {
             if (!ActiveProfileHasGraphicsSettings())
                 return false;
@@ -959,26 +965,32 @@ namespace UnityEditor.Build.Profile
             {
                 keywordDeclarationOverrides = keywordDeclarationOverrides,
                 defines = defines,
-                compilerSettings = compilerSettings
+                numInternalDefines = (uint)numInternalDefines,
+                compilerSettings = compilerSettings,
+                fastBuildMode = (ShaderBuildSettings.FastBuildMode)fastBuildMode
             };
             return true;
         }
 
         [RequiredByNativeCode, UsedImplicitly]
-        static void GetActiveShaderBuildSettings(out ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, out string[] defines, out ShaderBuildSettings.ShaderCompilerSettings[] compilerSettings)
+        static void GetActiveShaderBuildSettings(out ShaderBuildSettings.KeywordDeclarationOverride[] keywordDeclarationOverrides, out string[] defines, out int numInternalDefines, out ShaderBuildSettings.ShaderCompilerSettings[] compilerSettings, out int fastBuildMode)
         {
             if (!ActiveProfileHasGraphicsSettings())
             {
                 keywordDeclarationOverrides = null;
                 defines = null;
+                numInternalDefines = 0;
                 compilerSettings = null;
+                fastBuildMode = (int)ShaderBuildSettings.FastBuildMode.Off;
                 return;
             }
 
             var shaderBuildSettings = activeProfile.graphicsSettings.shaderBuildSettings;
             keywordDeclarationOverrides = shaderBuildSettings.keywordDeclarationOverrides;
             defines = shaderBuildSettings.defines;
+            numInternalDefines = (int)shaderBuildSettings.numInternalDefines;
             compilerSettings = shaderBuildSettings.compilerSettings;
+            fastBuildMode = (int)shaderBuildSettings.fastBuildMode;
         }
 
         // Lets native code check whether its shader build settings snapshot is stale without marshalling the data.

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using UnityEngine;
 using System;
 using UnityEditor;
@@ -23,9 +22,9 @@ namespace UnityEditorInternal.Profiling
 
         protected static class BaseStyles
         {
-            public static readonly GUIContent noData = EditorGUIUtility.TrTextContent("No frame data available. Select a frame from the charts above to see its details here.");
-            public static readonly GUIContent disabledSearchText = EditorGUIUtility.TrTextContent("Showing search results are disabled while recording with deep profiling.\nStop recording to view search results.");
-            public static readonly GUIContent cpuGPUTime = EditorGUIUtility.TrTextContent("CPU:{0}ms   GPU:{1}ms");
+            public static readonly GUIContent noData = L10n.TextContent("No frame data available. Select a frame from the charts above to see its details here.", null, null, null);
+            public static readonly GUIContent disabledSearchText = L10n.TextContent("Showing search results are disabled while recording with deep profiling.\nStop recording to view search results.", null, null, null);
+            public static readonly GUIContent cpuGPUTime = L10n.TextContent("CPU:{0}ms   GPU:{1}ms", null, null, null);
 
             public static readonly GUIStyle header = "OL title";
             public static readonly GUIStyle label = "OL label";
@@ -40,18 +39,18 @@ namespace UnityEditorInternal.Profiling
             public static readonly int tooltipButtonAreaControlId = "ProfilerTimelineTooltipButton".GetHashCode();
             public static readonly int timelineTimeAreaControlId = "ProfilerTimelineTimeArea".GetHashCode();
 
-            public static readonly GUIContent tooltipCopyTooltip = EditorGUIUtility.TrTextContent("Copy", "Copy to Clipboard");
+            public static readonly GUIContent tooltipCopyTooltip = L10n.TextContent("Copy", "Copy to Clipboard", null, null);
 
-            public static readonly GUIContent showDetailsDropdownContent = EditorGUIUtility.TrTextContent("Show");
-            public static readonly GUIContent showFullDetailsForCallStacks = EditorGUIUtility.TrTextContent("Full details for Call Stacks");
-            public static readonly GUIContent showSelectedSampleStacks = EditorGUIUtility.TrTextContent("Selected Sample Stack ...");
+            public static readonly GUIContent showDetailsDropdownContent = L10n.TextContent("Show", null, null, null);
+            public static readonly GUIContent showFullDetailsForCallStacks = L10n.TextContent("Full details for Call Stacks", null, null, null);
+            public static readonly GUIContent showSelectedSampleStacks = L10n.TextContent("Selected Sample Stack ...", null, null, null);
             public static readonly GUIContent askAssistantTooltip = EditorGUIUtility.TrTextContent("Ask Assistant", "Ask the Profiler Assistant for help understanding this sample", EditorGUIUtility.LoadIcon("AISparkle"));
             public static readonly GUIStyle viewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDownLeft);
             public static readonly GUIStyle threadSelectionToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
             public static readonly GUIStyle detailedViewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
-            public static readonly GUIContent updateLive = EditorGUIUtility.TrTextContent("Live", "Display the current or selected frame while recording Playmode or Editor. This increases the overhead in the EditorLoop when the Profiler Window is repainted.");
-            public static readonly GUIContent liveUpdateMessage = EditorGUIUtility.TrTextContent("Displaying of frame data disabled while recording Playmode or Editor. To see the data, pause recording, or toggle \"Live\" display mode on. " +
-                "\n \"Live\" display mode increases the overhead in the EditorLoop when the Profiler Window is repainted.");
+            public static readonly GUIContent updateLive = L10n.TextContent("Live", "Display the current or selected frame while recording Playmode or Editor. This increases the overhead in the EditorLoop when the Profiler Window is repainted.", null, null);
+            public static readonly GUIContent liveUpdateMessage = L10n.TextContent("Displaying of frame data disabled while recording Playmode or Editor. To see the data, pause recording, or toggle \"Live\" display mode on. " +
+                "\n \"Live\" display mode increases the overhead in the EditorLoop when the Profiler Window is repainted.", null, null, null);
 
             public static readonly string selectionExtraInfoHierarhcyView = L10n.Tr("Selection Info: ", null);
             public static readonly string proxySampleMessage = L10n.Tr("Sample \"{0}\" {1} {2} deeper not found in this frame within the selected Sample Stack.", null);
@@ -111,40 +110,27 @@ namespace UnityEditorInternal.Profiling
 
         static readonly GUIContent[] kCPUProfilerViewTypeNames = new GUIContent[]
         {
-            EditorGUIUtility.TrTextContent("Timeline"),
-            EditorGUIUtility.TrTextContent("Hierarchy"),
-            EditorGUIUtility.TrTextContent("Inverted Hierarchy"),
-            EditorGUIUtility.TrTextContent("Raw Hierarchy")
+            L10n.TextContent("Timeline", null, null, null),
+            L10n.TextContent("Hierarchy", null, null, null),
+            L10n.TextContent("Inverted Hierarchy", null, null, null),
+            L10n.TextContent("Raw Hierarchy", null, null, null),
+            L10n.TextContent("New Timeline (Experimental)", null, null, null),
         };
-
-        static readonly GUIContent[] kCPUProfilerViewTypeNamesWithNewTimeline = new GUIContent[]
-        {
-            EditorGUIUtility.TrTextContent("Timeline"),
-            EditorGUIUtility.TrTextContent("Hierarchy"),
-            EditorGUIUtility.TrTextContent("Inverted Hierarchy"),
-            EditorGUIUtility.TrTextContent("Raw Hierarchy"),
-            EditorGUIUtility.TrTextContent("New Timeline (Experimental)"),
-        };
-
-        bool IsJobsProfilerRegistered() {
-            ProfilerModule pm = m_ProfilerWindow.GetJobsProfilerModule();
-            return pm != null;
-        }
 
         internal static GUIContent GetCPUProfilerViewTypeName(ProfilerViewType viewType)
         {
             switch (viewType)
             {
                 case ProfilerViewType.Hierarchy:
-                    return kCPUProfilerViewTypeNamesWithNewTimeline[1];
+                    return kCPUProfilerViewTypeNames[1];
                 case ProfilerViewType.Timeline:
-                    return kCPUProfilerViewTypeNamesWithNewTimeline[0];
+                    return kCPUProfilerViewTypeNames[0];
                 case ProfilerViewType.TimelineV2:
-                    return kCPUProfilerViewTypeNamesWithNewTimeline[4];
+                    return kCPUProfilerViewTypeNames[4];
                 case ProfilerViewType.RawHierarchy:
-                    return kCPUProfilerViewTypeNamesWithNewTimeline[3];
+                    return kCPUProfilerViewTypeNames[3];
                 case ProfilerViewType.InvertedHierarchy:
-                    return kCPUProfilerViewTypeNamesWithNewTimeline[2];
+                    return kCPUProfilerViewTypeNames[2];
                 default:
                     throw new NotImplementedException($"Lookup Not Implemented for {viewType}");
             }
@@ -156,21 +142,13 @@ namespace UnityEditorInternal.Profiling
             (int)ProfilerViewType.Hierarchy,
             (int)ProfilerViewType.InvertedHierarchy,
             (int)ProfilerViewType.RawHierarchy,
-        };
-
-        static readonly int[] kCPUProfilerViewTypesWithNewTimeline = new int[]
-        {
-            (int)ProfilerViewType.Timeline,
-            (int)ProfilerViewType.Hierarchy,
-            (int)ProfilerViewType.InvertedHierarchy,
-            (int)ProfilerViewType.RawHierarchy,
             (int)ProfilerViewType.TimelineV2,
         };
 
         static readonly GUIContent[] kGPUProfilerViewTypeNames = new GUIContent[]
         {
-            EditorGUIUtility.TrTextContent("Hierarchy"),
-            EditorGUIUtility.TrTextContent("Raw Hierarchy")
+            L10n.TextContent("Hierarchy", null, null, null),
+            L10n.TextContent("Raw Hierarchy", null, null, null)
         };
         static readonly int[] kGPUProfilerViewTypes = new int[]
         {
@@ -203,10 +181,7 @@ namespace UnityEditorInternal.Profiling
             ProfilerViewType newViewType;
             if (!gpuView)
             {
-                if (IsJobsProfilerRegistered())
-                    newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kCPUProfilerViewTypeNamesWithNewTimeline, kCPUProfilerViewTypesWithNewTimeline, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
-                else
-                    newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kCPUProfilerViewTypeNames, kCPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
+                newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kCPUProfilerViewTypeNames, kCPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
             }
             else
             {
@@ -371,10 +346,7 @@ namespace UnityEditorInternal.Profiling
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.Hierarchy), false, () => { viewTypeChanged(ProfilerViewType.Hierarchy); });
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.InvertedHierarchy), false, () => { viewTypeChanged(ProfilerViewType.InvertedHierarchy); });
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.RawHierarchy), false, () => { viewTypeChanged(ProfilerViewType.RawHierarchy); });
-                        if (IsJobsProfilerRegistered())
-                        {
-                            menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.TimelineV2), false, () => { viewTypeChanged(ProfilerViewType.TimelineV2); });
-                        }
+                        menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.TimelineV2), false, () => { viewTypeChanged(ProfilerViewType.TimelineV2); });
 
                         menu.AddSeparator("");
                         if (hasCallstack)
@@ -525,9 +497,9 @@ namespace UnityEditorInternal.Profiling
         {
             public static class Content
             {
-                public static readonly GUIContent title = EditorGUIUtility.TrTextContent("Sample Stack");
-                public static readonly GUIContent selectedSampleStack = EditorGUIUtility.TrTextContent("Selected Sample Stack");
-                public static readonly GUIContent actualSampleStack = EditorGUIUtility.TrTextContent("Actual Sample Stack");
+                public static readonly GUIContent title = L10n.TextContent("Sample Stack", null, null, null);
+                public static readonly GUIContent selectedSampleStack = L10n.TextContent("Selected Sample Stack", null, null, null);
+                public static readonly GUIContent actualSampleStack = L10n.TextContent("Actual Sample Stack", null, null, null);
             }
 
             [NonSerialized]
@@ -658,4 +630,3 @@ namespace UnityEditorInternal.Profiling
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

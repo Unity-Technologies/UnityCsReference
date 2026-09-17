@@ -22,7 +22,7 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly GUIContent OtherSettings = EditorGUIUtility.TrTextContent("Other Settings");
+            public static readonly GUIContent OtherSettings = L10n.TextContent("Other Settings", null, null, null);
         }
 
         class DefaultEnvironmentSectionExtension : LightingWindowEnvironmentSection

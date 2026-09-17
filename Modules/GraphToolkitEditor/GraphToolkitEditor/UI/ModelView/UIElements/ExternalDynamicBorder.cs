@@ -18,11 +18,7 @@ namespace Unity.GraphToolkit.Editor
         public ExternalDynamicBorder(ModelView view)
             : base(view)
         {
-            float maxMargin = (SmallSelectionWidth + HoverWidth) / k_MinZoom;
-            style.left = -maxMargin;
-            style.right = -maxMargin;
-            style.bottom = -maxMargin;
-            style.top = -maxMargin;
+            UpdateMargins();
         }
 
         [NoAutoStaticsCleanup] // CSS custom property descriptor; value is a fixed CSS property name
@@ -32,6 +28,38 @@ namespace Unity.GraphToolkit.Editor
         /// The inset for the element bounds.
         /// </summary>
         public float Inset { get; private set; }
+
+        /// <summary>
+        /// How much further than <see cref="BaseMargin"/> the element extends past the bounds of the
+        /// <see cref="ModelView"/> it decorates, in graph units.
+        /// </summary>
+        /// <remarks>
+        /// Only affects how far the element reaches, not where the border is drawn: <see cref="AlterBounds"/>
+        /// compensates for the whole margin, so the outline always lands on the edge of the decorated element.
+        /// This is read while the base class constructor runs, so overrides must not rely on derived state
+        /// being initialized.
+        /// </remarks>
+        protected virtual float ExtraMargin => 0f;
+
+        /// <summary>
+        /// The margin needed to draw the widest border this element can display, in graph units.
+        /// </summary>
+        protected float BaseMargin => (SmallSelectionWidth + HoverWidth) / k_MinZoom;
+
+        float TotalMargin => BaseMargin + ExtraMargin;
+
+        /// <summary>
+        /// Positions the element so that it extends <see cref="TotalMargin"/> past the bounds of the
+        /// <see cref="ModelView"/> it decorates, minus the element's own padding.
+        /// </summary>
+        protected void UpdateMargins()
+        {
+            var margin = TotalMargin;
+            style.left = -margin + resolvedStyle.paddingLeft;
+            style.right = -margin + resolvedStyle.paddingRight;
+            style.bottom = -margin + resolvedStyle.paddingBottom;
+            style.top = -margin + resolvedStyle.paddingTop;
+        }
 
         /// <inheritdoc />
         protected override float GetCornerOffset(float width) => width;
@@ -43,19 +71,16 @@ namespace Unity.GraphToolkit.Editor
 
             if (e.customStyle.TryGetValue(k_InsetProperty, out var value))
                 Inset = value;
-            float maxMargin = (SmallSelectionWidth + HoverWidth) / k_MinZoom;
-            style.left = -maxMargin + resolvedStyle.paddingLeft;
-            style.right = -maxMargin + resolvedStyle.paddingRight;
-            style.bottom = -maxMargin + resolvedStyle.paddingBottom;
-            style.top = -maxMargin + resolvedStyle.paddingTop;
+
+            UpdateMargins();
         }
 
         /// <inheritdoc />
         protected override void AlterBounds(ref Rect bound, float width)
         {
-            float maxMargin = (SmallSelectionWidth + HoverWidth) / k_MinZoom;
-            bound.position += Vector2.one * (maxMargin - width + Inset);
-            bound.size -= Vector2.one * (maxMargin - width + Inset) * 2;
+            var margin = TotalMargin;
+            bound.position += Vector2.one * (margin - width + Inset);
+            bound.size -= Vector2.one * (margin - width + Inset) * 2;
         }
     }
 }

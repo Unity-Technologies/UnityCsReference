@@ -254,8 +254,6 @@ namespace UnityEngine.UIElements
             int n = GetTextElementCount();
             int firstChar = -1;
             int lastChar = -1;
-            float lineLeft = float.MaxValue;
-            float lineRight = float.MinValue;
 
             for (int i = 0; i < n; i++)
             {
@@ -264,10 +262,6 @@ namespace UnityEngine.UIElements
 
                 if (firstChar < 0) firstChar = i;
                 lastChar = i;
-
-                var m = GetScaledCharacterMetrics(i);
-                lineLeft = Mathf.Min(lineLeft, m.topLeft.x);
-                lineRight = Mathf.Max(lineRight, m.topRight.x);
             }
 
             if (firstChar < 0)
@@ -275,9 +269,9 @@ namespace UnityEngine.UIElements
 
             int charCount = lastChar - firstChar + 1;
 
-            // Glyph mesh vertex Y positions are local to each paragraph, so they can't be
-            // used for cross-line comparisons. Instead, use the native cursor/line APIs which
-            // provide correct global Y coordinates.
+            // Extents come from the native layout metrics, not the mesh quads: quads carry
+            // vertex padding and per-glyph transforms (<rotate>, italic shear), so they don't
+            // describe the typographic line box. Rotated glyphs may overhang this rect by design.
             float ppp = GetPixelsPerPoint();
             var cursorPos = TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, firstChar);
             float lineHeightPx = TextGenerationInfo.GetLineHeight(textGenerationInfo, lineIndex);
@@ -285,6 +279,8 @@ namespace UnityEngine.UIElements
             float lineBottomPt = cursorPos.y / ppp;
             float lineTopPt = (cursorPos.y - lineHeightPx) / ppp;
             float baselinePt = lineBaselinePx / ppp;
+            float lineLeft = TextGenerationInfo.GetLineXOrigin(textGenerationInfo, lineIndex) / ppp;
+            float lineRight = lineLeft + TextGenerationInfo.GetLineWidth(textGenerationInfo, lineIndex) / ppp;
 
             return new LineInfo
             {

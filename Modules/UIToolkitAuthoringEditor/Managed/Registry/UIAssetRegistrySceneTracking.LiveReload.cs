@@ -11,8 +11,7 @@ using UnityEngine.UIElements;
 namespace Unity.UIToolkit.Editor;
 
 /// <summary>
-/// Suspends the document live reload of the tracked scene panels while
-/// <see cref="UIToolkitAuthoringSettings.EnableMainStageAuthoring"/> is on.
+/// Suspends the document live reload of the tracked scene panels.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -86,8 +85,7 @@ static partial class UIAssetRegistrySceneTracking
     }
 
     /// <summary>
-    /// Brings <paramref name="panel"/> in line with the current settings: its documents stop live reloading
-    /// while Main Stage authoring is enabled, and reload again as soon as it is not.
+    /// Suspends the document live reload of <paramref name="panel"/>.
     /// </summary>
     /// <remarks>
     /// Only call this once the panel's assets are tracked: the registry's authoring trackers are what keep the
@@ -98,12 +96,6 @@ static partial class UIAssetRegistrySceneTracking
     {
         if (panel == null)
             return;
-
-        if (!UIToolkitStageUtility.IsAuthoringEnabledInMainStage)
-        {
-            RestoreLiveReload(panel);
-            return;
-        }
 
         if (s_LiveReloadSuspensions.ContainsKey(panel))
             return;
@@ -246,6 +238,26 @@ static partial class UIAssetRegistrySceneTracking
         EditorApplication.delayCall += FlushPendingReload;
     }
 
+    /// <summary>
+    /// Runs the pending re-clone now instead of on the next editor tick, so the panels' new element instances
+    /// exist — and every change processor has reconciled against them — before this returns.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For the deliberate, one-shot operations that settle a single asset from a menu. Their reimport rebuilds
+    /// the document's asset tree, so every live element cloned from it is left pointing at a
+    /// <see cref="VisualElementAsset"/> that has left the document. Deferring the re-clone means the editor
+    /// draws a frame against that stale tree — the class names in the hierarchy flicker as the style sheet
+    /// tracker applies the reimport ahead of it — and the inspector repaints against a selection whose
+    /// elements are gone, which is where its console errors come from.
+    /// </para>
+    /// <para>
+    /// Safe to run inline here, unlike from an edit command (see <see cref="ScheduleReload"/>): a menu action
+    /// holds none of the elements the re-clone releases.
+    /// </para>
+    /// </remarks>
+    internal static void FlushPendingReloadNow() => FlushPendingReload();
+
     static void FlushPendingReload()
     {
         var changes = s_PendingChanges;
@@ -268,7 +280,10 @@ static partial class UIAssetRegistrySceneTracking
         // every view, the edited one included.
         using var _skipped = ListPool<IPanelComponent>.Get(out var skipped);
         if ((changes & (CommandCategory.Hierarchy | CommandCategory.StylingContext)) == CommandCategory.None)
+        {
             CollectSelectedPanelComponents(skipped);
+            skipped.RemoveAll(component => ChangedContainedDocumentOf(component, changedAssets));
+        }
 
         // Reloading rebuilds the trees these panels are keyed on, so snapshot before touching any of them.
         using var _panels = ListPool<Panel>.Get(out var panels);
@@ -334,6 +349,26 @@ static partial class UIAssetRegistrySceneTracking
     /// repaints; the UI Stage gets the same thing from the frame update around its own re-clone.
     /// </summary>
     static void ReconcileAfterReload(BaseVisualElementPanel panel) => panel?.UpdateAuthoring();
+
+    /// <summary>
+    /// Whether any of <paramref name="changedAssets"/> is a template nested in <paramref name="component"/>'s
+    /// document. An edit there is only dual-written to the edited instance, so the component cannot be skipped.
+    /// </summary>
+    static bool ChangedContainedDocumentOf(IPanelComponent component, List<UnityEngine.Object> changedAssets)
+    {
+        var root = component?.visualTreeAsset;
+        if (root == null || changedAssets is not { Count: > 0 })
+            return false;
+
+        using var _ = ListPool<UnityEngine.Object>.Get(out var contained);
+        foreach (var asset in changedAssets)
+        {
+            if (asset is VisualTreeAsset vta && vta != root)
+                contained.Add(vta);
+        }
+
+        return PanelDependencyTracker.DependsOnAny(component, contained);
+    }
 
     // The scene components holding the current selection: what the inspector edits, and therefore the only
     // documents the authoring handlers dual-write to.

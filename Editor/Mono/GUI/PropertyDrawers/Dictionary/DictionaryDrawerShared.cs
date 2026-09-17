@@ -102,7 +102,7 @@ internal partial class DictionaryDrawer
         // Foldout titles for a dictionary value that is itself a collection, replacing the "Value" displayName.
         internal static readonly string NestedArrayLabel = L10n.Tr("Array", null);
         internal static readonly string NestedListLabel = L10n.Tr("List", null);
-        internal static readonly string ResetToDefaultsLabel = L10n.Tr("Reset to Defaults", null);
+        internal static readonly string ResetLayoutLabel = L10n.Tr("Reset Layout", null);
         internal static readonly string MultiEditUnsupportedMessage = L10n.Tr("Dictionary: Multi-object editing is not supported.", null); // Entries are sorted by key, so a given row may correspond to different entries across targets, so edits could affect unrelated entries
         internal static readonly string DuplicateMarkerTooltip = L10n.Tr("An element with the same key already exists, so this element is excluded from the runtime dictionary.", null);
         internal static readonly string NullKeyMarkerTooltip = L10n.Tr("The key is null. A dictionary only stores entries with a valid (non-null) key, so this element is excluded from the runtime dictionary.", null);
@@ -114,7 +114,9 @@ internal partial class DictionaryDrawer
         internal static readonly string NullKeysHelpBoxSingle = L10n.Tr("1 null key ignored. A dictionary key can't be null.", null);
         internal static readonly string NullKeysHelpBoxFormat = L10n.Tr("{0} null keys ignored. A dictionary key can't be null.", null);
         internal static readonly string MixedIgnoredHelpBoxFormat = L10n.Tr("{0} entries ignored. Ensure all keys are unique and non-null.", null);
-        internal static readonly string SelectFirstIgnoredButtonLabel = L10n.Tr("Select", null);
+        internal static readonly string SelectIgnoredButtonLabel = L10n.Tr("Select", null);
+        internal static readonly string SelectAllIgnoredButtonLabel = L10n.Tr("Select All", null);
+        internal static readonly string SelectFirstIgnoredButtonLabel = L10n.Tr("Select First", null);
         // Header context-menu labels for the three DictionaryLayout values, shown as a
         // radio group (the active layout is checked).
         internal static readonly string TwoColumnsLayoutLabel = L10n.Tr("Two Columns", null);
@@ -187,7 +189,7 @@ internal partial class DictionaryDrawer
 
     // Disk-backed, persistent across editor sessions. Key: Hash128 of normalized path
     // ([\d+] → []) so container siblings share state (linked views). Eviction: only via
-    // explicit RemoveState from the "Reset to Defaults" context menu.
+    // explicit RemoveState from the "Reset Layout" context menu.
     [NoAutoStaticsCleanup] // disk-backed state cache, intentionally persistent across sessions; safe to persist
     static readonly StateCache<DictionaryState> s_StateCache = new StateCache<DictionaryState>("Library/StateCache/DictionaryDrawer/");
 
@@ -311,6 +313,9 @@ internal partial class DictionaryDrawer
     internal static bool ShowSerializedOrder => SessionState.GetBool(k_SerializedOrderSessionKey, false);
 
     [AutoStaticsCleanupOnCodeReload] // stale view handlers after reload would pin the old ALC; views resubscribe on attach
+    // Subscribed when a DictionaryView attaches to a panel and unsubscribed when it detaches, so an
+    // empty handler list is correct while no view is attached; reattaching subscribes again.
+    [IgnoreForUAL0015("Subscribed and unsubscribed as DictionaryViews attach to and detach from a panel")]
     internal static event Action SerializedOrderChanged;
 
     internal static void SetShowSerializedOrder(bool value)
@@ -601,6 +606,9 @@ internal partial class DictionaryDrawer
     // a project. The key is the closed Dictionary<K,V> targetType.
     // Statics reset on domain reload, so the cache rebuilds automatically when assemblies change.
     [AutoStaticsCleanupOnCodeReload]
+    // Lazy registry: GetAssemblyLayoutRegistry rescans the loaded assemblies whenever this is null, so
+    // the mapping cleared on reload is rebuilt from the assemblies that are actually loaded now.
+    [IgnoreForUAL0015("Lazy assembly-layout registry rebuilt by GetAssemblyLayoutRegistry on the next access")]
     static Dictionary<Type, AssemblyLayoutEntry> s_AssemblyLayoutRegistry;
 
     static Dictionary<Type, AssemblyLayoutEntry> GetAssemblyLayoutRegistry()
@@ -838,6 +846,31 @@ internal partial class DictionaryDrawer
         firstDisplayIndex = MinDisplayIndex(duplicateArrayIndices, sortedIndices, firstDisplayIndex);
         firstDisplayIndex = MinDisplayIndex(nullKeyArrayIndices, sortedIndices, firstDisplayIndex);
         return firstDisplayIndex == int.MaxValue ? -1 : firstDisplayIndex;
+    }
+
+    internal static void CollectIgnoredDisplayIndices(
+        IEnumerable<int> duplicateArrayIndices,
+        IEnumerable<int> nullKeyArrayIndices,
+        SortedIndexMap sortedIndices,
+        List<int> displayIndices)
+    {
+        displayIndices.Clear();
+        AddDisplayIndices(duplicateArrayIndices, sortedIndices, displayIndices);
+        AddDisplayIndices(nullKeyArrayIndices, sortedIndices, displayIndices);
+        displayIndices.Sort();
+    }
+
+    static void AddDisplayIndices(IEnumerable<int> arrayIndices, SortedIndexMap sortedIndices, List<int> displayIndices)
+    {
+        if (arrayIndices == null)
+            return;
+
+        foreach (var arrayIndex in arrayIndices)
+        {
+            if (!sortedIndices.ContainsArrayIndex(arrayIndex))
+                continue;
+            displayIndices.Add(sortedIndices.ToDisplayIndex(arrayIndex));
+        }
     }
 
     static int MinDisplayIndex(IEnumerable<int> arrayIndices, SortedIndexMap sortedIndices, int current)

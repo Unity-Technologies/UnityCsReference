@@ -48,88 +48,88 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent duration = EditorGUIUtility.TrTextContent("Duration", "The length of time the Particle System is emitting particles. If the system is looping, this indicates the length of one cycle.");
-            public GUIContent looping = EditorGUIUtility.TrTextContent("Looping", "If true, the emission cycle will repeat after the duration.");
-            public GUIContent prewarm = EditorGUIUtility.TrTextContent("Prewarm", "When played, a prewarmed system will be in a state as if it had emitted one loop cycle. Can only be used if the system is looping.");
-            public GUIContent startDelay = EditorGUIUtility.TrTextContent("Start Delay", "Delay in seconds that this Particle System will wait before emitting particles. Cannot be used together with a prewarmed looping system.");
-            public GUIContent maxParticles = EditorGUIUtility.TrTextContent("Max Particles", "The number of particles in the system will be limited by this number. Emission will be temporarily halted if this is reached.");
-            public GUIContent lifetime = EditorGUIUtility.TrTextContent("Start Lifetime", "Start lifetime in seconds, particle will die when its lifetime reaches 0.");
-            public GUIContent speed = EditorGUIUtility.TrTextContent("Start Speed", "The start speed of particles, applied in the starting direction.");
-            public GUIContent color = EditorGUIUtility.TrTextContent("Start Color", "The start color of particles.");
-            public GUIContent size3D = EditorGUIUtility.TrTextContent("3D Start Size", "If enabled, you can control the size separately for each axis.");
-            public GUIContent size = EditorGUIUtility.TrTextContent("Start Size", "The start size of particles.");
-            public GUIContent rotation3D = EditorGUIUtility.TrTextContent("3D Start Rotation", "If enabled, you can control the rotation separately for each axis.");
-            public GUIContent rotation = EditorGUIUtility.TrTextContent("Start Rotation", "The start rotation of particles in degrees.");
-            public GUIContent randomizeRotationDirection = EditorGUIUtility.TrTextContent("Flip Rotation", "Cause some particles to spin in the opposite direction. (Set between 0 and 1, where a higher value causes more to flip)");
-            public GUIContent autoplay = EditorGUIUtility.TrTextContent("Play On Awake*", "If enabled, the system will start playing automatically. Note that this setting is shared between all Particle Systems in the current particle effect.");
-            public GUIContent gravitySource = EditorGUIUtility.TrTextContent("Gravity Source", "Use 2D or 3D physics gravity");
-            public GUIContent gravity = EditorGUIUtility.TrTextContent("Gravity Modifier", "Scales the gravity defined in Physics Manager");
-            public GUIContent scalingMode = EditorGUIUtility.TrTextContent("Scaling Mode", "Use the combined scale from our entire hierarchy, just this local particle node, or only apply scale to the shape module.");
-            public GUIContent simulationSpace = EditorGUIUtility.TrTextContent("Simulation Space", "Makes particle positions simulate in world, local or custom space. In local space they stay relative to their own Transform, and in custom space they are relative to the custom Transform.");
-            public GUIContent customSimulationSpace = EditorGUIUtility.TrTextContent("Custom Simulation Space", "Makes particle positions simulate relative to a custom Transform component.");
-            public GUIContent simulationSpeed = EditorGUIUtility.TrTextContent("Simulation Speed", "Scale the playback speed of the Particle System.");
-            public GUIContent deltaTime = EditorGUIUtility.TrTextContent("Delta Time", "Use either the Delta Time or the Unscaled Delta Time. Useful for playing effects whilst paused.");
-            public GUIContent autoRandomSeed = EditorGUIUtility.TrTextContent("Auto Random Seed", "Simulate differently each time the effect is played.");
-            public GUIContent randomSeed = EditorGUIUtility.TrTextContent("Random Seed", "Randomize the look of the Particle System. Using the same seed will make the Particle System play identically each time. After changing this value, restart the Particle System to see the changes, or check the Resimulate box.");
-            public GUIContent emitterVelocity = EditorGUIUtility.TrTextContent("Custom Velocity", "An extra velocity value added to emitted particles when the Emitter Velocity Mode is Custom.");
-            public GUIContent emitterVelocityMode = EditorGUIUtility.TrTextContent("Emitter Velocity Mode", "How to determine the extra velocity imparted to particles by the Particle System. Use the Transform option to add the velocity calculated from the system's Transform. Use Rigidbody to add the velocity of the system's Rigidbody. Use Custom to add the velocity specified in the Custom Velocity property.");
-            public GUIContent stopAction = EditorGUIUtility.TrTextContent("Stop Action", "When the Particle System is stopped and all particles have died, should the GameObject automatically disable/destroy itself?");
-            public GUIContent cullingMode = EditorGUIUtility.TrTextContent("Culling Mode", "Choose whether to continue simulating the Particle System when offscreen. Catch-up mode pauses offscreen simulations but performs a large simulation step when they become visible, giving the appearance that they were never paused. Automatic uses Pause mode for looping systems, and AlwaysSimulate if not looping.");
-            public GUIContent ringBufferMode = EditorGUIUtility.TrTextContent("Ring Buffer Mode", "Rather than dying when their lifetime has elapsed, particles will remain alive until the Max Particles buffer is full, at which point new particles will replace the oldest.");
-            public GUIContent ringBufferLoopRange = EditorGUIUtility.TrTextContent("Loop Range", "Particle lifetimes may loop between a fade-in and fade-out time, in order to use curves for the entire time they are alive. Values are in the 0-1 range.");
-            public GUIContent prewarmingSubEmitterWarning = EditorGUIUtility.TrTextContent("Pre-warming a sub-emitter is not necessary and wastes resources. You only need to pre-warm the root Particle System component.");
+            public GUIContent duration = L10n.TextContent("Duration", "The length of time the Particle System is emitting particles. If the system is looping, this indicates the length of one cycle.", null, null);
+            public GUIContent looping = L10n.TextContent("Looping", "If true, the emission cycle will repeat after the duration.", null, null);
+            public GUIContent prewarm = L10n.TextContent("Prewarm", "When played, a prewarmed system will be in a state as if it had emitted one loop cycle. Can only be used if the system is looping.", null, null);
+            public GUIContent startDelay = L10n.TextContent("Start Delay", "Delay in seconds that this Particle System will wait before emitting particles. Cannot be used together with a prewarmed looping system.", null, null);
+            public GUIContent maxParticles = L10n.TextContent("Max Particles", "The number of particles in the system will be limited by this number. Emission will be temporarily halted if this is reached.", null, null);
+            public GUIContent lifetime = L10n.TextContent("Start Lifetime", "Start lifetime in seconds, particle will die when its lifetime reaches 0.", null, null);
+            public GUIContent speed = L10n.TextContent("Start Speed", "The start speed of particles, applied in the starting direction.", null, null);
+            public GUIContent color = L10n.TextContent("Start Color", "The start color of particles.", null, null);
+            public GUIContent size3D = L10n.TextContent("3D Start Size", "If enabled, you can control the size separately for each axis.", null, null);
+            public GUIContent size = L10n.TextContent("Start Size", "The start size of particles.", null, null);
+            public GUIContent rotation3D = L10n.TextContent("3D Start Rotation", "If enabled, you can control the rotation separately for each axis.", null, null);
+            public GUIContent rotation = L10n.TextContent("Start Rotation", "The start rotation of particles in degrees.", null, null);
+            public GUIContent randomizeRotationDirection = L10n.TextContent("Flip Rotation", "Cause some particles to spin in the opposite direction. (Set between 0 and 1, where a higher value causes more to flip)", null, null);
+            public GUIContent autoplay = L10n.TextContent("Play On Awake*", "If enabled, the system will start playing automatically. Note that this setting is shared between all Particle Systems in the current particle effect.", null, null);
+            public GUIContent gravitySource = L10n.TextContent("Gravity Source", "Use 2D or 3D physics gravity", null, null);
+            public GUIContent gravity = L10n.TextContent("Gravity Modifier", "Scales the gravity defined in Physics Manager", null, null);
+            public GUIContent scalingMode = L10n.TextContent("Scaling Mode", "Use the combined scale from our entire hierarchy, just this local particle node, or only apply scale to the shape module.", null, null);
+            public GUIContent simulationSpace = L10n.TextContent("Simulation Space", "Makes particle positions simulate in world, local or custom space. In local space they stay relative to their own Transform, and in custom space they are relative to the custom Transform.", null, null);
+            public GUIContent customSimulationSpace = L10n.TextContent("Custom Simulation Space", "Makes particle positions simulate relative to a custom Transform component.", null, null);
+            public GUIContent simulationSpeed = L10n.TextContent("Simulation Speed", "Scale the playback speed of the Particle System.", null, null);
+            public GUIContent deltaTime = L10n.TextContent("Delta Time", "Use either the Delta Time or the Unscaled Delta Time. Useful for playing effects whilst paused.", null, null);
+            public GUIContent autoRandomSeed = L10n.TextContent("Auto Random Seed", "Simulate differently each time the effect is played.", null, null);
+            public GUIContent randomSeed = L10n.TextContent("Random Seed", "Randomize the look of the Particle System. Using the same seed will make the Particle System play identically each time. After changing this value, restart the Particle System to see the changes, or check the Resimulate box.", null, null);
+            public GUIContent emitterVelocity = L10n.TextContent("Custom Velocity", "An extra velocity value added to emitted particles when the Emitter Velocity Mode is Custom.", null, null);
+            public GUIContent emitterVelocityMode = L10n.TextContent("Emitter Velocity Mode", "How to determine the extra velocity imparted to particles by the Particle System. Use the Transform option to add the velocity calculated from the system's Transform. Use Rigidbody to add the velocity of the system's Rigidbody. Use Custom to add the velocity specified in the Custom Velocity property.", null, null);
+            public GUIContent stopAction = L10n.TextContent("Stop Action", "When the Particle System is stopped and all particles have died, should the GameObject automatically disable/destroy itself?", null, null);
+            public GUIContent cullingMode = L10n.TextContent("Culling Mode", "Choose whether to continue simulating the Particle System when offscreen. Catch-up mode pauses offscreen simulations but performs a large simulation step when they become visible, giving the appearance that they were never paused. Automatic uses Pause mode for looping systems, and AlwaysSimulate if not looping.", null, null);
+            public GUIContent ringBufferMode = L10n.TextContent("Ring Buffer Mode", "Rather than dying when their lifetime has elapsed, particles will remain alive until the Max Particles buffer is full, at which point new particles will replace the oldest.", null, null);
+            public GUIContent ringBufferLoopRange = L10n.TextContent("Loop Range", "Particle lifetimes may loop between a fade-in and fade-out time, in order to use curves for the entire time they are alive. Values are in the 0-1 range.", null, null);
+            public GUIContent prewarmingSubEmitterWarning = L10n.TextContent("Pre-warming a sub-emitter is not necessary and wastes resources. You only need to pre-warm the root Particle System component.", null, null, null);
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
 
             public GUIContent[] simulationSpaces = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Local"),
-                EditorGUIUtility.TrTextContent("World"),
-                EditorGUIUtility.TrTextContent("Custom")
+                L10n.TextContent("Local", null, null, null),
+                L10n.TextContent("World", null, null, null),
+                L10n.TextContent("Custom", null, null, null)
             };
 
             public GUIContent[] scalingModes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Hierarchy"),
-                EditorGUIUtility.TrTextContent("Local"),
-                EditorGUIUtility.TrTextContent("Shape")
+                L10n.TextContent("Hierarchy", null, null, null),
+                L10n.TextContent("Local", null, null, null),
+                L10n.TextContent("Shape", null, null, null)
             };
 
             public GUIContent[] stopActions = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("None"),
-                EditorGUIUtility.TrTextContent("Disable"),
-                EditorGUIUtility.TrTextContent("Destroy"),
-                EditorGUIUtility.TrTextContent("Callback")
+                L10n.TextContent("None", null, null, null),
+                L10n.TextContent("Disable", null, null, null),
+                L10n.TextContent("Destroy", null, null, null),
+                L10n.TextContent("Callback", null, null, null)
             };
 
             public GUIContent[] cullingModes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Automatic"),
-                EditorGUIUtility.TrTextContent("Pause and Catch-up"),
-                EditorGUIUtility.TrTextContent("Pause"),
-                EditorGUIUtility.TrTextContent("Always Simulate")
+                L10n.TextContent("Automatic", null, null, null),
+                L10n.TextContent("Pause and Catch-up", null, null, null),
+                L10n.TextContent("Pause", null, null, null),
+                L10n.TextContent("Always Simulate", null, null, null)
             };
 
             public GUIContent[] ringBufferModes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Disabled"),
-                EditorGUIUtility.TrTextContent("Pause Until Replaced"),
-                EditorGUIUtility.TrTextContent("Loop Until Replaced")
+                L10n.TextContent("Disabled", null, null, null),
+                L10n.TextContent("Pause Until Replaced", null, null, null),
+                L10n.TextContent("Loop Until Replaced", null, null, null)
             };
 
             public GUIContent[] emitterVelocityModes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Transform"),
-                EditorGUIUtility.TrTextContent("Rigidbody"),
-                EditorGUIUtility.TrTextContent("Custom")
+                L10n.TextContent("Transform", null, null, null),
+                L10n.TextContent("Rigidbody", null, null, null),
+                L10n.TextContent("Custom", null, null, null)
             };
 
             public GUIContent[] gravitySources = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("3D Physics"),
-                EditorGUIUtility.TrTextContent("2D Physics")
+                L10n.TextContent("3D Physics", null, null, null),
+                L10n.TextContent("2D Physics", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache

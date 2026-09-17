@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -50,7 +49,7 @@ class LocaleGeneratorWindow : EditorWindow
     /// <param name="onLocalesAdded">A callback invoked once locales are added to the settings.</param>
     public static void ShowWindow(Action onLocalesAdded = null)
     {
-        var window = GetWindow<LocaleGeneratorWindow>(true, L10n.Tr("Add locales", null));
+        var window = GetWindow<LocaleGeneratorWindow>(true, LocLabels.AddLocales);
         window.m_OnLocalesAdded = onLocalesAdded;
         window.minSize = new Vector2(440, 460);
     }
@@ -73,7 +72,7 @@ class LocaleGeneratorWindow : EditorWindow
         SetupColumns();
 
         m_AddButton = root.Q<Button>("add-locales");
-        m_AddButton.text = L10n.Tr("Add locales", null);
+        m_AddButton.text = LocLabels.AddLocales;
         m_AddButton.clicked += AddSelected;
 
         ApplyFilter();
@@ -87,10 +86,12 @@ class LocaleGeneratorWindow : EditorWindow
         enabled.bindCell = BindToggleCell;
 
         var name = m_Tree.columns["name"];
-        name.makeCell = MakeLabelCell;
+        name.title = LocLabels.Name;
+        name.makeCell = MakeNameCell;
         name.bindCell = (element, index) => BindLabelCell(element, index, code: false);
 
         var codeColumn = m_Tree.columns["code"];
+        codeColumn.title = LocLabels.Code;
         codeColumn.makeCell = MakeLabelCell;
         codeColumn.bindCell = (element, index) => BindLabelCell(element, index, code: true);
     }
@@ -202,12 +203,32 @@ class LocaleGeneratorWindow : EditorWindow
         return label;
     }
 
+    VisualElement MakeNameCell()
+    {
+        var label = MakeLabelCell();
+        label.RegisterCallback<ClickEvent>(OnNameClicked);
+        return label;
+    }
+
     void BindLabelCell(VisualElement element, int index, bool code)
     {
         var row = m_Tree.GetItemDataForIndex<Row>(index);
         var label = (Label)element;
         label.text = code ? row.Code : row.EnglishName;
+        label.userData = m_Tree.GetIdForIndex(index);
         label.EnableInClassList(LocClasses.LocaleGenInProject, row.InProject);
+    }
+
+    void OnNameClicked(ClickEvent evt)
+    {
+        if (evt.clickCount != 1 || ((VisualElement)evt.currentTarget).userData is not int id)
+            return;
+
+        // Both calls guard on the row having children, so a click on a region row does nothing.
+        if (m_Tree.IsExpanded(id))
+            m_Tree.CollapseItem(id);
+        else
+            m_Tree.ExpandItem(id);
     }
 
     void ApplyFilter()
@@ -303,4 +324,3 @@ class LocaleGeneratorWindow : EditorWindow
         Close();
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

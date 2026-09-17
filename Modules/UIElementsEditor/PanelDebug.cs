@@ -107,6 +107,9 @@ namespace UnityEditor.UIElements
                 debuggerOverlayPanel.Dispose();
                 debuggerOverlayPanel = null;
                 debugContainer = null;
+
+                UnityEngine.Object.DestroyImmediate(ownerObject);
+                ownerObject = null;
             }
         }
 
@@ -138,10 +141,22 @@ namespace UnityEditor.UIElements
 
         public void DetachAllDebuggers()
         {
-            foreach (var debugger in m_Debuggers)
+            // UIRDebugger.Disconnect detaches itself, which removes it from m_Debuggers.
+            var debuggers = new IPanelDebugger[m_Debuggers.Count];
+            m_Debuggers.CopyTo(debuggers);
+
+            foreach (var debugger in debuggers)
             {
                 debugger.panelDebug = null;
-                debugger.Disconnect();
+
+                try
+                {
+                    debugger.Disconnect();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
             }
             m_Debuggers.Clear();
             MarkDirtyRepaint();
@@ -155,7 +170,7 @@ namespace UnityEditor.UIElements
 
         public void MarkDirtyRepaint()
         {
-            panel.visualTree.MarkDirtyRepaint();
+            visualTree?.MarkDirtyRepaint();
         }
 
         public void MarkDebugContainerDirtyRepaint()

@@ -5,3 +5,7 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Modules.LocalizationRuntimeEditor.Tests.Editor")]
+
+// The bundled com.unity.localization package drives its upgrade-to-module path through these internals.
+[assembly: InternalsVisibleTo("Unity.Localization.Editor")]
+[assembly: InternalsVisibleTo("Unity.Localization.Editor.Tests")]

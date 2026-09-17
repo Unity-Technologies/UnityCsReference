@@ -38,8 +38,8 @@ namespace UnityEditor
         readonly AnimBool m_ShowContacts = new AnimBool();
         Vector2 m_ContactScrollPosition;
 
-        static readonly GUIContent m_FreezePositionLabel = EditorGUIUtility.TrTextContent("Freeze Position");
-        static readonly GUIContent m_FreezeRotationLabel = EditorGUIUtility.TrTextContent("Freeze Rotation");
+        static readonly GUIContent m_FreezePositionLabel = L10n.TextContent("Freeze Position", null, null, null);
+        static readonly GUIContent m_FreezeRotationLabel = L10n.TextContent("Freeze Rotation", null, null, null);
 
         // this is a cached collection (to avoid allocations on every frame) that can reference user defined Colliders.
         // We don't care about its content, but we want to prevent references to user code here

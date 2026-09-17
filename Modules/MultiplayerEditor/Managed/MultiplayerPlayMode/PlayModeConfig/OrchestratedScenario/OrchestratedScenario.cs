@@ -114,7 +114,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
                 return new SerializedObject(this)
                     .FindProperty(k_SettingsPropertyName)
-                    .FindPropertyRelative(OrchestratedScenarioSettings.k_ControllerItemsPropertyName)
+                    .FindPropertyRelative(OrchestratedScenarioSettings.k_InstanceItemsPropertyName)
                     .GetArrayElementAtIndex(i);
             }
 
@@ -213,8 +213,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // guard-revert paths that bypass the WantsToDeselect prompt (UUM-138111).
             if (m_Scenario != null)
             {
-                foreach (var instance in m_Scenario.GetAllInstances())
-                    instance.TearDown();
+                foreach (var runtime in m_Scenario.GetAllRuntimes())
+                    runtime.TearDown();
             }
 
             // Clear any loaded scenario from the scenario runner
@@ -234,9 +234,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             // Only confirm the switch here; the teardown itself runs in OnDeselected (UUM-138111).
             var reasons = new List<string>();
-            foreach (var instance in m_Scenario.GetAllInstances())
+            foreach (var runtime in m_Scenario.GetAllRuntimes())
             {
-                if (instance.NeedsTearDown(out var reason))
+                if (runtime.NeedsTearDown(out var reason))
                     reasons.Add(reason);
             }
 
@@ -290,7 +290,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // The settings internal hash comparison should take care of most common cases of it needing a refresh,
             // but to cover potential external edits to the scenario asset (e.g. git merges)
             // we force a refresh when the object is loaded (OnEnable), which happens less often.
-            m_Settings.RefreshDecorators(force: true);
+            m_Settings.RefreshItems(force: true);
 
             if (m_Scenario != null)
                 SetupEvents();
@@ -331,15 +331,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         Scenario CreateScenario()
         {
-            return ScenarioFactory.CreateScenario(this, GetAllInstances());
+            return ScenarioFactory.CreateScenario(this, GetAllInstances(), m_Settings.GetAllScenarioItems());
         }
 
         private void OnValidate()
         {
-            // Validation happens very often, so we don't want to force a refresh of the decorators every time.
-            // As long as the file is not externally edited, the hash comparison inside RefreshDecorators will prevent unnecessary refreshes,
+            // Validation happens very often, so we don't want to force a refresh of the items every time.
+            // As long as the file is not externally edited, the hash comparison inside RefreshItems will prevent unnecessary refreshes,
             // still, for potential external edits, we force a refresh when the object is loaded (OnEnable), which happens less often.
-            m_Settings.RefreshDecorators(force: false);
+            m_Settings.RefreshItems(force: false);
 
             // Avoid re-creating the scenario if the scenario is running
             if (ScenarioRunner.GetScenarioStatus().OverallStatus.State == ExecutionState.Running)
@@ -626,7 +626,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 k_ValidationDialogOKLabel);
         }
 
-        internal static void NotifyValidationFailure(Instance instance)
+        internal static void NotifyValidationFailure(ControllerRuntime instance)
         {
             ScenarioDialog.DisplayDialog(k_ValidationDialogTitle,
                 GetValidationMessage(k_ValidationDialogInstanceMessage, instance.GetExecutionGraph().GetNodes(ExecutionStage.Validate)),

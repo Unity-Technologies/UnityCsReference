@@ -84,6 +84,11 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
 
     readonly HashSet<VisualElementEditingStage> m_StagePanels = new();
 
+    // The preview clones a UI Viewport shows for a document reached from the Main Stage. Tracked so their
+    // elements carry selection objects, but deliberately silent on PanelTracked/PanelUntracked: the Hierarchy
+    // builds its rows from the live scene panels, and a clone would list every document twice.
+    readonly List<Panel> m_PreviewPanels = new();
+
     bool m_Initialized;
 
     /// <summary>Raised when a scene panel starts being tracked. Node handlers mirror this to build nodes.</summary>
@@ -93,6 +98,39 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
     public event Action<Panel> PanelUntracked;
 
     public IReadOnlyList<Panel> TrackedScenePanels => m_TrackedScenePanels;
+
+    /// <summary>
+    /// Every panel the authoring system knows about: the live scene panels, the authoring panel of the stage
+    /// being edited, and the previews a UI Viewport renders.
+    /// </summary>
+    /// <remarks>
+    /// The same document can be behind several of these at once, which is what a caller that has to reach every
+    /// view of it — resolving a highlight, for one — walks instead of keeping a list of its own.
+    /// </remarks>
+    public void CollectTrackedPanels(List<Panel> results)
+    {
+        if (results == null)
+            return;
+
+        foreach (var panel in m_TrackedScenePanels)
+        {
+            if (panel != null && !results.Contains(panel))
+                results.Add(panel);
+        }
+
+        foreach (var stage in m_StagePanels)
+        {
+            var panel = stage.GetAuthoringPanel();
+            if (panel != null && !results.Contains(panel))
+                results.Add(panel);
+        }
+
+        foreach (var panel in m_PreviewPanels)
+        {
+            if (panel != null && !results.Contains(panel))
+                results.Add(panel);
+        }
+    }
 
     public void EnsureInitialized() => Initialize();
 
@@ -104,11 +142,8 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
 
         UIElementsRuntimeUtility.onCreatePanel += OnCreatePanel;
         UIElementsRuntimeUtility.onWillDestroyPanel += OnWillDestroyPanel;
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnEnableInSceneAuthoringChanged;
-        UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnMainStageAuthoringChanged;
 
-        if (UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
-            AdoptExistingScenePanels(pingRoot: false);
+        AdoptExistingScenePanels();
     }
 
     void Shutdown()
@@ -119,17 +154,14 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
 
         UIElementsRuntimeUtility.onCreatePanel -= OnCreatePanel;
         UIElementsRuntimeUtility.onWillDestroyPanel -= OnWillDestroyPanel;
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnEnableInSceneAuthoringChanged;
-        UIToolkitAuthoringSettings.MainStageAuthoringChanged -= OnMainStageAuthoringChanged;
 
         UntrackAllScenePanels();
         UntrackAllEditablePanels();
+        UntrackAllPreviewPanels();
     }
 
     void OnCreatePanel(IRuntimePanel panel)
     {
-        if (!UIToolkitAuthoringSettings.EnableInSceneUIAuthoring)
-            return;
         if (panel is BaseRuntimePanel runtimePanel && runtimePanel.ownerObject is not PanelElement.PanelOwner)
             TrackScenePanel(runtimePanel);
     }
@@ -140,28 +172,7 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
             UntrackScenePanel(p);
     }
 
-    void OnEnableInSceneAuthoringChanged(bool enabled)
-    {
-        if (enabled)
-            AdoptExistingScenePanels(pingRoot: true);
-        else
-            UntrackAllScenePanels();
-    }
-
-    // Scene (Main Stage) element editability is governed by EnableMainStageAuthoring, so re-evaluate every
-    // live scene selection when it toggles. Re-assigning the edit flags is what notifies the inspector, so a
-    // selected element's inspector locks and unlocks without a re-selection.
-    void OnMainStageAuthoringChanged(bool enabled)
-    {
-        foreach (var pair in m_ElementToEntry)
-        {
-            var entry = pair.Value;
-            if (ReferenceEquals(entry.Instance, pair.Key) && m_TrackedScenePanels.Contains(entry.Panel))
-                RefreshSelectionObject(entry, pair.Key, entry.Panel);
-        }
-    }
-
-    void AdoptExistingScenePanels(bool pingRoot)
+    void AdoptExistingScenePanels()
     {
         using var _ = ListPool<Panel>.Get(out var panels);
         UIElementsUtility.GetAllPanels(panels, ContextType.Player);
@@ -170,9 +181,6 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
             if (panel is BaseRuntimePanel runtimePanel && runtimePanel.ownerObject is not PanelElement.PanelOwner)
                 TrackScenePanel(runtimePanel);
         }
-
-        if (pingRoot)
-            EditorApplication.delayCall += PingFirstTrackedRoot;
     }
 
     void TrackScenePanel(Panel panel)
@@ -201,6 +209,12 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
             UntrackScenePanel(m_TrackedScenePanels[^1]);
     }
 
+    void UntrackAllPreviewPanels()
+    {
+        while (m_PreviewPanels.Count > 0)
+            UntrackPreviewPanel(m_PreviewPanels[^1]);
+    }
+
     void UntrackAllEditablePanels()
     {
         if (m_StagePanels.Count == 0)
@@ -210,20 +224,6 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         panels.AddRange(m_StagePanels);
         foreach (var panel in panels)
             UntrackStagePanel(panel);
-    }
-
-    void PingFirstTrackedRoot()
-    {
-        foreach (var panel in m_TrackedScenePanels)
-        {
-            var root = panel.visualTree.Q<PanelRendererRootElement>();
-            var selectionObject = root?.GetSelectionObject();
-            if (selectionObject)
-            {
-                EditorGUIUtility.PingObject(selectionObject.GetEntityId());
-                return;
-            }
-        }
     }
 
     void IVisualElementChangeProcessor.BeginProcessing(BaseVisualElementPanel panel)
@@ -299,7 +299,8 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
         return panel != null && m_FrameRemaps.TryGetValue(panel, out var list) ? list : s_EmptyRemaps;
     }
 
-    public bool IsTracked(Panel panel) => panel != null && (m_TrackedScenePanels.Contains(panel) || ContainsPanel(m_StagePanels, panel));
+    public bool IsTracked(Panel panel) => panel != null
+        && (m_TrackedScenePanels.Contains(panel) || ContainsPanel(m_StagePanels, panel) || m_PreviewPanels.Contains(panel));
 
     static bool ContainsPanel(HashSet<VisualElementEditingStage> set, Panel panel)
     {
@@ -328,6 +329,31 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
             return;
 
         var panel = stage.GetAuthoringPanel();
+        panel.UnregisterChangeProcessor(this);
+        DestroyEntriesForPanel(panel);
+    }
+
+    /// <summary>
+    /// Starts tracking the preview clone a UI Viewport renders, so clicking it can select something.
+    /// </summary>
+    /// <remarks>
+    /// Unlike a scene panel this raises no <see cref="PanelTracked"/>: the clone stands in for a tree the
+    /// Hierarchy already lists, and announcing it would add a second row for every element.
+    /// </remarks>
+    public void TrackPreviewPanel(Panel panel)
+    {
+        if (panel == null || m_PreviewPanels.Contains(panel))
+            return;
+
+        m_PreviewPanels.Add(panel);
+        panel.RegisterChangeProcessor(this);
+    }
+
+    public void UntrackPreviewPanel(Panel panel)
+    {
+        if (panel == null || !m_PreviewPanels.Remove(panel))
+            return;
+
         panel.UnregisterChangeProcessor(this);
         DestroyEntriesForPanel(panel);
     }
@@ -496,6 +522,8 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
             ResyncStablePaths(panel);
         foreach (var stage in m_StagePanels)
             ResyncStablePaths(stage.GetAuthoringPanel());
+        foreach (var panel in m_PreviewPanels)
+            ResyncStablePaths(panel);
     }
 
     UISelectionObject CreateSelectionObject(VisualElement element, Panel panel)
@@ -581,7 +609,9 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
             }
         }
 
-        if (m_TrackedScenePanels.Contains(panel))
+        // A preview clone is governed by the same setting as the scene tree it stands in for: the viewport must
+        // not author into a document the Hierarchy showing it would refuse to edit.
+        if (m_TrackedScenePanels.Contains(panel) || m_PreviewPanels.Contains(panel))
             return UIToolkitStageUtility.GetMainStageEditFlags(element);
 
         return VisualElementEditFlags.None;

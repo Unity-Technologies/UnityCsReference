@@ -99,11 +99,13 @@ namespace Unity.Profiling.Editor.UI
                 cancellationToken,
                 OnMainThreadUtilizationCompleted: model => DeferIfNotCancelled(() => m_MainThreadUtilizationViewController.RefreshView(model), cancellationToken),
                 OnSystemsImpactBuildCompleted: model => DeferIfNotCancelled(() => m_SystemsImpactViewController.ReloadData(model), cancellationToken),
-                OnFrameBottlenecksBuildCompleted: model => DeferIfNotCancelled(() =>
+                OnFrameBottlenecksBuildCompleted: model =>
                 {
+                    // Assigned synchronously (not deferred) so it is already up to date by the time
+                    // ReloadDataAsync calls CreateDetailsProvider() right after this method returns.
                     m_FrameBottlenecksModel = model;
-                    m_SingleFrameTimesSectionViewController.RefreshFrameBottlenecksView(model);
-                }, cancellationToken),
+                    DeferIfNotCancelled(() => m_SingleFrameTimesSectionViewController.RefreshFrameBottlenecksView(model), cancellationToken);
+                },
                 OnTopFrameMarkersBuildCompleted: model => DeferIfNotCancelled(() => m_SingleFrameTimesSectionViewController.RefreshTopFrameMarkersView(model), cancellationToken),
                 OnFrameGCAllocationsBuildCompleted: model => DeferIfNotCancelled(() => m_FrameAllocationsSectionViewController.RefreshFrameGCAllocationsView(model), cancellationToken),
                 OnTopGCMarkersBuildCompleted: model => DeferIfNotCancelled(() => m_FrameAllocationsSectionViewController.RefreshTopGCMarkersView(model), cancellationToken),

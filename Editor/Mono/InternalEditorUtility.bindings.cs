@@ -370,8 +370,8 @@ namespace UnityEditorInternal
             if (CanMeshBeModifiedFromCode(meshPath))
             {
                 if (DrawWarningHelpBoxWithButton(
-                    EditorGUIUtility.TrTextContent(message),
-                    EditorGUIUtility.TrTextContent("Enable")))
+                    L10n.TextContent(message, null, null, null),
+                    L10n.TextContent("Enable", null, null, null)))
                 {
                     ImportMeshAsReadable(mesh);
                 }
@@ -379,8 +379,8 @@ namespace UnityEditorInternal
             else
             {
                 if (DrawWarningHelpBoxWithButton(
-                    EditorGUIUtility.TrTextContent(message),
-                    EditorGUIUtility.TrTextContent("View")))
+                    L10n.TextContent(message, null, null, null),
+                    L10n.TextContent("View", null, null, null)))
                 {
                     Selection.objects = new UnityEngine.Object[] { mesh };
                 }

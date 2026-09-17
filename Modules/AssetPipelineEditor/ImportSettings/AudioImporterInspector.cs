@@ -25,14 +25,14 @@ namespace UnityEditor
 #pragma warning restore UAC2001
             public static readonly int[] kSampleRateValues = {8000, 11025, 22050, 44100, 48000, 96000, 192000};
 
-            public static readonly GUIContent LoadType = EditorGUIUtility.TrTextContent("Load Type");
-            public static readonly GUIContent PreloadAudioData = EditorGUIUtility.TrTextContent("Preload Audio Data*");
-            public static readonly GUIContent CompressionFormat = EditorGUIUtility.TrTextContent("Compression Format");
-            public static readonly GUIContent Quality = EditorGUIUtility.TrTextContent("Quality");
-            public static readonly GUIContent SampleRateSetting = EditorGUIUtility.TrTextContent("Sample Rate Setting");
-            public static readonly GUIContent SampleRate = EditorGUIUtility.TrTextContent("Sample Rate");
-            public static readonly GUIContent DefaultPlatform = EditorGUIUtility.TrTextContent("Default");
-            public static readonly GUIContent SharedSettingInformation = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
+            public static readonly GUIContent LoadType = L10n.TextContent("Load Type", null, null, null);
+            public static readonly GUIContent PreloadAudioData = L10n.TextContent("Preload Audio Data*", null, null, null);
+            public static readonly GUIContent CompressionFormat = L10n.TextContent("Compression Format", null, null, null);
+            public static readonly GUIContent Quality = L10n.TextContent("Quality", null, null, null);
+            public static readonly GUIContent SampleRateSetting = L10n.TextContent("Sample Rate Setting", null, null, null);
+            public static readonly GUIContent SampleRate = L10n.TextContent("Sample Rate", null, null, null);
+            public static readonly GUIContent DefaultPlatform = L10n.TextContent("Default", null, null, null);
+            public static readonly GUIContent SharedSettingInformation = L10n.TextContent("* Shared setting between multiple platforms.", null, null, null);
         }
 
         SerializedProperty m_ForceToMono;
@@ -495,7 +495,7 @@ namespace UnityEditor
                 // Define the UI state of the override here.
                 using (var horizontal = new EditorGUILayout.HorizontalScope())
                 {
-                    var label = EditorGUIUtility.TrTempContent("Override for " + validPlatforms[shownSettingsPage].title.text);
+                    var label = L10n.TempContent("Override for " + validPlatforms[shownSettingsPage].title.text, null);
                     using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, label, isOverriddenProperty))
                     {
                         EditorGUI.showMixedValue = isOverriddenProperty.hasMultipleDifferentValues;

@@ -4,7 +4,9 @@
 
 using System;
 using Unity.GraphToolkit.Editor.Implementation;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Unity.GraphToolkit.Editor.GraphVisualization;
 
@@ -62,6 +64,32 @@ class Session
             if (m_GraphView == null)
                 ResolveGraphView();
             return m_GraphView;
+        }
+    }
+
+    /// <summary>
+    /// The inspector view for the window currently showing the session's graph, or <c>null</c> if no window is
+    /// currently showing it, or it has no inspector overlay open.
+    /// </summary>
+    /// <remarks>
+    /// Resolved on every access rather than cached, since the inspector overlay can be toggled or rebuilt
+    /// independently of the graph view.
+    /// </remarks>
+    internal ModelInspectorView ModelInspectorView
+    {
+        get
+        {
+            var graphView = GraphView;
+            if (graphView == null)
+                return null;
+
+            foreach (var window in GraphViewEditorWindow.OpenedWindows)
+            {
+                if (window.GraphView == graphView && window.TryGetOverlay(ModelInspectorOverlay.idValue, out var inspectorOverlay))
+                    return inspectorOverlay.rootVisualElement?.Q<ModelInspectorView>();
+            }
+
+            return null;
         }
     }
 

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UniversalWindowsPlatform not yet converted
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -80,7 +79,7 @@ namespace UnityEditor
             window.publisher = publisher;
             window.password = string.Empty;
             window.confirm = window.password;
-            window.message = (File.Exists(window.path) ? EditorGUIUtility.TrTextContent("Current file will be overwritten.") : GUIContent.none);
+            window.message = (File.Exists(window.path) ? L10n.TextContent("Current file will be overwritten.", null, null, null) : GUIContent.none);
 
             window.messageStyle = new GUIStyle(GUI.skin.label);
             window.messageStyle.fontStyle = FontStyle.Italic;
@@ -93,7 +92,7 @@ namespace UnityEditor
             }
             else
             {
-                window.titleContent = EditorGUIUtility.TrTextContent("Create Test Certificate for Windows Store");
+                window.titleContent = L10n.TextContent("Create Test Certificate for Windows Store", null, null, null);
 
                 window.position = new Rect(100, 100, 350, 140);
                 window.minSize = new Vector2(window.position.width, window.position.height);
@@ -125,7 +124,7 @@ namespace UnityEditor
 
                     using (HorizontalLayout.DoLayout())
                     {
-                        GUILayout.Label(EditorGUIUtility.TrTextContent("Publisher", "Publisher of the package."), kLabelWidth);
+                        GUILayout.Label(L10n.TextContent("Publisher", "Publisher of the package.", null, null), kLabelWidth);
                         GUI.SetNextControlName(kPublisherId);
                         publisher = GUILayout.TextField(publisher);
                     }
@@ -134,7 +133,7 @@ namespace UnityEditor
 
                     using (HorizontalLayout.DoLayout())
                     {
-                        GUILayout.Label(EditorGUIUtility.TrTextContent("Password", "Certificate password."), kLabelWidth);
+                        GUILayout.Label(L10n.TextContent("Password", "Certificate password.", null, null), kLabelWidth);
                         GUI.SetNextControlName(kPasswordId);
                         password = GUILayout.PasswordField(password, kPasswordChar);
                     }
@@ -143,7 +142,7 @@ namespace UnityEditor
 
                     using (HorizontalLayout.DoLayout())
                     {
-                        GUILayout.Label(EditorGUIUtility.TrTextContent("Confirm password", "Re-enter certificate password."), kLabelWidth);
+                        GUILayout.Label(L10n.TextContent("Confirm password", "Re-enter certificate password.", null, null), kLabelWidth);
                         GUI.SetNextControlName(kConfirmId);
                         confirm = GUILayout.PasswordField(confirm, kPasswordChar);
                     }
@@ -156,13 +155,13 @@ namespace UnityEditor
 
                         GUILayout.FlexibleSpace();
 
-                        if (GUILayout.Button(EditorGUIUtility.TrTextContent("Create"), kButtonWidth) || enter)
+                        if (GUILayout.Button(L10n.TextContent("Create", null, null, null), kButtonWidth) || enter)
                         {
                             message = GUIContent.none;
 
                             if (string.IsNullOrEmpty(publisher))
                             {
-                                message = EditorGUIUtility.TrTextContent("Publisher must be specified.");
+                                message = L10n.TextContent("Publisher must be specified.", null, null, null);
                                 focus = kPublisherId;
                             }
                             /*else if (!IsValidPublisher(publisher))
@@ -174,12 +173,12 @@ namespace UnityEditor
                             {
                                 if (string.IsNullOrEmpty(confirm))
                                 {
-                                    message = EditorGUIUtility.TrTextContent("Confirm the password.");
+                                    message = L10n.TextContent("Confirm the password.", null, null, null);
                                     focus = kConfirmId;
                                 }
                                 else
                                 {
-                                    message = EditorGUIUtility.TrTextContent("Passwords do not match.");
+                                    message = L10n.TextContent("Passwords do not match.", null, null, null);
                                     password = string.Empty;
                                     confirm = password;
                                     focus = kPasswordId;
@@ -195,7 +194,7 @@ namespace UnityEditor
 
                                     if (!PlayerSettings.WSA.SetCertificate(FileUtil.GetProjectRelativePath(path), password))
                                     {
-                                        message = EditorGUIUtility.TrTextContent("Invalid password.");
+                                        message = L10n.TextContent("Invalid password.", null, null, null);
                                     }
 
                                     close = true;
@@ -226,4 +225,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -16,76 +16,76 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static readonly GUIContent optimizeRealtimeUVs = EditorGUIUtility.TrTextContent("Optimize Realtime UVs", "Specifies whether the authored mesh UVs get optimized for Realtime Global Illumination or not. When enabled, the authored UVs can get merged, and are scaled and packed for optimization purposes. When disabled, the authored UVs are scaled and packed, but not merged.");
-            public static readonly GUIContent ignoreNormalsForChartDetection = EditorGUIUtility.TrTextContent("Ignore Normals", "When enabled, prevents the UV charts from being split during the precompute process for Realtime Global Illumination lighting.");
+            public static readonly GUIContent optimizeRealtimeUVs = L10n.TextContent("Optimize Realtime UVs", "Specifies whether the authored mesh UVs get optimized for Realtime Global Illumination or not. When enabled, the authored UVs can get merged, and are scaled and packed for optimization purposes. When disabled, the authored UVs are scaled and packed, but not merged.", null, null);
+            public static readonly GUIContent ignoreNormalsForChartDetection = L10n.TextContent("Ignore Normals", "When enabled, prevents the UV charts from being split during the precompute process for Realtime Global Illumination lighting.", null, null);
             public static readonly int[] minimumChartSizeValues = { 2, 4 };
             public static readonly GUIContent[] minimumChartSizeStrings =
             {
-                EditorGUIUtility.TrTextContent("2 (Minimum)"),
-                EditorGUIUtility.TrTextContent("4 (Stitchable)"),
+                L10n.TextContent("2 (Minimum)", null, null, null),
+                L10n.TextContent("4 (Stitchable)", null, null, null),
             };
 
             public static readonly int[] receiveGILightmapValues = { (int)ReceiveGI.Lightmaps, (int)ReceiveGI.LightProbes };
             public static readonly GUIContent[] receiveGILightmapStrings =
             {
-                EditorGUIUtility.TrTextContent("Lightmaps"),
-                EditorGUIUtility.TrTextContent("Light Probes")
+                L10n.TextContent("Lightmaps", null, null, null),
+                L10n.TextContent("Light Probes", null, null, null)
             };
 
-            public static readonly GUIContent lightingSettings = EditorGUIUtility.TrTextContent("Lighting");
-            public static readonly GUIContent lighting = new GUIContent(EditorGUIUtility.TrTextContent("Lighting").text); // prevent the Lighting window icon from being added
-            public static readonly GUIContent minimumChartSize = EditorGUIUtility.TrTextContent("Min Chart Size", "Specifies the minimum texel size used for a UV chart. If stitching is required, a value of 4 will create a chart of 4x4 texels to store lighting and directionality. If stitching is not required, a value of 2 will reduce the texel density and provide better lighting build times and run time performance.");
-            public static readonly GUIContent importantGI = EditorGUIUtility.TrTextContent("Prioritize Illumination", "When enabled, the object will be marked as a priority object and always included in lighting calculations. Useful for objects that will be strongly emissive to make sure that other objects will be illuminated by this object.");
-            public static readonly GUIContent stitchLightmapSeams = EditorGUIUtility.TrTextContent("Stitch Seams", "When enabled, seams in baked lightmaps will get smoothed.");
-            public static readonly GUIContent autoUVMaxDistance = EditorGUIUtility.TrTextContent("Max Distance", "Specifies the maximum worldspace distance to be used for UV chart simplification. If charts are within this distance, they will be simplified for optimization purposes.");
-            public static readonly GUIContent autoUVMaxAngle = EditorGUIUtility.TrTextContent("Max Angle", "Specifies the maximum angle in degrees between faces sharing a UV edge. If the angle between the faces is below this value, the UV charts will be simplified.");
-            public static readonly GUIContent lightmapParameters = EditorGUIUtility.TrTextContent("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
-            public static readonly GUIContent atlasTilingX = EditorGUIUtility.TrTextContent("Tiling X");
-            public static readonly GUIContent atlasTilingY = EditorGUIUtility.TrTextContent("Tiling Y");
-            public static readonly GUIContent atlasOffsetX = EditorGUIUtility.TrTextContent("Offset X");
-            public static readonly GUIContent atlasOffsetY = EditorGUIUtility.TrTextContent("Offset Y");
-            public static readonly GUIContent clampedSize = EditorGUIUtility.TrTextContent("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, divide it into smaller meshes or set higher max atlas size via the LightingSettings class.");
-            public static readonly GUIContent clampedPackingResolution = EditorGUIUtility.TrTextContent("Object's size in the realtime lightmap has reached the maximum size. If you need higher resolution for this object, divide it into smaller meshes.");
-            public static readonly GUIContent zeroAreaPackingMesh = EditorGUIUtility.TrTextContent("Mesh used by the renderer has zero UV or surface area. Non zero area is required for lightmapping.");
-            public static readonly GUIContent noNormalsNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have normals. Normals are needed for lightmapping.");
-            public static readonly GUIContent noVerticesNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have vertices. Vertices are needed for lightmapping.");
-            public static readonly GUIContent unsupportedTopology = EditorGUIUtility.TrTextContent("Mesh with point, strip or line topology is not supported by lightmapping.");
-            public static readonly GUIContent uvOverlap = EditorGUIUtility.TrTextContent("This GameObject has overlapping UVs. Please adjust Mesh Importer settings or increase chart padding in your modeling package.");
-            public static readonly GUIContent atlas = EditorGUIUtility.TrTextContent("Baked Lightmap");
-            public static readonly GUIContent interactiveAtlas = EditorGUIUtility.TrTextContent("Preview Lightmap");
-            public static readonly GUIContent realtimeLM = EditorGUIUtility.TrTextContent("Realtime Lightmap");
-            public static readonly GUIContent scaleInLightmap = EditorGUIUtility.TrTextContent("Scale In Lightmap", "Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being lightmapped, but still contribute lighting to other objects in the Scene.");
-            public static readonly GUIContent albedoScale = EditorGUIUtility.TrTextContent("Albedo Scale", "Specifies the relative size of object's UVs within its albedo texture that is used when calculating the influence on surrounding objects.");
-            public static readonly GUIContent atlasIndex = EditorGUIUtility.TrTextContent("Lightmap Index");
-            public static readonly GUIContent lightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution");
-            public static readonly GUIContent lightmapObjectScale = EditorGUIUtility.TrTextContent("Lightmap Object Scale");
-            public static readonly GUIContent pvrInstanceHash = EditorGUIUtility.TrTextContent("Instance Hash", "The hash of the baked GI instance.");
-            public static readonly GUIContent pvrAtlasHash = EditorGUIUtility.TrTextContent("Atlas Hash", "The hash of the atlas this baked GI instance is a part of.");
-            public static readonly GUIContent pvrAtlasInstanceOffset = EditorGUIUtility.TrTextContent("Atlas Instance Offset", "The offset into the transform array instances of this atlas start at.");
-            public static readonly GUIContent realtimeLMResolution = EditorGUIUtility.TrTextContent("System Resolution", "The resolution in texels of the realtime lightmap that this renderer belongs to.");
-            public static readonly GUIContent realtimeLMInstanceResolution = EditorGUIUtility.TrTextContent("Instance Resolution", "The resolution in texels of the realtime lightmap packed instance.");
-            public static readonly GUIContent realtimeLMInputSystemHash = EditorGUIUtility.TrTextContent("System Hash", "The hash of the realtime system that the renderer belongs to.");
-            public static readonly GUIContent realtimeLMInstanceHash = EditorGUIUtility.TrTextContent("Instance Hash", "The hash of the realtime GI instance.");
-            public static readonly GUIContent realtimeLMGeometryHash = EditorGUIUtility.TrTextContent("Geometry Hash", "The hash of the realtime GI geometry that the renderer is using.");
-            public static readonly GUIContent uvCharting = EditorGUIUtility.TrTextContent("Realtime UVs");
-            public static readonly GUIContent lightmapSettings = EditorGUIUtility.TrTextContent("Lightmapping");
-            public static readonly GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether a geometry creates shadows or not when a shadow-casting Light shines on it.");
-            public static readonly GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "When enabled, any shadows cast from other objects are drawn on the geometry.");
-            public static readonly GUIContent staticShadowCaster = EditorGUIUtility.TrTextContent("Static Shadow Caster", "When enabled, Unity considers this renderer as being static for the sake of shadow rendering. If the SRP implements cached shadow maps, this field indicates to the render pipeline what renderers are considered static and what renderers are considered dynamic.");
-            public static readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
-            public static readonly GUIContent contributeGI = EditorGUIUtility.TrTextContent("Contribute Global Illumination", "When enabled, this GameObject influences lightmaps and Light Probes. If you want this object itself to be lightmapped, you must enable this property.");
-            public static readonly GUIContent receiveGITitle = EditorGUIUtility.TrTextContent("Receive Global Illumination", "If enabled, this GameObject receives global illumination from lightmaps or Light Probes. To use lightmaps, Contribute Global Illumination must be enabled.");
-            public static readonly GUIContent lightmapParametersDefault = EditorGUIUtility.TrTextContent("Scene Default Parameters");
-            public static readonly GUIContent globalIlluminationMeshLod = EditorGUIUtility.TrTextContent("Mesh LOD for Global Illumination", "The Mesh LOD index to use for Global Illumination.");
-            public static readonly GUIContent resolutionTooHighWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.");
-            public static readonly GUIContent resolutionTooLowWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.");
-            public static readonly GUIContent giNotEnabledInfo = EditorGUIUtility.TrTextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
-            public static readonly GUIContent terrainProbeNotSupported = EditorGUIUtility.TrTextContent("Legacy Light Probes are enabled in the Project's Render Pipeline. These are not supported by Terrain, therefore the Scene's Ambient Probe will be used instead.");
-            public static readonly GUIContent isPresetInfo = EditorGUIUtility.TrTextContent("The Contribute Global Illumination property cannot be stored in a preset.");
-            public static readonly GUIContent giMeshNotValid = EditorGUIUtility.TrTextContent("It is not possible to generate lighting for this Mesh because it is missing the required attribute(s). Ensure that this Mesh has normals, vertices, and texture coordinates.");
-            public static readonly GUIContent giMeshNotValidMultiple = EditorGUIUtility.TrTextContent("It is not possible to generate lighting for these Meshes because one or more of them are missing the required attribute(s). Ensure that all the Meshes you've selected have normals, vertices, and texture coordinates.");
+            public static readonly GUIContent lightingSettings = L10n.TextContent("Lighting", null, null, null);
+            public static readonly GUIContent lighting = new GUIContent(L10n.TextContent("Lighting", null, null, null).text); // prevent the Lighting window icon from being added
+            public static readonly GUIContent minimumChartSize = L10n.TextContent("Min Chart Size", "Specifies the minimum texel size used for a UV chart. If stitching is required, a value of 4 will create a chart of 4x4 texels to store lighting and directionality. If stitching is not required, a value of 2 will reduce the texel density and provide better lighting build times and run time performance.", null, null);
+            public static readonly GUIContent importantGI = L10n.TextContent("Prioritize Illumination", "When enabled, the object will be marked as a priority object and always included in lighting calculations. Useful for objects that will be strongly emissive to make sure that other objects will be illuminated by this object.", null, null);
+            public static readonly GUIContent stitchLightmapSeams = L10n.TextContent("Stitch Seams", "When enabled, seams in baked lightmaps will get smoothed.", null, null);
+            public static readonly GUIContent autoUVMaxDistance = L10n.TextContent("Max Distance", "Specifies the maximum worldspace distance to be used for UV chart simplification. If charts are within this distance, they will be simplified for optimization purposes.", null, null);
+            public static readonly GUIContent autoUVMaxAngle = L10n.TextContent("Max Angle", "Specifies the maximum angle in degrees between faces sharing a UV edge. If the angle between the faces is below this value, the UV charts will be simplified.", null, null);
+            public static readonly GUIContent lightmapParameters = L10n.TextContent("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.", null, null);
+            public static readonly GUIContent atlasTilingX = L10n.TextContent("Tiling X", null, null, null);
+            public static readonly GUIContent atlasTilingY = L10n.TextContent("Tiling Y", null, null, null);
+            public static readonly GUIContent atlasOffsetX = L10n.TextContent("Offset X", null, null, null);
+            public static readonly GUIContent atlasOffsetY = L10n.TextContent("Offset Y", null, null, null);
+            public static readonly GUIContent clampedSize = L10n.TextContent("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, divide it into smaller meshes or set higher max atlas size via the LightingSettings class.", null, null);
+            public static readonly GUIContent clampedPackingResolution = L10n.TextContent("Object's size in the realtime lightmap has reached the maximum size. If you need higher resolution for this object, divide it into smaller meshes.", null, null, null);
+            public static readonly GUIContent zeroAreaPackingMesh = L10n.TextContent("Mesh used by the renderer has zero UV or surface area. Non zero area is required for lightmapping.", null, null, null);
+            public static readonly GUIContent noNormalsNoLightmapping = L10n.TextContent("Mesh used by the renderer doesn't have normals. Normals are needed for lightmapping.", null, null, null);
+            public static readonly GUIContent noVerticesNoLightmapping = L10n.TextContent("Mesh used by the renderer doesn't have vertices. Vertices are needed for lightmapping.", null, null, null);
+            public static readonly GUIContent unsupportedTopology = L10n.TextContent("Mesh with point, strip or line topology is not supported by lightmapping.", null, null, null);
+            public static readonly GUIContent uvOverlap = L10n.TextContent("This GameObject has overlapping UVs. Please adjust Mesh Importer settings or increase chart padding in your modeling package.", null, null, null);
+            public static readonly GUIContent atlas = L10n.TextContent("Baked Lightmap", null, null, null);
+            public static readonly GUIContent interactiveAtlas = L10n.TextContent("Preview Lightmap", null, null, null);
+            public static readonly GUIContent realtimeLM = L10n.TextContent("Realtime Lightmap", null, null, null);
+            public static readonly GUIContent scaleInLightmap = L10n.TextContent("Scale In Lightmap", "Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being lightmapped, but still contribute lighting to other objects in the Scene.", null, null);
+            public static readonly GUIContent albedoScale = L10n.TextContent("Albedo Scale", "Specifies the relative size of object's UVs within its albedo texture that is used when calculating the influence on surrounding objects.", null, null);
+            public static readonly GUIContent atlasIndex = L10n.TextContent("Lightmap Index", null, null, null);
+            public static readonly GUIContent lightmapResolution = L10n.TextContent("Lightmap Resolution", null, null, null);
+            public static readonly GUIContent lightmapObjectScale = L10n.TextContent("Lightmap Object Scale", null, null, null);
+            public static readonly GUIContent pvrInstanceHash = L10n.TextContent("Instance Hash", "The hash of the baked GI instance.", null, null);
+            public static readonly GUIContent pvrAtlasHash = L10n.TextContent("Atlas Hash", "The hash of the atlas this baked GI instance is a part of.", null, null);
+            public static readonly GUIContent pvrAtlasInstanceOffset = L10n.TextContent("Atlas Instance Offset", "The offset into the transform array instances of this atlas start at.", null, null);
+            public static readonly GUIContent realtimeLMResolution = L10n.TextContent("System Resolution", "The resolution in texels of the realtime lightmap that this renderer belongs to.", null, null);
+            public static readonly GUIContent realtimeLMInstanceResolution = L10n.TextContent("Instance Resolution", "The resolution in texels of the realtime lightmap packed instance.", null, null);
+            public static readonly GUIContent realtimeLMInputSystemHash = L10n.TextContent("System Hash", "The hash of the realtime system that the renderer belongs to.", null, null);
+            public static readonly GUIContent realtimeLMInstanceHash = L10n.TextContent("Instance Hash", "The hash of the realtime GI instance.", null, null);
+            public static readonly GUIContent realtimeLMGeometryHash = L10n.TextContent("Geometry Hash", "The hash of the realtime GI geometry that the renderer is using.", null, null);
+            public static readonly GUIContent uvCharting = L10n.TextContent("Realtime UVs", null, null, null);
+            public static readonly GUIContent lightmapSettings = L10n.TextContent("Lightmapping", null, null, null);
+            public static readonly GUIContent castShadows = L10n.TextContent("Cast Shadows", "Specifies whether a geometry creates shadows or not when a shadow-casting Light shines on it.", null, null);
+            public static readonly GUIContent receiveShadows = L10n.TextContent("Receive Shadows", "When enabled, any shadows cast from other objects are drawn on the geometry.", null, null);
+            public static readonly GUIContent staticShadowCaster = L10n.TextContent("Static Shadow Caster", "When enabled, Unity considers this renderer as being static for the sake of shadow rendering. If the SRP implements cached shadow maps, this field indicates to the render pipeline what renderers are considered static and what renderers are considered dynamic.", null, null);
+            public static readonly GUIContent shadowBias = L10n.TextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.", null, null);
+            public static readonly GUIContent contributeGI = L10n.TextContent("Contribute Global Illumination", "When enabled, this GameObject influences lightmaps and Light Probes. If you want this object itself to be lightmapped, you must enable this property.", null, null);
+            public static readonly GUIContent receiveGITitle = L10n.TextContent("Receive Global Illumination", "If enabled, this GameObject receives global illumination from lightmaps or Light Probes. To use lightmaps, Contribute Global Illumination must be enabled.", null, null);
+            public static readonly GUIContent lightmapParametersDefault = L10n.TextContent("Scene Default Parameters", null, null, null);
+            public static readonly GUIContent globalIlluminationMeshLod = L10n.TextContent("Mesh LOD for Global Illumination", "The Mesh LOD index to use for Global Illumination.", null, null);
+            public static readonly GUIContent resolutionTooHighWarning = L10n.TextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.", null, null, null);
+            public static readonly GUIContent resolutionTooLowWarning = L10n.TextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.", null, null, null);
+            public static readonly GUIContent giNotEnabledInfo = L10n.TextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.", null, null, null);
+            public static readonly GUIContent terrainProbeNotSupported = L10n.TextContent("Legacy Light Probes are enabled in the Project's Render Pipeline. These are not supported by Terrain, therefore the Scene's Ambient Probe will be used instead.", null, null, null);
+            public static readonly GUIContent isPresetInfo = L10n.TextContent("The Contribute Global Illumination property cannot be stored in a preset.", null, null, null);
+            public static readonly GUIContent giMeshNotValid = L10n.TextContent("It is not possible to generate lighting for this Mesh because it is missing the required attribute(s). Ensure that this Mesh has normals, vertices, and texture coordinates.", null, null, null);
+            public static readonly GUIContent giMeshNotValidMultiple = L10n.TextContent("It is not possible to generate lighting for these Meshes because one or more of them are missing the required attribute(s). Ensure that all the Meshes you've selected have normals, vertices, and texture coordinates.", null, null, null);
 
-            public static readonly GUIContent openPreview = EditorGUIUtility.TrTextContent("View");
+            public static readonly GUIContent openPreview = L10n.TextContent("View", null, null, null);
             public static readonly GUIStyle openPreviewStyle = EditorStyles.objectFieldThumb.name + "LightmapPreviewOverlay";
             public static readonly int previewPadding = 30;
             public static readonly int previewWidth = 104;

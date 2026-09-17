@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1159,6 +1158,7 @@ namespace Unity.GraphToolkit.Editor
             // State nodes menu items:
             menuActionMap.Add(ContextualMenuHelpers.createTransitionMenuItem.Name, () => AppendStartTransitionCreationMenuItem(evt, selection));
             menuActionMap.Add(ContextualMenuHelpers.createSelfTransitionMenuItem.Name, () => AppendCreateSelfTransitionSubmenu(evt, selection));
+            menuActionMap.Add(ContextualMenuHelpers.disconnectAllTransitionsItem.Name, () => AppendDisconnectAllTransitionsMenuItem(evt, selection));
 
             // Subgraph nodes menu items:
             menuActionMap.Add(ContextualMenuHelpers.extractContentsToPlacematItem.Name, () => AppendExtractContentsToPlacematMenuItem(evt, selection));
@@ -1612,7 +1612,7 @@ namespace Unity.GraphToolkit.Editor
             if (!GraphModel.IsStateMachineGraph || selection.Count != 1 || selection[0] is not StateModel stateModel || PlaceholderModelHelper.IsMissingTypeModel(stateModel))
                 return;
 
-            evt.menu.AppendAction(L10n.Tr("Create Transition", null), menuAction =>
+            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutCreateTransitionEvent>(GraphTool, L10n.Tr("Create Transition", null), menuAction =>
             {
                 var stateView = stateModel.GetView<StateView>(this);
                 var mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
@@ -1641,6 +1641,30 @@ namespace Unity.GraphToolkit.Editor
                     }
                 });
             }
+        }
+
+        void AppendDisconnectAllTransitionsMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection)
+        {
+            if (!GraphModel.IsStateMachineGraph)
+                return;
+
+            var connectedStates = new List<StateModel>();
+
+            foreach (var elementModel in selection)
+            {
+                if (elementModel is not StateModel state || PlaceholderModelHelper.IsMissingTypeModel(state))
+                    continue;
+
+                if (!state.GetOutPort().IsConnected() && !state.GetInPort().IsConnected())
+                    continue;
+
+                connectedStates.Add(state);
+            }
+
+            evt.menu.AppendMenuItemFromShortcutWithName<ShortcutDisconnectWiresEvent>(GraphTool, L10n.Tr("Disconnect All Transitions", null), _ =>
+            {
+                Dispatch(new DisconnectWiresCommand(connectedStates));
+            }, connectedStates.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
         }
 
         static string GetTransitionSupportDisplayName(Type transitionSupportType)
@@ -4981,6 +5005,7 @@ namespace Unity.GraphToolkit.Editor
             public void AppendToggleCollapseMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendToggleCollapseMenuItem(evt, selection);
             public void AppendStartTransitionCreationMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendStartTransitionCreationMenuItem(evt, selection);
             public void AppendCreateSelfTransitionMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendCreateSelfTransitionSubmenu(evt, selection);
+            public void AppendDisconnectAllTransitionsMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendDisconnectAllTransitionsMenuItem(evt, selection);
             public void AppendCreateLocalSubgraphFromSelectionMenuItem(ContextualMenuPopulateEvent evt) => m_GraphView.AppendCreateLocalSubgraphFromSelectionMenuItem(evt);
             public void AppendExtractContentsToPlacematMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendExtractContentsToPlacematMenuItem(evt, selection);
             public void AppendOpenSubgraphMenuItem(ContextualMenuPopulateEvent evt, List<GraphElementModel> selection) => m_GraphView.AppendOpenSubgraphMenuItem(evt, selection);
@@ -4996,4 +5021,3 @@ namespace Unity.GraphToolkit.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

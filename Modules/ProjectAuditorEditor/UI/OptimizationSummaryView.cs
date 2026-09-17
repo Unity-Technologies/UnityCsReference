@@ -14,7 +14,8 @@ namespace Unity.ProjectAuditor.Editor.UI
 {
     // The Optimization page summary: a high-level overview of the project report (issue breakdown,
     // top ten issues and additional insights), followed by the shared Session Information section.
-    // Its Issue Breakdown excludes Upgrade-area issues (those appear on the Upgrade page).
+    // Its Issue Breakdown excludes issues from areas with their own dedicated page (those appear on
+    // the Upgrade and migration pages instead).
     class OptimizationSummaryView : SummaryView
     {
         bool m_ShowIssueBreakdown = true;
@@ -31,24 +32,6 @@ namespace Unity.ProjectAuditor.Editor.UI
         bool m_AnyAdditionalInsights;
         bool m_AnyCompilationErrors;
 
-        readonly Color[] m_DarkSkinSeverityColors =
-        [
-            new Color(0.6627f, 0.4118f, 0.9059f),   // Critical
-            new Color(1.0000f, 0.2196f, 0.2078f),   // Major
-            new Color(0.9608f, 0.5059f, 0.0000f),   // Moderate
-            new Color(0.3137f, 0.5843f, 0.7922f),   // Minor
-            new Color(0.6700f, 0.6700f, 0.6700f)    // Ignored
-        ];
-
-        readonly Color[] m_LightSkinSeverityColors =
-        [
-            new Color(0.5529f, 0.1059f, 0.8706f),   // Critical
-            new Color(0.7020f, 0.1725f, 0.0000f),   // Major
-            new Color(0.8431f, 0.4275f, 0.0000f),   // Moderate
-            new Color(0.2235f, 0.5373f, 0.7725f),   // Minor
-            new Color(0.4300f, 0.4300f, 0.4300f)    // Ignored
-        ];
-
         public override string Description => "Project report summary.";
 
         bool m_SkipRepaintPass;
@@ -57,8 +40,8 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
         }
 
-        // The Optimization breakdown shows everything except Upgrade-area issues.
-        protected override bool MatchesSummaryFilter(ReportItem issue) => !HasAnyAreas(issue, Areas.Upgrade);
+        // The Optimization breakdown excludes Upgrade and migration issues.
+        protected override bool MatchesSummaryFilter(ReportItem issue) => !issue.IsIssue() || IssueHasAnyAreas(issue, ~AreasExtensions.AllUpgradeAreas);
 
         protected override void OnSummaryRefreshed()
         {
@@ -162,9 +145,9 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             if (base.IsIssueIgnoredOrFiltered(item))
                 return true;
-            if (item.IsUpgradeIssue)
-                return true;
             if (item.Severity != Severity.Error && item.Severity != Severity.Critical && item.Severity != Severity.Major && item.Severity != Severity.Moderate)
+                return true;
+            if (!MatchesSummaryFilter(item))
                 return true;
 
             return false;
@@ -231,7 +214,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             bool newFoldoutState = true;
             using (new EditorGUILayout.HorizontalScope())
             {
-                newFoldoutState = Utility.BoldFoldout(foldoutState, EditorGUIUtility.TrTempContent($"{title} ({value} issues)"));
+                newFoldoutState = Utility.BoldFoldout(foldoutState, L10n.TempContent($"{title} ({value} issues)", null));
                 GUILayout.FlexibleSpace();
             }
 
@@ -250,9 +233,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                         if (m_ViewManager.HasPendingCategory(category))
                         {
-                            var text = string.Format(Contents.AnalysisInProgressText, title);
-                            var content = EditorGUIUtility.TrTextContent($"{text}|{Utility.GetStatusWheelFrame()}", text, string.Empty, Utility.GetIcon(Utility.IconType.StatusWheel).image);
-                            GUILayout.Label(content);
+                            DrawAnalysisInProgressLabel(title);
                         }
                         else if (m_ViewManager.Report.HasCategory(category))
                         {
@@ -292,40 +273,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                 EditorGUILayout.EndHorizontal();
 
-                var error = m_Stats.SeveritiesByCategory[(int)category].Error;
-                var critical = m_Stats.SeveritiesByCategory[(int)category].Critical;
-                var major = m_Stats.SeveritiesByCategory[(int)category].Major;
-                var moderate = m_Stats.SeveritiesByCategory[(int)category].Moderate;
-                var minor = m_Stats.SeveritiesByCategory[(int)category].Minor;
-                var ignored = m_Stats.SeveritiesByCategory[(int)category].Ignored;
-
-                var colors = SharedStyles.IsDarkMode ? m_DarkSkinSeverityColors : m_LightSkinSeverityColors;
-
-                List<ChartUtil.Element> inValues = new List<ChartUtil.Element>();
-                if (error != 0)
-                    inValues.Add(new ChartUtil.Element("Error", "Errors", error, colors[0], Utility.GetIcon(Utility.IconType.Error)));
-                if (critical != 0)
-                    inValues.Add(new ChartUtil.Element("Critical", "Critical issues", critical, colors[0], Utility.GetIcon(Utility.IconType.Critical)));
-                if (major != 0)
-                    inValues.Add(new ChartUtil.Element("Major", "Major issues", major, colors[1], Utility.GetIcon(Utility.IconType.Major)));
-                if (moderate != 0)
-                    inValues.Add(new ChartUtil.Element("Moderate", "Moderate issues", moderate, colors[2], Utility.GetIcon(Utility.IconType.Moderate)));
-                if (minor != 0)
-                    inValues.Add(new ChartUtil.Element("Minor", "Minor issues", minor, colors[3], Utility.GetIcon(Utility.IconType.Minor)));
-                if (ignored != 0)
-                    inValues.Add(new ChartUtil.Element("Ignored", "Ignored issues", ignored, colors[4], Utility.GetIcon(Utility.IconType.Ignored)));
-
-                EditorGUILayout.BeginHorizontal();
-
-                GUILayout.Space(20);
-
-                // Note: Using PA window's Draw2D allows custom geometry drawn here to be clipped (via Draw2D.SetClipRect) to stay inside scroll view handled in PA window
-                ChartUtil.DrawHorizontalStackedBar(m_Window.Draw2D, 14, null, inValues, "{0}", "N0",
-                    true, false, true, time);
-
-                GUILayout.Space(20);
-
-                EditorGUILayout.EndHorizontal();
+                DrawSeverityBar(m_Stats.SeveritiesByCategory[(int)category], horizontalPadding: 20, time);
 
                 EditorGUILayout.BeginHorizontal();
 
@@ -387,11 +335,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         static class Contents
         {
-            public static readonly GUIContent IssueBreakdownContent = EditorGUIUtility.TrTextContent("Issue Breakdown");
-            public static readonly GUIContent TopTenIssuesContent = EditorGUIUtility.TrTextContent("Top Ten Issues");
-            public static readonly GUIContent AdditionalInsightsContent = EditorGUIUtility.TrTextContent("Additional Insights");
-
-            public static readonly string AnalysisInProgressText = L10n.Tr("{0} analysis is still running in the background (see more in Window > General > Progress)", null);
+            public static readonly GUIContent IssueBreakdownContent = L10n.TextContent("Issue Breakdown", null, null, null);
+            public static readonly GUIContent TopTenIssuesContent = L10n.TextContent("Top Ten Issues", null, null, null);
+            public static readonly GUIContent AdditionalInsightsContent = L10n.TextContent("Additional Insights", null, null, null);
         }
     }
 }

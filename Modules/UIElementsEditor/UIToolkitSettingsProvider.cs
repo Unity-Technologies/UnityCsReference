@@ -32,19 +32,21 @@ namespace UnityEditor.UIElements
         const string k_EnableFilterShaderGraphToggleName = "enable-filter-shader-graph";
         const string k_ConsistentAttributeOrdering = "consistent-attribute-ordering-toggle";
         const string k_EnableMultiWindowBuilder = "enable-multi-window-builder";
+        const string k_EnableStyleSheetEditingMode = "enable-stylesheet-editing-mode";
+        const string k_StyleSheetEditingPreviewDocument = "stylesheet-editing-preview-document";
         const string k_EnableEventDebugger = "enable-event-debugger";
         const string k_EnableLayoutDebugger = "enable-layout-debugger";
         const string k_EnableUSSStatsWindow = "enable-uss-stats-window";
-        const string k_EnablePanelRendererAnimation = "enable-panel-renderer-animation";
         const string k_EnableUIComponents = "enable-ui-components";
         const string k_UIComponentsExperimentalLabel = "ui-components-experimental-label";
         const string k_UIComponentsHelpBox = "ui-components-help-box";
         const string k_EnableGridLayout = "enable-grid-layout";
-        const string k_EnableZIndex = "enable-z-index";
         const string k_EnableCurvedUI = "enable-curved-ui";
         const string k_EnableDebuggerLowLevelName = "enable-debugger-low-level";
         const string k_DefaultRuntimeTheme = "default-runtime-theme";
         const string k_DefaultEditorTheme = "default-editor-theme";
+        const string k_ProjectPreviewThemeHelpBox = "project-preview-theme-help-box";
+        const string k_ProjectPreviewThemeHelpTopic = "UIB-interface-overview";
 
         static readonly string k_EnableUIComponentsText = L10n.Tr("Enable UI Components", null);
         static readonly string k_ExperimentalText = L10n.Tr("Experimental", null);
@@ -192,6 +194,24 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.enableMultiWindowBuilder = e.newValue;
             });
 
+            var styleSheetEditingPreviewField = rootElement.Q<ObjectField>(k_StyleSheetEditingPreviewDocument);
+            styleSheetEditingPreviewField.objectType = typeof(VisualTreeAsset);
+            styleSheetEditingPreviewField.SetValueWithoutNotify(UIToolkitProjectSettings.styleSheetEditingPreviewDocument);
+            styleSheetEditingPreviewField.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.styleSheetEditingPreviewDocument = e.newValue as VisualTreeAsset;
+            });
+
+            var styleSheetEditingModeToggle = rootElement.Q<Toggle>(k_EnableStyleSheetEditingMode);
+            styleSheetEditingModeToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableStyleSheetEditingMode);
+            styleSheetEditingPreviewField.style.display = UIToolkitProjectSettings.enableStyleSheetEditingMode
+                ? DisplayStyle.Flex : DisplayStyle.None;
+            styleSheetEditingModeToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.enableStyleSheetEditingMode = e.newValue;
+                styleSheetEditingPreviewField.style.display = e.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+            });
+
             if (!Unsupported.IsDeveloperMode())
             {
                 VisualElement container = rootElement.Q("developer-settings-container");
@@ -220,18 +240,6 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.enableUSSStats = e.newValue;
             });
 
-            var panelRendererAnimationToggle = rootElement.Q<Toggle>(k_EnablePanelRendererAnimation);
-            panelRendererAnimationToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enablePanelRendererAnimation);
-            var animationRestartWarning = rootElement.Q("animation-restart-warning");
-            if (animationRestartWarning != null)
-                animationRestartWarning.style.display = UIToolkitProjectSettings.isAnimationSettingDirty ? DisplayStyle.Flex : DisplayStyle.None;
-            panelRendererAnimationToggle.RegisterValueChangedCallback(e =>
-            {
-                UIToolkitProjectSettings.enablePanelRendererAnimation = e.newValue;
-                if (animationRestartWarning != null)
-                    animationRestartWarning.style.display = UIToolkitProjectSettings.isAnimationSettingDirty ? DisplayStyle.Flex : DisplayStyle.None;
-            });
-
             var uiComponentsToggle = rootElement.Q<Toggle>(k_EnableUIComponents);
             uiComponentsToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableUIComponents);
             uiComponentsToggle.RegisterValueChangedCallback(e =>
@@ -247,13 +255,6 @@ namespace UnityEditor.UIElements
                 UIToolkitProjectSettings.enableGridLayout = e.newValue;
             });
 
-            var zIndexToggle = rootElement.Q<Toggle>(k_EnableZIndex);
-            zIndexToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableZIndex);
-            zIndexToggle.RegisterValueChangedCallback(e =>
-            {
-                UIToolkitProjectSettings.enableZIndex = e.newValue;
-            });
-
             var curvedUiToggle = rootElement.Q<Toggle>(k_EnableCurvedUI);
             curvedUiToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableCurvedUI);
             curvedUiToggle.RegisterValueChangedCallback(e =>
@@ -267,6 +268,9 @@ namespace UnityEditor.UIElements
             {
                 UIToolkitProjectSettings.EnableLowLevelDebugger = e.newValue;
             });
+
+            var projectPreviewThemeHelpBox = rootElement.Q<HelpBox>(k_ProjectPreviewThemeHelpBox);
+            projectPreviewThemeHelpBox.linkHref = Help.FindHelpNamed(k_ProjectPreviewThemeHelpTopic);
 
             var defaultRuntimeThemeMenu = rootElement.Q<ProjectSettingsThemeDropdown>(k_DefaultRuntimeTheme);
 

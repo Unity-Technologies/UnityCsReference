@@ -184,28 +184,39 @@ namespace Unity.Hierarchy
         public extern virtual int GetEntityIdsFromNodes(ReadOnlySpan<HierarchyNode> nodes, Span<EntityId> outEntityIds);
 
         /// <summary>
-        /// Called when a new search query begins.
+        /// Called when a new search query begins, for the view model running the search.
         /// </summary>
         /// <param name="query">The search query descriptor.</param>
-        protected virtual void SearchBegin(HierarchySearchQueryDescriptor query)
+        /// <param name="viewModel">The view model running the search. Use it to store per search state.</param>
+        protected virtual void SearchBegin(HierarchySearchQueryDescriptor query, HierarchyViewModel viewModel)
         {
+#pragma warning disable CS0618
+            SearchBegin(query);
+#pragma warning restore CS0618
         }
 
         /// <summary>
-        /// Determines if a node matches the search query.
+        /// Determines if a node matches the search query of the view model running the search.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
+        /// <param name="viewModel">The view model running the search.</param>
         /// <returns><see langword="true"/> if the node matches the search query, <see langword="false"/> otherwise.</returns>
-        protected virtual bool SearchMatch(in HierarchyNode node)
+        protected virtual bool SearchMatch(in HierarchyNode node, HierarchyViewModel viewModel)
         {
-            return false;
+#pragma warning disable CS0618
+            return SearchMatch(in node);
+#pragma warning restore CS0618
         }
 
         /// <summary>
-        /// Called when a search query ends.
+        /// Called when a search query ends, for the view model that was running the search.
         /// </summary>
-        protected virtual void SearchEnd()
+        /// <param name="viewModel">The view model that was running the search.</param>
+        protected virtual void SearchEnd(HierarchyViewModel viewModel)
         {
+#pragma warning disable CS0618
+            SearchEnd();
+#pragma warning restore CS0618
         }
 
         /// <summary>
@@ -284,10 +295,10 @@ namespace Unity.Hierarchy
         internal static HierarchyNodeTypeHandlerBase FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyNodeTypeHandlerBase)GCHandle.FromIntPtr(handlePtr).Target : null;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Internal_SearchBegin(HierarchySearchQueryDescriptor query) => SearchBegin(query);
+        internal void Internal_SearchBegin(HierarchySearchQueryDescriptor query, HierarchyViewModel viewModel) => SearchBegin(query, viewModel);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool Internal_SearchMatch(in HierarchyNode node) => SearchMatch(in node);
+        internal bool Internal_SearchMatch(in HierarchyNode node, HierarchyViewModel viewModel) => SearchMatch(in node, viewModel);
 
         [FreeFunction("HierarchyNodeTypeHandlerManager::Get().GetNodeType", IsThreadSafe = true, ThrowsException = true)]
         static extern int GetNodeTypeFromType(Type type);
@@ -351,11 +362,21 @@ namespace Unity.Hierarchy
         [RequiredByNativeCode]
         static int InvokeGetDefaultNodeFlags(IntPtr handlePtr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => (int)FromIntPtr(handlePtr).GetDefaultNodeFlags(in node, defaultFlags);
 
+#pragma warning disable CS0618
         [RequiredByNativeCode]
         static bool InvokeSearchMatch(IntPtr handlePtr, in HierarchyNode node) => FromIntPtr(handlePtr).SearchMatch(in node);
 
         [RequiredByNativeCode]
         static void InvokeSearchEnd(IntPtr handlePtr) => FromIntPtr(handlePtr).SearchEnd();
+#pragma warning restore CS0618
+
+        [RequiredByNativeCode]
+        static bool InvokeSearchMatchViewModel(IntPtr handlePtr, in HierarchyNode node, IntPtr viewModelHandlePtr)
+            => FromIntPtr(handlePtr).SearchMatch(in node, HierarchyViewModel.FromIntPtr(viewModelHandlePtr));
+
+        [RequiredByNativeCode]
+        static void InvokeSearchEndViewModel(IntPtr handlePtr, IntPtr viewModelHandlePtr)
+            => FromIntPtr(handlePtr).SearchEnd(HierarchyViewModel.FromIntPtr(viewModelHandlePtr));
 
         [RequiredByNativeCode]
         static void InvokeUpdateBegin(IntPtr handlePtr) => FromIntPtr(handlePtr).UpdateBegin();
@@ -410,6 +431,39 @@ namespace Unity.Hierarchy
 
         [RequiredByNativeCode]
         static bool InvokeUndoRedoSupported(IntPtr handlePtr) => FromIntPtr(handlePtr).UndoRedoSupported();
+        #endregion
+
+        #region Marked as obsolete warning in 6.7
+        /// <summary>
+        /// Called when a new search query begins.
+        /// </summary>
+        /// <param name="query">The search query descriptor.</param>
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected virtual void SearchBegin(HierarchySearchQueryDescriptor query)
+        {
+        }
+
+        /// <summary>
+        /// Determines if a node matches the search query.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns><see langword="true"/> if the node matches the search query, <see langword="false"/> otherwise.</returns>
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected virtual bool SearchMatch(in HierarchyNode node)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Called when a search query ends.
+        /// </summary>
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected virtual void SearchEnd()
+        {
+        }
         #endregion
 
         #region Marked as obsolete error in 6.7

@@ -16,28 +16,25 @@ namespace UnityEngine.UIElements
     /// sync with the UI as it changes.
     /// </summary>
     /// <remarks>
-    /// The bridge only ever produces an <see cref="AccessibilityHierarchy"/> — the shipped platform
-    /// adapters below <see cref="AssistiveSupport.activeHierarchy"/> handle the native side.
+    /// The bridge only produces an <see cref="AccessibilityHierarchy"/>; the platform adapters
+    /// below <see cref="AssistiveSupport.activeHierarchy"/> handle the native side.
     ///
-    /// The whole feature sits behind <see cref="featureEnabled"/>, off by default (fed by the
-    /// experimental UI Toolkit project setting): while off, the bridge never subscribes to screen
-    /// reader status nor allocates, and no panel carries a <see cref="VisualTreeAccessibilityUpdater"/>.
-    /// Individual panel components additionally carry a serialized, default-on opt-out gate that
-    /// is evaluated at registration, before any traversal.
+    /// Everything sits behind <see cref="featureEnabled"/>, off by default. While off, the bridge
+    /// never subscribes nor allocates, and no panel carries a
+    /// <see cref="VisualTreeAccessibilityUpdater"/>. Panel components also carry a serialized
+    /// opt-out gate, evaluated at registration.
     ///
-    /// Once a hierarchy exists, it is retained and kept in sync even while the screen reader is off
-    /// (mutating an inactive hierarchy is cheap, managed-only work), so turning the screen reader
-    /// back on only re-assigns the current hierarchy instead of rebuilding it. Live sync is driven
-    /// two ways: <see cref="VisualTreeAccessibilityUpdater"/> forwards version-bit changes
-    /// (structure, name, geometry, style- and picking-driven inclusion) and flushes them once per
-    /// frame after layout; leaf data (value, text, caption) arrives through per-element event hooks,
-    /// disabled/displayed flips through their single engine code paths, all applied immediately.
+    /// A built hierarchy is retained and kept in sync even while the screen reader is off, so
+    /// turning it back on only re-assigns it. Live sync is hybrid: the updater forwards
+    /// version-bit changes and flushes once per frame after layout; leaf data arrives through
+    /// per-element event hooks, disabled/displayed flips through their single engine code paths.
     ///
-    /// Beyond keeping data in sync, the bridge places open dropdown menus' node segments under
-    /// their field's node (or at the root level when the field is unmapped).
+    /// The bridge also manages exposure — the panel cover and out-of-view hiding compose on
+    /// <see cref="AccessibilityNode.isActive"/> — and places open dropdown menus' nodes under
+    /// their field's node.
     ///
-    /// The bridge yields to manual authoring: it never overwrites an active hierarchy assigned by
-    /// the developer, and it only ever mutates nodes it created.
+    /// The bridge yields to manual authoring: it never overwrites a developer-assigned active
+    /// hierarchy, and it only mutates nodes it created.
     /// </remarks>
     internal static partial class UITKAccessibilityBridge
     {
@@ -45,6 +42,9 @@ namespace UnityEngine.UIElements
         static bool s_FeatureEnabled;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Derived state: UpdateLiveState() recomputes it from the feature flag and the hierarchy every
+        // time either changes, so the value cleared on reload is re-derived rather than carried over.
+        [IgnoreForUAL0015("Derived flag recomputed by UpdateLiveState() from the current feature flag and hierarchy")]
         static bool s_IsLive;
 
         [AutoStaticsCleanupOnCodeReload]
@@ -67,11 +67,9 @@ namespace UnityEngine.UIElements
         [AutoStaticsCleanupOnCodeReload]
         static readonly AccessibilityNodeMap s_NodeMap = new();
 
-        // The root-level nodes generated for each top-level component, in reading order. A
-        // structural change regenerates the children of its nearest mapped Container ancestor;
-        // when no such ancestor exists (common: no labeled container between the panel root and
-        // the controls), the scope is the component's root segment, and these lists identify
-        // which root nodes belong to the affected component and where its segment starts.
+        // Each top-level component's root-level nodes, in reading order. A structural change
+        // with no mapped Container ancestor (the common case) regenerates the component's root
+        // segment; these lists say where that segment starts and what belongs to it.
         [AutoStaticsCleanupOnCodeReload]
         static readonly Dictionary<IPanelComponent, List<AccessibilityNode>> s_ComponentRootSegments = new();
 
@@ -101,14 +99,48 @@ namespace UnityEngine.UIElements
         [AutoStaticsCleanupOnCodeReload]
         static readonly HashSet<VisualElement> s_PendingFrameRefreshes = new();
 
-        // The node whose visual cursor needs re-anchoring: the screen reader cursor arrived on an
-        // element that had to be scrolled into view, and the cursor's visual highlight is drawn
-        // from geometry the platform samples before delivering the focus change. Once the node's
-        // frame stops moving across flushes, one layout-changed notification carrying the node
-        // redraws the cursor in place — unless the cursor has already moved on (quick sequential
-        // navigation is the normal screen reader gait, and a stale re-anchor yanks the cursor
-        // backward). Chatter-free by construction: only focus arrivals that actually scrolled get
-        // here, and each sends at most one notification.
+        // The topmost element that covers its whole panel and blocks pointer input — a modal
+        // backdrop. Nodes painted below it are hidden from the screen reader (isActive = false),
+        // mirroring what a pointer can reach. Null when nothing covers.
+        [AutoStaticsCleanupOnCodeReload]
+        static VisualElement s_PanelCover;
+
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_PanelCoverDirty;
+
+        // The nodes hidden by the current cover. isActive folds two reasons (cover and
+        // out-of-view); this set lets geometry refreshes re-apply the cover part without
+        // recomputing exposure per node. Empty while nothing covers.
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly HashSet<AccessibilityNode> s_NodesHiddenByCover = new();
+
+        // The cover's position in its tree: each ancestor with the child index leading down to
+        // the cover. A flush under an unchanged cover re-derives exposure only for freshly
+        // placed nodes, which is only sound while the cover has not moved; this cache proves
+        // that in O(depth) per flush (see PanelCoverPathIsCurrent). Empty while nothing covers.
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly List<(VisualElement ancestor, int branchIndex)> s_PanelCoverPath = new();
+
+        // The nodes placed by this flush's regenerations while a cover is up — the scope of the
+        // unchanged-cover exposure re-apply. Cleared at the end of every flush.
+        [AutoStaticsCleanupOnCodeReload]
+        static readonly HashSet<AccessibilityNode> s_FlushPlacedNodes = new();
+
+        // Where the screen reader cursor was when the cover went up; dismissal sends it back
+        // (the native modal convention). Captured at cover-raise, the last moment the cursor
+        // still sits on the opener. Null while nothing covers or nothing needs restoring.
+        //
+        // An element, not a node: own-document dialogs rebuild the hierarchy on attach/detach,
+        // and a rebuild replaces every node. That is also why this outlives ClearSyncState; the
+        // node is re-resolved when the cursor is sent back.
+        [AutoStaticsCleanupOnCodeReload]
+        static VisualElement s_CursorElementBeforeCover;
+
+        // The node whose cursor highlight needs redrawing: its element was scrolled into view
+        // on arrival, but the platform sampled the old geometry before delivering the focus
+        // change. Once the frame stops moving across flushes, one layout-changed notification
+        // redraws the cursor — dropped if the cursor already moved on, because a stale
+        // re-anchor yanks it backward. Only scrolled arrivals get here, one notification each.
         [AutoStaticsCleanupOnCodeReload]
         static VisualElement s_CursorReanchorElement;
 
@@ -122,15 +154,11 @@ namespace UnityEngine.UIElements
         [AutoStaticsCleanupOnCodeReload]
         static int s_CursorReanchorFlushesLeft;
 
-        // How many consecutive frame-moving flushes the settle wait tolerates before forcing the
-        // notification out. Only flushes where the focused node's frame moved consume it — the
-        // first quiet flush ends the wait — so it only binds while content keeps moving under the
-        // cursor. Two covers the deferred nested-scroll case (the outer ScrollTo re-applies from
-        // the scheduler one frame later and settles the next); doubled for slack. Deliberately
-        // far below ScrollView's own deferred-retry cap (k_MaxDeferredScrollToAttempts, 60
-        // frames of layout that keeps changing): a cursor redrawn after four moving flushes at a
-        // near-final position beats one redrawn a second late, and a stale redraw self-heals on
-        // the next cursor move.
+        // How many frame-moving flushes the settle wait tolerates before the notification is
+        // forced out; the first quiet flush ends the wait early. Two covers the deferred
+        // nested-scroll case, doubled for slack — and deliberately far below ScrollView's
+        // 60-frame deferred-retry cap: a cursor redrawn early at a near-final position beats one
+        // redrawn a second late, and a stale redraw self-heals on the next cursor move.
         const int k_CursorReanchorSettleBudget = 4;
 
         [AutoStaticsCleanupOnCodeReload]
@@ -152,6 +180,20 @@ namespace UnityEngine.UIElements
         // a user assembly across a code reload, so it is safe to persist.
         [NoAutoStaticsCleanup]
         static readonly EventCallback<PropertyChangedEvent> s_OnElementPropertyChanged = OnElementPropertyChanged;
+
+        /// <summary>
+        /// Whether hierarchies are built and kept in sync without a screen reader. On in the
+        /// editor: no screen reader reaches it there, and the Accessibility Hierarchy Viewer
+        /// should show the result as soon as play mode runs. Players keep screen-reader-driven
+        /// activation. Settable so tests control activation explicitly.
+        /// </summary>
+        [AutoStaticsCleanupOnCodeReload] // Auto re-captures the initializer: the platform default is re-derived on reload.
+        internal static bool activatesWithoutScreenReader { get; set; } = Application.isEditor;
+
+        // Whether a hierarchy should exist right now: a screen reader is on, or activation is
+        // platform-unconditional (the editor, for the Hierarchy Viewer).
+        static bool shouldMaintainHierarchy =>
+            AssistiveSupport.isScreenReaderEnabled || activatesWithoutScreenReader;
 
         /// <summary>
         /// The runtime gate for the whole bridge, off by default. Enabling it at runtime picks
@@ -190,13 +232,11 @@ namespace UnityEngine.UIElements
 
         internal static bool IsTrackedPanel(BaseVisualElementPanel panel) => s_TrackedPanels.Contains(panel);
 
-        // In players, the experimental project setting arrives as a TextAsset the build processor
-        // placed in a Resources folder ("1" = enabled), applied lazily at the first panel attach.
-        // A boot hook is not an option: [RuntimeInitializeOnLoadMethod] is banned in engine
-        // modules (BannedSymbols.RuntimeModules.txt — it acts as [Preserve]) and player builds
-        // only extract it from script assemblies anyway. A ScriptableObject cannot carry the
-        // setting either: internal engine-module classes have no MonoScript in player data, so
-        // their assets deserialize typeless. In the editor, the play-mode hook applies it instead.
+        // In players, the project setting ships as a Resources TextAsset ("1" = enabled),
+        // applied at the first panel attach. A boot hook is not an option
+        // ([RuntimeInitializeOnLoadMethod] is banned in engine modules), and a ScriptableObject
+        // cannot carry the setting (internal engine-module assets deserialize typeless in
+        // players). In the editor, the play-mode hook applies it instead.
         internal const string playerConfigurationResourceName = "UIToolkitAccessibilitySettings";
 
         [AutoStaticsCleanupOnCodeReload]
@@ -217,19 +257,17 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Called by <see cref="PanelSettings"/> when a top-level panel component attaches to the
-        /// visual tree — the registration entry where the per-component gate is evaluated. An
-        /// opted-out or non-participating component (see <see cref="IsParticipatingPanel"/>) is
-        /// never registered, so it is never walked.
+        /// Called by <see cref="PanelSettings"/> when a top-level panel component attaches —
+        /// the registration entry where the per-component gate is evaluated. Opted-out or
+        /// non-participating components (see <see cref="IsParticipatingPanel"/>) are never
+        /// registered, so they are never walked.
         /// </summary>
         internal static void OnPanelComponentAttached(IPanelComponent panelComponent)
         {
-            // The Accessibility module cannot represent hierarchies natively on this platform, so
-            // the bridge never registers anything (the editor is exempt: assignments there feed
-            // the Accessibility Hierarchy Viewer, and the tests run in it). Without this check,
-            // forcing AssistiveSupport.screenReaderStatusOverride on an unsupported player would
-            // make the bridge build and sync hierarchies nothing can consume, and log an
-            // assignment error per activation attempt.
+            // Register nothing on platforms the Accessibility module does not support (the
+            // editor is exempt: it feeds the Hierarchy Viewer and the tests). Otherwise a forced
+            // screenReaderStatusOverride would build hierarchies nothing can consume and log an
+            // assignment error per activation.
             if (!AssistiveSupport.isSupportedPlatform && !Application.isEditor)
                 return;
 
@@ -246,13 +284,13 @@ namespace UnityEngine.UIElements
 
             // A retained hierarchy is kept in sync while the screen reader is off, so lifecycle
             // rebuilds also run in that state.
-            if (AssistiveSupport.isScreenReaderEnabled || s_Hierarchy != null)
+            if (shouldMaintainHierarchy || s_Hierarchy != null)
                 ScheduleRebuildAndActivate(panelComponent);
         }
 
-        // The participant bookkeeping invariant — list membership, the status subscription and
-        // the tracked-panel set — is owned here; the attach/detach and gate-flip entry points
-        // only differ in how they react to a membership change.
+        // The participant bookkeeping rule — list membership, the status subscription and the
+        // tracked-panel set — is owned here; the attach/detach and gate-flip entry points only
+        // differ in how they react to a membership change.
         static bool TryRegisterParticipant(IPanelComponent panelComponent)
         {
             if (!IsParticipatingPanel(panelComponent.panelSettings) ||
@@ -275,10 +313,9 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Called by <see cref="PanelSettings"/> when a property that decides panel participation
-        /// (render mode, target display, target texture) or cross-panel reading order (sorting
-        /// order) changes on a live asset. Every attached component is re-evaluated, and a rebuild
-        /// is scheduled so order-only changes are reflected too.
+        /// Called by <see cref="PanelSettings"/> when a property deciding panel participation or
+        /// cross-panel reading order changes on a live asset. Attached components re-evaluate
+        /// and a rebuild is scheduled, so order-only changes are reflected too.
         /// </summary>
         internal static void OnPanelSettingsChanged(PanelSettings panelSettings)
         {
@@ -302,15 +339,14 @@ namespace UnityEngine.UIElements
 
             // Registration transitions schedule their own rebuild; an order-only change (sorting
             // order) does not, so make sure one lands whenever a hierarchy is in play.
-            if (scheduleTrigger != null && (AssistiveSupport.isScreenReaderEnabled || s_Hierarchy != null))
+            if (scheduleTrigger != null && (shouldMaintainHierarchy || s_Hierarchy != null))
                 ScheduleRebuildAndActivate(scheduleTrigger);
         }
 
         /// <summary>
-        /// Called by the per-component gate setters when the value changes on a live object. A
-        /// top-level component (un)registers as if it had just attached or detached; a nested
-        /// document's inclusion changes inside an already-walked tree, which is a structural
-        /// change at its root.
+        /// Called by the per-component gate setters when the value changes on a live object.
+        /// A top-level component (un)registers as on attach/detach; a nested document flips
+        /// inclusion inside an already-walked tree, which is a structural change at its root.
         /// </summary>
         internal static void OnPanelComponentGateChanged(IPanelComponent panelComponent)
         {
@@ -329,11 +365,10 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            // Unlike attach/detach — panel lifecycle events where wholesale change is under way —
-            // a gate flip happens on settled UI, so it must not take the full-rebuild path: a
-            // hierarchy swap tears down every native node and SendScreenChanged re-anchors the
-            // screen reader to the first element. The component's root segment is added or
-            // removed in place instead, leaving every other node (and the user's focus) alone.
+            // A gate flip happens on settled UI, unlike attach/detach, so no full rebuild: a
+            // hierarchy swap tears down every native node and re-anchors the screen reader to
+            // the first element. The component's root segment is added or removed in place,
+            // leaving every other node (and the user's focus) alone.
             if (panelComponent.GetAccessibilityEnabled())
             {
                 if (!TryRegisterParticipant(panelComponent))
@@ -341,7 +376,7 @@ namespace UnityEngine.UIElements
 
                 if (s_Hierarchy == null)
                 {
-                    if (AssistiveSupport.isScreenReaderEnabled)
+                    if (shouldMaintainHierarchy)
                         ScheduleRebuildAndActivate(panelComponent);
                     return;
                 }
@@ -378,13 +413,10 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Called by <see cref="GenericDropdownMenu"/> when its container attaches to a panel.
-        /// The menu mounts at the panel root, outside every component root, so the bridge places
-        /// it explicitly: under its field's node when the menu's target is mapped — reading order
-        /// then flows field, items, back out to the field's next sibling — else appended at the
-        /// root level. An open menu's items are readable and selectable, and — a dropdown being
-        /// light-dismiss, not modal — the rest of the UI stays represented and active alongside
-        /// it. The cursor deliberately stays on the field when the menu opens; the user walks in
-        /// when they choose to.
+        /// The menu mounts at the panel root, so the bridge places its nodes explicitly: under
+        /// the field's node when the menu's target is mapped, else appended at the root level.
+        /// Dropdowns are light-dismiss, not modal — the rest of the UI stays active — and the
+        /// cursor stays on the field until the user walks into the menu.
         /// </summary>
         internal static void OnDropdownMenuOpened(GenericDropdownMenu menu)
         {
@@ -452,9 +484,8 @@ namespace UnityEngine.UIElements
                 fieldNode.state &= ~AccessibilityState.Expanded;
 
             // Captured before the removal below unmaps the menu's nodes: a cursor inside the
-            // closing menu would be stranded on a removed node, so it returns to the field —
-            // whether an item was picked or the menu was dismissed. A cursor anywhere else (on
-            // the field, or on unrelated UI during a light dismiss) stays where the user put it.
+            // closing menu returns to the field (item picked or dismissed alike); a cursor
+            // anywhere else stays where the user put it.
             var cursorWasInMenu = AccessibilityTreeGenerator.screenReaderFocusedElement is { } cursorElement &&
                 menu.menuContainer.Contains(cursorElement);
 
@@ -489,6 +520,9 @@ namespace UnityEngine.UIElements
                 s_Hierarchy.RemoveNode(node, removeChildren: true);
             }
 
+            // The removed component may have carried the panel cover; the next flush recomputes.
+            s_PanelCoverDirty = true;
+
             if (AssistiveSupport.activeHierarchy == s_Hierarchy)
                 AssistiveSupport.notificationDispatcher.SendLayoutChanged();
         }
@@ -502,17 +536,14 @@ namespace UnityEngine.UIElements
             if (!TryUnregisterParticipant(panelComponent))
                 return;
 
-            if (AssistiveSupport.isScreenReaderEnabled || s_Hierarchy != null)
+            if (shouldMaintainHierarchy || s_Hierarchy != null)
                 ScheduleRebuildAndActivate(panelComponent);
         }
 
-        // Attach/detach-triggered rebuilds are deferred to the panel's next update tick. A
-        // component's content routinely arrives after its attach (PanelRenderer invokes its UI
-        // reload callbacks right after inserting the root; UIDocument content is usually added
-        // after panelSettings is assigned), so a synchronous rebuild at attach time snapshots
-        // empty roots when the screen reader is already on at startup — the primary path for
-        // screen reader users. Deferring one tick also coalesces a startup burst of attaches
-        // into a single rebuild. The screen-reader-on event path needs no rebuild at all: the
+        // Attach-triggered rebuilds are deferred one update tick: component content routinely
+        // arrives right after the attach, so a synchronous rebuild would snapshot empty roots
+        // when the screen reader is already on at startup. Deferring also coalesces a startup
+        // burst of attaches into one rebuild. The screen-reader-on path needs no rebuild: the
         // retained hierarchy is current.
         static void ScheduleRebuildAndActivate(IPanelComponent triggerComponent)
         {
@@ -537,10 +568,9 @@ namespace UnityEngine.UIElements
                 scheduled = true;
             }
 
-            // Schedule on every participating panel and let the first one to tick rebuild: the
-            // trigger's own panel is not guaranteed to get update ticks (and on detach it may be
-            // mid-teardown), while any live participating panel is an equally valid point past
-            // the attach-burst coalescing window.
+            // Schedule on every participating panel and let the first to tick rebuild: the
+            // trigger's own panel is not guaranteed updates (on detach it may be mid-teardown),
+            // and any live panel is equally past the attach-burst window.
             foreach (var component in s_ParticipatingComponents)
             {
                 ScheduleOn(component);
@@ -557,16 +587,12 @@ namespace UnityEngine.UIElements
                 RebuildAndActivate();
         }
 
-        // AssistiveSupport.activeHierarchy only represents the application's main window (wherever
-        // that window sits — the adapters resolve frames against the live window position), so only
-        // main-window screen-space overlay panels participate. Additional windows (targetDisplay >
-        // 0), offscreen surfaces (targetTexture) and world-space panels would merge nodes whose
-        // surface-local frames collide with main-window content, so they are not represented.
-        // Revisit after the platform display API work concludes (display/window separation):
-        // additional displays need the platform adapters to expose more than one window's
-        // accessibility tree. Render-texture panels blitted 1:1 to the main window are a candidate
-        // for an explicit opt-in later. Changing these values on a live PanelSettings re-evaluates
-        // its components through OnPanelSettingsChanged.
+        // AssistiveSupport.activeHierarchy represents only the application's main window, so
+        // only main-window screen-space overlay panels participate. Other displays, render
+        // textures and world-space panels would merge nodes whose frames collide with
+        // main-window content. Revisit when the platform display API work lands; 1:1
+        // render-texture blits are a candidate for an explicit opt-in later. Live PanelSettings
+        // changes re-evaluate through OnPanelSettingsChanged.
         static bool IsParticipatingPanel(PanelSettings panelSettings)
         {
             return panelSettings != null &&
@@ -593,12 +619,12 @@ namespace UnityEngine.UIElements
             // (see the class remarks) means the next "on" only re-assigns. The first "on" builds.
             if (!enabled)
             {
-                // Everything derived from the cursor belongs to the screen reader session that is
-                // ending: the tracked position (which gets no focus-loss event of its own) and a
-                // pending re-anchor. Kept, they would answer for a cursor that no longer exists
-                // on the next "on".
+                // Cursor-derived state belongs to the ending screen reader session: the tracked
+                // position (no focus-loss event will clear it), a pending re-anchor, and the
+                // pre-cover position. Kept, they would answer for a cursor that no longer exists.
                 AccessibilityTreeGenerator.ClearScreenReaderFocusedNode();
                 ClearCursorReanchor();
+                s_CursorElementBeforeCover = null;
                 return;
             }
 
@@ -625,10 +651,13 @@ namespace UnityEngine.UIElements
             {
                 var component = ((IPanelComponentRootElement)root).panelComponent;
                 var segmentStart = s_Hierarchy.rootNodes.Count;
+                var childState = AccessibilityFrameProjection.Descend(
+                    AccessibilityFrameProjection.GetClipStateAbove(root), root);
 
-                foreach (var child in root.hierarchy.Children())
+                for (var i = 0; i < root.hierarchy.childCount; i++)
                 {
-                    AccessibilityTreeGenerator.GenerateSubtree(child, s_Hierarchy, s_NodeMap);
+                    var cursor = s_Hierarchy.rootNodes.Count;
+                    AccessibilityTreeGenerator.GenerateSubtree(root.hierarchy[i], s_Hierarchy, null, s_NodeMap, ref cursor, null, null, childState);
                 }
 
                 s_ComponentRootSegments[component] = CaptureSegment(s_Hierarchy.rootNodes, segmentStart);
@@ -647,6 +676,12 @@ namespace UnityEngine.UIElements
                     OnDropdownMenuOpened(menu);
             }
 
+            // Nodes are created exposed; a cover already up (a rebuild under an open dialog) must
+            // hide the content below it before the native tree is built from the node data.
+            // ClearSyncState dropped the previous cover, so a found cover registers as a change.
+            s_PanelCoverDirty = true;
+            UpdatePanelCover(structurallyChanged: false);
+
             // Yield to a hierarchy the developer assigned manually; only replace nothing or our own
             // previous generation.
             ActivateIfUnclaimed(previousHierarchy);
@@ -654,11 +689,10 @@ namespace UnityEngine.UIElements
             RestoreCursorAfterRebuild();
         }
 
-        // Activating a hierarchy sends a screen-changed notification carrying no target, and the
-        // platform then places the cursor on its own — the first node, on macOS. That is right for
-        // a genuinely new screen, but a rebuild is not one: it is the same UI, re-derived. When a
-        // dialog that lived in its own panel component closes, the detach rebuilds, and without
-        // this, the cursor lands at the top of the UI instead of on whatever opened the dialog.
+        // Activation sends an untargeted screen-changed notification, and the platform parks
+        // the cursor on the first node. Right for a new screen — wrong for a rebuild, which is
+        // the same UI re-derived: without this, closing an own-document dialog drops the cursor
+        // at the top of the UI instead of on the opener.
         static void RestoreCursorAfterRebuild()
         {
             // The tracked cursor node belongs to the generation just discarded; re-point it at the
@@ -674,9 +708,17 @@ namespace UnityEngine.UIElements
             if (AssistiveSupport.activeHierarchy != s_Hierarchy)
                 return;
 
-            // Put the cursor back where the user had it: the tracked element, re-resolved to the
-            // node the rebuild just gave it.
-            var nodeToFocus = trackedNode is { isActive: true } ? trackedNode : null;
+            // A cover is up — either the rebuild is what put it there (a dialog opening) or it
+            // happened underneath one. Either way the dialog owns the cursor, and the pre-cover
+            // position waits for its dismissal.
+            if (s_PanelCover != null)
+                return;
+
+            // A dismissed cover returns the cursor to whatever opened it; failing that, the cursor
+            // stays on its own element. Both are the same request: put the cursor back where the
+            // user had it.
+            var nodeToFocus = TakeCursorNodeToRestore() ??
+                (trackedNode is { isActive: true } ? trackedNode : null);
 
             if (nodeToFocus != null)
                 AssistiveSupport.notificationDispatcher.SendLayoutChanged(nodeToFocus);
@@ -695,8 +737,8 @@ namespace UnityEngine.UIElements
             if (activeHierarchy == s_Hierarchy)
                 return;
 
-#pragma warning disable UAL0018 // Reset() clears AssistiveSupport.activeHierarchy back to null before s_Hierarchy is reset, and this method rebuilds+reassigns s_Hierarchy on the next activation, so a stale capture never outlives one refresh cycle
             if (activeHierarchy == null || activeHierarchy == replaceable)
+#pragma warning disable UAL0018 // the capturing field (AccessibilityHierarchyService.s_ActiveHierarchy) is itself cleaned on code reload, so the reference cannot go stale; Reset() also clears activeHierarchy back to null before s_Hierarchy is reset, and this method rebuilds and reassigns s_Hierarchy on the next activation
                 AssistiveSupport.activeHierarchy = s_Hierarchy;
 #pragma warning restore UAL0018
         }
@@ -764,9 +806,8 @@ namespace UnityEngine.UIElements
                     s_TrackedPanels.Add(panel);
             }
 
-            // Panels only carry an accessibility updater while tracked (the default updater set
-            // leaves the phase empty): updaters are called for every version change on every
-            // element, so an untracked panel must not pay for the feature — not even an
+            // Panels carry an accessibility updater only while tracked: updaters run on every
+            // version change of every element, so untracked panels must not pay even an
             // early-out call.
             foreach (var panel in s_TrackedPanels)
             {
@@ -800,6 +841,9 @@ namespace UnityEngine.UIElements
             }
 
             s_NodeMap.Clear();
+            s_NodesHiddenByCover.Clear();
+            s_PanelCoverPath.Clear();
+            s_FlushPlacedNodes.Clear();
             s_ComponentRootSegments.Clear();
             s_OpenDropdownMenus.Clear();
             s_OpenDropdownSegmentNodes.Clear();
@@ -809,6 +853,8 @@ namespace UnityEngine.UIElements
             s_PendingFrameRefreshes.Clear();
             s_CurrentPanelPending.Clear();
             ClearCursorReanchor();
+            s_PanelCover = null;
+            s_PanelCoverDirty = false;
         }
 
         internal static void Reset()
@@ -835,21 +881,19 @@ namespace UnityEngine.UIElements
             // hierarchy reachable (nodes hold parent/children references).
             AccessibilityTreeGenerator.ClearScreenReaderFocusedNode();
 
+            // Survives a rebuild's ClearSyncState by design, so the teardown clears it here.
+            s_CursorElementBeforeCover = null;
             s_Hierarchy = null;
-
             UpdateLiveState();
         }
 
         #region Live sync change notifications
 
         /// <summary>
-        /// A structural version change happened at this element (child added/removed/reparented —
-        /// the bit fires on the parent and on an added child); its context regenerates at the next
-        /// flush. Known controls are accessibility leaves, so a structural change *on* one is a
-        /// change to its internals (a Toggle inserting its caption label, a ScrollView attaching a
-        /// scroller) and is not represented; their own add/remove is signalled through their
-        /// parent. A ScrollView's represented content is not exempted here: content changes fire
-        /// on its content container, which is not a registered control.
+        /// A structural change happened at this element (the bit fires on the parent and on an
+        /// added child); its context regenerates at the next flush. A structural change *on* a
+        /// known control is internal chrome and not represented — except a content host's
+        /// content, whose changes fire on its content container.
         /// </summary>
         internal static void OnElementStructureChanged(VisualElement ve)
         {
@@ -889,10 +933,9 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Called from <see cref="VisualElement.ApplyPseudoStateChange"/> — the one code path every
-        /// disabled-state change passes through — whenever an element's effective disabled state
-        /// flips (including elements disabled through an ancestor). Applies immediately: node writes
-        /// are managed-only while the hierarchy is inactive.
+        /// Called from <see cref="VisualElement.ApplyPseudoStateChange"/> — the one path every
+        /// disabled-state change passes through, ancestors included. Applies immediately; node
+        /// writes are managed-only while the hierarchy is inactive.
         /// </summary>
         internal static void OnElementEnabledChanged(VisualElement ve)
         {
@@ -904,9 +947,8 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Called from the <see cref="VisualElement.areAncestorsAndSelfDisplayed"/> setter — the one
-        /// code path every displayed-state change passes through, driven by the layout updater —
-        /// whenever an element's effective displayed state flips; displayed state decides subtree
+        /// Called from the <see cref="VisualElement.areAncestorsAndSelfDisplayed"/> setter — the
+        /// one path every displayed-state change passes through. Displayed state decides subtree
         /// inclusion, so this is structural.
         /// </summary>
         internal static void OnElementDisplayedChanged(VisualElement ve)
@@ -972,20 +1014,17 @@ namespace UnityEngine.UIElements
 
         #region Per-frame flush
 
-        // The pending entries taken for the panel currently being flushed. One reused list rather
-        // than a per-step allocation: each TakePanelPending call clears and refills it, so its
-        // contents are only meaningful within the step that filled it — never hold it across
-        // steps. Safe as a single shared instance because all flushing happens on the main thread
-        // and the steps run strictly one after another.
+        // The pending entries taken for the panel being flushed. One reused list: each
+        // TakePanelPending call clears and refills it, so never hold it across steps. Safe
+        // shared — flushing is main-thread and the steps run strictly in order.
         [AutoStaticsCleanupOnCodeReload]
         static readonly List<VisualElement> s_CurrentPanelPending = new();
 
         /// <summary>
-        /// Called by <see cref="AccessibilityTreeGenerator"/> when the screen reader cursor's
-        /// arrival on the element scrolled it into view. The caller already pushed the corrected
-        /// frame for late readers, but the cursor's highlight is drawn from geometry sampled
-        /// before the focus change was delivered; <see cref="ProcessCursorReanchor"/> redraws it
-        /// once the scrolled frames settle.
+        /// Called by <see cref="AccessibilityTreeGenerator"/> when a cursor arrival scrolled the
+        /// element into view. The corrected frame is already pushed, but the platform sampled the
+        /// old geometry before delivering focus; <see cref="ProcessCursorReanchor"/> redraws the
+        /// cursor once the frames settle.
         /// </summary>
         internal static void OnCursorArrivalScrolled(VisualElement element, AccessibilityNode node)
         {
@@ -999,10 +1038,10 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Called when the node loses the screen reader cursor: a re-anchor for a node the cursor
-        /// already left would yank the cursor back. The pending state self-guards by node
-        /// identity, so callers need not (and must not) gate this on event ordering — the gain
-        /// for the next node can arrive before the loss for the previous one.
+        /// Called when the node loses the screen reader cursor: a re-anchor for a node the
+        /// cursor left would yank it back. The pending state self-guards by node identity;
+        /// callers must not gate this on event order — the next gain can arrive before the
+        /// previous loss.
         /// </summary>
         internal static void OnCursorArrivalScrollCanceled(AccessibilityNode node)
         {
@@ -1033,10 +1072,8 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            // The re-anchor is a repair for one specific arrival: the moment the cursor moves
-            // on, it is stale, and sending it would yank the cursor backward. The cancel on
-            // cursor loss already covers the delivered-event case; this covers the race where
-            // the next gain arrived without the loss having been processed yet.
+            // A re-anchor repairs one arrival; once the cursor moves on it is stale. The loss
+            // cancel covers the delivered case; this covers a gain processed before its loss.
             if (AccessibilityTreeGenerator.screenReaderFocusedNode != node)
             {
                 ClearCursorReanchor();
@@ -1083,18 +1120,21 @@ namespace UnityEngine.UIElements
 
             ProcessCursorReanchor(panel);
 
-            // Only structural changes warrant a layout-changed notification. Frame-only refreshes
-            // already reach the native side through the frame setters (pushed into the platform
-            // nodes on macOS/iOS, re-read on query on Windows/Android); notifying on every
-            // geometry tick makes screen readers chatter through ordinary UI animation, like a
-            // label resizing once per second.
-            if (structurallyChanged && AssistiveSupport.activeHierarchy == s_Hierarchy)
-                AssistiveSupport.notificationDispatcher.SendLayoutChanged();
+            var panelCoverChanged = UpdatePanelCover(structurallyChanged);
+
+            // Only structural changes (and cover flips, which change what is reachable) warrant a
+            // layout-changed notification. Frame-only refreshes already reach the native side
+            // through the frame setters (pushed into the platform nodes on macOS/iOS, re-read on
+            // query on Windows/Android); notifying on every geometry change makes screen readers
+            // chatter through ordinary UI animation, like a label resizing once per second.
+            if ((structurallyChanged || panelCoverChanged) && AssistiveSupport.activeHierarchy == s_Hierarchy)
+                AssistiveSupport.notificationDispatcher.SendLayoutChanged(TakeCursorNodeToRestore());
 
             // Left uncleared, the scratch list keeps the last step's elements (and through them
             // their subtrees) reachable until the next non-empty flush step — indefinitely on
             // quiet frames, since the steps early-out before refilling it.
             s_CurrentPanelPending.Clear();
+            s_FlushPlacedNodes.Clear();
         }
 
         static void TakePanelPending(HashSet<VisualElement> pending, BaseVisualElementPanel panel, List<VisualElement> taken)
@@ -1128,6 +1168,10 @@ namespace UnityEngine.UIElements
             {
                 if (InclusionFlipped(element))
                     s_PendingStructural.Add(element);
+
+                // A pickingMode change can promote the element to panel cover or retire the
+                // current one (the Picking bit routes through the inclusion recheck).
+                NotePanelCoverSignal(element);
             }
         }
 
@@ -1187,13 +1231,17 @@ namespace UnityEngine.UIElements
                 if (contextNode != null)
                 {
                     RegenerateContainerContext(contextNode, contextElement);
+                    NotePanelCoverSignalInSubtree(contextElement);
                     coveredRoots.Add(contextElement);
                 }
                 else
                 {
                     RegenerateRootSegment(rootSegmentComponent);
                     if (rootSegmentComponent.GetRootVisualElement() is { } componentRoot)
+                    {
+                        NotePanelCoverSignalInSubtree(componentRoot);
                         coveredRoots.Add(componentRoot);
+                    }
                 }
 
                 changed = true;
@@ -1227,12 +1275,10 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        // Resolves the unit of regeneration for a structural change at the element: the nearest
-        // mapped Container ancestor (regenerate its node children), or the top-level component's
-        // root-level segment when no such ancestor exists. The context is chosen strictly above the
-        // element because the change may alter the element's own representation (kind, existence).
-        // Changes inside known-control leaves (whose internals are never represented) and inside
-        // omitted subtrees resolve to no context at all.
+        // Resolves what regenerates for a structural change: the nearest mapped Container
+        // ancestor's children, or the component's root segment when there is none. The context
+        // sits strictly above the element because the change may alter the element's own
+        // representation. Known-control internals and omitted subtrees resolve to nothing.
         static bool TryFindScopeToRegenerate(VisualElement element, out AccessibilityNode contextNode,
             out VisualElement contextElement, out IPanelComponent rootSegmentComponent)
         {
@@ -1268,11 +1314,10 @@ namespace UnityEngine.UIElements
                     return false;
                 }
 
-                // Inside a known control's internals: not represented, nothing to regenerate.
-                // The exception is a content host's content, which is represented under the
-                // host's own node; changes in its chrome (scrollers) still resolve to nothing.
-                // The element may be the content container itself: structural bits fire on the
-                // parent of an added or removed child.
+                // Known-control internals are not represented — except a content host's
+                // content, which regenerates under the host's node (chrome still resolves to
+                // nothing). The element may be the content container itself: structural bits
+                // fire on the parent.
                 if (AccessibilityRoleRegistry.TryGetRole(ancestor, out _))
                 {
                     if (AccessibilityTreeGenerator.TryGetContentHost(ancestor, out var content) &&
@@ -1305,17 +1350,14 @@ namespace UnityEngine.UIElements
             return false;
         }
 
-        // Both regeneration flavors diff against the previous generation instead of rebuilding:
-        // the walk reuses every node whose element still produces the same kind of node within
-        // the same scope (screen reader focus on it survives), and the nodes of the previous
-        // generation that the walk did not visit are swept afterwards. An element that moved in
-        // from another scope gets a fresh node — reuse never crosses scopes, so no walk disturbs
-        // another scope's node positions (the invariant the segment bookkeeping below relies on).
+        // Both flavors diff against the previous generation: nodes still producing the same
+        // kind of node in the same scope are reused (screen reader focus survives), the
+        // unvisited remainder is swept. Reuse never crosses scopes, so no walk disturbs another
+        // scope's node positions — the rule the segment bookkeeping relies on.
 
-        // The node-side recursions below index node.children instead of enumerating it: the
-        // property is an interface-typed view of the child list, and foreach through it boxes
-        // the enumerator for every node in the segment — including the leaf majority with empty
-        // child lists — on every structural flush.
+        // The recursions below index node.children instead of foreach: the property is an
+        // interface-typed view, and enumerating it boxes for every node on every structural
+        // flush.
         static void RegenerateContainerContext(AccessibilityNode contextNode, VisualElement contextElement)
         {
             using var pooledPrevious = HashSetPool<AccessibilityNode>.Get(out var previousNodes);
@@ -1339,11 +1381,9 @@ namespace UnityEngine.UIElements
             if (!s_ComponentRootSegments.TryGetValue(component, out var oldSegment))
                 oldSegment = null;
 
-            // The first old node's live position is the segment's position. It is guaranteed to
-            // still be live here: only this scope's own sweep (below) removes this segment's
-            // nodes, because node reuse never crosses scopes — even when another scope
-            // regenerated first in this flush (a cross-document reparent dirties both sides),
-            // the most it did to this segment is shift it whole, which the live lookup absorbs.
+            // The first old node's live position anchors the segment, and it is still live
+            // here: reuse never crosses scopes, so another scope regenerating first can at most
+            // shift this segment whole — which the live lookup absorbs.
             var segmentStart = oldSegment is { Count: > 0 }
                 ? IndexOfRootNode(oldSegment[0])
                 : ComputeRootSegmentStartIndex(component);
@@ -1357,10 +1397,9 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            // The sweep inside RegenerateChildren runs before the capture below: stale root nodes
-            // left inside [segmentStart, cursor) would corrupt the segment bookkeeping. Reused
-            // nodes were moved into position by the walk, so everything swept sits after the
-            // walked range or deeper in the tree.
+            // The sweep runs before the capture below: stale root nodes inside the walked range
+            // would corrupt the segment bookkeeping. Everything swept sits after the range or
+            // deeper.
             var cursor = segmentStart;
             RegenerateChildren(component.GetRootVisualElement(), null, ref cursor, previousNodes);
 
@@ -1388,18 +1427,26 @@ namespace UnityEngine.UIElements
 
             if (contextElement != null)
             {
+                // Derived once for all sibling subtrees (see AccessibilityFrameProjection.ClipState).
+                var childState = AccessibilityFrameProjection.Descend(
+                    AccessibilityFrameProjection.GetClipStateAbove(contextElement), contextElement);
                 for (var i = 0; i < contextElement.hierarchy.childCount; i++)
                 {
-                    AccessibilityTreeGenerator.GenerateSubtree(contextElement.hierarchy[i], s_Hierarchy, parentNode, s_NodeMap, ref cursor, previousNodes, visited);
+                    AccessibilityTreeGenerator.GenerateSubtree(contextElement.hierarchy[i], s_Hierarchy,
+                        parentNode, s_NodeMap, ref cursor, previousNodes, visited, childState);
                 }
             }
 
-            // Open dropdown segments come from a foreign element tree (the menu mounts at the
-            // panel root), so a context walk outside the menu never visits them; sparing them
-            // keeps churn near the field from tearing down its open menu. A context inside the
-            // menu (item churn) sweeps normally — there, the walk does visit the live nodes.
+            // Open menus mount at the panel root, so a context walk outside the menu never
+            // visits them; sparing them keeps churn near the field from tearing the menu down.
+            // Item churn inside the menu sweeps normally.
             SweepStaleNodes(previousNodes, visited,
                 spareOpenDropdownSegments: !IsInOpenDropdownSegment(parentNode));
+
+            // While a cover is up, the flush-wide set of placed nodes is the scope of the
+            // unchanged-cover exposure re-apply (see UpdatePanelCover).
+            if (s_PanelCover != null)
+                s_FlushPlacedNodes.UnionWith(visited);
         }
 
         static void SnapshotSubtree(AccessibilityNode node, HashSet<AccessibilityNode> snapshot)
@@ -1490,6 +1537,11 @@ namespace UnityEngine.UIElements
             // registration (the hook delegate is shared, so unregistering here would kill it).
             if (s_NodeMap.RemoveNode(node, out var element))
                 element.UnregisterCallback<PropertyChangedEvent>(s_OnElementPropertyChanged);
+
+            // With the scoped re-apply, removals are the only path off the hidden set for a
+            // node that never gets re-derived.
+            if (s_NodesHiddenByCover.Count > 0)
+                s_NodesHiddenByCover.Remove(node);
         }
 
         static void RegisterPropertyCallbacks(AccessibilityNode node)
@@ -1506,10 +1558,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        // A geometry bit fires on the topmost element whose parent-relative rect changed; the
-        // worldBounds of everything below shift with it without further bits, so the refresh
-        // walks each pending element's subtree. Pending elements sitting under another pending
-        // element are covered by that ancestor's walk and skipped.
+        // A geometry bit fires on the topmost moved element; descendants shift without further
+        // bits, so the refresh walks each pending element's subtree. Pending elements under
+        // another pending element are covered by that walk and skipped.
         static void ProcessFrameRefreshes(BaseVisualElementPanel panel)
         {
             if (s_PendingFrameRefreshes.Count == 0)
@@ -1524,6 +1575,10 @@ namespace UnityEngine.UIElements
             foreach (var element in s_CurrentPanelPending)
             {
                 pendingRoots.Add(element);
+
+                // Geometry can grow an element into panel cover or shrink the current one out of
+                // the role; both sides reduce to one cheap rect test per moved element.
+                NotePanelCoverSignal(element);
             }
 
             foreach (var element in s_CurrentPanelPending)
@@ -1535,23 +1590,38 @@ namespace UnityEngine.UIElements
 
         static void RefreshSubtreeFrames(VisualElement element)
         {
+            // The clip state above the subtree is derived once and carried down the recursion
+            // (see AccessibilityFrameProjection.ClipState).
+            RefreshSubtreeFrames(element, AccessibilityFrameProjection.GetClipStateAbove(element));
+        }
+
+        static void RefreshSubtreeFrames(VisualElement element, AccessibilityFrameProjection.ClipState inherited)
+        {
             if (s_NodeMap.TryGetNode(element, out var node))
             {
+                var bounds = element.worldBound;
+
                 // Pushing through the setter forwards to native even when the value is unchanged,
                 // which native needs for its own screen-coordinate conversion; while the hierarchy
                 // is inactive, this is a managed-only write.
-                node.frame = AccessibilityFrameProjection.GetScreenFrame(element);
+                node.frame = AccessibilityFrameProjection.GetScreenFrame(element, bounds);
 
-                // A content host's content is mapped, so the walk continues through its content
-                // container (skipping the chrome); a scroll view's percentage depends on this
-                // same geometry, so it refreshes here too — guarded, since this runs per frame
-                // (see ScrollPercentageIsCurrent).
-                if (AccessibilityTreeGenerator.TryGetContentHost(element, out var content))
+                // The same geometry decides in-view state (content scrolling under a viewport,
+                // an element leaving the panel); the cover term rides the set so cover exposure
+                // is not recomputed per node. The isActive setter no-ops when unchanged.
+                node.isActive = !s_NodesHiddenByCover.Contains(node) &&
+                    !AccessibilityFrameProjection.IsFullyOutOfView(inherited, bounds);
+
+                // A content host's content is mapped, so the walk continues through the content
+                // container. The scroll percentage depends on the same geometry, so it refreshes
+                // here too — guarded, since this runs per frame (see ScrollPercentageIsCurrent).
+                if (AccessibilityTreeGenerator.TryGetContentHost(element, out var content, out var viewport))
                 {
                     if (!AccessibilityTreeGenerator.ScrollPercentageIsCurrent(node.value, element))
                         node.value = AccessibilityTreeGenerator.DeriveValue(element);
 
-                    RefreshSubtreeFrames(content);
+                    RefreshSubtreeFrames(content,
+                        AccessibilityFrameProjection.DescendToHostedContent(inherited, element, viewport));
                     return;
                 }
 
@@ -1560,12 +1630,313 @@ namespace UnityEngine.UIElements
                     return;
             }
 
+            var childState = AccessibilityFrameProjection.Descend(inherited, element);
             for (var i = 0; i < element.hierarchy.childCount; i++)
             {
-                RefreshSubtreeFrames(element.hierarchy[i]);
+                RefreshSubtreeFrames(element.hierarchy[i], childState);
             }
         }
 
         #endregion // Per-frame flush
+
+        #region Panel cover (modal occlusion)
+
+        // Recomputes the panel cover when something that decides it may have changed: the dirty
+        // flag (geometry/picking signals, regenerated-subtree scans), or the current cover no
+        // longer covering — checked directly, one element per flush, so structural churn never
+        // rescans every tree just to notice cover loss. Returns whether the cover changed.
+        static bool UpdatePanelCover(bool structurallyChanged)
+        {
+            // The rect test alone is not enough: an element hidden by a display flip (its own or
+            // an ancestor's) or turned invisible keeps its last laid-out worldBound, so the
+            // stale rect still spans the panel while the element no longer covers anything.
+            if (s_PanelCover != null &&
+                (s_PanelCover.elementPanel == null || !s_PanelCover.areAncestorsAndSelfDisplayed ||
+                    !s_PanelCover.visible || !IsCoveringItsPanel(s_PanelCover)))
+                s_PanelCoverDirty = true;
+
+            // A moved cover invalidates every node's derived exposure (see s_PanelCoverPath)
+            // and takes the full recompute. Computed once — nothing between here and the apply
+            // decision moves the cover.
+            var structuralUnderCover = structurallyChanged && s_PanelCover != null;
+            var coverMoved = structuralUnderCover && !PanelCoverPathIsCurrent();
+            if (!s_PanelCoverDirty && coverMoved)
+                s_PanelCoverDirty = true;
+
+            if (!s_PanelCoverDirty && !structuralUnderCover)
+                return false;
+
+            var changed = false;
+
+            if (s_PanelCoverDirty)
+            {
+                s_PanelCoverDirty = false;
+
+                var roots = GetParticipatingRootsInReadingOrder();
+                var cover = FindPanelCover(roots);
+                var previousCover = s_PanelCover;
+                changed = cover != previousCover;
+                s_PanelCover = cover;
+
+                // Entering the covered state: remember where the cursor was so dismissal can
+                // send it back. An existing snapshot is kept — a cover replacing another, or a
+                // rebuild re-finding a standing cover from the cleared state, must not
+                // overwrite the pre-cover position with one inside a dialog.
+                if (changed && previousCover == null && s_CursorElementBeforeCover == null)
+                    s_CursorElementBeforeCover = AccessibilityTreeGenerator.screenReaderFocusedElement;
+
+                // Churn under a cover that recomputed unchanged AND unmoved re-derives only the
+                // placed nodes; everything else re-derives the whole map.
+                if (changed || (cover != null && structurallyChanged && coverMoved))
+                    ApplyPanelCoverToNodes(roots);
+                else if (cover != null && structurallyChanged)
+                    ApplyPanelCoverToPlacedNodes(roots);
+            }
+            else if (s_FlushPlacedNodes.Count > 0)
+            {
+                // Structural churn under a standing, unmoved cover: regeneration created its
+                // nodes exposed, so the cover term is re-applied to just those. (The count
+                // guard keeps a placement-free flush from building the roots list for nothing.)
+                ApplyPanelCoverToPlacedNodes(GetParticipatingRootsInReadingOrder());
+            }
+
+            // A cursor the cover never hid has nothing to return to. Resolved through the map,
+            // not the tracked node: this flush may have regenerated the element's node, leaving
+            // the tracked one stale.
+            if (s_PanelCover != null && s_CursorElementBeforeCover != null &&
+                !(s_NodeMap.TryGetNode(s_CursorElementBeforeCover, out var coveredCursorNode) &&
+                    s_NodesHiddenByCover.Contains(coveredCursorNode)))
+                s_CursorElementBeforeCover = null;
+
+            return changed;
+        }
+
+        // The restore target for the flush notification, consumed once per cover cycle: leaving
+        // the covered state returns the cursor where it was, instead of the top of the
+        // hierarchy. Null otherwise — placement stays with the platform.
+        static AccessibilityNode TakeCursorNodeToRestore()
+        {
+            if (s_PanelCover != null || s_CursorElementBeforeCover is not { } element)
+                return null;
+
+            s_CursorElementBeforeCover = null;
+
+            // The element may be gone (removed while the dialog was up) or its node hidden for
+            // reasons of its own beyond the cover (scrolled out of view); either way, there is no
+            // longer a position to return to, and the platform places the cursor itself.
+            var resolved = s_NodeMap.TryGetNode(element, out var node);
+
+            return resolved && node.isActive ? node : null;
+        }
+
+        // The topmost cover wins: panels and components are walked from the top of the paint
+        // order down, and within a subtree children paint above their parent, so the reverse
+        // pre-order finds the last-painted covering element first.
+        static VisualElement FindPanelCover(List<VisualElement> roots)
+        {
+            for (var i = roots.Count - 1; i >= 0; i--)
+            {
+                if (FindPanelCoverIn(roots[i]) is { } cover)
+                    return cover;
+            }
+
+            return null;
+        }
+
+        static VisualElement FindPanelCoverIn(VisualElement element)
+        {
+            if (AccessibilityTreeGenerator.IsOmittedSubtree(element))
+                return null;
+
+            for (var i = element.hierarchy.childCount - 1; i >= 0; i--)
+            {
+                if (FindPanelCoverIn(element.hierarchy[i]) is { } cover)
+                    return cover;
+            }
+
+            return IsCoveringItsPanel(element) ? element : null;
+        }
+
+        // Dirty only when the outcome can change: a new element covering, or the current cover
+        // no longer covering. The cover merely moving while still covering cannot change the
+        // outcome, and skipping it keeps animated covers from forcing a whole-tree recompute
+        // every frame.
+        static void NotePanelCoverSignal(VisualElement element)
+        {
+            var covering = IsCoveringItsPanel(element);
+            if (element == s_PanelCover ? !covering : covering)
+                s_PanelCoverDirty = true;
+        }
+
+        // A regenerated subtree is the one place a new cover can arrive through a structural
+        // change, so each regeneration scans its own context instead of every flush rescanning
+        // every tree. The standing cover is deliberately not a hit: churn inside a modal
+        // resolves to the backdrop as its context, and treating it as an arrival would force
+        // the full recompute every flush. The scan still descends into it (a panel-spanning
+        // child is a new topmost cover); the cover's own movement and loss are caught in
+        // UpdatePanelCover.
+        static void NotePanelCoverSignalInSubtree(VisualElement element)
+        {
+            if (s_PanelCoverDirty || AccessibilityTreeGenerator.IsOmittedSubtree(element))
+                return;
+
+            if (element != s_PanelCover && IsCoveringItsPanel(element))
+            {
+                s_PanelCoverDirty = true;
+                return;
+            }
+
+            for (var i = 0; i < element.hierarchy.childCount; i++)
+            {
+                NotePanelCoverSignalInSubtree(element.hierarchy[i]);
+            }
+        }
+
+        // The pointer-parallel definition of a cover: a pickable element spanning its whole
+        // panel blocks every pointer interaction below it, so the screen reader mirrors pointer
+        // reach. Visual transparency plays no part — a transparent backdrop blocks clicks all
+        // the same. Screen-space panels span the window, so covering one covers lower panels.
+        static bool IsCoveringItsPanel(VisualElement element)
+        {
+            if (element.pickingMode != PickingMode.Position || element.elementPanel is not { } panel)
+                return false;
+
+            var viewport = panel.visualTree.layout;
+            var bounds = element.worldBound;
+
+            // NaN bounds (pre-layout) fail the comparisons and correctly count as not covering.
+            return bounds.xMin <= viewport.xMin + 0.5f && bounds.yMin <= viewport.yMin + 0.5f &&
+                bounds.xMax >= viewport.xMax - 0.5f && bounds.yMax >= viewport.yMax - 0.5f;
+        }
+
+        // Hides every mapped node painted below the cover (isActive = false) and exposes the
+        // rest. Node identity is untouched, so screen reader focus survives a dialog closing.
+        static void ApplyPanelCoverToNodes(List<VisualElement> roots)
+        {
+            s_NodesHiddenByCover.Clear();
+
+            // For each cover ancestor, the child index leading down to the cover: an element
+            // elsewhere in the panel compares sibling branches at the common ancestor. The panel
+            // root is included, so same-panel components compare by sibling order too. The walk
+            // also caches the cover path for the scoped re-applies.
+            using var pooledBranches = DictionaryPool<VisualElement, int>.Get(out var coverBranchIndex);
+            var coverComponentOrder = -1;
+            s_PanelCoverPath.Clear();
+            if (s_PanelCover != null)
+            {
+                var branchChild = s_PanelCover;
+                for (var ancestor = s_PanelCover.hierarchy.parent; ancestor != null; ancestor = ancestor.hierarchy.parent)
+                {
+                    var branchIndex = ancestor.hierarchy.IndexOf(branchChild);
+                    coverBranchIndex[ancestor] = branchIndex;
+                    s_PanelCoverPath.Add((ancestor, branchIndex));
+                    if (ancestor.hierarchy.parent == null)
+                        coverComponentOrder = roots.IndexOf(branchChild);
+                    branchChild = ancestor;
+                }
+            }
+
+            foreach (var (element, node) in s_NodeMap)
+            {
+                var exposed = s_PanelCover == null ||
+                    IsExposedWithPanelCover(element, coverBranchIndex, roots, coverComponentOrder);
+                if (!exposed)
+                    s_NodesHiddenByCover.Add(node);
+
+                node.isActive = exposed && !AccessibilityFrameProjection.IsFullyOutOfView(element);
+            }
+        }
+
+        // Whether the cover still sits exactly where exposure was last derived for every node:
+        // same ancestor chain, same branch indices. O(cover depth), with one IndexOf per level —
+        // the lookups the full apply would pay once, without the map-wide node walk.
+        static bool PanelCoverPathIsCurrent()
+        {
+            var i = 0;
+            var branchChild = s_PanelCover;
+            for (var ancestor = s_PanelCover.hierarchy.parent; ancestor != null; ancestor = ancestor.hierarchy.parent)
+            {
+                if (i >= s_PanelCoverPath.Count)
+                    return false;
+
+                var (cachedAncestor, cachedIndex) = s_PanelCoverPath[i];
+                if (cachedAncestor != ancestor || ancestor.hierarchy.IndexOf(branchChild) != cachedIndex)
+                    return false;
+
+                branchChild = ancestor;
+                i++;
+            }
+
+            return i == s_PanelCoverPath.Count;
+        }
+
+        // The scoped counterpart of ApplyPanelCoverToNodes: exposure re-derived only for nodes
+        // this flush placed. Sound because an exposure-flipping change always fires inside a
+        // context containing the affected node — except the cover itself moving, which
+        // PanelCoverPathIsCurrent rules out first.
+        static void ApplyPanelCoverToPlacedNodes(List<VisualElement> roots)
+        {
+            if (s_FlushPlacedNodes.Count == 0)
+                return;
+
+            using var pooledBranches = DictionaryPool<VisualElement, int>.Get(out var coverBranchIndex);
+            var coverComponentOrder = -1;
+            foreach (var (ancestor, branchIndex) in s_PanelCoverPath)
+            {
+                coverBranchIndex[ancestor] = branchIndex;
+                if (ancestor.hierarchy.parent == null)
+                    coverComponentOrder = roots.IndexOf(ancestor.hierarchy[branchIndex]);
+            }
+
+            foreach (var node in s_FlushPlacedNodes)
+            {
+                // A mapping can be gone when a later step of the same flush removed the node;
+                // nothing to expose then.
+                if (!s_NodeMap.TryGetElement(node, out var element))
+                    continue;
+
+                var exposed = IsExposedWithPanelCover(element, coverBranchIndex, roots, coverComponentOrder);
+                if (exposed)
+                    s_NodesHiddenByCover.Remove(node);
+                else
+                    s_NodesHiddenByCover.Add(node);
+
+                node.isActive = exposed && !AccessibilityFrameProjection.IsFullyOutOfView(element);
+            }
+        }
+
+        static bool IsExposedWithPanelCover(VisualElement element,
+            Dictionary<VisualElement, int> coverBranchIndex, List<VisualElement> roots, int coverComponentOrder)
+        {
+            VisualElement previous = null;
+            for (var current = element; current != null; current = current.hierarchy.parent)
+            {
+                // The cover itself, or reached from inside it: painted at or above the cover.
+                if (current == s_PanelCover)
+                    return true;
+
+                if (coverBranchIndex.TryGetValue(current, out var coverChildIndex))
+                {
+                    // The element is an ancestor of the cover: it stays exposed, since it groups
+                    // content that sits above the cover.
+                    if (previous == null)
+                        return true;
+
+                    // Common ancestor found: the later sibling branch is painted on top.
+                    return current.hierarchy.IndexOf(previous) > coverChildIndex;
+                }
+
+                // A panel root that is not on the cover's path: the element lives in another
+                // panel, and panels stack by their sort order — the reading order of the roots.
+                if (current.hierarchy.parent == null)
+                    return roots.IndexOf(previous) > coverComponentOrder;
+
+                previous = current;
+            }
+
+            return true;
+        }
+
+        #endregion // Panel cover (modal occlusion)
     }
 }

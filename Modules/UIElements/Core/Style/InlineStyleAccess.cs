@@ -1230,7 +1230,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        //return true if another style was applied when removing the inlineStyle, false if notthing was applied
+        // Reverts a removed inline value to the base style — directly when the cached base is
+        // available, otherwise by scheduling a full restyle. Reports whether a change was applied
+        // or scheduled (currently always, but callers must not rely on that).
         private bool RemoveInlineStyle(StylePropertyId id)
         {
             var rulesHash = ve.computedStyle.matchingRulesHash;
@@ -1246,7 +1248,13 @@ namespace UnityEngine.UIElements
                 return true;
             }
 
-            return false;
+            // The base style for these matched rules is no longer cached (the cache is cleared
+            // whenever any stylesheet is rebuilt), so the removed value cannot be reverted here.
+            // Force a full restyle to recompute the matched rules and reapply the remaining
+            // inline values; otherwise the removed value stays baked into the computed style.
+            ve.computedStyle.InvalidateMatchingRulesCache();
+            ve.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
+            return true;
         }
 
         void IStyle.Clear(bool clearSourceAssetStyles)

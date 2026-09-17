@@ -177,6 +177,13 @@ namespace Unity.ProjectAuditor.Editor.CodeAnalysis
         {
             Enum.TryParse(diagnostic.category, out Areas area);
 
+            // Map some areas used in our own analyzers, to areas Project Auditor understands
+            if (area == Areas.None)
+            {
+                if (diagnostic.category == "Optimizations")
+                    area = Areas.CPU;
+            }
+
             var messageParts = diagnostic.messageFormat.Split('\n');
 
             return new Descriptor(

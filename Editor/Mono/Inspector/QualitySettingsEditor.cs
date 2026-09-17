@@ -27,42 +27,42 @@ namespace UnityEditor
     {
         private class ContentNonSearchable
         {
-            public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require either the Deferred Shading rendering path or Cameras that render depth textures.");
-            public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Detected platforms with textures that never use their highest resolution mipmap levels. Enable Texture Mipmap Stripping in the Player Settings to reduce the package size of those platforms.");
-            public static readonly GUIContent kAsyncUploadBufferSizeWarning = EditorGUIUtility.TrTextContent("Unity has detected that you are using an upload buffer size of {0} MB with the '{1}' setting enabled. If you have issues with excessive memory usage, you may need to reduce the upload buffer size or disable the '{1}' setting. Memory fragmentation can occur if you choose the latter option.");
+            public static readonly GUIContent kSoftParticlesHint = L10n.TextContent("Soft Particles require either the Deferred Shading rendering path or Cameras that render depth textures.", null, null, null);
+            public static readonly GUIContent kMipStrippingHint = L10n.TextContent("Detected platforms with textures that never use their highest resolution mipmap levels. Enable Texture Mipmap Stripping in the Player Settings to reduce the package size of those platforms.", null, null, null);
+            public static readonly GUIContent kAsyncUploadBufferSizeWarning = L10n.TextContent("Unity has detected that you are using an upload buffer size of {0} MB with the '{1}' setting enabled. If you have issues with excessive memory usage, you may need to reduce the upload buffer size or disable the '{1}' setting. Memory fragmentation can occur if you choose the latter option.", null, null, null);
         }
 
         internal class Content
         {
-            public static readonly GUIContent kPlatformTooltip = EditorGUIUtility.TrTextContent("", "Allow quality setting on platform");
-            public static readonly GUIContent kAddQualityLevel = EditorGUIUtility.TrTextContent("Add Quality Level");
+            public static readonly GUIContent kPlatformTooltip = L10n.TextContent("", "Allow quality setting on platform", null, null);
+            public static readonly GUIContent kAddQualityLevel = L10n.TextContent("Add Quality Level", null, null, null);
 
-            public static readonly GUIContent kGlobalTextureMipmapLimit = EditorGUIUtility.TrTextContent("Global Mipmap Limit", "The base texture quality level.");
+            public static readonly GUIContent kGlobalTextureMipmapLimit = L10n.TextContent("Global Mipmap Limit", "The base texture quality level.", null, null);
 
-            public static readonly GUIContent kTextureMipmapLimitGroupsHeader = EditorGUIUtility.TrTextContent("Mipmap Limit Groups", "Mipmap Limit Groups are used to control quality on a per-texture basis.");
+            public static readonly GUIContent kTextureMipmapLimitGroupsHeader = L10n.TextContent("Mipmap Limit Groups", "Mipmap Limit Groups are used to control quality on a per-texture basis.", null, null);
             public static readonly GUIContent[] kTextureMipmapLimitGroupsOverrideModeItems =
             {
-                EditorGUIUtility.TrTextContent("Override Global Mipmap Limit: Full Resolution", "Global Mipmap Limit is ignored, upload at full resolution."),
-                EditorGUIUtility.TrTextContent("Override Global Mipmap Limit: Half Resolution", "Global Mipmap Limit is ignored, upload at half resolution."),
-                EditorGUIUtility.TrTextContent("Override Global Mipmap Limit: Quarter Resolution", "Global Mipmap Limit is ignored, upload at quarter resolution."),
-                EditorGUIUtility.TrTextContent("Override Global Mipmap Limit: Eighth Resolution", "Global Mipmap Limit is ignored, upload at eighth resolution.")
+                L10n.TextContent("Override Global Mipmap Limit: Full Resolution", "Global Mipmap Limit is ignored, upload at full resolution.", null, null),
+                L10n.TextContent("Override Global Mipmap Limit: Half Resolution", "Global Mipmap Limit is ignored, upload at half resolution.", null, null),
+                L10n.TextContent("Override Global Mipmap Limit: Quarter Resolution", "Global Mipmap Limit is ignored, upload at quarter resolution.", null, null),
+                L10n.TextContent("Override Global Mipmap Limit: Eighth Resolution", "Global Mipmap Limit is ignored, upload at eighth resolution.", null, null)
             };
             public static readonly GUIContent[] kTextureMipmapLimitGroupsOffsetModeItems =
             {
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -3", "Upload 3 mipmap levels extra compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -2", "Upload 2 mipmap levels extra compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: -1", "Upload 1 mipmap level extra compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Use Global Mipmap Limit", "No offset or override occurs, simply use the Global Mipmap Limit. (Default)"),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +1", "Upload 1 mipmap level less compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +2", "Upload 2 mipmap levels less compared to the Global Mipmap Limit."),
-                EditorGUIUtility.TrTextContent("Offset Global Mipmap Limit: +3", "Upload 3 mipmap levels less compared to the Global Mipmap Limit.")
+                L10n.TextContent("Offset Global Mipmap Limit: -3", "Upload 3 mipmap levels extra compared to the Global Mipmap Limit.", null, null),
+                L10n.TextContent("Offset Global Mipmap Limit: -2", "Upload 2 mipmap levels extra compared to the Global Mipmap Limit.", null, null),
+                L10n.TextContent("Offset Global Mipmap Limit: -1", "Upload 1 mipmap level extra compared to the Global Mipmap Limit.", null, null),
+                L10n.TextContent("Use Global Mipmap Limit", "No offset or override occurs, simply use the Global Mipmap Limit. (Default)", null, null),
+                L10n.TextContent("Offset Global Mipmap Limit: +1", "Upload 1 mipmap level less compared to the Global Mipmap Limit.", null, null),
+                L10n.TextContent("Offset Global Mipmap Limit: +2", "Upload 2 mipmap levels less compared to the Global Mipmap Limit.", null, null),
+                L10n.TextContent("Offset Global Mipmap Limit: +3", "Upload 3 mipmap levels less compared to the Global Mipmap Limit.", null, null)
             };
-            public static readonly GUIContent kTextureMipmapLimitGroupsOptions = EditorGUIUtility.TrIconContent("_Menu", "Show additional options");
-            public static readonly GUIContent kTextureMipmapLimitGroupsOptionsIdentify = EditorGUIUtility.TrTextContent("Identify textures");
-            public static readonly GUIContent kTextureMipmapLimitGroupsOptionsDuplicate = EditorGUIUtility.TrTextContent("Duplicate group");
-            public static readonly GUIContent kTextureMipmapLimitGroupsOptionsRename = EditorGUIUtility.TrTextContent("Rename group");
-            public static readonly GUIContent kTextureMipmapLimitGroupsAddButton = EditorGUIUtility.TrIconContent("Toolbar Plus", "Create a new mipmap limit group. Note that this adds a group to all quality levels, not only the active one!");
-            public static readonly GUIContent kTextureMipmapLimitGroupsRemoveButton = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove mipmap limit group. Note that this removes the group from all quality levels, not only the active one!");
+            public static readonly GUIContent kTextureMipmapLimitGroupsOptions = L10n.IconContent("_Menu", "Show additional options", null);
+            public static readonly GUIContent kTextureMipmapLimitGroupsOptionsIdentify = L10n.TextContent("Identify textures", null, null, null);
+            public static readonly GUIContent kTextureMipmapLimitGroupsOptionsDuplicate = L10n.TextContent("Duplicate group", null, null, null);
+            public static readonly GUIContent kTextureMipmapLimitGroupsOptionsRename = L10n.TextContent("Rename group", null, null, null);
+            public static readonly GUIContent kTextureMipmapLimitGroupsAddButton = L10n.IconContent("Toolbar Plus", "Create a new mipmap limit group. Note that this adds a group to all quality levels, not only the active one!", null);
+            public static readonly GUIContent kTextureMipmapLimitGroupsRemoveButton = L10n.IconContent("Toolbar Minus", "Remove mipmap limit group. Note that this removes the group from all quality levels, not only the active one!", null);
 
             public static readonly string kTextureMipmapLimitGroupsDialogTitleOnUpdate = L10n.Tr("Mipmap Limit Groups: Update textures?", null);
             public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRemove = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to remove the group without modifying its associated textures. Relevant textures stay bound to the group and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to remove the group and reset the group property of associated textures to 'None'. This triggers a re-import and may take some time. An undo cannot revert the importer changes.", null);
@@ -72,45 +72,45 @@ namespace UnityEditor
             public static readonly string kTextureMipmapLimitGroupsDialogMessageOnUpdateAssetsError = L10n.Tr("An error occured while updating texture assets: {0}", null);
             public static readonly string kTextureMipmapLimitGroupsDialogMessageOnIdentifyFail = L10n.Tr("No textures are linked to the mipmap limit group '{0}'.", null);
 
-            public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Mipmap Streaming", "When enabled, Unity only streams texture mipmap levels relevant to the current Camera's position in a Scene. This reduces the total amount of memory Unity needs for textures. Individual textures must also have 'Stream Mipmap Levels' enabled in their Import Settings.");
-            public static readonly GUIContent kStreamingMipmapsMemoryBudget = EditorGUIUtility.TrTextContent("Memory Budget", "The amount of memory (in megabytes) to allocate for all loaded textures.");
-            public static readonly GUIContent kStreamingMipmapsRenderersPerFrame = EditorGUIUtility.TrTextContent("Renderers Per Frame", "The number of renderers to process each frame. A lower number decreases the CPU load but delays mipmap loading.");
-            public static readonly GUIContent kStreamingMipmapsAddAllCameras = EditorGUIUtility.TrTextContent("Add All Cameras", "When enabled, Unity uses mipmap streaming for every Camera in the Scene. Otherwise, Unity only uses mipmap streaming for Cameras that have an attached Streaming Controller component.");
-            public static readonly GUIContent kStreamingMipmapsMaxLevelReduction = EditorGUIUtility.TrTextContent("Max Level Reduction", "The maximum number of mipmap levels a texture can drop.");
-            public static readonly GUIContent kStreamingMipmapsMaxFileIORequests = EditorGUIUtility.TrTextContent("Max IO Requests", "The maximum number of texture file requests from the Mipmap Streaming system that can be active at the same time.");
+            public static readonly GUIContent kStreamingMipmapsActive = L10n.TextContent("Mipmap Streaming", "When enabled, Unity only streams texture mipmap levels relevant to the current Camera's position in a Scene. This reduces the total amount of memory Unity needs for textures. Individual textures must also have 'Stream Mipmap Levels' enabled in their Import Settings.", null, null);
+            public static readonly GUIContent kStreamingMipmapsMemoryBudget = L10n.TextContent("Memory Budget", "The amount of memory (in megabytes) to allocate for all loaded textures.", null, null);
+            public static readonly GUIContent kStreamingMipmapsRenderersPerFrame = L10n.TextContent("Renderers Per Frame", "The number of renderers to process each frame. A lower number decreases the CPU load but delays mipmap loading.", null, null);
+            public static readonly GUIContent kStreamingMipmapsAddAllCameras = L10n.TextContent("Add All Cameras", "When enabled, Unity uses mipmap streaming for every Camera in the Scene. Otherwise, Unity only uses mipmap streaming for Cameras that have an attached Streaming Controller component.", null, null);
+            public static readonly GUIContent kStreamingMipmapsMaxLevelReduction = L10n.TextContent("Max Level Reduction", "The maximum number of mipmap levels a texture can drop.", null, null);
+            public static readonly GUIContent kStreamingMipmapsMaxFileIORequests = L10n.TextContent("Max IO Requests", "The maximum number of texture file requests from the Mipmap Streaming system that can be active at the same time.", null, null);
 
-            public static readonly GUIContent kIconTrash = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Level");
-            public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TrTextContent("Billboards Face Camera Position", "When enabled, terrain billboards face towards the camera position. Otherwise, they face towards the camera plane. This makes billboards look nicer when the camera rotates but it is more resource intensive to process.");
-            public static readonly GUIContent kUseLegacyDistribution = EditorGUIUtility.TrTextContent("Use Legacy Details Distribution", "When enabled, terrain details will be scattered using the old scattering algorithm that often resulted in overlapping details. Included for backwards compatibility with terrain authored in Unity 2022.1 and earlier.");
-            public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count", "Specifies how Unity synchronizes rendering with the refresh rate of the display device.");
-            public static readonly GUIContent kRealtimeLGiCpuUsageLabel = EditorGUIUtility.TrTextContent("Realtime GI CPU Usage", "How many CPU worker threads to create for Realtime Global Illumination lighting calculations in the Player. Increasing this makes the system react faster to changes in lighting at a cost of using more CPU time. The higher the CPU Usage value, the more worker threads are created for solving Realtime GI.");
-            public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Group Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.");
-            public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Group Level", "The highest LOD to use in the application.");
-            public static readonly GUIContent kMeshLODThresholdLabel = EditorGUIUtility.TrTextContent("Mesh LOD Threshold", "Unity uses this parameter when selecting the Mesh LOD index to render. Increasing this setting makes Unity favor less detailed LODs in the evaluation process.");
-            public static readonly GUIContent kEnableLODCrossFadeLabel = EditorGUIUtility.TrTextContent("LOD Cross Fade", "Enables or disables LOD Cross Fade.");
+            public static readonly GUIContent kIconTrash = L10n.IconContent("TreeEditor.Trash", "Delete Level", null);
+            public static readonly GUIContent kBillboardsFaceCameraPos = L10n.TextContent("Billboards Face Camera Position", "When enabled, terrain billboards face towards the camera position. Otherwise, they face towards the camera plane. This makes billboards look nicer when the camera rotates but it is more resource intensive to process.", null, null);
+            public static readonly GUIContent kUseLegacyDistribution = L10n.TextContent("Use Legacy Details Distribution", "When enabled, terrain details will be scattered using the old scattering algorithm that often resulted in overlapping details. Included for backwards compatibility with terrain authored in Unity 2022.1 and earlier.", null, null);
+            public static readonly GUIContent kVSyncCountLabel = L10n.TextContent("VSync Count", "Specifies how Unity synchronizes rendering with the refresh rate of the display device.", null, null);
+            public static readonly GUIContent kRealtimeLGiCpuUsageLabel = L10n.TextContent("Realtime GI CPU Usage", "How many CPU worker threads to create for Realtime Global Illumination lighting calculations in the Player. Increasing this makes the system react faster to changes in lighting at a cost of using more CPU time. The higher the CPU Usage value, the more worker threads are created for solving Realtime GI.", null, null);
+            public static readonly GUIContent kLODBiasLabel = L10n.TextContent("LOD Group Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.", null, null);
+            public static readonly GUIContent kMaximumLODLevelLabel = L10n.TextContent("Maximum LOD Group Level", "The highest LOD to use in the application.", null, null);
+            public static readonly GUIContent kMeshLODThresholdLabel = L10n.TextContent("Mesh LOD Threshold", "Unity uses this parameter when selecting the Mesh LOD index to render. Increasing this setting makes Unity favor less detailed LODs in the evaluation process.", null, null);
+            public static readonly GUIContent kEnableLODCrossFadeLabel = L10n.TextContent("LOD Cross Fade", "Enables or disables LOD Cross Fade.", null, null);
 
-            public static readonly GUIContent kAsyncUploadTimeSlice = EditorGUIUtility.TrTextContent("Time Slice", "The amount of time (in milliseconds) Unity spends uploading Texture and Mesh data to the GPU per frame.");
-            public static readonly GUIContent kAsyncUploadBufferSize = EditorGUIUtility.TrTextContent("Buffer Size", "The size (in megabytes) of the upload buffer Unity uses to stream Texture and Mesh data to GPU.");
-            public static readonly GUIContent kAsyncUploadPersistentBuffer = EditorGUIUtility.TrTextContent("Persistent Buffer", "When enabled, the upload buffer persists even when there is nothing left to upload.");
+            public static readonly GUIContent kAsyncUploadTimeSlice = L10n.TextContent("Time Slice", "The amount of time (in milliseconds) Unity spends uploading Texture and Mesh data to the GPU per frame.", null, null);
+            public static readonly GUIContent kAsyncUploadBufferSize = L10n.TextContent("Buffer Size", "The size (in megabytes) of the upload buffer Unity uses to stream Texture and Mesh data to GPU.", null, null);
+            public static readonly GUIContent kAsyncUploadPersistentBuffer = L10n.TextContent("Persistent Buffer", "When enabled, the upload buffer persists even when there is nothing left to upload.", null, null);
 
-            public static readonly GUIContent kOverrideTerrainPixelError = EditorGUIUtility.TrTextContent("", "Whether to override pixel error in active Terrains.");
-            public static readonly GUIContent kOverrideTerrainBasemapDist = EditorGUIUtility.TrTextContent("", "Whether to override base map distance in active Terrains.");
-            public static readonly GUIContent kOverrideTerrainDensityScale = EditorGUIUtility.TrTextContent("", "Whether to override detail density scale in active Terrains.");
-            public static readonly GUIContent kOverrideTerrainDetailDistance = EditorGUIUtility.TrTextContent("", "Whether to override detail distance in active Terrains.");
-            public static readonly GUIContent kOverrideTerrainTreeDistance = EditorGUIUtility.TrTextContent("", "Whether to override tree distance in active Terrains.");
-            public static readonly GUIContent kOverrideTerrainBillboardStart = EditorGUIUtility.TrTextContent("", "Whether to override billboard start distance in active Terrains.");
-            public static readonly GUIContent kOverrideTerrainFadeLength = EditorGUIUtility.TrTextContent("", "Whether to override billboard fade length in active Terrains.");
-            public static readonly GUIContent kOverrideTerrainMaxTrees = EditorGUIUtility.TrTextContent("", "Whether to override max mesh trees in active Terrains.");
-            public static readonly GUIContent kTerrainPixelError = EditorGUIUtility.TrTextContent("Pixel Error", "Value set to Terrain pixel error (See Terrain settings)");
-            public static readonly GUIContent kTerrainBasemapDistance = EditorGUIUtility.TrTextContent("Base Map Dist.", "Value set to Terrain base map distance (See Terrain settings)");
-            public static readonly GUIContent kTerrainDetailDensityScale = EditorGUIUtility.TrTextContent("Detail Density Scale", "Value set to Terrain detail density scale (See Terrain settings)");
-            public static readonly GUIContent kTerrainDetailDistance = EditorGUIUtility.TrTextContent("Detail Distance", "Value set to Terrain detail object distance (See Terrain settings)");
-            public static readonly GUIContent kTerrainTreeDistance = EditorGUIUtility.TrTextContent("Tree Distance", "Value set to Terrain tree distance (See Terrain settings)");
-            public static readonly GUIContent kTerrainBillboardStart = EditorGUIUtility.TrTextContent("Billboard Start", "Value set to Terrain billboard start distance (See Terrain settings)");
-            public static readonly GUIContent kTerrainFadeLength = EditorGUIUtility.TrTextContent("Fade Length", "Value set to Terrain billboard fade length (See Terrain settings)");
-            public static readonly GUIContent kTerrainMaxTrees = EditorGUIUtility.TrTextContent("Max Mesh Trees", "Value set to Terrain max mesh trees (See Terrain settings)");
+            public static readonly GUIContent kOverrideTerrainPixelError = L10n.TextContent("", "Whether to override pixel error in active Terrains.", null, null);
+            public static readonly GUIContent kOverrideTerrainBasemapDist = L10n.TextContent("", "Whether to override base map distance in active Terrains.", null, null);
+            public static readonly GUIContent kOverrideTerrainDensityScale = L10n.TextContent("", "Whether to override detail density scale in active Terrains.", null, null);
+            public static readonly GUIContent kOverrideTerrainDetailDistance = L10n.TextContent("", "Whether to override detail distance in active Terrains.", null, null);
+            public static readonly GUIContent kOverrideTerrainTreeDistance = L10n.TextContent("", "Whether to override tree distance in active Terrains.", null, null);
+            public static readonly GUIContent kOverrideTerrainBillboardStart = L10n.TextContent("", "Whether to override billboard start distance in active Terrains.", null, null);
+            public static readonly GUIContent kOverrideTerrainFadeLength = L10n.TextContent("", "Whether to override billboard fade length in active Terrains.", null, null);
+            public static readonly GUIContent kOverrideTerrainMaxTrees = L10n.TextContent("", "Whether to override max mesh trees in active Terrains.", null, null);
+            public static readonly GUIContent kTerrainPixelError = L10n.TextContent("Pixel Error", "Value set to Terrain pixel error (See Terrain settings)", null, null);
+            public static readonly GUIContent kTerrainBasemapDistance = L10n.TextContent("Base Map Dist.", "Value set to Terrain base map distance (See Terrain settings)", null, null);
+            public static readonly GUIContent kTerrainDetailDensityScale = L10n.TextContent("Detail Density Scale", "Value set to Terrain detail density scale (See Terrain settings)", null, null);
+            public static readonly GUIContent kTerrainDetailDistance = L10n.TextContent("Detail Distance", "Value set to Terrain detail object distance (See Terrain settings)", null, null);
+            public static readonly GUIContent kTerrainTreeDistance = L10n.TextContent("Tree Distance", "Value set to Terrain tree distance (See Terrain settings)", null, null);
+            public static readonly GUIContent kTerrainBillboardStart = L10n.TextContent("Billboard Start", "Value set to Terrain billboard start distance (See Terrain settings)", null, null);
+            public static readonly GUIContent kTerrainFadeLength = L10n.TextContent("Fade Length", "Value set to Terrain billboard fade length (See Terrain settings)", null, null);
+            public static readonly GUIContent kTerrainMaxTrees = L10n.TextContent("Max Mesh Trees", "Value set to Terrain max mesh trees (See Terrain settings)", null, null);
 
-            public static readonly GUIContent kRenderPipelineObject = EditorGUIUtility.TrTextContent("Render Pipeline Asset", "Specifies the Render Pipeline Asset to use for this quality level. It overrides the value set in the Graphics Settings Window.");
+            public static readonly GUIContent kRenderPipelineObject = L10n.TextContent("Render Pipeline Asset", "Specifies the Render Pipeline Asset to use for this quality level. It overrides the value set in the Graphics Settings Window.", null, null);
 
             public static readonly string buildProfileQualitySettingsOverrideWarning = L10n.Tr("The current active build profile has overridden Quality levels inclusion. To ensure that the correct levels are included in your build, see the Build Profiles...", null);
             public static readonly string buildProfileQualitySettingsInformationSingular = L10n.Tr("Renaming and deleting Quality levels will impact one build profile. To edit Quality levels included in build profiles, go to Build Profiles...", null);
@@ -2360,7 +2360,7 @@ namespace UnityEditor
             const int limitValueToItemsArrayIndexOffset = 3;
             GUIContent content = (isOffset ? (mipmapLimit > -4 && mipmapLimit < 4) : (mipmapLimit >= 0 && mipmapLimit < 4)) // Is limit within array bounds?
                 ? (isOffset ? Content.kTextureMipmapLimitGroupsOffsetModeItems[mipmapLimit + limitValueToItemsArrayIndexOffset] : Content.kTextureMipmapLimitGroupsOverrideModeItems[mipmapLimit])
-                : EditorGUIUtility.TrTextContent($"{(isOffset ? "Offset" : "Override")} Global Mipmap Limit: {((mipmapLimit >= 0) ? $"+{mipmapLimit}" : $"{mipmapLimit}")}", "Custom User Setting");
+                : L10n.TextContent($"{(isOffset ? "Offset" : "Override")} Global Mipmap Limit: {((mipmapLimit >= 0) ? $"+{mipmapLimit}" : $"{mipmapLimit}")}", "Custom User Setting", null, null);
 
             if (EditorGUI.Button(rect, content, EditorStyles.popup))
             {

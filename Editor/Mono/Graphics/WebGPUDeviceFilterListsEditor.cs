@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: WebGPU not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,25 +24,25 @@ namespace UnityEditor
             public const float kHeightBetweenRows = 10.0f;
             public const float kComparatorFieldWidth = 170.0f;
 
-            public static readonly GUIContent filterList = EditorGUIUtility.TrTextContent("Filters", "List of filters");
-            public static readonly GUIContent vendor = EditorGUIUtility.TrTextContent("Vendor", "Use a regular expression to specify the vendor name of a device");
-            public static readonly GUIContent browserName = EditorGUIUtility.TrTextContent("Browser Name", "Use a regular expression to specify the name of a browser");
+            public static readonly GUIContent filterList = L10n.TextContent("Filters", "List of filters", null, null);
+            public static readonly GUIContent vendor = L10n.TextContent("Vendor", "Use a regular expression to specify the vendor name of a device", null, null);
+            public static readonly GUIContent browserName = L10n.TextContent("Browser Name", "Use a regular expression to specify the name of a browser", null, null);
             public static readonly GUIContent browserVersion =
-                EditorGUIUtility.TrTextContent("Browser Version", "Specify the browser version using the format MajorVersion.MinorVersion(optional).PatchVersion(optional).PatchMinorVersion(optional)");
+                L10n.TextContent("Browser Version", "Specify the browser version using the format MajorVersion.MinorVersion(optional).PatchVersion(optional).PatchMinorVersion(optional)", null, null);
             public static readonly GUIContent browserEngineFlavor =
-                EditorGUIUtility.TrTextContent("Browser Engine", "The browser engine (WebGPU backend) to match: Chromium-based (Blink), Safari-based (WebKit), or Firefox-based (Gecko)");
+                L10n.TextContent("Browser Engine", "The browser engine (WebGPU backend) to match: Chromium-based (Blink), Safari-based (WebKit), or Firefox-based (Gecko)", null, null);
             public static readonly GUIContent engineVersion =
-                EditorGUIUtility.TrTextContent("Engine Version", "Specify the engine version using the format MajorVersion.MinorVersion(optional).PatchVersion(optional).PatchMinorVersion(optional)");
+                L10n.TextContent("Engine Version", "Specify the engine version using the format MajorVersion.MinorVersion(optional).PatchVersion(optional).PatchMinorVersion(optional)", null, null);
             public static readonly GUIContent featureLevel =
-                EditorGUIUtility.TrTextContent("WebGPU Feature Level", "Specify the WebGPU feature level for a device using the format MajorVersion.MinorVersion(optional)");
+                L10n.TextContent("WebGPU Feature Level", "Specify the WebGPU feature level for a device using the format MajorVersion.MinorVersion(optional)", null, null);
             public static readonly GUIContent graphicsMemory =
-                EditorGUIUtility.TrTextContent("Graphics Memory (MB)", "Specify the amount of graphics memory in megabytes");
-            public static readonly GUIContent processorCount = EditorGUIUtility.TrTextContent("Processor Count", "Specify the number of processors");
-            public static readonly GUIContent deviceType = EditorGUIUtility.TrTextContent("Device Type", "Specify if the GPU is discrete or integrated");
-            public static readonly GUIContent browserIdentification = EditorGUIUtility.TrTextContent("Browser", "");
-            public static readonly GUIContent capabilityMetrics = EditorGUIUtility.TrTextContent("Capabilities", "");
-            public static readonly GUIContent features = EditorGUIUtility.TrTextContent("Required Features", "WebGPU device features required or excluded by this filter");
-            public static readonly GUIContent limits = EditorGUIUtility.TrTextContent("Limits", "WebGPU device limits required or excluded by this filter");
+                L10n.TextContent("Graphics Memory (MB)", "Specify the amount of graphics memory in megabytes", null, null);
+            public static readonly GUIContent processorCount = L10n.TextContent("Processor Count", "Specify the number of processors", null, null);
+            public static readonly GUIContent deviceType = L10n.TextContent("Device Type", "Specify if the GPU is discrete or integrated", null, null);
+            public static readonly GUIContent browserIdentification = L10n.TextContent("Browser", "", null, null);
+            public static readonly GUIContent capabilityMetrics = L10n.TextContent("Capabilities", "", null, null);
+            public static readonly GUIContent features = L10n.TextContent("Required Features", "WebGPU device features required or excluded by this filter", null, null);
+            public static readonly GUIContent limits = L10n.TextContent("Limits", "WebGPU device limits required or excluded by this filter", null, null);
 
             // Text
             public static readonly string filterText = "filter";
@@ -569,4 +568,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

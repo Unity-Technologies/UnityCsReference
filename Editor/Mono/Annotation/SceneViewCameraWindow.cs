@@ -21,11 +21,11 @@ namespace UnityEditor
             public static readonly string maxTooltips = L10n.Tr($"The maximum speed of the camera in the Scene view. Valid values are between [{SceneView.CameraSettings.kAbsoluteSpeedMin + .0001f}, {SceneView.CameraSettings.kAbsoluteSpeedMax}].", null);
 
             // Menu labels
-            public static readonly GUIContent copyPlacementLabel = EditorGUIUtility.TrTextContent("Copy Placement");
-            public static readonly GUIContent pastePlacementLabel = EditorGUIUtility.TrTextContent("Paste Placement");
-            public static readonly GUIContent copySettingsLabel = EditorGUIUtility.TrTextContent("Copy Settings");
-            public static readonly GUIContent pasteSettingsLabel = EditorGUIUtility.TrTextContent("Paste Settings");
-            public static readonly GUIContent resetSettingsLabel = EditorGUIUtility.TrTextContent("Reset Settings");
+            public static readonly GUIContent copyPlacementLabel = L10n.TextContent("Copy Placement", null, null, null);
+            public static readonly GUIContent pastePlacementLabel = L10n.TextContent("Paste Placement", null, null, null);
+            public static readonly GUIContent copySettingsLabel = L10n.TextContent("Copy Settings", null, null, null);
+            public static readonly GUIContent pasteSettingsLabel = L10n.TextContent("Paste Settings", null, null, null);
+            public static readonly GUIContent resetSettingsLabel = L10n.TextContent("Reset Settings", null, null, null);
 
             // Layout
             public const int windowWidth = 290;

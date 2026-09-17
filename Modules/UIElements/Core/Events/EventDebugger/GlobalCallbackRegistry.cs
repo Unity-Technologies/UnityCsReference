@@ -38,6 +38,9 @@ namespace UnityEngine.UIElements.Experimental
 
         [AutoStaticsCleanupOnCodeReload]
         // Global registry
+        // Callback registration re-populates this as elements are rebuilt, so the cleared registry
+        // re-fills itself in the next code-loaded scope.
+        [IgnoreForUAL0015("Event-debugger listener registry, re-populated by callback registration after cleanup")]
         internal static Dictionary<CallbackEventHandler, Dictionary<Type, List<ListenerRecord>>> s_Listeners =
             new Dictionary<CallbackEventHandler, Dictionary<Type, List<ListenerRecord>>>();
 

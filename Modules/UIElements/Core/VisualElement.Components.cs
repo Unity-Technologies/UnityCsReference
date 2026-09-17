@@ -14,20 +14,16 @@ namespace UnityEngine.UIElements
 {
     public partial class VisualElement
     {
-        // Per-element component storage: two compact parallel arrays that grow only as components
-        // are added. Both stay null until the first AddComponent call, so an element with no
-        // components carries zero extra storage. A single element typically holds 1-5 components,
-        // so lookup is a linear scan over the contiguous type-handle array.
-        RuntimeTypeHandle[] m_ComponentTypes;
+        // The types live in a shared record; m_ComponentSlots holds this element's state, positionally parallel.
+        ComponentTypeSet m_ComponentTypeSet = ComponentTypeSet.Empty;
         ComponentSlot[] m_ComponentSlots;
 
-        // Live component count. The arrays grow geometrically so capacity may exceed it; the tail past it is
-        // kept cleared. This, not their .Length, is the count of components.
-        int m_ComponentCount;
-
-        // Introspection only (tests, debugger); a null array with count 0 yields a valid empty span.
+        // Introspection only (tests, debugger); the record's array is exact-sized.
         internal ReadOnlySpan<RuntimeTypeHandle> componentTypeHandles
-            => new ReadOnlySpan<RuntimeTypeHandle>(m_ComponentTypes, 0, m_ComponentCount);
+            => new ReadOnlySpan<RuntimeTypeHandle>(m_ComponentTypeSet.types);
+
+        // Introspection only (tests, diagnostics): the shared record holding this element's component types.
+        internal ComponentTypeSet componentTypeSet => m_ComponentTypeSet;
 
         // Per-frame dirty record over the component slots: bit i marks slot i changed, bit 31 is the
         // overflow sentinel ("some slot >= 31 changed"). Set by MarkComponentDirty, drained once per
@@ -35,6 +31,58 @@ namespace UnityEngine.UIElements
         // once even after a burst of writes. 31 precise slots is well past the typical 1-5 components.
         const uint k_ComponentOverflowBit = 1u << 31;
         uint m_DirtyComponentMask;
+
+        const string k_ReleaseHookMutationExceptionMessage =
+            "A [ReleaseComponentResources] method can't add or remove components. It receives only the component being released, runs at a deferred point that can fall in the middle of an unrelated AddComponent, and also runs during code unload. Release the resources the component owns and nothing else.";
+
+        // The guards and messages below are shared by the generic component methods. IL2CPP emits a
+        // separate native copy of every generic body per component struct, so anything that needs only
+        // the type handle is kept out of them.
+
+        void ThrowIfComponentMutationForbidden()
+        {
+            if ((m_Flags & VisualElementFlags.Released) != 0)
+                throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+
+            ThrowIfRunningReleaseHook();
+        }
+
+        static void ThrowIfRunningReleaseHook()
+        {
+            if (ComponentManager.SharedManager.IsRunningReleaseHook)
+                throw new InvalidOperationException(k_ReleaseHookMutationExceptionMessage);
+        }
+
+        void ThrowIfComponentAttached(RuntimeTypeHandle typeHandle)
+        {
+            if (FindComponentIndex(typeHandle) >= 0)
+                throw new InvalidOperationException(
+                    $"VisualElement already has a component of type '{Type.GetTypeFromHandle(typeHandle).Name}'. Only one component of a given type is allowed per element.");
+        }
+
+        static void ThrowComponentNotAttached(RuntimeTypeHandle typeHandle)
+        {
+            throw new InvalidOperationException(
+                $"VisualElement does not have a component of type '{Type.GetTypeFromHandle(typeHandle).Name}'.");
+        }
+
+        static void ThrowComponentStoreTornDown(RuntimeTypeHandle typeHandle)
+        {
+            throw new InvalidOperationException(
+                $"The UI Toolkit component store for '{Type.GetTypeFromHandle(typeHandle).Name}' has been torn down (code/domain unload). Components cannot be added until it is reinitialized.");
+        }
+
+        int GetAttachedComponentIndex(RuntimeTypeHandle typeHandle)
+        {
+            if ((m_Flags & VisualElementFlags.Released) != 0)
+                throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+
+            var index = FindComponentIndex(typeHandle);
+            if (index < 0)
+                ThrowComponentNotAttached(typeHandle);
+
+            return index;
+        }
 
         /// <summary>
         /// Marks the element's resolved styles dirty so the next update re-resolves them, re-reading
@@ -72,7 +120,12 @@ namespace UnityEngine.UIElements
         /// <typeparam name="T">A component struct declared with <see cref="VisualElementComponentAttribute"/>.</typeparam>
         public void MarkComponentDirty<T>() where T : struct, IVisualElementComponent
         {
-            var i = FindComponentIndex(typeof(T).TypeHandle);
+            MarkComponentDirty(typeof(T).TypeHandle);
+        }
+
+        internal void MarkComponentDirty(RuntimeTypeHandle typeHandle)
+        {
+            var i = FindComponentIndex(typeHandle);
             if (i < 0)
                 return;
 
@@ -101,10 +154,9 @@ namespace UnityEngine.UIElements
             if (mask == 0)
                 return;
 
-            // Capture the slots array up front. A handler may remove another component mid-flush, which
-            // reassigns m_ComponentSlots to a new (resized) array; iterating the captured old array stays
-            // safe — it is still a valid array, and a removed component's dispatcher early-returns via its
-            // HasComponent<T> guard, so a now-stale slot just no-ops.
+            // A handler may add or remove components mid-flush, shifting entries inside these very
+            // arrays; InvokeComponentChangedAt resolves each dirty bit against this snapshot.
+            var set = m_ComponentTypeSet;
             var slots = m_ComponentSlots;
             var count = slots?.Length ?? 0;
 
@@ -113,15 +165,34 @@ namespace UnityEngine.UIElements
             for (var i = 0; i < precise; i++)
             {
                 if ((mask & (1u << i)) != 0)
-                    slots[i].onChanged?.Invoke(this);
+                    InvokeComponentChangedAt(set, slots, i);
             }
 
             // Overflow tail (>= 31 components, rare): the sentinel can't say which, so notify the tail.
             if ((mask & k_ComponentOverflowBit) != 0)
             {
                 for (var i = 31; i < count; i++)
-                    slots[i].onChanged?.Invoke(this);
+                    InvokeComponentChangedAt(set, slots, i);
             }
+        }
+
+        // Dispatches for the component at `index` in the flush snapshot. When the live fields differ,
+        // positions have shifted: re-resolve the captured type against live storage; removed ones skip.
+        void InvokeComponentChangedAt(ComponentTypeSet capturedSet, ComponentSlot[] capturedSlots, int index)
+        {
+            if (ReferenceEquals(capturedSet, m_ComponentTypeSet) && ReferenceEquals(capturedSlots, m_ComponentSlots))
+            {
+                capturedSlots[index].onChanged?.Invoke(this);
+                return;
+            }
+
+            var types = capturedSet.types;
+            if (index >= types.Length)
+                return;
+
+            var current = FindComponentIndex(types[index]);
+            if (current >= 0)
+                m_ComponentSlots[current].onChanged?.Invoke(this);
         }
 
         // Called when the element (re)attaches to a panel. A change made while detached only set the dirty
@@ -141,21 +212,19 @@ namespace UnityEngine.UIElements
         /// <typeparam name="T">A component struct declared with <see cref="VisualElementComponentAttribute"/>.</typeparam>
         /// <exception cref="InvalidOperationException">
         /// Thrown if a component of the same type is already attached (an element holds at most one
-        /// component of each type), or if this element's resources have been released.
+        /// component of each type), if this element's resources have been released, or if called from a
+        /// <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see> method.
         /// </exception>
         public void AddComponent<T>(in T value) where T : struct, IVisualElementComponent
         {
-            if ((m_Flags & VisualElementFlags.Released) != 0)
-                throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+            ThrowIfComponentMutationForbidden();
 
             value.__ValidateOwnerType(this);
 
             var typeHandle = typeof(T).TypeHandle;
-            if (FindComponentIndex(typeHandle) >= 0)
-                throw new InvalidOperationException(
-                    $"VisualElement already has a component of type '{typeof(T).Name}'. Only one component of a given type is allowed per element.");
+            ThrowIfComponentAttached(typeHandle);
 
-            AttachComponent(typeHandle, in value);
+            AttachComponent(typeHandle, in value, out _);
         }
 
         /// <summary>
@@ -176,6 +245,8 @@ namespace UnityEngine.UIElements
         /// </returns>
         public ref T GetOrAddComponent<T>() where T : struct, IVisualElementComponent
         {
+            ThrowIfRunningReleaseHook();
+
             var typeHandle = typeof(T).TypeHandle;
             var index = FindComponentIndex(typeHandle);
             if (index >= 0)
@@ -185,59 +256,56 @@ namespace UnityEngine.UIElements
             var value = factory != null ? factory() : default;
             value.__ValidateOwnerType(this);
 
-            // AttachComponent stores the new component at the end of the list, so no second scan is
-            // needed — unless an [OnComponentAdded] method ran and may have changed the list.
-            if (!AttachComponent(typeHandle, in value))
-                return ref GetComponentRefAt<T>(m_ComponentCount - 1);
+            // When an [OnComponentAdded] method ran it may have moved the slot; resolve again.
+            if (!AttachComponent(typeHandle, in value, out var insertIndex))
+                return ref GetComponentRefAt<T>(insertIndex);
 
             return ref GetComponent<T>();
         }
 
         // Shared by AddComponent and GetOrAddComponent: stores the component and runs the add side
         // effects. Callers have already validated the owner type and rejected duplicates. Returns
-        // whether an [OnComponentAdded] method ran (it may have added or removed other components).
-        unsafe bool AttachComponent<T>(RuntimeTypeHandle typeHandle, in T value) where T : struct, IVisualElementComponent
+        // whether an [OnComponentAdded] method ran (it may have added or removed other components);
+        // insertIndex is the slot the component landed in, only reliable when that method did not run.
+        unsafe bool AttachComponent<T>(RuntimeTypeHandle typeHandle, in T value, out int insertIndex) where T : struct, IVisualElementComponent
         {
             // Add the [RequiresComponentOfType] components first. This can grow the component arrays,
             // so nothing must be cached across this call.
             value.__ResolveComponentRequirements(this);
 
-            var slot = new ComponentSlot();
+            var record = ComponentManager<T>.Record;
+
+            if (!record.isValid)   // shut down between the code unload and the statics cleanup
+                ThrowComponentStoreTornDown(typeHandle);
+
+            var slot = new ComponentSlot { record = record };
+
+            // Free one pending slot per slot allocated — the backstop that keeps Collect()'s per-call cap
+            // from letting the queue grow under churn.
+            ComponentManager.SharedManager.TryRecycleSingleFree();
 
             if (ComponentManager<T>.IsUnmanaged)
             {
-                var record = ComponentManager<T>.Record;
-
-                if (!record.store.IsValid)   // shut down between the code unload and the statics cleanup
-                    throw new InvalidOperationException(
-                        $"The UI Toolkit component store for '{typeof(T).Name}' has been torn down (code/domain unload). Components cannot be added until it is reinitialized.");
-
-                // Free one pending slot before allocating one — the backstop that makes Collect()'s
-                // per-call cap safe under churn (mirrors LayoutManager.CreateNodeInternal).
-                ComponentManager.SharedManager.TryRecycleSingleFree();
-
-                var handle = record.store.Allocate();
+                slot.handle = record.store.Allocate();
                 var local = value;
-                UnsafeUtility.CopyStructureToPtr(ref local, record.store.GetComponentDataPtr(handle.Index, 0));
-                record.liveCount++;
-                slot.record = record;
-                slot.handle = handle;
+                UnsafeUtility.CopyStructureToPtr(ref local, record.store.GetComponentDataPtr(slot.handle.Index, 0));
             }
             else
             {
-                // A managed field forces a boxed slot. StrongBox<T> (not a plain box) lets GetComponent
-                // hand back a real `ref T`; pool it so add/remove churn is allocation-free.
                 var box = ManagedComponentBoxPool<T>.Pool.Get();
                 box.Value = value;
+                ComponentManager<T>.Registry.Add(box);
                 slot.managedBox = box;
             }
+
+            record.liveCount++;
 
             // Cache the component's shared per-type dispatchers ([OnComponentChanged]; binding dispatch),
             // so later code can invoke them without knowing T. Constrained generic calls, no boxing.
             slot.onChanged = value.__GetComponentChangedDispatcher();
             slot.bindingDispatcher = value.__GetComponentBindingDispatcher();
 
-            AppendComponentSlot(typeHandle, slot);
+            insertIndex = InsertComponentSlot(typeHandle, slot);
 
             value.__RegisterComponentCallbacks(this);
 
@@ -261,25 +329,17 @@ namespace UnityEngine.UIElements
         /// </exception>
         public ref T GetComponent<T>() where T : struct, IVisualElementComponent
         {
-            if ((m_Flags & VisualElementFlags.Released) != 0)
-                throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
-
-            var index = FindComponentIndex(typeof(T).TypeHandle);
-            if (index < 0)
-                throw new InvalidOperationException(
-                    $"VisualElement does not have a component of type '{typeof(T).Name}'.");
-
-            return ref GetComponentRefAt<T>(index);
+            return ref GetComponentRefAt<T>(GetAttachedComponentIndex(typeof(T).TypeHandle));
         }
 
         // No existence/bounds check: callers must resolve the index via FindComponentIndex first.
         unsafe ref T GetComponentRefAt<T>(int index) where T : struct, IVisualElementComponent
         {
             ref var slot = ref m_ComponentSlots[index];
-            if (slot.record != null)
+            if (ComponentManager<T>.IsUnmanaged)
                 return ref UnsafeUtility.AsRef<T>(slot.record.store.GetComponentDataPtr(slot.handle.Index, 0));
 
-            return ref ((StrongBox<T>)slot.managedBox).Value;
+            return ref ((ManagedComponentBox<T>)slot.managedBox).Value;
         }
 
         /// <summary>
@@ -329,8 +389,7 @@ namespace UnityEngine.UIElements
         public void RemoveComponent<T>() where T : struct, IVisualElementComponent
         {
             if (!TryRemoveComponent<T>())
-                throw new InvalidOperationException(
-                    $"VisualElement does not have a component of type '{typeof(T).Name}'.");
+                ThrowComponentNotAttached(typeof(T).TypeHandle);
         }
 
         /// <summary>
@@ -338,11 +397,13 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <typeparam name="T">A component struct declared with <see cref="VisualElementComponentAttribute"/>.</typeparam>
         /// <returns><see langword="true"/> if a component was removed; <see langword="false"/> if none was attached.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if this element's resources have been released.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this element's resources have been released, or if called from a
+        /// <see cref="ReleaseComponentResourcesAttribute">[ReleaseComponentResources]</see> method.
+        /// </exception>
         public bool TryRemoveComponent<T>() where T : struct, IVisualElementComponent
         {
-            if ((m_Flags & VisualElementFlags.Released) != 0)
-                throw new InvalidOperationException(k_ElementReleaseExceptionMessage);
+            ThrowIfComponentMutationForbidden();
 
             var typeHandle = typeof(T).TypeHandle;
             var index = FindComponentIndex(typeHandle);
@@ -366,11 +427,6 @@ namespace UnityEngine.UIElements
             // The hook forwards to shared per-type registrations and ignores instance state, so default(T) is a valid receiver.
             default(T).__UnregisterComponentCallbacks(this);
 
-            // Pool the managed box for reuse. Safe here because RemoveComponent is main-thread; the pool
-            // is not thread-safe, so the finalizer teardown (ReleaseComponentStorage) doesn't pool.
-            if (!ComponentManager<T>.IsUnmanaged && m_ComponentSlots[index].managedBox is ManagedComponentBox<T> box)
-                ManagedComponentBoxPool<T>.Pool.Release(box);
-
             FreeComponentSlot(ref m_ComponentSlots[index]);
             RemoveComponentSlotAt(index);
             return true;
@@ -380,12 +436,13 @@ namespace UnityEngine.UIElements
         // with [RequiresComponentOfType]. Editor only; compiled out of player builds.
         void WarnIfComponentStillRequired(RuntimeTypeHandle removedType, int removedIndex)
         {
-            for (var i = 0; i < m_ComponentCount; i++)
+            var types = m_ComponentTypeSet.types;
+            for (var i = 0; i < types.Length; i++)
             {
                 if (i == removedIndex)
                     continue;
 
-                var required = ComponentRequirementRegistry.GetRequiredTypes(m_ComponentTypes[i]);
+                var required = ComponentRequirementRegistry.GetRequiredTypes(types[i]);
                 if (required == null)
                     continue;
 
@@ -394,7 +451,7 @@ namespace UnityEngine.UIElements
                     if (required[r].Equals(removedType))
                     {
                         Debug.LogWarning(
-                            $"[UI Toolkit] Removing component '{Type.GetTypeFromHandle(removedType).Name}' from this element, but the attached component '{Type.GetTypeFromHandle(m_ComponentTypes[i]).Name}' declares it required with [RequiresComponentOfType]. The dependent component may no longer work.");
+                            $"[UI Toolkit] Removing component '{Type.GetTypeFromHandle(removedType).Name}' from this element, but the attached component '{Type.GetTypeFromHandle(types[i]).Name}' declares it required with [RequiresComponentOfType]. The dependent component may no longer work.");
                         break;
                     }
                 }
@@ -403,29 +460,36 @@ namespace UnityEngine.UIElements
 
         // Frees every component's storage as part of element teardown. Called from both
         // ~VisualElement (GC finalizer thread) and ReleaseResourcesNoChecks (main thread), so it
-        // must stay safe to run off the main thread: it only enqueues blittable handles on the
-        // manager's concurrent free-queue and drops managed references. The box pool is not
-        // thread-safe, so only the main-thread caller opts into returnManagedBoxesToPool.
-        internal void ReleaseComponentStorage(bool returnManagedBoxesToPool = false)
+        // must stay safe to run off the main thread: it only enqueues on the manager's concurrent
+        // free-queue and drops the slot arrays.
+        internal void ReleaseComponentStorage(bool fromFinalizer = false)
         {
             var slots = m_ComponentSlots;
             if (slots == null)
                 return;
 
-            var manager = ComponentManager.IsSharedManagerCreated ? ComponentManager.SharedManager : null;
-            for (var i = 0; i < m_ComponentCount; i++)
+            if (ComponentManager.IsSharedManagerCreated)
             {
-                ref var slot = ref slots[i];
-                if (slot.record != null && manager != null)
-                    manager.EnqueueFree(slot.record, slot.handle);
-                if (returnManagedBoxesToPool && slot.managedBox is IManagedComponentBox box)
-                    box.ReturnToPool();
-                slot.managedBox = null;
+                var manager = ComponentManager.SharedManager;
+                var count = m_ComponentTypeSet.Count;
+                for (var i = 0; i < count; i++)
+                {
+                    ref var slot = ref slots[i];
+                    if (slot.managedBox != null)
+                        manager.EnqueueFree(slot.record, slot.managedBox);
+                    else
+                        manager.EnqueueFree(slot.record, slot.handle);
+                }
             }
 
-            m_ComponentTypes = null;
+            // ReleaseRef is main-thread only; the finalizer thread must enqueue.
+            if (fromFinalizer)
+                ComponentTypeSet.EnqueueRelease(m_ComponentTypeSet);
+            else
+                m_ComponentTypeSet.ReleaseRef();
+
+            m_ComponentTypeSet = ComponentTypeSet.Empty;
             m_ComponentSlots = null;
-            m_ComponentCount = 0;
             m_DirtyComponentMask = 0;
         }
 
@@ -437,12 +501,8 @@ namespace UnityEngine.UIElements
 
         int FindComponentIndex(RuntimeTypeHandle typeHandle)
         {
-            var types = m_ComponentTypes;
-            if (types == null)
-                return -1;
-
-            var count = m_ComponentCount;
-            for (var i = 0; i < count; i++)
+            var types = m_ComponentTypeSet.types;
+            for (var i = 0; i < types.Length; i++)
             {
                 if (types[i].Equals(typeHandle))
                     return i;
@@ -463,12 +523,9 @@ namespace UnityEngine.UIElements
         {
             handle = default;
 
-            var types = m_ComponentTypes;
-            if (types == null)
-                return false;
-
+            var types = m_ComponentTypeSet.types;
             var matchIndex = -1;
-            for (var i = 0; i < m_ComponentCount; i++)
+            for (var i = 0; i < types.Length; i++)
             {
                 if (Type.GetTypeFromHandle(types[i]).Name != shortTypeName)
                     continue;
@@ -494,19 +551,26 @@ namespace UnityEngine.UIElements
         // live element's components without knowing their types (the public API is all generic). Cold paths,
         // so they box a copy rather than expose the unsafe storage; route edits back through SetComponentForDebug.
 
-        internal int componentCountForDebug => m_ComponentCount;
+        internal int componentCountForDebug => m_ComponentTypeSet.Count;
 
         internal IEnumerable<(Type type, object value)> EnumerateComponentsForDebug()
         {
-            var types = m_ComponentTypes;
-            for (var i = 0; i < m_ComponentCount; i++)
-                yield return (Type.GetTypeFromHandle(types[i]), BoxComponentForDebug(i));
+            var types = m_ComponentTypeSet.types;
+            for (var i = 0; i < types.Length; i++)
+            {
+                // Cold path: re-resolve per yield so a removal between MoveNexts skips, never faults.
+                var index = FindComponentIndex(types[i]);
+                if (index < 0)
+                    continue;
+
+                yield return (Type.GetTypeFromHandle(types[i]), BoxComponentForDebug(index));
+            }
         }
 
         internal IEnumerable<Type> EnumerateComponentTypesForDebug()
         {
-            var types = m_ComponentTypes;
-            for (var i = 0; i < m_ComponentCount; i++)
+            var types = m_ComponentTypeSet.types;
+            for (var i = 0; i < types.Length; i++)
                 yield return Type.GetTypeFromHandle(types[i]);
         }
 
@@ -518,7 +582,7 @@ namespace UnityEngine.UIElements
 
             // Copy the live bytes with the store's own stride (UnsafeUtility.SizeOf), not Marshal, so the read
             // can't diverge from how the value was written. Unmanaged-only here (no references), so pin + raw copy is valid.
-            var type = Type.GetTypeFromHandle(m_ComponentTypes[index]);
+            var type = Type.GetTypeFromHandle(m_ComponentTypeSet.types[index]);
             var box = Activator.CreateInstance(type);
             var handle = GCHandle.Alloc(box, GCHandleType.Pinned);
             try
@@ -566,88 +630,102 @@ namespace UnityEngine.UIElements
             IncrementVersion(VersionChangeType.Repaint | VersionChangeType.StyleSheet);
         }
 
-        void AppendComponentSlot(RuntimeTypeHandle typeHandle, ComponentSlot slot)
+        // Transitions the record and inserts the slot at the type's canonical index; returns that index.
+        int InsertComponentSlot(RuntimeTypeHandle typeHandle, ComponentSlot slot)
         {
-            var capacity = m_ComponentTypes?.Length ?? 0;
-            if (m_ComponentCount == capacity)
+            var set = m_ComponentTypeSet;
+            var found = set.Find(typeHandle, out var index);
+            // Callers reject duplicates before requirements resolution; a hit here means that broke.
+            Debug.Assert(!found, "Inserting a component type that is already in the element's type set.");
+            var successor = ComponentTypeSet.GetWithAdded(set, typeHandle, index);
+
+            var count = set.Count;
+            var capacity = m_ComponentSlots?.Length ?? 0;
+            if (count == capacity)
             {
                 // Start at 1 (most elements carry a single component), then double.
-                var newCapacity = capacity == 0 ? 1 : capacity * 2;
-                Array.Resize(ref m_ComponentTypes, newCapacity);
-                Array.Resize(ref m_ComponentSlots, newCapacity);
+                Array.Resize(ref m_ComponentSlots, capacity == 0 ? 1 : capacity * 2);
             }
 
-            m_ComponentTypes[m_ComponentCount] = typeHandle;
-            m_ComponentSlots[m_ComponentCount] = slot;
-            m_ComponentCount++;
+            for (var i = count; i > index; i--)
+                m_ComponentSlots[i] = m_ComponentSlots[i - 1];
+            m_ComponentSlots[index] = slot;
+
+            m_DirtyComponentMask = ShiftDirtyMaskForInsert(m_DirtyComponentMask, index);
+
+            successor.AddRef();
+            set.ReleaseRef();
+            m_ComponentTypeSet = successor;
+            return index;
         }
 
         void FreeComponentSlot(ref ComponentSlot slot)
         {
-            if (slot.record != null)
+            if (slot.managedBox != null)
+                ComponentManager.SharedManager.EnqueueFree(slot.record, slot.managedBox);
+            else
                 ComponentManager.SharedManager.EnqueueFree(slot.record, slot.handle);
 
-            slot.managedBox = null;
             slot.record = null;
             slot.handle = UnmanagedDataHandle.Undefined;
+            slot.managedBox = null;
         }
 
+        // Order-preserving removal: the successor record must depend only on content, never on element history.
         void RemoveComponentSlotAt(int index)
         {
-            var last = m_ComponentCount - 1;
+            var set = m_ComponentTypeSet;
+            var successor = ComponentTypeSet.GetWithRemoved(set, index);
 
-            // Realign the per-slot dirty bits with the swap below, so a mid-frame removal can't misroute a
-            // pending [OnComponentChanged]. Precise bits (< 31) only; the overflow sentinel stays coarse.
-            // The removed slot's bit clears; if the last slot moves into `index`, its bit moves with it.
-            if (m_DirtyComponentMask != 0)
-            {
-                if (index < 31)
-                    m_DirtyComponentMask &= ~(1u << index);
-                if (index != last)
-                {
-                    var lastDirty = last < 31 && (m_DirtyComponentMask & (1u << last)) != 0;
-                    if (last < 31)
-                        m_DirtyComponentMask &= ~(1u << last);
-                    if (lastDirty && index < 31)
-                        m_DirtyComponentMask |= 1u << index;
-                }
-            }
+            var last = set.Count - 1;
+            m_DirtyComponentMask = ShiftDirtyMaskForRemove(m_DirtyComponentMask, index, last);
 
-            // Swap-remove: the last entry fills the gap.
-            if (index != last)
-            {
-                m_ComponentTypes[index] = m_ComponentTypes[last];
-                m_ComponentSlots[index] = m_ComponentSlots[last];
-            }
+            for (var i = index; i < last; i++)
+                m_ComponentSlots[i] = m_ComponentSlots[i + 1];
 
-            // Clear the freed tail slot so it can't root a managed box past the live range. Capacity is
-            // kept, even at count 0, so steady-state add/remove churn never reallocates the arrays.
-            m_ComponentTypes[last] = default;
+            // Clear the freed tail slot so it can't root a dispatcher past the live range. Capacity is kept,
+            // even at count 0, so steady-state add/remove churn never reallocates the array.
             m_ComponentSlots[last] = default;
-            m_ComponentCount = last;
+
+            successor.AddRef();
+            set.ReleaseRef();
+            m_ComponentTypeSet = successor;
         }
-    }
 
-    // Lets the non-generic teardown path (ReleaseComponentStorage) return a box to its typed pool
-    // without knowing T.
-    interface IManagedComponentBox
-    {
-        void ReturnToPool();
-    }
+        // Pending bits at and above the insertion index move up one. Precise bits only: bit 30 merges
+        // into the bit-31 overflow sentinel, the only representation for slots past 30.
+        static uint ShiftDirtyMaskForInsert(uint mask, int index)
+        {
+            if (mask == 0 || index >= 31)
+                return mask;
 
-    // StrongBox<T> (not a plain box) lets GetComponent hand back a real `ref T` into the boxed value.
-    sealed class ManagedComponentBox<T> : StrongBox<T>, IManagedComponentBox where T : struct, IVisualElementComponent
-    {
-        public void ReturnToPool() => ManagedComponentBoxPool<T>.Pool.Release(this);
-    }
+            var below = mask & ((1u << index) - 1);
+            var atOrAbove = mask & ~((1u << index) - 1) & ~k_ComponentOverflowBit;
+            return below | (atOrAbove << 1) | (mask & k_ComponentOverflowBit);
+        }
 
-    // Not GenericPool (nor the UIElements ObjectPool): their new T() constraints construct through
-    // Activator.CreateInstance, while an explicit createFunc compiles to a direct ManagedComponentBox<T> ctor call.
-    static class ManagedComponentBoxPool<T> where T : struct, IVisualElementComponent
-    {
-        [NoAutoStaticsCleanup] // pooled boxes root nothing (see actionOnRelease)
-        public static readonly UnityEngine.Pool.ObjectPool<ManagedComponentBox<T>> Pool = new(
-            () => new ManagedComponentBox<T>(),
-            actionOnRelease: box => box.Value = default); // don't keep removed managed fields rooted while pooled
+        // The removed index's bit clears and precise bits above it move down one. Slot 31 lands on 30,
+        // which the sentinel no longer covers, so a set sentinel also sets bit 30 and only survives while
+        // a slot >= 31 remains. Coarse either way: the sentinel names no single slot.
+        static uint ShiftDirtyMaskForRemove(uint mask, int index, int remainingCount)
+        {
+            if (mask == 0)
+                return mask;
+
+            // Removing from the tail moves no precise bit, but a sentinel left with no slot >= 31 would
+            // name whatever lands in slot 31 next. Keeping it retired maintains "sentinel set => count > 31",
+            // which is also what lets ShiftDirtyMaskForInsert pass a tail insertion straight through.
+            if (index >= 31)
+                return remainingCount > 31 ? mask : mask & ~k_ComponentOverflowBit;
+
+            var below = mask & ((1u << index) - 1);
+            var above = mask & ~((2u << index) - 1) & ~k_ComponentOverflowBit;
+            var shifted = below | (above >> 1);
+            if ((mask & k_ComponentOverflowBit) == 0)
+                return shifted;
+
+            shifted |= 1u << 30;
+            return remainingCount > 31 ? shifted | k_ComponentOverflowBit : shifted;
+        }
     }
 }

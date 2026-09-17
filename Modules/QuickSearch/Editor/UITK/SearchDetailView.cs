@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,8 +48,8 @@ namespace UnityEditor.Search
         public static readonly string actionButtonClassName = ussClassName.WithUssElement("action-button");
         public static readonly string actionButtonMoreClassName = ussClassName.WithUssElement("action-button-more");
 
-        public static readonly GUIContent previewInspectorContent = EditorGUIUtility.TrTextContentWithIcon("Inspector", "Open Inspector (F4)", EditorGUIUtility.LoadIcon("UnityEditor.InspectorWindow"));
-        public static readonly GUIContent moreActionsContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Open actions menu", Icons.more);
+        public static readonly GUIContent previewInspectorContent = L10n.TextContentWithIcon("Inspector", "Open Inspector (F4)", EditorGUIUtility.LoadIcon("UnityEditor.InspectorWindow"), null);
+        public static readonly GUIContent moreActionsContent = L10n.TextContentWithIcon(string.Empty, "Open actions menu", Icons.more, null);
 
         public SearchDetailView(string name, ISearchView viewModel, params string[] classes) : base(name, viewModel, classes)
         {
@@ -194,7 +193,9 @@ namespace UnityEditor.Search
         private void OnRefreshed(ISearchEvent evt)
         {
             m_RefreshOff?.Invoke();
+#pragma warning disable UAL0018 // the stored handle only cancels the pending call against the live tick list; it snapshots nothing, so a reload that drops the pending call leaves it a no-op
             m_RefreshOff = Utils.CallDelayed(Refresh, 0.05d);
+#pragma warning restore UAL0018
         }
 
         private void Refresh()
@@ -625,4 +626,3 @@ namespace UnityEditor.Search
     }
 }
 
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

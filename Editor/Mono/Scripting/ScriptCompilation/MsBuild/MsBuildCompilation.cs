@@ -12,7 +12,6 @@ using UnityEditor.Compilation;
 using UnityEditor.MSBuild;
 using Unity.AsmDefToCSProj;
 using UnityEditor.Build;
-using Unity.Scripting;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -45,10 +44,17 @@ partial class MsBuildCompilation
     }
 
     [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
+    internal class CompilationAssembly
+    {
+        public string Name;
+        public List<string> ReferencedAssemblyNames;
+    }
+
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal class CompilationMessages
     {
         public bool Success;
-        public string[] Assemblies = Array.Empty<string>();
+        public CompilationAssembly[] Assemblies = Array.Empty<CompilationAssembly>();
         public CompilationMessage[] Messages = Array.Empty<CompilationMessage>();
     }
 
@@ -499,14 +505,22 @@ partial class MsBuildCompilation
 
     private static CompilationMessages BuildScriptCompilationMessages(BuildResultMessage buildResult)
     {
-        var assemblies = new List<string>();
+        var assemblies = new List<CompilationAssembly>();
         var messages = new List<CompilationMessage>();
 
         foreach (var kvp in buildResult.GetProjectResults())
         {
             var projectResult = kvp.Value;
-            if (!string.IsNullOrEmpty(projectResult.AssemblyName))
-                assemblies.Add(projectResult.AssemblyName);
+
+            // ILPostProcessors are build-time tools, not script assemblies, so they don't belong in the assembly list.
+            if (!string.IsNullOrEmpty(projectResult.AssemblyName) && !projectResult.IsILPostProcessor)
+            {
+                assemblies.Add(new CompilationAssembly
+                {
+                    Name = projectResult.AssemblyName,
+                    ReferencedAssemblyNames = new List<string>(projectResult.GetReferencedAssemblyNames())
+                });
+            }
 
             foreach (var msg in projectResult.GetLogMessages())
             {

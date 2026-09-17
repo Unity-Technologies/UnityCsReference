@@ -24,7 +24,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
     {
         [SerializeField] private ScenarioStatusData m_StatusData;
         [SerializeField] private bool m_HasStarted;
-        [SerializeField] private List<Instance> m_Instances = new List<Instance>();
+        [SerializeField] private List<ControllerRuntime> m_Instances = new List<ControllerRuntime>();
+        [SerializeField] private List<ControllerRuntime> m_ScenarioControllers = new List<ControllerRuntime>();
 
         public ScenarioStatusData StatusData => m_StatusData;
 
@@ -45,16 +46,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
         void OnEnable()
         {
             // Re-attach listeners after Domain Reload
-            foreach (var instance in m_Instances)
+            foreach (var runtime in GetAllRuntimes())
             {
-                instance.StatusRefreshed -= OnInstanceStatusRefreshed;
-                instance.StatusRefreshed += OnInstanceStatusRefreshed;
+                runtime.StatusRefreshed -= OnRuntimeStatusRefreshed;
+                runtime.StatusRefreshed += OnRuntimeStatusRefreshed;
             }
         }
 
-        private void OnInstanceStatusRefreshed(Instance instance, InstanceStatusData status)
+        private void OnRuntimeStatusRefreshed(ControllerRuntime runtime, InstanceStatusData status)
         {
-            if (!instance.IsFreeRunMode())
+            if (!runtime.IsFreeRunMode())
                 RefreshAndNotifyStatus();
         }
 
@@ -63,32 +64,26 @@ namespace Unity.Multiplayer.PlayMode.Editor
             m_HasStarted = false;
             m_StatusData.Clear();
 
-            // Reset only the instances that are controlled by this Scenario.
-            foreach (var instance in m_Instances)
-            {
-                if (!instance.IsFreeRunMode())
-                    instance.Reset();
-            }
+            // Reset only the runtimes that are controlled by this Scenario.
+            foreach (var runtime in NonFreeRunRuntimes())
+                runtime.Reset();
         }
 
         private void ResetAfterCancellation()
         {
-            // After a cancellation, instances that failed should remain in their failed state
-            // so users can see the failure result. While instances that were running or completed
+            // After a cancellation, runtimes that failed should remain in their failed state
+            // so users can see the failure result. While runtimes that were running or completed
             // should be reset to the idle state.
-            foreach (var instance in m_Instances)
+            foreach (var runtime in NonFreeRunRuntimes())
             {
-                if (instance.IsFreeRunMode())
-                    continue;
-
-                if (instance.StatusData.OverallStatus.State is not ExecutionState.Failed)
+                if (runtime.StatusData.OverallStatus.State is not ExecutionState.Failed)
                 {
-                    instance.Reset();
+                    runtime.Reset();
                 }
             }
         }
 
-        internal void AddInstance(Instance instance)
+        internal void AddInstance(ControllerRuntime instance)
         {
             if (m_HasStarted)
                 throw new InvalidOperationException("Trying to modify a scenario that has already started.");
@@ -98,13 +93,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
                 return;
 
             // Add instance and hook up event listeners back to this scenario.
-            instance.StatusRefreshed += OnInstanceStatusRefreshed;
+            instance.StatusRefreshed += OnRuntimeStatusRefreshed;
             m_Instances.Add(instance);
 
             RefreshAndNotifyStatus();
         }
 
-        internal void RemoveInstance(Instance instance)
+        internal void RemoveInstance(ControllerRuntime instance)
         {
             // Sanity check
             if (instance == null)
@@ -113,19 +108,56 @@ namespace Unity.Multiplayer.PlayMode.Editor
             // Remove the given instance and deatch its listeners from this Scenario, if found.
             if (m_Instances.Remove(instance))
             {
-                instance.StatusRefreshed -= OnInstanceStatusRefreshed;
+                instance.StatusRefreshed -= OnRuntimeStatusRefreshed;
                 return;
             }
 
             Debug.LogWarning($"Scenario: No instance {instance.Name} was found to be removed!");
         }
 
-        internal List<Instance> GetAllInstances()
+        internal List<ControllerRuntime> GetAllInstances()
         {
             return m_Instances;
         }
 
-        internal Instance GetInstanceByName(string instanceName, bool targetActiveFreeRun = false)
+        internal void AddScenarioController(ControllerRuntime runtime)
+        {
+            if (m_HasStarted)
+                throw new InvalidOperationException("Trying to modify a scenario that has already started.");
+
+            if (runtime == null || m_ScenarioControllers.Contains(runtime))
+                return;
+
+            runtime.StatusRefreshed += OnRuntimeStatusRefreshed;
+            m_ScenarioControllers.Add(runtime);
+
+            RefreshAndNotifyStatus();
+        }
+
+        internal List<ControllerRuntime> GetAllScenarioControllers()
+        {
+            return m_ScenarioControllers;
+        }
+
+        internal IEnumerable<ControllerRuntime> GetAllRuntimes()
+        {
+            foreach (var instance in m_Instances)
+                yield return instance;
+
+            foreach (var runtime in m_ScenarioControllers)
+                yield return runtime;
+        }
+
+        private IEnumerable<ControllerRuntime> NonFreeRunRuntimes()
+        {
+            foreach (var runtime in GetAllRuntimes())
+            {
+                if (!runtime.IsFreeRunMode())
+                    yield return runtime;
+            }
+        }
+
+        internal ControllerRuntime GetInstanceByName(string instanceName, bool targetActiveFreeRun = false)
         {
             foreach (var instance in m_Instances)
             {
@@ -139,7 +171,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return null;
         }
 
-        internal Instance GetInstanceById(GUID instanceId)
+        internal ControllerRuntime GetInstanceById(GUID instanceId)
         {
             foreach (var instance in m_Instances)
             {
@@ -302,22 +334,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         async Task<bool> RunStage(ExecutionStage stage, CancellationToken cancellationToken)
         {
-            var allInstanceTaskForStage = new List<Task<bool>>();
+            var allRuntimeTasksForStage = new List<Task<bool>>();
 
-            // For each state, execute on all instances.
-            foreach (var instance in m_Instances)
-            {
-                if (instance.IsFreeRunMode())
-                    continue;
+            // For each state, execute on all runtimes.
+            foreach (var runtime in NonFreeRunRuntimes())
+                allRuntimeTasksForStage.Add(runtime.RunOrResumeAsync(stage, cancellationToken));
 
-                var instanceTask = instance.RunOrResumeAsync(stage, cancellationToken);
-                allInstanceTaskForStage.Add(instanceTask);
-            }
-
-            await Task.WhenAll(allInstanceTaskForStage);
+            await Task.WhenAll(allRuntimeTasksForStage);
 
             bool success = true;
-            foreach (var result in allInstanceTaskForStage)
+            foreach (var result in allRuntimeTasksForStage)
                 success &= result.Result;
 
             return success;
@@ -326,28 +352,20 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal ReadOnlyCollection<ExecutionNode> GetNodes(ExecutionStage executionStage)
         {
             var nodes = new List<ExecutionNode>();
-            foreach (var instance in m_Instances)
-            {
-                var graph = instance.GetExecutionGraph();
-                var instanceNodes = graph.GetNodes(executionStage);
-                nodes.AddRange(instanceNodes);
-            }
+            foreach (var runtime in GetAllRuntimes())
+                nodes.AddRange(runtime.GetExecutionGraph().GetNodes(executionStage));
 
             return nodes.AsReadOnly();
         }
 
-        IEnumerable<ExecutionNode> GetNonFreeRunNodes(IEnumerable<ExecutionStage> executionStages)
+        internal IEnumerable<ExecutionNode> GetNonFreeRunNodes(IEnumerable<ExecutionStage> executionStages)
         {
-            foreach (var instance in m_Instances)
+            foreach (var runtime in NonFreeRunRuntimes())
             {
-                if (instance.IsFreeRunMode())
-                    continue;
-
-                var graph = instance.GetExecutionGraph();
+                var graph = runtime.GetExecutionGraph();
                 foreach (var stage in executionStages)
                 {
-                    var instanceNodes = graph.GetNodes(stage);
-                    foreach (var node in instanceNodes)
+                    foreach (var node in graph.GetNodes(stage))
                         yield return node;
                 }
             }
@@ -363,21 +381,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
         {
             m_StatusData.Clear();
 
-            foreach (var instance in m_Instances)
+            foreach (var runtime in NonFreeRunRuntimes())
             {
-                if (instance.IsFreeRunMode())
+                var runtimeStatus = runtime.StatusData;
+
+                if (runtimeStatus.OverallStatus.State == ExecutionState.Invalid)
                     continue;
 
-                var instanceStatus = instance.StatusData;
-
-                if (instanceStatus.OverallStatus.State == ExecutionState.Invalid)
-                    continue;
-
-                m_StatusData.OverallStatus.Aggregate(instanceStatus.OverallStatus);
+                m_StatusData.OverallStatus.Aggregate(runtimeStatus.OverallStatus);
 
                 foreach (var stage in ExecutionGraph.k_Stages)
                 {
-                    m_StatusData.StageStatuses[(int)stage].Aggregate(instanceStatus.StageStatuses[(int)stage]);
+                    m_StatusData.StageStatuses[(int)stage].Aggregate(runtimeStatus.StageStatuses[(int)stage]);
 
                     if (m_StatusData.StageStatuses[(int)stage].IdleNodesCount < m_StatusData.StageStatuses[(int)stage].NodesCount)
                         m_StatusData.CurrentStage = stage;
@@ -387,12 +402,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal IEnumerable<ExecutionNode.Error> GetAllNonFreeRunNodeErrors()
         {
-            foreach (var instance in m_Instances)
+            foreach (var runtime in NonFreeRunRuntimes())
             {
-                if (instance.IsFreeRunMode())
-                    continue;
-
-                foreach (var node in instance.GetExecutionGraph().GetAllNodes())
+                foreach (var node in runtime.GetExecutionGraph().GetAllNodes())
                 {
                     if (node.ErrorInfo != null)
                         yield return node.ErrorInfo;

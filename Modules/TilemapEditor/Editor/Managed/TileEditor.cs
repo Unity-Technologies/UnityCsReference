@@ -28,16 +28,16 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent invalidMatrixLabel = EditorGUIUtility.TrTextContent("Invalid Matrix", "No valid Position / Rotation / Scale components available for this matrix");
-            public static readonly GUIContent resetMatrixLabel = EditorGUIUtility.TrTextContent("Reset Matrix");
-            public static readonly GUIContent previewLabel = EditorGUIUtility.TrTextContent("Preview", "Preview of tile with attributes set");
+            public static readonly GUIContent invalidMatrixLabel = L10n.TextContent("Invalid Matrix", "No valid Position / Rotation / Scale components available for this matrix", null, null);
+            public static readonly GUIContent resetMatrixLabel = L10n.TextContent("Reset Matrix", null, null, null);
+            public static readonly GUIContent previewLabel = L10n.TextContent("Preview", "Preview of tile with attributes set", null, null);
 
-            public static readonly GUIContent gameObjectToInstantiateLabel = EditorGUIUtility.TrTextContent("GameObject to Instantiate", "GameObject to instantiate when placed on Tilemap");
+            public static readonly GUIContent gameObjectToInstantiateLabel = L10n.TextContent("GameObject to Instantiate", "GameObject to instantiate when placed on Tilemap", null, null);
 
-            public static readonly GUIContent spriteEditorLabel = EditorGUIUtility.TrTextContent("Sprite Editor");
-            public static readonly GUIContent offsetLabel = EditorGUIUtility.TrTextContent("Offset");
-            public static readonly GUIContent rotationLabel = EditorGUIUtility.TrTextContent("Rotation");
-            public static readonly GUIContent scaleLabel = EditorGUIUtility.TrTextContent("Scale");
+            public static readonly GUIContent spriteEditorLabel = L10n.TextContent("Sprite Editor", null, null, null);
+            public static readonly GUIContent offsetLabel = L10n.TextContent("Offset", null, null, null);
+            public static readonly GUIContent rotationLabel = L10n.TextContent("Rotation", null, null, null);
+            public static readonly GUIContent scaleLabel = L10n.TextContent("Scale", null, null, null);
         }
 
         internal void OnEnable()

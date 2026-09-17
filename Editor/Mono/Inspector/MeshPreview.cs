@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Mesh not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -18,12 +17,12 @@ namespace UnityEditor
         {
             const string k_DisplayModeTooltip = "Change display mode";
 
-            public static readonly GUIContent meshLodIcon = EditorGUIUtility.TrIconContent("MeshLOD", "Select a LOD to view.");
-            public static readonly GUIContent wireframeToggle = EditorGUIUtility.TrIconContent(EditorGUIUtility.LoadIconRequired("Toolbars/wireframe"), "Show wireframe");
+            public static readonly GUIContent meshLodIcon = L10n.IconContent("MeshLOD", "Select a LOD to view.", null);
+            public static readonly GUIContent wireframeToggle = L10n.IconContent(EditorGUIUtility.LoadIconRequired("Toolbars/wireframe"), "Show wireframe", null);
 
-            public static readonly GUIContent displayModeDropdown = EditorGUIUtility.TrTextContent("", "Change display mode");
-            public static readonly GUIContent shadedIcon = EditorGUIUtility.TrIconContent("Toolbars/Shaded", k_DisplayModeTooltip);
-            public static readonly GUIContent uvIcon = EditorGUIUtility.TrIconContent("PreTextureMipMapLow", k_DisplayModeTooltip);
+            public static readonly GUIContent displayModeDropdown = L10n.TextContent("", "Change display mode", null, null);
+            public static readonly GUIContent shadedIcon = L10n.IconContent("Toolbars/Shaded", k_DisplayModeTooltip, null);
+            public static readonly GUIContent uvIcon = L10n.IconContent("PreTextureMipMapLow", k_DisplayModeTooltip, null);
 
             public static readonly GUIContent uvChannelDropdown = EditorGUIUtility.TrTextContent("", k_DisplayModeTooltip);
 
@@ -973,4 +972,3 @@ namespace UnityEditor
         }        
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

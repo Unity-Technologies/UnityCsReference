@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 
@@ -16,6 +15,9 @@ namespace UnityEditor.Toolbars
         [NoAutoStaticsCleanup] // Scratch quality-level index, consumed and reset to -1 on each rebuild; safe to persist.
         static int s_TemporaryNewQualityLevel = -1;
 
+        // All four events are cleared on code reload, so these subscriptions have to be re-established on
+        // every load. A static constructor would only run once per domain, and the quality dropdown would
+        // stop tracking quality level changes and renames after the first reload.
         [OnCodeLoaded]
         static void Initialize()
         {
@@ -108,4 +110,3 @@ namespace UnityEditor.Toolbars
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

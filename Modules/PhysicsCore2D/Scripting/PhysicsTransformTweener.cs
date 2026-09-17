@@ -153,7 +153,7 @@ namespace Unity.U2D.Physics
         #region Writers
 
         /// <undoc/>
-        struct WriteTransformTweensParallelJob : IJobParallelForTransform
+        internal struct WriteTransformTweensParallelJob : IJobParallelForTransform
         {
             [ReadOnly] public float interpolationTime;
             [ReadOnly] public float extrapolationTime;

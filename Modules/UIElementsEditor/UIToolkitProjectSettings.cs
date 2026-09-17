@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using UnityEditor.UIElements.Experimental.Debugger;
 using UnityEditor.UIElements.Experimental.UILayoutDebugger;
@@ -16,7 +15,6 @@ namespace UnityEditor.UIElements
 {
     [FilePath("ProjectSettings/UIToolkitProjectSettings.asset", FilePathAttribute.Location.ProjectFolder)]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    [NoAutoStaticsCleanup] // Editor settings singleton; onEnableGridLayoutChanged subscribers unsubscribe on panel detach.
     internal partial class UIToolkitProjectSettings : ScriptableSingleton<UIToolkitProjectSettings>
     {
         const string k_EditorExtensionModeKey = "UIBuilder.EditorExtensionModeKey";
@@ -26,10 +24,10 @@ namespace UnityEditor.UIElements
         const string k_EnableEventDebugger = "UIToolkit.EnableEventDebugger";
         const string k_EnableLayoutDebugger = "UIToolkit.EnableLayoutDebugger";
         const string k_EnableUSStatsWindow = "UIToolkit.EnableUSSStatsWindow";
-        const string k_EnableZIndex = "UIAuthoring.EnableZIndex";
         const string k_EnableFilterShaderGraph = "UIToolkit.EnableFilterShaderGraph";
         const string k_EnableCurvedUI = "UIToolkit.EnableCurvedUI";
         const string k_EnableMultiWindowBuilder = "UIBuilder.EnableMultiWindow";
+        const string k_EnableStyleSheetEditingMode = "UIBuilder.EnableStyleSheetEditingMode";
 
         // Must match BuilderConstants.BuilderMenuEntry + " (New Window)" in the UI Builder module (which this
         // module cannot reference). The Menu API is only reachable here, so the experimental menu item is
@@ -38,6 +36,7 @@ namespace UnityEditor.UIElements
 
         [SerializeField] LazyLoadReference<ThemeStyleSheet> m_DefaultRuntimeTheme;
         [SerializeField] LazyLoadReference<ThemeStyleSheet> m_DefaultEditorTheme;
+        [SerializeField] LazyLoadReference<VisualTreeAsset> m_StyleSheetEditingPreviewDocument;
         [SerializeField] CanvasTheme m_DefaultRuntimeCanvasTheme;
         [SerializeField] CanvasTheme m_DefaultEditorCanvasTheme;
         [SerializeField] bool m_ConsistentAttributeOrderingWhenExporting;
@@ -117,16 +116,17 @@ namespace UnityEditor.UIElements
         private bool m_EnableLowLevelDebugger = false;
 
         [SerializeField]
-        private bool m_EnablePanelRendererAnimation = false;
-
-        [SerializeField]
         private bool m_EnableUIComponents = false;
 
-		
         [SerializeField]
         private bool m_EnableGridLayout = false;
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIElementsSamplesModule")]
+        // Cleared on reload like onThemeChanged above, because keeping the delegates would pin the
+        // outgoing scope; subscribers attach and detach with their panel lifecycle, so the cleared
+        // invocation list refills as those elements are attached again.
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static Action<bool> onEnableGridLayoutChanged;
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIElementsSamplesModule")]
@@ -146,38 +146,10 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIElementsSamplesModule")]
-        internal static Action onEnableZIndexChanged;
-
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule", "UnityEditor.UIElementsSamplesModule")]
-        internal static bool enableZIndex
-        {
-            get => GetBool(k_EnableZIndex);
-            set
-            {
-                if (GetBool(k_EnableZIndex) == value)
-                    return;
-                SetBool(k_EnableZIndex, value);
-                onEnableZIndexChanged?.Invoke();
-            }
-        }
-
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
-        [NoAutoStaticsCleanup]
-        internal static bool s_EnablePanelRendererAnimationAtBoot;
-
-        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
-        internal static bool enablePanelRendererAnimation
-        {
-            get => instance.m_EnablePanelRendererAnimation;
-            set
-            {
-                if (instance.m_EnablePanelRendererAnimation == value)
-                    return;
-                instance.m_EnablePanelRendererAnimation = value;
-                instance.Save();
-            }
-        }
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
+        internal static Action onEnableUIComponentsChanged;
 
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
         internal static bool enableUIComponents
@@ -189,24 +161,29 @@ namespace UnityEditor.UIElements
                     return;
                 instance.m_EnableUIComponents = value;
                 instance.Save();
+                onEnableUIComponentsChanged?.Invoke();
             }
         }
 
-        internal static bool isAnimationSettingDirty => enablePanelRendererAnimation != s_EnablePanelRendererAnimationAtBoot;
-
-        internal static void CaptureBootValues()
-        {
-            s_EnablePanelRendererAnimationAtBoot = enablePanelRendererAnimation;
-        }
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
+        internal static Action onEnableCurvedUIChanged;
 
         // Curved UI (-unity-curvature) authoring gate, off by default: hides the curvature rows in the
         // UI Builder and VisualElement inspectors. The runtime feature is always on (like background
-        // gradients); the inspectors re-check this on refresh, so toggling applies live.
+        // gradients).
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule", "UnityEditor.UIBuilderModule")]
         internal static bool enableCurvedUI
         {
             get => GetBool(k_EnableCurvedUI);
-            set => SetBool(k_EnableCurvedUI, value);
+            set
+            {
+                if (GetBool(k_EnableCurvedUI) == value)
+                    return;
+                SetBool(k_EnableCurvedUI, value);
+                onEnableCurvedUIChanged?.Invoke();
+            }
         }
 
         internal static bool EnableLowLevelDebugger
@@ -344,8 +321,10 @@ namespace UnityEditor.UIElements
             }
         }
 
-        // Set by the UI Builder module; invoked by the "UI Builder (New Window)" menu item.
+        // Set by the UI Builder module; invoked by the "UI Builder (New Window)" menu item. Cleared on
+        // reload like onThemeChanged above, since the Builder module re-assigns it on its own reload.
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [AutoStaticsCleanupOnCodeReload]
         internal static Action openNewBuilderWindowMenuCommand;
 
         // Experimental: surfaces the menu entry that opens additional UI Builder windows. Off by default.
@@ -363,6 +342,29 @@ namespace UnityEditor.UIElements
                     AddMultiWindowBuilderMenuItem();
                 else
                     EditorApplication.CallDelayed(RemoveMultiWindowBuilderMenuItem);
+            }
+        }
+
+        // Experimental: allows opening a .uss/.tss directly in the UI Builder to edit its selectors
+        // against a read-only preview document. Off by default; gates the open entry points only.
+        public static bool enableStyleSheetEditingMode
+        {
+            get => GetBool(k_EnableStyleSheetEditingMode);
+            set => SetBool(k_EnableStyleSheetEditingMode, value);
+        }
+
+        // The UXML previewed while editing a stylesheet, project-wide (version controlled).
+        // When unset, the UI Builder falls back to its built-in preview of common controls.
+        public static VisualTreeAsset styleSheetEditingPreviewDocument
+        {
+            get => instance.m_StyleSheetEditingPreviewDocument.asset;
+            set
+            {
+                if (instance.m_StyleSheetEditingPreviewDocument.asset == value)
+                    return;
+
+                instance.m_StyleSheetEditingPreviewDocument = value;
+                instance.Save();
             }
         }
 
@@ -423,7 +425,7 @@ namespace UnityEditor.UIElements
             defaultEditorTheme = null;
             defaultRuntimeCanvasTheme = CanvasTheme.ProjectSettings;
             defaultEditorCanvasTheme = CanvasTheme.ProjectSettings;
-            m_EnablePanelRendererAnimation = false;
+            styleSheetEditingPreviewDocument = null;
             m_EnableUIComponents = false;
         }
 
@@ -437,8 +439,8 @@ namespace UnityEditor.UIElements
             EditorUserSettings.SetConfigValue(k_EnableAbsolutePositionPlacement, null);
             EditorUserSettings.SetConfigValue(k_EnableEventDebugger, null);
             EditorUserSettings.SetConfigValue(k_EnableCurvedUI, null);
+            EditorUserSettings.SetConfigValue(k_EnableStyleSheetEditingMode, null);
         }
     }
 }
 
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

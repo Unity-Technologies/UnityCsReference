@@ -21,7 +21,7 @@ namespace UnityEditorInternal
     {
         public AnimationWindowState state { get; set; }
 
-        readonly GUIContent k_AnimatePropertyLabel = EditorGUIUtility.TrTextContent("Add Property");
+        readonly GUIContent k_AnimatePropertyLabel = L10n.TextContent("Add Property", null, null, null);
 
         private GUIStyle m_AnimationRowEvenStyle;
         private GUIStyle m_AnimationRowOddStyle;
@@ -730,9 +730,9 @@ namespace UnityEditorInternal
             if (showInterpolation)
             {
                 GenericMenu.MenuFunction2 nullMenuFunction2 = null;
-                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Euler Angles"), rotationInterpolation == RotationCurveInterpolation.Mode.RawEuler, rotationEnabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.RawEuler);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Euler Angles (Quaternion)"), rotationInterpolation == RotationCurveInterpolation.Mode.Baked, rotationEnabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.Baked);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Quaternion"), rotationInterpolation == RotationCurveInterpolation.Mode.NonBaked, rotationEnabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.NonBaked);
+                menu.AddItem(L10n.TextContent("Interpolation/Euler Angles", null, null, null), rotationInterpolation == RotationCurveInterpolation.Mode.RawEuler, rotationEnabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.RawEuler);
+                menu.AddItem(L10n.TextContent("Interpolation/Euler Angles (Quaternion)", null, null, null), rotationInterpolation == RotationCurveInterpolation.Mode.Baked, rotationEnabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.Baked);
+                menu.AddItem(L10n.TextContent("Interpolation/Quaternion", null, null, null), rotationInterpolation == RotationCurveInterpolation.Mode.NonBaked, rotationEnabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.NonBaked);
             }
 
             menu.AddSeparator("");

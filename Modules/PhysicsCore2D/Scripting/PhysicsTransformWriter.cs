@@ -221,7 +221,7 @@ namespace Unity.U2D.Physics
         #region Writers
 
         /// <undoc/>
-        struct WriteTransformsParallelJob : IJobParallelForTransform
+        internal struct WriteTransformsParallelJob : IJobParallelForTransform
         {
             [ReadOnly] public NativeArray<PhysicsBody.TransformWriteTween> transformWriteTweens;
             [ReadOnly] public PhysicsWorld.TransformPlane transformPlane;

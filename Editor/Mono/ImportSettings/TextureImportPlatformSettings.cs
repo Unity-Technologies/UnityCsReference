@@ -15,7 +15,7 @@ namespace UnityEditor
     {
         static class Styles
         {
-            static public readonly GUIContent overrideFor = EditorGUIUtility.TrTextContent("Override For {0}");
+            static public readonly GUIContent overrideFor = L10n.TextContent("Override For {0}", null, null, null);
         }
 
         public abstract bool textureTypeHasMultipleDifferentValues { get; }
@@ -159,7 +159,7 @@ namespace UnityEditor
         {
             BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
             GUILayout.Space(10);
-            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, EditorGUIUtility.TrTextContent("Default"));
+            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(validPlatforms, L10n.TextContent("Default", null, null, null));
             ShowPlatformSpecificSettings(platformSettings, shownTextureFormatPage);
         }
 

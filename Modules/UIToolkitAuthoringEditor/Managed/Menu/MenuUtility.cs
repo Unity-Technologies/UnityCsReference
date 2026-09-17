@@ -9,8 +9,8 @@ using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
+using UnityEditor.Utils;
 using UnityEngine;
-using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
@@ -20,11 +20,6 @@ static class MenuUtility
 {
     const string k_UndoCreatePanelRenderer = "Create Panel Renderer";
     const string k_NewVisualTreeAssetDefaultName = "New UXML";
-    const string k_StageEntryOptOutKey = "UIToolkit.AutoEnterEditingStage";
-    const string k_StageEntryDialogTitle = "Open visual element editing stage";
-    const string k_StageEntryDialogMessage =
-        "To add this element, Unity will open the Visual Element editing stage to edit the underlying UI Document. " +
-        "You can return to the previous stage by clicking the breadcrumb or pressing the back button.";
 
     /// <summary>
     /// When adding from a top menu, we will prioritize to find an existing <see cref="IPanelComponent"/> component in the
@@ -64,42 +59,7 @@ static class MenuUtility
         }
 
         // Main Stage authoring edits the scene documents where they are, so the element is added in place.
-        // There is no stage to enter, and therefore nothing to ask the user about either.
-        if (UIToolkitStageUtility.IsAuthoringEnabledInMainStage)
-        {
-            AddInMainStage(request, addAsSibling, parentNewGameObjectUnderSelection);
-            return;
-        }
-
-        if (!ConfirmStageEntry())
-            return;
-
-        UIToolkitAuthoringSettings.EnableInSceneUIAuthoring = true;
-
-        switch (Selection.activeObject)
-        {
-            case VisualTreeAssetSelection { PanelComponent: not null } vtaSelection
-                when vtaSelection.PanelComponent.visualTreeAsset:
-            {
-                var sceneContext = new VisualTreeAssetEditingContext(vtaSelection.PanelComponent.visualTreeAsset, vtaSelection.PanelComponent.panelSettings);
-                EnterStageAndAdd(sceneContext, request, parentVea: null);
-                return;
-            }
-            case VisualElementSelection { Element: not null } ves
-                when TryBuildContextFromElement(ves.Element, out var elementContext):
-            {
-                var parentElement = GetFirstSuitableElement(ves.Element, elementContext.EditedVisualTreeAsset);
-                var vea = parentElement?.visualElementAsset;
-                if (addAsSibling)
-                    vea = (VisualElementAsset)vea?.parentAsset;
-                else if (parentElement != null && !VisualElementUtility.CanReceiveChildren(parentElement))
-                    return;
-                EnterStageAndAdd(elementContext, request, vea);
-                return;
-            }
-        }
-
-        AddInAppropriatePanelRendererComponent(Selection.activeGameObject, request, parentNewGameObjectUnderSelection);
+        AddInMainStage(request, addAsSibling, parentNewGameObjectUnderSelection);
     }
 
     /// <summary>
@@ -234,6 +194,11 @@ static class MenuUtility
         // is in.
         UIToolkitStageUtility.ScopePendingSelectionRequestsTo(target.ParentElement);
 
+        // A new element has no name to identify it by until the user gives it one. An instance already reads as
+        // the document it came from, so it is left alone.
+        if (!request.IsTemplate)
+            UIToolkitStageUtility.RequestRenameOfPendingSelection();
+
         // The commands only write to the authoring assets, and a scene panel does not show an in-memory change
         // to the document it renders until it clones it again.
         UIAssetRegistrySceneTracking.ReloadDocumentOf(target.ParentElement);
@@ -255,29 +220,6 @@ static class MenuUtility
             "uxml",
             "Choose a location for the new UI Document.");
         return !string.IsNullOrEmpty(assetPath);
-    }
-
-    static bool ConfirmStageEntry()
-    {
-        var postFix = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring ? "" : "\n\nthis is an experimental feature that is currently disabled, continuing will automatically enable the feature.";
-
-        return EditorDialog.DisplayDecisionDialogWithOptOut(
-            k_StageEntryDialogTitle,
-            k_StageEntryDialogMessage + postFix,
-            yesButtonText: "Continue",
-            noButtonText: "Cancel",
-            DialogOptOutDecisionType.ForThisMachine,
-            k_StageEntryOptOutKey,
-            DialogIconType.Info);
-    }
-
-    static void AddInAppropriatePanelRendererComponent(GameObject selectedGo, AddRequest request, bool parentNewGameObjectUnderSelection)
-    {
-        if (!TryResolveTargetPanelComponent(selectedGo, parentNewGameObjectUnderSelection, out var component))
-            return;
-
-        var context = new VisualTreeAssetEditingContext(component.visualTreeAsset, component.panelSettings);
-        EnterStageAndAdd(context, request, parentVea: null);
     }
 
     /// <summary>
@@ -385,38 +327,6 @@ static class MenuUtility
         return null;
     }
 
-    static bool TryBuildContextFromElement(VisualElement element, out VisualTreeAssetEditingContext context)
-    {
-        var rootElement = element.GetFirstOfType<IPanelComponentRootElement>();
-        if (rootElement?.panelComponent?.visualTreeAsset != null)
-        {
-            var panelComponent = rootElement.panelComponent;
-            using var pathHandle = ListPool<TemplateAsset>.Get(out var path);
-            element.GenerateSubDocumentPath(path);
-
-            context = path.Count > 0
-                ? new VisualTreeAssetEditingContext(panelComponent.visualTreeAsset, path.ToArray(), SubDocumentOptions.InContext, panelComponent.panelSettings)
-                : new VisualTreeAssetEditingContext(panelComponent.visualTreeAsset, panelComponent.panelSettings);
-            return true;
-        }
-
-        // The selection may have outlived its stage; the element is detached but still
-        // remembers the VisualTreeAsset it was cloned from. Walk up to find the closest one.
-        var current = element;
-        while (current != null)
-        {
-            if (current.visualTreeAssetSource != null)
-            {
-                context = new VisualTreeAssetEditingContext(current.visualTreeAssetSource);
-                return true;
-            }
-            current = current.hierarchy.parent;
-        }
-
-        context = default;
-        return false;
-    }
-
     static bool TryCreatePanelRendererAndAsset(GameObject parent, IPanelComponent reusableComponent, out IPanelComponent component)
     {
         component = null;
@@ -424,7 +334,8 @@ static class MenuUtility
         if (!TryResolveNewVisualTreeAssetPath(out var assetPath))
             return false;
 
-        var folder = Path.GetDirectoryName(assetPath)?.Replace('\\', '/');
+        var directory = Path.GetDirectoryName(assetPath);
+        var folder = directory != null ? directory.ConvertSeparatorsToUnity() : null;
         var contents = UIElementsTemplate.CreateUXMLTemplate(folder);
         File.WriteAllText(assetPath, contents);
         AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
@@ -470,15 +381,6 @@ static class MenuUtility
         return true;
     }
 
-    static void EnterStageAndAdd(VisualTreeAssetEditingContext context, AddRequest request, VisualElementAsset parentVea)
-    {
-        var stage = VisualElementEditingStage.GoToStage(context, BreadcrumbBar.SeparatorStyle.Arrow);
-
-        // The stage was only just entered, so it has cloned nothing yet and there is no live parent to name; the
-        // add lands at the root of the document it opened on, which exists only once.
-        ExecuteAdd(stage, request, parentVea, parentElement: null);
-    }
-
     static void ExecuteAdd(VisualElementEditingStage stage, AddRequest request, VisualElementAsset parentVea,
         VisualElement parentElement)
     {
@@ -501,6 +403,11 @@ static class MenuUtility
         // Both commands asked for what they created by asset alone. A staged document can instantiate the same
         // template twice as well, so point the request at the instance the selection is in.
         UIToolkitStageUtility.ScopePendingSelectionRequestsTo(parentElement);
+
+        // A new element has no name to identify it by until the user gives it one. An instance already reads as
+        // the document it came from, so it is left alone, the way a prefab instance is.
+        if (!request.IsTemplate)
+            UIToolkitStageUtility.RequestRenameOfPendingSelection();
     }
 
     /// <summary>

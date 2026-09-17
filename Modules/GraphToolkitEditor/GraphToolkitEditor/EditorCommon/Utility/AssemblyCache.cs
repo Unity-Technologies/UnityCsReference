@@ -32,6 +32,9 @@ namespace Unity.GraphToolkit.Editor
         };
 
         [AutoStaticsCleanupOnCodeReload]
+        // Lazily filled from the currently loaded assemblies (s_Assemblies ??= ...), which is also the right
+        // thing to do after a code load since the loaded set may have changed.
+        [IgnoreForUAL0015("Loaded-assembly list re-queried on the next access when null")]
         static List<Assembly> s_Assemblies;
 
         public static IReadOnlyList<Assembly> CachedAssemblies

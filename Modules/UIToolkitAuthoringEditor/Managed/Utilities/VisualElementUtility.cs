@@ -46,6 +46,48 @@ static class VisualElementUtility
 
     public static bool CanReceiveChildren(VisualElement element) => element?.contentContainer != null;
 
+    public static void UpdateInlineRuleOnAllClones(VisualElement element, StyleSheet inlineSheet, StyleRule rule)
+    {
+        var asset = element.visualElementAsset;
+        var ownPanel = element.panel as BaseVisualElementPanel;
+
+        // The asset's other clones can live in any tracked panel, not just the edited element's
+        using var _ = ListPool<BaseVisualElementPanel>.Get(out var panels);
+        if (ownPanel != null)
+            panels.Add(ownPanel);
+
+        var registry = VisualElementSelectionRegistry.Instance;
+        if (asset != null && registry != null)
+        {
+            using var _tracked = ListPool<Panel>.Get(out var tracked);
+            registry.CollectTrackedPanels(tracked);
+            foreach (var panel in tracked)
+            {
+                if (panel != null && !panels.Contains(panel))
+                    panels.Add(panel);
+            }
+        }
+
+        if (asset == null || panels.Count == 0)
+        {
+            Apply(element);
+            return;
+        }
+
+        foreach (var panel in panels)
+            panel.visualTree?.Query<VisualElement>().Where(e => e.visualElementAsset == asset).ForEach(Apply);
+
+        // A detached element is not found by the walks but still holds the rule
+        if (ownPanel == null)
+            Apply(element);
+
+        void Apply(VisualElement e)
+        {
+            e.UpdateInlineRule(inlineSheet, rule);
+            e.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
+        }
+    }
+
     public static void GenerateSubDocumentPath(this VisualElement element, List<TemplateAsset> templateAssetPath)
     {
         Assert.IsNotNull(templateAssetPath);
@@ -82,10 +124,8 @@ static class VisualElementUtility
             return stage.Context.PanelSettings;
         }
 
-        var root = element.GetFirstOfType<IPanelComponentRootElement>();
-        if (root != null)
-            return root.panelComponent.panelSettings;
-        return null;
+        var panelComponent = element.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent;
+        return panelComponent.IsAlive() ? panelComponent.panelSettings : null;
     }
 
     // Finds the first descendant of `root` (including root itself) whose visualElementAsset

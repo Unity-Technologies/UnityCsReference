@@ -14,7 +14,7 @@ namespace Unity.GraphToolkit.Editor
     /// UI for a <see cref="InputOutputPortsNodeModel"/>.
     /// </summary>
     [UnityRestricted]
-    internal class CollapsibleInOutNodeView : NodeView, IAnimatableView
+    internal class CollapsibleInOutNodeView : NodeView, IAccentAnimatableView
     {
         /// <summary>
         /// The name of the title container with an icon.
@@ -47,17 +47,6 @@ namespace Unity.GraphToolkit.Editor
         const float k_DefaultMinWidth = 80f;
 
         const float k_ByteToPercentFactor = 100 / 255.0f;
-        public byte Progress
-        {
-            set
-            {
-                var titleComponent = EditableTitlePart as NodeTitlePart;
-                if (titleComponent?.CoroutineProgressBar != null)
-                {
-                    titleComponent.CoroutineProgressBar.value = value * k_ByteToPercentFactor;
-                }
-            }
-        }
 
         /// <summary>
         /// The maximum allowed input label width.
@@ -199,10 +188,11 @@ namespace Unity.GraphToolkit.Editor
             if (ports == null)
                 return;
 
+            var hasNodeOptions = NodeModel is InputOutputPortsNodeModel ioNode && ioNode.NodeOptions.Count > 0;
+
             if (ports.Count == 0)
             {
                 // No ports: enable the button only if there are node options to collapse.
-                var hasNodeOptions = NodeModel is InputOutputPortsNodeModel ioNode && ioNode.NodeOptions.Count > 0;
                 collapseButton.SetEnabled(hasNodeOptions);
                 return;
             }
@@ -217,7 +207,7 @@ namespace Unity.GraphToolkit.Editor
                 }
             }
 
-            collapseButton.SetEnabled(!allPortConnected);
+            collapseButton.SetEnabled(!allPortConnected || hasNodeOptions);
         }
 
         protected void OnSetVisible()
@@ -264,35 +254,32 @@ namespace Unity.GraphToolkit.Editor
         public virtual void BeginAnimating(float animationSpeed)
         {
             var part = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
-            if (part == null)
-                return;
-
-            part.PlayAnimation(animationSpeed);
+            part?.PlayAnimation(animationSpeed);
         }
 
         public virtual void StopAnimating()
         {
             var part = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
-            if (part == null)
-                return;
-            part.StopAnimation();
+            part?.StopAnimation();
         }
 
         public virtual void AnimationUpdate(double deltaTime)
         {
             var part = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
-            if (part == null)
-                return;
-            part.UpdateAnimation(deltaTime);
+            part?.UpdateAnimation(deltaTime);
         }
 
-        public virtual void SetFillAmount(float percentage)
+        public virtual void OverrideFillAmount(float percentage)
         {
             var part = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
-            if (part == null)
-                return;
+            part?.OverrideFillAmount(percentage);
+        }
 
-            part.SetFillAmount(percentage);
+        /// <inheritdoc />
+        public virtual void ClearFillAmountOverride()
+        {
+            var part = PartList.GetPart(topColorLineContainerPartName) as NodeColorLinePart;
+            part?.ClearFillAmountOverride();
         }
     }
 }

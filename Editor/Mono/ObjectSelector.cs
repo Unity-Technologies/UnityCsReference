@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ProjectBrowser not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using System.Collections.Generic;
@@ -42,10 +41,10 @@ namespace UnityEditor
             public static readonly GUIStyle previewBackground = "PopupCurveSwatchBackground"; // TODO: Make dedicated style
             public static readonly GUIStyle previewTextureBackground = "ObjectPickerPreviewBackground"; // TODO: Make dedicated style
 
-            public static readonly GUIContent assetsTabLabel = EditorGUIUtility.TrTextContent("Assets");
-            public static readonly GUIContent sceneTabLabel = EditorGUIUtility.TrTextContent("Scene");
+            public static readonly GUIContent assetsTabLabel = L10n.TextContent("Assets", null, null, null);
+            public static readonly GUIContent sceneTabLabel = L10n.TextContent("Scene", null, null, null);
 
-            public static readonly GUIContent packagesVisibilityContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden packages, click to toggle packages visibility");
+            public static readonly GUIContent packagesVisibilityContent = L10n.IconContent("SceneViewVisibility", "Number of hidden packages, click to toggle packages visibility", null);
 
             public const string rootName = "unity-object-selector";
             public const string headerName = rootName + "__header";
@@ -243,6 +242,9 @@ namespace UnityEditor
 
         // get an existing ObjectSelector or create one
         [AutoStaticsCleanupOnCodeReload]
+        // Shared window cache: the get accessor rediscovers an existing ObjectSelector with
+        // FindObjectsOfTypeAll and otherwise creates one, so it comes back on the next access.
+        [IgnoreForUAL0015("Shared window cache rediscovered or recreated on demand by the get accessor")]
         static ObjectSelector s_SharedObjectSelector = null;
         public static ObjectSelector get
         {
@@ -760,7 +762,7 @@ namespace UnityEditor
             var shouldRepositionWindow = m_Parent != null;
             ShowWithMode(ShowMode.AuxWindow);
 
-            titleContent = EditorGUIUtility.TrTextContent(typeList.GenerateTitleContent());
+            titleContent = L10n.TextContent(typeList.GenerateTitleContent(), null, null, null);
 
             // Deal with window size
             if (shouldRepositionWindow)
@@ -1448,4 +1450,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

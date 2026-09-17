@@ -77,16 +77,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private readonly IUnityConnectProxy m_UnityConnect;
-        private readonly IAssetStoreOAuth m_AssetStoreOAuth;
         private readonly IJsonParser m_JsonParser;
         private readonly IHttpClientFactory m_HttpClientFactory;
         public AssetStoreRestAPI(IUnityConnectProxy unityConnect,
-            IAssetStoreOAuth assetStoreOAuth,
             IJsonParser jsonParser,
             IHttpClientFactory httpClientFactory)
         {
             m_UnityConnect = RegisterDependency(unityConnect);
-            m_AssetStoreOAuth = RegisterDependency(assetStoreOAuth);
             m_JsonParser = RegisterDependency(jsonParser);
             m_HttpClientFactory = RegisterDependency(httpClientFactory);
         }
@@ -155,17 +152,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var fullUrl = host + urlWithoutHost;
 
-            if (m_UnityConnect.isUserInfoReady && !m_UnityConnect.isUserLoggedIn)
-            {
-                var errorMessage = L10n.Tr("You need to be signed in.", null);
-                errorCallback?.Invoke(new UIError(UIErrorCode.UserNotSignedIn, L10n.Tr(errorMessage, null), UIError.Attribute.HiddenFromUI));
-                return;
-            }
-
             if (abortPreviousRequest && !string.IsNullOrEmpty(tag))
                 m_HttpClientFactory.AbortByTag(tag);
 
-            m_AssetStoreOAuth.FetchAccessToken(
+            m_UnityConnect.GetAccessToken(
                 token =>
                 {
                     var maxRetryCount = k_MaxRetries;
@@ -176,7 +166,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         httpRequest.tag = tag ?? httpRequest.tag;
 
                         httpRequest.header["Content-Type"] = "application/json";
-                        httpRequest.header["Authorization"] = "Bearer " + token.accessToken;
+                        httpRequest.header["Authorization"] = "Bearer " + token;
                         httpRequest.doneCallback = request =>
                         {
                             // Ignore if aborted

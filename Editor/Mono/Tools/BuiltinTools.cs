@@ -179,7 +179,7 @@ namespace UnityEditor
 
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Transform Tool", "Transform Tool", "TransformTool"); }
+            get { return L10n.TextContentWithIcon("Transform Tool", "Transform Tool", "TransformTool", null); }
         }
 
         public override bool gridSnapEnabled
@@ -288,7 +288,7 @@ namespace UnityEditor
     {
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Move Tool", "Move Tool", "MoveTool"); }
+            get { return L10n.TextContentWithIcon("Move Tool", "Move Tool", "MoveTool", null); }
         }
 
         public override bool gridSnapEnabled
@@ -368,7 +368,7 @@ namespace UnityEditor
     {
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Rotate Tool", "Rotate Tool", "RotateTool"); }
+            get { return L10n.TextContentWithIcon("Rotate Tool", "Rotate Tool", "RotateTool", null); }
         }
         
         protected override bool ShouldToolGUIBeDisabled(out GUIContent disabledLabel)
@@ -439,7 +439,7 @@ namespace UnityEditor
     {
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Scale Tool", "Scale Tool", "ScaleTool"); }
+            get { return L10n.TextContentWithIcon("Scale Tool", "Scale Tool", "ScaleTool", null); }
         }
 
         [NoAutoStaticsCleanup] // Transient per-drag scale accumulator, reset to one on MouseDown; safe to persist.
@@ -492,9 +492,12 @@ namespace UnityEditor
 
         const float kMinVisibleSize = 0.2f;
 
+        const EventModifiers kIgnoredDragModifiers =
+            EventModifiers.CapsLock | EventModifiers.Numeric | EventModifiers.FunctionKey;
+
         public override GUIContent toolbarIcon
         {
-            get { return EditorGUIUtility.TrTextContentWithIcon("Rect Tool", "Rect Tool", "RectTool"); }
+            get { return L10n.TextContentWithIcon("Rect Tool", "Rect Tool", "RectTool", null); }
         }
 
         public static Vector2 GetLocalRectPoint(Rect rect, int index)
@@ -887,7 +890,8 @@ namespace UnityEditor
                     {
                         acceptClick =
                             evt.button == 0 &&
-                            evt.modifiers == 0 &&
+                            // Test against the flipped mask of modifiers to ignore.
+                            (evt.modifiers & ~kIgnoredDragModifiers) == 0 &&
                             RectHandles.RaycastGUIPointToWorldHit(evt.mousePosition, guiPlane, out s_StartMouseWorldPos) &&
                             (
                                 SceneViewDistanceToRectangle(corners, evt.mousePosition) == 0f ||

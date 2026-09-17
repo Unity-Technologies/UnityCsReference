@@ -61,6 +61,14 @@ internal class Clipboard
         m_CutElements.Clear();
     }
 
+    // Clears both the internal cut-element list and the system copy buffer written by CutElementsCommand,
+    // so subsequent pastes cannot re-paste the same content via TryPasteCopied.
+    public void Clear()
+    {
+        m_CutElements.Clear();
+        SystemCopyBuffer = null;
+    }
+
     public void Dispose()
     {
         m_CutElements.Clear();

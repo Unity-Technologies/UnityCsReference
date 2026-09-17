@@ -13,6 +13,10 @@ namespace UnityEditor.PackageManager
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<PackageRegistrationEventArgs> registeringPackages;
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle - ModeService re-subscribes from its [OnCodeLoaded]
+        // initializer, and the windows and UI elements re-subscribe on enable/attach - so the cleared
+        // invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action<PackageRegistrationEventArgs> registeredPackages;
 
         [RequiredByNativeCode]

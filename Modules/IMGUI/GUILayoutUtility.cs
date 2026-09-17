@@ -31,6 +31,14 @@ namespace UnityEngine
                 layoutGroups = cache.layoutGroups;
                 windows = cache.windows;
             }
+
+            public LayoutCacheState(long id, GUILayoutGroup topLevel, GenericStack layoutGroups, GUILayoutGroup windows)
+            {
+                this.id = id;
+                this.topLevel = topLevel;
+                this.layoutGroups = layoutGroups;
+                this.windows = windows;
+            }
         }
 
         [System.Diagnostics.DebuggerDisplay("id={id}, groups={layoutGroups.Count}")]

@@ -51,10 +51,20 @@ namespace UnityEditor.Profiling
         private static int m_FrameCount = 0;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle - the Profiler window subscribes from OnEnable and
+        // the view controllers and settings services from their constructors - so the cleared invocation
+        // list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static Action settingsChanged;
         [AutoStaticsCleanupOnCodeReload]
+        // The capture data service subscribes from its constructor and unsubscribes on dispose, so the
+        // subscription returns when the Profiler window recreates the service.
+        [IgnoreForUAL0015("Event re-subscribed by CaptureDataService when the Profiler window recreates it")]
         public static event Action CaptureStoragePathChanged;
         [AutoStaticsCleanupOnCodeReload]
+        // The persistent settings service subscribes from its constructor and unsubscribes on dispose, so the
+        // subscription returns when the Profiler window recreates it.
+        [IgnoreForUAL0015("Event re-subscribed by the Profiler settings service constructor")]
         public static event Action targetFramesPerSecondChanged;
 
         public static string ProfilerCaptureStoragePath

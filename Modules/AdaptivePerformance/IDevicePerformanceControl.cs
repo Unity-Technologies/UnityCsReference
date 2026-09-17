@@ -89,9 +89,8 @@ namespace UnityEngine.AdaptivePerformance
         /// <see cref="Provider.AdaptivePerformanceSubsystem.Capabilities"/>), the set is a no-op and the
         /// stored value does not change. The getter reflects the last value that was successfully
         /// applied to the subsystem, not the most recent request — so a failed set leaves the
-        /// getter reporting the previous state.
+        /// getter reporting the previous state. The default value is false.
         /// </summary>
-        /// <value>True when energy-efficiency mode is currently active. The default value is false.</value>
         bool EnergyEfficiencyMode { get; set; }
     }
 

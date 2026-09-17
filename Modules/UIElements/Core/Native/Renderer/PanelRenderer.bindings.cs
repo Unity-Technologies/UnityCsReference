@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -31,6 +30,8 @@ namespace UnityEngine.UIElements
         #region Fields
 
         [AutoStaticsCleanupOnCodeReload]
+        // Reinstalled on every code load by LiveReloadTrackerCreator.Initialize().
+        [IgnoreForUAL0015("Factory slot reinstalled on every code load by LiveReloadTrackerCreator.Initialize()")]
         internal static Func<IPanelComponent, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
         ILiveReloadAssetTracker<VisualTreeAsset> m_LiveReloadVisualTreeAssetTracker;
 
@@ -68,9 +69,17 @@ namespace UnityEngine.UIElements
                     nativePanelSettings = value;
                     isAssetDirty = true;
 
+                    // Only rebuild the visual tree if the UXML content actually changed: a
+                    // PanelSettings-only change should keep the existing VisualElement instances
+                    // and just reattach them to the new panel below, mirroring UIDocument.panelSettings.
+                    bool visualTreeAssetChanged =
+                        visualTreeAsset != previousVisualTreeAsset ||
+                        (visualTreeAsset != null && visualTreeAsset.contentHash != m_PreviousVisualTreeAssetContentHash);
+
                     // Setup the root visual element, but don't add it to the tree yet.
                     // It will be added when RefreshAssets is called.
-                    InitRootVisualElement(true);
+                    InitRootVisualElement(visualTreeAssetChanged);
+                    requiresReinsertion = true;
                 }
             }
         }
@@ -250,6 +259,11 @@ namespace UnityEngine.UIElements
 
         extern private int nativePosition { get; set; }
 
+        extern private bool nativeTrackScreenSpacePosition { get; set; }
+
+        extern private float nativeScreenSpaceOffsetX { get; set; }
+        extern private float nativeScreenSpaceOffsetY { get; set; }
+
         private bool m_RequiresReinsertion = false;
         internal bool requiresReinsertion
         {
@@ -386,6 +400,53 @@ namespace UnityEngine.UIElements
             {
                 nativePosition = (int)value;
                 SetupPosition();
+            }
+        }
+
+        /// <summary>
+        /// Whether the root visual element follows the position of the GameObject in screen space.
+        /// The default value is @@false@@.
+        /// </summary>
+        /// <remarks>
+        /// Only takes effect in screen-space render modes. Ignored in <see cref="PanelRenderMode.WorldSpace"/>.
+        ///
+        /// While enabled, the root visual element is sized by its content and the renderer controls its
+        /// @@translate@@ and @@display@@ inline styles: every frame, the root is translated so its origin matches
+        /// the position of the GameObject on screen, as seen from the main camera. When that position is not on
+        /// screen, the root is hidden. When there is no main camera, the last tracked styles are kept.
+        ///
+        /// Use this, for example, for a screen-space health bar that follows a unit moving in the 3D world.
+        /// Use <see cref="screenSpaceOffset"/> to offset the UI from the tracked position.
+        /// </remarks>
+        public bool trackScreenSpacePosition
+        {
+            get => nativeTrackScreenSpacePosition;
+            set
+            {
+                if (nativeTrackScreenSpacePosition == value)
+                    return;
+
+                nativeTrackScreenSpacePosition = value;
+                SetupRootClassList();
+
+                if (!value)
+                    ClearTrackedScreenSpacePosition();
+                else if (rootVisualElement != null && !isWorldSpace)
+                    UpdateTrackedScreenSpacePosition();
+            }
+        }
+
+        /// <summary>
+        /// The offset, in panel coordinates, applied to the position tracked by <see cref="trackScreenSpacePosition"/>.
+        /// The default value is (0, 0).
+        /// </summary>
+        public Vector2 screenSpaceOffset
+        {
+            get => new Vector2(nativeScreenSpaceOffsetX, nativeScreenSpaceOffsetY);
+            set
+            {
+                nativeScreenSpaceOffsetX = value.x;
+                nativeScreenSpaceOffsetY = value.y;
             }
         }
 
@@ -786,7 +847,7 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement == null || parentUI == null)
                 return; // The position property is only relevant for nested PanelRenderers.
 
-            if (PanelComponentUtils.IsTransformControlledByGameObject(this))
+            if ((!isWorldSpace && trackScreenSpacePosition) || PanelComponentUtils.IsTransformControlledByGameObject(this))
                 m_RootVisualElement.style.position = Position.Absolute;
             else
                 m_RootVisualElement.style.position = position;
@@ -843,13 +904,27 @@ namespace UnityEngine.UIElements
             OnPanelRendererCheckConsistency();
         }
 
+        bool m_RootLayoutIsWorldSpace;
+
         void IPanelComponent.PerformUpdate()
         {
             if (rootVisualElement == null)
                 return;
 
-            if (isWorldSpace)
+            bool worldSpace = isWorldSpace;
+
+            // renderMode can change at runtime without triggering a refresh of the root layout styles.
+            if (m_RootLayoutIsWorldSpace != worldSpace)
             {
+                m_RootLayoutIsWorldSpace = worldSpace;
+                SetupRootClassList();
+            }
+
+            if (worldSpace)
+            {
+                if (m_RootHasTrackedPosition)
+                    ClearTrackedScreenSpacePosition();
+
                 // UUM-119563: while hidden, PivotOffset()'s 3D bounds collapse to zero; recomputing would cache a
                 // stale zero transform that snaps the panel in one frame after it reappears. Skip until visible.
                 if (rootVisualElement.areAncestorsAndSelfDisplayed)
@@ -876,6 +951,8 @@ namespace UnityEngine.UIElements
             {
                 if (m_RootHasWorldTransform)
                     ClearTransform();
+
+                UpdateTrackedScreenSpacePosition();
             }
 
             UpdateIsWorldSpaceRootFlag();
@@ -904,6 +981,61 @@ namespace UnityEngine.UIElements
             rootVisualElement.style.rotate = StyleKeyword.Null;
             rootVisualElement.style.scale = StyleKeyword.Null;
             m_RootHasWorldTransform = false;
+        }
+
+        bool m_RootHasTrackedPosition;
+
+        void UpdateTrackedScreenSpacePosition()
+        {
+            if (!trackScreenSpacePosition)
+            {
+                if (m_RootHasTrackedPosition)
+                    ClearTrackedScreenSpacePosition();
+                return;
+            }
+
+            var panel = rootVisualElement.panel;
+            var camera = Camera.main;
+            if (panel == null || camera == null)
+                return; // Keep the last tracked styles rather than flicker during camera swaps.
+
+            Vector3 screenPoint = camera.WorldToScreenPoint(transform.position);
+            Vector2 screenPosition = new Vector2(screenPoint.x, screenPoint.y);
+
+            if (screenPoint.z > 0 && camera.pixelRect.Contains(screenPosition))
+            {
+                screenPosition = UIElementsRuntimeUtility.FlipY(screenPosition, UIElementsRuntimeUtility.GetScreenHeightForDisplay(camera.targetDisplay));
+                Vector2 panelPosition = RuntimePanelUtils.ScreenToPanel(panel, screenPosition);
+
+                // The offset is in panel coordinates: apply it before converting to parent-local coordinates.
+                panelPosition.x += nativeScreenSpaceOffsetX;
+                panelPosition.y += nativeScreenSpaceOffsetY;
+
+                // Nested roots translate in their parent's coordinates.
+                var parent = rootVisualElement.hierarchy.parent;
+                if (parent != null)
+                    panelPosition = parent.WorldToLocal(panelPosition);
+
+                rootVisualElement.style.translate = new Translate(panelPosition.x, panelPosition.y);
+                rootVisualElement.style.display = StyleKeyword.Null;
+            }
+            else
+            {
+                rootVisualElement.style.display = DisplayStyle.None;
+            }
+
+            m_RootHasTrackedPosition = true;
+        }
+
+        void ClearTrackedScreenSpacePosition()
+        {
+            if (rootVisualElement != null)
+            {
+                rootVisualElement.style.translate = StyleKeyword.Null;
+                rootVisualElement.style.display = StyleKeyword.Null;
+            }
+
+            m_RootHasTrackedPosition = false;
         }
 
         internal float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
@@ -1008,7 +1140,7 @@ namespace UnityEngine.UIElements
             if (rootVisualElement.isWorldSpaceRootPanelComponent != isWorldSpaceRootUIDocument)
             {
                 rootVisualElement.isWorldSpaceRootPanelComponent = isWorldSpaceRootUIDocument;
-                rootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
+                rootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command and to rebuild the subtree's render data
             }
         }
 
@@ -1017,14 +1149,19 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement == null)
                 return;
 
+            // A tracked root is positioned by translation and sized by its content.
+            bool trackedPosition = !isWorldSpace && trackScreenSpacePosition;
+            m_RootVisualElement.style.left = trackedPosition ? 0 : StyleKeyword.Null;
+            m_RootVisualElement.style.top = trackedPosition ? 0 : StyleKeyword.Null;
+
             if (!isWorldSpace)
             {
                 // If we're not a child of any other PanelRenderer stretch to take the full screen.
-                m_RootVisualElement.EnableInClassList(rootStyleClassNameUnique, parentUI == null);
+                m_RootVisualElement.EnableInClassList(rootStyleClassNameUnique, parentUI == null && !trackedPosition);
 
                 // Reset inline styles thay may have been set if the PanelSetting was
                 // previously set to world-space rendering.
-                m_RootVisualElement.style.position = StyleKeyword.Null;
+                m_RootVisualElement.style.position = trackedPosition ? Position.Absolute : StyleKeyword.Null;
                 m_RootVisualElement.style.width = StyleKeyword.Null;
                 m_RootVisualElement.style.height = StyleKeyword.Null;
             }
@@ -1103,7 +1240,7 @@ namespace UnityEngine.UIElements
     internal class PanelRendererRootElement : TemplateContainer, IPanelComponentRootElement
     {
         internal PanelRenderer panelRenderer { get; set; }
-        IPanelComponent IPanelComponentRootElement.panelComponent => panelRenderer;
+        IPanelComponent IPanelComponentRootElement.panelComponent => panelRenderer.AliveOrNull();
 
         public PanelRendererRootElement(PanelRenderer panelRenderer, VisualTreeAsset sourceAsset)
             : base(sourceAsset?.name, sourceAsset)
@@ -1122,4 +1259,3 @@ namespace UnityEngine.UIElements
         public IntPtr stencilStatePtr;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

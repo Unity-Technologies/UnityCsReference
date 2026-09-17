@@ -20,16 +20,16 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent multiplier = EditorGUIUtility.TrTextContent("Multiplier", "Used to scale the force applied to this Particle System. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.");
-            public GUIContent influenceFilter = EditorGUIUtility.TrTextContent("Influence Filter", "Use either a LayerMask or a List, to decide which Force Fields affect this Particle System.");
-            public GUIContent influenceMask = EditorGUIUtility.TrTextContent("Influence Mask", "Select a global mask of which GameObjects can affect this Particle System.");
-            public GUIContent createForceField = EditorGUIUtility.TrTextContent("", "Create a GameObject containing a Particle System Force Field and assign it to the list.");
+            public GUIContent multiplier = L10n.TextContent("Multiplier", "Used to scale the force applied to this Particle System. If you use a curve to set this value, the Particle System applies the curve over the lifetime of each particle.", null, null);
+            public GUIContent influenceFilter = L10n.TextContent("Influence Filter", "Use either a LayerMask or a List, to decide which Force Fields affect this Particle System.", null, null);
+            public GUIContent influenceMask = L10n.TextContent("Influence Mask", "Select a global mask of which GameObjects can affect this Particle System.", null, null);
+            public GUIContent createForceField = L10n.TextContent("", "Create a GameObject containing a Particle System Force Field and assign it to the list.", null, null);
 
             public GUIContent[] influenceFilters = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Layer Mask"),
-                EditorGUIUtility.TrTextContent("List"),
-                EditorGUIUtility.TrTextContent("Layer Mask and List")
+                L10n.TextContent("Layer Mask", null, null, null),
+                L10n.TextContent("List", null, null, null),
+                L10n.TextContent("Layer Mask and List", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache

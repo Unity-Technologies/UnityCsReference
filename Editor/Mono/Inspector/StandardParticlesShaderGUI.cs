@@ -40,54 +40,54 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent albedoText = EditorGUIUtility.TrTextContent("Albedo", "Albedo (RGB) and Transparency (A).");
-            public static readonly GUIContent alphaCutoffText = EditorGUIUtility.TrTextContent("Alpha Cutoff", "Threshold for alpha cutoff.");
-            public static readonly GUIContent metallicMapText = EditorGUIUtility.TrTextContent("Metallic", "Metallic (R) and Smoothness (A).");
-            public static readonly GUIContent smoothnessText = EditorGUIUtility.TrTextContent("Smoothness", "Smoothness value.");
-            public static readonly GUIContent smoothnessScaleText = EditorGUIUtility.TrTextContent("Smoothness", "Smoothness scale factor.");
-            public static readonly GUIContent normalMapText = EditorGUIUtility.TrTextContent("Normal Map", "Normal Map.");
-            public static readonly GUIContent emissionText = EditorGUIUtility.TrTextContent("Color", "Emission (RGB).");
+            public static readonly GUIContent albedoText = L10n.TextContent("Albedo", "Albedo (RGB) and Transparency (A).", null, null);
+            public static readonly GUIContent alphaCutoffText = L10n.TextContent("Alpha Cutoff", "Threshold for alpha cutoff.", null, null);
+            public static readonly GUIContent metallicMapText = L10n.TextContent("Metallic", "Metallic (R) and Smoothness (A).", null, null);
+            public static readonly GUIContent smoothnessText = L10n.TextContent("Smoothness", "Smoothness value.", null, null);
+            public static readonly GUIContent smoothnessScaleText = L10n.TextContent("Smoothness", "Smoothness scale factor.", null, null);
+            public static readonly GUIContent normalMapText = L10n.TextContent("Normal Map", "Normal Map.", null, null);
+            public static readonly GUIContent emissionText = L10n.TextContent("Color", "Emission (RGB).", null, null);
 
-            public static readonly GUIContent renderingMode = EditorGUIUtility.TrTextContent("Rendering Mode", "Determines the transparency and blending method for drawing the object to the screen.");
+            public static readonly GUIContent renderingMode = L10n.TextContent("Rendering Mode", "Determines the transparency and blending method for drawing the object to the screen.", null, null);
             public static readonly GUIContent[] blendNames = Array.ConvertAll(Enum.GetNames(typeof(BlendMode)), item => new GUIContent(item));
 
-            public static readonly GUIContent colorMode = EditorGUIUtility.TrTextContent("Color Mode", "Determines the blending mode between the particle color and the texture albedo.");
+            public static readonly GUIContent colorMode = L10n.TextContent("Color Mode", "Determines the blending mode between the particle color and the texture albedo.", null, null);
             public static readonly GUIContent[] colorNames = Array.ConvertAll(Enum.GetNames(typeof(ColorMode)), item => new GUIContent(item));
 
-            public static readonly GUIContent flipbookBlending = EditorGUIUtility.TrTextContent("Flip-Book Frame Blending", "Enables blending between the frames of animated texture sheets.");
-            public static readonly GUIContent twoSidedEnabled = EditorGUIUtility.TrTextContent("Two Sided", "Render both front and back faces of the particle geometry.");
+            public static readonly GUIContent flipbookBlending = L10n.TextContent("Flip-Book Frame Blending", "Enables blending between the frames of animated texture sheets.", null, null);
+            public static readonly GUIContent twoSidedEnabled = L10n.TextContent("Two Sided", "Render both front and back faces of the particle geometry.", null, null);
 
-            public static readonly GUIContent distortionEnabled = EditorGUIUtility.TrTextContent("Distortion", "Use a grab pass and normal map to simulate refraction.");
-            public static readonly GUIContent distortionStrengthText = EditorGUIUtility.TrTextContent("Strength", "Distortion Strength.");
-            public static readonly GUIContent distortionBlendText = EditorGUIUtility.TrTextContent("Blend", "Weighting between albedo and grab pass.");
+            public static readonly GUIContent distortionEnabled = L10n.TextContent("Distortion", "Use a grab pass and normal map to simulate refraction.", null, null);
+            public static readonly GUIContent distortionStrengthText = L10n.TextContent("Strength", "Distortion Strength.", null, null);
+            public static readonly GUIContent distortionBlendText = L10n.TextContent("Blend", "Weighting between albedo and grab pass.", null, null);
 
-            public static readonly GUIContent softParticlesEnabled = EditorGUIUtility.TrTextContent("Soft Particles", "Fade out particle geometry when it gets close to the surface of objects written into the depth buffer.");
-            public static readonly GUIContent softParticlesNearFadeDistanceText = EditorGUIUtility.TrTextContent("Near fade", "Soft Particles near fade distance.");
-            public static readonly GUIContent softParticlesFarFadeDistanceText = EditorGUIUtility.TrTextContent("Far fade", "Soft Particles far fade distance.");
+            public static readonly GUIContent softParticlesEnabled = L10n.TextContent("Soft Particles", "Fade out particle geometry when it gets close to the surface of objects written into the depth buffer.", null, null);
+            public static readonly GUIContent softParticlesNearFadeDistanceText = L10n.TextContent("Near fade", "Soft Particles near fade distance.", null, null);
+            public static readonly GUIContent softParticlesFarFadeDistanceText = L10n.TextContent("Far fade", "Soft Particles far fade distance.", null, null);
 
-            public static readonly GUIContent cameraFadingEnabled = EditorGUIUtility.TrTextContent("Camera Fading", "Fade out particle geometry when it gets close to the camera.");
-            public static readonly GUIContent cameraNearFadeDistanceText = EditorGUIUtility.TrTextContent("Near fade", "Camera near fade distance.");
-            public static readonly GUIContent cameraFarFadeDistanceText = EditorGUIUtility.TrTextContent("Far fade", "Camera far fade distance.");
+            public static readonly GUIContent cameraFadingEnabled = L10n.TextContent("Camera Fading", "Fade out particle geometry when it gets close to the camera.", null, null);
+            public static readonly GUIContent cameraNearFadeDistanceText = L10n.TextContent("Near fade", "Camera near fade distance.", null, null);
+            public static readonly GUIContent cameraFarFadeDistanceText = L10n.TextContent("Far fade", "Camera far fade distance.", null, null);
 
-            public static readonly GUIContent emissionEnabled = EditorGUIUtility.TrTextContent("Emission");
+            public static readonly GUIContent emissionEnabled = L10n.TextContent("Emission", null, null, null);
 
-            public static readonly GUIContent blendingOptionsText = EditorGUIUtility.TrTextContent("Blending Options");
-            public static readonly GUIContent mainOptionsText = EditorGUIUtility.TrTextContent("Main Options");
-            public static readonly GUIContent mapsOptionsText = EditorGUIUtility.TrTextContent("Maps");
-            public static readonly GUIContent advancedText = EditorGUIUtility.TrTextContent("Advanced Options");
-            public static readonly GUIContent requiredVertexStreamsText = EditorGUIUtility.TrTextContent("Required Vertex Streams");
+            public static readonly GUIContent blendingOptionsText = L10n.TextContent("Blending Options", null, null, null);
+            public static readonly GUIContent mainOptionsText = L10n.TextContent("Main Options", null, null, null);
+            public static readonly GUIContent mapsOptionsText = L10n.TextContent("Maps", null, null, null);
+            public static readonly GUIContent advancedText = L10n.TextContent("Advanced Options", null, null, null);
+            public static readonly GUIContent requiredVertexStreamsText = L10n.TextContent("Required Vertex Streams", null, null, null);
 
-            public static readonly GUIContent streamPositionText = EditorGUIUtility.TrTextContent("Position (POSITION.xyz)");
-            public static readonly GUIContent streamNormalText = EditorGUIUtility.TrTextContent("Normal (NORMAL.xyz)");
-            public static readonly GUIContent streamColorText = EditorGUIUtility.TrTextContent("Color (COLOR.xyzw)");
-            public static readonly GUIContent streamColorInstancedText = EditorGUIUtility.TrTextContent("Color (INSTANCED0.xyzw)");
-            public static readonly GUIContent streamUVText = EditorGUIUtility.TrTextContent("UV (TEXCOORD0.xy)");
-            public static readonly GUIContent streamUV2Text = EditorGUIUtility.TrTextContent("UV2 (TEXCOORD0.zw)");
-            public static readonly GUIContent streamAnimBlendText = EditorGUIUtility.TrTextContent("AnimBlend (TEXCOORD1.x)");
-            public static readonly GUIContent streamAnimFrameText = EditorGUIUtility.TrTextContent("AnimFrame (INSTANCED1.x)");
-            public static readonly GUIContent streamTangentText = EditorGUIUtility.TrTextContent("Tangent (TANGENT.xyzw)");
+            public static readonly GUIContent streamPositionText = L10n.TextContent("Position (POSITION.xyz)", null, null, null);
+            public static readonly GUIContent streamNormalText = L10n.TextContent("Normal (NORMAL.xyz)", null, null, null);
+            public static readonly GUIContent streamColorText = L10n.TextContent("Color (COLOR.xyzw)", null, null, null);
+            public static readonly GUIContent streamColorInstancedText = L10n.TextContent("Color (INSTANCED0.xyzw)", null, null, null);
+            public static readonly GUIContent streamUVText = L10n.TextContent("UV (TEXCOORD0.xy)", null, null, null);
+            public static readonly GUIContent streamUV2Text = L10n.TextContent("UV2 (TEXCOORD0.zw)", null, null, null);
+            public static readonly GUIContent streamAnimBlendText = L10n.TextContent("AnimBlend (TEXCOORD1.x)", null, null, null);
+            public static readonly GUIContent streamAnimFrameText = L10n.TextContent("AnimFrame (INSTANCED1.x)", null, null, null);
+            public static readonly GUIContent streamTangentText = L10n.TextContent("Tangent (TANGENT.xyzw)", null, null, null);
 
-            public static readonly GUIContent streamApplyToAllSystemsText = EditorGUIUtility.TrTextContent("Apply to Systems", "Apply the vertex stream layout to all Particle Systems using this material");
+            public static readonly GUIContent streamApplyToAllSystemsText = L10n.TextContent("Apply to Systems", "Apply the vertex stream layout to all Particle Systems using this material", null, null);
 
             public static readonly string undoApplyCustomVertexStreams = L10n.Tr("Apply custom vertex streams from material", null);
         }

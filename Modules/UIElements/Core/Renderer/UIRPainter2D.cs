@@ -877,7 +877,7 @@ namespace UnityEngine.UIElements
             UIPainter2D.PopClip(m_Handle);
         }
 
-        struct Painter2DJobData
+        internal struct Painter2DJobData
         {
             public UnsafeMeshGenerationNode node;
             public int snapshotIndex;
@@ -886,7 +886,7 @@ namespace UnityEngine.UIElements
             public int userData;
         }
 
-        struct Painter2DJob : IJobParallelFor
+        internal struct Painter2DJob : IJobParallelFor
         {
             [NativeDisableUnsafePtrRestriction] public IntPtr painterHandle;
             [ReadOnly] public TempMeshAllocator allocator;

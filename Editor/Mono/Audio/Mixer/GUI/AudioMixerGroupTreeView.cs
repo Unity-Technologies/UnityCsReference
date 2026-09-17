@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AudioAuthoring not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -163,8 +162,8 @@ namespace UnityEditor
     internal class AudioGroupTreeViewGUI : TreeViewGUI<EntityId>
     {
         readonly float column1Width = 20f;
-        readonly GUIContent k_VisibleON = EditorGUIUtility.TrIconContent("animationvisibilitytoggleon");
-        readonly GUIContent k_VisibleOFF = EditorGUIUtility.TrIconContent("animationvisibilitytoggleoff");
+        readonly GUIContent k_VisibleON = L10n.IconContent("animationvisibilitytoggleon", null, null);
+        readonly GUIContent k_VisibleOFF = L10n.IconContent("animationvisibilitytoggleoff", null, null);
         public Action<AudioMixerTreeViewNode, bool> NodeWasToggled;
         public AudioMixerController m_Controller = null;
 
@@ -300,8 +299,8 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent header = EditorGUIUtility.TrTextContent("Groups", "An Audio Mixer Group is used by e.g Audio Sources to modify the audio output before it reaches the Audio Listener. An Audio Mixer Group will route its output to another Audio Mixer Group if it is made a child of that group. The Master Group will route its output to the Audio Listener if it doesn't route its output into another Mixer.");
-            public GUIContent addButton = EditorGUIUtility.TrIconContent("CreateAddNew", "Add child group");
+            public GUIContent header = L10n.TextContent("Groups", "An Audio Mixer Group is used by e.g Audio Sources to modify the audio output before it reaches the Audio Listener. An Audio Mixer Group will route its output to another Audio Mixer Group if it is made a child of that group. The Master Group will route its output to the Audio Listener if it doesn't route its output into another Mixer.", null, null);
+            public GUIContent addButton = L10n.IconContent("CreateAddNew", "Add child group", null);
             public Texture2D audioMixerGroupIcon = EditorGUIUtility.FindTexture(typeof(UnityEngine.Audio.AudioMixerGroup));
         }
 
@@ -476,12 +475,12 @@ namespace UnityEditor
 
                     if (!EditorApplication.isPlaying)
                     {
-                        pm.AddItem(EditorGUIUtility.TrTextContent("Add child group"), false, AddChildGroupPopupCallback, new AudioMixerGroupPopupContext(m_Controller, mixerNode.group));
+                        pm.AddItem(L10n.TextContent("Add child group", null, null, null), false, AddChildGroupPopupCallback, new AudioMixerGroupPopupContext(m_Controller, mixerNode.group));
                         if (mixerNode.group != m_Controller.masterGroup)
                         {
-                            pm.AddItem(EditorGUIUtility.TrTextContent("Add sibling group"), false, AddSiblingGroupPopupCallback, new AudioMixerGroupPopupContext(m_Controller, mixerNode.group));
+                            pm.AddItem(L10n.TextContent("Add sibling group", null, null, null), false, AddSiblingGroupPopupCallback, new AudioMixerGroupPopupContext(m_Controller, mixerNode.group));
                             pm.AddSeparator("");
-                            pm.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameGroupCallback, node);
+                            pm.AddItem(L10n.TextContent("Rename", null, null, null), false, RenameGroupCallback, node);
 
                             // Mastergroup cannot be deleted nor duplicated
                             var selection = GetGroupSelectionWithoutMasterGroup().ToArray();
@@ -491,7 +490,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Modifying group topology in play mode is not allowed"));
+                        pm.AddDisabledItem(L10n.TextContent("Modifying group topology in play mode is not allowed", null, null, null));
                     }
 
                     pm.ShowAsContext();
@@ -705,4 +704,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

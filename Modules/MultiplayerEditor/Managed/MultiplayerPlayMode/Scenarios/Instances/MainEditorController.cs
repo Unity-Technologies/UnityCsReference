@@ -70,7 +70,7 @@ class MainEditorController : EditorController<MainEditorController.InstanceSetti
         graphBuilder.AddNode<MainEditorRunNode>(ExecutionStage.Run);
     }
 
-    protected internal override VisualElement CreateControllerUI(Instance instance)
+    protected internal override VisualElement CreateControllerUI(ControllerRuntime instance)
     {
         return new EditorInstanceStatusElement(Settings.RoleMask, Settings.PlayerTag);
     }

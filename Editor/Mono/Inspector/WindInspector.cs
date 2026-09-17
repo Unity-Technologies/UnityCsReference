@@ -15,12 +15,12 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static readonly GUIContent Mode               = EditorGUIUtility.TrTextContent("Mode", "The wind blows towards a direction or outwards within a sphere");
-            public static readonly GUIContent Radius             = EditorGUIUtility.TrTextContent("Radius", "The radius of the spherical area");
-            public static readonly GUIContent WindMain           = EditorGUIUtility.TrTextContent("Main", "Overall strength of the wind");
-            public static readonly GUIContent WindTurbulence     = EditorGUIUtility.TrTextContent("Turbulence", "Randomness in strength");
-            public static readonly GUIContent WindPulseMagnitude = EditorGUIUtility.TrTextContent("Pulse Magnitude", "Strength of the wind pulses");
-            public static readonly GUIContent WindPulseFrequency = EditorGUIUtility.TrTextContent("Pulse Frequency", "Frequency of the wind pulses");
+            public static readonly GUIContent Mode               = L10n.TextContent("Mode", "The wind blows towards a direction or outwards within a sphere", null, null);
+            public static readonly GUIContent Radius             = L10n.TextContent("Radius", "The radius of the spherical area", null, null);
+            public static readonly GUIContent WindMain           = L10n.TextContent("Main", "Overall strength of the wind", null, null);
+            public static readonly GUIContent WindTurbulence     = L10n.TextContent("Turbulence", "Randomness in strength", null, null);
+            public static readonly GUIContent WindPulseMagnitude = L10n.TextContent("Pulse Magnitude", "Strength of the wind pulses", null, null);
+            public static readonly GUIContent WindPulseFrequency = L10n.TextContent("Pulse Frequency", "Frequency of the wind pulses", null, null);
         }
 
         private SerializedProperty m_Mode;

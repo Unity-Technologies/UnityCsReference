@@ -146,6 +146,15 @@ namespace UnityEngine
             set;
         }
 
+        // Should the Back button hand control to the OS? Android and UWP only, no-op elsewhere.
+        extern public static bool backButtonLeavesApp
+        {
+            [FreeFunction("GetBackButtonLeavesApp")]
+            get;
+            [FreeFunction("SetBackButtonLeavesApp")]
+            set;
+        }
+
         /// Is Unity activated with the Pro License?
         [FreeFunction("GetBuildSettings().GetHasPROVersion")]
         extern public static bool HasProLicense();

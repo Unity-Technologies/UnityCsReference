@@ -50,54 +50,54 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent lifetimeLoss = EditorGUIUtility.TrTextContent("Lifetime Loss", "When particle collides, it will lose this fraction of its Start Lifetime");
-            public GUIContent planes = EditorGUIUtility.TrTextContent("Planes", "Planes are defined by assigning a reference to a transform. This transform can be any transform in the scene and can be animated. Multiple planes can be used. Note: the Y-axis is used as the plane normal.");
-            public GUIContent createPlane = EditorGUIUtility.TrTextContent("", "Create an empty GameObject and assign it as a plane.");
-            public GUIContent minKillSpeed = EditorGUIUtility.TrTextContent("Min Kill Speed", "When particles collide and their speed is lower than this value, they are killed.");
-            public GUIContent maxKillSpeed = EditorGUIUtility.TrTextContent("Max Kill Speed", "When particles collide and their speed is higher than this value, they are killed.");
-            public GUIContent dampen = EditorGUIUtility.TrTextContent("Dampen", "When particle collides, it will lose this fraction of its speed. Unless this is set to 0.0, particle will become slower after collision.");
-            public GUIContent bounce = EditorGUIUtility.TrTextContent("Bounce", "When particle collides, the bounce is scaled with this value. The bounce is the upwards motion in the plane normal direction.");
-            public GUIContent radiusScale = EditorGUIUtility.TrTextContent("Radius Scale", "Scale particle bounds by this amount to get more precise collisions.");
-            public GUIContent visualization = EditorGUIUtility.TrTextContent("Visualization", "Only used for visualizing the planes: Wireframe or Solid.");
-            public GUIContent scalePlane = EditorGUIUtility.TrTextContent("Scale Plane", "Resizes the visualization planes.");
-            public GUIContent visualizeBounds = EditorGUIUtility.TrTextContent("Visualize Bounds", "Render the collision bounds of the particles.");
-            public GUIContent collidesWith = EditorGUIUtility.TrTextContent("Collides With", "Collides the particles with colliders included in the layermask.");
-            public GUIContent collidesWithDynamic = EditorGUIUtility.TrTextContent("Enable Dynamic Colliders", "Should particles collide with dynamic objects?");
-            public GUIContent maxCollisionShapes = EditorGUIUtility.TrTextContent("Max Collision Shapes", "How many collision shapes can be considered for particle collisions. Excess shapes will be ignored. Terrains take priority.");
-            public GUIContent quality = EditorGUIUtility.TrTextContent("Collision Quality", "Quality of world collisions. Medium and low quality are approximate and may leak particles.");
-            public GUIContent voxelSize = EditorGUIUtility.TrTextContent("Voxel Size", "Size of voxels in the collision cache. Smaller values improve accuracy but require higher memory usage and are less efficient.");
-            public GUIContent collisionMessages = EditorGUIUtility.TrTextContent("Send Collision Messages", "Send collision callback messages.");
-            public GUIContent collisionType = EditorGUIUtility.TrTextContent("Type", "Collide with a list of Planes, or the Physics World.");
-            public GUIContent collisionMode = EditorGUIUtility.TrTextContent("Mode", "Use 3D Physics or 2D Physics.");
-            public GUIContent colliderForce = EditorGUIUtility.TrTextContent("Collider Force", "Control the strength of particle forces on colliders.");
-            public GUIContent multiplyColliderForceByCollisionAngle = EditorGUIUtility.TrTextContent("Multiply by Collision Angle", "Should the force be proportional to the angle of the particle collision?  A particle collision directly along the collision normal produces all the specified force whilst collisions away from the collision normal produce less force.");
-            public GUIContent multiplyColliderForceByParticleSpeed = EditorGUIUtility.TrTextContent("Multiply by Particle Speed", "Should the force be proportional to the particle speed?");
-            public GUIContent multiplyColliderForceByParticleSize = EditorGUIUtility.TrTextContent("Multiply by Particle Size", "Should the force be proportional to the particle size?");
-            public GUIContent sceneTools = EditorGUIUtility.TrTextContent("Scene Tools");
+            public GUIContent lifetimeLoss = L10n.TextContent("Lifetime Loss", "When particle collides, it will lose this fraction of its Start Lifetime", null, null);
+            public GUIContent planes = L10n.TextContent("Planes", "Planes are defined by assigning a reference to a transform. This transform can be any transform in the scene and can be animated. Multiple planes can be used. Note: the Y-axis is used as the plane normal.", null, null);
+            public GUIContent createPlane = L10n.TextContent("", "Create an empty GameObject and assign it as a plane.", null, null);
+            public GUIContent minKillSpeed = L10n.TextContent("Min Kill Speed", "When particles collide and their speed is lower than this value, they are killed.", null, null);
+            public GUIContent maxKillSpeed = L10n.TextContent("Max Kill Speed", "When particles collide and their speed is higher than this value, they are killed.", null, null);
+            public GUIContent dampen = L10n.TextContent("Dampen", "When particle collides, it will lose this fraction of its speed. Unless this is set to 0.0, particle will become slower after collision.", null, null);
+            public GUIContent bounce = L10n.TextContent("Bounce", "When particle collides, the bounce is scaled with this value. The bounce is the upwards motion in the plane normal direction.", null, null);
+            public GUIContent radiusScale = L10n.TextContent("Radius Scale", "Scale particle bounds by this amount to get more precise collisions.", null, null);
+            public GUIContent visualization = L10n.TextContent("Visualization", "Only used for visualizing the planes: Wireframe or Solid.", null, null);
+            public GUIContent scalePlane = L10n.TextContent("Scale Plane", "Resizes the visualization planes.", null, null);
+            public GUIContent visualizeBounds = L10n.TextContent("Visualize Bounds", "Render the collision bounds of the particles.", null, null);
+            public GUIContent collidesWith = L10n.TextContent("Collides With", "Collides the particles with colliders included in the layermask.", null, null);
+            public GUIContent collidesWithDynamic = L10n.TextContent("Enable Dynamic Colliders", "Should particles collide with dynamic objects?", null, null);
+            public GUIContent maxCollisionShapes = L10n.TextContent("Max Collision Shapes", "How many collision shapes can be considered for particle collisions. Excess shapes will be ignored. Terrains take priority.", null, null);
+            public GUIContent quality = L10n.TextContent("Collision Quality", "Quality of world collisions. Medium and low quality are approximate and may leak particles.", null, null);
+            public GUIContent voxelSize = L10n.TextContent("Voxel Size", "Size of voxels in the collision cache. Smaller values improve accuracy but require higher memory usage and are less efficient.", null, null);
+            public GUIContent collisionMessages = L10n.TextContent("Send Collision Messages", "Send collision callback messages.", null, null);
+            public GUIContent collisionType = L10n.TextContent("Type", "Collide with a list of Planes, or the Physics World.", null, null);
+            public GUIContent collisionMode = L10n.TextContent("Mode", "Use 3D Physics or 2D Physics.", null, null);
+            public GUIContent colliderForce = L10n.TextContent("Collider Force", "Control the strength of particle forces on colliders.", null, null);
+            public GUIContent multiplyColliderForceByCollisionAngle = L10n.TextContent("Multiply by Collision Angle", "Should the force be proportional to the angle of the particle collision?  A particle collision directly along the collision normal produces all the specified force whilst collisions away from the collision normal produce less force.", null, null);
+            public GUIContent multiplyColliderForceByParticleSpeed = L10n.TextContent("Multiply by Particle Speed", "Should the force be proportional to the particle speed?", null, null);
+            public GUIContent multiplyColliderForceByParticleSize = L10n.TextContent("Multiply by Particle Size", "Should the force be proportional to the particle size?", null, null);
+            public GUIContent sceneTools = L10n.TextContent("Scene Tools", null, null, null);
 
             public GUIContent[] collisionTypes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Planes"),
-                EditorGUIUtility.TrTextContent("World")
+                L10n.TextContent("Planes", null, null, null),
+                L10n.TextContent("World", null, null, null)
             };
 
             public GUIContent[] collisionModes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("3D"),
-                EditorGUIUtility.TrTextContent("2D")
+                L10n.TextContent("3D", null, null, null),
+                L10n.TextContent("2D", null, null, null)
             };
 
             public GUIContent[] qualitySettings = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("High"),
-                EditorGUIUtility.TrTextContent("Medium (Static Colliders)"),
-                EditorGUIUtility.TrTextContent("Low (Static Colliders)")
+                L10n.TextContent("High", null, null, null),
+                L10n.TextContent("Medium (Static Colliders)", null, null, null),
+                L10n.TextContent("Low (Static Colliders)", null, null, null)
             };
 
             public GUIContent[] planeVizTypes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Grid"),
-                EditorGUIUtility.TrTextContent("Solid")
+                L10n.TextContent("Grid", null, null, null),
+                L10n.TextContent("Solid", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache
@@ -112,7 +112,7 @@ namespace UnityEditor
 
             public override GUIContent toolbarIcon
             {
-                get { return EditorGUIUtility.TrIconContent("TransformTool", "Collision module plane editing mode."); }
+                get { return L10n.IconContent("TransformTool", "Collision module plane editing mode.", null); }
             }
 
             public override bool IsAvailable()

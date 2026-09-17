@@ -31,7 +31,7 @@ namespace Unity.Properties.Internal
             s_Initialized = true;
         }
 
-        struct InitializePropertiesJob : IJob
+        internal struct InitializePropertiesJob : IJob
         {
             public void Execute()
             {

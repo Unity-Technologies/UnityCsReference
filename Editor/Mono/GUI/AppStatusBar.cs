@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ProgressWindow not yet converted
 using System;
 using System.Globalization;
 using System.Linq;
@@ -39,8 +38,8 @@ namespace UnityEditor
 
             public static readonly GUIContent[] statusWheel;
             public static readonly GUIContent assemblyLock = EditorGUIUtility.IconContent("AssemblyLock", "|Assemblies are currently locked. Compilation will resume once they are unlocked");
-            public static readonly GUIContent progressIcon = EditorGUIUtility.TrIconContent("Progress", "Show progress details");
-            public static readonly GUIContent progressHideIcon = EditorGUIUtility.TrIconContent("Progress", "Hide progress details");
+            public static readonly GUIContent progressIcon = L10n.IconContent("Progress", "Show progress details", null);
+            public static readonly GUIContent progressHideIcon = L10n.IconContent("Progress", "Hide progress details", null);
 
             static Styles()
             {
@@ -492,4 +491,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

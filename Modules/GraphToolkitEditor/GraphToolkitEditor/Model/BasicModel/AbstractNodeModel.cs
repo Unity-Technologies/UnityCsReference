@@ -94,11 +94,12 @@ namespace Unity.GraphToolkit.Editor
             get => m_FillAmount;
             set
             {
-                float clampedValue = Mathf.Clamp(value, -100f, 100f);
-                if (m_FillAmount == clampedValue)
+                var clampedValue = Mathf.Clamp(value, -100f, 100f);
+                if (Mathf.Approximately(m_FillAmount, clampedValue))
                     return;
 
                 m_FillAmount = clampedValue;
+                using var assetDirtyScope = GraphModel?.BlockAssetDirtyScope();
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }

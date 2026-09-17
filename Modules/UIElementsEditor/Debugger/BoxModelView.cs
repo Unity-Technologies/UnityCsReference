@@ -477,7 +477,7 @@ namespace UnityEditor.UIElements.Debugger
 
             public void SyncValues()
             {
-                if (m_SelectedElement != null)
+                if (m_SelectedElement.IsLive())
                 {
                     InitStyleValues();
                 }
@@ -554,7 +554,7 @@ namespace UnityEditor.UIElements.Debugger
 
             public void SyncValues()
             {
-                if (m_SelectedElement != null)
+                if (m_SelectedElement.IsLive())
                 {
                     var value = m_SelectedElement.contentRect.width;
                     if (m_WidthTextField.value != value)

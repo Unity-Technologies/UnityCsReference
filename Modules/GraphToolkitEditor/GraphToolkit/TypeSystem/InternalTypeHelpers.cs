@@ -21,6 +21,9 @@ namespace Unity.GraphToolkit
         const string k_MonoSystemAssemblyName = ", mscorlib, ";
 
         [AutoStaticsCleanupOnCodeReload]
+        // Lazily built MovedFrom lookup: the accessor rebuilds the whole map by reflection when it is null,
+        // so cleanup just returns it to its fresh-load state.
+        [IgnoreForUAL0015("Lazily built MovedFrom lookup, rebuilt by reflection when null")]
         static Dictionary<string, Type> s_MovedFromTypes;
 
         [AutoStaticsCleanupOnCodeReload]

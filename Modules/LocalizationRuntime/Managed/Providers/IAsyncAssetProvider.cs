@@ -19,7 +19,7 @@ namespace Unity.Localization.Providers;
 /// <see cref="UnityEngine.Awaitable"/>.
 /// </remarks>
 /// <example>
-/// <para>A provider that resolves its assets through an asynchronous operation.</para>
+/// A provider that resolves its assets through an asynchronous operation.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/IAsyncAssetProviderExample.cs"/>
 /// </example>
 /// <seealso cref="IAssetProvider"/>
@@ -40,7 +40,7 @@ public interface IAsyncAssetProvider : IAssetProvider
     /// <param name="cancellationToken">A token that cancels the load.</param>
     /// <returns>The loaded asset, or <see langword="null"/> when it cannot be resolved.</returns>
     /// <example>
-    /// <para>Load a texture through a provider.</para>
+    /// Load a texture through a provider.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/IAsyncAssetProviderLoadAssetGenericExample.cs"/>
     /// </example>
     Awaitable<T> LoadAssetAsync<T>(AssetKey key, CancellationToken cancellationToken) where T : Object;

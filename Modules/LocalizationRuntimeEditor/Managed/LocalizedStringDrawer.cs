@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -16,7 +15,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.Localization.Editor;
 
-[CustomPropertyDrawer(typeof(LocalizedString))]
+[CustomPropertyDrawer(typeof(LocalizedString), useForChildren: true)]
 class LocalizedStringDrawer : PropertyDrawer
 {
     public override VisualElement CreatePropertyGUI(SerializedProperty property)
@@ -77,7 +76,7 @@ class LocalizedStringElement : LocalizedReferenceElement
 
         slot.Q("smart-row").tooltip = L10n.Tr("Smart String: formatted through Smart Strings at runtime. Applies to every locale for this entry.", null);
         slot.Q<Label>("smart-badge").tooltip = L10n.Tr("Smart String", null);
-        slot.Q<Label>("smart-label").text = L10n.Tr("Smart", null);
+        slot.Q<Label>("smart-label").text = LocLabels.Smart;
 
         var toggle = slot.Q<Toggle>("smart-toggle");
         toggle.value = SharedEntry.IsSmart;
@@ -220,7 +219,7 @@ class LocalizedStringElement : LocalizedReferenceElement
             return new Label(text);
         var container = s_Preview.Instantiate();
         container.Q<Label>("preview-text").text = text;
-        container.Q<Label>("preview-hint").text = L10n.Tr("Formatted with local variables", null);
+        container.Q<Label>("preview-hint").text = LocLabels.FormattedWithLocalVariables;
         return container;
     }
 
@@ -233,7 +232,7 @@ class LocalizedStringElement : LocalizedReferenceElement
         var listView = new ListView
         {
             showFoldoutHeader = true,
-            headerTitle = L10n.Tr("Local variables", null),
+            headerTitle = LocLabels.LocalVariables,
             showAddRemoveFooter = true,
             reorderable = true,
             reorderMode = ListViewReorderMode.Animated,
@@ -462,4 +461,3 @@ class LocalizedStringElement : LocalizedReferenceElement
         return ObjectNames.NicifyVariableName(type.Name);
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

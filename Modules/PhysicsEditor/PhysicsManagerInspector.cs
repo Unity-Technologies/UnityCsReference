@@ -50,19 +50,19 @@ namespace UnityEditor
 
         static class Content
         {
-            public static readonly string classicWarning = EditorGUIUtility.TrTextContent("You have changed the active physics SDK integration. For the change to take effect please restart the Editor.").text;
-            public static readonly string classicFallbackWarning = EditorGUIUtility.TrTextContent($"{classicWarning} \nNote: Setting this value to NONE will cause all physics APIs and Components to no longer work. Coincidentally setting this value to NONE is required for the Physics module to be automatically stripped when 'Strip Engine Code' is enabled.").text;
-            public static readonly string autoSyncTransformsWarning = EditorGUIUtility.TrTextContent("This option has been deprecated and is for legacy support only. It can result in extremely poor performance when ON. For this reason, it defaults to being OFF.").text;
-            public static readonly string reuseCollisionCallbacksWarning = EditorGUIUtility.TrTextContent("This option boosts performance when ON. With it OFF it can result in poor performance due to GC pressure. For this reason, it defaults to being ON.").text;
+            public static readonly string classicWarning = L10n.TextContent("You have changed the active physics SDK integration. For the change to take effect please restart the Editor.", null, null, null).text;
+            public static readonly string classicFallbackWarning = L10n.TextContent($"{classicWarning} \nNote: Setting this value to NONE will cause all physics APIs and Components to no longer work. Coincidentally setting this value to NONE is required for the Physics module to be automatically stripped when 'Strip Engine Code' is enabled.", null, null, null).text;
+            public static readonly string autoSyncTransformsWarning = L10n.TextContent("This option has been deprecated and is for legacy support only. It can result in extremely poor performance when ON. For this reason, it defaults to being OFF.", null, null, null).text;
+            public static readonly string reuseCollisionCallbacksWarning = L10n.TextContent("This option boosts performance when ON. With it OFF it can result in poor performance due to GC pressure. For this reason, it defaults to being ON.", null, null, null).text;
 
 
-            public static readonly string classicDropDownTooltip = EditorGUIUtility.TrTextContent($"The current physics SDK integration used by Unity's GameObject API. {dropDownTooltipBase}. \nPlease note that only by setting this property to NONE can the Physics module by automatically stripped.").text;
-            public static readonly string entitiesDropDownTooltip = EditorGUIUtility.TrTextContent($"The current physics SDK integration used by Unity's Entities API. {dropDownTooltipBase}").text;
+            public static readonly string classicDropDownTooltip = L10n.TextContent($"The current physics SDK integration used by Unity's GameObject API. {dropDownTooltipBase}. \nPlease note that only by setting this property to NONE can the Physics module by automatically stripped.", null, null, null).text;
+            public static readonly string entitiesDropDownTooltip = L10n.TextContent($"The current physics SDK integration used by Unity's Entities API. {dropDownTooltipBase}", null, null, null).text;
             
             const string dropDownTooltipBase = "Changing this value to another SDK integration has the potential to change the behavior of your physics Components. \nTweaking your physics simulation might be necessary due to behavior differences between different physics SDKs.";
 
             [NoAutoStaticsCleanup] // immutable format string set once at init, holds no user-code references
-            public static string backendInfo = EditorGUIUtility.TrTempContent("Description: {0}\nSDK version: {1}.{2}.{3}\n Integration version: {4}.{5}.{6}").text;
+            public static string backendInfo = L10n.TempContent("Description: {0}\nSDK version: {1}.{2}.{3}\n Integration version: {4}.{5}.{6}", null).text;
         }
 
         static SerializedObject LoadGameManagerAssetAtPath(string path)

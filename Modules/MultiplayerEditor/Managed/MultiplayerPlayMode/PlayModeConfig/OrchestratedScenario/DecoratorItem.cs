@@ -20,7 +20,7 @@ interface IDecoratorItem
 
     static IDecoratorItem Create(Type decoratorType)
     {
-        var settingsType = PlayModeControllerDecorator.GetSettingsType(decoratorType);
+        var settingsType = PlayModeController.GetSettingsType(decoratorType);
         var decoratorItemType = typeof(DecoratorItem<,>).MakeGenericType(decoratorType, settingsType);
         var newDecoratorItem = (IDecoratorItem)Activator.CreateInstance(decoratorItemType);
         return newDecoratorItem;

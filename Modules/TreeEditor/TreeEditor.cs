@@ -2431,11 +2431,11 @@ namespace TreeEditor
 
         public class Styles
         {
-            public GUIContent iconAddLeaves =   EditorGUIUtility.TrIconContent("TreeEditor.AddLeaves", "Add Leaf Group");
-            public GUIContent iconAddBranches = EditorGUIUtility.TrIconContent("TreeEditor.AddBranches", "Add Branch Group");
-            public GUIContent iconTrash =       EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Selected Group");
-            public GUIContent iconDuplicate =   EditorGUIUtility.TrIconContent("TreeEditor.Duplicate", "Duplicate Selected Group");
-            public GUIContent iconRefresh =     EditorGUIUtility.TrIconContent("TreeEditor.Refresh", "Recompute Tree");
+            public GUIContent iconAddLeaves =   L10n.IconContent("TreeEditor.AddLeaves", "Add Leaf Group", null);
+            public GUIContent iconAddBranches = L10n.IconContent("TreeEditor.AddBranches", "Add Branch Group", null);
+            public GUIContent iconTrash =       L10n.IconContent("TreeEditor.Trash", "Delete Selected Group", null);
+            public GUIContent iconDuplicate =   L10n.IconContent("TreeEditor.Duplicate", "Duplicate Selected Group", null);
+            public GUIContent iconRefresh =     L10n.IconContent("TreeEditor.Refresh", "Recompute Tree", null);
             public GUIStyle toolbar = "TE Toolbar";
             public GUIStyle toolbarButton = "TE toolbarbutton";
 

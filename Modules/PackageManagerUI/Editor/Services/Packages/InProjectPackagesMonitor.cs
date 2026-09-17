@@ -18,8 +18,6 @@ internal interface IInProjectPackagesMonitor : IService
 [Serializable]
 internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>, IInProjectPackagesMonitor
 {
-    private const string k_WindowType = "PassiveTrust";
-
     [SerializeField]
     private bool m_CheckStartupPackageErrors;
 
@@ -32,7 +30,6 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
     private readonly IUpmRegistryClient m_UpmRegistryClient;
     private readonly IPackageDatabase m_PackageDatabase;
     private readonly IPageRefreshHandler m_PageRefreshHandler;
-    private readonly ICustomDisplayDialog m_CustomDisplayDialog;
     private readonly IUpmClient m_UpmClient;
     public InProjectPackagesMonitor(IApplicationProxy application,
         IProjectSettingsProxy settingsProxy,
@@ -40,7 +37,6 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
         IUpmRegistryClient upmRegistryClient,
         IPackageDatabase packageDatabase,
         IPageRefreshHandler pageRefreshHandler,
-        ICustomDisplayDialog customDisplayDialog,
         IUpmClient upmClient)
     {
         m_Application = RegisterDependency(application);
@@ -49,7 +45,6 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
         m_UpmRegistryClient = RegisterDependency(upmRegistryClient);
         m_PackageDatabase = RegisterDependency(packageDatabase);
         m_PageRefreshHandler = RegisterDependency(pageRefreshHandler);
-        m_CustomDisplayDialog = RegisterDependency(customDisplayDialog);
         m_UpmClient = RegisterDependency(upmClient);
     }
 
@@ -131,63 +126,12 @@ internal class InProjectPackagesMonitor : BaseService<IInProjectPackagesMonitor>
             }
         }
 
-        IPackage unsignedPackage = null;
-        IPackage invalidSignaturePackage = null;
-        foreach (var package in PackagesToCheck())
-        {
-            var trustAndSignature = package.versions.installed?.trustAndSignature ?? TrustAndSignature.NotApplicable;
-            if (trustAndSignature == TrustAndSignature.UntrustedInvalidSignature)
-            {
-                invalidSignaturePackage = package;
-                break;
-            }
-            if (unsignedPackage == null && trustAndSignature == TrustAndSignature.UntrustedNoSignature)
-                unsignedPackage = package;
-        }
+        var viewData = TrustWindow.CreateViewData(m_UpmCache, PackagesToCheck(), m_SettingsProxy.trustPolicyLevel, m_Application.shortUnityVersion);
+        if (viewData == null)
+            return;
 
-        if (invalidSignaturePackage != null)
-        {
-            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Invalid Signature", null),"invalidSignatureInProject", L10n.Tr("Open Package Manager", null), L10n.Tr("Close", null), new Vector2(340f, 150f))
-            {
-                headerIcon = Icon.PackageErrorLarge,
-                headerMainText = L10n.Tr("This project contains one or more packages with invalid signatures.", null),
-                bodyText = L10n.Tr("This might indicate they are unsafe or malicious. Would you like to open the Package Manager to review these packages?", null),
-                readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-errors.html#pkg-invalid-sig",
-                readMoreClickedAnalyticsId = "invalid-signature-in-project-read-more",
-                headerColor = HeaderColor.Red
-            };
-            var analyticsData = new TrustAnalyticsData
-            {
-                windowType = k_WindowType,
-                invalidSignaturePackageIds = new[] { invalidSignaturePackage.versions.installed.uniqueId }
-            };
-            var dialogResult = m_CustomDisplayDialog.Show(dialogArgs);
-            if (dialogResult == DialogResult.DefaultAction)
-                PackageManagerWindow.OpenAndSelectPackage(invalidSignaturePackage.uniqueId, InProjectErrorsAndWarningsPage.k_Id);
-            analyticsData.action = dialogResult.ToString();
-            PackageManagerTrustWindowAnalytics.SendEvent(analyticsData);
-        }
-        else if (unsignedPackage != null)
-        {
-            var dialogArgs = new CustomDecisionDialogArgs(L10n.Tr("Missing Signature", null), "unsignedPackageInProject", L10n.Tr("Open Package Manager", null), L10n.Tr("Close", null), new Vector2(340f, 150f))
-            {
-                headerIcon = Icon.PackageWarningLarge,
-                headerMainText = L10n.Tr("This project contains one or more unsigned packages.", null),
-                bodyText = L10n.Tr("This could indicate they are potentially unsafe. Would you like to open the Package Manager to review these packages?", null),
-                readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-signature.html",
-                readMoreClickedAnalyticsId = "unsigned-package-in-project-read-more"
-            };
-            var analyticsData = new TrustAnalyticsData
-            {
-                windowType = k_WindowType,
-                missingSignaturePackageIds = new[] { unsignedPackage.versions.installed.uniqueId }
-            };
-            var dialogResult = m_CustomDisplayDialog.Show(dialogArgs);
-            if (dialogResult == DialogResult.DefaultAction)
-                PackageManagerWindow.OpenAndSelectPackage(unsignedPackage.uniqueId, InProjectErrorsAndWarningsPage.k_Id);
-            analyticsData.action = dialogResult.ToString();
-            PackageManagerTrustWindowAnalytics.SendEvent(analyticsData);
-        }
+        if (TrustWindow.Show(viewData) == TrustWindowReturnValue.OpenPackageManager)
+            PackageManagerWindow.OpenAndSelectPage(InProjectErrorsAndWarningsPage.k_Id);
     }
 
     private void CheckStartupPackageErrors()

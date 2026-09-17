@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneTooling not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
@@ -268,10 +267,10 @@ namespace UnityEditor.Overlays
             if (targetWindow is ISupportsOverlays)
             {
                 var binding = ShortcutManager.instance.GetShortcutBinding(OverlayMenu.k_ShowOverlayMenuShortcutPath);
-                var overlayMenuItemContent = EditorGUIUtility.TrTextContent($"Overlays/Overlay Menu _{binding}");
-                var enableOverlaysContent = EditorGUIUtility.TrTextContent($"Overlays/Enable Overlays");
-                var displaceWindowContent = EditorGUIUtility.TrTextContent($"Overlays/Displace Window");
-                var overlaySettingsContent = EditorGUIUtility.TrTextContent($"Overlays/Color Preferences...");
+                var overlayMenuItemContent = L10n.TextContent($"Overlays/Overlay Menu _{binding}", null, null, null);
+                var enableOverlaysContent = L10n.TextContent($"Overlays/Enable Overlays", null, null, null);
+                var displaceWindowContent = L10n.TextContent($"Overlays/Displace Window", null, null, null);
+                var overlaySettingsContent = L10n.TextContent($"Overlays/Color Preferences...", null, null, null);
 
                 var displaceWindow = targetWindow.overlayCanvas.dynamicPanelBehavior == DynamicPanelBehavior.DisplaceWindow;
                 var overlaysEnabled = targetWindow.overlayCanvas.overlaysEnabled;
@@ -521,4 +520,3 @@ namespace UnityEditor.Overlays
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

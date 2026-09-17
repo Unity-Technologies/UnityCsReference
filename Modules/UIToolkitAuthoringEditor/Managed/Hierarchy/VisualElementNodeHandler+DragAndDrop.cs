@@ -632,6 +632,9 @@ internal partial class VisualElementNodeHandler
         // The command asked for what it created by asset alone; point that at the instance dropped into.
         ScopePendingSelectionRequestsTo(parentElement);
 
+        // A new element has no name to identify it by until the user gives it one.
+        RequestRenameOfPendingSelection();
+
         StageStrategy.RequestRefresh(parentElement);
         return DragVisualMode.Copy;
     }

@@ -33,10 +33,10 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent applyRootMotion = new GUIContent(EditorGUIUtility.TrTextContent("Apply Root Motion"));
-            public GUIContent updateMode = new GUIContent(EditorGUIUtility.TrTextContent("Update Mode"));
-            public GUIContent cullingMode = new GUIContent(EditorGUIUtility.TrTextContent("Culling Mode"));
-            public GUIContent animatePhysics = new GUIContent(EditorGUIUtility.TrTextContent("Animate Physics"));
+            public GUIContent applyRootMotion = new GUIContent(L10n.TextContent("Apply Root Motion", null, null, null));
+            public GUIContent updateMode = new GUIContent(L10n.TextContent("Update Mode", null, null, null));
+            public GUIContent cullingMode = new GUIContent(L10n.TextContent("Culling Mode", null, null, null));
+            public GUIContent animatePhysics = new GUIContent(L10n.TextContent("Animate Physics", null, null, null));
 
             public Styles()
             {

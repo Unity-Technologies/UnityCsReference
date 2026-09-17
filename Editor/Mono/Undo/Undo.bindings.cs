@@ -268,6 +268,9 @@ namespace UnityEditor
            This can't be properly deprecated until all packages being tested through Katana that use the old callback have been updated to use the new callback.
         [Obsolete("Use Undo.undoRedoEvent instead which provides Undo Event information", false)] */
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static UndoRedoCallback undoRedoPerformed;
         [AutoStaticsCleanupOnCodeReload]
         [Obsolete("Use m_UndoRedoEvent instead", false)]
@@ -277,6 +280,9 @@ namespace UnityEditor
         public delegate void UndoRedoEventCallback(in UndoRedoInfo undo);
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static UndoRedoEventCallback undoRedoEvent;
         [AutoStaticsCleanupOnCodeReload]
         private static DelegateWithPerformanceTracker<UndoRedoEventCallback> m_UndoRedoEvent = new DelegateWithPerformanceTracker<UndoRedoEventCallback>($"{nameof(Undo)}.{nameof(undoRedoEvent)}");
@@ -284,7 +290,9 @@ namespace UnityEditor
         // Called when about to flush undo recording
         public delegate void WillFlushUndoRecord();
 
+        // Re-subscribed on every code load by DrivenRectTransformUndo.Initialize().
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event re-subscribed on every code load by DrivenRectTransformUndo.Initialize()")]
         public static WillFlushUndoRecord willFlushUndoRecord;
         [AutoStaticsCleanupOnCodeReload]
         private static DelegateWithPerformanceTracker<WillFlushUndoRecord> m_WillFlushUndoRecordEvent = new DelegateWithPerformanceTracker<WillFlushUndoRecord>($"{nameof(Undo)}.{nameof(willFlushUndoRecord)}");
@@ -300,6 +308,9 @@ namespace UnityEditor
         public delegate UndoPropertyModification[] PostprocessModifications(UndoPropertyModification[] modifications);
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static PostprocessModifications postprocessModifications;
         [AutoStaticsCleanupOnCodeReload]
         private static DelegateWithPerformanceTracker<PostprocessModifications> m_PostprocessModificationsEvent = new DelegateWithPerformanceTracker<PostprocessModifications>($"{nameof(Undo)}.{nameof(postprocessModifications)}");

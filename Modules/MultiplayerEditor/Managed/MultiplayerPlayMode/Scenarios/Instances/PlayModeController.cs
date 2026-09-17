@@ -20,44 +20,56 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         protected internal virtual void SetupExecutionGraph(ExecutionGraphBuilder graph) { }
 
-        protected internal virtual VisualElement CreateControllerUI(Instance instance) => null;
-        protected internal virtual VisualElement CreateTitleBarUI(Instance instance) => null;
+        protected internal virtual VisualElement CreateControllerUI(ControllerRuntime runtime) => null;
+        protected internal virtual VisualElement CreateTitleBarUI(ControllerRuntime runtime) => null;
 
-        // The Instance is passed because the active state can live on it (e.g. the free-run
-        // token), not on the controller — mirroring CreateControllerUI(Instance).
-        internal virtual bool NeedsTearDown(Instance instance, out string reason)
+        // The runtime is passed because the active state can live on it (e.g. the free-run
+        // token), not on the controller — mirroring CreateControllerUI(ControllerRuntime).
+        internal virtual bool NeedsTearDown(ControllerRuntime runtime, out string reason)
         {
             reason = null;
             return false;
         }
 
         // Must be idempotent and safe to call when there is nothing to release.
-        internal virtual void TearDown(Instance instance) { }
+        internal virtual void TearDown(ControllerRuntime runtime) { }
 
         // Returns controller-type-specific analytics data for the OnPlayFromScenario event,
         // or null when the controller has no extra data to report. 
         protected internal virtual ICustomInstanceAnalyticsData GetCustomAnalyticsData(ExecutionGraph graph) => null;
 
+        // Everything below is keyed on the item's id, so a controller built without one - a scenario-scoped
+        // kind that declares no settings - has no store to address. Reads degrade to the caller's default;
+        // a write throws, because a dropped one would be invisible at the call site.
         internal T GetUserSettings<T>(T defaultValue = default) where T : struct
-            => OrchestratedScenarioUserSettings.GetSettings<T>(m_Owner, m_InstanceItem, defaultValue);
+            => m_InstanceItem == null
+                ? defaultValue
+                : OrchestratedScenarioUserSettings.GetSettings<T>(m_Owner, m_InstanceItem, defaultValue);
 
         internal bool TryGetUserSettings<T>(out T settings) where T : struct
         {
             settings = default;
-            if (m_Owner == null || !AssetDatabase.Contains(m_Owner))
+            if (m_Owner == null || m_InstanceItem == null || !AssetDatabase.Contains(m_Owner))
                 return false;
             settings = GetUserSettings<T>();
             return true;
         }
 
         internal void SetUserSettings<T>(T settings) where T : struct
-            => OrchestratedScenarioUserSettings.SetSettings(m_Owner, m_InstanceItem, settings);
+        {
+            if (m_InstanceItem == null)
+                throw new InvalidOperationException($"Controller '{name}' has no controller item to store user settings of type '{typeof(T).FullName}' under.");
+
+            OrchestratedScenarioUserSettings.SetSettings(m_Owner, m_InstanceItem, settings);
+        }
 
         internal SerializedProperty GetUserSettingsSerializedProperty<T>(T defaultValue = default) where T : struct
-            => OrchestratedScenarioUserSettings.GetSerializedSettingsProperty<T>(m_Owner, m_InstanceItem, defaultValue);
+            => m_InstanceItem == null
+                ? null
+                : OrchestratedScenarioUserSettings.GetSerializedSettingsProperty<T>(m_Owner, m_InstanceItem, defaultValue);
 
         private protected SerializedProperty GetControllerItemProperty()
-            => m_Owner == null ? null : m_Owner.GetControllerItemProperty(m_InstanceItem.GetId());
+            => m_Owner == null || m_InstanceItem == null ? null : m_Owner.GetControllerItemProperty(m_InstanceItem.GetId());
 
         internal virtual string GetTypeNameForAnalytics() => k_CustomTypeName;
 
@@ -73,6 +85,37 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             return false;
+        }
+
+        internal static bool IsControllerWithSettings(Type controllerType)
+        {
+            return GetBaseControllerWithSettingsType(controllerType) != null;
+        }
+
+        internal static Type GetSettingsType(Type controllerType)
+        {
+            var baseType = GetBaseControllerWithSettingsType(controllerType)
+                ?? throw new ArgumentException($"Controller type {controllerType.Name} is not a valid controller type with settings.");
+            return baseType.GetGenericArguments()[0];
+        }
+
+        static Type GetBaseControllerWithSettingsType(Type controllerType)
+        {
+            var currentType = controllerType;
+            while (currentType != null && currentType != typeof(object))
+            {
+                if (currentType.IsGenericType)
+                {
+                    var genericType = currentType.GetGenericTypeDefinition();
+                    if (genericType == typeof(PlayModeController<>) || genericType == typeof(PlayModeControllerDecorator<>))
+                    {
+                        return currentType;
+                    }
+                }
+                currentType = currentType.BaseType;
+            }
+
+            return null;
         }
 
         internal static PlayModeController CreateInstance(

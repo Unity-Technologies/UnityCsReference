@@ -17,7 +17,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
     [CustomEditor(typeof(OrchestratedScenario))]
     class ScenarioConfigEditor : Editor
     {
-        internal const string k_InstancesListPropertyPath = $"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_ControllerItemsPropertyName}";
+        internal const string k_InstancesListPropertyPath = $"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_InstanceItemsPropertyName}";
+        internal const string k_ScenarioListPropertyPath = $"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_ScenarioItemsPropertyName}";
         internal const string k_StylePath = "Multiplayer/UI/ScenarioConfigEditor.uss";
         internal const string k_LocalInstanceListName = "local-instance-list";
         internal const string k_EditorInstancesContainerName = "editor-instances-container";
@@ -26,6 +27,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         const string k_CloneEditorsTooltip = "Initial Editor Instances when entering play mode. Editor Instances will only have limited authoring capabilities.";
         const string k_LocalInstancesLabel = "Local Instances";
         const string k_LocalInstancesTooltip = "Local Instances are builds that will run on the same machine as the editor.";
+        const string k_AdditionalConfigurationName = "additional-configuration-group";
+        const string k_AdditionalConfigurationLabel = "Additional Configuration";
+        const string k_AdditionalConfigurationTooltip = "Settings contributed by the installed packages that extend this scenario.";
 
         internal const int MaxServerCount = 1;
 
@@ -45,15 +49,37 @@ namespace Unity.Multiplayer.PlayMode.Editor
             descriptionText.Bind(serializedObject);
             container.Add(descriptionText);
 
+            container.Add(CreateAdditionalConfigurationElement());
             container.Add(CreateEditorInstancesElement());
             container.Add(CreateLocalInstancesElement());
 
             return container;
         }
 
+        VisualElement CreateAdditionalConfigurationElement()
+        {
+            var scenarioItems = serializedObject.FindProperty(k_ScenarioListPropertyPath);
+            if (scenarioItems == null || scenarioItems.arraySize == 0)
+                return null;
+
+            var group = new Foldout { text = k_AdditionalConfigurationLabel, name = k_AdditionalConfigurationName };
+            group.AddToClassList("instances-group");
+            group.tooltip = k_AdditionalConfigurationTooltip;
+            group.viewDataKey = $"{nameof(ScenarioConfigEditor)}.{k_AdditionalConfigurationName}";
+
+            for (var i = 0; i < scenarioItems.arraySize; i++)
+            {
+                var itemField = new PlainPropertyField(scenarioItems.GetArrayElementAtIndex(i));
+                itemField.Bind(serializedObject);
+                group.Add(itemField);
+            }
+
+            return group;
+        }
+
         bool TryGetMainEditorProperty(out SerializedProperty mainEditorProperty)
         {
-            var instancesProperty = serializedObject.FindProperty($"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_ControllerItemsPropertyName}");
+            var instancesProperty = serializedObject.FindProperty($"{OrchestratedScenario.k_SettingsPropertyName}.{OrchestratedScenarioSettings.k_InstanceItemsPropertyName}");
             mainEditorProperty = default(SerializedProperty);
 
             for (int i = 0; i < instancesProperty.arraySize; i++)

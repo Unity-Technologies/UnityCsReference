@@ -28,7 +28,7 @@ namespace Unity.Localization;
 /// tables. Missing or empty entries follow the locale fallback chain defined by <see cref="Locale.FallbackCode"/>.
 /// </remarks>
 /// <example>
-/// <para>Resolves a localized string in the selected locale.</para>
+/// Resolves a localized string in the selected locale.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/ResolveLocalizedStringExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizationSettings"/>
@@ -71,7 +71,7 @@ public class ResourceDatabase
     /// <param name="cancellationToken">The token that cancels the load operation.</param>
     /// <returns>The loaded resource table, or null when no table matches the reference in the locale.</returns>
     /// <example>
-    /// <para>Loads a table and reports the locale it was loaded for.</para>
+    /// Loads a table and reports the locale it was loaded for.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetTableAsyncExample.cs"/>
     /// </example>
     public async Awaitable<ResourceTable> GetTableAsync(TableReference tableRef, Locale locale = null, CancellationToken cancellationToken = default)
@@ -128,7 +128,7 @@ public class ResourceDatabase
     /// <param name="enableFallback">Whether to walk the locale fallback chain when the locale has no usable value.</param>
     /// <returns>The resolved entry, or null when neither the locale nor its fallback chain has a usable value.</returns>
     /// <example>
-    /// <para>Resolves an entry and reads it when it is a string entry.</para>
+    /// Resolves an entry and reads it when it is a string entry.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetEntryAsyncExample.cs"/>
     /// </example>
     public async Awaitable<IResourceEntry> GetEntryAsync(TableReference tableRef, TableEntryReference entryRef, Locale locale = null, CancellationToken cancellationToken = default, bool enableFallback = true)
@@ -179,7 +179,7 @@ public class ResourceDatabase
     /// <param name="localVariables">The extra variables that Smart String placeholders resolve against, in addition to the arguments.</param>
     /// <returns>The formatted localized string, or null when the entry is not a string entry or has no value.</returns>
     /// <example>
-    /// <para>Resolves a Smart String that inserts the player's score.</para>
+    /// Resolves a Smart String that inserts the player's score.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetLocalizedStringWithArgsExample.cs"/>
     /// </example>
     public async Awaitable<string> GetLocalizedStringAsync(TableReference tableRef, TableEntryReference entryRef, Locale locale = null, object[] args = null, CancellationToken cancellationToken = default, bool enableFallback = true, IVariableGroup localVariables = null)
@@ -209,7 +209,7 @@ public class ResourceDatabase
     /// <param name="localVariables">The extra variables that Smart String placeholders resolve against, in addition to the arguments.</param>
     /// <returns>The formatted localized string, or null when the table is not loaded or the entry has no value.</returns>
     /// <example>
-    /// <para>Reads an already-loaded string without awaiting.</para>
+    /// Reads an already-loaded string without awaiting.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetLocalizedStringSyncExample.cs"/>
     /// </example>
     public string GetLocalizedString(TableReference tableRef, TableEntryReference entryRef, Locale locale = null, object[] args = null, bool enableFallback = true, IVariableGroup localVariables = null)
@@ -276,7 +276,7 @@ public class ResourceDatabase
     /// <param name="cancellationToken">The token that cancels the load operation.</param>
     /// <returns>The loaded localized asset, or null when the entry has no asset for the locale.</returns>
     /// <example>
-    /// <para>Loads a localized sprite for the selected locale.</para>
+    /// Loads a localized sprite for the selected locale.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetLocalizedAssetAsyncExample.cs"/>
     /// </example>
     public async Awaitable<TObject> GetLocalizedAssetAsync<TObject>(TableReference tableRef, TableEntryReference entryRef, Locale locale = null, CancellationToken cancellationToken = default) where TObject : Object
@@ -347,7 +347,7 @@ public class ResourceDatabase
     /// <param name="locale">The locale to resolve in; null uses the selected locale.</param>
     /// <returns>The resolved asset, or null when it cannot be resolved synchronously.</returns>
     /// <example>
-    /// <para>Reads a localized asset synchronously.</para>
+    /// Reads a localized asset synchronously.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetLocalizedAssetSyncExample.cs"/>
     /// </example>
     public TObject GetLocalizedAsset<TObject>(TableReference tableRef, TableEntryReference entryRef, Locale locale = null) where TObject : Object
@@ -397,7 +397,7 @@ public class ResourceDatabase
     /// </remarks>
     /// <param name="locale">The locale whose cached assets to release.</param>
     /// <example>
-    /// <para>Frees the cached assets for a locale after switching away from it.</para>
+    /// Frees the cached assets for a locale after switching away from it.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/ReleaseAssetsExample.cs"/>
     /// </example>
     public void ReleaseAssets(Locale locale)
@@ -416,7 +416,7 @@ public class ResourceDatabase
     /// next time it is requested. To release only one locale's assets, use <see cref="ReleaseAssets"/>.
     /// </remarks>
     /// <example>
-    /// <para>Releases all cached assets, for example before unloading a scene.</para>
+    /// Releases all cached assets, for example before unloading a scene.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/ReleaseAllAssetsExample.cs"/>
     /// </example>
     public void ReleaseAllAssets()
@@ -465,7 +465,7 @@ public class ResourceDatabase
     /// <param name="locale">The locale to look up; null uses the selected locale.</param>
     /// <returns>The resource table for the reference in the locale, or null when it cannot be resolved synchronously.</returns>
     /// <example>
-    /// <para>Reads a table if it is loaded, otherwise loads it asynchronously.</para>
+    /// Reads a table if it is loaded, otherwise loads it asynchronously.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetTableSyncExample.cs"/>
     /// </example>
     public ResourceTable GetTable(TableReference tableRef, Locale locale = null)
@@ -513,7 +513,7 @@ public class ResourceDatabase
     /// <param name="enableFallback">Whether to walk the locale fallback chain when the locale has no usable value.</param>
     /// <returns>The resolved entry, or null when the table is not loaded or no usable value exists.</returns>
     /// <example>
-    /// <para>Reads an entry that is already loaded.</para>
+    /// Reads an entry that is already loaded.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/GetEntrySyncExample.cs"/>
     /// </example>
     public IResourceEntry GetEntry(TableReference tableRef, TableEntryReference entryRef, Locale locale = null, bool enableFallback = true)

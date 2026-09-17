@@ -324,10 +324,11 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// An event produced when a contact between a pair of <see cref="PhysicsShape"/> is updated, used to provide the ability to decide if the contact should be disabled or not.
+        /// An event produced when a contact between a pair of shapes is updated, giving the opportunity to modify the contact manifold before it is solved.
+        /// The event is passed to the callback by reference so the manifold can be changed, and calling Cancel cancels the contact.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        public readonly record struct PreSolveEvent
+        public struct PreContactEvent
         {
             /// <summary>
             /// The physics world both shapes are within.
@@ -345,17 +346,64 @@ namespace Unity.U2D.Physics
             public readonly PhysicsShape shapeB => m_ShapeB;
 
             /// <summary>
-            /// The point of contact.
+            /// The contact manifold that is about to be solved.
+            /// This can be modified in place, and because the event itself is passed to the callback by reference, the solver uses whatever it is left as this step.
+            /// </summary>
+            public PhysicsShape.ContactManifold manifold;
+
+            /// <summary>
+            /// Cancels the contact so it is not solved this step.
+            /// The manifold is left with no points.
+            /// </summary>
+            public void Cancel() => manifold.pointCount = 0;
+
+            /// <undoc/>
+            public override readonly string ToString() => $"PreContactEvent: physicsWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}, manifold={manifold}";
+
+            #region Internal
+
+            // Field storage order must match the native PreContactEvent struct: manifold, then world, shapeA, shapeB.
+            readonly PhysicsWorld m_PhysicsWorld;
+            readonly PhysicsShape m_ShapeA;
+            readonly PhysicsShape m_ShapeB;
+
+            #endregion
+        }
+
+        /// <summary>
+        /// An event produced during the continuous collision stage when a fast-moving shape is predicted to hit another shape this step.
+        /// The callback decides whether the shape is stopped at the predicted impact point or allowed to continue.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        public readonly record struct PreContinuousEvent
+        {
+            /// <summary>
+            /// The physics world both shapes are within.
+            /// </summary>
+            public readonly PhysicsWorld physicsWorld => m_PhysicsWorld;
+
+            /// <summary>
+            /// One of the shapes involved in the event.
+            /// </summary>
+            public readonly PhysicsShape shapeA => m_ShapeA;
+
+            /// <summary>
+            /// The other shape involved in the event.
+            /// </summary>
+            public readonly PhysicsShape shapeB => m_ShapeB;
+
+            /// <summary>
+            /// The predicted point of impact in world space.
             /// </summary>
             public readonly Vector2 point => m_Point;
 
             /// <summary>
-            /// The surface normal at the point of contact.
+            /// The surface normal at the predicted point of impact.
             /// </summary>
             public readonly Vector2 normal => m_Normal;
 
             /// <undoc/>
-            public override readonly string ToString() => $"PreSolveEvent: physicsWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}, point={point}, normal={normal}";
+            public override readonly string ToString() => $"PreContinuousEvent: physicsWorld={physicsWorld}, shapeA={shapeA}, shapeB={shapeB}, point={point}, normal={normal}";
 
             #region Internal
 
@@ -380,7 +428,7 @@ namespace Unity.U2D.Physics
 	        public readonly PhysicsJoint joint => m_Joint;
 
             /// <undoc/>
-            public override readonly string ToString() => $"JointEvent: joint={joint}";
+            public override readonly string ToString() => $"JointThresholdEvent: joint={joint}";
 
             #region Internal
 
@@ -633,7 +681,7 @@ namespace Unity.U2D.Physics
 
         #endregion
 
-        #region Contact/PreSolve Callbacks
+        #region Contact / Pre-Contact / Pre-Continuous Callbacks
 
         /// <undoc/>
         [RequiredByNativeCode]
@@ -647,13 +695,73 @@ namespace Unity.U2D.Physics
 
         /// <undoc/>
         [RequiredByNativeCode]
-        static bool SendPreSolveCallback(Object callbackTarget, PreSolveEvent preSolveEvent)
+        static unsafe void SendPreContactCallback(Object callbackTarget, PreContactEvent preContactEvent, IntPtr manifoldPtr)
         {
-            if (callbackTarget is PhysicsCallbacks.IPreSolveCallback target)
-                return target.OnPreSolve2D(preSolveEvent);
+            // The new interface takes priority; a target implementing it never sees the deprecated callback.
+            if (callbackTarget is PhysicsCallbacks.IPreContactCallback target)
+            {
+                target.OnPreContact2D(ref preContactEvent);
+            }
+            else
+            {
+                // Fall back to the deprecated callback only when the new interface is not implemented on this target.
+#pragma warning disable CS0618
+                if (callbackTarget is PhysicsCallbacks.IPreSolveCallback legacyTarget)
+                {
+                    // Feed the deprecated event with the deepest manifold point, which is what the engine used to pick before calling out.
+                    var preSolveEvent = BuildDeprecatedPreSolveEvent(ref preContactEvent);
+
+                    // The deprecated callback cancels the contact by returning false, which now maps onto cancelling the manifold.
+                    if (!legacyTarget.OnPreSolve2D(preSolveEvent))
+                        preContactEvent.Cancel();
+                }
+#pragma warning restore CS0618
+            }
+
+            // The event was marshalled in by value, so write the edited manifold back through the native pointer; a struct return would box and a by-reference parameter would not marshal back.
+            *(PhysicsShape.ContactManifold*)manifoldPtr = preContactEvent.manifold;
+        }
+
+        /// <undoc/>
+        [RequiredByNativeCode]
+        static bool SendPreContinuousCallback(Object callbackTarget, PreContinuousEvent preContinuousEvent)
+        {
+            // The new interface takes priority; a target implementing it never sees the deprecated callback.
+            if (callbackTarget is PhysicsCallbacks.IPreContinuousCallback target)
+                return target.OnPreContinuous2D(preContinuousEvent);
+
+            // Fall back to the deprecated callback only when the new interface is not implemented on this target.
+#pragma warning disable CS0618
+            if (callbackTarget is PhysicsCallbacks.IPreSolveCallback legacyTarget)
+            {
+                // The continuous event already carries the predicted point and normal, which is exactly what the deprecated event exposed.
+                var preSolveEvent = new PreSolveEvent(preContinuousEvent.physicsWorld, preContinuousEvent.shapeA, preContinuousEvent.shapeB, preContinuousEvent.point, preContinuousEvent.normal);
+
+                return legacyTarget.OnPreSolve2D(preSolveEvent);
+            }
+#pragma warning restore CS0618
 
             return true;
         }
+
+        /// <summary>
+        /// Builds the deprecated pre-solve event from a pre-contact event, picking the deepest manifold point to stand in for the single contact point the deprecated callback expects.
+        /// </summary>
+#pragma warning disable CS0618
+        static PreSolveEvent BuildDeprecatedPreSolveEvent(ref PreContactEvent preContactEvent)
+        {
+            ref var manifold = ref preContactEvent.manifold;
+
+            // Pick the point with the smallest separation, which is the deepest contact.
+            var deepestIndex = 0;
+            if (manifold.pointCount > 1 && manifold.points[1].separation < manifold.points[0].separation)
+                deepestIndex = 1;
+
+            var point = manifold.pointCount > 0 ? manifold.points[deepestIndex].pointA : Vector2.zero;
+
+            return new PreSolveEvent(preContactEvent.physicsWorld, preContactEvent.shapeA, preContactEvent.shapeB, point, manifold.normal);
+        }
+#pragma warning restore CS0618
 
         #endregion
 
@@ -769,8 +877,12 @@ namespace Unity.U2D.Physics
 
         /// <summary>
         /// Event callback for a world transform-plane change event.
-        /// This only fires when the transform plane actually changes.
+        /// This only fires when the mapping between 2D physics space and 3D world space actually changes.
+        /// A world using <see cref="PhysicsWorld.TransformPlane.Custom"/> also fires this when <see cref="PhysicsWorld.transformPlaneCustom"/> changes, reporting <see cref="PhysicsWorld.TransformPlane.Custom"/> as both the old and the new plane.
         /// </summary>
+        /// <remarks>
+        /// Do not treat a difference between the old and new plane as the test for whether anything changed, because a change to the custom transformation alone reports the same plane on both sides.
+        /// </remarks>
         public static event WorldTransformPlaneChangeEventHandler WorldTransformPlaneChange { add => s_WorldTransformPlaneChange += value; remove => s_WorldTransformPlaneChange -= value; }
         [NoAutoStaticsCleanup] // see stripping note on s_PreSimulate
         static event WorldTransformPlaneChangeEventHandler s_WorldTransformPlaneChange;

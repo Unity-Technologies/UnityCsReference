@@ -439,6 +439,20 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
         boundProperty = property;
     }
 
+    /// <summary>
+    /// Drops the properties this decorator tracks, for a document whose shape has changed under them.
+    /// </summary>
+    internal void ReleaseBoundProperties()
+    {
+        // Kept off the boundProperty setter, which also clears the attribute description and would empty
+        // every field label until the rebind that follows this.
+        UntrackPropertyValueChange();
+
+        m_BoundProperty = null;
+        m_BoundPropertyFlags = null;
+        m_BoundPropertyArraySize = null;
+    }
+
     void SetupContextMenu()
     {
         var contextMenuManipulator = new ContextualMenuManipulator((evt) =>
@@ -517,16 +531,14 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
                     }
                 }
             }
+
+            if (context.showsAncestorOverrides && boundAttributeDescription != null)
+                AttributeOverridesMenu.Append(menu, this);
+
             menu.AppendSeparator();
 
             menu.AppendAction(k_UnsetText, (_) => UnsetAttribute(), (_) => CanUnsetAttribute() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
             menu.AppendAction(k_UnsetAllText, (_) => UnsetAllAttributes(), (_) => CanUnsetAllAttributes() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
-
-            if (context.showsAncestorOverrides && boundAttributeDescription != null)
-            {
-                menu.AppendSeparator();
-                AttributeOverridesMenu.Append(menu, context, boundAttributeDescription);
-            }
         };
     }
 
@@ -553,6 +565,9 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
 
     void UnsetAttribute()
     {
+        if (!HasLiveContext())
+            return;
+
         var result = UxmlAssetUtilities.SynchronizePath(context, boundProperty.propertyPath, false);
 
         if (!result.success)
@@ -567,8 +582,17 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
             context.isInTemplateInstance,
             true);
 
-        context.rootSerializedObject.UpdateIfRequiredOrScript();
+        SyncRootSerializedObjectAfterCommand();
         ScheduleRefresh();
+    }
+
+    bool HasLiveContext() => context?.element != null && boundProperty is { isValid: true };
+
+    // The command can re-clone from inside, which detaches the inspector and nulls the context.
+    void SyncRootSerializedObjectAfterCommand()
+    {
+        if (context?.rootSerializedObject?.isValid == true)
+            context.rootSerializedObject.UpdateIfRequiredOrScript();
     }
 
     readonly record struct UnsetAllAttributesContext(
@@ -651,6 +675,9 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
 
     bool CanUnsetAllAttributes()
     {
+        if (!HasLiveContext())
+            return false;
+
         var resolvedContext = ResolveUnsetAllAttributesContext();
 
         return !context.isReadOnly && UxmlAssetUtilities.IsAnyAttributeSet(
@@ -665,6 +692,9 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
 
     void UnsetAllAttributes()
     {
+        if (!HasLiveContext())
+            return;
+
         var resolvedContext = ResolveUnsetAllAttributesContext();
 
         if (!resolvedContext.success)
@@ -678,8 +708,8 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
             context.isInTemplateInstance,
             resolvedContext.ignoredAttributeNames);
 
-        context.rootSerializedObject.UpdateIfRequiredOrScript();
-        context.editingController.RefreshAllDecorators();
+        SyncRootSerializedObjectAfterCommand();
+        context?.editingController.RefreshAllDecorators();
     }
 
     void UpdateBoundAttribute()
@@ -838,14 +868,52 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
         EnableInClassList(s_BoundFieldUssClassName, binding != null);
         OnTrackedPropertySourceChanged?.Invoke(this, boundProperty.propertyPath, false, binding != null, false);
 
+        var isLockedByAncestorOverride = isDrivenByAncestorOverride && context.locksAncestorDrivenFields;
+
         if (m_ContentContainer.bindable is VisualElement bindableElement)
         {
-            bindableElement.SetEnabled(!isBindingSuccessful && !isDrivenByAncestorOverride);
+            bindableElement.SetEnabled(!isBindingSuccessful && !isLockedByAncestorOverride);
         }
+
+        // The first moment a request filed before the selection changed can be honoured.
+        if (AttributeFieldFocusRequest.TryConsume(context.element, GetFullBindingPath(), panel))
+            RevealAndFocus();
     }
 
     internal BindingId GetFullBindingPath() =>
         m_CachedFullBindingPath ??= m_BoundProperty?.GetFullBindingPath() ?? string.Empty;
+
+    /// <summary>
+    /// Brings this field into view and puts the keyboard focus on it, for a caller that sent the user here to
+    /// edit this one attribute.
+    /// </summary>
+    internal void RevealAndFocus()
+    {
+        ExpandEnclosingFoldouts();
+
+        // Scrolling needs the layout the expansion produces, which the next panel update is the first to have.
+        schedule.Execute(() =>
+        {
+            GetFirstAncestorOfType<ScrollView>()?.ScrollTo(this);
+            m_BoundField?.Focus();
+        });
+    }
+
+    void ExpandEnclosingFoldouts()
+    {
+        for (var ancestor = hierarchy.parent; ancestor != null; ancestor = ancestor.hierarchy.parent)
+        {
+            switch (ancestor)
+            {
+                case OverrideFoldout overrideFoldout:
+                    overrideFoldout.value = true;
+                    break;
+                case Foldout foldout:
+                    foldout.value = true;
+                    break;
+            }
+        }
+    }
 
     void OnAttachedToPanel(AttachToPanelEvent evt)
     {

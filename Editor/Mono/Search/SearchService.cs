@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -116,8 +115,10 @@ namespace UnityEditor.SearchService
             var index = SearchService.searchApis.FindIndex(api => api.engineScope == m_EngineScope);
             if (index >= 0)
             {
+#pragma warning disable UAL0018 // session handlers are owned by editor windows, which are recreated on code reload; a handler that finds no api yet re-resolves it from the refilled registry in BeginSession
                 m_Api = SearchService.searchApis[index];
                 m_Api.activeEngineChanged += OnActiveEngineChanged;
+#pragma warning restore UAL0018
             }
         }
 
@@ -212,6 +213,9 @@ namespace UnityEditor.SearchService
         public const string keyPrefix = "searchservice";
         public const string activeSearchEnginesPrefKey = keyPrefix + ".activeengines.";
         [AutoStaticsCleanupOnCodeReload]
+        // Live-instance registry: every SearchApiBaseImp adds itself from its own constructor, and each
+        // engine impl is itself lazily recreated, so the list cleared on reload refills itself.
+        [IgnoreForUAL0015("Live search-api registry, refilled by each SearchApiBaseImp constructor")]
         public static List<ISearchApi> searchApis = new List<ISearchApi>();
 
         public enum SyncSearchEvent
@@ -452,4 +456,3 @@ namespace UnityEditor.SearchService
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -114,6 +114,7 @@ namespace Unity.Scripting.LifecycleManagement
             }
         }
 
+        // Called only from DomainReloadLifecycleController.cs, which is #if !ENABLE_CORECLR.
         internal static void InitializeForIl2Cpp(IScriptingCoreDebug depDebug)
         {
             Debug.ScriptingCoreDebug = depDebug;

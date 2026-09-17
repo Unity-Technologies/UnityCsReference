@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphView not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,6 +62,9 @@ namespace UnityEditor.Experimental.GraphView
         [NoAutoStaticsCleanup] // timestamp of last window close; no user-assembly refs, throttle logic tolerates stale value
         private static long s_LastClosedTime;
         [AutoStaticsCleanupOnCodeReload]
+        // Initialize() sets this on every code load so the search tree is rebuilt from the newly loaded
+        // assemblies rather than reused.
+        [IgnoreForUAL0015("Rebuild flag re-asserted on every code load by Initialize()")]
         private static bool s_DirtyList = false;
 
         // Member variables
@@ -116,6 +118,9 @@ namespace UnityEditor.Experimental.GraphView
 
         // Methods
 
+        // The search tree is built from the loaded assemblies, so it has to be rebuilt after every code
+        // load. Cleanup resets this flag to false — the opposite of what a fresh load needs — and a static
+        // constructor would not run again to correct it, so OnGUI would keep reusing the stale tree.
         [OnCodeLoaded]
         static void Initialize()
         {
@@ -632,4 +637,3 @@ namespace UnityEditor.Experimental.GraphView
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

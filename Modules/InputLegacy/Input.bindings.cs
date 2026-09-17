@@ -1457,6 +1457,7 @@ namespace UnityEngine
         ///<summary>Use to enable or disable compass. Note, that if you want <c>Input.compass.trueHeading</c> property to contain a valid value, you must also enable location updates. To do this, call <c>Input.location.Start()</c>.
         ///
         ///**Note**: On the web platform,  the compass is available only with an HTTPS connection, except during development when you might use http://localhost.</summary>
+        ///<remarks>Don't drive the heading service from both this legacy API and the Input System <c>CompassSensor</c> in the same project. Both share the same underlying platform heading service, so disabling it here also stops updates for the <c>CompassSensor</c> (the reverse is also true). Use a single compass API for each project.</remarks>
         public bool enabled
         {
             get { return LocationService.IsHeadingUpdatesEnabled(); }
@@ -2815,18 +2816,15 @@ namespace UnityEngine
             [FreeFunction("GetAccelerationCount")]
             get;
         }
-        ///<summary>Should  **Back** button quit the application?</summary>
-        ///<remarks>**Note**: This API is part of the legacy Input Manager. The recommended best practice is that you don't use this API in new projects. For new projects, use the Input System package. To learn more about input, refer to [Input](xref:Input).
+        ///<summary>Whether the **Back** button hands control to the operating system instead of the application.</summary>
+        ///<remarks>**Note**: This property has moved to <see cref="Application.backButtonLeavesApp" />, because it controls application lifecycle rather than input. Use `Application.backButtonLeavesApp`; `Input.backButtonLeavesApp` reads and writes the same underlying flag and will be removed.
         ///
-        ///Only usable on Android or Universal Windows Platform (UWP).
+        ///Only usable on Android or Universal Windows Platform (UWP). On all other platforms the property is a no-op: the getter always returns false and the setter has no effect.
         ///
-        ///By default this property is set to false, which means you're responsible for responding to **Back** button. You can do this by calling <see cref="Input.GetKey" /> and passing <see cref="KeyCode.Escape" />.
+        ///The default value is false.
         ///
-        ///If you set this property to true, clicking the **Back** button:
-        ///
-        /// * minimizes the application on Android.
-        ///
-        /// * suspends the application on UWP.</remarks>
+        ///When the value is true, the operating system handles **Back**: it minimizes the application on Android and suspends it on UWP. Otherwise, the button is delivered to the application as the Escape key, which you can read by calling <see cref="Input.GetKey" /> and passing <see cref="KeyCode.Escape" />.</remarks>
+        [Obsolete("Input.backButtonLeavesApp is deprecated and will be removed in a future release. Use Application.backButtonLeavesApp instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.Application.backButtonLeavesApp", false)]
         public extern static bool backButtonLeavesApp
         {
             [FreeFunction("GetBackButtonLeavesApp")]

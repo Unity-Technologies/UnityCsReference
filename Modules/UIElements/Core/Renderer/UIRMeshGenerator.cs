@@ -720,7 +720,7 @@ namespace UnityEngine.UIElements.UIR
             if (font.atlasPopulationMode == AtlasPopulationMode.Static)
 #pragma warning restore CS0618
             {
-                Debug.LogError($"Advanced text system cannot render using static font asset {font.faceInfo.familyName}. See <a href=\"https://docs.unity3d.com/Manual/ui-systems/migrate-static-font-assets.html\">migration guidance</a>.");
+                TextUtilities.LogStaticFontAssetError(font);
                 return;
             }
 
@@ -1845,7 +1845,7 @@ namespace UnityEngine.UIElements.UIR
             public Rect rect; // source rect for element-fraction computation
         }
 
-        struct TessellationJobParameters
+        internal struct TessellationJobParameters
         {
             public bool isBorderJob;
             public DrawPhase phase;
@@ -1861,7 +1861,7 @@ namespace UnityEngine.UIElements.UIR
         }
         List<TessellationJobParameters> m_TesselationJobParameters = new(256);
 
-        struct TessellationJob : IJobParallelFor
+        internal struct TessellationJob : IJobParallelFor
         {
             [ReadOnly] public TempMeshAllocator allocator;
             [ReadOnly] public NativeSlice<TessellationJobParameters> jobParameters;

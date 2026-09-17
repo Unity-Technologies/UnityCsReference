@@ -13,15 +13,15 @@ namespace UnityEditor
     {
         internal static class Content
         {
-            public static readonly GUIContent kMultithreadingLabel = EditorGUIUtility.TrTextContent("Multithreading", "Allows the configuration of multi-threaded physics using the job system.");
-            public static readonly GUIContent kGizmosLabel = EditorGUIUtility.TrTextContent("Gizmos", "Allows the configuration of 2D physics gizmos shown in the Editor.");
-            public static readonly GUIContent kSimulationModeLabel = EditorGUIUtility.TrTextContent("Simulation Mode", "Controls when and how the physics simulation will be run.");
-            public static readonly GUIContent kLayerCollisionMatrixLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Allows the configuration of the layer-based collision detection.");
-            public static readonly GUIContent kReuseCollisionCallbacksLabel = EditorGUIUtility.TrTextContent("This option boosts performance when ON. With it OFF it can result in poor performance due to GC pressure. For this reason, it defaults to being ON.");
-            public static readonly GUIContent kAutoSyncTransformsLabel = EditorGUIUtility.TrTextContent("This option has been deprecated and is for legacy support only. It can result in extremely poor performance when ON. For this reason, it defaults to being OFF.");
+            public static readonly GUIContent kMultithreadingLabel = L10n.TextContent("Multithreading", "Allows the configuration of multi-threaded physics using the job system.", null, null);
+            public static readonly GUIContent kGizmosLabel = L10n.TextContent("Gizmos", "Allows the configuration of 2D physics gizmos shown in the Editor.", null, null);
+            public static readonly GUIContent kSimulationModeLabel = L10n.TextContent("Simulation Mode", "Controls when and how the physics simulation will be run.", null, null);
+            public static readonly GUIContent kLayerCollisionMatrixLabel = L10n.TextContent("Layer Collision Matrix", "Allows the configuration of the layer-based collision detection.", null, null);
+            public static readonly GUIContent kReuseCollisionCallbacksLabel = L10n.TextContent("This option boosts performance when ON. With it OFF it can result in poor performance due to GC pressure. For this reason, it defaults to being ON.", null, null, null);
+            public static readonly GUIContent kAutoSyncTransformsLabel = L10n.TextContent("This option has been deprecated and is for legacy support only. It can result in extremely poor performance when ON. For this reason, it defaults to being OFF.", null, null, null);
 
-            public static readonly GUIContent kGeneralLabel = EditorGUIUtility.TrTextContent("General Settings", "General Settings");
-            public static readonly GUIContent kCollisionLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Collision Settings");
+            public static readonly GUIContent kGeneralLabel = L10n.TextContent("General Settings", "General Settings", null, null);
+            public static readonly GUIContent kCollisionLabel = L10n.TextContent("Layer Collision Matrix", "Collision Settings", null, null);
         }
 
         class Styles

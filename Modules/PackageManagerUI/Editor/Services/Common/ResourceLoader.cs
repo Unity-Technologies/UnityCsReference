@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         StyleSheet selectionWindowStyleSheet { get; }
         StyleSheet customDisplayDialogStyleSheet { get; }
         StyleSheet exportWindowStyleSheet { get; }
-        StyleSheet activeTrustWindowStyleSheet { get; }
+        StyleSheet trustWindowStyleSheet { get; }
         VisualElement GetTemplate(string templateFilename, bool shouldThrowException = true);
     }
 
@@ -77,7 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             public static readonly string inProgressDropdown = "StyleSheets/PackageManager/InProgressDropdown.uss";
             public static readonly string customDisplayDialog = "StyleSheets/PackageManager/CustomDisplayDialog.uss";
             public static readonly string exportWindowStyleSheet = "StyleSheets/PackageManager/ExportWindow.uss";
-            public static readonly string activeTrustWindowStyleSheet = "StyleSheets/PackageManager/ActiveTrustWindow.uss";
+            public static readonly string trustWindowStyleSheet = "StyleSheets/PackageManager/TrustWindow.uss";
 
             public static readonly string selectionWindowCommon = "StyleSheets/PackageManager/SelectionWindow.uss";
             public static string selectionWindowVariables => EditorGUIUtility.isProSkin ?
@@ -95,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SelectionWindow,
             CustomDisplayDialog,
             ExportWindow,
-            ActiveTrustWindow,
+            TrustWindow,
 
             Count
         }
@@ -130,7 +130,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     _ = customDisplayDialogStyleSheet;
                     _ = exportWindowStyleSheet;
-                    _ = activeTrustWindowStyleSheet;
+                    _ = trustWindowStyleSheet;
                     m_ModalStylesheetPreloaded = true;
                 };
             }
@@ -222,11 +222,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             StyleSheetPath.packageManagerVariables,
             StyleSheetPath.exportWindowStyleSheet);
 
-        public StyleSheet activeTrustWindowStyleSheet =>
-            FindResolvedStyleSheetFromType(StyleSheetType.ActiveTrustWindow)
-            ?? ResolveStyleSheets(StyleSheetType.ActiveTrustWindow,
+        public StyleSheet trustWindowStyleSheet =>
+            FindResolvedStyleSheetFromType(StyleSheetType.TrustWindow)
+            ?? ResolveStyleSheets(StyleSheetType.TrustWindow,
                 StyleSheetPath.packageManagerVariables,
-                StyleSheetPath.activeTrustWindowStyleSheet);
+                StyleSheetPath.trustWindowStyleSheet);
 
         public StyleSheet selectionWindowStyleSheet
         {

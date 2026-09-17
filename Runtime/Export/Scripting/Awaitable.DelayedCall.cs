@@ -78,9 +78,15 @@ namespace UnityEngine
         }
 
 
+        // Wire-up gate: EnsureDelayedCallWiredUp re-wires the callbacks whenever this is false, so the
+        // reset applied on reload re-arms the wiring on the next delayed call.
         [AutoStaticsCleanupOnCodeReload] // all Next Frame callbacks are reset on code reload
+        [IgnoreForUAL0015("Wire-up gate re-armed on demand by EnsureDelayedCallWiredUp")]
         private static bool _nextFrameAndEndOfFrameWiredUp = false;
+        // Registration handle owned by the gate above; re-acquired by EnsureDelayedCallWiredUp when the
+        // gate re-arms.
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Registration handle re-acquired when EnsureDelayedCallWiredUp re-arms the gate")]
         static CancellationTokenRegistration _nextFrameAndEndOfFrameWiredUpCTRegistration = default;
         static void EnsureDelayedCallWiredUp()
         {

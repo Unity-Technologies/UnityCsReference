@@ -22,15 +22,6 @@ namespace Unity.SmartStrings.Core.Parsing;
 [Serializable]
 public class Parser
 {
-    // Deprecated values. Used here for upgrading.
-    [SerializeField, HideInInspector] internal char m_OpeningBrace = '{';
-    [SerializeField, HideInInspector] internal char m_ClosingBrace = '}';
-    [SerializeField, HideInInspector] internal bool m_AlphanumericSelectors;
-    [SerializeField, HideInInspector] internal string m_AllowedSelectorChars = "";
-    [SerializeField, HideInInspector] internal string m_Operators = "";
-    [SerializeField, HideInInspector] internal bool m_AlternativeEscaping;
-    [SerializeField, HideInInspector] internal char m_AlternativeEscapeChar = '\\';
-
     const int k_PositionUndefined = -1;
     readonly ParsingErrorText m_ParsingErrorText = new();
 
@@ -78,78 +69,6 @@ public class Parser
         m_InputFormat = string.Empty;
         m_ResultFormat = null;
     }
-
-    /// <summary>
-    /// Includes a-z and A-Z in the list of allowed selector chars.
-    /// </summary>
-    [Obsolete("Alphanumeric selectors are always enabled", false)]
-    public void AddAlphanumericSelectors()
-    {
-        // Do nothing - this is the standard behavior
-    }
-
-    /// <summary>
-    /// Adds specific characters to the allowed selector chars.
-    /// </summary>
-    /// <param name="chars">Characters to add to the allowed selector characters.</param>
-    [Obsolete("Use 'Settings.Parser.AddCustomSelectorChars' instead.", false)]
-    public void AddAdditionalSelectorChars(string chars)
-    {
-        m_ParserSettings.AddCustomSelectorChars(chars.ToCharArray());
-    }
-
-    /// <summary>
-    /// Adds specific characters to the allowed operator chars.
-    /// An operator is a character that is in the selector string
-    /// that splits the selectors.
-    /// </summary>
-    /// <param name="chars">Characters to add to the allowed operator characters.</param>
-    [Obsolete("Use 'Settings.Parser.AddCustomOperatorChars' instead.", false)]
-    public void AddOperators(string chars)
-    {
-        m_ParserSettings.AddCustomOperatorChars(chars.ToCharArray());
-    }
-
-    /// <summary>
-    /// Sets the AlternativeEscaping option to True
-    /// so that braces will only be escaped after the
-    /// specified character. The only allowed escape character is the backslash '\'.
-    /// </summary>
-    /// <param name="alternativeEscapeChar">Defaults to backslash</param>
-    [Obsolete("Use 'Settings.StringFormatCompatibility' instead.", false)]
-    public void UseAlternativeEscapeChar(char alternativeEscapeChar = '\\')
-    {
-        if (alternativeEscapeChar != m_ParserSettings.CharLiteralEscapeChar)
-        {
-            throw new ArgumentException("Cannot set an escape character other than '\\'",
-                nameof(alternativeEscapeChar));
-        }
-        Settings.StringFormatCompatibility = false;
-    }
-
-    /// <summary>
-    /// Uses {{ and }} for escaping braces for compatibility with string.Format.
-    /// However, this does not work very well with nested placeholders,
-    /// so it is recommended to use an 'alternative' escape char, which is the
-    /// backslash.
-    /// </summary>
-    [Obsolete("Use 'Settings.StringFormatCompatibility' instead.", false)]
-    public void UseBraceEscaping()
-    {
-        throw new NotSupportedException($"Init-only property {nameof(Settings)}.{nameof(Settings.StringFormatCompatibility)} can only be set in an object initializer");
-    }
-
-    /// <summary>
-    /// Sets the closing and opening braces for the parser.
-    /// </summary>
-    /// <param name="opening">Character to use as the opening brace.</param>
-    /// <param name="closing">Character to use as the closing brace.</param>
-    [Obsolete("This feature has been removed", false)]
-    public void UseAlternativeBraces(char opening, char closing)
-    {
-        throw new NotSupportedException("This feature has been removed");
-    }
-
     /// <summary>
     /// The Container for indexes pointing to positions within the input format.
     /// </summary>
@@ -822,7 +741,7 @@ public class Parser
     }
 
     /// <summary>
-    /// Handles <see cref="ParsingError"/>s as defined in <see cref="SmartSettings.ParseErrorAction"/>.
+    /// Handles <see cref="ParsingError"/>s as defined by the parser's error action.
     /// </summary>
     /// <param name="parsingErrors"></param>
     /// <param name="currentResult"></param>

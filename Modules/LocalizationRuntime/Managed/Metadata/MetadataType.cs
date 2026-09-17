@@ -15,7 +15,7 @@ namespace Unity.Localization;
 /// a <see cref="SharedTableData"/>, a <see cref="ResourceTable"/>, a shared key, and a per-locale entry.
 /// </remarks>
 /// <example>
-/// <para>Test whether a value allows attaching metadata to a shared table entry.</para>
+/// Test whether a value allows attaching metadata to a shared table entry.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/MetadataTypeExample.cs"/>
 /// </example>
 /// <seealso cref="MetadataAttribute"/>
@@ -65,7 +65,7 @@ public enum MetadataType
 /// whether more than one item of the kind can be added to the same target.
 /// </remarks>
 /// <example>
-/// <para>Restrict a custom metadata kind to shared table entries and give it a menu label.</para>
+/// Restrict a custom metadata kind to shared table entries and give it a menu label.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/MetadataAttributeExample.cs"/>
 /// </example>
 /// <seealso cref="MetadataType"/>

@@ -51,7 +51,7 @@ public class Selector : FormatItem
 
     /// <summary>
     /// Clears the <see cref="Selector"/>.
-    /// <para>This method gets called by <see cref="SelectorPool"/> when it releases an instance.</para>
+    /// This method gets called by <see cref="SelectorPool"/> when it releases an instance.
     /// </summary>
     public override void Clear()
     {

@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: HeadlessRuntime not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -16,7 +14,13 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private const int k_MaxTrackedRecompiles = 100;
         private const string k_EditorPrefsKey = "RecompileTracker_Times";
 
-        [AutoStaticsCleanupOnCodeReload] // lazy cache; must re-load from EditorPrefs after reload
+        // The lazy guard in GetRecompileTimes() is `if (s_CachedRecompileTimes != null) return ...`, so it
+        // only reloads from EditorPrefs when the field is null. Automatic cleanup of a List<T> empties the
+        // list instead of nulling it, which makes the guard pass with an EMPTY list: the EditorPrefs reload
+        // is skipped and the next SaveRecompileTimes() overwrites the stored history with the truncated one,
+        // permanently losing the tracked recompile times. The entries are plain DateTime values, so keeping
+        // the list across a reload pins nothing.
+        [NoAutoStaticsCleanup]
         private static List<DateTime> s_CachedRecompileTimes;
 
         [OnCodeLoaded]
@@ -98,5 +102,3 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

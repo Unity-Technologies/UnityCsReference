@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -98,6 +97,10 @@ namespace UnityEditor.Search
         /// </summary>
         public Texture2D thumbnail;
 
+        // Alpha multiplier SearchViewItem applies to the rendered thumbnail. 1 (default) leaves every
+        // item's icon fully opaque; a provider lowers it to dim the icon of an item it considers inactive.
+        internal float thumbnailAlpha = 1f;
+
         /// <summary>
         /// Large preview of the search item. Usually cached by fetchPreview.
         /// </summary>
@@ -138,6 +141,9 @@ namespace UnityEditor.Search
         /// A search item representing none, usually used to clear the selection.
         /// </summary>
         [AutoStaticsCleanupOnCodeReload]
+        // Lazy sentinel item: the clear getter recreates it (and re-resolves its thumbnail) whenever it is
+        // null, so the next access hands back an equivalent item.
+        [IgnoreForUAL0015("Lazy sentinel item recreated by the clear getter on the next access")]
         private static SearchItem s_ClearItem;
         public static SearchItem clear
         {
@@ -149,7 +155,9 @@ namespace UnityEditor.Search
                     {
                         label = "None",
                         score = int.MinValue,
+#pragma warning disable UAL0018 // the capturing item (s_ClearItem) is itself cleaned on code reload, so it never outlives the provider it points at
                         provider = defaultProvider,
+#pragma warning restore UAL0018
                         options = SearchItemOptions.CustomAction
                     };
                 }
@@ -166,7 +174,12 @@ namespace UnityEditor.Search
         public SearchItem(string _id)
         {
             id = _id;
+            // The fallback provider is a stateless stub: it carries no search results and derives
+            // label and thumbnail from the item it is asked about, so an item still holding the
+            // pre-reload stub behaves exactly like one holding a fresh stub.
+#pragma warning disable UAL0018 // stateless fallback stub; a retained reference behaves identically to a fresh one
             provider = defaultProvider;
+#pragma warning restore UAL0018
         }
 
         /// <summary>
@@ -730,4 +743,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

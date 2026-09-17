@@ -18,34 +18,34 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public readonly GUIContent  shaderPass          = EditorGUIUtility.TrTextContent("Shader Pass", "Shader Pass used to update the Custom Render Texture.");
-            public readonly GUIContent  needSwap            = EditorGUIUtility.TrTextContent("Swap (Double Buffer)", "If ticked, and if the texture is double buffered, a request is made to swap the buffers before the next update. If this is not ticked, the buffers will not be swapped.");
-            public readonly GUIContent  updateMode          = EditorGUIUtility.TrTextContent("Update Mode", "Specify how the texture should be updated.");
-            public readonly GUIContent  updatePeriod        = EditorGUIUtility.TrTextContent("Period", "Period in seconds at which real-time textures are updated (0.0 will update every frame).");
-            public readonly GUIContent  doubleBuffered      = EditorGUIUtility.TrTextContent("Double Buffered", "If ticked, the Custom Render Texture is double buffered so that you can access it during its own update. If unticked, the Custom Render Texture will be not be double buffered.");
-            public readonly GUIContent  initializationMode  = EditorGUIUtility.TrTextContent("Initialization Mode", "Specify how the texture should be initialized.");
-            public readonly GUIContent  initSource          = EditorGUIUtility.TrTextContent("Source", "Specify if the texture is initialized by a Material or by a Texture and a Color.");
-            public readonly GUIContent  initColor           = EditorGUIUtility.TrTextContent("Color", "Color with which the Custom Render Texture is initialized.");
-            public readonly GUIContent  initTexture         = EditorGUIUtility.TrTextContent("Texture", "Texture with which the Custom Render Texture is initialized (multiplied by the initialization color).");
-            public readonly GUIContent  initMaterial        = EditorGUIUtility.TrTextContent("Material", "Material with which the Custom Render Texture is initialized.");
-            public readonly GUIContent  updateZoneSpace     = EditorGUIUtility.TrTextContent("Update Zone Space", "Space in which the update zones are expressed (Normalized or Pixel space).");
-            public readonly GUIContent  updateZoneList      = EditorGUIUtility.TrTextContent("Update Zones", "List of partial update zones.");
-            public readonly GUIContent  cubemapFacesLabel   = EditorGUIUtility.TrTextContent("Cubemap Faces", "Enable or disable rendering on each face of the cubemap.");
-            public readonly GUIContent  updateZoneCenter    = EditorGUIUtility.TrTextContent("Center", "Center of the partial update zone.");
-            public readonly GUIContent  updateZoneSize      = EditorGUIUtility.TrTextContent("Size", "Size of the partial update zone.");
-            public readonly GUIContent  updateZoneRotation  = EditorGUIUtility.TrTextContent("Rotation", "Rotation of the update zone.");
-            public readonly GUIContent  wrapUpdateZones     = EditorGUIUtility.TrTextContent("Wrap Update Zones", "If ticked, Update zones will wrap around the border of the Custom Render Texture. If unticked, Update zones will be clamped at the border of the Custom Render Texture.");
+            public readonly GUIContent  shaderPass          = L10n.TextContent("Shader Pass", "Shader Pass used to update the Custom Render Texture.", null, null);
+            public readonly GUIContent  needSwap            = L10n.TextContent("Swap (Double Buffer)", "If ticked, and if the texture is double buffered, a request is made to swap the buffers before the next update. If this is not ticked, the buffers will not be swapped.", null, null);
+            public readonly GUIContent  updateMode          = L10n.TextContent("Update Mode", "Specify how the texture should be updated.", null, null);
+            public readonly GUIContent  updatePeriod        = L10n.TextContent("Period", "Period in seconds at which real-time textures are updated (0.0 will update every frame).", null, null);
+            public readonly GUIContent  doubleBuffered      = L10n.TextContent("Double Buffered", "If ticked, the Custom Render Texture is double buffered so that you can access it during its own update. If unticked, the Custom Render Texture will be not be double buffered.", null, null);
+            public readonly GUIContent  initializationMode  = L10n.TextContent("Initialization Mode", "Specify how the texture should be initialized.", null, null);
+            public readonly GUIContent  initSource          = L10n.TextContent("Source", "Specify if the texture is initialized by a Material or by a Texture and a Color.", null, null);
+            public readonly GUIContent  initColor           = L10n.TextContent("Color", "Color with which the Custom Render Texture is initialized.", null, null);
+            public readonly GUIContent  initTexture         = L10n.TextContent("Texture", "Texture with which the Custom Render Texture is initialized (multiplied by the initialization color).", null, null);
+            public readonly GUIContent  initMaterial        = L10n.TextContent("Material", "Material with which the Custom Render Texture is initialized.", null, null);
+            public readonly GUIContent  updateZoneSpace     = L10n.TextContent("Update Zone Space", "Space in which the update zones are expressed (Normalized or Pixel space).", null, null);
+            public readonly GUIContent  updateZoneList      = L10n.TextContent("Update Zones", "List of partial update zones.", null, null);
+            public readonly GUIContent  cubemapFacesLabel   = L10n.TextContent("Cubemap Faces", "Enable or disable rendering on each face of the cubemap.", null, null);
+            public readonly GUIContent  updateZoneCenter    = L10n.TextContent("Center", "Center of the partial update zone.", null, null);
+            public readonly GUIContent  updateZoneSize      = L10n.TextContent("Size", "Size of the partial update zone.", null, null);
+            public readonly GUIContent  updateZoneRotation  = L10n.TextContent("Rotation", "Rotation of the update zone.", null, null);
+            public readonly GUIContent  wrapUpdateZones     = L10n.TextContent("Wrap Update Zones", "If ticked, Update zones will wrap around the border of the Custom Render Texture. If unticked, Update zones will be clamped at the border of the Custom Render Texture.", null, null);
 
-            public readonly GUIContent[] updateModeStrings = { EditorGUIUtility.TrTextContent("On Load"), EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("On Demand") };
+            public readonly GUIContent[] updateModeStrings = { L10n.TextContent("On Load", null, null, null), L10n.TextContent("Realtime", null, null, null), L10n.TextContent("On Demand", null, null, null) };
             public readonly int[] updateModeValues = { (int)CustomRenderTextureUpdateMode.OnLoad, (int)CustomRenderTextureUpdateMode.Realtime, (int)CustomRenderTextureUpdateMode.OnDemand };
 
-            public readonly GUIContent[] initSourceStrings = { EditorGUIUtility.TrTextContent("Texture and Color"), EditorGUIUtility.TrTextContent("Material") };
+            public readonly GUIContent[] initSourceStrings = { L10n.TextContent("Texture and Color", null, null, null), L10n.TextContent("Material", null, null, null) };
             public readonly int[] initSourceValues = { (int)CustomRenderTextureInitializationSource.TextureAndColor, (int)CustomRenderTextureInitializationSource.Material };
 
-            public readonly GUIContent[] updateZoneSpaceStrings = { EditorGUIUtility.TrTextContent("Normalized"), EditorGUIUtility.TrTextContent("Pixel") };
+            public readonly GUIContent[] updateZoneSpaceStrings = { L10n.TextContent("Normalized", null, null, null), L10n.TextContent("Pixel", null, null, null) };
             public readonly int[] updateZoneSpaceValues = { (int)CustomRenderTextureUpdateZoneSpace.Normalized, (int)CustomRenderTextureUpdateZoneSpace.Pixel };
 
-            public readonly GUIContent[] cubemapFaces = { EditorGUIUtility.TextContent("+X"), EditorGUIUtility.TextContent("-X"), EditorGUIUtility.TextContent("+Y"), EditorGUIUtility.TextContent("-Y"), EditorGUIUtility.TrTextContent("+Z"), EditorGUIUtility.TrTextContent("-Z") };
+            public readonly GUIContent[] cubemapFaces = { EditorGUIUtility.TextContent("+X"), EditorGUIUtility.TextContent("-X"), EditorGUIUtility.TextContent("+Y"), EditorGUIUtility.TextContent("-Y"), L10n.TextContent("+Z", null, null, null), L10n.TextContent("-Z", null, null, null) };
         }
 
         [NoAutoStaticsCleanup] // GUIContent/int-array-only lazy Styles cache; contents survive code reload

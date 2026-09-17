@@ -91,6 +91,14 @@ namespace UnityEditorInternal.Profiling
             InfoTextChanged?.Invoke(text);
         }
 
+        // Resets to the no-data state. Nothing else overwrites the info text once the profile is
+        // cleared, so the last resolved frame's text would otherwise stay on screen.
+        public void Clear()
+        {
+            ClearCurrentTexture();
+            SetInfoText(string.Empty);
+        }
+
         public void LoadScreenshot(int logicalFrame, int firstAvailableFrame)
         {
             try

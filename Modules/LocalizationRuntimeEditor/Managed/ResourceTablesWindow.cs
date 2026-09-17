@@ -82,12 +82,19 @@ partial class ResourceTablesWindow : EditorWindow
     public static void ShowWindow(ResourceTableCollection selected)
     {
         var window = GetWindow<ResourceTablesWindow>();
-        window.titleContent = new GUIContent(L10n.Tr("Resource Tables", null), LocIcons.Tex(LocIcons.Table));
+        window.titleContent = new GUIContent(LocLabels.ResourceTables, LocIcons.Tex(LocIcons.Table));
         window.minSize = new Vector2(720, 420);
         if (selected != null)
+            window.Collection = selected;
+    }
+
+    internal ResourceTableCollection Collection
+    {
+        get => m_Collection;
+        set
         {
-            window.m_Collection = selected;
-            window.RefreshAll();
+            m_Collection = value;
+            RefreshAll();
         }
     }
 
@@ -157,19 +164,30 @@ partial class ResourceTablesWindow : EditorWindow
         m_Root = root;
         rootTemplate.CloneTree(root);
         m_NewCollectionButton = root.Q<Button>("new-collection-button");
+        m_NewCollectionButton.text = LocLabels.NewCollection;
         m_NewCollectionButton.clicked += CreateCollection;
+        root.Q<Label>("collections-eyebrow").text = LocLabels.Collections;
+        root.Q<Label>("collection-label").text = LocLabels.Collection;
+        root.Q<Label>("new-key-label").text = LocLabels.NewKey;
+        root.Q<HelpBox>("empty-help").text = LocLabels.SelectCollectionHelp;
 
         m_SearchField = root.Q<ToolbarSearchField>("search-field");
         m_SearchField.tooltip = L10n.Tr("Filter entries. Supports k:key v:value type:string|asset smart:true loc:code and free text.", null);
         m_SearchField.SetValueWithoutNotify(m_Search);
         m_SearchField.RegisterValueChangedCallback(evt => SetSearchQuery(evt.newValue));
         m_SearchInfo = root.Q<Label>("search-info");
-        root.Q<Button>("import-export-button").clicked += () => ShowImportExportMenu(root.Q<Button>("import-export-button"));
+        var importButton = root.Q<Button>("import-button");
+        importButton.text = LocLabels.Import;
+        importButton.clicked += () => ShowImportMenu(importButton);
+        var exportButton = root.Q<Button>("export-button");
+        exportButton.text = LocLabels.Export;
+        exportButton.clicked += () => ShowExportMenu(exportButton);
 
         m_NewKeyField = root.Q<TextField>("new-key-field");
         m_NewKeyField.RegisterValueChangedCallback(_ => UpdateAddEnabled());
         m_AddRow = root.Q("add-row");
         m_AddEntryButton = root.Q<Button>("add-entry-button");
+        m_AddEntryButton.text = LocLabels.AddEntry;
         m_AddEntryButton.clicked += () => ShowAddEntryMenu(m_AddEntryButton);
 
         m_CollectionsList = root.Q<ListView>("collections-list");
@@ -215,7 +233,12 @@ partial class ResourceTablesWindow : EditorWindow
     {
         if (m_SearchInfo == null || !HasCollection || string.IsNullOrWhiteSpace(m_Search))
             return;
-        var total = m_Collection.SharedData.Entries.Count;
+        var total = 0;
+        foreach (var entry in m_Collection.SharedData.Entries)
+        {
+            if (LocalizationTableAuthoring.IsAddressableKey(entry))
+                total++;
+        }
         m_SearchInfo.text = $"{(visible?.Count ?? total)} {L10n.Tr("of", null)} {total}";
     }
 
@@ -316,20 +339,17 @@ partial class ResourceTablesWindow : EditorWindow
         }
         m_EmptyHelp.style.display = DisplayStyle.None;
 
-        if (m_Collection.SharedData.Entries.Count == 0)
-        {
-            m_ColumnsContainer.Add(EmptyState(LocIcons.Table, L10n.Tr("No entries yet", null),
-                L10n.Tr("Type a key name above and choose Add Entry to create the first entry.", null), null, null));
-            return;
-        }
-
         var visible = ComputeVisibleKeys();
         UpdateResultInfo(visible);
-        var items = BuildItems(visible, out var matchedAny);
-        if (!matchedAny)
+        var items = BuildItems(visible);
+        if (items.Count == 0)
         {
-            m_ColumnsContainer.Add(EmptyState(LocIcons.Search, L10n.Tr("No entries match your search", null),
-                null, L10n.Tr("Clear search", null), () => { m_Search = string.Empty; m_SearchField?.SetValueWithoutNotify(string.Empty); RebuildTree(); }));
+            if (string.IsNullOrWhiteSpace(m_Search))
+                m_ColumnsContainer.Add(EmptyState(LocIcons.Table, L10n.Tr("No entries yet", null),
+                    L10n.Tr("Type a key name above and choose Add Entry to create the first entry.", null), null, null));
+            else
+                m_ColumnsContainer.Add(EmptyState(LocIcons.Search, L10n.Tr("No entries match your search", null),
+                    null, L10n.Tr("Clear search", null), () => { m_Search = string.Empty; m_SearchField?.SetValueWithoutNotify(string.Empty); RebuildTree(); }));
             return;
         }
 
@@ -349,7 +369,7 @@ partial class ResourceTablesWindow : EditorWindow
         // The Key and actions columns are structural: not optional, so the header menu can't hide them.
         m_Tree.columns.Add(new Column
         {
-            title = L10n.Tr("Key", null),
+            title = LocLabels.Key,
             width = 186f,
             optional = false,
             makeHeader = KeyHeader,
@@ -360,7 +380,7 @@ partial class ResourceTablesWindow : EditorWindow
         // ID is always a column so it stays toggleable in the header menu; its state persists in m_ShowId.
         var idColumn = new Column
         {
-            title = L10n.Tr("ID", null),
+            title = LocLabels.Id,
             width = 120f,
             visible = m_ShowId,
             makeCell = () => { var label = new Label(); label.AddToClassList(LocClasses.LocIdCell); return label; },
@@ -621,7 +641,7 @@ partial class ResourceTablesWindow : EditorWindow
         return header;
     }
 
-    void ShowImportExportMenu(Button anchor)
+    void ShowExportMenu(Button anchor)
     {
         var menu = new GenericDropdownMenu();
         if (!HasCollection)
@@ -630,16 +650,49 @@ partial class ResourceTablesWindow : EditorWindow
             menu.DropDown(anchor.worldBound, anchor, DropdownMenuSizeMode.Auto);
             return;
         }
+        foreach (var window in TableFormatRegistry.Windows)
+        {
+            var format = window;
+            menu.AddItem($"{format.DisplayName}...", false, () => format.Open(m_Collection));
+        }
         foreach (var exporter in TableFormatRegistry.Exporters)
         {
             var format = exporter;
-            menu.AddItem($"{L10n.Tr("Export", null)}/{format.DisplayName}", false, () => ExportCollection(format));
+            if (format is ITableCollectionWindowFormat)
+                continue;
+            menu.AddItem($"{format.DisplayName}...", false, () => ExportCollection(format));
+        }
+        foreach (var service in TableFormatRegistry.Services)
+        {
+            var target = service;
+            if (target.IsAvailable(m_Collection))
+                menu.AddItem(target.DisplayName, false, () => PushToService(target));
+        }
+        menu.DropDown(anchor.worldBound, anchor, DropdownMenuSizeMode.Auto);
+    }
+
+    void ShowImportMenu(Button anchor)
+    {
+        var menu = new GenericDropdownMenu();
+        if (!HasCollection)
+        {
+            menu.AddDisabledItem(L10n.Tr("Select a collection first", null), false);
+            menu.DropDown(anchor.worldBound, anchor, DropdownMenuSizeMode.Auto);
+            return;
         }
         foreach (var importer in TableFormatRegistry.Importers)
         {
             var format = importer;
-            menu.AddItem($"{L10n.Tr("Import", null)}/{format.DisplayName} ({L10n.Tr("Merge", null)})", false, () => ImportCollection(format, replace: false));
-            menu.AddItem($"{L10n.Tr("Import", null)}/{format.DisplayName} ({L10n.Tr("Replace", null)})", false, () => ImportCollection(format, replace: true));
+            menu.AddItem($"{format.DisplayName} ({L10n.Tr("Merge", null)})...", false, () => ImportCollection(format, replace: false));
+            menu.AddItem($"{format.DisplayName} ({L10n.Tr("Replace", null)})...", false, () => ImportCollection(format, replace: true));
+        }
+        foreach (var service in TableFormatRegistry.Services)
+        {
+            var target = service;
+            if (!target.IsAvailable(m_Collection))
+                continue;
+            menu.AddItem($"{target.DisplayName} ({L10n.Tr("Merge", null)})", false, () => PullFromService(target, replace: false));
+            menu.AddItem($"{target.DisplayName} ({L10n.Tr("Replace", null)})", false, () => PullFromService(target, replace: true));
         }
         menu.DropDown(anchor.worldBound, anchor, DropdownMenuSizeMode.Auto);
     }
@@ -648,28 +701,27 @@ partial class ResourceTablesWindow : EditorWindow
     {
         if (!HasCollection)
             return;
-        var dir = EditorPrefs.GetString(k_ImportExportDirPref, string.Empty);
-        var path = EditorUtility.SaveFilePanel($"{L10n.Tr("Export", null)} {m_Collection.TableCollectionName}", dir, m_Collection.TableCollectionName, exporter.FileExtension);
-        if (string.IsNullOrEmpty(path))
-            return;
-        EditorPrefs.SetString(k_ImportExportDirPref, Path.GetDirectoryName(path));
         var reporter = new EditorProgressBarReporter();
         try
         {
-            using var writer = new StreamWriter(path, false, new System.Text.UTF8Encoding(false));
-            exporter.Export(writer, m_Collection, reporter);
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogException(e);
-            EditorUtility.DisplayDialog(L10n.Tr("Export failed", null), e.Message, L10n.Tr("OK", null));
-            return;
+            ExportToFile($"{LocLabels.Export} {m_Collection.TableCollectionName}", m_Collection.TableCollectionName, exporter.FileExtension,
+                writer => exporter.Export(writer, m_Collection, reporter));
         }
         finally
         {
             reporter.Clear();
         }
-        EditorUtility.RevealInFinder(path);
+    }
+
+    void ExportToFile(string title, string defaultName, string extension, Action<TextWriter> write)
+    {
+        var dir = EditorPrefs.GetString(k_ImportExportDirPref, string.Empty);
+        var path = EditorUtility.SaveFilePanel(title, dir, defaultName, extension);
+        if (string.IsNullOrEmpty(path))
+            return;
+        EditorPrefs.SetString(k_ImportExportDirPref, Path.GetDirectoryName(path));
+        if (TableFileIO.Write(path, write))
+            EditorUtility.RevealInFinder(path);
     }
 
     void ImportCollection(ITableCollectionImporter importer, bool replace)
@@ -677,7 +729,7 @@ partial class ResourceTablesWindow : EditorWindow
         if (!HasCollection)
             return;
         var dir = EditorPrefs.GetString(k_ImportExportDirPref, string.Empty);
-        var path = EditorUtility.OpenFilePanel($"{L10n.Tr("Import into", null)} {m_Collection.TableCollectionName}", dir, importer.FileExtension);
+        var path = EditorUtility.OpenFilePanel($"{L10n.Tr("Import Into", null)} {m_Collection.TableCollectionName}", dir, importer.FileExtension);
         if (string.IsNullOrEmpty(path))
             return;
         EditorPrefs.SetString(k_ImportExportDirPref, Path.GetDirectoryName(path));
@@ -691,13 +743,7 @@ partial class ResourceTablesWindow : EditorWindow
         var reporter = new EditorProgressBarReporter();
         try
         {
-            using var reader = new StreamReader(path);
-            importer.ImportInto(reader, m_Collection, options, reporter);
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogException(e);
-            EditorUtility.DisplayDialog(L10n.Tr("Import failed", null), e.Message, L10n.Tr("OK", null));
+            TableFileIO.Read(path, reader => importer.ImportInto(reader, m_Collection, options, reporter));
         }
         finally
         {
@@ -708,11 +754,61 @@ partial class ResourceTablesWindow : EditorWindow
         }
     }
 
+    void PushToService(ITableCollectionService service)
+    {
+        if (!HasCollection)
+            return;
+        var reporter = new EditorProgressBarReporter();
+        try
+        {
+            service.Push(m_Collection, reporter);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+            EditorUtility.DisplayDialog(L10n.Tr("Export Failed", null), e.Message, L10n.Tr("OK", null));
+        }
+        finally
+        {
+            reporter.Clear();
+        }
+    }
+
+    void PullFromService(ITableCollectionService service, bool replace)
+    {
+        if (!HasCollection)
+            return;
+        var options = new TableImportOptions
+        {
+            CreateUndo = true,
+            RemoveMissingEntries = replace,
+            CreateMissingKeys = true,
+            CreateMissingLocaleTables = true
+        };
+        var reporter = new EditorProgressBarReporter();
+        try
+        {
+            service.Pull(m_Collection, options, reporter);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+            EditorUtility.DisplayDialog(L10n.Tr("Import Failed", null), e.Message, L10n.Tr("OK", null));
+        }
+        finally
+        {
+            reporter.Clear();
+            // A service can mutate the collection before throwing; refresh even on failure.
+            m_Collection.SharedData?.InvalidateCache();
+            RebuildTree();
+        }
+    }
+
     void ShowKeyHeaderMenu(Button anchor)
     {
         var menu = new GenericDropdownMenu();
-        menu.AddItem(L10n.Tr("Shared metadata…", null), false, () =>
-            MetadataPopup.Show(anchor.worldBound, $"{L10n.Tr("Shared metadata", null)}: {m_Collection.TableCollectionName}", m_Collection.SharedData, "m_Metadata", MetadataType.SharedTableData,
+        menu.AddItem($"{L10n.Tr("Shared Metadata", null)}...", false, () =>
+            MetadataPopup.Show(anchor.worldBound, $"{L10n.Tr("Shared Metadata", null)}: {m_Collection.TableCollectionName}", m_Collection.SharedData, "m_Metadata", MetadataType.SharedTableData,
                 () => { EditorUtility.SetDirty(m_Collection.SharedData); RebuildTree(); }));
         AddColumnItems(menu);
         menu.DropDown(anchor.worldBound, anchor, DropdownMenuSizeMode.Auto);
@@ -720,14 +816,14 @@ partial class ResourceTablesWindow : EditorWindow
 
     void AddColumnItems(GenericDropdownMenu menu)
     {
-        menu.AddItem($"{L10n.Tr("Columns", null)}/{L10n.Tr("ID", null)}", m_ShowId, () => { m_ShowId = !m_ShowId; RebuildTree(); });
+        menu.AddItem($"{L10n.Tr("Columns", null)}/{L10n.Tr("Id", null)}", m_ShowId, () => { m_ShowId = !m_ShowId; RebuildTree(); });
         var visible = VisibleTableCount();
         foreach (var table in Tables())
         {
             var code = table.LocaleIdentifier.Code;
             var isVisible = !m_HiddenLocales.ContainsKey(code);
             var name = LocaleDisplayName(code);
-            var label = string.IsNullOrEmpty(name) ? $"{L10n.Tr("Columns", null)}/{code}" : $"{L10n.Tr("Columns", null)}/{code} · {name}";
+            var label = $"{L10n.Tr("Columns", null)}/{LocaleLabel(code, name)}";
             if (isVisible && visible <= 1)
                 menu.AddDisabledItem(label, true);
             else
@@ -748,12 +844,12 @@ partial class ResourceTablesWindow : EditorWindow
                 anyMissing = true;
                 var captured = locale;
                 var name = LocaleDisplayName(locale.Code);
-                var label = string.IsNullOrEmpty(name) ? $"{L10n.Tr("Add locale", null)}/{locale.Code}" : $"{L10n.Tr("Add locale", null)}/{locale.Code} · {name}";
+                var label = $"{LocLabels.AddLocale}/{LocaleLabel(locale.Code, name)}";
                 menu.AddItem(label, false, () => AddLocaleToCollection(captured));
             }
         }
         if (!anyMissing)
-            menu.AddDisabledItem($"{L10n.Tr("Add locale", null)}/{L10n.Tr("(all project locales added)", null)}", false);
+            menu.AddDisabledItem($"{LocLabels.AddLocale}/{L10n.Tr("(all project locales added)", null)}", false);
     }
 
     static void OnHeaderContextMenu(ContextualMenuPopulateEvent evt, Column column)
@@ -773,16 +869,29 @@ partial class ResourceTablesWindow : EditorWindow
     {
         var code = table.LocaleIdentifier.Code;
         var menu = new GenericDropdownMenu();
-        menu.AddItem(L10n.Tr("Table metadata…", null), false, () =>
-            MetadataPopup.Show(anchor.worldBound, $"{L10n.Tr("Table metadata", null)}: {code}", table, "m_Metadata", MetadataType.ResourceTable,
+        menu.AddItem($"{L10n.Tr("Table Metadata", null)}...", false, () =>
+            MetadataPopup.Show(anchor.worldBound, $"{L10n.Tr("Table Metadata", null)}: {LocaleLabel(code, LocaleDisplayName(code))}", table, "m_Metadata", MetadataType.ResourceTable,
                 () => { EditorUtility.SetDirty(table); RebuildTree(); }));
 
         var visible = VisibleTableCount();
         if (visible > 1)
-            menu.AddItem(L10n.Tr("Hide column", null), false, () => { ToggleLocale(code); RebuildTree(); });
+            menu.AddItem(L10n.Tr("Hide Column", null), false, () => { ToggleLocale(code); RebuildTree(); });
         else
-            menu.AddDisabledItem(L10n.Tr("Hide column", null), false);
+            menu.AddDisabledItem(L10n.Tr("Hide Column", null), false);
+        menu.AddItem($"{LocLabels.ExportCharacterSet}...", false, () => ExportCharacterSet(table));
         menu.DropDown(anchor.worldBound, anchor, DropdownMenuSizeMode.Auto);
+    }
+
+    void ExportCharacterSet(ResourceTable table)
+    {
+        if (!HasCollection)
+            return;
+        ExportToFile(LocLabels.ExportCharacterSet, $"{m_Collection.TableCollectionName} {table.LocaleIdentifier.Code}", "txt", writer =>
+        {
+            var characters = CharacterSetCollectionFormat.NewCharacterSet();
+            CharacterSetCollectionFormat.CollectCharacters(table, characters);
+            CharacterSetCollectionFormat.WriteCharacters(writer, characters);
+        });
     }
 
     void ToggleLocale(string code)
@@ -791,6 +900,9 @@ partial class ResourceTablesWindow : EditorWindow
             m_HiddenLocales[code] = true;
     }
 
+    // Locales read by language name; the code disambiguates regional variants.
+    static string LocaleLabel(string code, string name) => string.IsNullOrEmpty(name) ? code : $"{name} ({code})";
+
     static string LocaleDisplayName(string code)
     {
         var settings = LocalizationEditorSettings.ActiveSettings;
@@ -798,19 +910,19 @@ partial class ResourceTablesWindow : EditorWindow
         return locale?.LocaleName;
     }
 
-    List<TreeViewItemData<object>> BuildItems(HashSet<long> visible, out bool matchedAny)
+    List<TreeViewItemData<object>> BuildItems(HashSet<long> visible)
     {
         var roots = new List<TreeViewItemData<object>>();
         m_KeyItemId.Clear();
         m_ItemIdToKey.Clear();
-        matchedAny = false;
         var id = 0;
         foreach (var sharedEntry in m_Collection.SharedData.Entries)
         {
+            if (!LocalizationTableAuthoring.IsAddressableKey(sharedEntry))
+                continue;
             var keyId = sharedEntry.Id;
             if (visible != null && !visible.Contains(keyId))
                 continue;
-            matchedAny = true;
             var variantKeys = AuthoredVariantKeys(keyId);
             List<TreeViewItemData<object>> children = null;
             if (variantKeys != null && variantKeys.Count > 0)
@@ -847,7 +959,7 @@ partial class ResourceTablesWindow : EditorWindow
             return;
         }
 
-        var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Create resource table collection", null), "New Table Collection", "asset",
+        var path = EditorUtility.SaveFilePanelInProject(L10n.Tr("Create Resource Table Collection", null), "New Table Collection", "asset",
             L10n.Tr("Choose where to save the collection and its per-locale tables.", null));
         if (string.IsNullOrEmpty(path))
             return;

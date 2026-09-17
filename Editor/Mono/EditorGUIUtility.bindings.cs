@@ -119,7 +119,7 @@ namespace UnityEditor
         public static extern bool IsDisplayReferencedByCameras(int displayIndex);
 
         // Send an input event into the game.
-        public static extern void QueueGameViewInputEvent(Event evt);
+        public static extern void QueueGameViewInputEvent([NotNull] Event evt);
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("RenderGameViewCameras is no longer supported.Consider rendering cameras manually.", true)]

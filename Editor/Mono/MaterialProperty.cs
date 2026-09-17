@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SRPFoundation not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -249,14 +248,14 @@ namespace UnityEditor
             static readonly Color overrideLineColor_d = new Color32(0xC4, 0xC4, 0xC4, 0xFF);
             public static Color overrideLineColor { get { return EditorGUIUtility.isProSkin ? overrideLineColor_d : overrideLineColor_l; } }
 
-            public static readonly GUIContent revertContent = EditorGUIUtility.TrTextContent("Revert");
-            public static readonly GUIContent revertAllContent = EditorGUIUtility.TrTextContent("Revert all Overrides");
-            public static readonly GUIContent lockContent = EditorGUIUtility.TrTextContent("Lock in children");
-            public static readonly GUIContent lockOriginContent = EditorGUIUtility.TrTextContent("See lock origin");
+            public static readonly GUIContent revertContent = L10n.TextContent("Revert", null, null, null);
+            public static readonly GUIContent revertAllContent = L10n.TextContent("Revert all Overrides", null, null, null);
+            public static readonly GUIContent lockContent = L10n.TextContent("Lock in children", null, null, null);
+            public static readonly GUIContent lockOriginContent = L10n.TextContent("See lock origin", null, null, null);
 
-            public static readonly GUIContent resetContent = EditorGUIUtility.TrTextContent("Reset");
-            public static readonly GUIContent copyContent = EditorGUIUtility.TrTextContent("Copy");
-            public static readonly GUIContent pasteContent = EditorGUIUtility.TrTextContent("Paste");
+            public static readonly GUIContent resetContent = L10n.TextContent("Reset", null, null, null);
+            public static readonly GUIContent copyContent = L10n.TextContent("Copy", null, null, null);
+            public static readonly GUIContent pasteContent = L10n.TextContent("Paste", null, null, null);
 
             [NoAutoStaticsCleanup] // capture-less editor icon loaded by fixed name; survives reload
             static readonly Texture lockInChildrenIcon = EditorGUIUtility.IconContent("HierarchyLock").image;
@@ -400,7 +399,7 @@ namespace UnityEditor
                 {
                     if (menu.GetItemCount() != 0)
                         menu.AddSeparator("");
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Copy Property Name"), false, () => EditorGUIUtility.systemCopyBuffer = capturedProperties[0].name);
+                    menu.AddItem(L10n.TextContent("Copy Property Name", null, null, null), false, () => EditorGUIUtility.systemCopyBuffer = capturedProperties[0].name);
                 }
 
                 if (menu.GetItemCount() == 0)
@@ -842,4 +841,3 @@ namespace UnityEditor
         }
     }
 } // namespace UnityEngine.Rendering
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

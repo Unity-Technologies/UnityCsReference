@@ -42,6 +42,8 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         protected Image m_Icon;
 
+        Texture2D m_IconOverride;
+
         /// <summary>
         /// The size of one indentation.
         /// </summary>
@@ -169,6 +171,26 @@ namespace Unity.GraphToolkit.Editor
             base.PostBuildUI();
             AddToClassList(ussClassName);
         }
+
+        /// <inheritdoc />
+        public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
+        {
+            base.UpdateUIFromModel(visitor);
+
+            RefreshIcon();
+        }
+
+        /// <summary>
+        /// Sets the icon a visualization <see cref="GraphVisualization.ConditionVisualManager"/> overrides this row
+        /// with, or <c>null</c> to fall back to the condition's own icon.
+        /// </summary>
+        internal void SetIconOverride(Texture2D icon)
+        {
+            m_IconOverride = icon;
+            RefreshIcon();
+        }
+
+        void RefreshIcon() => m_Icon.image = m_IconOverride ?? ConditionModel.Icon;
 
         internal void CallBuildContextualMenuForTests(ContextualMenuPopulateEvent evt) => BuildContextualMenu(evt);
     }

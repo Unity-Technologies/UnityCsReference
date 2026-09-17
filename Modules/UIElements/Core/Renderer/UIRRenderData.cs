@@ -53,6 +53,9 @@ namespace UnityEngine.UIElements.UIR
         RegisteredForBackdropFilterCallbacks = 1 << 10,
         // Curved UI: the engine-owned curvature mesh modifier is registered on the owner.
         HasCurvatureModifier = 1 << 11,
+        // Value of the owner's isWorldSpaceRootPanelComponent at insertion time, which decides both the
+        // render-chain cut and whether z-indexed descendants may be promoted past this element.
+        CutsRenderChain = 1 << 12,
     }
 
     // This is intended for data that used infrequently, to such an extent, that it's not worth being directly in RenderChainVEData.
@@ -242,6 +245,12 @@ namespace UnityEngine.UIElements.UIR
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (flags & RenderDataFlags.IsGroupTransform) == RenderDataFlags.IsGroupTransform;
+        }
+
+        public bool cutsRenderChain
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (flags & RenderDataFlags.CutsRenderChain) == RenderDataFlags.CutsRenderChain;
         }
 
         // Explicit z-index (auto is encoded as int.MinValue; 0 keeps document order, so both are excluded).

@@ -119,106 +119,106 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent renderMode = EditorGUIUtility.TrTextContent("Render Mode", "Defines the render mode of the particle renderer.");
-            public GUIContent material = EditorGUIUtility.TrTextContent("Material", "Defines the material used to render particles.");
-            public GUIContent trailMaterial = EditorGUIUtility.TrTextContent("Trail Material", "Defines the material used to render particle trails.");
-            public GUIContent meshes = EditorGUIUtility.TrTextContent("Meshes", "Specifies the Meshes to render for each particle. When using a non-uniform distribution, you can also specify the weightings for each Mesh.");
-            public GUIContent meshDistribution = EditorGUIUtility.TrTextContent("Mesh Distribution", "Specifies the method Unity uses to randomly assign Meshes to particles.");
-            public GUIContent minParticleSize = EditorGUIUtility.TrTextContent("Min Particle Size", "How small is a particle allowed to be on screen at least? 1 is entire viewport. 0.5 is half viewport.");
-            public GUIContent maxParticleSize = EditorGUIUtility.TrTextContent("Max Particle Size", "How large is a particle allowed to be on screen at most? 1 is entire viewport. 0.5 is half viewport.");
-            public GUIContent cameraSpeedScale = EditorGUIUtility.TrTextContent("Camera Scale", "How much the camera speed is factored in when determining particle stretching.");
-            public GUIContent speedScale = EditorGUIUtility.TrTextContent("Speed Scale", "Defines the length of the particle compared to its speed.");
-            public GUIContent lengthScale = EditorGUIUtility.TrTextContent("Length Scale", "Defines the length of the particle compared to its width. This determines the base length of particles when they don't move. A value of 1 is neutral, causing no stretching or squashing.");
-            public GUIContent freeformStretching = EditorGUIUtility.TrTextContent("Freeform Stretching", "Enables alternative stretching behavior where particles don't get thin when viewed head-on and where particle rotation can be independent from stretching direction.");
-            public GUIContent rotateWithStretchDirection = EditorGUIUtility.TrTextContent("Rotate With Stretch", "Rotate the particles based on the direction they are stretched in. This is added on top of other particle rotation.");
-            public GUIContent sortingFudge = EditorGUIUtility.TrTextContent("Sorting Fudge", "Lower the number and most likely these particles will appear in front of other transparent objects, including other particles.");
-            public GUIContent sortingFudgeDisabledDueToSortingGroup = EditorGUIUtility.TrTextContent("Sorting Fudge", "This is disabled as the Sorting Group component handles the sorting for this Renderer.");
-            public GUIContent sortMode = EditorGUIUtility.TrTextContent("Sort Mode", "Draw order of the particles. They can be sorted by:\n- Distance (from the camera position)\n- Oldest particles in front\n- Youngest prticles in front\n- Depth (distance from the camera plane)\n- Distance Reversed (from the camera position)\n- Depth Reversed (distance from the camera plane)");
-            public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Set whether the rotation of the particles is defined in Screen or World space.");
-            public GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Only opaque materials cast shadows");
-            public GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "Only opaque materials receive shadows. When using deferred rendering, all opaque objects receive shadows.");
-            public GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the particle size.");
-            public GUIContent staticShadowCaster = EditorGUIUtility.TrTextContent("Static Shadow Caster", " When enabled, Unity considers this renderer as being static for the sake of shadow rendering. If the SRP implements cached shadow maps, this field indicates to the render pipeline what renderers are considered static and what renderers are considered dynamic.");
-            public GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.");
-            public GUIContent normalDirection = EditorGUIUtility.TrTextContent("Normal Direction", "Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.");
-            public GUIContent allowRoll = EditorGUIUtility.TrTextContent("Allow Roll", "Allows billboards to roll with the camera. It is often useful to disable this option when using VR.");
+            public GUIContent renderMode = L10n.TextContent("Render Mode", "Defines the render mode of the particle renderer.", null, null);
+            public GUIContent material = L10n.TextContent("Material", "Defines the material used to render particles.", null, null);
+            public GUIContent trailMaterial = L10n.TextContent("Trail Material", "Defines the material used to render particle trails.", null, null);
+            public GUIContent meshes = L10n.TextContent("Meshes", "Specifies the Meshes to render for each particle. When using a non-uniform distribution, you can also specify the weightings for each Mesh.", null, null);
+            public GUIContent meshDistribution = L10n.TextContent("Mesh Distribution", "Specifies the method Unity uses to randomly assign Meshes to particles.", null, null);
+            public GUIContent minParticleSize = L10n.TextContent("Min Particle Size", "How small is a particle allowed to be on screen at least? 1 is entire viewport. 0.5 is half viewport.", null, null);
+            public GUIContent maxParticleSize = L10n.TextContent("Max Particle Size", "How large is a particle allowed to be on screen at most? 1 is entire viewport. 0.5 is half viewport.", null, null);
+            public GUIContent cameraSpeedScale = L10n.TextContent("Camera Scale", "How much the camera speed is factored in when determining particle stretching.", null, null);
+            public GUIContent speedScale = L10n.TextContent("Speed Scale", "Defines the length of the particle compared to its speed.", null, null);
+            public GUIContent lengthScale = L10n.TextContent("Length Scale", "Defines the length of the particle compared to its width. This determines the base length of particles when they don't move. A value of 1 is neutral, causing no stretching or squashing.", null, null);
+            public GUIContent freeformStretching = L10n.TextContent("Freeform Stretching", "Enables alternative stretching behavior where particles don't get thin when viewed head-on and where particle rotation can be independent from stretching direction.", null, null);
+            public GUIContent rotateWithStretchDirection = L10n.TextContent("Rotate With Stretch", "Rotate the particles based on the direction they are stretched in. This is added on top of other particle rotation.", null, null);
+            public GUIContent sortingFudge = L10n.TextContent("Sorting Fudge", "Lower the number and most likely these particles will appear in front of other transparent objects, including other particles.", null, null);
+            public GUIContent sortingFudgeDisabledDueToSortingGroup = L10n.TextContent("Sorting Fudge", "This is disabled as the Sorting Group component handles the sorting for this Renderer.", null, null);
+            public GUIContent sortMode = L10n.TextContent("Sort Mode", "Draw order of the particles. They can be sorted by:\n- Distance (from the camera position)\n- Oldest particles in front\n- Youngest prticles in front\n- Depth (distance from the camera plane)\n- Distance Reversed (from the camera position)\n- Depth Reversed (distance from the camera plane)", null, null);
+            public GUIContent rotation = L10n.TextContent("Rotation", "Set whether the rotation of the particles is defined in Screen or World space.", null, null);
+            public GUIContent castShadows = L10n.TextContent("Cast Shadows", "Only opaque materials cast shadows", null, null);
+            public GUIContent receiveShadows = L10n.TextContent("Receive Shadows", "Only opaque materials receive shadows. When using deferred rendering, all opaque objects receive shadows.", null, null);
+            public GUIContent shadowBias = L10n.TextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the particle size.", null, null);
+            public GUIContent staticShadowCaster = L10n.TextContent("Static Shadow Caster", " When enabled, Unity considers this renderer as being static for the sake of shadow rendering. If the SRP implements cached shadow maps, this field indicates to the render pipeline what renderers are considered static and what renderers are considered dynamic.", null, null);
+            public GUIContent motionVectors = L10n.TextContent("Motion Vectors", "Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.", null, null);
+            public GUIContent normalDirection = L10n.TextContent("Normal Direction", "Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.", null, null);
+            public GUIContent allowRoll = L10n.TextContent("Allow Roll", "Allows billboards to roll with the camera. It is often useful to disable this option when using VR.", null, null);
 
-            public GUIContent sortingLayer = EditorGUIUtility.TrTextContent("Sorting Layer", "Name of the Renderer's sorting layer.");
-            public GUIContent sortingOrder = EditorGUIUtility.TrTextContent("Order in Layer", "Renderer's order within a sorting layer");
-            public GUIContent space = EditorGUIUtility.TrTextContent("Render Alignment", "Specifies if the particles face the camera, align to world axes, or stay local to the system's transform.");
-            public GUIContent alignedToDirectionSpace = EditorGUIUtility.TrTextContent("Render Alignment", "Specifies if the particles face the camera, align to world axes, or stay local to the system's transform. When using Align to Direction in the Shape module, Particle Systems only support Local and World Render Alignments.");
-            public GUIContent pivot = EditorGUIUtility.TrTextContent("Pivot", "Applies an offset to the pivot of particles, as a multiplier of its size.");
-            public GUIContent flip = EditorGUIUtility.TrTextContent("Flip", "Cause some particles to be flipped horizontally and/or vertically. (Set between 0 and 1, where a higher value causes more to flip)");
-            public GUIContent flipMeshes = EditorGUIUtility.TrTextContent("Flip", "Cause some mesh particles to be flipped along each of their axes. Use a shader with CullMode=None, to avoid inside-out geometry. (Set between 0 and 1, where a higher value causes more to flip)");
-            public GUIContent visualizePivot = EditorGUIUtility.TrTextContent("Visualize Pivot", "Render the pivot positions of the particles.");
-            public GUIContent useCustomVertexStreams = EditorGUIUtility.TrTextContent("Custom Vertex Streams", "Choose whether to send custom particle data to the shader.");
-            public GUIContent useCustomTrailVertexStreams = EditorGUIUtility.TrTextContent("Custom Trail Vertex Streams", "Choose whether to send custom particle trail data to the shader.");
-            public GUIContent enableGPUInstancing = EditorGUIUtility.TrTextContent("Enable Mesh GPU Instancing", "When rendering mesh particles, use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
-            public GUIContent applyActiveColorSpace = EditorGUIUtility.TrTextContent("Apply Active Color Space", "When using Linear Rendering, particle colors will be converted appropriately before being passed to the GPU.");
+            public GUIContent sortingLayer = L10n.TextContent("Sorting Layer", "Name of the Renderer's sorting layer.", null, null);
+            public GUIContent sortingOrder = L10n.TextContent("Order in Layer", "Renderer's order within a sorting layer", null, null);
+            public GUIContent space = L10n.TextContent("Render Alignment", "Specifies if the particles face the camera, align to world axes, or stay local to the system's transform.", null, null);
+            public GUIContent alignedToDirectionSpace = L10n.TextContent("Render Alignment", "Specifies if the particles face the camera, align to world axes, or stay local to the system's transform. When using Align to Direction in the Shape module, Particle Systems only support Local and World Render Alignments.", null, null);
+            public GUIContent pivot = L10n.TextContent("Pivot", "Applies an offset to the pivot of particles, as a multiplier of its size.", null, null);
+            public GUIContent flip = L10n.TextContent("Flip", "Cause some particles to be flipped horizontally and/or vertically. (Set between 0 and 1, where a higher value causes more to flip)", null, null);
+            public GUIContent flipMeshes = L10n.TextContent("Flip", "Cause some mesh particles to be flipped along each of their axes. Use a shader with CullMode=None, to avoid inside-out geometry. (Set between 0 and 1, where a higher value causes more to flip)", null, null);
+            public GUIContent visualizePivot = L10n.TextContent("Visualize Pivot", "Render the pivot positions of the particles.", null, null);
+            public GUIContent useCustomVertexStreams = L10n.TextContent("Custom Vertex Streams", "Choose whether to send custom particle data to the shader.", null, null);
+            public GUIContent useCustomTrailVertexStreams = L10n.TextContent("Custom Trail Vertex Streams", "Choose whether to send custom particle trail data to the shader.", null, null);
+            public GUIContent enableGPUInstancing = L10n.TextContent("Enable Mesh GPU Instancing", "When rendering mesh particles, use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).", null, null);
+            public GUIContent applyActiveColorSpace = L10n.TextContent("Apply Active Color Space", "When using Linear Rendering, particle colors will be converted appropriately before being passed to the GPU.", null, null);
 
-            public GUIContent meshGPUInstancingTrailsWarning = EditorGUIUtility.TrTextContent("GPU Instancing does not support using the same shader for the Trails. Please use a different shader, or disable the GPU Instancing checkbox.");
+            public GUIContent meshGPUInstancingTrailsWarning = L10n.TextContent("GPU Instancing does not support using the same shader for the Trails. Please use a different shader, or disable the GPU Instancing checkbox.", null, null, null);
 
             // Keep in sync with enum in ParticleSystemRenderer.h
             public GUIContent[] particleTypes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Billboard"),
-                EditorGUIUtility.TrTextContent("Stretched Billboard"),
-                EditorGUIUtility.TrTextContent("Horizontal Billboard"),
-                EditorGUIUtility.TrTextContent("Vertical Billboard"),
-                EditorGUIUtility.TrTextContent("Mesh"),
-                EditorGUIUtility.TrTextContent("None")
+                L10n.TextContent("Billboard", null, null, null),
+                L10n.TextContent("Stretched Billboard", null, null, null),
+                L10n.TextContent("Horizontal Billboard", null, null, null),
+                L10n.TextContent("Vertical Billboard", null, null, null),
+                L10n.TextContent("Mesh", null, null, null),
+                L10n.TextContent("None", null, null, null)
             };
 
             public GUIContent[] sortTypes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("None"),
-                EditorGUIUtility.TrTextContent("By Distance"),
-                EditorGUIUtility.TrTextContent("Oldest in Front"),
-                EditorGUIUtility.TrTextContent("Youngest in Front"),
-                EditorGUIUtility.TrTextContent("By Depth"),
-                EditorGUIUtility.TrTextContent("By Distance (Reverse)"),
-                EditorGUIUtility.TrTextContent("By Depth (Reverse)")
+                L10n.TextContent("None", null, null, null),
+                L10n.TextContent("By Distance", null, null, null),
+                L10n.TextContent("Oldest in Front", null, null, null),
+                L10n.TextContent("Youngest in Front", null, null, null),
+                L10n.TextContent("By Depth", null, null, null),
+                L10n.TextContent("By Distance (Reverse)", null, null, null),
+                L10n.TextContent("By Depth (Reverse)", null, null, null)
             };
 
             public GUIContent[] spaces = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("View"),
-                EditorGUIUtility.TrTextContent("World"),
-                EditorGUIUtility.TrTextContent("Local"),
-                EditorGUIUtility.TrTextContent("Facing"),
-                EditorGUIUtility.TrTextContent("Velocity")
+                L10n.TextContent("View", null, null, null),
+                L10n.TextContent("World", null, null, null),
+                L10n.TextContent("Local", null, null, null),
+                L10n.TextContent("Facing", null, null, null),
+                L10n.TextContent("Velocity", null, null, null)
             };
 
             public GUIContent[] alignedToDirectionSpaces = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("World"),
-                EditorGUIUtility.TrTextContent("Local")
+                L10n.TextContent("World", null, null, null),
+                L10n.TextContent("Local", null, null, null)
             };
 
             public GUIContent[] localSpace = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Local")
+                L10n.TextContent("Local", null, null, null)
             };
 
             public GUIContent[] motionVectorOptions = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Camera Motion Only"),
-                EditorGUIUtility.TrTextContent("Per Object Motion"),
-                EditorGUIUtility.TrTextContent("Force No Motion")
+                L10n.TextContent("Camera Motion Only", null, null, null),
+                L10n.TextContent("Per Object Motion", null, null, null),
+                L10n.TextContent("Force No Motion", null, null, null)
             };
 
-            public GUIContent maskingMode = EditorGUIUtility.TrTextContent("Masking", "Defines the masking behavior of the particles. See Sprite Masking documentation for more details.");
+            public GUIContent maskingMode = L10n.TextContent("Masking", "Defines the masking behavior of the particles. See Sprite Masking documentation for more details.", null, null);
             public GUIContent[] maskInteractions = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("No Masking"),
-                EditorGUIUtility.TrTextContent("Visible Inside Mask"),
-                EditorGUIUtility.TrTextContent("Visible Outside Mask")
+                L10n.TextContent("No Masking", null, null, null),
+                L10n.TextContent("Visible Inside Mask", null, null, null),
+                L10n.TextContent("Visible Outside Mask", null, null, null)
             };
 
             public GUIContent[] meshDistributionOptions = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Uniform Random"),
-                EditorGUIUtility.TrTextContent("Non-uniform Random")
+                L10n.TextContent("Uniform Random", null, null, null),
+                L10n.TextContent("Non-uniform Random", null, null, null)
             };
 
             private static VertexStreamInfo ParticleVertexStream(string n) { return new VertexStreamInfo { name = n, mode = VertexStreamInfo.Mode.Particles }; }

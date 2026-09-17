@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
@@ -246,18 +245,23 @@ namespace Unity.UI.Builder
             m_AddUSSMenu.menu.MenuItems().Clear();
 
             {
+                // Disabled in StyleSheet Editing Mode: the stylesheet set is fixed to the opened sheet.
                 m_AddUSSMenu.menu.AppendAction(
                     BuilderConstants.ExplorerStyleSheetsPaneCreateNewUSSMenu,
                     action =>
                     {
                         BuilderStyleSheetsUtilities.CreateNewUSSAsset(m_PaneWindow);
-                    });
+                    },
+                    action => m_PaneWindow.document.isStyleSheetEditingMode
+                        ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
                 m_AddUSSMenu.menu.AppendAction(
                     BuilderConstants.ExplorerStyleSheetsPaneAddExistingUSSMenu,
                     action =>
                     {
                         BuilderStyleSheetsUtilities.AddExistingUSSToAsset(m_PaneWindow);
-                    });
+                    },
+                    action => m_PaneWindow.document.isStyleSheetEditingMode
+                        ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
             }
         }
 
@@ -375,4 +379,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

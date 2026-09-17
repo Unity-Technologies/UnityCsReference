@@ -18,7 +18,7 @@ namespace UnityEditor
     {
         internal class Styles
         {
-            public static readonly GUIContent overridePreprocessor = EditorGUIUtility.TrTextContent("Override preprocessor", "Select preprocessor to use for this shader.");
+            public static readonly GUIContent overridePreprocessor = L10n.TextContent("Override preprocessor", "Select preprocessor to use for this shader.", null, null);
         }
 
         internal override void OnHeaderControlsGUI()

@@ -82,7 +82,11 @@ internal sealed class AddTemplatesToElementCommand : Command<AddTemplatesToEleme
             var uxmlTypeDescription = UxmlSerializedDataRegistry.GetDescription(typeof(TemplateContainer).FullName);
             var attribute = uxmlTypeDescription.FindAttributeWithPropertyName(nameof(TemplateContainer.templateUXML));
 
-            var uxmlValue = new TemplateContainer.TemplateUXML { templateId = ParentAsset.visualTreeAsset.GetTemplateNameFromPath(assetPath) };
+            var uxmlValue = new TemplateContainer.TemplateUXML
+            {
+                templateAsset = template,
+                templateId = ParentAsset.visualTreeAsset.GetTemplateNameFromPath(assetPath)
+            };
             attribute.SetSerializedValue(templateAsset.serializedData, uxmlValue, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
             visualTreeAsset.ReparentElementInDocument(templateAsset, ParentAsset, index);
             toSelectAssets.Add(templateAsset);

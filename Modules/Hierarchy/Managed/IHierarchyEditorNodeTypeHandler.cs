@@ -24,6 +24,9 @@ namespace Unity.Hierarchy
         bool OnSetName(HierarchyView view, in HierarchyNode node, string name);
         // Return null to use the raw node name as it exists in native (fast no-alloc path). Override to decorate or replace the default node name.
         string GetDisplayNameOverride(HierarchyView view, in HierarchyNode node) => null;
+        // Return null to start the rename field from the text the row displays. Override when that text carries
+        // decorations that are not part of the editable name.
+        string GetRenameTextOverride(HierarchyView view, in HierarchyNode node) => null;
         bool CanDuplicate(HierarchyView view);
         bool OnDuplicate(HierarchyView view);
         bool CanDelete(HierarchyView view);

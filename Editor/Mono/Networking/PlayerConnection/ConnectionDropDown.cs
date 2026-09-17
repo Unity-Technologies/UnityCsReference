@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Kernel not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -610,8 +609,13 @@ namespace UnityEditor.Networking.PlayerConnection
         private ConnectionDropDownMultiColumnHeader multiColumnHeader;
         private IConnectionStateInternal state;
         [AutoStaticsCleanupOnCodeReload]
+        // Column layout for the connection dropdown, which a code reload closes; the next open finds
+        // this null and rebuilds it with CreateDefaultMultiColumnHeaderState.
+        [IgnoreForUAL0015("Column layout rebuilt by CreateDefaultMultiColumnHeaderState on the next open")]
         private static MultiColumnHeaderState multiColumnHeaderState;
         [AutoStaticsCleanupOnCodeReload]
+        // Rebuilt together with the column state above when the dropdown is next opened.
+        [IgnoreForUAL0015("Tree view state rebuilt alongside the column layout on the next open")]
         private static TreeViewState treeViewState;
         private List<ConnectionDropDownItem> connectionItems;
         [AutoStaticsCleanupOnCodeReload]
@@ -633,18 +637,18 @@ namespace UnityEditor.Networking.PlayerConnection
                 treeViewState = new TreeViewState();
                 multiColumnHeaderState = CreateDefaultMultiColumnHeaderState(100);
                 #pragma warning restore UAL0015
-                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the header and tree view live on this popup content instance, which only exists while the connection dropdown is open — a code reload closes the dropdown, and the next open finds the cleared statics and rebuilds the state together with the views that read it
                 multiColumnHeader = new ConnectionDropDownMultiColumnHeader(multiColumnHeaderState);
                 m_connectionTreeView = new ConnectionTreeView(treeViewState, multiColumnHeader, ClosePopUp) { dropDownItems = connectionItems };
-                #pragma warning restore UAL0018
+#pragma warning restore UAL0018
                 SetMinColumnWidths();
                 return;
             }
 
-            #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // the header and tree view live on this popup content instance, which only exists while the connection dropdown is open — a code reload closes the dropdown, and the next open finds the cleared statics and rebuilds the state together with the views that read it
             multiColumnHeader = new ConnectionDropDownMultiColumnHeader(multiColumnHeaderState);
             m_connectionTreeView = new ConnectionTreeView(treeViewState, multiColumnHeader, ClosePopUp) { dropDownItems = connectionItems };
-            #pragma warning restore UAL0018
+#pragma warning restore UAL0018
         }
 
         static class Content
@@ -938,4 +942,3 @@ namespace UnityEditor.Networking.PlayerConnection
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

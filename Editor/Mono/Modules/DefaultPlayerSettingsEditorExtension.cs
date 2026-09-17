@@ -125,7 +125,7 @@ namespace UnityEditor.Modules
         public virtual void SerializedObjectUpdated() {}
 
         protected SerializedProperty m_MTRendering;
-        private static readonly GUIContent m_MTRenderingTooltip = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
+        private static readonly GUIContent m_MTRenderingTooltip = L10n.TextContent("Multithreaded Rendering*", null, null, null);
 
         protected virtual GUIContent MultithreadedRenderingGUITooltip()
         {

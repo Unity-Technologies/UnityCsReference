@@ -14,6 +14,29 @@ namespace Unity.U2D.Physics
     /// <summary>
     /// A <see cref="PhysicsWorld"/> definition used to specify important initial properties.
     /// </summary>
+    /// <remarks>
+    /// For more information about definitions, refer to <see cref="PhysicsBodyDefinition"/>.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Create a world definition, configure it, then create a world from it.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class WorldDefinitionExample : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         PhysicsWorldDefinition worldDefinition = new PhysicsWorldDefinition();
+    ///         worldDefinition.gravity = new Vector2(0f, -9.81f);
+    ///         PhysicsWorld world = PhysicsWorld.Create(worldDefinition);
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsBodyDefinition"/>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
@@ -132,12 +155,15 @@ namespace Unity.U2D.Physics
         public bool contactFilterCallbacks { readonly get => m_ContactFilterCallbacks; set => m_ContactFilterCallbacks = value; }
 
         /// <summary>
-        /// Controls if pre-solve callbacks will be called.
+        /// Controls if pre-contact and pre-continuous callbacks will be called.
         /// This only applies to Dynamic bodies and is ignored for triggers.
         /// These are relatively expensive so disabling them can provide a significant performance benefit.
-        /// A pre-solve callback will call the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="PhysicsCallbacks.IPreSolveCallback"/>.
         /// </summary>
-        public bool preSolveCallbacks { readonly get => m_PreSolveCallbacks; set => m_PreSolveCallbacks = value; }
+        /// <remarks>
+        /// A shape only produces these callbacks if its own <see cref="PhysicsShape.preContactCallbacks"/> is also set.
+        /// The deprecated <see cref="PhysicsCallbacks.IPreSolveCallback"/> is also driven by this switch, for targets that only implement it.
+        /// </remarks>
+        public bool preContactCallbacks { readonly get => m_PreContactCallbacks; set => m_PreContactCallbacks = value; }
 
         /// <summary>
         /// Controls if body update callback targets are automatically called.
@@ -270,6 +296,21 @@ namespace Unity.U2D.Physics
         public int drawOrder { readonly get => m_DrawOrder; set => m_DrawOrder = value; }
 
         /// <summary>
+        /// Draws a body, its shapes and its joints at its assigned Transform's current world pose instead of its
+        /// simulated physics pose, whenever that body is writing its pose to the Transform.
+        /// Turning this on costs extra computation for every body drawn, and what gets drawn is no longer a picture
+        /// of the simulation: shapes can appear to be touching, overlapping, or separated from each other when the
+        /// simulation itself says otherwise.
+        /// </summary>
+        /// <remarks>
+        /// Only affects a body whose write mode produces a pose that can differ from the simulated one,
+        /// <see cref="PhysicsBody.TransformWriteMode.Interpolate"/> or <see cref="PhysicsBody.TransformWriteMode.Extrapolate"/>.
+        /// A body left at <see cref="PhysicsBody.TransformWriteMode.Current"/> or <see cref="PhysicsBody.TransformWriteMode.Off"/>
+        /// keeps drawing from its simulated pose either way. See <see cref="PhysicsBody.transformWriteMode"/>.
+        /// </remarks>
+        public bool drawAtTransform { readonly get => m_DrawAtTransform; set => m_DrawAtTransform = value; }
+
+        /// <summary>
         /// Controls what colors are used to draw <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/>, <see cref="PhysicsJoint"/> etc.
         /// See <see cref="PhysicsWorld.DrawColors"/>.
         /// </summary>
@@ -301,7 +342,7 @@ namespace Unity.U2D.Physics
         [SerializeField] bool m_ContinuousAllowed;
         [SerializeField] bool m_EventGroupingAllowed;
         [SerializeField] bool m_ContactFilterCallbacks;
-        [SerializeField] bool m_PreSolveCallbacks;
+        [SerializeField] [FormerlySerializedAs("m_PreSolveCallbacks")] bool m_PreContactCallbacks;
         [SerializeField] bool m_AutoBodyUpdateCallbacks;
         [SerializeField] bool m_AutoJointThresholdCallbacks;
         [SerializeField] [Min(0.0f)] float m_BounceThreshold;
@@ -322,6 +363,7 @@ namespace Unity.U2D.Physics
         [SerializeField] [Range(0.0001f, 10f)] float m_DrawNormalScale;
         [SerializeField] [FormerlySerializedAs("m_DrawImpulseScale")] [Range(0.0001f, 10f)] float m_DrawForceScale;
         [SerializeField] int m_DrawOrder;
+        [SerializeField] bool m_DrawAtTransform;
         [SerializeField] PhysicsWorld.DrawColors m_DrawColors;
         [SerializeField] PhysicsWorld.WorldCapacity m_Capacity;
 

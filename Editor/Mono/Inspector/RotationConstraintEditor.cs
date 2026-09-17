@@ -28,10 +28,10 @@ namespace UnityEditor
 
         private class Styles : ConstraintStyleBase
         {
-            GUIContent m_RotationAtRest = EditorGUIUtility.TrTextContent("Rotation At Rest");
-            GUIContent m_RotationOffset = EditorGUIUtility.TrTextContent("Rotation Offset");
+            GUIContent m_RotationAtRest = L10n.TextContent("Rotation At Rest", null, null, null);
+            GUIContent m_RotationOffset = L10n.TextContent("Rotation Offset", null, null, null);
 
-            GUIContent m_RotationAxes = EditorGUIUtility.TrTextContent("Freeze Rotation Axes");
+            GUIContent m_RotationAxes = L10n.TextContent("Freeze Rotation Axes", null, null, null);
 
             public override GUIContent AtRest { get { return m_RotationAtRest; } }
             public override GUIContent Offset { get { return m_RotationOffset; } }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AssetImporters not yet converted
 using System;
 using UnityEngine;
 using UnityEditor.AssetImporters;
@@ -141,67 +140,67 @@ namespace UnityEditor
 
         protected static class Styles
         {
-            public static readonly GUIContent Scene = EditorGUIUtility.TrTextContent("Scene", "FBX Scene import settings");
-            public static readonly GUIContent ScaleFactor = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the models compared to what is in the source file.");
-            public static readonly GUIContent UseFileScale = EditorGUIUtility.TrTextContent("Convert Units", "Convert file units to Unity ones.");
+            public static readonly GUIContent Scene = L10n.TextContent("Scene", "FBX Scene import settings", null, null);
+            public static readonly GUIContent ScaleFactor = L10n.TextContent("Scale Factor", "How much to scale the models compared to what is in the source file.", null, null);
+            public static readonly GUIContent UseFileScale = L10n.TextContent("Convert Units", "Convert file units to Unity ones.", null, null);
 
-            public static readonly GUIContent ImportBlendShapes = EditorGUIUtility.TrTextContent("Import BlendShapes", "Should Unity import BlendShapes.");
-            public static readonly GUIContent ImportBlendShapesDeformPercent = EditorGUIUtility.TrTextContent("Import Deform Percent", "Import BlendShapes deform percent. If disabled, all values will be set to 0.");
-            public static readonly GUIContent ImportVisibility = EditorGUIUtility.TrTextContent("Import Visibility", "Use visibility properties to enable or disable MeshRenderer components.");
-            public static readonly GUIContent ImportCameras = EditorGUIUtility.TrTextContent("Import Cameras");
-            public static readonly GUIContent ImportLights = EditorGUIUtility.TrTextContent("Import Lights");
-            public static readonly GUIContent PreserveHierarchy = EditorGUIUtility.TrTextContent("Preserve Hierarchy", "Always create an explicit prefab root, even if the model only has a single root.");
-            public static readonly GUIContent SortHierarchyByName = EditorGUIUtility.TrTextContent("Sort Hierarchy By Name", "Sort game objects children by name.");
-            public static readonly GUIContent StrictVertexDataChecks = EditorGUIUtility.TrTextContent("Strict Vertex Data Checks", "Enables strict checks on Vertex data. If enabled, checks discard invalid data, this may result in missing vertex data but ensures that import results are consistent and can prevent crashes.");
+            public static readonly GUIContent ImportBlendShapes = L10n.TextContent("Import BlendShapes", "Should Unity import BlendShapes.", null, null);
+            public static readonly GUIContent ImportBlendShapesDeformPercent = L10n.TextContent("Import Deform Percent", "Import BlendShapes deform percent. If disabled, all values will be set to 0.", null, null);
+            public static readonly GUIContent ImportVisibility = L10n.TextContent("Import Visibility", "Use visibility properties to enable or disable MeshRenderer components.", null, null);
+            public static readonly GUIContent ImportCameras = L10n.TextContent("Import Cameras", null, null, null);
+            public static readonly GUIContent ImportLights = L10n.TextContent("Import Lights", null, null, null);
+            public static readonly GUIContent PreserveHierarchy = L10n.TextContent("Preserve Hierarchy", "Always create an explicit prefab root, even if the model only has a single root.", null, null);
+            public static readonly GUIContent SortHierarchyByName = L10n.TextContent("Sort Hierarchy By Name", "Sort game objects children by name.", null, null);
+            public static readonly GUIContent StrictVertexDataChecks = L10n.TextContent("Strict Vertex Data Checks", "Enables strict checks on Vertex data. If enabled, checks discard invalid data, this may result in missing vertex data but ensures that import results are consistent and can prevent crashes.", null, null);
 
-            public static readonly GUIContent Meshes = EditorGUIUtility.TrTextContent("Meshes", "Global settings for generated meshes");
-            public static readonly GUIContent MeshCompressionLabel = EditorGUIUtility.TrTextContent("Mesh Compression" , "Higher compression ratio means lower mesh precision. If enabled, the mesh bounds and a lower bit depth per component are used to compress the mesh data.");
-            public static readonly GUIContent IsReadable = EditorGUIUtility.TrTextContent("Read/Write", "Allow vertices and indices to be accessed from script.");
-            public static readonly GUIContent OptimizationFlags = EditorGUIUtility.TrTextContent("Optimize Mesh", "Reorder vertices and/or polygons for better GPU performance.");
-            public static readonly GUIContent MeshLods = EditorGUIUtility.TrTextContent("Mesh LODs");
+            public static readonly GUIContent Meshes = L10n.TextContent("Meshes", "Global settings for generated meshes", null, null);
+            public static readonly GUIContent MeshCompressionLabel = L10n.TextContent("Mesh Compression" , "Higher compression ratio means lower mesh precision. If enabled, the mesh bounds and a lower bit depth per component are used to compress the mesh data.", null, null);
+            public static readonly GUIContent IsReadable = L10n.TextContent("Read/Write", "Allow vertices and indices to be accessed from script.", null, null);
+            public static readonly GUIContent OptimizationFlags = L10n.TextContent("Optimize Mesh", "Reorder vertices and/or polygons for better GPU performance.", null, null);
+            public static readonly GUIContent MeshLods = L10n.TextContent("Mesh LODs", null, null, null);
             public static readonly GUIContent MeshLodsInfoBox = EditorGUIUtility.TrTextContent("The quality of simplified meshes depends on the complexity and structure of the original mesh. To achieve the best outcomes, read the documentation to understand the feature's capabilities, limitations, and optimal workflows.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
-            public static readonly GUIContent GenerateMeshLods = EditorGUIUtility.TrTextContent("Generate Mesh LODs", "Generate Mesh LODs during the import process.");
-            public static readonly GUIContent MeshLodLimit = EditorGUIUtility.TrTextContent("Limit LODs", "Enable to limit the number of LODs that Unity generates.");
-            public static readonly GUIContent MaximumMeshLod = EditorGUIUtility.TrTextContent("Maximum Level", "Enter the maximum index number of generated LODs.");
-            public static readonly GUIContent Collision = EditorGUIUtility.TrTextContent("Collision");
-            public static readonly GUIContent GenerateColliders = EditorGUIUtility.TrTextContent("Generate Colliders", "Should Unity generate mesh colliders for all meshes.");
-            public static readonly GUIContent PreBakeConvexCollisionMesh = EditorGUIUtility.TrTextContent("Pre-bake Convex Collision Mesh", "Enable this property if the Mesh is used by a convex Mesh Collider.");
-            public static readonly GUIContent PreBakeTriangleCollisionMesh = EditorGUIUtility.TrTextContent("Pre-bake Triangle Collision Mesh", "Enable this property if the Mesh is used by a non convex Mesh Collider.");
-            public static readonly GUIContent MeshLodDiscardOddLevels = EditorGUIUtility.TrTextContent("Discard Odd Levels", "Limits the number of generated LODs by discarding all odd LOD indices.");
+            public static readonly GUIContent GenerateMeshLods = L10n.TextContent("Generate Mesh LODs", "Generate Mesh LODs during the import process.", null, null);
+            public static readonly GUIContent MeshLodLimit = L10n.TextContent("Limit LODs", "Enable to limit the number of LODs that Unity generates.", null, null);
+            public static readonly GUIContent MaximumMeshLod = L10n.TextContent("Maximum Level", "Enter the maximum index number of generated LODs.", null, null);
+            public static readonly GUIContent Collision = L10n.TextContent("Collision", null, null, null);
+            public static readonly GUIContent GenerateColliders = L10n.TextContent("Generate Colliders", "Should Unity generate mesh colliders for all meshes.", null, null);
+            public static readonly GUIContent PreBakeConvexCollisionMesh = L10n.TextContent("Pre-bake Convex Collision Mesh", "Enable this property if the Mesh is used by a convex Mesh Collider.", null, null);
+            public static readonly GUIContent PreBakeTriangleCollisionMesh = L10n.TextContent("Pre-bake Triangle Collision Mesh", "Enable this property if the Mesh is used by a non convex Mesh Collider.", null, null);
+            public static readonly GUIContent MeshLodDiscardOddLevels = L10n.TextContent("Discard Odd Levels", "Limits the number of generated LODs by discarding all odd LOD indices.", null, null);
 
-            public static readonly GUIContent Geometry = EditorGUIUtility.TrTextContent("Geometry", "Detailed mesh data");
-            public static readonly GUIContent KeepQuads = EditorGUIUtility.TrTextContent("Keep Quads", "If model contains quad faces, they are kept for DX11 tessellation.");
-            public static readonly GUIContent WeldVertices = EditorGUIUtility.TrTextContent("Weld Vertices", "Combine vertices that share the same position in space.");
-            public static readonly GUIContent IndexFormatLabel = EditorGUIUtility.TrTextContent("Index Format", "Format of mesh index buffer. Auto mode picks 16 or 32 bit depending on mesh vertex count.");
+            public static readonly GUIContent Geometry = L10n.TextContent("Geometry", "Detailed mesh data", null, null);
+            public static readonly GUIContent KeepQuads = L10n.TextContent("Keep Quads", "If model contains quad faces, they are kept for DX11 tessellation.", null, null);
+            public static readonly GUIContent WeldVertices = L10n.TextContent("Weld Vertices", "Combine vertices that share the same position in space.", null, null);
+            public static readonly GUIContent IndexFormatLabel = L10n.TextContent("Index Format", "Format of mesh index buffer. Auto mode picks 16 or 32 bit depending on mesh vertex count.", null, null);
 
-            public static readonly GUIContent NormalsLabel = EditorGUIUtility.TrTextContent("Normals", "Source of mesh normals. If Import is selected and a mesh has no normals, they will be calculated instead.");
-            public static readonly GUIContent RecalculateNormalsLabel = EditorGUIUtility.TrTextContent("Normals Mode", "How to weight faces when calculating normals.");
-            public static readonly GUIContent SmoothingAngle = EditorGUIUtility.TrTextContent("Smoothing Angle", "When calculating normals on a mesh that doesn't have smoothing groups, edges between faces will be smooth if this value is greater than the angle between the faces.");
+            public static readonly GUIContent NormalsLabel = L10n.TextContent("Normals", "Source of mesh normals. If Import is selected and a mesh has no normals, they will be calculated instead.", null, null);
+            public static readonly GUIContent RecalculateNormalsLabel = L10n.TextContent("Normals Mode", "How to weight faces when calculating normals.", null, null);
+            public static readonly GUIContent SmoothingAngle = L10n.TextContent("Smoothing Angle", "When calculating normals on a mesh that doesn't have smoothing groups, edges between faces will be smooth if this value is greater than the angle between the faces.", null, null);
 
-            public static readonly GUIContent TangentsLabel = EditorGUIUtility.TrTextContent("Tangents", "Source of mesh tangents. If Import is selected and a mesh has no tangents, they will be calculated instead.");
+            public static readonly GUIContent TangentsLabel = L10n.TextContent("Tangents", "Source of mesh tangents. If Import is selected and a mesh has no tangents, they will be calculated instead.", null, null);
 
-            public static readonly GUIContent BlendShapeNormalsLabel = EditorGUIUtility.TrTextContent("Blend Shape Normals", "Source of blend shape normals. If Import is selected and a blend shape has no normals, they will be calculated instead.");
-            public static readonly GUIContent NormalSmoothingSourceLabel = EditorGUIUtility.TrTextContent("Smoothness Source", "How to determine which edges should be smooth and which should be sharp.");
+            public static readonly GUIContent BlendShapeNormalsLabel = L10n.TextContent("Blend Shape Normals", "Source of blend shape normals. If Import is selected and a blend shape has no normals, they will be calculated instead.", null, null);
+            public static readonly GUIContent NormalSmoothingSourceLabel = L10n.TextContent("Smoothness Source", "How to determine which edges should be smooth and which should be sharp.", null, null);
 
-            public static readonly GUIContent ImportUVs = EditorGUIUtility.TrTextContent("Import UVs", "Determine which UV channels are imported from the source model.");
-            public static readonly GUIContent SwapUVChannels = EditorGUIUtility.TrTextContent("Swap UVs", "Swaps the 2 UV channels in meshes. Use if your diffuse texture uses UVs from the lightmap.");
-            public static readonly GUIContent GenerateSecondaryUV = EditorGUIUtility.TrTextContent("Generate Lightmap UVs", "Generate lightmap UVs into UV1.");
-            public static readonly GUIContent GenerateSecondaryUVAdvanced = EditorGUIUtility.TrTextContent("Lightmap UVs settings", "Advanced settings for Lightmap UVs generation");
+            public static readonly GUIContent ImportUVs = L10n.TextContent("Import UVs", "Determine which UV channels are imported from the source model.", null, null);
+            public static readonly GUIContent SwapUVChannels = L10n.TextContent("Swap UVs", "Swaps the 2 UV channels in meshes. Use if your diffuse texture uses UVs from the lightmap.", null, null);
+            public static readonly GUIContent GenerateSecondaryUV = L10n.TextContent("Generate Lightmap UVs", "Generate lightmap UVs into UV1.", null, null);
+            public static readonly GUIContent GenerateSecondaryUVAdvanced = L10n.TextContent("Lightmap UVs settings", "Advanced settings for Lightmap UVs generation", null, null);
 
-            public static readonly GUIContent secondaryUVAngleDistortion       = EditorGUIUtility.TrTextContent("Angle Error", "Measured in percents. Angle error measures deviation of UV angles from geometry angles. Area error measures deviation of UV triangles area from geometry triangles if they were uniformly scaled.");
-            public static readonly GUIContent secondaryUVAreaDistortion        = EditorGUIUtility.TrTextContent("Area Error");
-            public static readonly GUIContent secondaryUVHardAngle             = EditorGUIUtility.TrTextContent("Hard Angle", "Angle between neighbor triangles that will generate seam.");
-            public static readonly GUIContent secondaryUVMarginMethod          = EditorGUIUtility.TrTextContent("Margin Method", "Method to handle margins between UV charts.");
-            public static readonly GUIContent secondaryUVPackMargin            = EditorGUIUtility.TrTextContent("Pack Margin", "Measured in pixels, assuming mesh will cover an entire 1024x1024 lightmap.");
-            public static readonly GUIContent secondaryUVMinLightmapResolution = EditorGUIUtility.TrTextContent("Min Lightmap Resolution", "The minimum lightmap resolution at which this object will be used. Used to determine a packing which ensures no texel bleeding.");
-            public static readonly GUIContent secondaryUVMinObjectScale        = EditorGUIUtility.TrTextContent("Min Object Scale", "The smallest scale at which this mesh will be used. Used to determine a packing which ensures no texel bleeding.");
+            public static readonly GUIContent secondaryUVAngleDistortion       = L10n.TextContent("Angle Error", "Measured in percents. Angle error measures deviation of UV angles from geometry angles. Area error measures deviation of UV triangles area from geometry triangles if they were uniformly scaled.", null, null);
+            public static readonly GUIContent secondaryUVAreaDistortion        = L10n.TextContent("Area Error", null, null, null);
+            public static readonly GUIContent secondaryUVHardAngle             = L10n.TextContent("Hard Angle", "Angle between neighbor triangles that will generate seam.", null, null);
+            public static readonly GUIContent secondaryUVMarginMethod          = L10n.TextContent("Margin Method", "Method to handle margins between UV charts.", null, null);
+            public static readonly GUIContent secondaryUVPackMargin            = L10n.TextContent("Pack Margin", "Measured in pixels, assuming mesh will cover an entire 1024x1024 lightmap.", null, null);
+            public static readonly GUIContent secondaryUVMinLightmapResolution = L10n.TextContent("Min Lightmap Resolution", "The minimum lightmap resolution at which this object will be used. Used to determine a packing which ensures no texel bleeding.", null, null);
+            public static readonly GUIContent secondaryUVMinObjectScale        = L10n.TextContent("Min Object Scale", "The smallest scale at which this mesh will be used. Used to determine a packing which ensures no texel bleeding.", null, null);
 
             public static readonly GUIContent secondaryUVMinLightmapResolutionNotice = EditorGUIUtility.TrTextContent("The active scene's Lightmap Resolution is less than the specified Min Lightmap Resolution.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
 
-            public static readonly GUIContent ImportVertexColors = EditorGUIUtility.TrTextContent("Import Vertex Colors", "Import the vertex colors channel from the source model.");
+            public static readonly GUIContent ImportVertexColors = L10n.TextContent("Import Vertex Colors", "Import the vertex colors channel from the source model.", null, null);
 
-            public static readonly GUIContent LegacyComputeNormalsFromSmoothingGroupsWhenMeshHasBlendShapes = EditorGUIUtility.TrTextContent("Legacy Blend Shape Normals", "Compute normals from smoothing groups when the mesh has BlendShapes.");
-            public static readonly GUIContent BakeAxisConversion = EditorGUIUtility.TrTextContent("Bake Axis Conversion", "Perform axis conversion on all content for models defined in an axis system that differs from Unity's (left handed, Z forward, Y-up).");
+            public static readonly GUIContent LegacyComputeNormalsFromSmoothingGroupsWhenMeshHasBlendShapes = L10n.TextContent("Legacy Blend Shape Normals", "Compute normals from smoothing groups when the mesh has BlendShapes.", null, null);
+            public static readonly GUIContent BakeAxisConversion = L10n.TextContent("Bake Axis Conversion", "Perform axis conversion on all content for models defined in an axis system that differs from Unity's (left handed, Z forward, Y-up).", null, null);
         }
 
         public override void OnInspectorGUI()
@@ -240,8 +239,8 @@ namespace UnityEditor
             if (m_AddColliders.boolValue && !m_PreBakeTriangleCollisionMesh.boolValue && !m_IsReadable.boolValue)
             {
                 if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                    EditorGUIUtility.TrTextContent("Generating Mesh Colliders is enabled but Read/Write and pre-bake triangle collision are both disabled. In future versions of Unity, the build process will require any of these 2 options to be enabled to generate collision data."),
-                    EditorGUIUtility.TrTextContent("Enable Pre-bake Collision"), 200.0f))
+                    L10n.TextContent("Generating Mesh Colliders is enabled but Read/Write and pre-bake triangle collision are both disabled. In future versions of Unity, the build process will require any of these 2 options to be enabled to generate collision data.", null, null, null),
+                    L10n.TextContent("Enable Pre-bake Collision", null, null, null), 200.0f))
                 {
                     m_PreBakeTriangleCollisionMesh.boolValue = true;
                 }
@@ -583,4 +582,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

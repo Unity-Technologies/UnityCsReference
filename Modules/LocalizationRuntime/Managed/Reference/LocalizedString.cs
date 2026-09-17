@@ -22,7 +22,7 @@ namespace Unity.Localization;
 /// receive the value immediately and again whenever the selected locale changes on <see cref="LocalizationSettings"/>.
 /// </remarks>
 /// <example>
-/// <para>Resolve a localized string and keep a label updated as the locale changes.</para>
+/// Resolve a localized string and keep a label updated as the locale changes.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedStringResolveExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizationSettings"/>
@@ -71,7 +71,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
     /// loaded. Removing the last handler stops the reference from listening for locale changes.
     /// </remarks>
     /// <example>
-    /// <para>Update a UI label whenever the localized value changes.</para>
+    /// Update a UI label whenever the localized value changes.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedStringChangedExample.cs"/>
     /// </example>
     /// <seealso cref="RefreshString"/>
@@ -104,7 +104,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
     /// <param name="args">Optional arguments that Smart String placeholders format against.</param>
     /// <returns>An awaitable that produces the formatted localized string, or an empty string when the reference is empty.</returns>
     /// <example>
-    /// <para>Resolve a string and format it with an argument.</para>
+    /// Resolve a string and format it with an argument.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedStringFormatAsyncExample.cs"/>
     /// </example>
     public Awaitable<string> GetLocalizedStringAsync(params object[] args)
@@ -143,7 +143,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
     /// <param name="args">Optional arguments that Smart String placeholders format against.</param>
     /// <returns>The formatted localized string, or an empty string when it is not available synchronously.</returns>
     /// <example>
-    /// <para>Read an already-loaded localized string.</para>
+    /// Read an already-loaded localized string.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedStringSyncExample.cs"/>
     /// </example>
     public string GetLocalizedString(params object[] args) => ResolveWithScope(null, args);
@@ -159,7 +159,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
     /// <param name="selector">Describes the placeholder being resolved.</param>
     /// <returns>The resolved text, or an empty string when the reference is unset or the nesting limit is reached.</returns>
     /// <example>
-    /// <para>Embed one localized string inside another as a local variable.</para>
+    /// Embed one localized string inside another as a local variable.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedStringNestedExample.cs"/>
     /// </example>
     /// <seealso cref="LocalVariables"/>
@@ -214,7 +214,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
     /// when an external input, such as a value in <see cref="LocalVariables"/>, changes.
     /// </remarks>
     /// <example>
-    /// <para>Refresh after changing a local variable that the string formats against.</para>
+    /// Refresh after changing a local variable that the string formats against.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedStringRefreshExample.cs"/>
     /// </example>
     public void RefreshString()

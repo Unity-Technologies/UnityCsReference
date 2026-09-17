@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.GraphToolkit.Editor.ContextualMenuItems;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -75,7 +76,13 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         protected override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            // we don't want the root group condition view to add elements.
+            // The root group can't be deleted or duplicated, so this only appends the [ConditionMenu] entries, not Delete/Duplicate.
+            if (!IsCorrectTarget(evt.target as VisualElement))
+                return;
+
+            ContextualMenuUserEntries.AppendConditionEntries(evt, TransitionSupportModel, TransitionModel, ConditionModel);
+
+            evt.StopPropagation();
         }
 
         /// <inheritdoc />

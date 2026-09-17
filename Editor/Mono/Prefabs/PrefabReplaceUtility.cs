@@ -196,10 +196,10 @@ namespace UnityEditor
                     if (addAsChildMenuItem)
                     {
                         menu.AddSeparator("");
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Add as Child"), false, MenuActionForInstantiateDraggedPrefabAsChild, (droppedUponGameObject, prefabAsset));
+                        menu.AddItem(L10n.TextContent("Add as Child", null, null, null), false, MenuActionForInstantiateDraggedPrefabAsChild, (droppedUponGameObject, prefabAsset));
                     }
                     menu.AddSeparator("");
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Cancel"), false, () => {/*nop*/ });
+                    menu.AddItem(L10n.TextContent("Cancel", null, null, null), false, () => {/*nop*/ });
                     menu.ShowAsContext();
                 }
                 return true;

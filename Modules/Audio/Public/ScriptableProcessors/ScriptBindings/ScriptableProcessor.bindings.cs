@@ -585,10 +585,25 @@ namespace UnityEngine.Audio
     }
 
     /// <summary>
-    /// A built-in message asking a processor to seek. Send it through <see cref="ControlContext.SendMessage{T}(ProcessorInstance, ref T)"/>
-    /// to a generator instance, for example an <c>AudioClip</c> instantiated as a generator (backed by a SampleProvider),
-    /// including within nested generator graphs.
+    /// A built-in message that moves the playback position of a generator.
     /// </summary>
+    /// <remarks>
+    /// Send a `SeekMessage` to a generator with <see cref="ControlContext.SendMessage{T}(ProcessorInstance, ref T)"/>.
+    /// A generator supports seeking only if it handles this message. An <see cref="AudioClip"/> used as a generator handles
+    /// <see cref="SeekMessage"/> out of the box, including within nested generator hierarchies; a custom generator opts in
+    /// through its control part's <see cref="ProcessorInstance.IControl{TRealtime}.OnMessage"/> method.
+    ///
+    /// <para/>
+    ///
+    /// <see cref="destination"/> is the position to jump to and <see cref="when"/> is the position at which the seek takes effect.
+    /// A null <see cref="when"/> seeks immediately. Send seeks in any order: an <see cref="AudioClip"/> generator applies them
+    /// in send order, and drops a seek whose <see cref="when"/> position playback has already passed when that seek becomes
+    /// the next one due. A custom generator defines its own seek handling in
+    /// <see cref="ProcessorInstance.IControl{TRealtime}.OnMessage"/>; follow the same rules where they apply so seeks behave
+    /// consistently across generator types.
+    /// </remarks>
+    /// <seealso cref="ControlContext.SendMessage{T}(ProcessorInstance, ref T)"/>
+    /// <seealso cref="AudioClip"/>
     public struct SeekMessage
     {
         // Native can't compute the managed type hash, so make it known here. This covers seeks originating
@@ -605,20 +620,24 @@ namespace UnityEngine.Audio
         Unity.IntegerTime.DiscreteTime m_Destination;
         Unity.IntegerTime.DiscreteTime m_When;
 
-        /// <summary>The clip position to seek to.</summary>
+        /// <summary>Content position to jump to.</summary>
         public Unity.IntegerTime.DiscreteTime destination => m_Destination;
 
-        /// <summary>
-        /// The clip position at which the seek fires: it is applied when playback reaches this position
-        /// (which itself jumps on each seek). Null means immediate, so the seek applies at the next block.
-        /// Seeks may be scheduled in any order and are evaluated in send order. A seek whose position
-        /// playback has already passed, including one the cursor jumped past via an earlier seek, is dropped.
-        /// </summary>
+        /// <summary>Content position at which the seek takes effect. Null applies the seek immediately.</summary>
+        /// <remarks>
+        /// An <see cref="AudioClip"/> generator applies seeks in send order, and drops a seek with a warning when
+        /// playback has already passed its position by the time that seek becomes the next one due. A custom
+        /// generator defines its own seek handling. For the full scheduling rules, refer to <see cref="SeekMessage"/>.
+        /// </remarks>
         public Unity.IntegerTime.DiscreteTime? when => m_When.Value >= 0 ? m_When : null;
 
-        /// <summary>Creates a seek request. Omit <paramref name="when"/> (or pass null) for an immediate seek.</summary>
-        /// <param name="destination">The clip position to seek to.</param>
-        /// <param name="when">The clip position at which the seek fires, or null to seek immediately.</param>
+        /// <summary>Creates a seek request.</summary>
+        /// <remarks>
+        /// Omit <paramref name="when"/> or pass `null` to seek immediately, at the start of the next processing block
+        /// after the message reaches the generator.
+        /// </remarks>
+        /// <param name="destination">Content position to jump to.</param>
+        /// <param name="when">Content position at which the seek takes effect, or `null` to seek immediately.</param>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown if <paramref name="destination"/> or <paramref name="when"/> is negative.
         /// </exception>
@@ -725,7 +744,11 @@ namespace UnityEngine.Audio
         OutputProcess = 4,
         OutputProcessEnd = 5,
         OutputRemoved = 6,
-        Message = 7
+        Message = 7,
+        // Effect processing has a different arg struct layout than generator Process
+        // (extra InputBuffer pointer), so it must dispatch under a distinct value - shared
+        // native code needs to pick the right cast to read Self from args.
+        EffectProcess = 8,
     };
 
     enum ControlFunction : UInt32
@@ -787,6 +810,15 @@ namespace UnityEngine.Audio
             {
                 fixed (IGeneratorProcessorExtensions.ProcessArguments* pArgs = &args)
                     InvokeRealtimeGenerateInternal(pAccess, pArgs);
+            }
+        }
+
+        public static unsafe void InvokeRealtimeEffect(in RealtimeAccess access, in IEffectProcessorExtensions.ProcessArguments args)
+        {
+            fixed (RealtimeAccess* pAccess = &access)
+            {
+                fixed (IEffectProcessorExtensions.ProcessArguments* pArgs = &args)
+                    InvokeRealtimeEffectInternal(pAccess, pArgs);
             }
         }
 
@@ -872,6 +904,9 @@ namespace UnityEngine.Audio
 
         [NativeMethod(Name = "audio::InvokeRealtimeGenerate", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         static extern unsafe void InvokeRealtimeGenerateInternal(/*RealtimeAccess**/ void* access, /* GeneratorProduceDataArguments**/ void* args);
+
+        [NativeMethod(Name = "audio::InvokeRealtimeEffect", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
+        static extern unsafe void InvokeRealtimeEffectInternal(/*RealtimeAccess**/ void* access, /* EffectProcessDataArguments**/ void* args);
 
         [NativeMethod(Name = "audio::InvokeRealtimeMessage", IsFreeFunction = true, IsThreadSafe = true, ThrowsException = true)]
         static extern unsafe void InvokeRealtimeMessageInternal(/* ProcessorRealtimeMessageArguments**/ void* args);

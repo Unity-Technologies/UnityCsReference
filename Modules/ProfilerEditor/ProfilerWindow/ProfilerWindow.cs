@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -37,10 +36,10 @@ namespace UnityEditor
     {
         internal static class Styles
         {
-            public static readonly GUIContent addArea = EditorGUIUtility.TrTextContent("Profiler Modules", "Add and remove profiler modules");
-            public static readonly GUIContent deepProfile = EditorGUIUtility.TrTextContent("Deep Profile", "Instrument all scripting method calls to investigate scripts");
-            public static readonly GUIContent deepProfileNotSupported = EditorGUIUtility.TrTextContent("Deep Profile", "Build a Player with Deep Profiling Support to be able to enable instrumentation of all scripting methods in a Player.");
-            public static readonly GUIContent noActiveModules = EditorGUIUtility.TrTextContent("No Profiler Modules are active. Activate modules from the top left-hand drop-down.");
+            public static readonly GUIContent addArea = L10n.TextContent("Profiler Modules", "Add and remove profiler modules", null, null);
+            public static readonly GUIContent deepProfile = L10n.TextContent("Deep Profile", "Instrument all scripting method calls to investigate scripts", null, null);
+            public static readonly GUIContent deepProfileNotSupported = L10n.TextContent("Deep Profile", "Build a Player with Deep Profiling Support to be able to enable instrumentation of all scripting methods in a Player.", null, null);
+            public static readonly GUIContent noActiveModules = L10n.TextContent("No Profiler Modules are active. Activate modules from the top left-hand drop-down.", null, null, null);
 
             public static readonly string enableDeepProfilingWarningDialogTitle = L10n.Tr("Enable deep script profiling", null);
             public static readonly string enableDeepProfilingWarningDialogContent = L10n.Tr("Enabling deep profiling requires reloading scripts.", null);
@@ -49,9 +48,9 @@ namespace UnityEditor
             public static readonly string domainReloadWarningDialogButton = L10n.Tr("Reload", null);
             public static readonly string cancelDialogButton = L10n.Tr("Cancel", null);
 
-            public static readonly GUIContent recordCallstacks = EditorGUIUtility.TrTextContent("Call Stacks", "Record call stacks for special samples such as \"GC.Alloc\". " +
+            public static readonly GUIContent recordCallstacks = L10n.TextContent("Call Stacks", "Record call stacks for special samples such as \"GC.Alloc\". " +
                 "To see the call stacks, select a sample in the CPU Usage module, e.g. in Timeline view. " +
-                "To also see call stacks in Hierarchy view, switch from \"No Details\" to \"Related Data\", select a \"GC.Alloc\" sample and select \"N/A\" items from the list.");
+                "To also see call stacks in Hierarchy view, switch from \"No Details\" to \"Related Data\", select a \"GC.Alloc\" sample and select \"N/A\" items from the list.", null, null);
             public static readonly string[] recordCallstacksOptions =
             {
                 L10n.Tr("GC.Alloc", null), L10n.Tr("UnsafeUtility.Malloc(Persistent)", null), L10n.Tr("JobHandle.Complete", null)
@@ -65,30 +64,30 @@ namespace UnityEditor
                 ProfilerMemoryRecordMode.GCAlloc, ProfilerMemoryRecordMode.UnsafeUtilityMalloc, ProfilerMemoryRecordMode.JobHandleComplete, ProfilerMemoryRecordMode.NativeAlloc
             };
 
-            public static readonly GUIContent profilerRecordOff = EditorGUIUtility.TrIconContent("Record Off", "Record profiling information (F9)");
-            public static readonly GUIContent profilerRecordOn = EditorGUIUtility.TrIconContent("Record On", "Record profiling information (F9)");
+            public static readonly GUIContent profilerRecordOff = L10n.IconContent("Record Off", "Record profiling information (F9)", null);
+            public static readonly GUIContent profilerRecordOn = L10n.IconContent("Record On", "Record profiling information (F9)", null);
 
             [NoAutoStaticsCleanup] // Fixed content, safe to persist
             public static SVC<Color> borderColor =
                 new SVC<Color>("--theme-profiler-border-color-darker", Color.black);
-            public static readonly GUIContent showHideCaptures = EditorGUIUtility.TrIconContent("LeftPanel", "Show/Hide Captures List");
-            public static readonly GUIContent prevFrame = EditorGUIUtility.TrIconContent("Animation.PrevKey", "Previous frame");
-            public static readonly GUIContent nextFrame = EditorGUIUtility.TrIconContent("Animation.NextKey", "Next frame");
-            public static readonly GUIContent currentFrame = EditorGUIUtility.TrIconContent("Animation.LastKey", "Current frame");
-            public static readonly GUIContent frame = EditorGUIUtility.TrTextContent("Frame: ", "Selected frame / Total number of frames");
-            public static readonly GUIContent clearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play", "Clear the captured data on entering Play Mode, or connecting to a new Player");
-            public static readonly GUIContent clearData = EditorGUIUtility.TrTextContent("Clear", "Clear the captured data");
-            public static readonly GUIContent saveProfilingData = EditorGUIUtility.TrIconContent("SaveAs", "Save current profiling information to a binary file");
-            public static readonly GUIContent loadWindowTitle = EditorGUIUtility.TrTextContent("Load Window");
-            public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrIconContent("Import", "Load binary profiling information from a file. Shift click to append to the existing data");
+            public static readonly GUIContent showHideCaptures = L10n.IconContent("LeftPanel", "Show/Hide Captures List", null);
+            public static readonly GUIContent prevFrame = L10n.IconContent("Animation.PrevKey", "Previous frame", null);
+            public static readonly GUIContent nextFrame = L10n.IconContent("Animation.NextKey", "Next frame", null);
+            public static readonly GUIContent currentFrame = L10n.IconContent("Animation.LastKey", "Current frame", null);
+            public static readonly GUIContent frame = L10n.TextContent("Frame: ", "Selected frame / Total number of frames", null, null);
+            public static readonly GUIContent clearOnPlay = L10n.TextContent("Clear on Play", "Clear the captured data on entering Play Mode, or connecting to a new Player", null, null);
+            public static readonly GUIContent clearData = L10n.TextContent("Clear", "Clear the captured data", null, null);
+            public static readonly GUIContent saveProfilingData = L10n.IconContent("SaveAs", "Save current profiling information to a binary file", null);
+            public static readonly GUIContent loadWindowTitle = L10n.TextContent("Load Window", null, null, null);
+            public static readonly GUIContent loadProfilingData = L10n.IconContent("Import", "Load binary profiling information from a file. Shift click to append to the existing data", null);
             public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files", null), "data,raw", L10n.Tr("All files", null), "*" };
 
-            public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Menu", "Additional Options");
-            public static readonly GUIContent helpButtonContent = EditorGUIUtility.TrIconContent("_Help", "Open Manual (in a web browser)");
-            public static readonly GUIContent preferencesButtonContent = EditorGUIUtility.TrTextContent("Preferences", "Open User Preferences for the Profiler");
+            public static readonly GUIContent optionsButtonContent = L10n.IconContent("_Menu", "Additional Options", null);
+            public static readonly GUIContent helpButtonContent = L10n.IconContent("_Help", "Open Manual (in a web browser)", null);
+            public static readonly GUIContent preferencesButtonContent = L10n.TextContent("Preferences", "Open User Preferences for the Profiler", null, null);
 
-            public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode", "Switch the color scheme to color blind safe colors");
-            public static readonly GUIContent showStatsLabelsOnCurrentFrameLabel = EditorGUIUtility.TrTextContent("Show Stats for 'current frame'", "Show stats labels when the 'current frame' toggle is on.");
+            public static readonly GUIContent accessibilityModeLabel = L10n.TextContent("Color Blind Mode", "Switch the color scheme to color blind safe colors", null, null);
+            public static readonly GUIContent showStatsLabelsOnCurrentFrameLabel = L10n.TextContent("Show Stats for 'current frame'", "Show stats labels when the 'current frame' toggle is on.", null, null);
 
             public static readonly GUIStyle background = "OL box flat";
             public static readonly GUIStyle profilerGraphBackground = "ProfilerScrollviewBackground";
@@ -261,9 +260,6 @@ namespace UnityEditor
         public string selectedModuleName => selectedModuleIdentifier;
 
         public string selectedModuleIdentifier => selectedModule?.Identifier ?? null;
-
-        const string kJobsProfilerIdentifier = "JobsProfilerModule, Unity.JobsProfiler.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
-        internal ProfilerModule jobsProfilerModule { get; private set; }
 
         internal ProfilerModule selectedModule
         {
@@ -602,10 +598,7 @@ namespace UnityEditor
                     var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleMetadata.DisplayName, moduleMetadata.Tooltip, moduleMetadata.IconPath, this, m_PersistentSettingsService);
                     module.Initialize(args);
 
-                    if (moduleIdentifier == kJobsProfilerIdentifier)
-                        jobsProfilerModule = module;
-                    else
-                        modules.Add(module);
+                    modules.Add(module);
                 }
                 catch (Exception e)
                 {
@@ -1378,6 +1371,12 @@ namespace UnityEditor
 
         internal void SaveProfilingData()
         {
+            // Matches the toolbar Save button's disabled state: an empty recording has no
+            // frame data for ProfilerDriver.SaveProfile to serialize, producing a capture file
+            // that cannot be loaded back.
+            if (!ProfilerHasAnyFrames())
+                return;
+
             var dateString = DateTime.Now.ToLocalTime().ToString("yyyy-MM-dd_HH-mm-ss", System.Globalization.CultureInfo.InvariantCulture);
             var prodName = Application.productName;
 
@@ -1449,11 +1448,10 @@ namespace UnityEditor
             else
                 CurrentLoadedCaptureFile = path;
 
-            // Stop current profiling if data was loaded successfully
-            ProfilerDriver.enabled = m_Recording = false;
-            SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
-            if (ProfilerUserSettings.rememberLastRecordState)
-                EditorPrefs.SetBool(kProfilerEnabledSessionKey, m_Recording);
+            // Stop current profiling if data was loaded successfully. Through SetRecordingEnabled
+            // rather than inline, so recordingStateChanged fires: subscribers can only observe a stop
+            // through that event, and it must arrive once ProfilerDriver.enabled is already false.
+            SetRecordingEnabled(false);
 
             // If there's an existing screenshot, start with that. If the user adds to this capture and saves,
             // it'll be better to have the old screenshot to show than nothing.
@@ -1883,9 +1881,10 @@ namespace UnityEditor
             }
         }
 
-        void OnModuleEditorChangesConfirmed(ReadOnlyCollection<ModuleData> modules, ReadOnlyCollection<ModuleData> deletedModules)
+        // internal for tests: the production trigger is the Module Editor's confirm button.
+        internal void OnModuleEditorChangesConfirmed(ReadOnlyCollection<ModuleData> modules, ReadOnlyCollection<ModuleData> deletedModules)
         {
-            var selectedModuleIndexCached = m_SelectedModuleIndex;
+            var selectedModuleCached = selectedModule;
 
             int index = 0;
             foreach (var moduleData in modules)
@@ -1900,7 +1899,13 @@ namespace UnityEditor
 
                     case ModuleData.EditedState.Updated:
                     {
-                        UpdateProfilerModule(moduleData, index, selectedModuleIndexCached);
+                        UpdateProfilerModule(moduleData, index);
+                        break;
+                    }
+
+                    default:
+                    {
+                        SetProfilerModuleOrderIndex(moduleData, index);
                         break;
                     }
                 }
@@ -1913,7 +1918,11 @@ namespace UnityEditor
                 DeleteProfilerModule(moduleData);
             }
 
-            // If any modules were deleted, all existing modules should update/refresh their order index.
+            SortModuleCollectionInPlace(ref m_AllModules);
+
+            // Deleting leaves gaps in the order indices, so renumber to close them. This has to run
+            // after sorting: until then m_AllModules is still in its previous order, and renumbering
+            // by position would discard the indices a reorder in the same change just assigned.
             bool hasDeletedModules = deletedModules.Count > 0;
             if (hasDeletedModules)
             {
@@ -1924,7 +1933,17 @@ namespace UnityEditor
                 }
             }
 
-            SortModuleCollectionInPlace(ref m_AllModules);
+            // Deleting and sorting move modules within m_AllModules, so re-resolve the selection
+            // from the module itself, once, here. Setting it earlier would write a post-sort
+            // position while m_AllModules is still unsorted, and the deletions in between consult
+            // it. A deleted one is absent, leaving its replacement intact.
+            if (selectedModuleCached != null)
+            {
+                var reresolvedSelectedModuleIndex = IndexOfModule(selectedModuleCached);
+                if (reresolvedSelectedModuleIndex != k_NoModuleSelected)
+                    m_SelectedModuleIndex = reresolvedSelectedModuleIndex;
+            }
+
             UpdateVisualTreeModulesOrder();
             UpdatePinnedModulesOrder();
             PersistDynamicModulesToEditorPrefs();
@@ -1950,7 +1969,7 @@ namespace UnityEditor
             module.OnEnable();
         }
 
-        void UpdateProfilerModule(ModuleData moduleData, int orderIndex, int selectedModuleIndexCached)
+        void UpdateProfilerModule(ModuleData moduleData, int orderIndex)
         {
             var currentProfilerModuleIdentifier = moduleData.currentProfilerModuleIdentifier;
             int updatedModuleIndex = IndexOfModuleWithIdentifier(currentProfilerModuleIdentifier);
@@ -1960,7 +1979,6 @@ namespace UnityEditor
             }
 
             var module = m_AllModules[updatedModuleIndex];
-            var isSelectedIndex = (module.orderIndex == selectedModuleIndexCached);
 
             var chartCounters = new List<ProfilerCounterData>(moduleData.chartCounters);
             var detailCounters = new List<ProfilerCounterData>(moduleData.detailCounters);
@@ -1971,10 +1989,17 @@ namespace UnityEditor
                 legacyModule.SetCounters(chartCounters, detailCounters);
             }
             module.orderIndex = orderIndex;
+        }
 
-            if (isSelectedIndex)
+        // Unchanged modules carry a requested position too. Leaving them on their old order index
+        // lets one collide with the index given to a created or updated module, which the sort then
+        // resolves by name rather than by the order the Module Editor asked for.
+        void SetProfilerModuleOrderIndex(ModuleData moduleData, int orderIndex)
+        {
+            var moduleIndex = IndexOfModuleWithIdentifier(moduleData.currentProfilerModuleIdentifier);
+            if (moduleIndex >= 0)
             {
-                m_SelectedModuleIndex = orderIndex;
+                m_AllModules[moduleIndex].orderIndex = orderIndex;
             }
         }
 
@@ -2000,6 +2025,13 @@ namespace UnityEditor
             // Clears the reference as well as disposing, so nothing can reach the dead controller.
             moduleToDelete.DisposeChartViewController();
             m_AllModules.RemoveAt(index);
+
+            // m_SelectedModuleIndex is a position in m_AllModules, so removing an earlier
+            // element leaves it naming a different module (UUM-149160).
+            if (index < m_SelectedModuleIndex)
+                m_SelectedModuleIndex--;
+            else if (index == m_SelectedModuleIndex)
+                m_SelectedModuleIndex = k_NoModuleSelected;
         }
 
         int IndexOfModuleWithIdentifier(string moduleIdentifier)
@@ -2304,7 +2336,6 @@ namespace UnityEditor
         long IProfilerWindowController.selectedFrameIndex { get => selectedFrameIndex; set => selectedFrameIndex = value; }
         ProfilerModule IProfilerWindowController.selectedModule { get => selectedModule; set => selectedModule = value; }
         ProfilerModule IProfilerWindowController.GetProfilerModuleByType(Type T) => GetProfilerModuleByType(T);
-        ProfilerModule IProfilerWindowController.GetJobsProfilerModule() => jobsProfilerModule;
         void IProfilerWindowController.Repaint() => Repaint();
 
 
@@ -2348,4 +2379,3 @@ namespace UnityEditor
         [Serializable] internal class ProfilerWindowControllerProxy {}
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

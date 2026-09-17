@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Localization.Providers;
@@ -22,15 +21,25 @@ namespace Unity.Localization.Editor;
 internal static partial class AssetProviderEditors
 {
     [AutoStaticsCleanup] // keyed by Type and holds editor instances; both go stale on reload
+    // Lazily built provider-editor registry: every entry point does s_Editors ??= BuildEditors(), so it
+    // is rebuilt by reflection on the next use.
+    [IgnoreForUAL0015("Provider-editor registry rebuilt by BuildEditors() when null")]
     static Dictionary<Type, AssetProviderEditor> s_Editors;
     [NoAutoStaticsCleanup] // stateless fallback; a readonly field cannot be reassigned anyway
     static readonly AssetProviderEditor s_Default = new DefaultAssetProviderEditor();
     [AutoStaticsCleanup] // asset scan cache; CollectionsChanged already drops it
+    // Collection scan result, re-scanned by ScanCollections() when null; it is already invalidated the
+    // same way whenever the localization collections change.
+    [IgnoreForUAL0015("Collection scan result, re-scanned by ScanCollections() when null")]
     static List<ResourceTableCollection> s_Collections;
 
     sealed class DefaultAssetProviderEditor : AssetProviderEditor { }
 
-    static AssetProviderEditors()
+    // CollectionsChanged is cleared on code reload, so this subscription has to be re-established on every
+    // load. A static constructor would only run once per domain, and the collection scan cache would stop
+    // being invalidated after the first reload, leaving the table window showing stale collections.
+    [OnCodeLoaded]
+    static void Initialize()
     {
         // Dropped on CollectionsChanged, so the per-repaint scans below stay a memory lookup.
         LocalizationEditorSettings.CollectionsChanged += () => s_Collections = null;
@@ -69,6 +78,71 @@ internal static partial class AssetProviderEditors
     public static IEnumerable<ResourceTableCollection> FindAllCollections()
     {
         return s_Collections ??= ScanCollections();
+    }
+
+    /// <summary>
+    /// Enumerates the collections built on a shared key table.
+    /// </summary>
+    /// <param name="shared">The shared key table to trace back.</param>
+    /// <returns>Every collection whose shared data is <paramref name="shared"/>.</returns>
+    internal static IEnumerable<ResourceTableCollection> CollectionsUsing(SharedTableData shared)
+    {
+        foreach (var collection in FindAllCollections())
+        {
+            if (collection != null && collection.SharedData == shared)
+                yield return collection;
+        }
+    }
+
+    /// <summary>
+    /// Enumerates the collections a locale table belongs to.
+    /// </summary>
+    /// <param name="table">The locale table to trace back.</param>
+    /// <returns>Every collection that shares the table's shared data or lists the table itself.</returns>
+    internal static IEnumerable<ResourceTableCollection> CollectionsWith(ResourceTable table)
+    {
+        foreach (var collection in FindAllCollections())
+        {
+            if (collection == null)
+                continue;
+            if (collection.SharedData != null && collection.SharedData == table.SharedData)
+            {
+                yield return collection;
+                continue;
+            }
+            foreach (var owned in collection.Tables)
+            {
+                if (owned == table)
+                {
+                    yield return collection;
+                    break;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns the collection that owns a shared key table.
+    /// </summary>
+    /// <param name="shared">The shared key table to trace back.</param>
+    /// <returns>The owning collection, or <see langword="null"/> when none uses it.</returns>
+    internal static ResourceTableCollection OwnerOf(SharedTableData shared)
+    {
+        foreach (var collection in CollectionsUsing(shared))
+            return collection;
+        return null;
+    }
+
+    /// <summary>
+    /// Returns the collection that owns a locale table.
+    /// </summary>
+    /// <param name="table">The locale table to trace back.</param>
+    /// <returns>The owning collection, or <see langword="null"/> when none holds it.</returns>
+    internal static ResourceTableCollection OwnerOf(ResourceTable table)
+    {
+        foreach (var collection in CollectionsWith(table))
+            return collection;
+        return null;
     }
 
     static List<ResourceTableCollection> ScanCollections()
@@ -208,7 +282,26 @@ internal static partial class AssetProviderEditors
             RegisterCollection(collection);
         var settings = LocalizationEditorSettings.ActiveSettings;
         if (settings != null)
+        {
+            PrunePreloadTables(settings);
             EditorUtility.SetDirty(settings);
+        }
+        LanguageToolbar.Refresh();
+    }
+
+    // Preload references for collections that no longer exist would resolve to nothing forever.
+    static void PrunePreloadTables(LocalizationSettings settings)
+    {
+        var preload = settings.PreloadTables;
+        if (preload.Count == 0)
+            return;
+        var valid = new HashSet<TableReference>();
+        foreach (var collection in FindAllCollections())
+        {
+            if (collection != null)
+                valid.Add(CreateReference(collection));
+        }
+        preload.RemoveAll(reference => !valid.Contains(reference));
     }
 
     static IAssetProvider ResolveTargetProvider(ResourceTableCollection collection)
@@ -302,9 +395,11 @@ internal static partial class AssetProviderEditors
     {
         return (type != null ? type.Name : string.Empty) switch
         {
-            nameof(ResourceFolderProvider) => L10n.Tr("Resources folder", null),
-            nameof(ReferencedAssetProvider) => L10n.Tr("Direct references", null),
-            nameof(JsonResourceProvider) => L10n.Tr("Data files (JSON)", null),
+            nameof(ResourceFolderProvider) => L10n.Tr("Resources Folder", null),
+            nameof(ReferencedAssetProvider) => LocLabels.DirectReferences,
+            nameof(JsonResourceProvider) => L10n.Tr("Data Files (JSON)", null),
+            // The com.unity.localization package's provider; a string because the type is not visible here.
+            "AddressablesProvider" => L10n.Tr("Addressables", null),
             var name => ObjectNames.NicifyVariableName(name)
         };
     }
@@ -442,4 +537,3 @@ internal static partial class AssetProviderEditors
         return map;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

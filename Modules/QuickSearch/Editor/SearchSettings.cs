@@ -638,6 +638,9 @@ namespace UnityEditor.Search
         internal const string settingsPreferencesKey = "Preferences/Search";
 
         [AutoStaticsCleanupOnCodeReload]
+        // Lazily re-created by the settingsStorage getter, which then calls Load() to read the settings
+        // back from UserSettings/Search.settings.
+        [IgnoreForUAL0015("Settings storage lazily re-created and reloaded from disk by the settingsStorage getter")]
         static SearchSettingsStorage s_SettingsStorage;
 
         internal static SearchSettingsStorage settingsStorage {
@@ -819,6 +822,9 @@ namespace UnityEditor.Search
 
         // TODO: That's not good that it is public like that. Should have been a property.
         [AutoStaticsCleanupOnCodeReload]
+        // Reassigned from the settings storage by Load(), which runs again the first time settingsStorage
+        // is accessed after cleanup nulls the storage, so the favorites come back from disk.
+        [IgnoreForUAL0015("Favorites set reassigned from the on-disk settings by Load()")]
         public static HashSet<string> searchItemFavorites = new();
 
         internal static int debounceMs
@@ -1535,25 +1541,25 @@ namespace UnityEditor.Search
 
         internal class Content
         {
-            public static readonly GUIContent toggleProviderActiveContent = EditorGUIUtility.TrTextContent("", "Enable or disable this provider. Disabled search provider will be completely ignored by the search service.");
-            public static readonly GUIContent resetProvidersContent = EditorGUIUtility.TrTextContent("Reset Providers Settings", "All search providers will restore their initial preferences (priority, active, default action)");
-            public static readonly GUIContent increaseProviderPriorityContent = EditorGUIUtility.TrTextContent("\u2191", "Increase the provider's priority");
-            public static readonly GUIContent decreaseProviderPriorityContent = EditorGUIUtility.TrTextContent("\u2193", "Decrease the provider's priority");
-            public static readonly GUIContent trackSelectionContent = EditorGUIUtility.TrTextContent(
+            public static readonly GUIContent toggleProviderActiveContent = L10n.TextContent("", "Enable or disable this provider. Disabled search provider will be completely ignored by the search service.", null, null);
+            public static readonly GUIContent resetProvidersContent = L10n.TextContent("Reset Providers Settings", "All search providers will restore their initial preferences (priority, active, default action)", null, null);
+            public static readonly GUIContent increaseProviderPriorityContent = L10n.TextContent("\u2191", "Increase the provider's priority", null, null);
+            public static readonly GUIContent decreaseProviderPriorityContent = L10n.TextContent("\u2193", "Decrease the provider's priority", null, null);
+            public static readonly GUIContent trackSelectionContent = L10n.TextContent(
                 "Track the current selection in the search view.",
-                "Tracking the current selection can alter other window state, such as pinging the project browser or the scene hierarchy window. This setting does not apply to the Advanced Object Selector.");
-            public static readonly GUIContent fetchPreviewContent = EditorGUIUtility.TrTextContent(
+                "Tracking the current selection can alter other window state, such as pinging the project browser or the scene hierarchy window. This setting does not apply to the Advanced Object Selector.", null, null);
+            public static readonly GUIContent fetchPreviewContent = L10n.TextContent(
                 "Generate an asset preview thumbnail for found items",
-                "Fetching the preview of the items can consume more memory and make searches within very large project slower.");
-            public static readonly GUIContent refreshSearchWindowsInPlayModeContent = EditorGUIUtility.TrTextContent(
+                "Fetching the preview of the items can consume more memory and make searches within very large project slower.", null, null);
+            public static readonly GUIContent refreshSearchWindowsInPlayModeContent = L10n.TextContent(
                 "Refresh Search views in Play Mode",
-                "Automatically refresh search views when hierarchy changes happened in Play Mode");
-            public static readonly GUIContent pickerAdvancedUIContent = EditorGUIUtility.TrTextContent(
+                "Automatically refresh search views when hierarchy changes happened in Play Mode", null, null);
+            public static readonly GUIContent pickerAdvancedUIContent = L10n.TextContent(
                 "Object Selector has Advanced UI",
-                "Object Selector has Advanced UI");
-            public static readonly GUIContent dockableContent = EditorGUIUtility.TrTextContent("Open Search as dockable window");
-            public static readonly GUIContent debugContent = EditorGUIUtility.TrTextContent("[DEV] Display additional debugging information");
-            public static readonly GUIContent debounceThreshold = EditorGUIUtility.TrTextContent("Select the typing debounce threshold (ms)");
+                "Object Selector has Advanced UI", null, null);
+            public static readonly GUIContent dockableContent = L10n.TextContent("Open Search as dockable window", null, null, null);
+            public static readonly GUIContent debugContent = L10n.TextContent("[DEV] Display additional debugging information", null, null, null);
+            public static readonly GUIContent debounceThreshold = L10n.TextContent("Select the typing debounce threshold (ms)", null, null, null);
 
             public static readonly GUIContent toggleObjectSelectorActiveContent = EditorGUIUtility.TrTextContent("", "Enable or disable this object selector. Disabled object selectors will be completely ignored.");
             public static readonly GUIContent resetObjectSelectorContent = EditorGUIUtility.TrTextContent("Reset Selector Settings", "All object selectors will restore their initial preferences (priority, active)");

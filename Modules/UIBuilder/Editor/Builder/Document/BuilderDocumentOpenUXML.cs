@@ -50,6 +50,11 @@ namespace Unity.UI.Builder
         [SerializeField]
         StyleSheet m_ActiveStyleSheet;
 
+        // The .uss/.tss opened by itself (StyleSheet Editing Mode); persistent, so it survives domain
+        // reloads and drives the rehydration of the non-persistent preview host.
+        [SerializeField]
+        StyleSheet m_OpenedStyleSheet;
+
         [SerializeField]
         BuilderDocumentSettings m_Settings;
 
@@ -81,6 +86,12 @@ namespace Unity.UI.Builder
 
         // Used in tests
         internal bool isBackupSet => m_VisualTreeAssetBackup != null;
+
+        internal StyleSheet openedStyleSheet => m_OpenedStyleSheet;
+
+        // True while a .uss/.tss is open by itself: the canvas hosts a read-only preview document and
+        // only the opened sheet is edited and saved.
+        internal bool isStyleSheetEditingMode => m_OpenedStyleSheet != null;
 
         [AutoStaticsCleanupOnCodeReload]
         internal static Action<string, string> s_WriteToDiskCallback = WriteToDisk;
@@ -311,23 +322,49 @@ namespace Unity.UI.Builder
 
         public void Clear()
         {
-            var sharedWithAnotherEditor =
-                UIAssetRegistry.LiveInstance?.IsOpenForWritingByOther(m_VisualTreeAsset, this) ?? false;
-
             // Using LiveInstance here intentionally because Clear() runs from the BuilderDocument constructor,
             // where accessing ScriptableSingleton.instance (which loads a file) is illegal. If the registry isn't alive
             // yet there is nothing tracked to release anyway.
-            UIAssetRegistry.LiveInstance?.CloseAll(this);
+            var registry = UIAssetRegistry.LiveInstance;
+
+            // Sample sharedness before releasing our own registrations below.
+            using var _ = HashSetPool<Object>.Get(out var sharedAssets);
+            if (registry != null)
+            {
+                if (registry.IsOpenForWritingByOther(m_VisualTreeAsset, this))
+                    sharedAssets.Add(m_VisualTreeAsset);
+
+                foreach (var openUSSFile in m_OpenUSSFiles)
+                {
+                    if (openUSSFile?.styleSheet != null &&
+                        registry.IsOpenForWritingByOther(openUSSFile.styleSheet, this))
+                        sharedAssets.Add(openUSSFile.styleSheet);
+                }
+            }
+
+            registry?.CloseAll(this);
             m_ReportedAssets?.Clear();
 
             ClearUndo();
 
-            if (!sharedWithAnotherEditor)
-                RestoreAssetsFromBackup();
+            // Restore per asset: one another window still holds for writing keeps its live edits
+            // (reverting it would clobber that editor's work); everything this window edited alone
+            // must not leak unsaved changes into the shared in-memory assets.
+            foreach (var openUSSFile in m_OpenUSSFiles)
+            {
+                if (openUSSFile?.styleSheet != null && !sharedAssets.Contains(openUSSFile.styleSheet))
+                    openUSSFile.RestoreFromBackup();
+            }
+
+            if (m_VisualTreeAsset != null && !sharedAssets.Contains(m_VisualTreeAsset))
+                RestoreVisualTreeAssetFromBackup();
+
+            hasUnsavedChanges = false;
 
             ClearBackups();
             m_OpenendVisualTreeAssetOldPath = string.Empty;
             m_ActiveStyleSheet = null;
+            m_OpenedStyleSheet = null;
             m_FileSettings = null;
 
             if (m_VisualTreeAsset != null)
@@ -478,6 +515,11 @@ namespace Unity.UI.Builder
         {
             needsFullRefresh = false;
 
+            // StyleSheet Editing Mode: only the opened stylesheet is written; the host copy has no
+            // file of its own, so the UXML path/save below never applies.
+            if (isStyleSheetEditingMode)
+                return SaveOpenedStyleSheet();
+
             // Re-use or ask the user for the UXML path.
             var newUxmlPath = uxmlPath;
             if (string.IsNullOrEmpty(newUxmlPath) || isSaveAs)
@@ -561,6 +603,78 @@ namespace Unity.UI.Builder
 
                 var assetSize = uxmlText?.Length ?? 0;
                 BuilderAnalyticsUtility.SendSaveEvent(startTime, this, newUxmlPath, assetSize);
+            }
+            finally
+            {
+                try
+                {
+                    PostSaveCommand.Execute(CommandSources.Builder, savedContext, succeeded);
+                }
+                finally
+                {
+                    ownerDocument.isSavingOwnDocument = false;
+                }
+            }
+
+            return succeeded;
+        }
+
+        // Saves the opened stylesheet to its own file. Wrapped in the same save commands as a document
+        // save so sibling Builder windows and the other authoring tools resync their shared state.
+        bool SaveOpenedStyleSheet()
+        {
+            var savedContext = new VisualTreeAssetEditingContext(visualTreeAsset);
+            var ownerDocument = document;
+            ownerDocument.isSavingOwnDocument = true;
+
+            var succeeded = false;
+            try
+            {
+                PreSaveCommand.Execute(CommandSources.Builder, savedContext);
+                ClearUndo();
+
+                succeeded = true;
+                using var pool = ListPool<BuilderDocumentOpenUSS>.Get(out var savedUSSFiles);
+                var previousSheet = m_OpenedStyleSheet;
+
+                foreach (var openUSSFile in m_OpenUSSFiles)
+                {
+                    openUSSFile.GeneratePreview();
+                    if (openUSSFile.SaveToDisk(visualTreeAsset, out var ussFailed))
+                        savedUSSFiles.Add(openUSSFile);
+                    succeeded &= !ussFailed;
+                }
+
+                m_DocumentBeingSavedExplicitly = true;
+                try
+                {
+                    AssetDatabase.Refresh();
+                }
+                finally
+                {
+                    m_DocumentBeingSavedExplicitly = false;
+                }
+
+                foreach (var openUSSFile in savedUSSFiles)
+                    openUSSFile.PostSaveToDiskChecksAndFixes();
+
+                // If the reimport replaced the sheet instance, re-point the host root and the mode at
+                // the fresh one, then re-render.
+                var freshSheet = m_OpenUSSFiles.Count > 0 ? m_OpenUSSFiles[0].styleSheet : null;
+                if (freshSheet != null && !ReferenceEquals(freshSheet, previousSheet))
+                {
+                    visualTreeAsset.visualTree.RemoveStyleSheet(previousSheet);
+                    visualTreeAsset.visualTree.AddStyleSheet(freshSheet);
+                    m_OpenedStyleSheet = freshSheet;
+                    m_ActiveStyleSheet = freshSheet;
+                    ReloadDocumentToCanvas(m_CurrentDocumentRootElement);
+                }
+
+                foreach (var openUSSFile in m_OpenUSSFiles)
+                    EditorUtility.ClearDirty(openUSSFile.styleSheet);
+
+                // Keep the "*" when a write failed: the changes are still only in memory.
+                hasUnsavedChanges = !succeeded;
             }
             finally
             {
@@ -745,7 +859,10 @@ namespace Unity.UI.Builder
 
                 // A genuine external change conflicts with our unsaved edits. The UIAssetRegistry is the single
                 // resolver: ask it for the decision instead of prompting ourselves, then apply the result.
-                switch (UIAssetRegistry.instance.ResolveExternalChange(visualTreeAsset))
+                // In StyleSheet Editing Mode the conflicted asset is the opened sheet — the host copy is
+                // untracked, which would mistitle the prompt and defeat the one-decision-per-asset cache.
+                var conflictedAsset = isStyleSheetEditingMode ? m_OpenedStyleSheet : (Object)visualTreeAsset;
+                switch (UIAssetRegistry.instance.ResolveExternalChange(conflictedAsset))
                 {
                     case UIAssetConflictChoice.Keep:
                         RestoreUnsavedChanges();
@@ -775,7 +892,10 @@ namespace Unity.UI.Builder
                     case 1:
                         return false;
                     case 2:
-                        UIAssetRegistry.instance.DiscardAsset(visualTreeAsset, this);
+                        // In StyleSheet Editing Mode the registry tracks the opened sheet, not the
+                        // host copy: discarding the sheet reverts it and notifies every holder.
+                        UIAssetRegistry.instance.DiscardAsset(
+                            isStyleSheetEditingMode ? m_OpenedStyleSheet : (Object)visualTreeAsset, this);
                         return true;
                 }
             }
@@ -824,6 +944,64 @@ namespace Unity.UI.Builder
             // instead of showing no "*".
             if (ReportOpenAssetsToRegistry())
                 hasUnsavedChanges = true;
+        }
+
+        // Opens a .uss/.tss by itself: hosts it in a private, non-persistent copy of the preview
+        // document, hard-set as the document's only editable stylesheet.
+        public void LoadStyleSheetDocument(VisualTreeAsset previewDocument, StyleSheet styleSheet, VisualElement documentElement)
+        {
+            NewDocument(documentElement);
+
+            if (previewDocument == null || styleSheet == null)
+                return;
+
+            // A private copy: editing mode must never mutate or save the shared preview asset, and each
+            // window needs its own host (the root stylesheet reference below is per-document).
+            m_VisualTreeAsset = previewDocument.DeepCopy();
+            m_VisualTreeAsset.name = previewDocument.name;
+            m_VisualTreeAssetBackup = m_VisualTreeAsset.DeepCopy();
+            m_VisualTreeAssetRef = null;
+            m_ContentHash = m_VisualTreeAsset.contentHash;
+
+            m_OpenedStyleSheet = styleSheet;
+
+            // The opened sheet is the document's only open stylesheet. Appending it to the host root
+            // (not rebuilding the root's references) keeps the preview's own stylesheets rendering.
+            m_OpenUSSFiles.Clear();
+            var newOpenUssFile = new BuilderDocumentOpenUSS();
+            newOpenUssFile.Set(styleSheet, null);
+            m_OpenUSSFiles.Add(newOpenUssFile);
+            m_VisualTreeAsset.visualTree.AddStyleSheet(styleSheet);
+            m_ActiveStyleSheet = styleSheet;
+
+            hasUnsavedChanges = false;
+
+            m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
+
+            ReloadDocumentToCanvas(documentElement);
+            GenerateUxmlPreview();
+            GenerateUssPreview();
+
+            // The sheet may already have unsaved changes from another tool; reflect the registry's truth.
+            if (ReportOpenAssetsToRegistry())
+                hasUnsavedChanges = true;
+        }
+
+        // Rebuilds the non-persistent preview host from the serialized opened-sheet reference after a
+        // domain reload; falls back to an empty document when the feature is off or an asset is gone.
+        void RestoreStyleSheetEditingHost(VisualElement documentRootElement)
+        {
+            var openedStyleSheet = m_OpenedStyleSheet;
+            var previewDocument = BuilderAssetUtilities.FindStyleSheetEditingPreviewDocument();
+
+            if (!UIToolkitProjectSettings.enableStyleSheetEditingMode || openedStyleSheet == null || previewDocument == null)
+            {
+                m_OpenedStyleSheet = null;
+                NewDocument(documentRootElement);
+                return;
+            }
+
+            LoadStyleSheetDocument(previewDocument, openedStyleSheet, documentRootElement);
         }
 
         /// <summary>
@@ -934,6 +1112,10 @@ namespace Unity.UI.Builder
                     if (found = openUSSFile.CheckPostProcessAssetIfFileChanged(assetPath))
                     {
                         trackedSheet = previousSheet;
+                        // The StyleSheet Editing Mode signal must follow a reimport that replaced the
+                        // managed instance, or the reload rebuilds the mode around the stale object.
+                        if (m_OpenedStyleSheet == previousSheet)
+                            m_OpenedStyleSheet = openUSSFile.styleSheet;
                         break;
                     }
                 }
@@ -1064,6 +1246,25 @@ namespace Unity.UI.Builder
 
         public void OnAfterBuilderDeserialize(VisualElement documentRootElement, bool restoringUnsavedChanges = false)
         {
+            // StyleSheet Editing Mode: the open stylesheet list is fixed to the opened sheet, never
+            // re-derived from the host. Rebuild the host when it did not survive a domain reload (or
+            // lost the sheet to a reimport); otherwise just re-render.
+            if (m_OpenedStyleSheet != null)
+            {
+                var hostRoot = m_VisualTreeAsset == null ? null : m_VisualTreeAsset.visualTreeNoAlloc;
+                if (hostRoot == null || !hostRoot.stylesheets.Contains(m_OpenedStyleSheet))
+                {
+                    RestoreStyleSheetEditingHost(documentRootElement);
+                }
+                else
+                {
+                    ValidateActiveStyleSheet();
+                    ReportOpenAssetsToRegistry();
+                    ReloadDocumentToCanvas(documentRootElement);
+                }
+                return;
+            }
+
             // Refresh StyleSheets.
             var styleSheetsUsed = visualTreeAsset.GetAllReferencedStyleSheets();
             while (m_OpenUSSFiles.Count < styleSheetsUsed.Count)
@@ -1108,6 +1309,13 @@ namespace Unity.UI.Builder
             OnAfterLoadFromDisk();
         }
 
+        // StyleSheet Editing Mode counterpart of ReopenAsset: remembering the opened sheet is enough,
+        // the first OnAfterBuilderDeserialize pass rebuilds the preview host around it.
+        internal void ReopenStyleSheet(StyleSheet styleSheet)
+        {
+            m_OpenedStyleSheet = styleSheet;
+        }
+
         public void OnAfterLoadFromDisk()
         {
             if (m_VisualTreeAssetRef.isSet && m_VisualTreeAssetRef.asset != null)
@@ -1134,25 +1342,30 @@ namespace Unity.UI.Builder
             foreach (var openUSSFile in m_OpenUSSFiles)
                 openUSSFile.RestoreFromBackup();
 
-            if (m_VisualTreeAsset != null && m_VisualTreeAssetBackup != null)
-            {
-                m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
-                m_ContentHash = m_VisualTreeAsset.contentHash;
-
-                // Restore the VTA name.
-                if (!string.IsNullOrEmpty(uxmlOldPath))
-                    m_VisualTreeAsset.name = Path.GetFileNameWithoutExtension(uxmlOldPath);
-
-                if (hasUnsavedChanges && !isAnonymousDocument)
-                {
-                    UIElementsUtility.MarkVisualTreeAssetAsChanged(m_VisualTreeAsset);
-                    UIElementsUtility.MarkVisualTreeAssetAsChanged(m_VisualTreeAssetBackup);
-                }
-
-                ClearVisualTreeAssetDirtyFlags();
-            }
+            RestoreVisualTreeAssetFromBackup();
 
             hasUnsavedChanges = false;
+        }
+
+        void RestoreVisualTreeAssetFromBackup()
+        {
+            if (m_VisualTreeAsset == null || m_VisualTreeAssetBackup == null)
+                return;
+
+            m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
+            m_ContentHash = m_VisualTreeAsset.contentHash;
+
+            // Restore the VTA name.
+            if (!string.IsNullOrEmpty(uxmlOldPath))
+                m_VisualTreeAsset.name = Path.GetFileNameWithoutExtension(uxmlOldPath);
+
+            if (hasUnsavedChanges && !isAnonymousDocument)
+            {
+                UIElementsUtility.MarkVisualTreeAssetAsChanged(m_VisualTreeAsset);
+                UIElementsUtility.MarkVisualTreeAssetAsChanged(m_VisualTreeAssetBackup);
+            }
+
+            ClearVisualTreeAssetDirtyFlags();
         }
 
         internal void NotifyRegistryOfDiscard()
@@ -1197,6 +1410,10 @@ namespace Unity.UI.Builder
                     continue;
                 s_WriteToDiskCallback.Invoke(ussPath, openUSSFile.ussPreview);
             }
+
+            // The StyleSheet Editing host is not user content; only the stylesheet backup matters.
+            if (isStyleSheetEditingMode)
+                return;
 
             var uxmlPath = s_SaveFileDialogCallback($"{visualTreeAsset.name} ({s_UxmlTempFileCounter++}).backup", "uxml");
             if (uxmlPath == null)

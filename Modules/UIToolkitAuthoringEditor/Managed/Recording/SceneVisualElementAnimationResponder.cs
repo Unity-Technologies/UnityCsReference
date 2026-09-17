@@ -20,9 +20,6 @@ namespace Unity.UIToolkit.Editor
         {
             newSelection = null;
 
-            if (!UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot)
-                return false;
-
             // A bare UIAnimationClip asset (Project-window selection, or double-click via
             // UIAnimationClipAssetOpener) edits the clip directly, independent of any stage or scene element.
             if (selectedObject is UIAnimationClip clipAsset)

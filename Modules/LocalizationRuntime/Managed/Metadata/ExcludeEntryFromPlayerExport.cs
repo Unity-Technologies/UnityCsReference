@@ -17,7 +17,7 @@ namespace Unity.Localization;
 /// entries, and limits each target to a single instance.
 /// </remarks>
 /// <example>
-/// <para>Flag an entry so the player file generation leaves it in the table asset.</para>
+/// Flag an entry so the player file generation leaves it in the table asset.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/ExcludeEntryFromExportExample.cs"/>
 /// </example>
 /// <seealso cref="ExcludeEntryFromEditorExport"/>

@@ -1144,10 +1144,10 @@ namespace Unity.Burst.Editor
                     {
                         GenericMenu menu = new GenericMenu();
 
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Copy Selection"), false, _textArea.DoSelectionCopy);
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Copy Color Tags"), _textArea.CopyColorTags, _textArea.ChangeCopyMode);
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Select All"), false, _textArea.SelectAll);
-                        menu.AddItem(EditorGUIUtility.TrTextContent($"Find in {DisassemblyKindContents[(int)_disasmKind].text}"), _searchBarVisible, EnableDisableSearchBar);
+                        menu.AddItem(L10n.TextContent("Copy Selection", null, null, null), false, _textArea.DoSelectionCopy);
+                        menu.AddItem(L10n.TextContent("Copy Color Tags", null, null, null), _textArea.CopyColorTags, _textArea.ChangeCopyMode);
+                        menu.AddItem(L10n.TextContent("Select All", null, null, null), false, _textArea.SelectAll);
+                        menu.AddItem(L10n.TextContent($"Find in {DisassemblyKindContents[(int)_disasmKind].text}", null, null, null), _searchBarVisible, EnableDisableSearchBar);
                         menu.ShowAsContext();
 
                         _leftClicked = false;

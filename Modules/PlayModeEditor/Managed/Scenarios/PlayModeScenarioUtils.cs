@@ -24,6 +24,9 @@ namespace Unity.PlayMode.Editor
         internal static event Action AssetsChanged;
 
         [AutoStaticsCleanupOnCodeReload] // lazy cache of PlayModeScenario ScriptableObjects; must be rebuilt after code reload
+        // Lazy scenario list: GetAllConfigs rescans loaded objects and scenario assets whenever this is
+        // null, which is also how the asset tracker invalidates it.
+        [IgnoreForUAL0015("Lazy scenario list rescanned by GetAllConfigs whenever it is null")]
         private static List<PlayModeScenario> s_AllConfigs;
 
         [Obsolete("Use PlayModeScenarioManager.RegisterScenarioType<T> instead.", false)]

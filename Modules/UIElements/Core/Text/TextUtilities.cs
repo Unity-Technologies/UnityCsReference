@@ -14,6 +14,9 @@ namespace UnityEngine.UIElements
     internal static partial class TextUtilities
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         public static Func<TextSettings> getEditorTextSettings;
         [AutoStaticsCleanupOnCodeReload]
         private static TextSettings s_TextSettings;
@@ -72,6 +75,11 @@ namespace UnityEngine.UIElements
             }
 
             return roundedValues;
+        }
+
+        internal static void LogStaticFontAssetError(FontAsset fontAsset)
+        {
+            Debug.LogError($"Static font assets aren't supported by the Advanced Text Generator. Convert '{fontAsset.faceInfo.familyName}' in the <a openfontassetmigration=\"true\">Font Asset Migration window</a>.");
         }
 
         internal static Vector2 MeasureVisualElementTextSize(TextElement te, string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize = null)

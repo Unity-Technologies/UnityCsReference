@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.Bindings;
 using UnityEditor.UIElements.StyleSheets;
@@ -15,16 +15,24 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [InitializeOnLoad]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    class RetainedMode
+    partial class RetainedMode
     {
-        static RetainedMode()
+        // Every slot installed here is cleared on code reload, so the wiring has to be re-established on
+        // each load. A static constructor would only run once per domain, leaving UI Toolkit's editor
+        // integration (IMGUI containers, panel resource loading, cursors, bindings) dead after the first
+        // reload.
+        [OnCodeLoaded]
+        static void Initialize()
         {
             UIElementsIMGUIUtility.s_BeginContainerCallback = OnBeginContainer;
             UIElementsIMGUIUtility.s_EndContainerCallback = OnEndContainer;
             UIElementsIMGUIUtility.s_FocusOutContainerCallback = OnFocusOutContainer;
 
+            // beforeAssemblyReload is itself cleared on code reload and OnBeforeAssemblyReload
+            // unsubscribes itself when it fires, so guard against a double subscription rather than
+            // pairing this with a teardown.
+            AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
 
             Panel.initEditorUpdaterFunc = EditorPanel.InitEditorUpdater;
@@ -157,4 +165,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

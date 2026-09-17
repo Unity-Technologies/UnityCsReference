@@ -203,6 +203,7 @@ namespace UnityEditor
         ///<seealso cref="BuildPipeline.BuildPlayer" />
         Switch2 = 48,
 
+        [System.Obsolete("Kepler has been removed in 6000.7")]
         [ExcludeFromDocs]
         Kepler = 49,
 

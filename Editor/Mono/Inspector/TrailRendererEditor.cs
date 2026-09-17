@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: VisualEffects not yet converted
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.EditorTools;
@@ -20,28 +19,28 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static readonly GUIContent colorGradient = EditorGUIUtility.TrTextContent("Color", "The gradient describing the color along the trail.");
-            public static readonly GUIContent numCornerVertices = EditorGUIUtility.TrTextContent("Corner Vertices", "How many vertices to add for each corner.");
-            public static readonly GUIContent numCapVertices = EditorGUIUtility.TrTextContent("End Cap Vertices", "How many vertices to add at each end.");
-            public static readonly GUIContent alignment = EditorGUIUtility.TrTextContent("Alignment", "Trails can rotate to face their transform component or the camera. When using TransformZ mode, lines extrude along the XY plane of the Transform.");
-            public static readonly GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
-            public static readonly GUIContent textureScale = EditorGUIUtility.TrTextContent("Texture Scale", "Scale the texture along the UV coordinates using this multiplier.");
-            public static readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
-            public static readonly GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
-            public static readonly GUIContent applyActiveColorSpace = EditorGUIUtility.TrTextContent("Apply Active Color Space", "When using Linear Rendering, colors will be converted appropriately before being passed to the GPU.");
+            public static readonly GUIContent colorGradient = L10n.TextContent("Color", "The gradient describing the color along the trail.", null, null);
+            public static readonly GUIContent numCornerVertices = L10n.TextContent("Corner Vertices", "How many vertices to add for each corner.", null, null);
+            public static readonly GUIContent numCapVertices = L10n.TextContent("End Cap Vertices", "How many vertices to add at each end.", null, null);
+            public static readonly GUIContent alignment = L10n.TextContent("Alignment", "Trails can rotate to face their transform component or the camera. When using TransformZ mode, lines extrude along the XY plane of the Transform.", null, null);
+            public static readonly GUIContent textureMode = L10n.TextContent("Texture Mode", "Should the U coordinate be stretched or tiled?", null, null);
+            public static readonly GUIContent textureScale = L10n.TextContent("Texture Scale", "Scale the texture along the UV coordinates using this multiplier.", null, null);
+            public static readonly GUIContent shadowBias = L10n.TextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.", null, null);
+            public static readonly GUIContent generateLightingData = L10n.TextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.", null, null);
+            public static readonly GUIContent applyActiveColorSpace = L10n.TextContent("Apply Active Color Space", "When using Linear Rendering, colors will be converted appropriately before being passed to the GPU.", null, null);
 
-            public static readonly GUIContent play = EditorGUIUtility.TrTextContent("Play");
-            public static readonly GUIContent playDisabled = EditorGUIUtility.TrTextContent("Play", "Play is disabled, because the Time Scale in the Time Manager is set to 0.0.");
-            public static readonly GUIContent stop = EditorGUIUtility.TrTextContent("Stop");
-            public static readonly GUIContent pause = EditorGUIUtility.TrTextContent("Pause");
-            public static readonly GUIContent restart = EditorGUIUtility.TrTextContent("Restart");
-            public static readonly GUIContent movementSpeed = EditorGUIUtility.TrTextContent("Movement Speed", "Speed is also affected by the Time Scale setting in the Time Manager.");
-            public static readonly GUIContent movementSpeedDisabled = EditorGUIUtility.TrTextContent("Movement Speed", "Speed is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.");
-            public static readonly GUIContent timeScale = EditorGUIUtility.TrTextContent("Time Scale", "Speed up or slow down the preview of the trail.");
-            public static readonly GUIContent timeScaleDisabled = EditorGUIUtility.TrTextContent("Time Scale", "Time Scale is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.");
-            public static readonly GUIContent showBounds = EditorGUIUtility.TrTextContent("Show Bounds", "Show world space bounding boxes.");
-            public static readonly GUIContent previewShape = EditorGUIUtility.TrTextContent("Shape", "The trail preview will follow the selected shape.");
-            public static readonly GUIContent previewShapeSize = EditorGUIUtility.TrTextContent("Shape Size", "The size of the shape.");
+            public static readonly GUIContent play = L10n.TextContent("Play", null, null, null);
+            public static readonly GUIContent playDisabled = L10n.TextContent("Play", "Play is disabled, because the Time Scale in the Time Manager is set to 0.0.", null, null);
+            public static readonly GUIContent stop = L10n.TextContent("Stop", null, null, null);
+            public static readonly GUIContent pause = L10n.TextContent("Pause", null, null, null);
+            public static readonly GUIContent restart = L10n.TextContent("Restart", null, null, null);
+            public static readonly GUIContent movementSpeed = L10n.TextContent("Movement Speed", "Speed is also affected by the Time Scale setting in the Time Manager.", null, null);
+            public static readonly GUIContent movementSpeedDisabled = L10n.TextContent("Movement Speed", "Speed is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.", null, null);
+            public static readonly GUIContent timeScale = L10n.TextContent("Time Scale", "Speed up or slow down the preview of the trail.", null, null);
+            public static readonly GUIContent timeScaleDisabled = L10n.TextContent("Time Scale", "Time Scale is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.", null, null);
+            public static readonly GUIContent showBounds = L10n.TextContent("Show Bounds", "Show world space bounding boxes.", null, null);
+            public static readonly GUIContent previewShape = L10n.TextContent("Shape", "The trail preview will follow the selected shape.", null, null);
+            public static readonly GUIContent previewShapeSize = L10n.TextContent("Shape Size", "The size of the shape.", null, null);
 
             public static readonly GUIContent toolIcon = EditorGUIUtility.IconContent("ParticleShapeTool", "Shape gizmo editing mode.");
 
@@ -830,4 +829,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

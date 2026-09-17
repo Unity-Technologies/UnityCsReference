@@ -78,8 +78,7 @@ namespace Unity.GraphToolkit.Editor.ContextualMenuItems
         /// </summary>
         internal static object GetClickedCondition(ConditionModel model)
         {
-            // The root group spans the whole condition list, so clicking it is clicking empty space.
-            if (model == null || model.Parent == null)
+            if (model == null)
                 return null;
 
             if (model is UserConditionModelImp userCondition)

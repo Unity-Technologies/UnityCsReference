@@ -76,8 +76,22 @@ class ControllerDatabase : IControllerDatabase
         }
     }
 
+    // A decorator is registered against the type it decorates, never as a controller in its own right:
+    // TController's constraint admits one, but the item factory's PlayModeControllerItem<TController, TSettings>
+    // does not, so accepting it here would surface as a MakeGenericType throw when an asset materializes the
+    // item. Reject it at the registration call site instead.
+    static void ThrowIfDecorator<TController>(string scope) where TController : PlayModeController
+    {
+        if (typeof(PlayModeControllerDecorator).IsAssignableFrom(typeof(TController)))
+        {
+            throw new InvalidOperationException($"Cannot register {typeof(TController).Name} as {scope} type because it is a decorator. Register decorators against the type they decorate with {nameof(RegisterDecorator)}.");
+        }
+    }
+
     public void RegisterInstanceController<TController>() where TController : PlayModeController
     {
+        ThrowIfDecorator<TController>("an instance");
+
         if (m_ScenarioTypes.Contains(typeof(TController)))
         {
             throw new InvalidOperationException($"Cannot register {typeof(TController).Name} as an instance type because it is already registered as a scenario type.");
@@ -89,6 +103,8 @@ class ControllerDatabase : IControllerDatabase
 
     public void RegisterScenarioController<TController>() where TController : PlayModeController
     {
+        ThrowIfDecorator<TController>("a scenario");
+
         if (m_InstanceTypes.Contains(typeof(TController)))
         {
             throw new InvalidOperationException($"Cannot register {typeof(TController).Name} as a scenario type because it is already registered as an instance type.");
@@ -102,9 +118,14 @@ class ControllerDatabase : IControllerDatabase
         where TDecorator : PlayModeControllerDecorator
         where TDecorated : PlayModeController
     {
-        if (!m_InstanceTypes.Contains(typeof(TDecorated)) && !m_ScenarioTypes.Contains(typeof(TDecorated)))
+        if (m_ScenarioTypes.Contains(typeof(TDecorated)))
         {
-            throw new InvalidOperationException($"Cannot register decorator {typeof(TDecorator).Name} for type {typeof(TDecorated).Name} because the decorated type is not registered as an instance type or a scenario type.");
+            throw new InvalidOperationException($"Cannot register decorator {typeof(TDecorator).Name} for type {typeof(TDecorated).Name} because decorators are supported on instance types only.");
+        }
+
+        if (!m_InstanceTypes.Contains(typeof(TDecorated)))
+        {
+            throw new InvalidOperationException($"Cannot register decorator {typeof(TDecorator).Name} for type {typeof(TDecorated).Name} because the decorated type is not registered as an instance type.");
         }
 
         if (!m_DecoratorsMap.TryGetValue(typeof(TDecorated), out var decoratorsList))

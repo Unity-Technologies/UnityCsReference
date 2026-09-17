@@ -15,6 +15,9 @@ namespace UnityEngine.TextCore.Text
     static partial class MaterialManager
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Memo of generated fallback materials, recreated on the next miss; it must be cleared on reload
+        // so it does not hold Materials belonging to the previous scope.
+        [IgnoreForUAL0015("Fallback-material memo, regenerated on demand after cleanup")]
         static Dictionary<long, Material> s_FallbackMaterials = new Dictionary<long, Material>();
 
         /// <summary>

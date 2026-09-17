@@ -33,12 +33,20 @@ abstract class SaveCommand<T> : Command<T>
         return command;
     }
 
+    protected static T GetPooled(object source, UnityEngine.Object asset, bool succeeded, bool singleAsset)
+    {
+        var command = GetPooled(source, asset, succeeded);
+        command.SingleAsset = singleAsset;
+        return command;
+    }
+
     protected override void Init()
     {
         base.Init();
         Context = default;
         Asset = null;
         Succeeded = true;
+        SingleAsset = false;
     }
 
     public override CommandCategory Category => CommandCategory.Save;
@@ -54,6 +62,12 @@ abstract class SaveCommand<T> : Command<T>
     /// Whether the operation this command closes actually completed.
     /// </summary>
     public bool Succeeded { get; private set; }
+
+    /// <summary>
+    /// Whether the operation concerns <see cref="Asset"/> on its own, leaving every other asset of its
+    /// document — a document's style sheets, a document that instantiates it — untouched and still unsaved.
+    /// </summary>
+    public bool SingleAsset { get; private set; }
 }
 
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -76,6 +90,13 @@ class PreSaveCommand : SaveCommand<PreSaveCommand>
         using var command = GetPooled(source, asset);
         UICommandQueue.Execute(command);
     }
+
+    /// <inheritdoc cref="SaveCommand{T}.SingleAsset"/>
+    public static void ExecuteForSingleAsset(object source, UnityEngine.Object asset)
+    {
+        using var command = SaveCommand<PreSaveCommand>.GetPooled(source, asset, succeeded: true, singleAsset: true);
+        UICommandQueue.Execute(command);
+    }
 }
 
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -96,6 +117,13 @@ class PostSaveCommand : SaveCommand<PostSaveCommand>
     public static void Execute(object source, UnityEngine.Object asset, bool succeeded = true)
     {
         using var command = GetPooled(source, asset, succeeded);
+        UICommandQueue.Execute(command);
+    }
+
+    /// <inheritdoc cref="SaveCommand{T}.SingleAsset"/>
+    public static void ExecuteForSingleAsset(object source, UnityEngine.Object asset, bool succeeded)
+    {
+        using var command = SaveCommand<PostSaveCommand>.GetPooled(source, asset, succeeded, singleAsset: true);
         UICommandQueue.Execute(command);
     }
 }
@@ -121,6 +149,13 @@ class PreDiscardCommand : SaveCommand<PreDiscardCommand>
         using var command = GetPooled(source, asset);
         UICommandQueue.Execute(command);
     }
+
+    /// <inheritdoc cref="SaveCommand{T}.SingleAsset"/>
+    public static void ExecuteForSingleAsset(object source, UnityEngine.Object asset)
+    {
+        using var command = SaveCommand<PreDiscardCommand>.GetPooled(source, asset, succeeded: true, singleAsset: true);
+        UICommandQueue.Execute(command);
+    }
 }
 
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -131,6 +166,13 @@ class PostDiscardCommand : SaveCommand<PostDiscardCommand>
 
     public new static PostDiscardCommand GetPooled(object source, UnityEngine.Object asset, bool succeeded = true)
         => SaveCommand<PostDiscardCommand>.GetPooled(source, asset, succeeded);
+
+    /// <inheritdoc cref="SaveCommand{T}.SingleAsset"/>
+    public static void ExecuteForSingleAsset(object source, UnityEngine.Object asset)
+    {
+        using var command = SaveCommand<PostDiscardCommand>.GetPooled(source, asset, succeeded: true, singleAsset: true);
+        UICommandQueue.Execute(command);
+    }
 
     public static void Execute(object source, VisualTreeAssetEditingContext context, bool succeeded = true)
     {

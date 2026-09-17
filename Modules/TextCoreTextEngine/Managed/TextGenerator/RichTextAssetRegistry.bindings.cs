@@ -24,6 +24,19 @@ namespace UnityEngine.TextCore
         [AutoStaticsCleanupOnCodeReload]
         internal static readonly Dictionary<uint, TextColorGradient> s_GradientAssetCache = new();
 
+        internal delegate bool ExternalSpriteResolver(EntityId textSettingsId, uint assetNameHash, uint spriteNameHash, int spriteIndexHint,
+            out int spriteIndex, out EntityId spriteAssetId, out GlyphMetrics metrics, out float scale);
+
+        // Hooks for external text systems (TMP) whose assets are not TextCore types.
+        [AutoStaticsCleanupOnCodeReload]
+        internal static Func<uint, IntPtr> externalFontAssetResolver;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static Action<EntityId, string> externalFontAssetLoader;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static Action<EntityId, string> externalSpriteAssetLoader;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static ExternalSpriteResolver externalSpriteResolver;
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static unsafe void PreloadAssetsFromTags(NativeTextBuffer textBuffer, TextSettings textSettings)
         {
@@ -48,7 +61,7 @@ namespace UnityEngine.TextCore
         internal static IntPtr GetFontAssetForNative(uint nameHash)
         {
             if (!s_FontAssetCache.TryGetValue(nameHash, out var fontAsset) || ReferenceEquals(fontAsset, null))
-                return IntPtr.Zero;
+                return externalFontAssetResolver?.Invoke(nameHash) ?? IntPtr.Zero;
             return fontAsset.nativeFontAsset;
         }
 
@@ -72,6 +85,10 @@ namespace UnityEngine.TextCore
             spriteAssetId = default;
             metrics = default;
             scale = 0f;
+
+            if (externalSpriteResolver != null &&
+                externalSpriteResolver(textSettingsId, assetNameHash, spriteNameHash, spriteIndexHint, out int externalIndex, out spriteAssetId, out metrics, out scale))
+                return externalIndex;
 
             // Fetch the asset from the TextSettings if name is empty
             SpriteAsset asset;
@@ -187,7 +204,11 @@ namespace UnityEngine.TextCore
 
             string nameStr = name.ToString();
             var fontAsset = Resources.Load<FontAsset>(textSettings.defaultFontAssetPath + nameStr);
-            if (fontAsset == null) return;
+            if (fontAsset == null)
+            {
+                externalFontAssetLoader?.Invoke(textSettingsId, nameStr);
+                return;
+            }
 
             fontAsset.EnsureNativeFontAssetIsCreated();
             s_FontAssetCache[hash] = fontAsset;
@@ -207,7 +228,11 @@ namespace UnityEngine.TextCore
 
             string nameStr = name.ToString();
             var spriteAsset = Resources.Load<SpriteAsset>(textSettings.defaultSpriteAssetPath + nameStr);
-            if (spriteAsset == null) return;
+            if (spriteAsset == null)
+            {
+                externalSpriteAssetLoader?.Invoke(textSettingsId, nameStr);
+                return;
+            }
 
             spriteAsset.UpdateLookupTables();
             _ = spriteAsset.entityId;

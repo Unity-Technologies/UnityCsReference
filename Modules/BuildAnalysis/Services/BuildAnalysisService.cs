@@ -8,6 +8,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.Profiling;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 namespace UnityEditor.Build.Analysis
@@ -109,6 +110,43 @@ namespace UnityEditor.Build.Analysis
         }
 
         /// <summary>
+        /// The raw <see cref="BuildReportSummary"/> for a build, or false when it is not tracked.
+        /// </summary>
+        public bool TryGetBuildSummary(GUID buildSessionGUID, out BuildReportSummary summary)
+        {
+            summary = default;
+            if (buildSessionGUID.Empty())
+                return false;
+
+            try
+            {
+                summary = m_BuildHistory.GetBuildSummary(buildSessionGUID);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Whether this build can be shown in the default report view.
+        /// </summary>
+        public bool CanDrawDefaultReport(GUID buildSessionGUID)
+        {
+            return HasBuildReport(buildSessionGUID)
+                || TryGetBuildAnalysisPath(buildSessionGUID, out _);
+        }
+
+        /// <summary>
+        /// Whether a build report is on disk for this build.
+        /// </summary>
+        public bool HasBuildReport(GUID buildSessionGUID)
+        {
+            return m_BuildHistory.HasBuildReport(buildSessionGUID);
+        }
+
+        /// <summary>
         /// Clear all cached data
         /// </summary>
         public void ClearCache()
@@ -165,6 +203,9 @@ namespace UnityEditor.Build.Analysis
                 return Task.FromResult(AnalyzedBuild.Unavailable);
             }
 
+            if (!CanDrawDefaultReport(buildSessionGUID))
+                return Task.FromResult(AnalyzedBuild.Unavailable);
+
             return Register(buildSessionGUID, () => LoadOrGenerateAsync(buildSessionGUID, entry, regenerate: false));
         }
 
@@ -179,6 +220,9 @@ namespace UnityEditor.Build.Analysis
 
             if (!m_Enumerator.TryGetBuild(buildSessionGUID, out var entry))
                 throw new ArgumentException($"No build found for BuildSessionGUID '{buildSessionGUID}'.", nameof(buildSessionGUID));
+
+            if (!HasBuildReport(buildSessionGUID))
+                return Task.FromResult(AnalyzedBuild.Unavailable);
 
             // Invalidate first so a concurrent GetBuildAnalysisAsync can't serve the stale entry we're replacing.
             m_Cache.Remove(buildSessionGUID);

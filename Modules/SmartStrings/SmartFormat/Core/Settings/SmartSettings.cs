@@ -22,13 +22,6 @@ namespace Unity.SmartStrings.Core.Settings;
 [Serializable]
 public class SmartSettings
 {
-    // Deprecated. Kept for upgrading
-    #pragma warning disable CS0618
-    [SerializeField, HideInInspector] internal ErrorAction m_FormatErrorAction = ErrorAction.ThrowError;
-    [SerializeField, HideInInspector] internal ErrorAction m_ParseErrorAction = ErrorAction.ThrowError;
-    [SerializeField, HideInInspector] internal bool m_ConvertCharacterStringLiterals = true;
-    #pragma warning restore CS0618
-
     [Tooltip("Determines whether placeholders are case-sensitive or not.")]
     [SerializeField] CaseSensitivityType m_CaseSensitivity = CaseSensitivityType.CaseSensitive;
 
@@ -39,7 +32,7 @@ public class SmartSettings
     /// Gets the thread safety mode.
     /// Thread safety is relevant for global caching, lists and object pools,
     /// which can be filled from different threads concurrently.
-    /// <para><see langword="true"/> does <b>not</b> guarantee thread safety of all classes.</para>
+    /// <see langword="true"/> does <b>not</b> guarantee thread safety of all classes.
     /// Always <see langword="false"/>: the shared object pools are single-threaded,
     /// so formatting from multiple threads concurrently is not supported.
     /// </summary>
@@ -48,53 +41,15 @@ public class SmartSettings
     /// <summary>
     /// Uses <c>string.Format</c>-compatible escaping of curly braces, {{ and }},
     /// instead of the <c>Smart.Format</c> default escaping, \{ and \}.
-    /// <para>Custom formatters cannot be parsed / used, if set to <see langword="true"/>.</para>
-    /// <para>Default is <see langword="false"/>.</para>
+    /// Custom formatters cannot be parsed / used, if set to <see langword="true"/>.
+    /// Default is <see langword="false"/>.
     /// </summary>
     internal bool StringFormatCompatibility { get; set; }
-
-    /// <summary>
-    /// Behavior that the <see cref="SmartFormatter" /> applies when a formatting error occurs.
-    /// The default is <see cref="ErrorAction.ThrowError"/>.
-    /// </summary>
-    [Obsolete("Use 'SmartSettings.Formatter.ErrorAction' instead.", false)]
-    public ErrorAction FormatErrorAction
-    {
-        get => (ErrorAction)Formatter.ErrorAction;
-        set => Formatter.ErrorAction = (FormatErrorAction)value;
-    }
-
-    /// <summary>
-    /// Behavior that the <see cref="Unity.SmartStrings.Core.Parsing.Parser" /> applies when a parsing error occurs.
-    /// The default is <see cref="ErrorAction.ThrowError"/>.
-    /// </summary>
-    [Obsolete("Use 'SmartSettings.Parser.ErrorAction' instead.", false)]
-    public ErrorAction ParseErrorAction
-    {
-        get => (ErrorAction)Parser.ErrorAction;
-        set => Parser.ErrorAction = (ParseErrorAction)value;
-    }
-
     /// <summary>
     /// Determines whether placeholders are case-sensitive or not.
     /// The default is <see cref="CaseSensitivityType.CaseSensitive"/>.
     /// </summary>
     public CaseSensitivityType CaseSensitivity { get => m_CaseSensitivity; set => m_CaseSensitivity = value; }
-
-    /// <summary>
-    /// This setting is relevant for the <see cref="Parsing.LiteralText" />.
-    /// If true (the default), character string literals are treated like in "normal" string.Format:
-    /// string.Format("\t")   will return a "TAB" character
-    /// If false, character string literals are not converted, just like with this string.Format:
-    /// string.Format(@"\t")  will return the 2 characters "\" and "t"
-    /// </summary>
-    [Obsolete("Use SmartSettings.Parser.ConvertCharacterStringLiterals instead.", false)]
-    public bool ConvertCharacterStringLiterals
-    {
-        get => Parser.ConvertCharacterStringLiterals;
-        set => Parser.ConvertCharacterStringLiterals = value;
-    }
-
     /// <summary>
     /// Gets the <see cref="StringComparer"/> that belongs to the <see cref="CaseSensitivity"/> setting.
     /// </summary>

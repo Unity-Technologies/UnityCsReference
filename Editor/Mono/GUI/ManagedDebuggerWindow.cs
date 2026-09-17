@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using UnityEngine;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting;
@@ -29,7 +28,9 @@ namespace UnityEditor
 
         static ManagedDebuggerWindow()
         {
+#pragma warning disable UAL0015 // Mono-only subscription (this whole block is compiled out under CoreCLR): a Mono domain reload re-runs this static constructor, so the cleared invocation list refills; the CoreCLR code-reload cleanup never sees this subscriber
             SubscribeToDebuggerAttached();
+#pragma warning restore UAL0015
         }
 
         public ManagedDebuggerWindow(CodeOptimization codeOptimization)
@@ -38,16 +39,16 @@ namespace UnityEditor
 
             if (CodeOptimization.Debug == m_CodeOptimization)
             {
-                m_CodeOptimizationTitleContent = EditorGUIUtility.TrTextContent("Mode: Debug");
-                m_CodeOptimizationButtonContent = EditorGUIUtility.TrTextContent("Switch to release mode");
+                m_CodeOptimizationTitleContent = L10n.TextContent("Mode: Debug", null, null, null);
+                m_CodeOptimizationButtonContent = L10n.TextContent("Switch to release mode", null, null, null);
                 m_CodeOptimizationTextContent = (!EditorUtility.scriptCompilationFailed) ?
                     EditorGUIUtility.TrTextContentWithIcon("Release mode disables C# debugging but improves C# performance.\nSwitching to release mode will recompile and reload all scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Info)) :
                     EditorGUIUtility.TrTextContentWithIcon("All compiler errors must be fixed before switching to release mode.", EditorGUIUtility.GetHelpIcon(MessageType.Error));
             }
             else
             {
-                m_CodeOptimizationTitleContent = EditorGUIUtility.TrTextContent("Mode: Release");
-                m_CodeOptimizationButtonContent = EditorGUIUtility.TrTextContent("Switch to debug mode");
+                m_CodeOptimizationTitleContent = L10n.TextContent("Mode: Release", null, null, null);
+                m_CodeOptimizationButtonContent = L10n.TextContent("Switch to debug mode", null, null, null);
                 m_CodeOptimizationTextContent = (!EditorUtility.scriptCompilationFailed) ?
                     EditorGUIUtility.TrTextContentWithIcon("Debug mode enables C# debugging but reduces C# performance.\nSwitching to debug mode will recompile and reload all scripts.", EditorGUIUtility.GetHelpIcon(MessageType.Info)) :
                     EditorGUIUtility.TrTextContentWithIcon("All compiler errors must be fixed before switching to debug mode.", EditorGUIUtility.GetHelpIcon(MessageType.Error));
@@ -165,4 +166,3 @@ If you switch it on for all projects, you can change it later in the ""Code Opti
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

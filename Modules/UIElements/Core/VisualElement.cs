@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -39,19 +37,34 @@ namespace UnityEngine.UIElements
         Root      = 1 << 7,     // set on the root visual element
     }
 
+    // The word is declared on CallbackEventHandler: bits 0, 1, 3, 4 and 6 back properties on that class and
+    // on Focusable, the rest properties on VisualElement. Bits 26-29 hold the two 2-bit direction fields, so
+    // only 13, 15, 16, 17, 30 and 31 are still free.
     [Flags]
     internal enum VisualElementFlags
     {
+        // Element is an IMGUIContainer, which needs custom treatment when dispatching events
+        IsIMGUIContainer = 1 << 0,
+        // Element can potentially receive focus
+        IsFocusable = 1 << 1,
         // Need to compute world clip
         WorldClipDirty = 1 << 2,
+        // Element delegates the focus to its children
+        DelegatesFocus = 1 << 3,
+        // Children of a composite appear at its tabIndex position in the focus ring, but the root itself doesn't
+        ExcludeFromFocusRing = 1 << 4,
         // Need to compute world bounding box
         EventInterestParentCategoriesDirty = 1 << 5,
+        // Clicking a disabled child can give this element the focus
+        EligibleToReceiveFocusFromDisabledChild = 1 << 6,
         // Element is a root for composite controls
         CompositeRoot = 1 << 7,
         // Element has a custom measure function
         RequireMeasureFunction = 1 << 8,
         // Element has view data persistence
         EnableViewDataPersistence = 1 << 9,
+        // Play-mode tint is not applied to this element nor to its children
+        DisablePlayModeTint = 1 << 10,
         // Element needs to receive an AttachToPanel event
         NeedsAttachToPanelEvent = 1 << 11,
         // Element has released the LayoutNode create in its constructor and can't be used anymore
@@ -74,8 +87,19 @@ namespace UnityEngine.UIElements
         StyleDirty = 1 << 24,
         // Element is an ancestor of an element with StylesDirty flag, but doesn't need to be updated itself
         StyleAncestorOfDirty = 1 << 25,
+        // 2-bit encoding of the LanguageDirection set on the element
+        LanguageDirectionMask = 3 << VisualElementFlagsShift.LanguageDirection,
+        // 2-bit encoding of the LanguageDirection resolved from the ancestors
+        LocalLanguageDirectionMask = 3 << VisualElementFlagsShift.LocalLanguageDirection,
         // Element initial flags
-        Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource
+        Init = WorldClipDirty | EventInterestParentCategoriesDirty | DetachedDataSource |
+            EligibleToReceiveFocusFromDisabledChild
+    }
+
+    internal static class VisualElementFlagsShift
+    {
+        public const int LanguageDirection = 26;
+        public const int LocalLanguageDirection = 28;
     }
 
     /// <summary>
@@ -265,7 +289,6 @@ namespace UnityEngine.UIElements
         StyleClassList m_ClassList;
         private Dictionary<PropertyName, object> m_PropertyBag;
 
-        private VisualElementFlags m_Flags;
         internal VisualElementFlags flags
         {
             get {
@@ -371,7 +394,11 @@ namespace UnityEngine.UIElements
             get { return panel?.focusController; }
         }
 
-        private bool m_DisablePlayModeTint = false;
+        private bool disablePlayModeTintSelf
+        {
+            get => GetFlag(VisualElementFlags.DisablePlayModeTint);
+            set => SetFlag(VisualElementFlags.DisablePlayModeTint, value);
+        }
 
         /// <summary>
         /// Play-mode tint is applied by default unless this is set to true. It's applied hierarchically to this <see cref="VisualElement"/> and to all its children that exist on an editor panel.
@@ -381,11 +408,11 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (panel?.contextType == ContextType.Player || m_DisablePlayModeTint)
+                if (panel?.contextType == ContextType.Player || disablePlayModeTintSelf)
                     return true;
                 for (var p = parent; p != null; p = p.parent)
                 {
-                    if (p.m_DisablePlayModeTint)
+                    if (p.disablePlayModeTintSelf)
                         return true;
                 }
 
@@ -393,10 +420,10 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                if (m_DisablePlayModeTint == value)
+                if (disablePlayModeTintSelf == value)
                     return;
 
-                m_DisablePlayModeTint = value;
+                disablePlayModeTintSelf = value;
                 MarkDirtyRepaint();
                 NotifyPropertyChanged(disablePlayModeTintProperty);
             }
@@ -1757,7 +1784,21 @@ namespace UnityEngine.UIElements
             set => focusable = value;
         }
 
-        LanguageDirection m_LanguageDirection;
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        LanguageDirection GetDirection(int shift) => (LanguageDirection)(((int)m_Flags >> shift) & 3);
+
+        // Derives the mask from the shift so the two can't be mispaired, and rejects values that would not
+        // survive the 2-bit round trip instead of silently truncating into the neighbouring field.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        void SetDirection(int shift, LanguageDirection value)
+        {
+            if (value < LanguageDirection.Inherit || value > LanguageDirection.RTL)
+                throw new ArgumentOutOfRangeException(nameof(value), value, null);
+
+            var mask = (VisualElementFlags)(3 << shift);
+            m_Flags = (m_Flags & ~mask) | (VisualElementFlags)((int)value << shift);
+        }
+
         /// <summary>
         /// Indicates the directionality of the element's text. The value will propagate to the element's children.
         /// </summary>
@@ -1765,14 +1806,14 @@ namespace UnityEngine.UIElements
         [UxmlAttribute]
         public LanguageDirection languageDirection
         {
-            get => m_LanguageDirection;
+            get => GetDirection(VisualElementFlagsShift.LanguageDirection);
             set
             {
-                if (m_LanguageDirection == value)
+                if (GetDirection(VisualElementFlagsShift.LanguageDirection) == value)
                     return;
 
-                m_LanguageDirection = value;
-                localLanguageDirection = m_LanguageDirection;
+                SetDirection(VisualElementFlagsShift.LanguageDirection, value);
+                localLanguageDirection = value;
                 NotifyPropertyChanged(languageDirectionProperty);
             }
         }
@@ -1940,10 +1981,7 @@ namespace UnityEngine.UIElements
             m_Children = s_EmptyList;
             controlid = ++s_NextId;
 
-            hierarchy = new Hierarchy(this);
-
             m_ClassList = StyleClassList.Empty;
-            flags = VisualElementFlags.Init;
 
             focusable = false;
 
@@ -2000,7 +2038,7 @@ namespace UnityEngine.UIElements
                     {
                         LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
                     }
-                    ReleaseComponentStorage();
+                    ReleaseComponentStorage(fromFinalizer: true);
                     ReleaseNativeResources(fromFinalizer: true);
                 }
                 s_FinalizerCount++;
@@ -2015,7 +2053,7 @@ namespace UnityEngine.UIElements
         }
 #pragma warning restore UA5000
 
-        private const string k_ElementReleaseExceptionMessage = "You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.";
+        private protected const string k_ElementReleaseExceptionMessage = "You can't modify a VisualElement after its resources are released. This usually happens when PanelRenderer releases elements during UI reload or cleanup. Make sure that you don't hold stale references to elements.";
 
         /// <summary>
         /// Indicates if the element has released its reusable resources, in which case it can not be modified or added again.
@@ -2065,7 +2103,7 @@ namespace UnityEngine.UIElements
         {
             flags |= VisualElementFlags.Released;
             LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
-            ReleaseComponentStorage(returnManagedBoxesToPool: true);
+            ReleaseComponentStorage();
 
             // Put back some of the lists we own to their pools
             // Note: we already know the child list was pooled back when clearing the element
@@ -2506,23 +2544,22 @@ namespace UnityEngine.UIElements
             }
         }
 
-        LanguageDirection m_LocalLanguageDirection;
         internal LanguageDirection localLanguageDirection
         {
-            get => m_LocalLanguageDirection;
+            get => GetDirection(VisualElementFlagsShift.LocalLanguageDirection);
             set
             {
-                if (m_LocalLanguageDirection == value)
+                if (GetDirection(VisualElementFlagsShift.LocalLanguageDirection) == value)
                     return;
 
-                m_LocalLanguageDirection = value;
+                SetDirection(VisualElementFlagsShift.LocalLanguageDirection, value);
 
                 IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                 var count = m_Children.Count;
                 for (int i = 0; i < count; ++i)
                 {
                     if(m_Children[i].languageDirection == LanguageDirection.Inherit)
-                        m_Children[i].localLanguageDirection = m_LocalLanguageDirection;
+                        m_Children[i].localLanguageDirection = value;
                 }
             }
         }
@@ -3572,5 +3609,3 @@ namespace UnityEngine.UIElements
 
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

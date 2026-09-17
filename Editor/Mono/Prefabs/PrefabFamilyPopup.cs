@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -56,6 +55,7 @@ namespace UnityEditor
         const float k_Padding = 3f;
         const float k_OffsetX = 6f;
         const float k_SplitWidth = 1f;
+        const string k_Ellipsis = "\u2026";
         readonly float k_MinNameWidth;
         readonly float k_TitleWidth = k_OffsetX + 50f;
         readonly float k_OverridesWidth = k_SplitWidth + EditorStyles.miniLabel.CalcSize(Styles.overridesLabel).x + 2 * k_Padding;
@@ -86,14 +86,14 @@ namespace UnityEditor
 
         public static class Styles
         {
-            public static readonly GUIContent rootLabel = EditorGUIUtility.TrTextContent("Root", "The root of the Prefab Variant hierarchy");
-            public static readonly GUIContent selectedLabel = EditorGUIUtility.TrTextContent("Current", "The currently selected Prefab");
-            public static readonly GUIContent titlePrefixLabel = EditorGUIUtility.TrTextContent("Variant Family of");
-            public static readonly GUIContent ancestorLabel = EditorGUIUtility.TrTextContent("Ancestors");
-            public static readonly GUIContent overridesLabel = EditorGUIUtility.TrTextContent("Overrides");
-            public static readonly GUIContent childrenLabel = EditorGUIUtility.TrTextContent("Children");
-            public static readonly GUIContent noResultsLabel = EditorGUIUtility.TrTextContent("No results");
-            public static readonly GUIContent noChildrenLabel = EditorGUIUtility.TrTextContent("This Prefab doesn't have any children.\nPrefab Variants created from this Prefab\nwill be listed here.");
+            public static readonly GUIContent rootLabel = L10n.TextContent("Root", "The root of the Prefab Variant hierarchy", null, null);
+            public static readonly GUIContent selectedLabel = L10n.TextContent("Current", "The currently selected Prefab", null, null);
+            public static readonly GUIContent titlePrefixLabel = L10n.TextContent("Variant Family of", null, null, null);
+            public static readonly GUIContent ancestorLabel = L10n.TextContent("Ancestors", null, null, null);
+            public static readonly GUIContent overridesLabel = L10n.TextContent("Overrides", null, null, null);
+            public static readonly GUIContent childrenLabel = L10n.TextContent("Children", null, null, null);
+            public static readonly GUIContent noResultsLabel = L10n.TextContent("No results", null, null, null);
+            public static readonly GUIContent noChildrenLabel = L10n.TextContent("This Prefab doesn't have any children.\nPrefab Variants created from this Prefab\nwill be listed here.", null, null, null);
             public static readonly GUIStyle searchBackground = new GUIStyle("ProjectBrowserIconAreaBg");
             public static readonly GUIStyle centered = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleCenter };
             public static readonly GUIStyle boldRightAligned = new GUIStyle(EditorStyles.boldLabel)
@@ -214,6 +214,11 @@ namespace UnityEditor
                 float scrollBarWidthOffset = numRows >= k_MaxTableRows ? k_ScrollbarWidth : 0;
                 m_MaxNameWidth = k_MaxWindowWidth - (k_TitleWidth + k_SplitWidth + k_OverridesWidth) - scrollBarWidthOffset;
 
+                // Cap the required name width to what can actually be rendered. Names beyond this are
+                // truncated with an ellipsis in DoObjectLabel() rather than widening the scrollable
+                // content past what's drawn, which used to leave dead space at the end of the scrollbar.
+                m_NamesWidth = Mathf.Min(m_NamesWidth, m_MaxNameWidth);
+
                 float prevWidth = m_WindowWidth;
                 if (m_NamesWidth <= k_MinNameWidth)
                     m_WindowWidth = k_MinWindowWidth;
@@ -318,7 +323,8 @@ namespace UnityEditor
             float labelSize = Styles.boldRightAligned.CalcSize(Styles.titlePrefixLabel).x;
 
             Rect labelRect = new Rect(k_OffsetX, headerRect.y + k_Padding, labelSize, EditorGUIUtility.singleLineHeight);
-            Rect contentRect = new Rect(labelRect.x + labelRect.width + k_Padding, labelRect.y, m_WindowWidth, labelRect.height);
+            float contentX = labelRect.x + labelRect.width + k_Padding;
+            Rect contentRect = new Rect(contentX, labelRect.y, m_WindowWidth - contentX - k_OffsetX, labelRect.height);
 
             GUI.Label(labelRect, Styles.titlePrefixLabel, Styles.boldRightAligned);
             DoObjectLabel(contentRect, AssetDatabase.GetAssetPath(m_Target), EditorStyles.boldLabel);
@@ -359,6 +365,7 @@ namespace UnityEditor
                 {
                     // Draw scrollable table
                     entryRect.x = k_TitleWidth;
+                    entryRect.width = m_NamesWidth;
                     for (int i = 0; i < m_AncestorItems.Length; i++)
                     {
                         entryRect.y = k_HeaderHeight + (i + 1) * k_EntryHeight;
@@ -591,7 +598,53 @@ namespace UnityEditor
 
             var icon = AssetDatabase.GetCachedIcon(assetPath);
             var name = System.IO.Path.GetFileNameWithoutExtension(assetPath);
+
+            // Truncate long names ourselves rather than relying on the style's own clipping: IMGUI
+            // lays out an image+text label by shrinking the *icon* until the full, untruncated text
+            // fits - down to nothing in the worst case (the imageScale clamp in
+            // GUIStyle::CalcContentRects, kImageLeft, in Modules/IMGUI/GUIStyle.cpp). So an over-wide
+            // name here costs us the icon instead of gaining an ellipsis. Measure against the width
+            // that is actually left for text once padding, the icon and the ellipsis are accounted
+            // for; GetNumCharactersThatFitWithinWidth() only measures raw glyph advances and knows
+            // about none of them.
+            Rect contentRect = style.padding.Remove(rect);
+            float textWidth = contentRect.width - GetRenderedIconWidth(icon, contentRect) - style.contentSpacing;
+
+            int maxChars = style.GetNumCharactersThatFitWithinWidth(name, Mathf.Max(0f, textWidth));
+            if (maxChars >= 0 && name.Length > maxChars)
+            {
+                // CalcSize() reports content + padding, so subtract the padding back out.
+                float ellipsisWidth = style.CalcSize(EditorGUIUtility.TempContent(k_Ellipsis)).x - style.padding.horizontal;
+                maxChars = style.GetNumCharactersThatFitWithinWidth(name, Mathf.Max(0f, textWidth - ellipsisWidth));
+                name = name.Substring(0, Mathf.Max(1, maxChars)) + k_Ellipsis;
+            }
+
             GUI.Label(rect, EditorGUIUtility.TempContent(name, icon), style);
+        }
+
+        // The width GUIStyle hands to the icon of an image+text label: the icon is scaled down to fit
+        // the content rect and that width is then removed from the bounds the text is generated into
+        // (GUIStyle::DrawContent, kImageLeft, in Modules/IMGUI/GUIStyle.cpp). Reserving exactly this
+        // keeps the text short enough that CalcContentRects never shrinks the icon a second time.
+        static float GetRenderedIconWidth(Texture icon, Rect contentRect)
+        {
+            if (icon == null)
+                return 0f;
+
+            // EditorGUIUtility.SetIconSize() pins the icon size and bypasses the scaling entirely.
+            var fixedIconSize = EditorGUIUtility.GetIconSize();
+            if (fixedIconSize.x > 0f && fixedIconSize.y > 0f)
+                return fixedIconSize.x;
+
+            // GUIStyle measures icons in points, not pixels, so undo the HiDPI scale first.
+            float pixelsPerPoint = icon is Texture2D texture2D ? texture2D.pixelsPerPoint : 1f;
+            float iconWidth = icon.width / pixelsPerPoint;
+            float iconHeight = icon.height / pixelsPerPoint;
+            if (iconWidth <= 0f || iconHeight <= 0f)
+                return 0f;
+
+            float scale = Mathf.Clamp01(Mathf.Min(contentRect.width / iconWidth, contentRect.height / iconHeight));
+            return Mathf.Round(iconWidth * scale);
         }
     }
 
@@ -749,4 +802,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

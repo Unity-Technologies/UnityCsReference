@@ -77,7 +77,7 @@ internal class ConfigurableBuildProfileExtension : IBuildProfileExtension
         m_BaseBuildProfileExtension.GetProfileInfoMessage();
 
     public PreconfiguredSettingsVariant[] GetPreconfiguredSettingsVariants() =>
-        m_SDKPlatformProvider.preconfiguredSettingsVariants;
+        BuildTargetDiscovery.BuildPlatformPreconfiguredSettingsVariants(m_SDKPlatformProvider.guid);
 
     public void OnBuildProfileCreated(BuildProfile buildProfile, int preconfiguredSettingsVariant) =>
         m_SDKPlatformProvider.onDerivedPlatformBuildProfileCreated?.Invoke(buildProfile, preconfiguredSettingsVariant, m_BaseBuildProfileExtension.OnBuildProfileCreated);

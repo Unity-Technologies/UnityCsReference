@@ -23,8 +23,14 @@ namespace UnityEditor.Search
     partial class SearchQueryAsset : ScriptableObject, ISearchQuery
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Guard for the SearchMonitor.contentRefreshed subscription: it is reset together with that
+        // subscription, so ListenToAssetChanges re-arms both on the next savedQueries access.
+        [IgnoreForUAL0015("Subscription guard re-armed by ListenToAssetChanges together with the subscription it guards")]
         static bool s_ListeningToAssetChanges = false;
         [AutoStaticsCleanupOnCodeReload]
+        // Saved queries are assets in the project; the savedQueries getter enumerates them again while
+        // the list is null, which is also what ResetSearchQueryItems relies on.
+        [IgnoreForUAL0015("Saved-query list re-enumerated from project assets by the savedQueries getter")]
         static List<SearchQueryAsset> s_SavedQueries;
 
         private bool? m_isReadOnlyQuery;

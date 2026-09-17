@@ -18,7 +18,7 @@ namespace Unity.Localization;
 /// <see cref="LocalizationSettings.StartupSelectors"/> runs.
 /// </remarks>
 /// <example>
-/// <para>Selects French when it is one of the available locales.</para>
+/// Selects French when it is one of the available locales.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/SpecificLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>
@@ -54,7 +54,7 @@ public class SpecificLocaleSelector : IStartupLocaleSelector
 /// ahead of <see cref="SystemLocaleSelector"/>.
 /// </remarks>
 /// <example>
-/// <para>Reads the locale from the command line when the player starts.</para>
+/// Reads the locale from the command line when the player starts.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/CommandLineLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>
@@ -99,7 +99,7 @@ public class CommandLineLocaleSelector : IStartupLocaleSelector
 /// Override <see cref="GetSystemCulture"/> to supply a fixed culture in tests.
 /// </remarks>
 /// <example>
-/// <para>Selects the locale that best matches the device language.</para>
+/// Selects the locale that best matches the device language.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/SystemLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>
@@ -132,7 +132,7 @@ public class SystemLocaleSelector : IStartupLocaleSelector
     /// </remarks>
     /// <returns>The culture used to detect the locale; by default the device's current UI culture.</returns>
     /// <example>
-    /// <para>Overrides the detected culture to always report German.</para>
+    /// Overrides the detected culture to always report German.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/SystemCultureOverrideExample.cs"/>
     /// </example>
     protected virtual CultureInfo GetSystemCulture() => CultureInfo.CurrentUICulture;
@@ -150,7 +150,7 @@ public class SystemLocaleSelector : IStartupLocaleSelector
 /// selector runs. Add it to <see cref="LocalizationSettings.StartupSelectors"/> to enable persistence.
 /// </remarks>
 /// <example>
-/// <para>Reads the previously saved locale when the game starts.</para>
+/// Reads the previously saved locale when the game starts.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Settings/PlayerPrefLocaleSelectorExample.cs"/>
 /// </example>
 /// <seealso cref="IStartupLocaleSelector"/>

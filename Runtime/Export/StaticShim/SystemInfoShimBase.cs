@@ -263,6 +263,12 @@ namespace UnityEngine
 
         public virtual bool supportsIndirectArgumentsBuffer => UnityEngine.SystemInfo.supportsIndirectArgumentsBuffer;
 
+        public virtual bool supportsMultiDrawIndirect => UnityEngine.SystemInfo.supportsMultiDrawIndirect;
+
+        public virtual bool supportsMultiDrawIndirectCountBuffer => UnityEngine.SystemInfo.supportsMultiDrawIndirectCountBuffer;
+
+        public virtual uint maxDrawIndirectCount => UnityEngine.SystemInfo.maxDrawIndirectCount;
+
         public virtual bool supportsDepthFetchInRenderPass => UnityEngine.SystemInfo.supportsDepthFetchInRenderPass;
 
         public virtual bool supportsDepthAttachmentAsInputAttachment => UnityEngine.SystemInfo.supportsDepthAttachmentAsInputAttachment;

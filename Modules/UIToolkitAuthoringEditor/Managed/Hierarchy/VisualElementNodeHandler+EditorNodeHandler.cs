@@ -20,6 +20,18 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
 {
     readonly List<WeakReference<HierarchyView>> m_Views = new();
 
+    /// <summary>Whether <paramref name="view"/> is one of the views this handler is bound to.</summary>
+    bool IsBoundView(HierarchyView view)
+    {
+        foreach (var weakRef in m_Views)
+        {
+            if (weakRef.TryGetTarget(out var stored) && ReferenceEquals(stored, view))
+                return true;
+        }
+
+        return false;
+    }
+
     bool IHierarchyEditorNodeTypeHandler.CanCut(HierarchyView view)
     {
         if (StageStrategy.IsReadOnly)
@@ -288,7 +300,7 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             RequestSelectionOnNextUpdate(toPaste);
             ReparentElementsCommand.Execute(CommandSources.Hierarchy, parentAsset, -1, toPaste);
             ScopePendingSelectionRequestsTo(parentElement);
-            Clipboard.GetClipboardForStage().ClearCutElements();
+            Clipboard.GetClipboardForStage().Clear();
             return true;
         }
 
@@ -339,7 +351,11 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             return false;
 
         if (element is IPanelComponentRootElement rootElement)
-            return !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(rootElement.panelComponent?.visualTreeAsset));
+        {
+            var panelComponent = rootElement.panelComponent;
+            var document = panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
+            return !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(document));
+        }
 
         return StageStrategy.GetEditFlags(element).IsFullyEditable();
     }
@@ -355,6 +371,11 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
         if (element is IPanelComponentRootElement rootElement)
             return TryRenameDocumentAsset(rootElement, name);
 
+        // The row displays the name as "#name". It is not part of the name and never valid in one, so it is dropped
+        // rather than rejected.
+        if (name.StartsWith('#'))
+            name = name[1..];
+
         if (!ValidateName(name))
         {
             CommandList.SetDirty();
@@ -367,18 +388,24 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
             CommandList.SetDirty();
             return false;
         }
+
+        // Name has not changed.
+        if (string.CompareOrdinal(element.name, name) == 0)
+            return true;
+
         SetElementNameCommand.Execute(CommandSources.Hierarchy, elementVea, name);
         element.name = name;
         return true;
     }
 
-    // The rename field is seeded with the row label, so the file extension and the unsaved marker it shows are
-    // tolerated and stripped before the asset file is renamed. ObjectNames.SetNameSmart renames through the same
-    // undoable path as the Project window, unlike AssetDatabase.RenameAsset which is not on the Undo stack; it
+    // The rename field seeds only the file name, but a user can still type the extension or the unsaved marker, so
+    // both are tolerated and stripped before the asset file is renamed. ObjectNames.SetNameSmart renames through the
+    // same undoable path as the Project window, unlike AssetDatabase.RenameAsset which is not on the Undo stack; it
     // keeps the extension the asset already has and warns on failure itself.
     bool TryRenameDocumentAsset(IPanelComponentRootElement rootElement, string name)
     {
-        var document = rootElement.panelComponent?.visualTreeAsset;
+        var panelComponent = rootElement.panelComponent;
+        var document = panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
         var path = document != null ? AssetDatabase.GetAssetPath(document) : null;
         if (string.IsNullOrEmpty(path))
         {
@@ -425,27 +452,26 @@ internal partial class VisualElementNodeHandler : IHierarchyEditorNodeTypeHandle
 
         switch (element)
         {
+            // Only the file name; the extension and unsaved marker are added as a separate label in Bind.
             case IPanelComponentRootElement rootElement:
-                var vta = rootElement.panelComponent.visualTreeAsset;
-                if (!vta)
-                    return "<none>.uxml";
-
-                var path = AssetDatabase.GetAssetPath(vta);
-                var fileName = !string.IsNullOrEmpty(path)
-                    ? Path.GetFileName(path)
-                    : string.IsNullOrEmpty(vta.name)
-                        ? "<unsaved file>.uxml"
-                        : $"{vta.name}.uxml";
-
-                return UIAssetRegistry.LiveInstance?.IsDirty(vta) == true
-                    ? fileName + "*"
-                    : fileName;
+                GetDocumentRowParts(rootElement, out var name, out _);
+                return name;
 
             default:
                 return string.IsNullOrEmpty(element.name)
                     ? string.Empty
                     : $"#{element.name}";
         }
+    }
+
+    string IHierarchyEditorNodeTypeHandler.GetRenameTextOverride(HierarchyView view, in HierarchyNode node)
+    {
+        if (!m_Mappings.TryGetValue(node, out var element) || element == null)
+            return null;
+
+        // A document row renames its .uxml file starting from the file name the row already shows; an element row
+        // edits the raw name, without the "#" the row prefixes it with.
+        return element is IPanelComponentRootElement ? null : element.name ?? string.Empty;
     }
 
     bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)

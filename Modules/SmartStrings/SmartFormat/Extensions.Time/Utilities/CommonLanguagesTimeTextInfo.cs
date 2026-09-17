@@ -27,7 +27,9 @@ static partial class CommonLanguagesTimeTextInfo
     /// </summary>
     public static TimeTextInfo English => new()
     {
+        #pragma warning disable UAL0018 // the capturing TimeTextInfo is created fresh on every property access, so it cannot hold a rule from a previous code-loaded scope
         PluralRule = PluralRules.GetPluralRule("en"),
+        #pragma warning restore UAL0018
         Ptxt_week = new[] { "{0} week", "{0} weeks" },
         Ptxt_day = new[] { "{0} day", "{0} days" },
         Ptxt_hour = new[] { "{0} hour", "{0} hours" },
@@ -48,7 +50,9 @@ static partial class CommonLanguagesTimeTextInfo
     /// </summary>
     public static TimeTextInfo French => new()
     {
+        #pragma warning disable UAL0018 // the capturing TimeTextInfo is created fresh on every property access, so it cannot hold a rule from a previous code-loaded scope
         PluralRule = PluralRules.GetPluralRule("fr"),
+        #pragma warning restore UAL0018
         Ptxt_week = new[] { "{0} semaine", "{0} semaines" },
         Ptxt_day = new[] { "{0} jour", "{0} jours" },
         Ptxt_hour = new[] { "{0} heure", "{0} heures" },
@@ -69,7 +73,9 @@ static partial class CommonLanguagesTimeTextInfo
     /// </summary>
     public static TimeTextInfo Spanish => new()
     {
+        #pragma warning disable UAL0018 // the capturing TimeTextInfo is created fresh on every property access, so it cannot hold a rule from a previous code-loaded scope
         PluralRule = PluralRules.GetPluralRule("es"),
+        #pragma warning restore UAL0018
         Ptxt_week = new[] { "{0} semana", "{0} semanas" },
         Ptxt_day = new[] { "{0} día", "{0} días" },
         Ptxt_hour = new[] { "{0} hore", "{0} horas" },
@@ -90,7 +96,9 @@ static partial class CommonLanguagesTimeTextInfo
     /// </summary>
     public static TimeTextInfo Portuguese => new()
     {
+        #pragma warning disable UAL0018 // the capturing TimeTextInfo is created fresh on every property access, so it cannot hold a rule from a previous code-loaded scope
         PluralRule = PluralRules.GetPluralRule("pt"),
+        #pragma warning restore UAL0018
         Ptxt_week = new[] { "{0} semana", "{0} semanas" },
         Ptxt_day = new[] { "{0} dia", "{0} dias" },
         Ptxt_hour = new[] { "{0} hora", "{0} horas" },
@@ -111,7 +119,9 @@ static partial class CommonLanguagesTimeTextInfo
     /// </summary>
     public static TimeTextInfo Italian => new()
     {
+        #pragma warning disable UAL0018 // the capturing TimeTextInfo is created fresh on every property access, so it cannot hold a rule from a previous code-loaded scope
         PluralRule = PluralRules.GetPluralRule("it"),
+        #pragma warning restore UAL0018
         Ptxt_week = new[] { "{0} settimana", "{0} settimane" },
         Ptxt_day = new[] { "{0} giorno", "{0} giorni" },
         Ptxt_hour = new[] { "{0} ora", "{0} ore" },
@@ -132,7 +142,9 @@ static partial class CommonLanguagesTimeTextInfo
     /// </summary>
     public static TimeTextInfo German => new()
     {
+        #pragma warning disable UAL0018 // the capturing TimeTextInfo is created fresh on every property access, so it cannot hold a rule from a previous code-loaded scope
         PluralRule = PluralRules.GetPluralRule("de"),
+        #pragma warning restore UAL0018
         Ptxt_week = new[] { "{0} Woche", "{0} Wochen" },
         Ptxt_day = new[] { "{0} Tag", "{0} Tage" },
         Ptxt_hour = new[] { "{0} Stunde", "{0} Stunden" },

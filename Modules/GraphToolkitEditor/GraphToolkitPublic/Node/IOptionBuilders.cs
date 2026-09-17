@@ -81,8 +81,8 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Configures the option to use the <see cref="UnityEngine.TextAreaAttribute"/>.
         /// </summary>
-        /// <param name="minLines">The maximum amount of lines the text area can show before it starts using a scrollbar. Defaults to 3.</param>
-        /// <param name="maxLines">The minimum amount of lines the text area will use. Defaults to 3.</param>
+        /// <param name="minLines">The minimum amount of lines the text area will use. Defaults to 3.</param>
+        /// <param name="maxLines">The maximum amount of lines the text area can show before it starts using a scrollbar. Defaults to 3.</param>
         /// <returns>The current builder instance for method chaining.</returns>
         /// <remarks>
         /// Applies only to string input ports. Use this setting to make the port value a Text Area.
@@ -165,8 +165,8 @@ namespace Unity.GraphToolkit.Editor
         /// <summary>
         /// Configures the option to use the <see cref="UnityEngine.TextAreaAttribute"/>.
         /// </summary>
-        /// <param name="minLines">The maximum amount of lines the text area can show before it starts using a scrollbar. Defaults to 3.</param>
-        /// <param name="maxLines">The minimum amount of lines the text area will use. Defaults to 3.</param>
+        /// <param name="minLines">The minimum amount of lines the text area will use. Defaults to 3.</param>
+        /// <param name="maxLines">The maximum amount of lines the text area can show before it starts using a scrollbar. Defaults to 3.</param>
         /// <returns>The current builder instance for method chaining.</returns>
         /// <remarks>
         /// Applies only to string input ports. Use this setting to make the port value a Text Area.

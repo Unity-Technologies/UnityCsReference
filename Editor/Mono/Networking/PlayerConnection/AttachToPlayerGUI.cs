@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Kernel not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEditor.Hardware;
@@ -46,7 +45,7 @@ namespace UnityEditor.Networking.PlayerConnection
     static class Styles
     {
         public static readonly GUIStyle defaultDropdown = "MiniPullDown";
-        public static readonly GUIContent dropdownButton = UnityEditor.EditorGUIUtility.TrTextContent("", "Target Selection: Choose the target to connect to.");
+        public static readonly GUIContent dropdownButton = UnityEditor.L10n.TextContent("", "Target Selection: Choose the target to connect to.", null, null);
     }
 
     public static partial class PlayerConnectionGUI
@@ -99,11 +98,11 @@ namespace UnityEditor.Networking.PlayerConnection
     {
         internal static class Content
         {
-            public static readonly GUIContent Playmode = UnityEditor.EditorGUIUtility.TrTextContent("Play Mode");
-            public static readonly GUIContent Editmode = UnityEditor.EditorGUIUtility.TrTextContent("Edit Mode");
-            public static readonly GUIContent EnterIPText = UnityEditor.EditorGUIUtility.TrTextContent("<Enter IP>");
-            public static readonly GUIContent AutoconnectedPlayer = UnityEditor.EditorGUIUtility.TrTextContent("(Autoconnected Player)");
-            public static readonly GUIContent ConnectingToPlayerMessage = UnityEditor.EditorGUIUtility.TrTextContent("Connecting to player... (this can take a while)");
+            public static readonly GUIContent Playmode = UnityEditor.L10n.TextContent("Play Mode", null, null, null);
+            public static readonly GUIContent Editmode = UnityEditor.L10n.TextContent("Edit Mode", null, null, null);
+            public static readonly GUIContent EnterIPText = UnityEditor.L10n.TextContent("<Enter IP>", null, null, null);
+            public static readonly GUIContent AutoconnectedPlayer = UnityEditor.L10n.TextContent("(Autoconnected Player)", null, null, null);
+            public static readonly GUIContent ConnectingToPlayerMessage = UnityEditor.L10n.TextContent("Connecting to player... (this can take a while)", null, null, null);
 
             public static readonly string LocalHostProhibited = L10n.Tr(" (Localhost prohibited)", null);
             public static readonly string VersionMismatch = L10n.Tr(" (Version mismatch)", null);
@@ -425,7 +424,7 @@ namespace UnityEditor.Networking.PlayerConnection
     {
         static class Content
         {
-            public static readonly GUIContent ConnectButtonContent = UnityEditor.EditorGUIUtility.TrTextContent("Connect");
+            public static readonly GUIContent ConnectButtonContent = UnityEditor.L10n.TextContent("Connect", null, null, null);
             public static readonly string EnterPlayerIPWindowName = L10n.Tr("Enter Player IP", null);
         }
         private const string k_TextFieldControlId = "IPWindow";
@@ -485,4 +484,3 @@ namespace UnityEditor.Networking.PlayerConnection
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

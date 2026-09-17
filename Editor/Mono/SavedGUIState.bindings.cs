@@ -33,7 +33,13 @@ namespace UnityEditor
         private void CaptureManaged()
         {
             skin = GUI.skin;
-            layoutCache = GUILayoutUtility.current.State;
+            // The state's group stack aliases the live cache, which a re-entrant Layout pass clears in place; the backup must own a copy (UUM-148153).
+            var live = GUILayoutUtility.current.State;
+            var groups = live.layoutGroups.ToArray();
+            var copiedGroups = new GenericStack();
+            for (int i = groups.Length - 1; i >= 0; i--)
+                copiedGroups.Push(groups[i]);
+            layoutCache = new GUILayoutUtility.LayoutCacheState(live.id, live.topLevel, copiedGroups, live.windows);
             unbalancedGroupsCount = GUILayoutUtility.unbalancedgroupscount;
             entityId = GUIUtility.s_OriginalID;
             if (GUI.scrollViewStates.Count != 0)
@@ -47,7 +53,8 @@ namespace UnityEditor
         {
             GUILayoutUtility.current.CopyState(layoutCache);
             GUILayoutUtility.unbalancedgroupscount = unbalancedGroupsCount;
-            GUI.skin = skin;
+            if (skin != null) 
+                GUI.DoSetSkin(skin); //setting GUI.skin directly doesn't work at a depth of 0
             GUIUtility.s_OriginalID = entityId;
             if (scrollViewStates != null)
                 GUI.scrollViewStates = scrollViewStates;
@@ -76,19 +83,23 @@ namespace UnityEditor
 
         // UUM-145914: managed-only backup used by the native re-entrancy path (GUIView::OnInputEvent).
         [AutoStaticsCleanupOnCodeReload] // cleared on reload so no captured layout state survives a domain reload
-        static readonly Stack<SavedGUIState> s_ReentrantLayoutStates = new Stack<SavedGUIState>();
+        static readonly Stack<(SavedGUIState guiState, SavedEditorGUIState editorState)> s_ReentrantLayoutStates = new();
 
         internal static void PushReentrantLayoutState()
         {
             SavedGUIState state = new SavedGUIState();
             state.CaptureManaged();
-            s_ReentrantLayoutStates.Push(state);
+            s_ReentrantLayoutStates.Push((state, SavedEditorGUIState.Capture()));
         }
 
         internal static void PopReentrantLayoutState()
         {
             if (s_ReentrantLayoutStates.Count > 0)
-                s_ReentrantLayoutStates.Pop().ApplyManaged();
+            {
+                var (guiState, editorState) = s_ReentrantLayoutStates.Pop();
+                editorState.Apply();
+                guiState.ApplyManaged();
+            }
         }
     }
 }

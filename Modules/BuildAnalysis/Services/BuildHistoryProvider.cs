@@ -11,6 +11,7 @@ namespace UnityEditor.Build.Analysis
     {
         GUID[] GetAllBuilds();
         BuildReportSummary GetBuildSummary(GUID buildSessionGuid);
+        bool HasBuildReport(GUID buildSessionGuid);
         bool TryLoadBuildReport(GUID buildSessionGuid, out BuildReport buildReport);
         bool TryGetFilePath(GUID buildSessionGuid, string filename, out string filePath);
         bool TryGetBuildReportDirectory(GUID buildSessionGuid, out string directory);
@@ -31,6 +32,12 @@ namespace UnityEditor.Build.Analysis
         public BuildReportSummary GetBuildSummary(GUID buildSessionGuid)
         {
             return BuildHistory.GetBuildSummary(buildSessionGuid);
+        }
+
+        public bool HasBuildReport(GUID buildSessionGuid)
+        {
+            var fileName = buildSessionGuid.ToString() + BuildAnalysisConstants.k_BuildReportFileExtension;
+            return BuildHistory.TryGetFilePath(buildSessionGuid, fileName, out _);
         }
 
         public bool TryLoadBuildReport(GUID buildSessionGuid, out BuildReport buildReport)

@@ -316,20 +316,20 @@ namespace UnityEditor
             }
         }
 
-        static readonly GUIContent kCopyContent = EditorGUIUtility.TrTextContent("Copy");
-        static readonly GUIContent kPasteContent = EditorGUIUtility.TrTextContent("Paste");
-        static readonly GUIContent kCopyEulerContent = EditorGUIUtility.TrTextContent("Copy Euler Angles");
-        static readonly GUIContent kCopyQuatContent = EditorGUIUtility.TrTextContent("Copy Quaternion");
-        static readonly GUIContent kCopyPathContent = EditorGUIUtility.TrTextContent("Copy Path");
-        static readonly GUIContent kCopyGuidContent = EditorGUIUtility.TrTextContent("Copy GUID");
-        static readonly GUIContent kPasteMinColorContent = EditorGUIUtility.TrTextContent("Paste Min Color");
-        static readonly GUIContent kPasteMaxColorContent = EditorGUIUtility.TrTextContent("Paste Max Color");
-        static readonly GUIContent kPasteMinGradientContent = EditorGUIUtility.TrTextContent("Paste Min Gradient");
-        static readonly GUIContent kPasteMaxGradientContent = EditorGUIUtility.TrTextContent("Paste Max Gradient");
-        static readonly GUIContent kPasteMinScalarContent = EditorGUIUtility.TrTextContent("Paste Min Scalar");
-        static readonly GUIContent kPasteMaxScalarContent = EditorGUIUtility.TrTextContent("Paste Max Scalar");
-        static readonly GUIContent kPasteMinCurveContent = EditorGUIUtility.TrTextContent("Paste Min Curve");
-        static readonly GUIContent kPasteMaxCurveContent = EditorGUIUtility.TrTextContent("Paste Max Curve");
+        static readonly GUIContent kCopyContent = L10n.TextContent("Copy", null, null, null);
+        static readonly GUIContent kPasteContent = L10n.TextContent("Paste", null, null, null);
+        static readonly GUIContent kCopyEulerContent = L10n.TextContent("Copy Euler Angles", null, null, null);
+        static readonly GUIContent kCopyQuatContent = L10n.TextContent("Copy Quaternion", null, null, null);
+        static readonly GUIContent kCopyPathContent = L10n.TextContent("Copy Path", null, null, null);
+        static readonly GUIContent kCopyGuidContent = L10n.TextContent("Copy GUID", null, null, null);
+        static readonly GUIContent kPasteMinColorContent = L10n.TextContent("Paste Min Color", null, null, null);
+        static readonly GUIContent kPasteMaxColorContent = L10n.TextContent("Paste Max Color", null, null, null);
+        static readonly GUIContent kPasteMinGradientContent = L10n.TextContent("Paste Min Gradient", null, null, null);
+        static readonly GUIContent kPasteMaxGradientContent = L10n.TextContent("Paste Max Gradient", null, null, null);
+        static readonly GUIContent kPasteMinScalarContent = L10n.TextContent("Paste Min Scalar", null, null, null);
+        static readonly GUIContent kPasteMaxScalarContent = L10n.TextContent("Paste Max Scalar", null, null, null);
+        static readonly GUIContent kPasteMinCurveContent = L10n.TextContent("Paste Min Curve", null, null, null);
+        static readonly GUIContent kPasteMaxCurveContent = L10n.TextContent("Paste Max Curve", null, null, null);
 
         static void AddSeparator(GenericMenu menu)
         {

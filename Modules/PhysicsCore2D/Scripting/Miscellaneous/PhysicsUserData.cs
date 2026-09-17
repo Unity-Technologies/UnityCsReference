@@ -14,6 +14,40 @@ namespace Unity.U2D.Physics
     /// Custom user data.
     /// The physics system doesn't use this data, it is entirely for custom use.
     /// </summary>
+    /// <remarks>
+    /// To attach a `PhysicsUserData` instance to a <see cref="PhysicsWorld"/>, <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/>, <see cref="PhysicsChain"/>, or <see cref="PhysicsJoint"/>, assign it to the object's `userData` property.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Create custom user data and attach it to a shape.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class PhysicsUserDataExample : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///         PhysicsBody body = world.CreateBody();
+    ///         PhysicsShape myShape = body.CreateShape(new CircleGeometry { radius = 1.5f });
+    ///
+    ///         PhysicsUserData physicsUserData = new PhysicsUserData
+    ///         {
+    ///             objectValue = this,
+    ///             boolValue = true,
+    ///             floatValue = 123.4f,
+    ///             intValue = 567,
+    ///             physicsMaskValue = PhysicsMask.All
+    ///         };
+    ///
+    ///         myShape.userData = physicsUserData;
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsShape.userData"/>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]

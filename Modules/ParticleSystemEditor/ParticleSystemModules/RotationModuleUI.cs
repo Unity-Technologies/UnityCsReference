@@ -17,8 +17,8 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent rotation = EditorGUIUtility.TrTextContent("Angular Velocity", "Controls the angular velocity of each particle during its lifetime.");
-            public GUIContent separateAxes = EditorGUIUtility.TrTextContent("Separate Axes", "If enabled, you can control the angular velocity limit separately for each axis.");
+            public GUIContent rotation = L10n.TextContent("Angular Velocity", "Controls the angular velocity of each particle during its lifetime.", null, null);
+            public GUIContent separateAxes = L10n.TextContent("Separate Axes", "If enabled, you can control the angular velocity limit separately for each axis.", null, null);
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");

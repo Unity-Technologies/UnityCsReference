@@ -63,6 +63,9 @@ namespace UnityEditor
         // are processed in order to clean any dangling state left after
         // an event was unexpectedly used.
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle: ShortcutIntegration re-adds its handler when the
+        // enabled flag is set again while lazily recreating its controller.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static Action<EventType, KeyCode, EventModifiers> beforeEventProcessed;
 
         // Instead of allocating a new Event object every time

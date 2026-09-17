@@ -49,12 +49,6 @@ namespace UnityEngine
         }
     }
 
-    [RequiredByNativeCode]
-    [AttributeUsage(AttributeTargets.Field)]
-    public sealed partial class SerializeField : Attribute
-    {
-    }
-
     /// <summary>
     /// What is this : Instruct the Unity serialization backend to serialize field as a reference type, as opposed to SerializeField
     ///                 that serializes the data in place (as if it where a Value type).

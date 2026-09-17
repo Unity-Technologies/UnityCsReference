@@ -14,6 +14,10 @@ namespace UnityEditor.Scripting
     [NativeHeader("Editor/Src/Scripting/ManagedDebugger.h")]
     public sealed partial class ManagedDebugger
     {
+        // Public static event: always cleaned up on code reload regardless of visibility, even though
+        // this particular event is dead on CoreCLR (obsolete above, and its only raise/subscribe sites
+        // are #if !ENABLE_CORECLR) — there is currently nothing to clean, but the attribute stays so it
+        // does the right thing if a CoreCLR subscriber is ever added.
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<bool> debuggerAttached;
 

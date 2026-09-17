@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
     [Serializable]
-    internal sealed class ViewManager
+    internal sealed class ViewManager : ISerializationCallbackReceiver
     {
         Report m_Report;
         AnalysisView[] m_Views;
@@ -74,14 +74,29 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+        }
+
+        // Remove any obsolete IssueCategory items from m_Categories
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            var categories = m_Categories.ToValuesList();
+            categories.RemoveAll(c => c.IsObsolete());
+
+            if (m_Categories.Length != categories.Count)
+            {
+                m_Categories = categories.ToSerializableArray();
+                m_ActiveViewIndex = 0;
+            }
+        }
+
         public void Create(SeverityRules rules, ViewStates viewStates, Action<ViewDescriptor, bool> onCreateView = null, ProjectAuditorWindow window = null)
         {
             var views = new List<AnalysisView>();
             foreach (var category in m_Categories)
             {
-                #pragma warning disable UAC2001 // Avoid Linq
-                var desc = ViewDescriptor.GetAll().FirstOrDefault(d => d.Category == category);
-#pragma warning restore UAC2001
+                var desc = Array.Find(ViewDescriptor.GetAll(), d => d.Category == category);
                 if (desc == null)
                 {
                     Debug.LogWarning($"[{ProjectAuditor.DisplayName}] Descriptor for " + ProjectAuditor.GetCategoryName(category) + " was not registered.");
@@ -135,9 +150,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         public AnalysisView GetView(IssueCategory category)
         {
-            #pragma warning disable UAC2001 // Avoid Linq
-            return m_Views.FirstOrDefault(v => v.Desc.Category == category);
-#pragma warning restore UAC2001
+            return Array.Find(m_Views, v => v.Desc.Category == category);
         }
 
         public void ChangeView(IssueCategory category)

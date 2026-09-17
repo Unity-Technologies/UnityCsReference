@@ -7,9 +7,11 @@ using Unity.SmartStrings.Core.Extensions;
 using Unity.SmartStrings.Core.Formatting;
 using Unity.SmartStrings.Core.Parsing;
 using Unity.SmartStrings.Extensions;
+using UnityEngine.Bindings;
 
 namespace Unity.SmartStrings;
 
+[VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
 internal class SmartFormatterLiteralCharacterExtractor : SmartFormatter
 {
     List<char> m_Characters;

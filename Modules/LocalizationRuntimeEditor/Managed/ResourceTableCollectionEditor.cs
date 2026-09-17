@@ -5,6 +5,8 @@
 using System.Collections.Generic;
 using Unity.Localization.Providers;
 using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.Localization.Editor;
@@ -13,6 +15,7 @@ namespace Unity.Localization.Editor;
 class ResourceTableCollectionEditor : UnityEditor.Editor
 {
     const string k_Uxml = "LocalizationRuntime/UXML/ResourceTableCollectionInspector.uxml";
+    const string k_ExtensionsField = "m_Extensions";
 
     VisualElement m_Source;
 
@@ -33,17 +36,179 @@ class ResourceTableCollectionEditor : UnityEditor.Editor
 
         m_Source = root.Q("source");
         BuildSource(m_Source);
+        AddPreloadToggle(root, collection);
 
-        var tables = root.Q("tables");
+        root.Q<Foldout>("tables-foldout").text = LocLabels.Tables;
+        BuildTables(root.Q("tables"), root.Q("tables-actions"), collection);
+        BuildExtensions(root);
+        return root;
+    }
+
+    static void BuildTables(VisualElement host, VisualElement actions, ResourceTableCollection collection)
+    {
+        var locales = new List<(LocaleIdentifier Identifier, string Name)>();
+        var settings = LocalizationEditorSettings.ActiveSettings;
+        if (settings != null)
+        {
+            foreach (var locale in settings.AvailableLocales)
+            {
+                if (locale != null)
+                    locales.Add((locale.Identifier, locale.LocaleName));
+            }
+        }
         foreach (var table in collection.Tables)
         {
-            if (table == null)
-                continue;
-            var label = new Label($"{table.LocaleIdentifier.Code}  ({table.name})");
-            label.AddToClassList(LocClasses.LocCollectionInspectorTable);
-            tables.Add(label);
+            if (table != null && !locales.Exists(l => l.Identifier == table.LocaleIdentifier))
+                locales.Add((table.LocaleIdentifier, table.LocaleIdentifier.ToString()));
         }
-        return root;
+
+        var grid = new MultiColumnListView
+        {
+            showBoundCollectionSize = false,
+            selectionType = SelectionType.None,
+            itemsSource = new List<ResourceTableCollection> { collection },
+            showAlternatingRowBackgrounds = AlternatingRowBackground.None,
+        };
+        grid.AddToClassList(LocClasses.LocCollectionInspectorTable);
+        grid.columns.Add(new Column
+        {
+            title = LocLabels.Table,
+            width = 140,
+            makeCell = () => new Label().WithClass(LocClasses.LocCellLabel),
+            bindCell = (element, _) => ((Label)element).text = collection.TableCollectionName,
+        });
+        foreach (var locale in locales)
+        {
+            var identifier = locale.Identifier;
+            grid.columns.Add(new Column
+            {
+                title = locale.Name,
+                width = 60,
+                makeCell = () =>
+                {
+                    var toggle = new Toggle();
+                    toggle.SetEnabled(false);
+                    toggle.AddToClassList(LocClasses.LocCellToggle);
+                    return toggle;
+                },
+                bindCell = (element, _) => ((Toggle)element).SetValueWithoutNotify(collection.GetTable(identifier) != null),
+            });
+        }
+        host.Add(grid);
+
+        actions.Add(new Button(() => ResourceTablesWindow.ShowWindow(collection)) { text = LocLabels.OpenInTablesWindow });
+    }
+
+    void BuildExtensions(VisualElement root)
+    {
+        var host = root.Q("extensions");
+        var property = serializedObject.FindProperty(k_ExtensionsField);
+        var list = new ListView
+        {
+            headerTitle = LocLabels.Extensions,
+            showFoldoutHeader = true,
+            showAddRemoveFooter = true,
+            reorderable = true,
+            reorderMode = ListViewReorderMode.Animated,
+            showBoundCollectionSize = false,
+            horizontalScrollingEnabled = false,
+            virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight,
+            selectionType = SelectionType.Single,
+        };
+        list.makeItem = () => new PropertyField();
+        list.bindItem = (element, index) =>
+        {
+            var array = serializedObject.FindProperty(k_ExtensionsField);
+            if (array == null || index >= array.arraySize)
+                return;
+            var item = array.GetArrayElementAtIndex(index);
+            var field = (PropertyField)element;
+            field.label = ExtensionLabel(item);
+            field.BindProperty(item);
+        };
+        list.unbindItem = (element, index) => ((PropertyField)element).Unbind();
+        list.BindProperty(property);
+        list.overridingAddButtonBehavior = (view, button) => ShowAddExtensionMenu(view, button);
+        host.Add(list);
+    }
+
+    static string ExtensionLabel(SerializedProperty item)
+    {
+        var value = item.managedReferenceValue;
+        return value != null ? ObjectNames.NicifyVariableName(value.GetType().Name) : L10n.Tr("Missing extension", null);
+    }
+
+    void ShowAddExtensionMenu(BaseListView list, Button anchor)
+    {
+        serializedObject.Update();
+        var property = serializedObject.FindProperty(k_ExtensionsField);
+        var present = new HashSet<System.Type>();
+        for (var i = 0; i < property.arraySize; i++)
+        {
+            var value = property.GetArrayElementAtIndex(i).managedReferenceValue;
+            if (value != null)
+                present.Add(value.GetType());
+        }
+
+        var menu = new GenericDropdownMenu();
+        var any = false;
+        foreach (var type in TypeCache.GetTypesDerivedFrom<IResourceCollectionExtension>())
+        {
+            // A managed reference needs a concrete type with a parameterless constructor, and cannot be an Object.
+            if (type.IsAbstract || type.IsGenericType || typeof(UnityEngine.Object).IsAssignableFrom(type) || type.GetConstructor(System.Type.EmptyTypes) == null)
+                continue;
+            any = true;
+            var name = ObjectNames.NicifyVariableName(type.Name);
+            if (present.Contains(type))
+            {
+                menu.AddDisabledItem(name, true);
+                continue;
+            }
+            var captured = type;
+            menu.AddItem(name, false, () =>
+            {
+                serializedObject.Update();
+                var array = serializedObject.FindProperty(k_ExtensionsField);
+                var index = array.arraySize;
+                array.InsertArrayElementAtIndex(index);
+                array.GetArrayElementAtIndex(index).managedReferenceValue = System.Activator.CreateInstance(captured);
+                serializedObject.ApplyModifiedProperties();
+                list.Rebuild();
+            });
+        }
+        if (!any)
+            menu.AddDisabledItem(L10n.Tr("No extensions are available", null), false);
+        menu.DropDown(anchor.worldBound, anchor, DropdownMenuSizeMode.Auto);
+    }
+
+    static void AddPreloadToggle(VisualElement root, ResourceTableCollection collection)
+    {
+        var settings = LocalizationEditorSettings.ActiveSettings;
+        if (settings == null)
+            return;
+
+        var reference = AssetProviderEditors.CreateReference(collection);
+        var toggle = new Toggle(LocLabels.Preload)
+        {
+            tooltip = L10n.Tr("Loads this collection's tables when localization initializes and when the locale changes, following the settings' preload behavior.", null),
+            value = settings.PreloadTables.Contains(reference),
+        };
+        toggle.RegisterValueChangedCallback(evt =>
+        {
+            Undo.RecordObject(settings, "Change Preload");
+            if (evt.newValue)
+            {
+                if (!settings.PreloadTables.Contains(reference))
+                    settings.PreloadTables.Add(reference);
+            }
+            else
+            {
+                settings.PreloadTables.Remove(reference);
+            }
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssetIfDirty(settings);
+        });
+        root.Add(toggle);
     }
 
     void BuildSource(VisualElement container)
@@ -101,7 +266,7 @@ class ResourceTableCollectionEditor : UnityEditor.Editor
                 choices.Add(AssetProviderEditors.ProviderTitle(provider.GetType()));
                 chain.Add(provider);
             }
-            var dropdown = new DropdownField(L10n.Tr("Provider", null), choices, current)
+            var dropdown = new DropdownField(LocLabels.Provider, choices, current)
             {
                 tooltip = L10n.Tr("The content source this collection registers its tables and assets with.", null)
             };

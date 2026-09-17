@@ -15,6 +15,9 @@ namespace UnityEngine.TextCore.Text
         /// HashSet containing instance ID of font assets already searched.
         /// </summary>
         [AutoStaticsCleanupOnCodeReload]
+        // Per-search scratch set: each search either allocates it or clears it before use, so nothing
+        // carries over from the previous code-loaded scope.
+        [IgnoreForUAL0015("Per-search scratch set, allocated or cleared at the start of every search")]
         static HashSet<int> k_SearchedAssets;
 
         /// <summary>

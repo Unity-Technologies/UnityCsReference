@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -3559,8 +3558,8 @@ namespace UnityEditor
 
         internal static bool DoRemovePrefabInstanceUnusedOverridesDialog(InstanceOverridesInfo[] instanceOverridesInfos)
         {
-            string titleCheckForUnusedOverrides = EditorGUIUtility.TrTextContent("Remove Unused Overrides").text;
-            string msgNoOverridesWereFound = EditorGUIUtility.TrTextContent("No unused overrides were found.").text;
+            string titleCheckForUnusedOverrides = L10n.TextContent("Remove Unused Overrides", null, null, null).text;
+            string msgNoOverridesWereFound = L10n.TextContent("No unused overrides were found.", null, null, null).text;
 
             string title = titleCheckForUnusedOverrides;
             string message = string.Empty;
@@ -3573,14 +3572,14 @@ namespace UnityEditor
                 return false;
             }
 
-            string titleRemoveUnusedOverrides = EditorGUIUtility.TrTextContent("Remove unused overrides?").text;
-            string msgDetailsWrittenToTheLog = EditorGUIUtility.TrTextContent("Details will be written to the Editor log.").text;
-            string msgUsedOverridesCount = EditorGUIUtility.TrTextContent("Used overrides count").text;
+            string titleRemoveUnusedOverrides = L10n.TextContent("Remove unused overrides?", null, null, null).text;
+            string msgDetailsWrittenToTheLog = L10n.TextContent("Details will be written to the Editor log.", null, null, null).text;
+            string msgUsedOverridesCount = L10n.TextContent("Used overrides count", null, null, null).text;
 
-            string msgAskRemoveMultipleOverridesFromMultipleInstances = EditorGUIUtility.TrTextContent("Do you want to remove {0} unused overrides from {1} Prefab instances?").text;
-            string msgAskRemoveSingleOverrideFromMultipleInstances = EditorGUIUtility.TrTextContent("Do you want to remove 1 unused override from {0} Prefab instances?").text;
-            string msgAskRemoveMultipleOverridesFromSingleInstance = EditorGUIUtility.TrTextContent("Do you want to remove {0} unused overrides from '{1}'?").text;
-            string msgAskRemoveSingleOverrideFromSingleInstance = EditorGUIUtility.TrTextContent("Do you want to remove 1 unused override from '{0}'?").text;
+            string msgAskRemoveMultipleOverridesFromMultipleInstances = L10n.TextContent("Do you want to remove {0} unused overrides from {1} Prefab instances?", null, null, null).text;
+            string msgAskRemoveSingleOverrideFromMultipleInstances = L10n.TextContent("Do you want to remove 1 unused override from {0} Prefab instances?", null, null, null).text;
+            string msgAskRemoveMultipleOverridesFromSingleInstance = L10n.TextContent("Do you want to remove {0} unused overrides from '{1}'?", null, null, null).text;
+            string msgAskRemoveSingleOverrideFromSingleInstance = L10n.TextContent("Do you want to remove 1 unused override from '{0}'?", null, null, null).text;
 
             PrefabUtility.InstanceOverridesInfo currInstanceWithUnusedMods = instanceOverridesInfos[0];
             int affectedInstanceCount = 0;
@@ -3982,4 +3981,3 @@ namespace UnityEditor
         internal static bool HasPrefabExtension(string assetPath) => assetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase);
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

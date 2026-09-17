@@ -80,73 +80,73 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         internal class Styles
         {
             public static readonly GUIContent[] shaderQualityName =
-                { EditorGUIUtility.TrTextContent("Low"), EditorGUIUtility.TrTextContent("Medium"), EditorGUIUtility.TrTextContent("High") };
+                { L10n.TextContent("Low", null, null, null), L10n.TextContent("Medium", null, null, null), L10n.TextContent("High", null, null, null) };
 
             public static readonly int[] shaderQualityValue =
                 { (int)ShaderQuality.Low, (int)ShaderQuality.Medium, (int)ShaderQuality.High };
 
             public static readonly GUIContent[] renderingPathName =
-                { EditorGUIUtility.TrTextContent("Forward"), EditorGUIUtility.TrTextContent("Deferred"), EditorGUIUtility.TrTextContent("Legacy Vertex Lit") };
+                { L10n.TextContent("Forward", null, null, null), L10n.TextContent("Deferred", null, null, null), L10n.TextContent("Legacy Vertex Lit", null, null, null) };
 
             public static readonly int[] renderingPathValue =
                 { (int)RenderingPath.Forward, (int)RenderingPath.DeferredShading, (int)RenderingPath.VertexLit };
 
             public static readonly GUIContent[] hdrModeName =
-                { EditorGUIUtility.TrTextContent("FP16"), EditorGUIUtility.TrTextContent("R11G11B10") };
+                { L10n.TextContent("FP16", null, null, null), L10n.TextContent("R11G11B10", null, null, null) };
 
             public static readonly int[] hdrModeValue =
                 { (int)CameraHDRMode.FP16, (int)CameraHDRMode.R11G11B10 };
 
             public static readonly GUIContent[] realtimeGICPUUsageName =
-                { EditorGUIUtility.TrTextContent("Low"), EditorGUIUtility.TrTextContent("Medium"), EditorGUIUtility.TrTextContent("High"), EditorGUIUtility.TrTextContent("Unlimited") };
+                { L10n.TextContent("Low", null, null, null), L10n.TextContent("Medium", null, null, null), L10n.TextContent("High", null, null, null), L10n.TextContent("Unlimited", null, null, null) };
 
             public static readonly int[] realtimeGICPUUsageValue =
                 { (int)RealtimeGICPUUsage.Low, (int)RealtimeGICPUUsage.Medium, (int)RealtimeGICPUUsage.High, (int)RealtimeGICPUUsage.Unlimited };
 
-            public static readonly GUIContent showEditorWindow = EditorGUIUtility.TrTextContent("Open Editor...");
-            public static readonly GUIContent closeEditorWindow = EditorGUIUtility.TrTextContent("Close Editor");
-            public static readonly GUIContent tierSettings = EditorGUIUtility.TrTextContent("Tier Settings");
+            public static readonly GUIContent showEditorWindow = L10n.TextContent("Open Editor...", null, null, null);
+            public static readonly GUIContent closeEditorWindow = L10n.TextContent("Close Editor", null, null, null);
+            public static readonly GUIContent tierSettings = L10n.TextContent("Tier Settings", null, null, null);
 
             public static readonly GUIContent[] tierName =
             {
-                EditorGUIUtility.TrTextContent("Low (Tier 1)"), EditorGUIUtility.TrTextContent("Medium (Tier 2)"), EditorGUIUtility.TrTextContent("High (Tier 3)")
+                L10n.TextContent("Low (Tier 1)", null, null, null), L10n.TextContent("Medium (Tier 2)", null, null, null), L10n.TextContent("High (Tier 3)", null, null, null)
             };
 
             public static readonly GUIContent empty = EditorGUIUtility.TextContent("");
-            public static readonly GUIContent autoSettingsLabel = EditorGUIUtility.TrTextContent("Use Defaults");
+            public static readonly GUIContent autoSettingsLabel = L10n.TextContent("Use Defaults", null, null, null);
 
-            public static readonly GUIContent standardShaderSettings = EditorGUIUtility.TrTextContent("Standard Shader");
-            public static readonly GUIContent renderingSettings = EditorGUIUtility.TrTextContent("Rendering");
+            public static readonly GUIContent standardShaderSettings = L10n.TextContent("Standard Shader", null, null, null);
+            public static readonly GUIContent renderingSettings = L10n.TextContent("Rendering", null, null, null);
 
-            public static readonly GUIContent standardShaderQuality = EditorGUIUtility.TrTextContent("Standard Shader Quality");
+            public static readonly GUIContent standardShaderQuality = L10n.TextContent("Standard Shader Quality", null, null, null);
 
             public static readonly GUIContent reflectionProbeBoxProjection =
-                EditorGUIUtility.TrTextContent("Reflection Probes Box Projection", "Enable projection for reflection UV mappings on Reflection Probes.");
+                L10n.TextContent("Reflection Probes Box Projection", "Enable projection for reflection UV mappings on Reflection Probes.", null, null);
 
-            public static readonly GUIContent reflectionProbeBlending = EditorGUIUtility.TrTextContent("Reflection Probes Blending",
-                "Gradually fade out one probe's cubemap while fading in the other's as the reflective object passes from one zone to the other.");
+            public static readonly GUIContent reflectionProbeBlending = L10n.TextContent("Reflection Probes Blending",
+                "Gradually fade out one probe's cubemap while fading in the other's as the reflective object passes from one zone to the other.", null, null);
 
             public static readonly GUIContent detailNormalMap =
-                EditorGUIUtility.TrTextContent("Detail Normal Map", "Enable Detail (secondary) Normal Map sampling for up-close viewing, if assigned.");
+                L10n.TextContent("Detail Normal Map", "Enable Detail (secondary) Normal Map sampling for up-close viewing, if assigned.", null, null);
 
-            public static readonly GUIContent cascadedShadowMaps = EditorGUIUtility.TrTextContent("Cascaded Shadows");
+            public static readonly GUIContent cascadedShadowMaps = L10n.TextContent("Cascaded Shadows", null, null, null);
 
             public static readonly GUIContent prefer32BitShadowMaps =
-                EditorGUIUtility.TrTextContent("Prefer 32-bit shadow maps", "Enable 32-bit float shadow map when you are targeting PS4 or platforms using DX11 or DX12.");
+                L10n.TextContent("Prefer 32-bit shadow maps", "Enable 32-bit float shadow map when you are targeting PS4 or platforms using DX11 or DX12.", null, null);
 
-            public static readonly GUIContent semitransparentShadows = EditorGUIUtility.TrTextContent("Enable Semitransparent Shadows");
+            public static readonly GUIContent semitransparentShadows = L10n.TextContent("Enable Semitransparent Shadows", null, null, null);
 
             public static readonly GUIContent enableLPPV =
-                EditorGUIUtility.TrTextContent("Enable Light Probe Proxy Volume", "Enable rendering a 3D grid of interpolated Light Probes inside a Bounding Volume.");
+                L10n.TextContent("Enable Light Probe Proxy Volume", "Enable rendering a 3D grid of interpolated Light Probes inside a Bounding Volume.", null, null);
 
-            public static readonly GUIContent renderingPath = EditorGUIUtility.TrTextContent("Rendering Path",
-                "Choose how Unity should render graphics. Different rendering paths affect the performance of your game, and how lighting and shading are calculated.");
+            public static readonly GUIContent renderingPath = L10n.TextContent("Rendering Path",
+                "Choose how Unity should render graphics. Different rendering paths affect the performance of your game, and how lighting and shading are calculated.", null, null);
 
-            public static readonly GUIContent useHDR = EditorGUIUtility.TrTextContent("Use HDR", "Enable High Dynamic Range rendering for this tier.");
-            public static readonly GUIContent hdrMode = EditorGUIUtility.TrTextContent("HDR Mode", "Color render texture format for the HDR buffer to use when HDR is enabled.");
+            public static readonly GUIContent useHDR = L10n.TextContent("Use HDR", "Enable High Dynamic Range rendering for this tier.", null, null);
+            public static readonly GUIContent hdrMode = L10n.TextContent("HDR Mode", "Color render texture format for the HDR buffer to use when HDR is enabled.", null, null);
 
-            public static readonly GUIContent realtimeGICPUUsage = EditorGUIUtility.TrTextContent("Realtime Global Illumination CPU Usage",
-                "How many CPU worker threads to create for Realtime Global Illumination lighting calculations in the Player. Increasing this makes the system react faster to changes in lighting at a cost of using more CPU time. The higher the CPU Usage value, the more worker threads are created for solving Realtime GI.");
+            public static readonly GUIContent realtimeGICPUUsage = L10n.TextContent("Realtime Global Illumination CPU Usage",
+                "How many CPU worker threads to create for Realtime Global Illumination lighting calculations in the Player. Increasing this makes the system react faster to changes in lighting at a cost of using more CPU time. The higher the CPU Usage value, the more worker threads are created for solving Realtime GI.", null, null);
         }
 
         public override bool BuiltinOnly => true;

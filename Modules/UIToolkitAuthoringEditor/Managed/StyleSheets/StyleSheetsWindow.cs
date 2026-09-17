@@ -41,7 +41,6 @@ internal class StyleSheetsWindow : EditorWindow
     VisualElement m_NoResultsLabelElement;
     VisualElement m_StagingModeContainerElement;
     VisualElement m_ToolbarElement;
-    Button m_OpenSettingsButton;
     VisualElement m_ContainerElement;
 
     [NonSerialized]
@@ -115,9 +114,7 @@ internal class StyleSheetsWindow : EditorWindow
         titleContent.text = "Style Sheets";
         titleContent.image = EditorGUIUtility.Load("StyleSheet Icon") as Texture2D;
 
-        StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnEnableInSceneAuthoringChanged;
-        UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnMainStageAuthoringChanged;
+        UIStageNavigation.StageSettled += OnStageChanged;
         UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
         Selection.selectionChanged += RefreshSelectionContext;
 
@@ -140,9 +137,7 @@ internal class StyleSheetsWindow : EditorWindow
 
         RemoveAssetTrackers();
         DisposeHierarchyResources();
-        StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnStageChanged;
-        UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged -= OnEnableInSceneAuthoringChanged;
-        UIToolkitAuthoringSettings.MainStageAuthoringChanged -= OnMainStageAuthoringChanged;
+        UIStageNavigation.StageSettled -= OnStageChanged;
         Selection.selectionChanged -= RefreshSelectionContext;
 
         var registry = UIAssetRegistry.LiveInstance;
@@ -436,7 +431,6 @@ internal class StyleSheetsWindow : EditorWindow
         }
 
         UpdateToolbarState();
-        UpdateOpenSettingsButton();
 
         // A different document (or a different editability) means a different set of sheets to answer for.
         RefreshUnsavedChangesState();
@@ -508,51 +502,12 @@ internal class StyleSheetsWindow : EditorWindow
         }
     }
 
-    void OnEnableInSceneAuthoringChanged(bool enabled)
-    {
-        UpdateOpenSettingsButton();
-        RefreshEditability();
-    }
-
-    void OnMainStageAuthoringChanged(bool enabled)
-    {
-        RefreshEditability();
-    }
-
     // A style sheet this window is responsible for was dirtied or settled — by an edit made here, or by any
     // other tool sharing it.
     void OnAssetDirtyStateChanged(UnityEngine.Object asset)
     {
         if (asset is StyleSheet)
             RefreshUnsavedChangesState();
-    }
-
-    /// <summary>
-    /// Re-applies the selection-driven context so the displayed document follows the authoring settings: its
-    /// stylesheets (and any selected rule) become editable once the scene documents themselves are, and
-    /// read-only again as soon as they are not.
-    /// </summary>
-    void RefreshEditability()
-    {
-        // A UI Stage is editable no matter how the Main Stage is configured.
-        if (m_EditingStage != null || m_ContainerElement == null || m_Context.Document == null)
-            return;
-
-        ApplySelectionContext(m_Context.Document);
-
-        // Whether the window answers for these sheets at all follows the settings, so it is re-evaluated even
-        // when the display itself did not have to be rebuilt.
-        RefreshUnsavedChangesState();
-    }
-
-    void UpdateOpenSettingsButton()
-    {
-        if (m_OpenSettingsButton == null)
-            return;
-
-        m_OpenSettingsButton.style.display = UIToolkitAuthoringSettings.EnableInSceneUIAuthoring
-            ? DisplayStyle.None
-            : DisplayStyle.Flex;
     }
 
     void OnSelectionRequested(in CommandContext context)
@@ -592,7 +547,7 @@ internal class StyleSheetsWindow : EditorWindow
         GetActiveStyleSheetQuery.QueryPayload.Execute(CommandSources.StyleSheets, styleSheet);
     }
 
-    void Update()
+    internal void Update()
     {
         PumpHierarchyView();
 
@@ -752,8 +707,6 @@ internal class StyleSheetsWindow : EditorWindow
         rootVisualElement.styleSheets.Add(styleSheet);
 
         m_StagingModeContainerElement = rootVisualElement.Q<VisualElement>("unity-style-sheets-window-staging-mode-container");
-        m_OpenSettingsButton = rootVisualElement.Q<Button>("unity-style-sheets-window-open-settings-button");
-        m_OpenSettingsButton.clicked += UIToolkitAuthoringSettingsProvider.OpenSettings;
         m_EmptyLabelElement = rootVisualElement.Q<Label>("unity-style-sheets-window-empty-label");
         m_EmptyLabelElement.RegisterCallback<DragUpdatedEvent>(OnEmptyLabelDragUpdated);
         m_EmptyLabelElement.RegisterCallback<DragPerformEvent>(OnEmptyLabelDragPerform);
@@ -911,6 +864,15 @@ internal class StyleSheetsWindow : EditorWindow
         }
 
         RefreshStyleSheetList();
+    }
+
+    internal void FocusNewSelectorField(string prefillText)
+    {
+        var newSelectorField = rootVisualElement.Q<NewSelectorField>("new-selector-field");
+        if (newSelectorField == null)
+            return;
+        newSelectorField.value = prefillText;
+        newSelectorField.Focus();
     }
 
     void OnCreateNewStyleRule(NewSelectorSubmitEvent evt)
@@ -1338,6 +1300,65 @@ internal class StyleSheetsWindow : EditorWindow
 
         AddStyleSheetCommand.Execute(CommandSources.StyleSheets, m_TrackedVTA, ussPath);
         RefreshStyleSheetList();
+    }
+
+    /// <summary>
+    /// Whether the style sheet on <paramref name="hierarchyNode"/> can be saved or discarded on its own from
+    /// here — an editable row, in the Main Stage, with unsaved changes. A UI Stage settles its whole document
+    /// instead.
+    /// </summary>
+    public bool CanSettleStyleSheet(HierarchyNode hierarchyNode)
+    {
+        if (m_EditingStage != null || !UIToolkitStageUtility.IsAuthoringActiveInMainStage)
+            return false;
+
+        if (!TryGetEditableStyleSheet(hierarchyNode, out var styleSheet))
+            return false;
+
+        var registry = UIAssetRegistry.LiveInstance;
+        return registry != null && registry.CanSettleSingleAsset(styleSheet);
+    }
+
+    /// <summary>
+    /// Writes the style sheet on <paramref name="hierarchyNode"/> and nothing else: the documents that
+    /// reference it keep whatever they have unsaved.
+    /// </summary>
+    public void SaveStyleSheet(HierarchyNode hierarchyNode)
+    {
+        if (!CanSettleStyleSheet(hierarchyNode) || !TryGetEditableStyleSheet(hierarchyNode, out var styleSheet))
+            return;
+
+        UIAssetRegistry.instance.SaveSingleAsset(styleSheet, CommandSources.StyleSheets);
+        RefreshUnsavedChangesState();
+    }
+
+    /// <summary>
+    /// Reverts the style sheet on <paramref name="hierarchyNode"/> to disk, after asking, and nothing else:
+    /// the documents that reference it keep whatever they have unsaved.
+    /// </summary>
+    public void DiscardStyleSheet(HierarchyNode hierarchyNode)
+    {
+        if (!CanSettleStyleSheet(hierarchyNode) || !TryGetEditableStyleSheet(hierarchyNode, out var styleSheet))
+            return;
+
+        UIAssetSavePrompt.ConfirmAndDiscardSingleAsset(styleSheet, CommandSources.StyleSheets);
+
+        // Re-derived rather than assumed: the user may have backed out of the confirmation, in which case the
+        // sheet is still unsaved and the window still has to answer for it.
+        RefreshUnsavedChangesState();
+    }
+
+    bool TryGetEditableStyleSheet(HierarchyNode hierarchyNode, out StyleSheet styleSheet)
+    {
+        styleSheet = null;
+        if (m_Handler?.Mappings == null || !m_Handler.Mappings.TryGetValue(hierarchyNode, out var node))
+            return false;
+
+        if (node.Rule != null || node.IsReadOnly || node.StyleSheet == null)
+            return false;
+
+        styleSheet = node.StyleSheet;
+        return true;
     }
 
     public void RemoveStyleSheet(HierarchyNode hierarchyNode)

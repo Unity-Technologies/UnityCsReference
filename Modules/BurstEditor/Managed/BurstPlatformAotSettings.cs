@@ -872,7 +872,7 @@ namespace Unity.Burst.Editor
                 {
                     // Note burst treats Windows and Windows32 as the same target from a settings point of view (same for linux)
                     // So we only display the standalone platform
-                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Target Platform", "Shows the currently selected standalone build target, can be switched in the Build Settings dialog"), EditorGUIUtility.TrTextContent(FetchStandaloneTargetName()));
+                    EditorGUILayout.LabelField(L10n.TextContent("Target Platform", "Shows the currently selected standalone build target, can be switched in the Build Settings dialog", null, null), L10n.TextContent(FetchStandaloneTargetName(), null, null, null));
                 }
 
                 for (int i = 0; i < m_PlatformProperties[selectedPlatform].Length; i++)

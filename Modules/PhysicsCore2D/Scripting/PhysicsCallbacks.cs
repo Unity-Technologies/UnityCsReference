@@ -13,7 +13,7 @@ namespace Unity.U2D.Physics
     /// All callback interfaces and targets.
     /// </summary>
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public readonly record struct PhysicsCallbacks
+    public readonly partial record struct PhysicsCallbacks
     {
         #region Interfaces
 
@@ -57,37 +57,128 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// An interface that when implemented by a <see cref="System.Object"/>, can be called as a target when a <see cref="PhysicsShape"/> has <see cref="PhysicsShape.preSolveCallbacks"/> set to true.
-        /// The <see cref="PhysicsWorld"/> the <see cref="PhysicsShape"/> is in also has to have its <see cref="PhysicsWorld.preSolveCallbacks"/> set to true.
+        /// An interface that when implemented, is called as a contact between a pair of shapes is updated, before the contact is solved.
+        /// The callback receives the full contact manifold and may modify it, or cancel the contact by calling Cancel on the event.
         /// </summary>
-        public interface IPreSolveCallback
+        /// <remarks>
+        /// This is only called if the <see cref="PhysicsWorld"/> and one of the <see cref="PhysicsShape"/> both have their <c>preContactCallbacks</c> set to true.
+        /// It takes priority over the deprecated <see cref="IPreSolveCallback"/>, which is only used when this interface is not implemented on the same target.
+        /// </remarks>
+        public interface IPreContactCallback
         {
             /// <summary>
-            /// Called when a contact between a pair of shapes is updated.
-            /// This allows a contact to be disabled before it goes to the solver.
-            /// A typical use-case would be to implement a one-way behaviour based upon the provided contact.
-            /// This is only called if the <see cref="PhysicsWorld"/> has <see cref="PhysicsWorld.preSolveCallbacks"/> set to true.
-            /// An event is only produced if one of the <see cref="PhysicsShape"/>  have <see cref="PhysicsShape.preSolveCallbacks"/> set to true.
-            /// This is only called for Awake Dynamic bodies.
-            /// This is not called for triggers.
-            ///
-            /// Extreme care must be taken with this callback!!
-            /// 
-            /// This callback occurs during the simulation step and can be called from any thread, therefore it must be thread-safe.
-            /// During this time, the simulation state is undefined for the broadphase, events etc.
-            ///	For this reason, any attempt to perform a write operation will result in a deadlock as the world itself is write locked.
-            ///	Performing simple read operations on <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/> or <see cref="PhysicsJoint"/> is safe, such as reading velocity or getting the geometry of a shape, however more complex operations involving the world such as performing a query can result in corruption or crashes.
-            /// A recommendation is to use the provided contact details to make a decision in the callback.
-            /// An additional recommendation is reading <see cref="PhysicsUserData"/> from any object which is a completely safe read operation therefore any required information should be encoded there if possible.
+            /// Called when a contact between a pair of shapes is updated, giving the opportunity to modify the contact manifold before it is solved.
+            /// Any change written to the manifold is used by the solver this step, and calling Cancel on the event cancels the contact.
+            /// Modifying the world-space contact points or the point identifiers has no effect, as the solver does not read them.
             /// </summary>
-            /// <param name="preSolveEvent">The event that occurred.</param>
-            /// <returns>Return false if you want to disable the contact this simulation step. Returning true allows the contact.</returns>
-            bool OnPreSolve2D(PhysicsEvents.PreSolveEvent preSolveEvent);
+            /// <remarks>
+            /// This is only called for Awake Dynamic bodies and is never called for triggers.
+            ///
+            /// Extreme care must be taken with this callback.
+            ///
+            /// It occurs during the simulation step and can be called from any thread, so it must be thread-safe.
+            /// During this time the simulation state is undefined for the broadphase, events and so on.
+            /// Any attempt to perform a write operation on the world results in a deadlock, as the world itself is write locked.
+            /// Simple read operations on <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/> or <see cref="PhysicsJoint"/> are safe, such as reading velocity or getting the geometry of a shape, however more complex operations involving the world such as performing a query can result in corruption or crashes.
+            /// Reading <see cref="PhysicsUserData"/> from any object is a completely safe read operation, so any required information should be encoded there if possible.
+            ///
+            /// If the manifold is left in an invalid state, such as a value that is not a number or an out-of-range point count, the change is discarded and a warning is produced after the step.
+            /// </remarks>
+            /// <param name="preContactEvent">The event that occurred, passed by reference so the manifold can be modified.</param>
+            void OnPreContact2D(ref PhysicsEvents.PreContactEvent preContactEvent);
+        }
+
+        /// <summary>
+        /// An interface that when implemented, is called during the continuous collision stage when a fast-moving shape is about to be stopped short of a shape it would otherwise pass through.
+        /// Returning false lets the shape continue rather than being stopped at the predicted impact point.
+        /// </summary>
+        /// <remarks>
+        /// This is only called if the <see cref="PhysicsWorld"/> and one of the <see cref="PhysicsShape"/> both have their <c>preContactCallbacks</c> set to true.
+        /// It takes priority over the deprecated <see cref="IPreSolveCallback"/>, which is only used when this interface is not implemented on the same target.
+        /// </remarks>
+        public interface IPreContinuousCallback
+        {
+            /// <summary>
+            /// Called during the continuous collision stage when a fast-moving shape is predicted to hit another shape this step.
+            /// No contact exists yet, as the shapes are not touching during the contact update, so this is the only place the pair is seen.
+            /// Returning true stops the shape at the predicted impact point, and a contact then appears on the next step once the shapes are found touching.
+            /// </summary>
+            /// <remarks>
+            /// This is only called for Awake Dynamic bodies and is never called for triggers.
+            ///
+            /// Extreme care must be taken with this callback.
+            ///
+            /// It occurs during the simulation step and can be called from any thread, so it must be thread-safe.
+            /// During this time the simulation state is undefined for the broadphase, events and so on.
+            /// Any attempt to perform a write operation on the world results in a deadlock, as the world itself is write locked.
+            /// Simple read operations on <see cref="PhysicsBody"/>, <see cref="PhysicsShape"/> or <see cref="PhysicsJoint"/> are safe, such as reading velocity or getting the geometry of a shape, however more complex operations involving the world such as performing a query can result in corruption or crashes.
+            /// Reading <see cref="PhysicsUserData"/> from any object is a completely safe read operation, so any required information should be encoded there if possible.
+            /// </remarks>
+            /// <param name="preContinuousEvent">The event that occurred.</param>
+            /// <returns>Return false to let the shape continue through, or true to stop it at the predicted impact point.</returns>
+            bool OnPreContinuous2D(PhysicsEvents.PreContinuousEvent preContinuousEvent);
         }
 
         /// <summary>
         /// An interface that when implemented, can be called as a target by <see cref="PhysicsWorld.SendTriggerCallbacks"/>.
         /// </summary>
+        /// <remarks>
+        /// A trigger shape doesn't collide with other shapes. Other shapes pass through it instead.
+        /// Unity calls `OnTriggerBegin2D` and `OnTriggerEnd2D` on the main thread after the simulation finishes.
+        /// For a worked example, refer to the `PhysicsShapeTriggerCallback` example in the <a href="https://github.com/Unity-Technologies/PhysicsExamples2D/tree/master">Physics Core 2D examples repository</a> on GitHub.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// // Add the PhysicsCallbacks.ITriggerCallback interface.
+        /// public class DetectTriggerOverlap : MonoBehaviour, PhysicsCallbacks.ITriggerCallback
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///
+        ///         // Create a trigger shape that reports overlaps instead of colliding.
+        ///         PhysicsBody triggerBody = world.CreateBody(new PhysicsBodyDefinition
+        ///         {
+        ///             position = new Vector2(0.5f, 8f),
+        ///             type = PhysicsBody.BodyType.Dynamic
+        ///         });
+        ///         PhysicsShape triggerShape = triggerBody.CreateShape(CircleGeometry.defaultGeometry, new PhysicsShapeDefinition
+        ///         {
+        ///             isTrigger = true,
+        ///             triggerEvents = true
+        ///         });
+        ///         triggerShape.callbackTarget = this;
+        ///
+        ///         // Create a static shape for the trigger to overlap.
+        ///         PhysicsBody staticBody = world.CreateBody(new PhysicsBodyDefinition
+        ///         {
+        ///             position = new Vector2(0f, 0f),
+        ///             type = PhysicsBody.BodyType.Static
+        ///         });
+        ///         staticBody.CreateShape(new CircleGeometry { radius = 3f }, new PhysicsShapeDefinition { triggerEvents = true });
+        ///     }
+        ///
+        ///     // Log when the trigger starts overlapping another shape.
+        ///     public void OnTriggerBegin2D(PhysicsEvents.TriggerBeginEvent beginEvent)
+        ///     {
+        ///         Debug.Log("Trigger overlap started.");
+        ///     }
+        ///
+        ///     // Log when the trigger stops overlapping another shape.
+        ///     public void OnTriggerEnd2D(PhysicsEvents.TriggerEndEvent endEvent)
+        ///     {
+        ///         Debug.Log("Trigger overlap ended.");
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsWorld.SendTriggerCallbacks"/>
+        /// <seealso cref="IContactCallback"/>
         public interface ITriggerCallback
         {
             /// <summary>
@@ -108,6 +199,62 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// An interface that when implemented, can be called as a target by <see cref="PhysicsWorld.SendContactCallbacks"/>.
         /// </summary>
+        /// <remarks>
+        /// Unity calls `OnContactBegin2D` and `OnContactEnd2D` on the main thread after the simulation finishes.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// // Add the PhysicsCallbacks.IContactCallback interface.
+        /// public class DetectCollisions : MonoBehaviour, PhysicsCallbacks.IContactCallback
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///
+        ///         // Create a small falling circle.
+        ///         PhysicsBody object1 = world.CreateBody(new PhysicsBodyDefinition
+        ///         {
+        ///             position = new Vector2(0.5f, 8f),
+        ///             type = PhysicsBody.BodyType.Dynamic
+        ///         });
+        ///         PhysicsShape objectShape1 = object1.CreateShape(CircleGeometry.defaultGeometry);
+        ///
+        ///         // Create a larger static circle below.
+        ///         PhysicsBody object2 = world.CreateBody(new PhysicsBodyDefinition
+        ///         {
+        ///             position = new Vector2(0f, 0f),
+        ///             type = PhysicsBody.BodyType.Static
+        ///         });
+        ///         object2.CreateShape(new CircleGeometry { radius = 3f });
+        ///
+        ///         // Set object 1 to activate collisions.
+        ///         objectShape1.contactEvents = true;
+        ///         objectShape1.callbackTarget = this;
+        ///     }
+        ///
+        ///     // Log when the small circle collides.
+        ///     public void OnContactBegin2D(PhysicsEvents.ContactBeginEvent eventData)
+        ///     {
+        ///         var contact = eventData.contactId.contact;
+        ///         Debug.Log("Collision started between shapes: " + contact.shapeA + " and " + contact.shapeB);
+        ///     }
+        ///
+        ///     // Log when the small circle stops colliding.
+        ///     public void OnContactEnd2D(PhysicsEvents.ContactEndEvent eventData)
+        ///     {
+        ///         var contact = eventData.contactId.contact;
+        ///         Debug.Log("Collision ended between shapes: " + contact.shapeA + " and " + contact.shapeB);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsWorld.SendContactCallbacks"/>
+        /// <seealso cref="ITriggerCallback"/>
         public interface IContactCallback
         {
             /// <summary>

@@ -44,6 +44,13 @@ namespace UnityEditor.Shaders
             High
         }
 
+        [UsedByNativeCode]
+        internal enum FastBuildMode
+        {
+            Off,
+            On
+        }
+
         internal static bool IsEmptyKeyword(string keyword)
         {
             if (keyword.Length == 0)
@@ -236,6 +243,16 @@ namespace UnityEditor.Shaders
                 return ArrayValuesEqual(keywords, other.keywords, static (a, b) => a.ValueEquals(b));
             }
 
+            // Copying the struct alone still shares the keywords array. This does a deep copy instead.
+            internal KeywordDeclarationOverride DeepCopy()
+            {
+                return new KeywordDeclarationOverride
+                {
+                    keywords = keywords == null ? null : (KeywordOverrideInfo[])keywords.Clone(),
+                    variantGenerationMode = variantGenerationMode,
+                };
+            }
+
             [SerializeField] public KeywordOverrideInfo[] keywords = Array.Empty<KeywordOverrideInfo>();
             [SerializeField] public ShaderVariantGenerationMode variantGenerationMode = ShaderVariantGenerationMode.Default;
 
@@ -348,8 +365,10 @@ namespace UnityEditor.Shaders
             return (KeywordDeclarationOverride[])keywordDeclarationOverrides.Clone();
         }
 
+        [SerializeField] internal FastBuildMode fastBuildMode = FastBuildMode.Off;
+
         [SerializeField] internal string[] defines = Array.Empty<string>();
-        [SerializeField] private uint numInternalDefines = 0;
+        [SerializeField] internal uint numInternalDefines = 0;
 
         internal string[] GetAllDefinesCopy()
         {
@@ -364,6 +383,9 @@ namespace UnityEditor.Shaders
         internal bool ValueEquals(ShaderBuildSettings other)
         {
             if (numInternalDefines != other.numInternalDefines)
+                return false;
+
+            if (fastBuildMode != other.fastBuildMode)
                 return false;
 
             if (!ArrayValuesEqual(defines, other.defines, static (a, b) => a == b))
@@ -387,6 +409,47 @@ namespace UnityEditor.Shaders
                 defineList.AddRange(defines);
             defines = defineList.ToArray();
             numInternalDefines++;
+        }
+
+        internal bool HasInternalDefine(string identifier)
+        {
+            for (int i = 0; i < numInternalDefines; ++i)
+            {
+                if (DefineHasIdentifier(defines[i], identifier))
+                    return true;
+            }
+
+            return false;
+        }
+
+        // Returns true when a define was removed.
+        internal bool RemoveInternalDefine(string identifier)
+        {
+            for (int i = 0; i < numInternalDefines; ++i)
+            {
+                if (!DefineHasIdentifier(defines[i], identifier))
+                    continue;
+
+                // Internal defines stay at the start of the array, which GetDefinesCopy and the setter both rely on.
+                var remaining = new string[defines.Length - 1];
+                Array.Copy(defines, 0, remaining, 0, i);
+                Array.Copy(defines, i + 1, remaining, i, defines.Length - i - 1);
+
+                defines = remaining;
+                numInternalDefines--;
+                return true;
+            }
+
+            return false;
+        }
+
+        static bool DefineHasIdentifier(string define, string identifier)
+        {
+            if (define == null)
+                return false;
+
+            var sections = define.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+            return sections.Length > 0 && sections[0] == identifier;
         }
 
         internal static bool SplitAndValidateDefine(string define, out string identifier, out string value, out string msg)

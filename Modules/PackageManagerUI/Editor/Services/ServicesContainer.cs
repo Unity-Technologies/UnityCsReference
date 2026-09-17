@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -80,8 +79,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private BackgroundFetchHandler m_SerializedBackgroundFetchHandler;
         [SerializeField]
-        private AssetStoreOAuth m_SerializedAssetStoreOAuth;
-        [SerializeField]
         private AssetStoreDownloadManager m_SerializedAssetStoreDownloadManager;
         [SerializeField]
         private AssetStoreCachePathProxy m_SerializedAssetStoreCachePathProxy;
@@ -127,7 +124,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ReverseDependencies.Clear();
 
             var httpClientFactory = Register(new HttpClientFactory());
-            var unityOAuthProxy = Register(new UnityOAuthProxy());
             var selectionProxy = Register(new SelectionProxy());
             var assetDatabaseProxy = Register(new AssetDatabaseProxy());
             var ioProxy = Register(new IOProxy());
@@ -145,8 +141,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var resourceLoader = Register(new ResourceLoader());
 
             var assetSelectionHandler = Register(new AssetSelectionHandler(selectionWindowProxy));
-            var assetStoreOAuth = Register(new AssetStoreOAuth(dateTimeProxy, unityConnectProxy, unityOAuthProxy, httpClientFactory));
-            var assetStoreRestAPI = Register(new AssetStoreRestAPI(unityConnectProxy, assetStoreOAuth, jsonParser, httpClientFactory));
+            var assetStoreRestAPI = Register(new AssetStoreRestAPI(unityConnectProxy, jsonParser, httpClientFactory));
             var localInfoHandler = Register(new LocalInfoHandler(assetStoreUtils, ioProxy));
             var assetStoreCache = Register(new AssetStoreCache(applicationProxy, httpClientFactory, ioProxy));
             var operationFactory = Register(new OperationFactory(unityConnectProxy, assetStoreRestAPI, assetStoreCache));
@@ -171,7 +166,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy));
             var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
             var packageCreator = Register(new PackageCreator(upmClient, upmCache, unityConnectProxy, ioProxy, dateTimeProxy));
-            var inProjectPackagesMonitor = Register(new InProjectPackagesMonitor(applicationProxy, settingsProxy, upmCache, upmRegistryClient, packageDatabase, pageRefreshHandler, customDisplayDialog, upmClient));
+            var inProjectPackagesMonitor = Register(new InProjectPackagesMonitor(applicationProxy, settingsProxy, upmCache, upmRegistryClient, packageDatabase, pageRefreshHandler, upmClient));
             var operationDispatcher = Register(new PackageOperationDispatcher(assetStorePackageInstaller, assetStoreDownloadManager, upmClient, selectionProxy, assetDatabaseProxy));
 
             Register(new EditorAnalyticsProxy());
@@ -192,7 +187,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedAssetStoreCache = assetStoreCache;
             m_SerializedAssetStoreClient = assetStoreClient;
             m_SerializedBackgroundFetchHandler = backgroundFetchHandler;
-            m_SerializedAssetStoreOAuth = assetStoreOAuth;
             m_SerializedAssetStoreDownloadManager = assetStoreDownloadManager;
             m_SerializedAssetStoreCachePathProxy = assetStoreCachePathProxy;
             m_SerializedUpmCache = upmCache;
@@ -271,4 +265,3 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -21,6 +21,7 @@ namespace Unity.Scripting
 
         public static bool IsDiagnosticSwitchEnabled(string name) => ScriptingCoreDebug.IsDiagnosticSwitchEnabled(name);
         public static void Log(string message) => ScriptingCoreDebug.Log(message);
+        public static void LogWarning(string message) => ScriptingCoreDebug.LogWarning(message);
         public static void LogError(string message) => ScriptingCoreDebug.LogError(message);
         public static void LogError(string message, Exception exception) => ScriptingCoreDebug.LogError($"{message}\nException:\n{exception}");
         public static void LogException(Exception exception) => ScriptingCoreDebug.LogException(exception);
@@ -35,6 +36,7 @@ namespace Unity.Scripting
             public bool IsDiagnosticSwitchEnabled(string name) => false;
 
             public void Log(string message) => System.Diagnostics.Debug.WriteLine(message);
+            public void LogWarning(string message) => System.Diagnostics.Debug.WriteLine(message);
             public void LogError(string message) => System.Diagnostics.Debug.WriteLine(message);
             public void LogException(Exception exception) => System.Diagnostics.Debug.WriteLine("[Error] " + exception);
             public void LogExceptionFatal(Exception exception) => System.Diagnostics.Debug.WriteLine("[Fatal] " + exception);

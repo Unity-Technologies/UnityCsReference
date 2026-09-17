@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -517,7 +516,9 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             if (EditorGUI.EndChangeCheck())
             {
                 m_NextSearchOffDelegate?.Invoke();
+#pragma warning disable UAL0018 // holds only the cancel token for the pending debounce; a reload drops the pending callback with the tick subscribers, and the next keystroke invokes and replaces the token, so a stale one cancels nothing
                 m_NextSearchOffDelegate = EditorApplication.CallDelayed(UpdateSearchDelayed, UnityEditor.SearchUtils.debounceThresholdMs / 1000f);
+#pragma warning restore UAL0018
             }
             else if (m_PendingSearchString == m_TextFilter.searchString)
             {
@@ -1053,7 +1054,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             public static readonly GUIContent SearchStringLabel = new GUIContent("Search:", "Text search options");
             public static readonly GUIContent Dependencies = new GUIContent("Dependencies");
 
-            public static readonly GUIContent SearchJumpButton = EditorGUIUtility.TrIconContent("SearchJump Icon", "Open in Search");
+            public static readonly GUIContent SearchJumpButton = L10n.IconContent("SearchJump Icon", "Open in Search", null);
 
             public static readonly string DiscardTitle = L10n.Tr("Analyze Now", null);
             public static readonly string DiscardQuestion = L10n.Tr("If you analyze this section, your currently ignored items will be discarded.", null);
@@ -1095,14 +1096,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         {
             public static readonly GUIContent Details = new GUIContent("Details", "Issue Details");
             public static readonly GUIContent Recommendation = new GUIContent("Recommendation", "Recommendation on how to solve the issue");
-            public static readonly GUIContent CopyToClipboard = EditorGUIUtility.TrTextContent(string.Empty, "Copy to Clipboard");
+            public static readonly GUIContent CopyToClipboard = L10n.TextContent(string.Empty, "Copy to Clipboard", null, null);
             public static readonly GUIContent QuickFix = new GUIContent("Quick Fix", "Automatically fix the issue");
             public static readonly GUIContent QuickFixDone = new GUIContent("Fixed", "Quick fix applied");
-            public static readonly GUIContent DocumentationInternal = EditorGUIUtility.TrTextContent(string.Empty, "Open the Unity documentation");
+            public static readonly GUIContent DocumentationInternal = L10n.TextContent(string.Empty, "Open the Unity documentation", null, null);
             public static readonly GUIContent DocumentationExternal = new GUIContent("Learn More", "Open external documentation");
             public static readonly GUIContent Show = new GUIContent("Show:");
             public static readonly GUIContent ShowIgnoredIssues = new GUIContent("Show Ignored Issues");
+            public static readonly GUIContent Summary = L10n.TextContent("Summary", null, null, null);
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

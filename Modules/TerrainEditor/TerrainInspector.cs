@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 /*
 GUILayout.TextureGrid number of horiz elements doesn't work
 */
@@ -149,97 +148,97 @@ namespace UnityEditor
             // List of tools supported by the editor
             public readonly GUIContent[] toolIcons =
             {
-                EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolAdd", "Create Neighbor Terrains"),
-                EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolSplat", "Paint Terrain"),
-                EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolTrees", "Paint Trees"),
-                EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolPlants", "Paint Details"),
-                EditorGUIUtility.TrIconContent("TerrainInspector.TerrainToolSettings", "Terrain Settings")
+                L10n.IconContent("TerrainInspector.TerrainToolAdd", "Create Neighbor Terrains", null),
+                L10n.IconContent("TerrainInspector.TerrainToolSplat", "Paint Terrain", null),
+                L10n.IconContent("TerrainInspector.TerrainToolTrees", "Paint Trees", null),
+                L10n.IconContent("TerrainInspector.TerrainToolPlants", "Paint Details", null),
+                L10n.IconContent("TerrainInspector.TerrainToolSettings", "Terrain Settings", null)
             };
 
             public readonly GUIContent[] toolNames =
             {
-                EditorGUIUtility.TrTextContent("Create Neighbor Terrains", "Click the edges to create neighbor terrains"),
-                EditorGUIUtility.TrTextContent("Paint Terrain", "Select a tool from the drop-down list"),
-                EditorGUIUtility.TrTextContent("Paint Trees", "Click to paint trees.\n\nHold shift and click to erase trees.\n\nHold Ctrl and click to erase only trees of the selected type."),
-                EditorGUIUtility.TrTextContent("Paint Details", "Click to paint details.\n\nHold shift and click to erase details.\n\nHold Ctrl and click to erase only details of the selected type."),
-                EditorGUIUtility.TrTextContent("Terrain Settings")
+                L10n.TextContent("Create Neighbor Terrains", "Click the edges to create neighbor terrains", null, null),
+                L10n.TextContent("Paint Terrain", "Select a tool from the drop-down list", null, null),
+                L10n.TextContent("Paint Trees", "Click to paint trees.\n\nHold shift and click to erase trees.\n\nHold Ctrl and click to erase only trees of the selected type.", null, null),
+                L10n.TextContent("Paint Details", "Click to paint details.\n\nHold shift and click to erase details.\n\nHold Ctrl and click to erase only details of the selected type.", null, null),
+                L10n.TextContent("Terrain Settings", null, null, null)
             };
 
-            public readonly GUIContent brushSize = EditorGUIUtility.TrTextContent("Brush Size", "Size of the brush used to paint.");
-            public readonly GUIContent opacity = EditorGUIUtility.TrTextContent("Opacity", "Strength of the applied effect.");
-            public readonly GUIContent settings = EditorGUIUtility.TrTextContent("Settings");
+            public readonly GUIContent brushSize = L10n.TextContent("Brush Size", "Size of the brush used to paint.", null, null);
+            public readonly GUIContent opacity = L10n.TextContent("Opacity", "Strength of the applied effect.", null, null);
+            public readonly GUIContent settings = L10n.TextContent("Settings", null, null, null);
             public readonly GUIContent mismatchedTerrainData = EditorGUIUtility.TextContentWithIcon(
                 "The TerrainData used by the TerrainCollider component is different from this terrain. Would you like to assign the same TerrainData to the TerrainCollider component?",
                 "console.warnicon");
             public readonly GUIContent noTerrainCollider = EditorGUIUtility.TextContentWithIcon(
                 "Painting on this Terrain is not supported without the TerrainCollider component. Would you like to add or enable it?",
                 "console.warnicon");
-            public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
-            public readonly GUIContent addOrEnable = EditorGUIUtility.TrTextContent("Add/Enable");
-            public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("This inspector tab is not the active Terrain inspector, paint functionality disabled.");
-            public readonly GUIContent makeMeActive = EditorGUIUtility.TrTextContent("Activate this inspector");
-            public readonly GUIContent readOnlyEditor = EditorGUIUtility.TrTextContent("Terrain editing is not available in an Editor instance that cannot modify the project's assets.");
+            public readonly GUIContent assign = L10n.TextContent("Assign", null, null, null);
+            public readonly GUIContent addOrEnable = L10n.TextContent("Add/Enable", null, null, null);
+            public readonly GUIContent duplicateTab = L10n.TextContent("This inspector tab is not the active Terrain inspector, paint functionality disabled.", null, null, null);
+            public readonly GUIContent makeMeActive = L10n.TextContent("Activate this inspector", null, null, null);
+            public readonly GUIContent readOnlyEditor = L10n.TextContent("Terrain editing is not available in an Editor instance that cannot modify the project's assets.", null, null, null);
 
             // Heightmaps
-            public readonly GUIContent textures = EditorGUIUtility.TrTextContent("Texture Resolutions (On Terrain Data)");
-            public readonly GUIContent requireResampling = EditorGUIUtility.TrTextContent("Require resampling on change");
-            public readonly GUIContent importRaw  = EditorGUIUtility.TrTextContent("Import Raw...", "The Import Raw button allows you to set the terrain's heightmap from an image file in the RAW grayscale format. RAW format can be generated by third party terrain editing tools (such as Bryce) and can also be opened, edited and saved by Photoshop. This allows for sophisticated generation and editing of terrains outside Unity.");
-            public readonly GUIContent exportRaw = EditorGUIUtility.TrTextContent("Export Raw...", "The Export Raw button allows you to save the terrain's heightmap to an image file in the RAW grayscale format. RAW format can be generated by third party terrain editing tools (such as Bryce) and can also be opened, edited and saved by Photoshop. This allows for sophisticated generation and editing of terrains outside Unity.");
+            public readonly GUIContent textures = L10n.TextContent("Texture Resolutions (On Terrain Data)", null, null, null);
+            public readonly GUIContent requireResampling = L10n.TextContent("Require resampling on change", null, null, null);
+            public readonly GUIContent importRaw  = L10n.TextContent("Import Raw...", "The Import Raw button allows you to set the terrain's heightmap from an image file in the RAW grayscale format. RAW format can be generated by third party terrain editing tools (such as Bryce) and can also be opened, edited and saved by Photoshop. This allows for sophisticated generation and editing of terrains outside Unity.", null, null);
+            public readonly GUIContent exportRaw = L10n.TextContent("Export Raw...", "The Export Raw button allows you to save the terrain's heightmap to an image file in the RAW grayscale format. RAW format can be generated by third party terrain editing tools (such as Bryce) and can also be opened, edited and saved by Photoshop. This allows for sophisticated generation and editing of terrains outside Unity.", null, null);
 
-            public readonly GUIContent bakeLightProbesForTrees = EditorGUIUtility.TrTextContent("Bake Light Probes For Trees", "If the option is enabled, Unity will create internal light probes at the position of each tree (these probes are internal and will not affect other renderers in the scene) and apply them to tree renderers for lighting. Otherwise trees are still affected by LightProbeGroups. The option is only effective for trees that have LightProbe enabled on their prototype prefab.");
-            public readonly GUIContent deringLightProbesForTrees = EditorGUIUtility.TrTextContent("Remove Light Probe Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.");
-            public readonly GUIContent refresh = EditorGUIUtility.TrTextContent("Refresh", "When you save a tree asset from the modelling app, you will need to click the Refresh button (shown in the inspector when the tree painting tool is selected) in order to see the updated trees on your terrain.");
+            public readonly GUIContent bakeLightProbesForTrees = L10n.TextContent("Bake Light Probes For Trees", "If the option is enabled, Unity will create internal light probes at the position of each tree (these probes are internal and will not affect other renderers in the scene) and apply them to tree renderers for lighting. Otherwise trees are still affected by LightProbeGroups. The option is only effective for trees that have LightProbe enabled on their prototype prefab.", null, null);
+            public readonly GUIContent deringLightProbesForTrees = L10n.TextContent("Remove Light Probe Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.", null, null);
+            public readonly GUIContent refresh = L10n.TextContent("Refresh", "When you save a tree asset from the modelling app, you will need to click the Refresh button (shown in the inspector when the tree painting tool is selected) in order to see the updated trees on your terrain.", null, null);
 
             // Settings
-            public readonly GUIContent basicTerrain = EditorGUIUtility.TrTextContent("Basic Terrain");
-            public readonly GUIContent groupingID = EditorGUIUtility.TrTextContent("Grouping ID", "Grouping ID for auto connection");
-            public readonly GUIContent allowAutoConnect = EditorGUIUtility.TrTextContent("Auto Connect", "Allow the current terrain tile to automatically connect to neighboring tiles sharing the same grouping ID.");
-            public readonly GUIContent attemptReconnect = EditorGUIUtility.TrTextContent("Reconnect", "Will attempt to re-run auto connection");
-            public readonly GUIContent drawTerrain = EditorGUIUtility.TrTextContent("Draw", "Toggle the rendering of terrain");
-            public readonly GUIContent enableHeightmapRayTracing = EditorGUIUtility.TrTextContent("Enable Ray Tracing Support", "When enabling this option, RayTracingAccelerationStructure.CullInstances function will populate the acceleration structure with terrain geometries.");
-            public readonly GUIContent drawInstancedTerrain = EditorGUIUtility.TrTextContent("Draw Instanced" , "Toggle terrain instancing rendering");
-            public readonly GUIContent qualitySettings = EditorGUIUtility.TrTextContent("Quality Settings");
-            public readonly GUIContent ignoreQualitySettings = EditorGUIUtility.TrTextContent("Ignore Quality Settings", "Toggle whether this terrain should ignore the current active quality settings' terrain overrides.");
-            public readonly GUIContent pixelError = EditorGUIUtility.TrTextContent("Pixel Error", "The accuracy of the mapping between the terrain maps (heightmap, textures, etc.) and the generated terrain; higher values indicate lower accuracy but lower rendering overhead.");
-            public readonly GUIContent heightmapMinLODLimit = EditorGUIUtility.TrTextContent("Minimum Detail Limit", "Enforces a minimum level of detail on the Heightmap.\n0 enforces no limit - higher values enforce progressively more detail.\nMost users will not need this setting - see documentation.");
-            public readonly GUIContent heightmapMaxLODLimit = EditorGUIUtility.TrTextContent("Maximum Complexity Limit", "Enforces a maximum level of detail on the Heightmap.\n0 enforces no limit - higher values enforce progressively more detail.\nThis can be useful to limit detail on low-end devices.");
-            public readonly GUIContent baseMapDist = EditorGUIUtility.TrTextContent("Base Map Dist.", "The maximum distance at which terrain textures will be displayed at full resolution. Beyond this distance, a lower resolution composite image will be used for efficiency.");
-            public readonly GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Does the terrain cast shadows?");
-            public readonly GUIContent createMaterial = EditorGUIUtility.TrTextContent("Create...", "Create a new Material asset to be used by the terrain by duplicating the current default Terrain material.");
-            public readonly GUIContent reflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes", "How reflection probes are used on terrain. Only effective when using built-in standard material or a custom material which supports rendering with reflection.");
+            public readonly GUIContent basicTerrain = L10n.TextContent("Basic Terrain", null, null, null);
+            public readonly GUIContent groupingID = L10n.TextContent("Grouping ID", "Grouping ID for auto connection", null, null);
+            public readonly GUIContent allowAutoConnect = L10n.TextContent("Auto Connect", "Allow the current terrain tile to automatically connect to neighboring tiles sharing the same grouping ID.", null, null);
+            public readonly GUIContent attemptReconnect = L10n.TextContent("Reconnect", "Will attempt to re-run auto connection", null, null);
+            public readonly GUIContent drawTerrain = L10n.TextContent("Draw", "Toggle the rendering of terrain", null, null);
+            public readonly GUIContent enableHeightmapRayTracing = L10n.TextContent("Enable Ray Tracing Support", "When enabling this option, RayTracingAccelerationStructure.CullInstances function will populate the acceleration structure with terrain geometries.", null, null);
+            public readonly GUIContent drawInstancedTerrain = L10n.TextContent("Draw Instanced" , "Toggle terrain instancing rendering", null, null);
+            public readonly GUIContent qualitySettings = L10n.TextContent("Quality Settings", null, null, null);
+            public readonly GUIContent ignoreQualitySettings = L10n.TextContent("Ignore Quality Settings", "Toggle whether this terrain should ignore the current active quality settings' terrain overrides.", null, null);
+            public readonly GUIContent pixelError = L10n.TextContent("Pixel Error", "The accuracy of the mapping between the terrain maps (heightmap, textures, etc.) and the generated terrain; higher values indicate lower accuracy but lower rendering overhead.", null, null);
+            public readonly GUIContent heightmapMinLODLimit = L10n.TextContent("Minimum Detail Limit", "Enforces a minimum level of detail on the Heightmap.\n0 enforces no limit - higher values enforce progressively more detail.\nMost users will not need this setting - see documentation.", null, null);
+            public readonly GUIContent heightmapMaxLODLimit = L10n.TextContent("Maximum Complexity Limit", "Enforces a maximum level of detail on the Heightmap.\n0 enforces no limit - higher values enforce progressively more detail.\nThis can be useful to limit detail on low-end devices.", null, null);
+            public readonly GUIContent baseMapDist = L10n.TextContent("Base Map Dist.", "The maximum distance at which terrain textures will be displayed at full resolution. Beyond this distance, a lower resolution composite image will be used for efficiency.", null, null);
+            public readonly GUIContent castShadows = L10n.TextContent("Cast Shadows", "Does the terrain cast shadows?", null, null);
+            public readonly GUIContent createMaterial = L10n.TextContent("Create...", "Create a new Material asset to be used by the terrain by duplicating the current default Terrain material.", null, null);
+            public readonly GUIContent reflectionProbes = L10n.TextContent("Reflection Probes", "How reflection probes are used on terrain. Only effective when using built-in standard material or a custom material which supports rendering with reflection.", null, null);
             public readonly GUIContent preserveTreePrototypeLayers = EditorGUIUtility.TextContent("Preserve Tree Prototype Layers|Enable this option if you want your tree instances to take on the layer values of their prototype prefabs, rather than the terrain GameObject's layer.");
-            public readonly GUIContent treeAndDetails = EditorGUIUtility.TrTextContent("Tree & Detail Objects");
-            public readonly GUIContent drawTrees = EditorGUIUtility.TrTextContent("Draw", "Should trees, grass and details be drawn?");
-            public readonly GUIContent treeMotionVectorOverrideMode = EditorGUIUtility.TrTextContent("Tree Motion Vectors", "Select the motion vector mode to be used for all of the trees painted on the terrain. 'Inherit From Prototype' will use the value from the tree prototype's mesh renderer.");
-            public readonly GUIContent detailObjectDistance = EditorGUIUtility.TrTextContent("Detail Distance", "The distance (from camera) beyond which details will be culled.");
-            public readonly GUIContent detailObjectDensity = EditorGUIUtility.TrTextContent("Detail Density Scale", "Scaling factor applied to the density of all details. Only affects details with the \"Affected by Density Scale\" option enabled.");
-            public readonly GUIContent detailScatterMode = EditorGUIUtility.TrTextContent("Detail Scatter Mode", "The scatter mode type to be used while painting details. Coverage paints areas detail should be populated in based on their density setting, Instance Count paints the amount per sample.");
-            public readonly GUIContent treeDistance = EditorGUIUtility.TrTextContent("Tree Distance", "The distance (from camera) beyond which trees will be culled. For SpeedTree trees this parameter is controlled by the LOD group settings.");
-            public readonly GUIContent treeBillboardDistance = EditorGUIUtility.TrTextContent("Billboard Start", "The distance (from camera) at which 3D tree objects will be replaced by billboard images. For SpeedTree trees this parameter is controlled by the LOD group settings.");
-            public readonly GUIContent treeCrossFadeLength = EditorGUIUtility.TrTextContent("Fade Length", "Distance over which trees will transition between 3D objects and billboards. For SpeedTree trees this parameter is controlled by the LOD group settings.");
-            public readonly GUIContent treeMaximumFullLODCount = EditorGUIUtility.TrTextContent("Max Mesh Trees", "The maximum number of visible trees that will be represented as solid 3D meshes. Beyond this limit, trees will be replaced with billboards. For SpeedTree trees this parameter is controlled by the LOD group settings.");
-            public readonly GUIContent grassWindSettings = EditorGUIUtility.TrTextContent("Wind Settings for Grass (On Terrain Data)");
-            public readonly GUIContent wavingGrassStrength = EditorGUIUtility.TrTextContent("Speed", "The speed of the wind as it blows grass.");
-            public readonly GUIContent wavingGrassSpeed = EditorGUIUtility.TrTextContent("Size", "The size of the 'ripples' on grassy areas as the wind blows over them.");
-            public readonly GUIContent wavingGrassAmount = EditorGUIUtility.TrTextContent("Bending", "The degree to which grass objects are bent over by the wind.");
-            public readonly GUIContent wavingGrassTint = EditorGUIUtility.TrTextContent("Grass Tint", "Overall color tint applied to grass objects.");
-            public readonly GUIContent meshResolution = EditorGUIUtility.TrTextContent("Mesh Resolution (On Terrain Data)");
-            public readonly GUIContent holesSettings = EditorGUIUtility.TrTextContent("Holes Settings (On Terrain Data)");
-            public readonly GUIContent holesCompressionToggle = EditorGUIUtility.TrTextContent("Compress Holes Texture", "If enabled, holes texture will be compressed at runtime if compression supported.");
+            public readonly GUIContent treeAndDetails = L10n.TextContent("Tree & Detail Objects", null, null, null);
+            public readonly GUIContent drawTrees = L10n.TextContent("Draw", "Should trees, grass and details be drawn?", null, null);
+            public readonly GUIContent treeMotionVectorOverrideMode = L10n.TextContent("Tree Motion Vectors", "Select the motion vector mode to be used for all of the trees painted on the terrain. 'Inherit From Prototype' will use the value from the tree prototype's mesh renderer.", null, null);
+            public readonly GUIContent detailObjectDistance = L10n.TextContent("Detail Distance", "The distance (from camera) beyond which details will be culled.", null, null);
+            public readonly GUIContent detailObjectDensity = L10n.TextContent("Detail Density Scale", "Scaling factor applied to the density of all details. Only affects details with the \"Affected by Density Scale\" option enabled.", null, null);
+            public readonly GUIContent detailScatterMode = L10n.TextContent("Detail Scatter Mode", "The scatter mode type to be used while painting details. Coverage paints areas detail should be populated in based on their density setting, Instance Count paints the amount per sample.", null, null);
+            public readonly GUIContent treeDistance = L10n.TextContent("Tree Distance", "The distance (from camera) beyond which trees will be culled. For SpeedTree trees this parameter is controlled by the LOD group settings.", null, null);
+            public readonly GUIContent treeBillboardDistance = L10n.TextContent("Billboard Start", "The distance (from camera) at which 3D tree objects will be replaced by billboard images. For SpeedTree trees this parameter is controlled by the LOD group settings.", null, null);
+            public readonly GUIContent treeCrossFadeLength = L10n.TextContent("Fade Length", "Distance over which trees will transition between 3D objects and billboards. For SpeedTree trees this parameter is controlled by the LOD group settings.", null, null);
+            public readonly GUIContent treeMaximumFullLODCount = L10n.TextContent("Max Mesh Trees", "The maximum number of visible trees that will be represented as solid 3D meshes. Beyond this limit, trees will be replaced with billboards. For SpeedTree trees this parameter is controlled by the LOD group settings.", null, null);
+            public readonly GUIContent grassWindSettings = L10n.TextContent("Wind Settings for Grass (On Terrain Data)", null, null, null);
+            public readonly GUIContent wavingGrassStrength = L10n.TextContent("Speed", "The speed of the wind as it blows grass.", null, null);
+            public readonly GUIContent wavingGrassSpeed = L10n.TextContent("Size", "The size of the 'ripples' on grassy areas as the wind blows over them.", null, null);
+            public readonly GUIContent wavingGrassAmount = L10n.TextContent("Bending", "The degree to which grass objects are bent over by the wind.", null, null);
+            public readonly GUIContent wavingGrassTint = L10n.TextContent("Grass Tint", "Overall color tint applied to grass objects.", null, null);
+            public readonly GUIContent meshResolution = L10n.TextContent("Mesh Resolution (On Terrain Data)", null, null, null);
+            public readonly GUIContent holesSettings = L10n.TextContent("Holes Settings (On Terrain Data)", null, null, null);
+            public readonly GUIContent holesCompressionToggle = L10n.TextContent("Compress Holes Texture", "If enabled, holes texture will be compressed at runtime if compression supported.", null, null);
 
-            public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
+            public static readonly GUIContent renderingLayerMask = L10n.TextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.", null, null);
 
-            public static readonly GUIContent heightmapResolution = EditorGUIUtility.TrTextContent("Heightmap Resolution", "Pixel resolution of the terrain's heightmap (should be a power of two plus one, eg, 513 = 512 + 1)");
+            public static readonly GUIContent heightmapResolution = L10n.TextContent("Heightmap Resolution", "Pixel resolution of the terrain's heightmap (should be a power of two plus one, eg, 513 = 512 + 1)", null, null);
             public static readonly GUIContent[] heightmapResolutionStrings =
             {
-                EditorGUIUtility.TrTextContent("33 x 33", "Pixels"),
-                EditorGUIUtility.TrTextContent("65 x 65", "Pixels"),
-                EditorGUIUtility.TrTextContent("129 x 129", "Pixels"),
-                EditorGUIUtility.TrTextContent("257 x 257", "Pixels"),
-                EditorGUIUtility.TrTextContent("513 x 513", "Pixels"),
-                EditorGUIUtility.TrTextContent("1025 x 1025", "Pixels"),
-                EditorGUIUtility.TrTextContent("2049 x 2049", "Pixels"),
-                EditorGUIUtility.TrTextContent("4097 x 4097", "Pixels")
+                L10n.TextContent("33 x 33", "Pixels", null, null),
+                L10n.TextContent("65 x 65", "Pixels", null, null),
+                L10n.TextContent("129 x 129", "Pixels", null, null),
+                L10n.TextContent("257 x 257", "Pixels", null, null),
+                L10n.TextContent("513 x 513", "Pixels", null, null),
+                L10n.TextContent("1025 x 1025", "Pixels", null, null),
+                L10n.TextContent("2049 x 2049", "Pixels", null, null),
+                L10n.TextContent("4097 x 4097", "Pixels", null, null)
             };
             public static readonly int[] heightmapResolutionInts =
             {
@@ -253,18 +252,18 @@ namespace UnityEditor
                 4097
             };
 
-            public static readonly GUIContent alphamapResolution = EditorGUIUtility.TrTextContent("Control Texture Resolution", "Resolution of the \"splatmap\" that controls the blending of the different terrain materials.");
+            public static readonly GUIContent alphamapResolution = L10n.TextContent("Control Texture Resolution", "Resolution of the \"splatmap\" that controls the blending of the different terrain materials.", null, null);
             public static readonly GUIContent[] alphamapResolutionStrings =
             {
-                EditorGUIUtility.TrTextContent("16 x 16", "Pixels"),
-                EditorGUIUtility.TrTextContent("32 x 32", "Pixels"),
-                EditorGUIUtility.TrTextContent("64 x 64", "Pixels"),
-                EditorGUIUtility.TrTextContent("128 x 128", "Pixels"),
-                EditorGUIUtility.TrTextContent("256 x 256", "Pixels"),
-                EditorGUIUtility.TrTextContent("512 x 512", "Pixels"),
-                EditorGUIUtility.TrTextContent("1024 x 1024", "Pixels"),
-                EditorGUIUtility.TrTextContent("2048 x 2048", "Pixels"),
-                EditorGUIUtility.TrTextContent("4096 x 4096", "Pixels")
+                L10n.TextContent("16 x 16", "Pixels", null, null),
+                L10n.TextContent("32 x 32", "Pixels", null, null),
+                L10n.TextContent("64 x 64", "Pixels", null, null),
+                L10n.TextContent("128 x 128", "Pixels", null, null),
+                L10n.TextContent("256 x 256", "Pixels", null, null),
+                L10n.TextContent("512 x 512", "Pixels", null, null),
+                L10n.TextContent("1024 x 1024", "Pixels", null, null),
+                L10n.TextContent("2048 x 2048", "Pixels", null, null),
+                L10n.TextContent("4096 x 4096", "Pixels", null, null)
             };
             public static readonly int[] alphamapResolutionInts =
             {
@@ -279,18 +278,18 @@ namespace UnityEditor
                 4096
             };
 
-            public static readonly GUIContent basemapResolution = EditorGUIUtility.TrTextContent("Base Texture Resolution", "Resolution of the composite texture used on the terrain when viewed from a distance greater than the Basemap Distance.");
+            public static readonly GUIContent basemapResolution = L10n.TextContent("Base Texture Resolution", "Resolution of the composite texture used on the terrain when viewed from a distance greater than the Basemap Distance.", null, null);
             public static readonly GUIContent[] basemapResolutionStrings =
             {
-                EditorGUIUtility.TrTextContent("16 x 16", "Pixels"),
-                EditorGUIUtility.TrTextContent("32 x 32", "Pixels"),
-                EditorGUIUtility.TrTextContent("64 x 64", "Pixels"),
-                EditorGUIUtility.TrTextContent("128 x 128", "Pixels"),
-                EditorGUIUtility.TrTextContent("256 x 256", "Pixels"),
-                EditorGUIUtility.TrTextContent("512 x 512", "Pixels"),
-                EditorGUIUtility.TrTextContent("1024 x 1024", "Pixels"),
-                EditorGUIUtility.TrTextContent("2048 x 2048", "Pixels"),
-                EditorGUIUtility.TrTextContent("4096 x 4096", "Pixels")
+                L10n.TextContent("16 x 16", "Pixels", null, null),
+                L10n.TextContent("32 x 32", "Pixels", null, null),
+                L10n.TextContent("64 x 64", "Pixels", null, null),
+                L10n.TextContent("128 x 128", "Pixels", null, null),
+                L10n.TextContent("256 x 256", "Pixels", null, null),
+                L10n.TextContent("512 x 512", "Pixels", null, null),
+                L10n.TextContent("1024 x 1024", "Pixels", null, null),
+                L10n.TextContent("2048 x 2048", "Pixels", null, null),
+                L10n.TextContent("4096 x 4096", "Pixels", null, null)
             };
             public static readonly int[] basemapResolutionInts =
             {
@@ -428,6 +427,10 @@ namespace UnityEditor
         // Coupled with m_ActiveTerrainTool below: reset to the editor-tool default on reload so the pair stays
         // coherent (m_ActiveTerrainTool is cleaned to null, so mode must not stay false pointing at a null tool).
         [AutoStaticsCleanupOnCodeReload]
+        // Back at its editor-tool default it stays coherent with m_ActiveTerrainTool being null, and
+        // GetActiveTerrainTool then reads the live tool from EditorToolManager; activating a paint tool
+        // sets it explicitly again.
+        [IgnoreForUAL0015("Tool-mode flag reset to its default and set again when a paint tool is activated")]
         internal static bool s_ActiveTerrainToolIsEditorTool = true;
         [AutoStaticsCleanupOnCodeReload]
         private static ITerrainPaintTool m_ActiveTerrainTool = null; // NOT EDITOR TOOL
@@ -1713,8 +1716,14 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // The brush-size overlay slider subscribes on AttachToPanelEvent and unsubscribes on detach, so the
+        // subscription comes back as soon as the overlay is attached to a panel again.
+        [IgnoreForUAL0015("Event re-subscribed by the brush overlay on AttachToPanelEvent")]
         internal static event Action BrushSizeChanged;
         [AutoStaticsCleanupOnCodeReload]
+        // The brush-strength overlay slider subscribes on AttachToPanelEvent and unsubscribes on detach, so
+        // the subscription comes back as soon as the overlay is attached to a panel again.
+        [IgnoreForUAL0015("Event re-subscribed by the brush overlay on AttachToPanelEvent")]
         internal static event Action BrushStrengthChanged;
         public void ShowBrushes(int spacing, bool showBrushes, bool showBrushEditor, bool showBrushSize, bool showBrushStrength, int textureResolutionPerTile)
         {
@@ -1964,26 +1973,26 @@ namespace UnityEditor
 
             const int kMaxTerrainSize = 100000;
             const int kMaxTerrainHeight = 10000;
-            terrainWidth = EditorGUILayout.DelayedFloatField(EditorGUIUtility.TrTextContent("Terrain Width", $"Size of the terrain object in its X axis (in world units). Value range [1, {kMaxTerrainSize}]"), terrainWidth);
+            terrainWidth = EditorGUILayout.DelayedFloatField(L10n.TextContent("Terrain Width", $"Size of the terrain object in its X axis (in world units). Value range [1, {kMaxTerrainSize}]", null, null), terrainWidth);
             if (terrainWidth <= 0) terrainWidth = 1;
             if (terrainWidth > kMaxTerrainSize) terrainWidth = kMaxTerrainSize;
 
-            terrainLength = EditorGUILayout.DelayedFloatField(EditorGUIUtility.TrTextContent("Terrain Length", $"Size of the terrain object in its Z axis (in world units). Value range [1, {kMaxTerrainSize}]"), terrainLength);
+            terrainLength = EditorGUILayout.DelayedFloatField(L10n.TextContent("Terrain Length", $"Size of the terrain object in its Z axis (in world units). Value range [1, {kMaxTerrainSize}]", null, null), terrainLength);
             if (terrainLength <= 0) terrainLength = 1;
             if (terrainLength > kMaxTerrainSize) terrainLength = kMaxTerrainSize;
 
-            terrainHeight = EditorGUILayout.DelayedFloatField(EditorGUIUtility.TrTextContent("Terrain Height", $"Difference in Y coordinate between the lowest possible heightmap value and the highest (in world units). Value range [1, {kMaxTerrainHeight}]"), terrainHeight);
+            terrainHeight = EditorGUILayout.DelayedFloatField(L10n.TextContent("Terrain Height", $"Difference in Y coordinate between the lowest possible heightmap value and the highest (in world units). Value range [1, {kMaxTerrainHeight}]", null, null), terrainHeight);
             if (terrainHeight <= 0) terrainHeight = 1;
             if (terrainHeight > kMaxTerrainHeight) terrainHeight = kMaxTerrainHeight;
 
             const int kMinDetailResolutionPerPatch = 8;
             const int kMaxDetailResolutionPerPatch = 128;
-            detailResolutionPerPatch = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Detail Resolution Per Patch", $"The number of cells in a single patch (mesh). This value is squared to form a grid of cells, and must be a divisor of the detail resolution. Value range [{kMinDetailResolutionPerPatch}, {kMaxDetailResolutionPerPatch}]"), detailResolutionPerPatch);
+            detailResolutionPerPatch = EditorGUILayout.DelayedIntField(L10n.TextContent("Detail Resolution Per Patch", $"The number of cells in a single patch (mesh). This value is squared to form a grid of cells, and must be a divisor of the detail resolution. Value range [{kMinDetailResolutionPerPatch}, {kMaxDetailResolutionPerPatch}]", null, null), detailResolutionPerPatch);
             detailResolutionPerPatch = Mathf.Clamp(detailResolutionPerPatch, kMinDetailResolutionPerPatch, kMaxDetailResolutionPerPatch);
 
             const int kMinDetailResolution = 0;
             const int kMaxDetailResolution = 4048;
-            detailResolution = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Detail Resolution", $"The number of cells available for placing details onto the terrain tile. This value is squared to make a grid of cells. Value range [{kMinDetailResolution}, {kMaxDetailResolution}]"), detailResolution);
+            detailResolution = EditorGUILayout.DelayedIntField(L10n.TextContent("Detail Resolution", $"The number of cells available for placing details onto the terrain tile. This value is squared to make a grid of cells. Value range [{kMinDetailResolution}, {kMaxDetailResolution}]", null, null), detailResolution);
             detailResolution = Mathf.Clamp(detailResolution, kMinDetailResolution, kMaxDetailResolution);
 
             ShowDetailStats();
@@ -2720,4 +2729,3 @@ namespace UnityEditor
         }
     }
 } //namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: GraphToolkit not yet converted
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using Unity.GraphToolkit.Editor.ContextualMenuItems;
@@ -155,6 +155,7 @@ namespace Unity.GraphToolkit.Editor
             return menuItems;
         }
 
+        [NoAutoStaticsCleanup] // fixed menu-item descriptors (enum/string/int value data, no delegates); safe to persist across reload
         internal static readonly List<ContextualMenuItem> s_LocalSubgraphContextualMenuItems = new()
         {
             ContextualMenuHelpers.extractContentsToPlacematItem,
@@ -162,6 +163,7 @@ namespace Unity.GraphToolkit.Editor
             ContextualMenuHelpers.convertToAssetSubgraphItem,
         };
 
+        [NoAutoStaticsCleanup] // fixed menu-item descriptors (enum/string/int value data, no delegates); safe to persist across reload
         internal static readonly List<ContextualMenuItem> s_AssetSubgraphContextualMenuItems = new()
         {
             ContextualMenuHelpers.extractContentsToPlacematItem,
@@ -171,4 +173,3 @@ namespace Unity.GraphToolkit.Editor
         };
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

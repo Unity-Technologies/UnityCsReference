@@ -104,11 +104,17 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
+        ///<summary>Checks whether the struct or type is unmanaged.</summary>
+        ///<remarks>An unmanaged type contains no managed fields, and can be freely copied in memory.</remarks>
+        ///<returns>True if <c>type</c> is unmanaged, otherwise false.</returns>
         public static bool IsUnmanaged<T>()
         {
             return (TypeFlagsCache<T>.flags & kIsManaged) == 0;
         }
 
+        ///<summary>Checks whether a struct or type is a <see cref="NativeContainerAttribute" />.</summary>
+        ///<remarks>A NativeContainer type uses the <see cref="NativeContainerAttribute" /> attribute.</remarks>
+        ///<returns>True if the struct is a NativeContainer type, otherwise false.</returns>
         public static bool IsNativeContainerType<T>()
         {
             return (TypeFlagsCache<T>.flags & kIsNativeContainer) != 0;
@@ -119,6 +125,8 @@ namespace Unity.Collections.LowLevel.Unsafe
         // - checking IsUnmanaged (if constrained to struct instead of unmanaged)
         // - checking IsNativeContainer
         // - properly set up safety handles
+        ///<summary>Checks whether the type is acceptable as an element type in a native container.</summary>
+        ///<returns>True if type is acceptable as a native container element.</returns>
         public static bool IsValidNativeContainerElementType<T>()
         {
             return TypeFlagsCache<T>.flags == 0;  // not managed, not a container

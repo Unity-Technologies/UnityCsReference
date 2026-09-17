@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -65,7 +64,9 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_ReadOnly)
                     field.SetEnabled(false);
                 else
+#pragma warning disable UAL0015 // this view is rebuilt by its owning debugger window on every code reload, so the instance never outlives the reload that would need the cache cleared
                     field.RegisterValueChangeCallback(_ => OnMirrorPropertyChanged(attribute));
+#pragma warning restore UAL0015
 
                 Add(field);
             }
@@ -141,4 +142,3 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

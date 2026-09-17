@@ -26,6 +26,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             public int Moderate;
             public int Minor;
             public int Ignored;
+
+            public int Total => TotalExcludingIgnored + Ignored;
+            public int TotalExcludingIgnored => Error + Critical + Major + Moderate + Minor;
+            public int MajorAndCritical => Critical + Major;
         }
 
         protected struct Stats
@@ -93,11 +97,17 @@ namespace Unity.ProjectAuditor.Editor.UI
         protected abstract bool MatchesSummaryFilter(ReportItem issue);
 
         // True if the issue is flagged with the specific areas.
-        protected static bool HasAnyAreas(ReportItem issue, Areas areas)
+        internal static bool HasAnyAreas(ReportItem issue, Areas areas)
         {
             if (!issue.Id.IsValid())
                 return false;
 
+            return IssueHasAnyAreas(issue, areas);
+        }
+
+        // True if the issue is flagged with the specific areas.
+        internal static bool IssueHasAnyAreas(ReportItem issue, Areas areas)
+        {
             return (issue.Id.GetDescriptor().Areas & areas) != 0;
         }
 
@@ -185,6 +195,51 @@ namespace Unity.ProjectAuditor.Editor.UI
                 severities.Moderate++;
             else if (newIssue.Severity == Severity.Minor)
                 severities.Minor++;
+        }
+
+        protected void DrawSeverityBar(StatSeverities severities, float horizontalPadding, string extraTotalInfo = null)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(horizontalPadding);
+
+                // Drawing through the window's Draw2D lets the bar geometry be clipped (via
+                // Draw2D.SetClipRect) to stay inside the scroll view the PA window handles.
+                ChartUtil.DrawHorizontalStackedBar(m_Window.Draw2D, 14, null, BuildSeverityChartElements(severities),
+                    "{0}", "N0", true, false, true, extraTotalInfo);
+
+                GUILayout.Space(horizontalPadding);
+            }
+        }
+
+        // Empty buckets are left out of the legend.
+        static List<ChartUtil.Element> BuildSeverityChartElements(StatSeverities severities)
+        {
+            var colors = Utility.GetSeverityColors();
+
+            var elements = new List<ChartUtil.Element>();
+            if (severities.Error != 0)
+                elements.Add(new ChartUtil.Element("Error", "Errors", severities.Error, colors[0], Utility.GetIcon(Utility.IconType.Error)));
+            if (severities.Critical != 0)
+                elements.Add(new ChartUtil.Element("Critical", "Critical issues", severities.Critical, colors[0], Utility.GetIcon(Utility.IconType.Critical)));
+            if (severities.Major != 0)
+                elements.Add(new ChartUtil.Element("Major", "Major issues", severities.Major, colors[1], Utility.GetIcon(Utility.IconType.Major)));
+            if (severities.Moderate != 0)
+                elements.Add(new ChartUtil.Element("Moderate", "Moderate issues", severities.Moderate, colors[2], Utility.GetIcon(Utility.IconType.Moderate)));
+            if (severities.Minor != 0)
+                elements.Add(new ChartUtil.Element("Minor", "Minor issues", severities.Minor, colors[3], Utility.GetIcon(Utility.IconType.Minor)));
+            if (severities.Ignored != 0)
+                elements.Add(new ChartUtil.Element("Ignored", "Ignored issues", severities.Ignored, colors[4], Utility.GetIcon(Utility.IconType.Ignored)));
+
+            return elements;
+        }
+
+        // "<title> analysis is still running" plus the animated status wheel.
+        protected static void DrawAnalysisInProgressLabel(string title)
+        {
+            var text = string.Format(Contents.AnalysisInProgressText, title);
+            GUILayout.Label(EditorGUIUtility.TrTextContent($"{text}|{Utility.GetStatusWheelFrame()}",
+                text, string.Empty, Utility.GetIcon(Utility.IconType.StatusWheel).image));
         }
 
         protected bool IsIgnored(ReportItem issue)
@@ -532,8 +587,10 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         static class Contents
         {
-            public static readonly GUIContent SessionInformationContent = EditorGUIUtility.TrTextContent("Session Information");
-            public static readonly GUIContent MoreDetails = EditorGUIUtility.TrTextContent("More Details");
+            public static readonly GUIContent SessionInformationContent = L10n.TextContent("Session Information", null, null, null);
+            public static readonly GUIContent MoreDetails = L10n.TextContent("More Details", null, null, null);
+
+            public static readonly string AnalysisInProgressText = L10n.Tr("{0} analysis is still running in the background (see more in Window > General > Progress)", null);
         }
     }
 }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Texture not yet converted
 using UnityEngine;
 
 namespace UnityEditor
@@ -43,8 +42,8 @@ namespace UnityEditor
             public static readonly GUIStyle preLabel = "preLabel";
             public static readonly GUIContent smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
             public static readonly GUIContent largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
-            public static readonly GUIContent alphaIcon = EditorGUIUtility.TrIconContent("PreTextureAlpha", "Displaying RGB channels. Click to show alpha channel.");
-            public static readonly GUIContent RGBIcon = EditorGUIUtility.TrIconContent("PreTextureRGB", "Displaying alpha channel. Click to show RGB channels.");
+            public static readonly GUIContent alphaIcon = L10n.IconContent("PreTextureAlpha", "Displaying RGB channels. Click to show alpha channel.", null);
+            public static readonly GUIContent RGBIcon = L10n.IconContent("PreTextureRGB", "Displaying alpha channel. Click to show RGB channels.", null);
         }
 
         public void OnDisable()
@@ -190,4 +189,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

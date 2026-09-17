@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -135,10 +134,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 displayName = L10n.Tr("Services", null),
                 icon = Icon.ServicesPage,
                 priority = k_ServicesPriority,
-                #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // these are delegates to static methods, so each call reads the service grouping dictionaries as they are then; no lookup is snapshotted here
                 filter = FilterServicesPackage,
                 getGroupName = GetServicesPackageGroupName,
-                #pragma warning restore UAL0018
+#pragma warning restore UAL0018
                 compareGroup = CompareGroup,
                 supportedSortOptions = SimplePageWithPackages.k_DefaultSupportedSortOptions,
                 supportedStatusFilters = SimplePageWithPackages.k_DefaultSupportedStatusFilters,
@@ -331,4 +330,3 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

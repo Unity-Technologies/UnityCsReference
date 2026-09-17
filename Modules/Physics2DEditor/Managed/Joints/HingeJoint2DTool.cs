@@ -13,7 +13,7 @@ namespace UnityEditor
     {
         protected static class Styles
         {
-            public static readonly string editAngularLimitsUndoMessage = EditorGUIUtility.TrTextContent("Change Joint Angular Limits").text;
+            public static readonly string editAngularLimitsUndoMessage = L10n.TextContent("Change Joint Angular Limits", null, null, null).text;
             public static readonly Color handleColor = new Color(0f, 1f, 0f, 0.7f);
             public static readonly float handleRadius = 0.8f;
         }

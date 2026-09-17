@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
@@ -15,10 +14,6 @@ namespace UnityEditor
     [VisibleToOtherModules("UnityEditor.GraphToolkitModule")]
     internal class ColorPicker : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal ColorPicker() {}
-        #pragma warning restore UAL0015
-
         private const string k_HeightPrefKey = "CPickerHeight";
         private const string k_ShowDefaultsPrefKey = "CPDefaultsShow";
         private const string k_ShowPresetsPrefKey = "CPPresetsShow";
@@ -500,12 +495,12 @@ namespace UnityEditor
             public static readonly GUIStyle selectedExposureSwatchStroke = "ColorPickerCurrentExposureSwatchBorder";
 
             #pragma warning disable UAL0015 // only populates EditorGUIUtility's icon-name-per-skin cache, which repopulates on demand from a fixed icon name
-            public static readonly GUIContent eyeDropper = EditorGUIUtility.TrIconContent("EyeDropper.Large", "Pick a color from the screen.");
+            public static readonly GUIContent eyeDropper = L10n.IconContent("EyeDropper.Large", "Pick a color from the screen.", null);
             #pragma warning restore UAL0015
-            public static readonly GUIContent exposureValue = EditorGUIUtility.TrTextContent("Intensity", "Number of stops to over- or under-expose the color. The intensity calculates each time based on the predefined max color component of 191 (0.749) when Color Picker opens.");
-            public static readonly GUIContent hexLabel = EditorGUIUtility.TrTextContent("Hexadecimal");
-            public static readonly GUIContent presetsToggle = EditorGUIUtility.TrTextContent("Swatches");
-            public static readonly GUIContent defaultsToggle = EditorGUIUtility.TrTextContent("Defaults");
+            public static readonly GUIContent exposureValue = L10n.TextContent("Intensity", "Number of stops to over- or under-expose the color. The intensity calculates each time based on the predefined max color component of 191 (0.749) when Color Picker opens.", null, null);
+            public static readonly GUIContent hexLabel = L10n.TextContent("Hexadecimal", null, null, null);
+            public static readonly GUIContent presetsToggle = L10n.TextContent("Swatches", null, null, null);
+            public static readonly GUIContent defaultsToggle = L10n.TextContent("Defaults", null, null, null);
 
             public static readonly ScalableGUIContent originalColorSwatchFill =
                 new ScalableGUIContent(string.Empty, "The original color. Click this swatch to reset the color picker to this value.", "ColorPicker-OriginalColor");
@@ -517,10 +512,10 @@ namespace UnityEditor
             public static readonly Texture2D alphaSliderCheckerBackground =
                 EditorGUIUtility.LoadRequired("Previews/Textures/textureChecker.png") as Texture2D;
 
-            public static readonly GUIContent RGB0_255Mode = EditorGUIUtility.TrTextContent("RGB 0-255");
-            public static readonly GUIContent RGB0_1Mode = EditorGUIUtility.TrTextContent("RGB 0-1.0");
-            public static readonly GUIContent RGB0_InfMode = EditorGUIUtility.TrTextContent("RGB 0-Inf");
-            public static readonly GUIContent RGBHSVMode = EditorGUIUtility.TrTextContent("HSV");
+            public static readonly GUIContent RGB0_255Mode = L10n.TextContent("RGB 0-255", null, null, null);
+            public static readonly GUIContent RGB0_1Mode = L10n.TextContent("RGB 0-1.0", null, null, null);
+            public static readonly GUIContent RGB0_InfMode = L10n.TextContent("RGB 0-Inf", null, null, null);
+            public static readonly GUIContent RGBHSVMode = L10n.TextContent("HSV", null, null, null);
 
             public static readonly GUIContent[] sliderLDRModeLabels = new[]
             {
@@ -1299,7 +1294,7 @@ namespace UnityEditor
                 cp.m_Color.exposureValue = 0;
             }
 
-            cp.titleContent = hdr ? EditorGUIUtility.TrTextContent("HDR Color") : EditorGUIUtility.TrTextContent("Color");
+            cp.titleContent = hdr ? L10n.TextContent("HDR Color", null, null, null) : L10n.TextContent("Color", null, null, null);
             float height = EditorPrefs.GetInt(k_HeightPrefKey, (int)cp.position.height);
             cp.minSize = new Vector2(Styles.fixedWindowWidth, height);
             cp.maxSize = new Vector2(Styles.fixedWindowWidth, height);
@@ -1376,6 +1371,9 @@ namespace UnityEditor
         GUIView m_DelegateView;
         Texture2D m_Preview;
         [AutoStaticsCleanupOnCodeReload]
+        // Lazy singleton: the instance getter creates an EyeDropper when this is null and the constructor
+        // assigns it back, so the next eye-dropper session recreates it.
+        [IgnoreForUAL0015("Lazy singleton recreated by the instance getter after cleanup nulls it")]
         static EyeDropper s_Instance;
         [NoAutoStaticsCleanup] // value type, safe to persist; overwritten at start of each EyeDropper session
         private static Vector2 s_PickCoordinates = Vector2.zero;
@@ -1635,4 +1633,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

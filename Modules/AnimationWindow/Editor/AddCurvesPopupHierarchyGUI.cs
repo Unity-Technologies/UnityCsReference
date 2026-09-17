@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEditor;
@@ -17,8 +16,8 @@ namespace UnityEditorInternal
     {
         public EditorWindow owner;
         public bool showPlusButton { get; set; }
-        private GUIContent plusIcon = EditorGUIUtility.TrIconContent("Toolbar Plus");
-        private GUIContent addPropertiesContent = EditorGUIUtility.TrTextContent("Add Properties");
+        private GUIContent plusIcon = L10n.IconContent("Toolbar Plus", null, null);
+        private GUIContent addPropertiesContent = L10n.TextContent("Add Properties", null, null, null);
         private const float plusButtonWidth = 17;
 
         public AddCurvesPopupHierarchyGUI(TreeViewController treeView, EditorWindow owner)
@@ -180,4 +179,3 @@ namespace UnityEditorInternal
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

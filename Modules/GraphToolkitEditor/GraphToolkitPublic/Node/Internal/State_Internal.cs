@@ -4,6 +4,7 @@
 
 using System;
 using Unity.GraphToolkit.Editor.Implementation;
+using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.GraphToolkit.Editor
 {
@@ -11,6 +12,24 @@ namespace Unity.GraphToolkit.Editor
     {
         [NonSerialized]
         internal StateModel m_Implementation;
+
+        // State has its own pooled context so that defining a state cannot clobber the builders in use by a node define.
+        [AutoStaticsCleanupOnCodeReload]
+        static Node.OptionDefinitionContext s_OptionDefinitionContext = new();
+
+        internal void CallOnDefineOptions(IOptionsDefinition context)
+        {
+            s_OptionDefinitionContext.OptionsDefinition = context;
+            try
+            {
+                OnDefineOptions(s_OptionDefinitionContext);
+            }
+            finally
+            {
+                // The context is shared by every state, so a throwing callback must not leave pending options behind.
+                s_OptionDefinitionContext.Finish();
+            }
+        }
 
         StateModel IState.StateModel => GetImplementation();
 

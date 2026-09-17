@@ -285,7 +285,8 @@ namespace Unity.U2D.Physics
         /// This includes the following events:
         /// 
         ///- A <see cref="PhysicsEvents.ContactFilterEvent"/> with call <see cref="PhysicsCallbacks.IContactFilterCallback"/>.
-        ///- A <see cref="PhysicsEvents.PreSolveEvent"/> with call <see cref="PhysicsCallbacks.IPreSolveCallback"/>.
+        ///- A <see cref="PhysicsEvents.PreContactEvent"/> with call <see cref="PhysicsCallbacks.IPreContactCallback"/>.
+        ///- A <see cref="PhysicsEvents.PreContinuousEvent"/> with call <see cref="PhysicsCallbacks.IPreContinuousCallback"/>.
         ///- A <see cref="PhysicsEvents.TriggerBeginEvent"/> with call <see cref="PhysicsCallbacks.ITriggerCallback"/>.
         ///- A <see cref="PhysicsEvents.TriggerEndEvent"/> with call <see cref="PhysicsCallbacks.ITriggerCallback"/>.
         ///- A <see cref="PhysicsEvents.ContactBeginEvent"/> with call <see cref="PhysicsCallbacks.IContactCallback"/>.

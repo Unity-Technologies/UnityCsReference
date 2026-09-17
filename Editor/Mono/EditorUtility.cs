@@ -74,6 +74,9 @@ namespace UnityEditor
         public delegate void SelectMenuItemFunction(object userData, string[] options, int selected);
 
         [AutoStaticsCleanupOnCodeReload]
+        // EditorContextualMenuManager re-registers its pointer-reset handler on every code load from its
+        // static constructor.
+        [IgnoreForUAL0015("Event re-subscribed on every code load by EditorContextualMenuManager's static constructor")]
         internal static event Action onResetMouseDown;
 
         public static bool LoadWindowLayout(string path)

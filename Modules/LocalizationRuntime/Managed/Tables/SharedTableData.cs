@@ -18,7 +18,7 @@ namespace Unity.Localization;
 /// <see cref="Smart"/> flag marks a key whose string values are Smart Strings.
 /// </remarks>
 /// <example>
-/// <para>Combine and test the flags on a key's entry.</para>
+/// Combine and test the flags on a key's entry.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedEntryFlagsOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="SharedTableData"/>
@@ -51,13 +51,14 @@ public enum SharedEntryFlags
 /// <see cref="UnityEngine.ScriptableObject"/> factory methods rather than the <c>new</c> operator.
 /// </remarks>
 /// <example>
-/// <para>Create shared data, add a key, and resolve between key text and id.</para>
+/// Create shared data, add a key, and resolve between key text and id.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="SharedTableData.SharedTableEntry"/>
 /// <seealso cref="SharedEntryFlags"/>
 /// <seealso cref="IKeyGenerator"/>
 /// <seealso cref="ResourceTable"/>
+[HelpURL("localization/localization-tables")]
 public sealed class SharedTableData : ScriptableObject, ISerializationCallbackReceiver
 {
     /// <summary>
@@ -70,7 +71,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// <see cref="SharedTableData"/> keeps its id and key lookups in sync.
     /// </remarks>
     /// <example>
-    /// <para>Read the id, key, and flags from an entry.</para>
+    /// Read the id, key, and flags from an entry.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableEntryOverviewExample.cs"/>
     /// </example>
     /// <seealso cref="SharedTableData"/>
@@ -145,12 +146,11 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
         }
     }
 
-    [SerializeField] string m_TableCollectionName;
-    // Left empty; the editor assigns the collection's asset guid when the asset is created.
-    [SerializeField] GUID m_TableCollectionNameGuid;
-    [SerializeReference] IKeyGenerator m_KeyGenerator = new DistributedUIDGenerator();
-    [SerializeField] List<SharedTableEntry> m_Entries = new();
-    [SerializeField] MetadataCollection m_Metadata = new();
+    [SerializeField, HideInInspector] string m_TableCollectionName;
+    [SerializeField, HideInInspector] GUID m_TableCollectionNameGuid;
+    [SerializeReference, HideInInspector] IKeyGenerator m_KeyGenerator = new DistributedUIDGenerator();
+    [SerializeField, HideInInspector] List<SharedTableEntry> m_Entries = new();
+    [SerializeField, HideInInspector] MetadataCollection m_Metadata = new();
 
     Dictionary<string, SharedTableEntry> m_KeyToEntry;
     Dictionary<long, SharedTableEntry> m_IdToEntry;
@@ -225,7 +225,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// so clear the shared data and every locale table together to avoid orphaning translations.
     /// </remarks>
     /// <example>
-    /// <para>Remove all keys from the shared data.</para>
+    /// Remove all keys from the shared data.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataClearExample.cs"/>
     /// </example>
     /// <seealso cref="RemoveKey(string)"/>
@@ -246,7 +246,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// <param name="key">The key to look up.</param>
     /// <returns>The key's stable id, or <c>0</c> when it is absent.</returns>
     /// <example>
-    /// <para>Look up the id assigned to a key.</para>
+    /// Look up the id assigned to a key.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataGetIdExample.cs"/>
     /// </example>
     /// <seealso cref="GetKey(long)"/>
@@ -268,7 +268,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// <param name="id">The id to look up.</param>
     /// <returns>The key text, or <see langword="null"/> when the id is absent.</returns>
     /// <example>
-    /// <para>Resolve a stable id back to its key text.</para>
+    /// Resolve a stable id back to its key text.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataGetKeyExample.cs"/>
     /// </example>
     /// <seealso cref="GetId(string)"/>
@@ -291,7 +291,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// <param name="key">The key to look up.</param>
     /// <returns>The matching entry, or <see langword="null"/> when the key is absent.</returns>
     /// <example>
-    /// <para>Look up an entry by its key text.</para>
+    /// Look up an entry by its key text.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataGetEntryByKeyExample.cs"/>
     /// </example>
     /// <seealso cref="GetEntry(long)"/>
@@ -314,7 +314,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// <param name="id">The id to look up.</param>
     /// <returns>The matching entry, or <see langword="null"/> when the id is absent.</returns>
     /// <example>
-    /// <para>Look up an entry by its stable id.</para>
+    /// Look up an entry by its stable id.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataGetEntryByIdExample.cs"/>
     /// </example>
     /// <seealso cref="GetEntry(string)"/>
@@ -337,7 +337,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// <param name="id">The stable key id.</param>
     /// <returns><c>true</c> when the key's values are Smart Strings; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Check whether a key uses Smart Strings.</para>
+    /// Check whether a key uses Smart Strings.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataIsSmartExample.cs"/>
     /// </example>
     /// <seealso cref="SharedEntryFlags"/>
@@ -380,7 +380,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// <param name="key">The key to add.</param>
     /// <returns>The new or existing entry, or <see langword="null"/> when the key is empty.</returns>
     /// <example>
-    /// <para>Add a key and observe that adding it again returns the same entry.</para>
+    /// Add a key and observe that adding it again returns the same entry.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataAddKeyExample.cs"/>
     /// </example>
     /// <seealso cref="AddKey(string,long)"/>
@@ -419,7 +419,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// <param name="id">The stable id to assign.</param>
     /// <returns>The new or existing entry, or <see langword="null"/> when the key or id cannot be used.</returns>
     /// <example>
-    /// <para>Add a key with an id preserved from serialized data.</para>
+    /// Add a key with an id preserved from serialized data.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataAddKeyWithIdExample.cs"/>
     /// </example>
     /// <seealso cref="AddKey(string)"/>
@@ -454,7 +454,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// </remarks>
     /// <param name="orderedIds">The desired key-id order.</param>
     /// <example>
-    /// <para>Move a key to the front by listing its id first.</para>
+    /// Move a key to the front by listing its id first.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataSetKeyOrderExample.cs"/>
     /// </example>
     /// <seealso cref="Entries"/>
@@ -494,7 +494,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// </remarks>
     /// <param name="key">The key to remove.</param>
     /// <example>
-    /// <para>Remove a single key from the shared data.</para>
+    /// Remove a single key from the shared data.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataRemoveKeyExample.cs"/>
     /// </example>
     /// <seealso cref="AddKey(string)"/>
@@ -525,7 +525,7 @@ public sealed class SharedTableData : ScriptableObject, ISerializationCallbackRe
     /// <param name="newKey">The new key text.</param>
     /// <returns><c>true</c> when the key was renamed or already had the requested name; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Fix a typo in a key without changing its id.</para>
+    /// Fix a typo in a key without changing its id.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/SharedTableDataRenameKeyExample.cs"/>
     /// </example>
     /// <seealso cref="AddKey(string)"/>

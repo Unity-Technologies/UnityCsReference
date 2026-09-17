@@ -644,7 +644,7 @@ namespace UnityEngine.UIElements
                     // Only permit switching the focus to another IMGUIContainer if the event target was not focusable.
                     bool targetIsFocusable = evt.elementTarget?.focusable ?? false;
 
-                    if (imContainer.SendEventToIMGUI(evt, !targetIsFocusable))
+                    if (imContainer.ShouldReceiveBroadcastEvent(evt) && imContainer.SendEventToIMGUI(evt, !targetIsFocusable))
                     {
                         evt.StopPropagation();
                     }

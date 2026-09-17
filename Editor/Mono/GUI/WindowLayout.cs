@@ -90,7 +90,9 @@ namespace UnityEditor
         internal static string ProjectLayoutPath => GetProjectLayoutPerMode(ModeService.currentId);
         internal static string currentLayoutName => GetLayoutFileName(ModeService.currentId, Application.unityVersionVer);
 
+        // Re-subscribed on every code load by LayoutDropdown.Initialize().
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event re-subscribed on every code load by LayoutDropdown.Initialize()")]
         internal static event Action lastLoadedLayoutChanged;
 
         [NoAutoStaticsCleanup] // string label cache, value type with no user references, safe to persist across code reload

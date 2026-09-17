@@ -16,28 +16,22 @@ namespace UnityEngine.UIElements
     /// reader interactions on the nodes it creates.
     /// </summary>
     /// <remarks>
-    /// The tree-to-hierarchy transform is pure — no bridge lifecycle involved, unit-testable
-    /// without a screen reader — and applies the following rules:
+    /// The transform is pure — no bridge lifecycle, unit-testable without a screen reader — and
+    /// follows these rules:
     ///
-    /// - Element types registered in <see cref="AccessibilityRoleRegistry"/> produce a node with
-    ///   their registered role and are treated as accessibility leaves — their internal hierarchy
-    ///   (prefix labels, checkmarks) is never traversed. Content hosts are the exception (see
-    ///   <see cref="TryGetContentHost"/>).
-    /// - Open dropdown menus' items, identified by their class, read as selectable options
-    ///   (Toggle role, the current choice Selected); the generic rules would omit them.
-    /// - Unknown types are never announced as interactive: an unknown leaf with a derivable label
-    ///   produces a <see cref="AccessibilityRole.None"/> node; an unknown branch produces a labeled
-    ///   <see cref="AccessibilityRole.Container"/> node, or is flattened (children promoted to its
-    ///   parent) when it has no label or ignores picking.
-    /// - Elements that are not displayed or not visible are omitted along with their subtree, as
-    ///   are subtrees of nested panel components whose accessibility gate is off, and a field's
-    ///   caption element (already spoken as the field's label).
+    /// - Registered types (<see cref="AccessibilityRoleRegistry"/>) become leaves with their
+    ///   registered role; their internals are never traversed. Content hosts are the exception
+    ///   (<see cref="TryGetContentHost"/>).
+    /// - Open dropdown menus' items, identified by class, read as selectable options.
+    /// - Unknown types are never announced as interactive: a labeled leaf becomes a
+    ///   <see cref="AccessibilityRole.None"/> node, a labeled branch a
+    ///   <see cref="AccessibilityRole.Container"/>, anything else flattens away.
+    /// - Undisplayed and invisible subtrees are omitted, as are gated-off nested components and
+    ///   a field's caption element (already spoken as the field's label).
     ///
-    /// Reading order is depth-first tree order by construction.
-    ///
-    /// The inbound half — activation, slider adjustment, page scrolling with its announcement and
-    /// refocus, and keyboard focus following the screen reader cursor — reacts to the live session
-    /// through the handlers wired at node creation.
+    /// Reading order is depth-first tree order. The inbound half — activation, slider
+    /// adjustment, page scrolling, keyboard focus following the cursor — runs through handlers
+    /// wired at node creation.
     /// </remarks>
     internal static partial class AccessibilityTreeGenerator
     {
@@ -57,24 +51,31 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Diffing variant used to regenerate a scope in place. Nodes for the walked elements are
-        /// positioned as the children of <paramref name="parentNode"/> starting at
-        /// <paramref name="cursor"/> (which advances past each placed node); an element already
-        /// mapped to a live node of the same role <b>from this scope's previous generation</b>
-        /// (<paramref name="previousNodes"/>) keeps that node — moved into position and its
-        /// derived data refreshed — so its identity (and any screen reader focus on it) survives
-        /// the regeneration. An element that entered the scope from elsewhere gets a fresh node
-        /// instead: a cross-scope move is remove+add — the map repoints to the fresh node, the
-        /// old one is swept by its own scope's regeneration, and the element's hooks survive
-        /// through the map's remove guard. That confinement is what keeps concurrent scopes of
-        /// one flush (and scopes on other panels) safe: no walk ever moves a node out of another
-        /// scope's range, so segment positions and sweeps stay valid without shared state. Every
-        /// placed node is recorded in <paramref name="visited"/> (when provided) so the caller
-        /// can sweep the stale remainder of the previous generation.
+        /// Diffing variant that regenerates a scope in place: walked elements are positioned as
+        /// children of <paramref name="parentNode"/> from <paramref name="cursor"/> on. An
+        /// element still mapped to a live same-role node <b>from this scope's previous
+        /// generation</b> (<paramref name="previousNodes"/>) keeps that node, so its identity
+        /// and any screen reader focus survive. An element that moved in from another scope
+        /// gets a fresh node — reuse never crosses scopes, which keeps every other scope's
+        /// segment positions and sweeps valid without shared state. Placed nodes are recorded
+        /// in <paramref name="visited"/> so the caller can sweep the stale remainder.
         /// </summary>
         internal static void GenerateSubtree(VisualElement element, AccessibilityHierarchy hierarchy,
             AccessibilityNode parentNode, AccessibilityNodeMap nodeMap, ref int cursor,
             HashSet<AccessibilityNode> previousNodes, HashSet<AccessibilityNode> visited)
+        {
+            // Starts the walk from the clip state above the root, derived once for the whole
+            // subtree (see AccessibilityFrameProjection.ClipState).
+            GenerateSubtree(element, hierarchy, parentNode, nodeMap, ref cursor, previousNodes, visited,
+                AccessibilityFrameProjection.GetClipStateAbove(element));
+        }
+
+        // The state-accepting form, for callers that generate several sibling subtrees under one
+        // context and can derive the shared inherited state once (see RegenerateChildren).
+        internal static void GenerateSubtree(VisualElement element, AccessibilityHierarchy hierarchy,
+            AccessibilityNode parentNode, AccessibilityNodeMap nodeMap, ref int cursor,
+            HashSet<AccessibilityNode> previousNodes, HashSet<AccessibilityNode> visited,
+            AccessibilityFrameProjection.ClipState inheritedClipState)
         {
             if (IsOmittedSubtree(element))
                 return;
@@ -83,17 +84,20 @@ namespace UnityEngine.UIElements
             {
                 // Known controls are accessibility leaves; never descend into their internals.
                 var node = PlaceNode(element, role, DeriveLabel(element), hierarchy, parentNode,
-                    nodeMap, ref cursor, previousNodes, visited);
+                    nodeMap, ref cursor, previousNodes, visited, inheritedClipState);
 
                 // Except a content host, whose content children are placed under its node —
                 // see TryGetContentHost.
-                if (TryGetContentHost(element, out var content))
+                if (TryGetContentHost(element, out var content, out var viewport))
                 {
+                    var contentState = AccessibilityFrameProjection.Descend(
+                        AccessibilityFrameProjection.DescendToHostedContent(inheritedClipState, element, viewport),
+                        content);
                     var contentCursor = 0;
                     for (var i = 0; i < content.hierarchy.childCount; i++)
                     {
                         GenerateSubtree(content.hierarchy[i], hierarchy, node, nodeMap,
-                            ref contentCursor, previousNodes, visited);
+                            ref contentCursor, previousNodes, visited, contentState);
                     }
                 }
 
@@ -108,7 +112,7 @@ namespace UnityEngine.UIElements
             if (IsDropdownMenuItem(element))
             {
                 PlaceNode(element, AccessibilityRole.Toggle, DeriveDropdownItemLabel(element),
-                    hierarchy, parentNode, nodeMap, ref cursor, previousNodes, visited);
+                    hierarchy, parentNode, nodeMap, ref cursor, previousNodes, visited, inheritedClipState);
                 return;
             }
 
@@ -116,22 +120,26 @@ namespace UnityEngine.UIElements
             {
                 var label = DeriveLabel(element);
                 if (label != null && element.pickingMode != PickingMode.Ignore)
-                    PlaceNode(element, AccessibilityRole.None, label, hierarchy, parentNode, nodeMap, ref cursor, previousNodes, visited);
+                    PlaceNode(element, AccessibilityRole.None, label, hierarchy, parentNode, nodeMap,
+                        ref cursor, previousNodes, visited, inheritedClipState);
                 return;
             }
 
             var branchLabel = element.pickingMode != PickingMode.Ignore ? DeriveLabel(element) : null;
+            var childState = AccessibilityFrameProjection.Descend(inheritedClipState, element);
 
             if (branchLabel != null)
             {
                 // A labeled branch gets a Container node; its children are positioned inside it
                 // with their own cursor. Children are indexed rather than enumerated: the walk
                 // runs per structural change, and Children() boxes the list enumerator.
-                var containerNode = PlaceNode(element, AccessibilityRole.Container, branchLabel, hierarchy, parentNode, nodeMap, ref cursor, previousNodes, visited);
+                var containerNode = PlaceNode(element, AccessibilityRole.Container, branchLabel, hierarchy,
+                    parentNode, nodeMap, ref cursor, previousNodes, visited, inheritedClipState);
                 var containerCursor = 0;
                 for (var i = 0; i < element.hierarchy.childCount; i++)
                 {
-                    GenerateSubtree(element.hierarchy[i], hierarchy, containerNode, nodeMap, ref containerCursor, previousNodes, visited);
+                    GenerateSubtree(element.hierarchy[i], hierarchy, containerNode, nodeMap,
+                        ref containerCursor, previousNodes, visited, childState);
                 }
 
                 return;
@@ -141,7 +149,8 @@ namespace UnityEngine.UIElements
             // at the same position.
             for (var i = 0; i < element.hierarchy.childCount; i++)
             {
-                GenerateSubtree(element.hierarchy[i], hierarchy, parentNode, nodeMap, ref cursor, previousNodes, visited);
+                GenerateSubtree(element.hierarchy[i], hierarchy, parentNode, nodeMap, ref cursor,
+                    previousNodes, visited, childState);
             }
         }
 
@@ -321,13 +330,25 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal static bool TryGetContentHost(VisualElement element, out VisualElement content)
         {
+            return TryGetContentHost(element, out content, out _);
+        }
+
+        // The three-way form also yields the host's viewport — the boundary at which the
+        // enclosing scroll segment closes and the content's begins (see
+        // AccessibilityFrameProjection.DescendToHostedContent) — so callers never reach for the
+        // concrete host type.
+        internal static bool TryGetContentHost(VisualElement element, out VisualElement content,
+            out VisualElement viewport)
+        {
             if (element is ScrollView scrollView)
             {
                 content = scrollView.contentContainer;
+                viewport = scrollView.contentViewport;
                 return true;
             }
 
             content = null;
+            viewport = null;
             return false;
         }
 
@@ -363,7 +384,7 @@ namespace UnityEngine.UIElements
         static AccessibilityNode PlaceNode(VisualElement element, AccessibilityRole role, string label,
             AccessibilityHierarchy hierarchy, AccessibilityNode parentNode,
             AccessibilityNodeMap nodeMap, ref int cursor, HashSet<AccessibilityNode> previousNodes,
-            HashSet<AccessibilityNode> visited)
+            HashSet<AccessibilityNode> visited, AccessibilityFrameProjection.ClipState inheritedClipState)
         {
             AccessibilityNode node = null;
 
@@ -388,10 +409,11 @@ namespace UnityEngine.UIElements
                 node.state = DeriveState(element) | (node.state & AccessibilityState.Expanded);
 
                 node.value = DeriveValue(element);
+                node.isActive = !AccessibilityFrameProjection.IsFullyOutOfView(inheritedClipState, element.worldBound);
             }
             else
             {
-                node = CreateNode(element, role, label, hierarchy, parentNode, cursor, nodeMap);
+                node = CreateNode(element, role, label, hierarchy, parentNode, cursor, nodeMap, inheritedClipState);
             }
 
             cursor++;
@@ -405,12 +427,20 @@ namespace UnityEngine.UIElements
         // allocation per REUSED node per regeneration walk.
         static AccessibilityNode CreateNode(VisualElement element, AccessibilityRole role, string label,
             AccessibilityHierarchy hierarchy, AccessibilityNode parentNode, int cursor,
-            AccessibilityNodeMap nodeMap)
+            AccessibilityNodeMap nodeMap, AccessibilityFrameProjection.ClipState inheritedClipState)
         {
             var node = hierarchy.InsertNode(cursor, label, parentNode);
             node.role = role;
             node.state = DeriveState(element);
             node.value = DeriveValue(element);
+
+            // Out-of-view content gets a node too (scroll views generate all their content;
+            // parked panels stay in the tree) but may start hidden: isActive mirrors
+            // IsFullyOutOfView — hidden only when no gesture can reveal the element, so scroll
+            // content beyond the viewport stays active while content beyond the panel or a static
+            // clip does not. The bridge keeps this current on geometry changes and combines it
+            // with panel-cover hiding.
+            node.isActive = !AccessibilityFrameProjection.IsFullyOutOfView(inheritedClipState, element.worldBound);
             node.frameGetter = () => AccessibilityFrameProjection.GetScreenFrame(element);
             node.focusChanged += (_, focused) => OnScreenReaderFocusChanged(element, node, focused);
 
@@ -608,16 +638,11 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Re-points the tracked cursor at the node its element maps to now, after a rebuild
-        /// replaced every node. The cursor has not moved — only the node representing it has — so
-        /// the element is kept; a null node means the element is no longer represented and the
-        /// tracked position is forgotten entirely.
+        /// Re-points the tracked cursor at the element's current node after a rebuild replaced
+        /// every node; null means the element is no longer represented and the position is
+        /// forgotten. Without this, everything keyed on the tracked node (page-scroll refocus,
+        /// arrival re-anchor) silently degrades after every rebuild.
         /// </summary>
-        /// <remarks>
-        /// Without this, everything keyed on the tracked node (the page-scroll refocus, the
-        /// arrival re-anchor) silently degrades after a rebuild: a node from a discarded
-        /// generation can never match a current one, so those paths fall back instead of working.
-        /// </remarks>
         internal static void RetrackScreenReaderFocusedNode(AccessibilityNode node)
         {
             if (s_ScreenReaderFocusedElement == null)
@@ -633,14 +658,10 @@ namespace UnityEngine.UIElements
         }
 
         // The screen reader cursor moved onto (or off) the element's node. On arrival, the
-        // element is first scrolled into view — the cursor navigates the whole hierarchy,
-        // including nodes outside their scroll view's viewport, and its highlight must never sit
-        // on invisible content — and then keyboard focus follows it onto focusable controls so
-        // the control under the cursor can take keyboard input right away (typing into a text
-        // field, arrow-adjusting a slider). Losing the cursor deliberately leaves UI focus alone:
-        // desktop screen readers behave that way natively (keyboard focus stays put while the
-        // cursor reads static text), and the cursor landing on the next focusable control grabs
-        // it anyway.
+        // element is scrolled into view (the cursor's highlight must never sit on invisible
+        // content) and keyboard focus follows onto focusable controls, so the control under the
+        // cursor can take input right away. Cursor loss leaves UI focus alone — the native
+        // desktop screen reader behavior; the next focusable arrival grabs it anyway.
         static void OnScreenReaderFocusChanged(VisualElement element, AccessibilityNode node, bool focused)
         {
             // A loss only clears the tracked cursor while no other node has taken it since —
@@ -668,13 +689,10 @@ namespace UnityEngine.UIElements
             if (!focused || element.elementPanel == null)
                 return;
 
-            // An arrival that scrolls needs two follow-ups. The corrected frame is pushed right
-            // here (scrolling is inline translate writes and worldBound recomputes lazily, so the
-            // post-scroll frame is already available) for everything that reads it later. But the
-            // visual cursor is NOT such a reader: VoiceOver samples the element's geometry before
-            // it delivers the focus change so the bridge also re-anchors the cursor with one
-            // layout-changed notification once the scrolled frames settle, dropped if the cursor
-            // has already moved on.
+            // An arrival that scrolls needs two follow-ups: the corrected frame is pushed right
+            // here (the post-scroll worldBound is already readable) for every later reader, and
+            // the bridge re-anchors the visual cursor once the frames settle — the platform
+            // sampled the old geometry before delivering the focus change.
             if (ScrollAncestorsToShow(element))
             {
                 node.frame = AccessibilityFrameProjection.GetScreenFrame(element);
@@ -695,15 +713,11 @@ namespace UnityEngine.UIElements
             element.Focus();
         }
 
-        // Each ancestor scroll view scrolls just enough to show the element, innermost first
-        // (ScrollTo is a no-op for an already fully visible target). Outer scroll views are asked
-        // to show the inner scroll view rather than the element itself: the inner scroll view's
-        // own geometry is unaffected by its content scrolling, so the outer amounts stay exact
-        // even though this frame's world bounds don't yet reflect the inner scroll. Returns
-        // whether any offset actually moved. (A ScrollTo fully deferred to the scheduler with no
-        // immediate movement is reported as unmoved — that needs the panel to be dirty from
-        // unrelated churn in the same frame the cursor arrives, and the miss only costs the
-        // cursor-redraw nudge.)
+        // Each ancestor scroll view scrolls just enough to show the element, innermost first.
+        // Outer scroll views are asked to show the inner scroll view, not the element: the inner
+        // view's own geometry is unaffected by its content scrolling, so the outer amounts stay
+        // exact. Returns whether any offset actually moved; a fully deferred ScrollTo reads as
+        // unmoved, and that rare miss only costs the cursor-redraw nudge.
         static bool ScrollAncestorsToShow(VisualElement element)
         {
             var scrolled = false;
@@ -722,12 +736,11 @@ namespace UnityEngine.UIElements
             return scrolled;
         }
 
-        // Activation is the editing entry point: focusing the field starts editing and, on touch
-        // platforms, opens the on-screen keyboard — which under a screen reader must only happen
-        // when the user explicitly activates the field, never because the cursor landed on it.
-        // On desktop, the cursor already focused the field, and re-focusing is a no-op, so wiring
-        // this uniformly costs nothing and keeps the node's invokable capability consistent
-        // across platforms (Android freezes it at node creation).
+        // Activation is the editing entry point: focusing starts editing and, on touch, opens
+        // the on-screen keyboard — which must only happen on explicit activation, never because
+        // the cursor landed. On desktop the cursor already focused the field and re-focusing is
+        // a no-op, so uniform wiring costs nothing and keeps the node's invokable capability
+        // consistent across platforms.
         static bool FocusTextInputField(VisualElement field)
         {
             if (field.elementPanel == null || !field.canGrabFocus)
@@ -816,13 +829,10 @@ namespace UnityEngine.UIElements
             AccessibilityNode nodeToFocus = null;
             if (cursorNode != scrollViewNode)
             {
-                // The refocus target is whatever content arrived at the cursor's pre-scroll
-                // position; falls back to the top of the revealed page when nothing arrives
-                // there (a clamped, partial last page) or when the cursor was not inside this
-                // scroll view's content at all. Element frames already reflect the scroll that
-                // just happened: the offset setter applies the content translate through the
-                // transform fast path, and worldBound recomputes on read (only the nodes'
-                // cached frames wait for the next flush).
+                // The refocus target is whatever arrived at the cursor's pre-scroll position;
+                // falls back to the top of the revealed page (clamped last page, or no cursor in
+                // this content). Element frames already reflect the scroll — worldBound
+                // recomputes on read; only the nodes' cached frames wait for the flush.
                 if (cursorFrame.HasValue)
                     nodeToFocus = FirstContentNodeOverlapping(scrollViewNode, cursorFrame.Value);
 
@@ -860,13 +870,10 @@ namespace UnityEngine.UIElements
             return null;
         }
 
-        // The scrolled contract asks the handler to follow a successful scroll with the
-        // page-scrolled notification, which the screen reader reads out (and which ends the
-        // scroll interaction cleanly on iOS). Numerals and "%" keep the announcement
-        // language-neutral — the engine cannot localize prose like the "Page 19 of 27" the API
-        // docs suggest; Windows deliberately ignores the text (Narrator already announces the
-        // scroll percent) and only uses the focus node, computed by the caller (see
-        // ScrollTowards: position-preserving, with the top of the revealed page as fallback).
+        // The scrolled contract asks for a page-scrolled notification after a successful
+        // scroll. Numerals and "%" keep the announcement language-neutral (the engine cannot
+        // localize prose like "Page 19 of 27"); Windows ignores the text and only uses the
+        // focus node, computed by the caller (see ScrollTowards).
         static void AnnouncePageScrolled(ScrollView scrollView, AccessibilityNode nodeToFocus,
             bool scrolledHorizontally)
         {
@@ -958,32 +965,17 @@ namespace UnityEngine.UIElements
         }
 
         // Whether the element is a TextInputBaseField of any value type — the family whose focus
-        // starts text editing (and opens the touch keyboard where supported). Matched by generic
-        // type definition because the instantiations are open-ended.
-        internal static bool IsTextInputField(VisualElement element)
-        {
-            for (var type = element.GetType(); type != null; type = type.BaseType)
-            {
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(TextInputBaseField<>))
-                    return true;
-            }
+        // starts text editing (and opens the touch keyboard where supported). Membership is read
+        // off the registered role: the registry owns the base-chain/open-generic classification
+        // (cached per type), so activation, value and role resolve from one classifier and can
+        // never disagree.
+        internal static bool IsTextInputField(VisualElement element) =>
+            AccessibilityRoleRegistry.TryGetRole(element, out var role) && role == AccessibilityRole.TextField;
 
-            return false;
-        }
-
-        // Whether the element is a BasePopupField of any type arguments — the dropdown family the
-        // registry maps to the Dropdown role, identified the same way the role is (by generic type
-        // definition), so activation, value and role can never disagree on what counts as a popup.
-        static bool IsPopupField(VisualElement element)
-        {
-            for (var type = element.GetType(); type != null; type = type.BaseType)
-            {
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(BasePopupField<,>))
-                    return true;
-            }
-
-            return false;
-        }
+        // Whether the element is a BasePopupField of any type arguments — the dropdown family.
+        // Same single-classifier rule as IsTextInputField.
+        static bool IsPopupField(VisualElement element) =>
+            AccessibilityRoleRegistry.TryGetRole(element, out var role) && role == AccessibilityRole.Dropdown;
 
         // Whether the element is a row of an open GenericDropdownMenu. The rows have no type of
         // their own; their class is their identity.

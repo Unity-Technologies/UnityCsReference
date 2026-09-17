@@ -49,12 +49,15 @@ namespace UnityEditor.Build
         /// <summary>Index of this entry inside <see cref="ContentLayout.SerializedFiles"/>.</summary>
         public int Index;
 
-        /// <summary>Stable identifier used to reference this SerializedFile from other SerializedFiles
-        /// in a way that doesn't break when the content changes. Currently based on the cluster or guid of the source.</summary>
-        public string ID;
+        /// <summary>Stable identity hash of this SerializedFile, used to reference it from other
+        /// SerializedFiles in a way that doesn't break when the content changes. Computed from the
+        /// cluster or object identity of the source; matches the stable id baked into LoadableObjectIds.
+        /// For the synthetic built-in entry this is the resource path instead.</summary>
+        public string StableId;
 
         /// <summary>True for synthetic entries representing built-in Unity resources that are not produced
-        /// by the build (currently only "Library/unity default resources"). Such entries have no ContentHash.</summary>
+        /// by the build (currently only "Library/unity default resources"); such entries resolve through
+        /// the PersistentManager at runtime and have no artifact. Only written when true; absent means false.</summary>
         public bool IsBuiltIn;
 
         /// <summary>The source assets included in this SerializedFile.</summary>
@@ -64,36 +67,34 @@ namespace UnityEditor.Build
         /// other SerializedFiles that need to be loaded prior to loading this SerializedFile.</summary>
         public int[] SerializedFileDependencies;
 
-        /// <summary>ObjectIdHash values for loadable objects referenced from this SerializedFile.</summary>
-        public string[] LoadableDependencies;
+        /// <summary>Indices into <see cref="ContentLayout.LoadableObjectIds"/> for loadable objects
+        /// referenced from this SerializedFile.</summary>
+        public int[] LoadableDependencies;
 
         /// <summary>Scene paths for scenes referenced from this SerializedFile.</summary>
         public string[] LoadableSceneDependencies;
 
-        /// <summary>xxhash3 hash of the content, used for the filename (+".cf") and for lookup into UDS.
-        /// Matches the <see cref="BinaryArtifact.ContentHash"/> of the corresponding entry in
-        /// <see cref="ContentLayout.BinaryArtifacts"/>.</summary>
-        public string ContentHash;
+        /// <summary>Index into <see cref="ContentLayout.BinaryArtifacts"/> for the artifact holding this
+        /// SerializedFile's content, or -1 for the built-in entry, which has no artifact.
+        /// Always written by the build; only hand-constructed instances see the field's 0 default.</summary>
+        public int ArtifactIndex;
     }
 
     /// <summary>
     /// Records a loadable object in the build. Listed at the top level of the ContentLayout so that a
     /// loadable's identity is described independently of the SerializedFile that happens to contain it.
+    /// Referenced by index from <see cref="SerializedFileLayout.LoadableDependencies"/> and
+    /// <see cref="ContentLayout.RootAssets"/>.
     /// </summary>
     [VisibleToOtherModules("UnityEditor.BuildAnalysisModule", "Unity.Modules.BuildAnalysis.Tests.Editor")]
     [Serializable]
     internal class LoadableObjectIdLayout
     {
-        /// <summary>Hash of the GUID, LFID and IdentifierType.</summary>
-        public string ObjectIdHash;
-
         /// <summary>AssetDatabase GUID of the source asset.</summary>
         public string GUID;
 
-        /// <summary>Path of the source asset.</summary>
-        public string AssetPath;
-
-        /// <summary>Local file id of the source object.</summary>
+        /// <summary>Local file id of the object in the output <see cref="SerializedFile"/> when placed,
+        /// otherwise the source local file id. Identical to the source id except for MonoScripts.</summary>
         public long LFID;
 
         /// <summary>Identifier type of the source object.</summary>
@@ -102,9 +103,6 @@ namespace UnityEditor.Build
         /// <summary>Index into <see cref="ContentLayout.SerializedFiles"/> for the file that contains this
         /// loadable, or -1 if it was dropped (e.g. server build shader references).</summary>
         public int SerializedFile = -1;
-
-        /// <summary>Local file id of the object in the output <see cref="SerializedFile"/>.</summary>
-        public long OutputLFID;
     }
 
     /// <summary>
@@ -135,7 +133,8 @@ namespace UnityEditor.Build
         public int Index;
 
         /// <summary>Content addressable hash. For ContentFile artifacts, the matching
-        /// <see cref="SerializedFileLayout"/> can be found by ContentHash.</summary>
+        /// <see cref="SerializedFileLayout"/> references this entry via
+        /// <see cref="SerializedFileLayout.ArtifactIndex"/>.</summary>
         public string ContentHash;
 
         /// <summary>One of the strings in <see cref="BuildArtifactCategory"/>.</summary>
@@ -182,7 +181,7 @@ namespace UnityEditor.Build
     /// In-memory representation of the ContentLayout.json file written by the build.
     ///
     /// The Layout is a companion to the BuildManifest, recording additional details about the build
-    /// (including source assets and information about which object an ObjectId hash refers to).
+    /// (including source assets and information about which source object each loadable refers to).
     /// It is not shipped with the build; it exists for tools and tests that analyze build output.
     /// The schema is subject to change and there is currently no backward compatibility.
     /// </summary>
@@ -192,7 +191,12 @@ namespace UnityEditor.Build
     {
         // Keep in sync with kLayoutVersion in WriteBuildOutput.cpp.
         // v1 -> v2: added OutputLFID to LoadableObjectIds entries.
-        const int kContentLayoutVersion = 2;
+        // v2 -> v3: ObjectIdHash deleted. LoadableObjectIds entries trimmed to {GUID, LFID,
+        //           IdentifierType, SerializedFile}; LoadableDependencies and RootAssets became
+        //           indices into LoadableObjectIds. SerializedFiles entries carry StableId
+        //           (the identity hash, no extension) instead of ID, and ArtifactIndex (index
+        //           into BinaryArtifacts) instead of ContentHash.
+        const int kContentLayoutVersion = 3;
 
         /// <summary>Schema version of the ContentLayout.json file.</summary>
         public int Version;
@@ -203,8 +207,8 @@ namespace UnityEditor.Build
         /// <summary>The SerializedFiles in the build output.</summary>
         public SerializedFileLayout[] SerializedFiles;
 
-        /// <summary>ObjectIdHash values of the root assets; resolve via <see cref="LoadableObjectIds"/>.</summary>
-        public string[] RootAssets;
+        /// <summary>Indices into <see cref="LoadableObjectIds"/> of the root assets, in root input order.</summary>
+        public int[] RootAssets;
 
         /// <summary>Loadable objects in the build.</summary>
         public LoadableObjectIdLayout[] LoadableObjectIds;

@@ -24,7 +24,9 @@ public static partial class LocalizationEditorSettings
     /// <remarks>
     /// Raised after a <see cref="ResourceTableCollection"/> is created, imported, or deleted so editor UI can refresh.
     /// </remarks>
+    // Re-subscribed on every code load by AssetProviderEditors.Initialize().
     [AutoStaticsCleanup] // holds subscriber delegates
+    [IgnoreForUAL0015("Event re-subscribed on every code load by AssetProviderEditors.Initialize()")]
     public static event Action CollectionsChanged;
 
     /// <summary>
@@ -153,6 +155,7 @@ public static partial class LocalizationEditorSettings
             else
                 EditorBuildSettings.AddConfigObject(LocalizationSettings.ConfigName, value, true);
             LocalizationSettings.Instance = value;
+            LanguageToolbar.Refresh();
         }
     }
 }

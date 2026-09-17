@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -197,9 +196,6 @@ namespace UnityEditor.UIElements.Debugger
 
     internal class UIElementsDebugger : EditorWindow, IHasCustomMenu
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal UIElementsDebugger() { }
-        #pragma warning restore UAL0015
 
         public const string k_WindowPath = "Window/UI Toolkit/Debugger";
         public static readonly string WindowName = L10n.Tr("UI Toolkit Debugger", null);
@@ -311,7 +307,7 @@ namespace UnityEditor.UIElements.Debugger
 
         void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Enable Low Level Debugger"), UIToolkitProjectSettings.EnableLowLevelDebugger, () =>
+            menu.AddItem(L10n.TextContent("Enable Low Level Debugger", null, null, null), UIToolkitProjectSettings.EnableLowLevelDebugger, () =>
             {
                 UIToolkitProjectSettings.EnableLowLevelDebugger = !UIToolkitProjectSettings.EnableLowLevelDebugger;
             });
@@ -423,12 +419,9 @@ namespace UnityEditor.UIElements.Debugger
             });
             m_Toolbar.Add(m_ShowTextMetrics);
 
-            if (Unsupported.IsDeveloperMode())
-            {
-                m_RepaintOverlayToggle = new ToolbarToggle { name = "repaintOverlayToggle", text = "Repaint Overlay" };
-                m_RepaintOverlayToggle.RegisterValueChangedCallback(e => m_Context.showRepaintOverlay = e.newValue);
-                m_Toolbar.Add(m_RepaintOverlayToggle);
-            }
+            m_RepaintOverlayToggle = new ToolbarToggle { name = "repaintOverlayToggle", text = "Repaint Overlay" };
+            m_RepaintOverlayToggle.RegisterValueChangedCallback(e => m_Context.showRepaintOverlay = e.newValue);
+            m_Toolbar.Add(m_RepaintOverlayToggle);
 
             if (Unsupported.IsDeveloperMode())
             {
@@ -437,12 +430,9 @@ namespace UnityEditor.UIElements.Debugger
                 m_Toolbar.Add(m_BreakBatchesToggle);
             }
 
-            if (Unsupported.IsDeveloperBuild())
-            {
-                m_ShowWireframeToggle = new ToolbarToggle { name = "showWireframeToggle", text = "Show Wireframe" };
-                m_ShowWireframeToggle.RegisterValueChangedCallback(e => { m_Context.showWireframe = e.newValue; });
-                m_Toolbar.Add(m_ShowWireframeToggle);
-            }
+            m_ShowWireframeToggle = new ToolbarToggle { name = "showWireframeToggle", text = "Show Wireframe" };
+            m_ShowWireframeToggle.RegisterValueChangedCallback(e => { m_Context.showWireframe = e.newValue; });
+            m_Toolbar.Add(m_ShowWireframeToggle);
 
             m_TextureAtlasViewerButton = new ToolbarButton { name = "textureAtlasViewerButton", text = "Texture Atlas Viewer" };
             m_TextureAtlasViewerButton.clicked += () => { TextureAtlasViewerWindow.ShowWindow(); };
@@ -486,8 +476,10 @@ namespace UnityEditor.UIElements.Debugger
 
             EditorApplication.update += EditorUpdate;
 
-            UIToolkitProjectSettings.onEnableLowLevelDebuggerChanged += (_) =>Refresh();
+            UIToolkitProjectSettings.onEnableLowLevelDebuggerChanged += OnLowLevelDebuggerChanged;
         }
+
+        void OnLowLevelDebuggerChanged(bool enabled) => Refresh();
 
         internal abstract class DebuggerFoldout : Foldout
         {
@@ -547,7 +539,7 @@ namespace UnityEditor.UIElements.Debugger
 
             protected virtual void UpdateVisiblity()
             {
-                style.display = (m_SelectedElement != null) && (!m_IsLowLevel || UIToolkitProjectSettings.EnableLowLevelDebugger) ? DisplayStyle.Flex : DisplayStyle.None;
+                style.display = m_SelectedElement.IsLive() && (!m_IsLowLevel || UIToolkitProjectSettings.EnableLowLevelDebugger) ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             protected abstract void Refresh();
@@ -1172,12 +1164,14 @@ namespace UnityEditor.UIElements.Debugger
             if (DebuggerEventDispatchUtilities.s_GlobalPanelDebug == this)
                 DebuggerEventDispatchUtilities.s_GlobalPanelDebug = null;
 
-            UIToolkitProjectSettings.onEnableLowLevelDebuggerChanged -= (_) => Refresh();
+            UIToolkitProjectSettings.onEnableLowLevelDebuggerChanged -= OnLowLevelDebuggerChanged;
         }
 
         public override void EditorUpdate()
         {
             base.EditorUpdate();
+
+            DropSelectionIfReleased();
 
             (panelDebug?.debuggerOverlayPanel as Panel)?.UpdateAnimations();
         }
@@ -1192,6 +1186,8 @@ namespace UnityEditor.UIElements.Debugger
 
         public override void Refresh()
         {
+            DropSelectionIfReleased();
+
             if (!m_Context.pickElement)
             {
                 var selectedElement = m_Context.selectedElement;
@@ -1200,7 +1196,7 @@ namespace UnityEditor.UIElements.Debugger
                 //we should not lose the selection when the tree has changed.
                 if (selectedElement != m_Context.selectedElement)
                 {
-                    if (m_Context.selectedElement == null && selectedElement.panel == panelDebug.panel)
+                    if (m_Context.selectedElement == null && panelDebug != null && selectedElement.panel == panelDebug.panel)
                         SelectElement(selectedElement);
                 }
 
@@ -1233,6 +1229,13 @@ namespace UnityEditor.UIElements.Debugger
 
             panelDebug?.MarkDirtyRepaint();
             panelDebug?.MarkDebugContainerDirtyRepaint();
+        }
+
+        void DropSelectionIfReleased()
+        {
+            var selected = m_Context.selectedElement;
+            if (selected != null && !selected.IsLive())
+                SelectElement(null);
         }
 
         void OnGenerateVisualContent(MeshGenerationContext mgc)
@@ -1468,7 +1471,7 @@ namespace UnityEditor.UIElements.Debugger
         private void ShowInspectMenu(VisualElement ve)
         {
             var menu = new GenericMenu();
-            menu.AddItem(EditorGUIUtility.TrTextContent("Inspect Element"), false, InspectElement, ve);
+            menu.AddItem(L10n.TextContent("Inspect Element", null, null, null), false, InspectElement, ve);
             menu.ShowAsContext();
         }
 
@@ -1671,4 +1674,3 @@ namespace UnityEditor.UIElements.Debugger
 
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

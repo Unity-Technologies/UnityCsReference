@@ -54,6 +54,30 @@ namespace UnityEditor
                 JoyRight = (1 << SupportedNpadStyleBits.JoyRight),
             }
 
+            public enum StorageMode
+            {
+                Legacy = 0,
+                Configurable = 1,
+            }
+
+            public enum StorageType
+            {
+                CacheStorage = 0,
+                IndexedCacheStorage = 1,
+                TemporaryStorage = 2,
+                RamDisk = 3,
+            }
+
+            public struct StorageMountDeclaration
+            {
+                public string mountName;
+                public StorageType storageType;
+                public int index;
+                public long size;
+                public long journalSize;
+                public int memoryPoolSizeMB;
+            }
+
             // Socket Memory Pool Size
             [NativeProperty("switchSocketMemoryPoolSize", TargetType.Field)]
             extern public static int socketMemoryPoolSize { get; set; }
@@ -366,6 +390,117 @@ namespace UnityEditor
             //To specify how much space should be allocated for the ram disk
             [NativeProperty("switchRamDiskSpaceSize", TargetType.Field)]
             extern public static int switchRamDiskSpaceSize { get; set; }
+
+            [NativeProperty("switchStorageMode", TargetType.Field)]
+            extern public static StorageMode storageMode { get; set; }
+
+            // The Mount List: the storages the application declares.
+            //
+            // The getter assembles the declarations from one array per field instead of
+            // receiving StorageMountDeclaration[] from native code directly. Returning an
+            // array of a struct makes the bindings look the element type up by name, and the
+            // name generated for a struct nested two levels deep
+            // ("PlayerSettings.Switch/StorageMountDeclaration") does not resolve: the lookup
+            // (Modules/Scripting/Source/Scripting/CommonScriptingClasses.cpp, OptionalType)
+            // splits nested names on '/' only, so the first part is searched for as a type of
+            // its own. The lookup then returns null and creating the array crashes the Editor.
+            // Arrays of string and of primitives need no such lookup, so the fields are passed
+            // one array each and joined back together here.
+            //
+            // The setter is unaffected: it receives an array that already exists on the
+            // managed side, which needs no type lookup.
+            public static StorageMountDeclaration[] storageMounts
+            {
+                get
+                {
+                    string[] mountNames = storageMountNames;
+                    int[] storageTypes = storageMountStorageTypes;
+                    int[] indices = storageMountIndices;
+                    long[] sizes = storageMountSizes;
+                    long[] journalSizes = storageMountJournalSizes;
+                    int[] memoryPoolSizes = storageMountMemoryPoolSizes;
+
+                    var declarations = new StorageMountDeclaration[mountNames.Length];
+                    for (int i = 0; i < declarations.Length; i++)
+                    {
+                        declarations[i] = new StorageMountDeclaration
+                        {
+                            mountName = mountNames[i],
+                            storageType = (StorageType)storageTypes[i],
+                            index = indices[i],
+                            size = sizes[i],
+                            journalSize = journalSizes[i],
+                            memoryPoolSizeMB = memoryPoolSizes[i],
+                        };
+                    }
+                    return declarations;
+                }
+                set { storageMountsInternal = ClampStorageMounts(value); }
+            }
+
+            const int k_RamDiskMemoryPoolSizeMaxMB = 1024;
+
+            static StorageMountDeclaration[] ClampStorageMounts(StorageMountDeclaration[] mounts)
+            {
+                if (mounts == null)
+                    return null;
+
+                var clamped = new StorageMountDeclaration[mounts.Length];
+                for (int i = 0; i < clamped.Length; i++)
+                {
+                    clamped[i] = mounts[i];
+                    clamped[i].index = Math.Max(0, clamped[i].index);
+                    clamped[i].size = Math.Max(0L, clamped[i].size);
+                    clamped[i].journalSize = Math.Max(0L, clamped[i].journalSize);
+                    clamped[i].memoryPoolSizeMB = Math.Clamp(clamped[i].memoryPoolSizeMB, 0, k_RamDiskMemoryPoolSizeMaxMB);
+                }
+                return clamped;
+            }
+
+            [NativeProperty("switchStorageMounts", TargetType.Function)]
+            extern private static StorageMountDeclaration[] storageMountsInternal { set; }
+
+            extern private static string[] storageMountNames
+            {
+                [NativeMethod("GetSwitchStorageMountNames")]
+                get;
+            }
+
+            extern private static int[] storageMountStorageTypes
+            {
+                [NativeMethod("GetSwitchStorageMountStorageTypes")]
+                get;
+            }
+
+            extern private static int[] storageMountIndices
+            {
+                [NativeMethod("GetSwitchStorageMountIndices")]
+                get;
+            }
+
+            extern private static long[] storageMountSizes
+            {
+                [NativeMethod("GetSwitchStorageMountSizes")]
+                get;
+            }
+
+            extern private static long[] storageMountJournalSizes
+            {
+                [NativeMethod("GetSwitchStorageMountJournalSizes")]
+                get;
+            }
+
+            extern private static int[] storageMountMemoryPoolSizes
+            {
+                [NativeMethod("GetSwitchStorageMountMemoryPoolSizes")]
+                get;
+            }
+
+            [NativeProperty("switchPersistentDataPathMountName", TargetType.Function)]
+            extern public static string persistentDataPathMountName { get; set; }
+
+            [NativeProperty("switchTemporaryCachePathMountName", TargetType.Function)]
+            extern public static string temporaryCachePathMountName { get; set; }
         }
     }
 }

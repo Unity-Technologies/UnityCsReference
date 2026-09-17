@@ -38,9 +38,14 @@ namespace Unity.UI.Builder
             m_ReorderZoneBelow.userData = this;
         }
 
-        public void ActivateRenameElementMode()
+        public void ActivateRenameElementMode(bool isCanvasReadOnly = false)
         {
             var documentElement = GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
+
+            // On a read-only canvas the preview elements can't be renamed; selectors live in the
+            // stylesheet and stay renameable.
+            if (isCanvasReadOnly && !BuilderSharedStyles.IsSelectorElement(documentElement))
+                return;
 
             if ((!documentElement.IsPartOfCurrentDocument() ||
                  BuilderSharedStyles.IsDocumentElement(documentElement)) &&

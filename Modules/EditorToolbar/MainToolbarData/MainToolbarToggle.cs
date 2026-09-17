@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.UIElements;   
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
+    [Icon("UIToolkit/Icons/Toggle.png")]
     public sealed class MainToolbarToggle : MainToolbarElement
     {
         readonly Action<bool> m_ValueChanged;

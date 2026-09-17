@@ -26,6 +26,17 @@ interface IUIViewportContext
     /// <summary>The panel the canvas renders; only valid between <see cref="Acquire"/> and <see cref="Release"/>.</summary>
     PanelElement PanelElement { get; }
 
+    /// <summary>
+    /// The root of the live tree <see cref="PanelElement"/> is a preview clone of, or <see langword="null"/>
+    /// when what the canvas renders is itself the tree the rest of the editor selects.
+    /// </summary>
+    /// <remarks>
+    /// Selection resolves through this so the viewport, the Hierarchy and the inspector name one element rather
+    /// than a clone each. The clone is still the fallback: a document can be shown with no live tree behind it,
+    /// and correspondence can come up empty for an element that only exists in the preview.
+    /// </remarks>
+    VisualElement AuthoritativeRoot { get; }
+
     /// <summary>The document the panel shows. The theme override is stored per root document.</summary>
     VisualTreeAsset RootVisualTreeAsset { get; }
 

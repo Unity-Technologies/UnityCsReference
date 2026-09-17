@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -115,6 +114,9 @@ namespace UnityEditor
         private Object m_InspectedObject;
         private string m_ExpectedTitle;
         [AutoStaticsCleanupOnCodeReload]
+        // Only used to cascade the position of the next property editor window; ShowPropertyEditorWindow
+        // reassigns it every time such a window is opened.
+        [IgnoreForUAL0015("Last-opened window reference, reassigned whenever a property editor window is shown")]
         private static PropertyEditor s_LastPropertyEditor;
         protected EntityId m_LastInitialEditorEntityId;
         protected Component[] m_ComponentsInPrefabSource;
@@ -223,31 +225,31 @@ namespace UnityEditor
             public static readonly GUIStyle dragHandle = "RL DragHandle";
             public static readonly GUIStyle lockButton = "IN LockButton";
             public static readonly GUIStyle insertionMarker = "InsertionMarker";
-            public static readonly GUIContent preTitle = EditorGUIUtility.TrTextContent("Preview");
-            public static readonly GUIContent labelTitle = EditorGUIUtility.TrTextContent("Asset Labels");
-            public static readonly GUIContent addComponentLabel = EditorGUIUtility.TrTextContent("Add Component");
+            public static readonly GUIContent preTitle = L10n.TextContent("Preview", null, null, null);
+            public static readonly GUIContent labelTitle = L10n.TextContent("Asset Labels", null, null, null);
+            public static readonly GUIContent addComponentLabel = L10n.TextContent("Add Component", null, null, null);
             public static readonly GUIStyle preBackground = "preBackground";
             public static readonly GUIStyle footer = "IN Footer";
             public static readonly GUIStyle preMargins = new GUIStyle() {margin = new RectOffset(0, 0, 0, 4)};
             public static readonly GUIStyle preOptionsButton = new GUIStyle(EditorStyles.toolbarButtonRight) { padding = new RectOffset(), contentOffset = new Vector2(1, 0) };
             public static readonly GUIStyle addComponentArea = EditorStyles.inspectorTitlebar;
             public static readonly GUIStyle addComponentButtonStyle = "AC Button";
-            public static readonly GUIContent menuIcon = EditorGUIUtility.TrIconContent("_Menu");
+            public static readonly GUIContent menuIcon = L10n.IconContent("_Menu", null, null);
             public static readonly GUIStyle previewMiniLabel = EditorStyles.whiteMiniLabel;
             public static readonly GUIStyle typeSelection = "IN TypeSelection";
 
             public static readonly GUIContent vcsCheckoutHint = EditorGUIUtility.TrTextContent("Under Version Control\nCheck out this asset in order to make changes.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
-            public static readonly GUIContent vcsNotConnected = EditorGUIUtility.TrTextContent("VCS ({0}) is not connected");
-            public static readonly GUIContent vcsOffline = EditorGUIUtility.TrTextContent("Work Offline option is active");
-            public static readonly GUIContent vcsSettings = EditorGUIUtility.TrTextContent("Settings");
-            public static readonly GUIContent vcsCheckout = EditorGUIUtility.TrTextContent("Check Out");
-            public static readonly GUIContent vcsCheckoutMeta = EditorGUIUtility.TrTextContent("Check Out Meta");
-            public static readonly GUIContent vcsAdd = EditorGUIUtility.TrTextContent("Add");
-            public static readonly GUIContent vcsLock = EditorGUIUtility.TrTextContent("Lock");
-            public static readonly GUIContent vcsUnlock = EditorGUIUtility.TrTextContent("Unlock");
-            public static readonly GUIContent vcsSubmit = EditorGUIUtility.TrTextContent("Submit");
-            public static readonly GUIContent vcsRevert = EditorGUIUtility.TrTextContent("Revert");
-            public static readonly GUIContent vcsRevertUnchanged = EditorGUIUtility.TrTextContent("Revert Unchanged");
+            public static readonly GUIContent vcsNotConnected = L10n.TextContent("VCS ({0}) is not connected", null, null, null);
+            public static readonly GUIContent vcsOffline = L10n.TextContent("Work Offline option is active", null, null, null);
+            public static readonly GUIContent vcsSettings = L10n.TextContent("Settings", null, null, null);
+            public static readonly GUIContent vcsCheckout = L10n.TextContent("Check Out", null, null, null);
+            public static readonly GUIContent vcsCheckoutMeta = L10n.TextContent("Check Out Meta", null, null, null);
+            public static readonly GUIContent vcsAdd = L10n.TextContent("Add", null, null, null);
+            public static readonly GUIContent vcsLock = L10n.TextContent("Lock", null, null, null);
+            public static readonly GUIContent vcsUnlock = L10n.TextContent("Unlock", null, null, null);
+            public static readonly GUIContent vcsSubmit = L10n.TextContent("Submit", null, null, null);
+            public static readonly GUIContent vcsRevert = L10n.TextContent("Revert", null, null, null);
+            public static readonly GUIContent vcsRevertUnchanged = L10n.TextContent("Revert Unchanged", null, null, null);
             [NoAutoStaticsCleanup] // array of auto-exempt GUIContent refs, safe to persist
             public static readonly GUIContent[] vcsRevertMenuNames = {vcsRevertUnchanged};
             [NoAutoStaticsCleanup] // ok the static method assigned here is stateless
@@ -347,9 +349,7 @@ namespace UnityEditor
             }
         }
 
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         internal PropertyEditor()
-        #pragma warning restore UAL0015
         {
             editorDragging = new EditorDragging(this);
             minSize = new Vector2(k_MinimumWindowWidth, minSize.y);
@@ -754,12 +754,12 @@ namespace UnityEditor
 
         public virtual void AddDebugItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
+            menu.AddItem(L10n.TextContent("Normal", null, null, null), m_InspectorMode == InspectorMode.Normal, SetNormal);
+            menu.AddItem(L10n.TextContent("Debug", null, null, null), m_InspectorMode == InspectorMode.Debug, SetDebug);
 
             if (Unsupported.IsDeveloperMode())
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
+                menu.AddItem(L10n.TextContent("Debug-Internal", null, null, null), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
             }
         }
 
@@ -769,14 +769,14 @@ namespace UnityEditor
             menu.AddSeparator(String.Empty);
 
             if (IsAnyComponentCollapsed())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Expand All Components"), false, ExpandAllComponents);
+                menu.AddItem(L10n.TextContent("Expand All Components", null, null, null), false, ExpandAllComponents);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Expand All Components"));
+                menu.AddDisabledItem(L10n.TextContent("Expand All Components", null, null, null));
 
             if (IsAnyComponentExpanded())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Collapse All Components"), false, CollapseAllComponents);
+                menu.AddItem(L10n.TextContent("Collapse All Components", null, null, null), false, CollapseAllComponents);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Collapse All Components"));
+                menu.AddDisabledItem(L10n.TextContent("Collapse All Components", null, null, null));
 
             if (m_Tracker != null)
             {
@@ -797,8 +797,8 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TrTextContent("Ping"), false, () => EditorGUIUtility.PingObject(GetInspectedObject()));
-            menu.AddItem(EditorGUIUtility.TrTextContent("Open in Import Activity Window"), false, () => ImportActivityWindow.OpenFromPropertyEditor(GetInspectedObject()));
+            menu.AddItem(L10n.TextContent("Ping", null, null, null), false, () => EditorGUIUtility.PingObject(GetInspectedObject()));
+            menu.AddItem(L10n.TextContent("Open in Import Activity Window", null, null, null), false, () => ImportActivityWindow.OpenFromPropertyEditor(GetInspectedObject()));
         }
 
         private void SetTrackerExpandedState(ActiveEditorTracker tracker, int editorIndex, bool expanded)
@@ -3027,4 +3027,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

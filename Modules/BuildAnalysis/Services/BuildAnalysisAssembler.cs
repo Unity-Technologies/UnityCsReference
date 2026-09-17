@@ -155,12 +155,7 @@ namespace UnityEditor.Build.Analysis
             if (rootStats.Length == 0)
                 return Array.Empty<BuildAnalysisRootAsset>();
 
-            var pathToAssetId = new Dictionary<string, int>(assets.Length, StringComparer.Ordinal);
-            foreach (var a in assets)
-            {
-                if (!string.IsNullOrEmpty(a.Path))
-                    pathToAssetId[a.Path] = a.Id;
-            }
+            var pathToAssetId = BuildPathToAssetId(assets);
 
             var result = new List<BuildAnalysisRootAsset>(rootStats.Length);
             foreach (var s in rootStats)
@@ -184,6 +179,21 @@ namespace UnityEditor.Build.Analysis
                 });
             }
             return result.ToArray();
+        }
+
+        /// <summary>
+        /// Asset path to Assets-table id. The one rule for joining layout paths onto the table, shared
+        /// with <see cref="DependencyGraphBuilder"/> so the graph and the root assets resolve alike.
+        /// </summary>
+        internal static Dictionary<string, int> BuildPathToAssetId(BuildAnalysisAsset[] assets)
+        {
+            var pathToAssetId = new Dictionary<string, int>(assets.Length, StringComparer.Ordinal);
+            foreach (var a in assets)
+            {
+                if (!string.IsNullOrEmpty(a.Path))
+                    pathToAssetId[a.Path] = a.Id;
+            }
+            return pathToAssetId;
         }
 
         private static int[] ResolveReferencedAssetIds(

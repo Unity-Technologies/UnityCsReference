@@ -60,7 +60,7 @@ static partial class UIAssetRegistrySceneTracking
     internal static void CollectDirtyScenePanelAssets(List<UnityEngine.Object> results)
     {
         var registry = UIAssetRegistry.LiveInstance;
-        if (registry == null || !UIToolkitStageUtility.IsAuthoringEnabledInMainStage)
+        if (registry == null)
             return;
 
         registry.CollectDirtyAssetsHeldOnlyBy(IsTrackedScenePanel, results);

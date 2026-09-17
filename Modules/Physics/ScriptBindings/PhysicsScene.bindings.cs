@@ -17,8 +17,9 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public partial struct PhysicsScene : IEquatable<PhysicsScene>
     {
-        private int m_index;
-        private int m_version;
+        private uint m_index;
+        private uint m_version;
+
         ///<exclude />
         public override string ToString() { return string.Format("PhysicsScene(Index: {0}, Version: {1})", m_index, m_version); }
         ///<exclude />
@@ -58,6 +59,17 @@ namespace UnityEngine
             //!!!Keep this in sync with the declaration of kDefaultPhysicsSceneHandle inside PhysicsSceneHandle.h!!!
             var scene = new PhysicsScene();
             scene.m_index = 0;
+            scene.m_version = 0;
+
+            return scene;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static internal PhysicsScene Invalid()
+        {
+            //!!!Keep this in sync with the declaration of kInvalidPhysicsSceneHandle inside PhysicsSceneHandle.h!!!
+            var scene = new PhysicsScene();
+            scene.m_index = uint.MaxValue;
             scene.m_version = 0;
 
             return scene;
@@ -178,7 +190,7 @@ namespace UnityEngine
         [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
         [NativeMethod("ReleasePhysicsSceneSimulationBuffers")]
         private extern static void ReleasePhysicsSceneSimulationBuffers_Internal(PhysicsScene handle);
-        
+
         ///<summary>Clear and deallocate the simulation results.</summary>
         ///<remarks>Calling this method will result in all simulation result buffers used by this PhysicsScene to be deallocated. The method offers a manual alternative to the result clearing options present in the physics settings pane.</remarks>
         public void ReleaseLastSimulationStepBuffers()
@@ -634,6 +646,76 @@ namespace UnityEngine
         {
             return BoxCast(center, halfExtents, direction, results, Quaternion.identity, Mathf.Infinity, Physics.DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
+    }
+
+
+    /// <summary>
+    /// Scope used during scene load operations such as <see cref="UnityEngine.SceneManagement.SceneManager.LoadSceneAsync" />, with the purpose of providing a different physics scene than the global one.
+    ///<example>
+    ///  <code><![CDATA[
+    ///using UnityEngine;
+    ///using UnityEngine.SceneManagement;
+    ///
+    ///public class SimpleLoader : MonoBehaviour
+    ///{
+    ///
+    /// IEnumerator Start()
+    /// {
+    ///    int buildIndex0 = 0;
+    ///    int buildIndex1 = 1;
+    ///
+    ///    var newScene = SceneManagement.SceneManager.LoadScene(buildIndex0, new LoadSceneParameters() { localPhysicsMode = LocalPhysicsMode.Physics3D });
+    ///    var localPhys = newScene.GetPhysicsScene();
+    ///
+    ///    using(new PhysicsSceneLoadScope(localPhys))
+    ///    {
+    ///        SceneManagement.SceneManager.LoadSceneAsync(buildIndex1);
+    ///    }
+    /// }
+    /// 
+    ///}
+    ///
+    ///]]></code>
+    ///</example>
+    /// </summary>
+    [NativeHeader("Modules/Physics/Public/PhysicsSceneHandle.h")]
+    [NativeHeader("Modules/Physics/Public/PhysicsSceneLoadScope.h")]
+    public struct PhysicsSceneLoadScope : IDisposable
+    {
+        /// <summary>
+        /// The physics scene used within this scope.
+        /// </summary>
+        public PhysicsScene scene { get; private set; } = PhysicsScene.Invalid();
+
+        /// <summary>
+        /// Construct a new physics scene loading scope.
+        /// </summary>
+        /// <param name="physicsScene">A valid physics scene handle.</param>
+        /// <exception cref="InvalidOperationException">An exception will be thrown if another scope already exists or the provided scene is invalid.</exception>
+        public PhysicsSceneLoadScope(PhysicsScene physicsScene)
+        {
+            if (!SetLoadingScopeScene(physicsScene))
+                throw new InvalidOperationException("Unable to push a new PhysicsSceneLoadScope. A previous scope has not been disposed yet or the handle is invalid.");
+
+            scene = physicsScene;
+        }
+
+        /// <summary>
+        /// Dispose of the current physics scene loading scope.
+        /// </summary>
+        public void Dispose()
+        {
+            PopLoadingScopeScene(scene);
+            scene = PhysicsScene.Invalid();
+        }
+
+        [FreeFunction("PhysicsSceneLoadScope::SetLoadingScopeScene")]
+        extern static bool SetLoadingScopeScene(PhysicsScene scene);
+        [FreeFunction("PhysicsSceneLoadScope::PopLoadingScopeScene")]
+        extern static void PopLoadingScopeScene(PhysicsScene scene);
+
+        [FreeFunction("PhysicsSceneLoadScope::GetLoadingScopeScene")]
+        extern static PhysicsScene GetLoadingScopeScene();
     }
 
     ///<summary>Scene extensions to access the underlying physics scene.</summary>

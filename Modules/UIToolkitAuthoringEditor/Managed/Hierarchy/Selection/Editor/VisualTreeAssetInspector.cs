@@ -65,7 +65,14 @@ internal sealed partial class VisualTreeAssetInspector : VisualElement
         vta.CloneTree(this);
 
         m_Header = this.Q<VisualTreeAssetHeader>(className: HeaderUssClass);
-        m_Header.SetEnabled(false);
-        m_AssetActionsView = this.Q<VisualTreeAssetInspectorActionsView>(className: AssetActionsViewUssClass);
+
+        // The header is display-only, but the actions menu lives inside it and must stay
+        // clickable, so the header cannot be disabled wholesale.
+        m_Header.Q(className: UISelectionObjectHeader.ObjectTypeIconUssClass)?.SetEnabled(false);
+        m_Header.Q(className: UISelectionObjectHeader.ObjectTypeNameUssClass)?.SetEnabled(false);
+
+        m_AssetActionsView = new VisualTreeAssetInspectorActionsView();
+        m_AssetActionsView.AddToClassList(AssetActionsViewUssClass);
+        m_Header.Q(className: VisualTreeAssetHeader.AssetPathRowUssClass).Add(m_AssetActionsView);
     }
 }

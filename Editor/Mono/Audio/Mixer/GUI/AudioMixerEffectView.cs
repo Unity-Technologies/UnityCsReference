@@ -28,14 +28,14 @@ namespace UnityEditor
 
         static class Texts
         {
-            public static readonly GUIContent editInPlaymode = EditorGUIUtility.TrTextContent("Edit in Playmode");
-            public static readonly GUIContent pitch = EditorGUIUtility.TrTextContent("Pitch");
-            public static readonly GUIContent addEffect = EditorGUIUtility.TrTextContent("Add Effect");
-            public static readonly GUIContent volume = EditorGUIUtility.TrTextContent("Volume");
-            public static readonly GUIContent sendLevel = EditorGUIUtility.TrTextContent("Send level");
-            public static readonly GUIContent bus = EditorGUIUtility.TrTextContent("Receive");
-            public static readonly GUIContent none = EditorGUIUtility.TrTextContent("None");
-            public static readonly GUIContent wet = EditorGUIUtility.TrTextContent("Wet", "Enables/disables wet/dry ratio on this effect. Note that this makes the DSP graph more complex and requires additional CPU and memory, so use it only when necessary.");
+            public static readonly GUIContent editInPlaymode = L10n.TextContent("Edit in Playmode", null, null, null);
+            public static readonly GUIContent pitch = L10n.TextContent("Pitch", null, null, null);
+            public static readonly GUIContent addEffect = L10n.TextContent("Add Effect", null, null, null);
+            public static readonly GUIContent volume = L10n.TextContent("Volume", null, null, null);
+            public static readonly GUIContent sendLevel = L10n.TextContent("Send level", null, null, null);
+            public static readonly GUIContent bus = L10n.TextContent("Receive", null, null, null);
+            public static readonly GUIContent none = L10n.TextContent("None", null, null, null);
+            public static readonly GUIContent wet = L10n.TextContent("Wet", "Enables/disables wet/dry ratio on this effect. Note that this makes the DSP graph more complex and requires additional CPU and memory, so use it only when necessary.", null, null);
             public const string dB = "dB";
             public const string percentage = "%";
             public const string cpuFormatString = " - CPU: {0:#0.00}%";
@@ -372,8 +372,8 @@ namespace UnityEditor
             {
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsDuckVolume())
                 {
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate { AudioMixerUtility.ToggleEffectWetMix(effect); });
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Bypass"), effect.bypass, delegate()
+                    menu.AddItem(L10n.TextContent("Allow Wet Mixing (causes higher memory usage)", null, null, null), effect.enableWetMix, delegate { AudioMixerUtility.ToggleEffectWetMix(effect); });
+                    menu.AddItem(L10n.TextContent("Bypass", null, null, null), effect.bypass, delegate()
                     {
                         Undo.RecordObject(effect, "Bypass Effect");
                         effect.bypass = !effect.bypass;
@@ -384,7 +384,7 @@ namespace UnityEditor
                     menu.AddSeparator("");
                 }
 
-                menu.AddItem(EditorGUIUtility.TrTextContent("Copy effect settings to all snapshots"), false, delegate()
+                menu.AddItem(L10n.TextContent("Copy effect settings to all snapshots", null, null, null), false, delegate()
                 {
                     Undo.RecordObject(controller, "Copy effect settings to all snapshots");
                     if (effect.IsAttenuation())
@@ -396,7 +396,7 @@ namespace UnityEditor
 
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsDuckVolume() && effect.enableWetMix)
                 {
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Copy effect settings to all snapshots, including wet level"), false, delegate()
+                    menu.AddItem(L10n.TextContent("Copy effect settings to all snapshots, including wet level", null, null, null), false, delegate()
                     {
                         Undo.RecordObject(controller, "Copy effect settings to all snapshots, including wet level");
                         controller.CopyEffectSettingsToAllSnapshots(group, effectIndex, controller.TargetSnapshot, true);
@@ -414,7 +414,7 @@ namespace UnityEditor
             if (!effect.IsAttenuation())
             {
                 menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Remove this effect"), false, delegate()
+                menu.AddItem(L10n.TextContent("Remove this effect", null, null, null), false, delegate()
                 {
                     controller.RemoveEffect(effect, group);
                     AudioMixerUtility.RepaintAudioMixerAndInspectors();
@@ -428,13 +428,13 @@ namespace UnityEditor
         {
             GenericMenu pm = new GenericMenu();
             var sendContext = new AudioMixerChannelStripView.ConnectSendContext(group.controller, effect, null);
-            pm.AddItem(EditorGUIUtility.TrTextContent("None"), false, AudioMixerChannelStripView.ConnectSendPopupCallback, sendContext);
+            pm.AddItem(L10n.TextContent("None", null, null, null), false, AudioMixerChannelStripView.ConnectSendPopupCallback, sendContext);
             pm.AddSeparator("");
             AudioMixerChannelStripView.AddMenuItemsForReturns(pm, string.Empty, effectIndex, group, allGroups, effectMap, effect, true);
 
             if (pm.GetItemCount() == 2)
             {
-                pm.AddDisabledItem(EditorGUIUtility.TrTextContent("No valid Receive targets found"));
+                pm.AddDisabledItem(L10n.TextContent("No valid Receive targets found", null, null, null));
             }
 
             pm.DropDown(buttonRect);

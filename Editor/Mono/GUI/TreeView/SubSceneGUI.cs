@@ -105,7 +105,7 @@ static partial class SubSceneGUI
 
     internal static void CreateClosedSubSceneContextClick(GenericMenu menu, SceneHierarchyHooks.SubSceneInfo subScene)
     {
-        var selectAssetContent = EditorGUIUtility.TrTextContent("Select Scene Asset");
+        var selectAssetContent = L10n.TextContent("Select Scene Asset", null, null, null);
         if (subScene.sceneAsset)
             menu.AddItem(selectAssetContent, false, SelectSceneAsset, subScene.sceneAsset);
         else

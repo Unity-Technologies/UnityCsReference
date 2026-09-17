@@ -69,15 +69,22 @@ namespace Unity.GraphToolkit.Editor
     {
         // ReSharper disable once StaticMemberInGenericType
         [AutoStaticsCleanupOnCodeReload]
+        // Factory-method table built by reflection over the current scope: ClearCache nulls it and
+        // BuildFactoryMethodCache rebuilds it on the next lookup.
+        [IgnoreForUAL0015("Reflection table rebuilt by BuildFactoryMethodCache on the next lookup")]
         static Dictionary<(Type, Type), MethodInfo> s_FactoryMethodCache = null;
 
         // Results of previous lookups. Kept separate from s_FactoryMethodCache so a cached result never hides a registered method.
         // ReSharper disable once StaticMemberInGenericType
         [AutoStaticsCleanupOnCodeReload]
+        // Memo of previous extension-method lookups, refilled on demand as methods are resolved again.
+        [IgnoreForUAL0015("Lookup memo refilled on demand as extension methods are resolved")]
         static Dictionary<(Type, Type), MethodInfo> s_ResolvedMethodCache = new Dictionary<(Type, Type), MethodInfo>();
 
         // ReSharper disable once StaticMemberInGenericType
         [AutoStaticsCleanupOnCodeReload]
+        // Per-walk scratch queue: every type walk leaves it empty, so an empty queue is the resting value.
+        [IgnoreForUAL0015("Per-walk scratch queue, left empty by every type walk")]
         static Queue<Type> s_CandidateTypes = new Queue<Type>();
 
         public static void ClearCache()

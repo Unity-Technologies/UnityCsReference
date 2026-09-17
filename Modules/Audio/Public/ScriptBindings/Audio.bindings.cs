@@ -2825,6 +2825,31 @@ namespace UnityEngine
 
         extern internal Object generatorObject { get; set; }
 
+        /// <summary>
+        /// Gets the effect instance for a specific IAudioEffect component attached to this AudioSource's GameObject.
+        /// </summary>
+        /// <param name="effectComponent">The component implementing IAudioEffect.</param>
+        /// <typeparam name="TComponent">The concrete component type. Must derive from <see cref="Component"/> so that <see cref="ScriptableObject"/>-based <see cref="UnityEngine.Audio.IAudioEffect"/> implementations are rejected at compile time.</typeparam>
+        /// <returns>The ProcessorInstance for the effect, or default if not found.</returns>
+        /// <remarks>Use this to get runtime access to effect parameters via the Pipe/messaging system.</remarks>
+        public ProcessorInstance GetEffectInstance<TComponent>(TComponent effectComponent)
+            where TComponent : Component, UnityEngine.Audio.IAudioEffect
+        {
+            // Unity's overloaded op_Equality handles the fake-null case for destroyed components,
+            // and the editor's GetEntityId() returns cached ids for destroyed objects (where players
+            // return EntityId.None) so this guard is required for editor/player consistency.
+            if (effectComponent != null)
+            {
+                var handle = GetEffectInstanceHandle(effectComponent.GetEntityId());
+                if (handle.WasCreated)
+                    return new UnityEngine.Audio.EffectInstance(handle);
+            }
+            return default;
+        }
+
+        [NativeMethod("GetEffectInstanceHandle")]
+        extern internal Audio.DualThreadHandle GetEffectInstanceHandle(EntityId componentEntityId);
+
         ///<summary>The target group to which the AudioSource should route its signal.</summary>
         extern public AudioMixerGroup outputAudioMixerGroup { get; set; }
 

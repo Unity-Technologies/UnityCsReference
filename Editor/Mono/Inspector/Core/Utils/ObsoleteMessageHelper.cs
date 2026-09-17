@@ -53,6 +53,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload] // lazy cache of obsolete type messages, must reset on reload
+        // Lazy message cache: the lookup re-walks the obsolete types and refills the dictionary whenever it
+        // is null, so the next inspector draw rebuilds it.
+        [IgnoreForUAL0015("Lazy obsolete-message cache rebuilt on the next lookup after cleanup")]
         private static Dictionary<Type, ObsoleteMessageContainer> s_ObsoleteTypeMessages;
 
         private static Type ResolveReplacementType(string typeName)

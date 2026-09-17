@@ -409,7 +409,7 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
         // does not get a warped render due to a one-frame delay.
         m_PanelElement.FrameUpdate();
         m_CheckerboardBackground.MarkDirtyRepaint();
-        m_DocumentRoot.MarkDirtyRepaint();
+        m_DocumentRoot.OnCanvasChanged();
     }
 
     void SetupPreviewMode(bool enabled)
@@ -646,7 +646,14 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
         foreach (var element in elementsToHighlight)
         {
-            m_HighlightOverlay.AddOverlay(element, self? OverlayContent.Outline : OverlayContent.AllBoxes);
+            // Highlights are broadcast, and outside the UI Stage the same document is on screen twice: as the
+            // live tree the request came from and as this canvas's clone of it. Only the clone has bounds that
+            // mean anything here, so anything mapping onto none of its elements is dropped rather than drawn.
+            var target = m_DocumentRoot.ResolveCanvasElement(element);
+            if (target == null)
+                continue;
+
+            m_HighlightOverlay.AddOverlay(target, self ? OverlayContent.Outline : OverlayContent.AllBoxes);
         }
     }
 }

@@ -853,6 +853,10 @@ internal static class UxmlAssetUtilities
     public static SynchronizePathResult SynchronizePath(UxmlAttributesEditingContext context, string propertyPath,
         bool changeUxmlAssets)
     {
+        // The context object survives a clear; these do not.
+        if (context?.element == null || context.rootSerializedObject == null)
+            return default;
+
         s_DocumentUndoRecorded = false;
 
         Action<VisualTreeAsset, VisualElement> handleTemplateOverride = null;
@@ -923,6 +927,27 @@ internal static class UxmlAssetUtilities
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Removes every binding currently registered on the element, so that deserializing the element's serialized
+    /// data can recreate them. Deserializing over live bindings corrupts their data source.
+    /// </summary>
+    public static void ClearLiveBindings(VisualElement element)
+    {
+        if (element == null)
+            return;
+
+        using var _ = ListPool<BindingId>.Get(out var boundIds);
+
+        foreach (var bindingInfo in element.GetBindingInfos())
+        {
+            if (bindingInfo.bindingId != BindingId.Invalid)
+                boundIds.Add(bindingInfo.bindingId);
+        }
+
+        foreach (var bindingId in boundIds)
+            element.ClearBinding(bindingId);
     }
 
     /// <summary>
@@ -1071,6 +1096,50 @@ internal static class UxmlAssetUtilities
     }
 
     /// <summary>
+    /// The element-wide form of <see cref="TryGetDrivingAttributeOverride"/>: whether an ancestor instance
+    /// drives any attribute of the element. Same walk, see there for why it is shaped this way.
+    /// </summary>
+    public static bool HasAncestorAttributeOverride(VisualElement element)
+    {
+        var vea = element?.visualElementAsset;
+        if (vea == null)
+            return false;
+
+        using var _ = ListPool<int>.Get(out var idsPath);
+        idsPath.Add(vea.id);
+
+        if (vea is TemplateAsset)
+            idsPath.Add(vea.id);
+
+        var ownerDocument = element.visualTreeAssetSource;
+
+        for (var ancestor = element.parent; ancestor != null; ancestor = ancestor.parent)
+        {
+            if (ancestor is IPanelComponentRootElement)
+                break;
+
+            if (ancestor is not TemplateContainer { visualElementAsset: TemplateAsset templateAsset } container)
+                continue;
+
+            idsPath.Insert(0, templateAsset.id);
+
+            if (container.templateSource != ownerDocument)
+                continue;
+
+            // An entry only exists when the fold found something to override
+            foreach (var dataOverride in templateAsset.serializedDataOverrides)
+            {
+                if (TargetsElement(in dataOverride, idsPath, vea.id, templateAsset.id))
+                    return true;
+            }
+
+            ownerDocument = container.visualTreeAssetSource;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Returns whether the instance's own authored overrides, element or component, target the
     /// specified attribute at this element's names path.
     /// </summary>
@@ -1123,8 +1192,7 @@ internal static class UxmlAssetUtilities
     {
         foreach (var dataOverride in templateAsset.serializedDataOverrides)
         {
-            if (dataOverride.m_ElementId != elementId
-                || !VisualElementAsset.IdsPathMatchesAttributeOverrideIdsPath(idsPath, dataOverride.m_ElementIdsPath, templateAsset.id))
+            if (!TargetsElement(in dataOverride, idsPath, elementId, templateAsset.id))
                 continue;
 
             if (OverridesAttribute(dataOverride.m_SerializedData, declaringType, attribute))
@@ -1144,46 +1212,17 @@ internal static class UxmlAssetUtilities
         return false;
     }
 
+    // Whether the clone applies this entry to this element: same element, same instance path.
+    static bool TargetsElement(in TemplateAsset.UxmlSerializedDataOverride dataOverride, List<int> idsPath, int elementId, int templateId)
+        => dataOverride.m_ElementId == elementId
+            && VisualElementAsset.IdsPathMatchesAttributeOverrideIdsPath(idsPath, dataOverride.m_ElementIdsPath, templateId);
+
     // The type test also guards the flags read, which throws for data that does not declare the field.
     static bool OverridesAttribute(UxmlSerializedData data, Type declaringType,
         UxmlSerializedAttributeDescription attribute)
         => data != null
             && declaringType.IsAssignableFrom(data.GetType())
             && (attribute.GetSerializedValueAttributeFlags(data) & UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml) != 0;
-
-    /// <summary>
-    /// Resolves the live element that represents the given document at or above this element: the
-    /// enclosing instance of the document, or the panel root element when it is the panel's root
-    /// document.
-    /// </summary>
-    public static bool TryGetEnclosingDocumentSceneTarget(VisualElement element, VisualTreeAsset document,
-        out VisualElement sceneTarget)
-    {
-        sceneTarget = null;
-        if (element == null || document == null)
-            return false;
-
-        for (var candidate = element; candidate != null; candidate = candidate.hierarchy.parent)
-        {
-            if (candidate is TemplateContainer { templateSource: { } templateSource } && templateSource == document)
-            {
-                sceneTarget = candidate;
-                return true;
-            }
-
-            // The pattern is a reference test, so a destroyed component needs the Unity-null test too:
-            // reading visualTreeAsset off one throws MissingReferenceException.
-            if (candidate is IPanelComponentRootElement { panelComponent: { } panelComponent }
-                && (panelComponent is not UnityEngine.Object component || component != null)
-                && panelComponent.visualTreeAsset == document)
-            {
-                sceneTarget = candidate;
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     /// <summary>
     /// Indicates whether the specified uxml attribute is inlined or template overridden.

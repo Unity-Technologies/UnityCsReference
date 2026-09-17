@@ -49,12 +49,12 @@ namespace UnityEditor.Build.Profile
         static readonly string k_DerivedPlatformDisabled = L10n.Tr("{0} was disabled via command-line arguments.", null);
         static readonly string k_EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules", null);
         static readonly string k_BuildProfileRecompileReason = L10n.Tr("Active build profile scripting defines changes.", null);
-        static readonly GUIContent k_OpenDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
-        static readonly GUIContent k_InstallModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
+        static readonly GUIContent k_OpenDownloadPage = L10n.TextContent("Open Download Page", null, null, null);
+        static readonly GUIContent k_InstallModuleWithHub = L10n.TextContent("Install with Unity Hub", null, null, null);
         static readonly string k_ModuleInstalled = L10n.Tr("{0} module has been installed.", null);
         static readonly string k_RestartNeeded = L10n.Tr("Please restart the Unity Editor to load the module.", null);
         static readonly string k_RestartEditor = L10n.Tr("Restart Unity Editor", null);
-        static readonly GUIContent k_ActivateDerivedPlatform = EditorGUIUtility.TrTextContent("Enable Platform");
+        static readonly GUIContent k_ActivateDerivedPlatform = L10n.TextContent("Enable Platform", null, null, null);
         [NoAutoStaticsCleanup] // static config set, allocated once, contains only string literals
         static readonly HashSet<string> s_BuildProfileIconModules = new()
         {
@@ -405,10 +405,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static bool IsBuildTargetSupportedByCoverage(BuildTarget buildTarget)
         {
-            if (!IsStandalonePlatform(buildTarget))
-                return false;
-
-            if (buildTarget == BuildTarget.StandaloneWindows)
+            if (!IsPlatformSupportedByCoverage(buildTarget))
                 return false;
 
             var namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildTarget);
@@ -416,6 +413,18 @@ namespace UnityEditor.Build.Profile
 
             return scriptingBackend == ScriptingImplementation.Mono2x || scriptingBackend == ScriptingImplementation.IL2CPP;
         }
+
+        /// <summary>
+        /// Returns true if the platform can produce coverage instrumented players,
+        /// regardless of the currently selected scripting backend.
+        /// </summary>
+        internal static bool IsPlatformSupportedByCoverage(BuildTarget buildTarget) => buildTarget switch
+        {
+            // 32-bit Windows standalone is not supported.
+            BuildTarget.StandaloneWindows => false,
+            BuildTarget.Android => true,
+            _ => IsStandalonePlatform(buildTarget)
+        };
 
         public static bool IsBuildAutomationSupported(GUID platformGuid)
         {
@@ -842,7 +851,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void CreateNewAssetWithName(
             GUID platformId, string customProfileName, string preconfiguredSettingsVariantName,
-            int preconfiguredSettingsVariant, string[] packagesToAdd, UnityAction<BuildProfile> onCreate,
+            int preconfiguredSettingsVariant, BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd, UnityAction<BuildProfile> onCreate,
             GUID selectedPlatformGuid = default)
         {
             BuildProfileModuleUtil.EnsureCustomBuildProfileFolderExists();
@@ -935,6 +944,28 @@ namespace UnityEditor.Build.Profile
         internal static void SuppressMissingTypeWarning()
         {
             SerializationUtility.SuppressMissingTypeWarning(nameof(BuildProfile));
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static void AddReferenceComponent(BuildProfile profile, Type componentType, ScriptableObject reference)
+        {
+            profile.AddReferenceComponent(componentType, reference);
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static bool HasComponent<T>(BuildProfile profile) where T : UnityEngine.Object
+        {
+            return profile.HasComponent<T>();
+        }
+
+        /// <summary>
+        /// Reassigns an existing reference component's source in place. Throws when the component does
+        /// not exist; see <see cref="BuildProfile.SetReferenceComponent"/>.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static void SetReferenceComponent(BuildProfile profile, Type componentType, ScriptableObject reference)
+        {
+            profile.SetReferenceComponent(componentType, reference);
         }
 
         public static string GetDefaultNewProfilePath(GUID platformGuid)
@@ -1474,8 +1505,13 @@ namespace UnityEditor.Build.Profile
                 var packageName = package.qualifiedName;
                 if (!PackageManager.PackageInfo.IsPackageRegistered(packageName))
                 {
+                    // The prompt lists bare names; only the install request carries the pinned version.
                     packageStringBuilder.AppendLine().Append(packageName);
-                    neededPackages.Add(packageName);
+                    neededPackages.Add(package.GetPackageIdentifier().GetInstallIdentifier());
+                }
+                else
+                {
+                    BuildTargetDiscovery.WarnIfPinnedVersionNotInstalled(package.GetPackageIdentifier());
                 }
             }
 

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -52,7 +51,9 @@ namespace Unity.Hierarchy
             TextField.RegisterCallback<BlurEvent>(OnBlurEvent);
         }
 
-        public void BeginRename()
+        public void BeginRename() => BeginRename(Text);
+
+        internal void BeginRename(string initialText)
         {
             if (IsRenaming)
                 return;
@@ -64,7 +65,7 @@ namespace Unity.Hierarchy
             Label.style.display = DisplayStyle.None;
             TextField.style.display = DisplayStyle.Flex;
 
-            TextField.value = Text;
+            TextField.value = initialText;
             TextField.Q<TextElement>().Focus();
 
             OnBeginRename?.Invoke();
@@ -147,4 +148,3 @@ namespace Unity.Hierarchy
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

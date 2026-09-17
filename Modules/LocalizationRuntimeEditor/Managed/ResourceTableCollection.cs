@@ -15,11 +15,13 @@ namespace Unity.Localization.Editor;
 /// Authoring edits the per-locale tables through the collection; at runtime the <see cref="ResourceDatabase"/>
 /// resolves through the individual tables it has registered, not the collection, which is editor-only.
 /// </remarks>
+[HelpURL("localization/create-and-edit-table-collections")]
 public sealed class ResourceTableCollection : ScriptableObject
 {
     [SerializeField] SharedTableData m_SharedData;
     [SerializeField] List<ResourceTable> m_Tables = new();
     [SerializeField] string m_ProviderId;
+    [SerializeReference] List<IResourceCollectionExtension> m_Extensions = new();
 
     /// <summary>
     /// Gets or sets the shared key data for the collection.
@@ -69,6 +71,48 @@ public sealed class ResourceTableCollection : ScriptableObject
     /// Gets the per-locale tables in this collection.
     /// </summary>
     public IReadOnlyList<ResourceTable> Tables => m_Tables;
+
+    /// <summary>
+    /// Gets the extensions attached to this collection.
+    /// </summary>
+    /// <remarks>
+    /// Extensions attach tool-specific data to a collection, such as the configuration for an external
+    /// translation service. See <see cref="IResourceCollectionExtension"/>.
+    /// </remarks>
+    public IReadOnlyList<IResourceCollectionExtension> Extensions => m_Extensions;
+
+    /// <summary>
+    /// Attaches an extension to this collection.
+    /// </summary>
+    /// <param name="extension">The extension to attach. Ignored when null or already attached.</param>
+    public void AddExtension(IResourceCollectionExtension extension)
+    {
+        if (extension == null || m_Extensions.Contains(extension))
+            return;
+        m_Extensions.Add(extension);
+    }
+
+    /// <summary>
+    /// Removes an extension from this collection.
+    /// </summary>
+    /// <param name="extension">The extension to remove.</param>
+    /// <returns><see langword="true"/> when the extension was attached; otherwise <see langword="false"/>.</returns>
+    public bool RemoveExtension(IResourceCollectionExtension extension) => m_Extensions.Remove(extension);
+
+    /// <summary>
+    /// Returns the first attached extension of a type.
+    /// </summary>
+    /// <typeparam name="T">The extension type to look for.</typeparam>
+    /// <returns>The extension, or <see langword="null"/> when none is attached.</returns>
+    public T GetExtension<T>() where T : class, IResourceCollectionExtension
+    {
+        foreach (var extension in m_Extensions)
+        {
+            if (extension is T match)
+                return match;
+        }
+        return null;
+    }
 
     /// <summary>
     /// Adds a per-locale table to the collection.

@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
@@ -19,7 +17,7 @@ namespace UnityEngine.UIElements
         public readonly UIDocument document;
         internal UIRenderer uiRenderer { get; set; }
 
-        IPanelComponent IPanelComponentRootElement.panelComponent => document;
+        IPanelComponent IPanelComponentRootElement.panelComponent => document.AliveOrNull();
 
         public UIDocumentRootElement(UIDocument document, VisualTreeAsset sourceAsset) : base(sourceAsset?.name,
             sourceAsset)
@@ -123,11 +121,25 @@ namespace UnityEngine.UIElements
         int IPanelComponent.creationIndex => m_UIDocumentCreationIndex;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Func<bool> IsEditorPlaying;
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Func<bool> IsEditorPlayingOrWillChangePlaymode;
         [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
         internal static Func<bool> IsEditingPrefab;
+        [AutoStaticsCleanupOnCodeReload]
+        // Editor-side implementation slot: EditorDelegateRegistration.Initialize() runs on every code
+        // load and reinstalls it, so the value cleared on reload is back before anything reads it.
+        [IgnoreForUAL0015("Editor implementation reinstalled on every code load by EditorDelegateRegistration.Initialize()")]
+        internal static Func<GameObject, bool> IsGameObjectInOpenPrefabStage;
 
 
         [AutoStaticsCleanupOnCodeReload]
@@ -456,6 +468,8 @@ namespace UnityEngine.UIElements
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Reinstalled on every code load by LiveReloadTrackerCreator.Initialize().
+        [IgnoreForUAL0015("Factory slot reinstalled on every code load by LiveReloadTrackerCreator.Initialize()")]
         internal static Func<IPanelComponent, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
         private ILiveReloadAssetTracker<VisualTreeAsset> m_LiveReloadVisualTreeAssetTracker;
 
@@ -757,7 +771,7 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement.isWorldSpaceRootPanelComponent != isWorldSpaceRootUIDocument)
             {
                 m_RootVisualElement.isWorldSpaceRootPanelComponent = isWorldSpaceRootUIDocument;
-                m_RootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
+                m_RootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command and to rebuild the subtree's render data
             }
         }
 
@@ -1318,5 +1332,3 @@ namespace UnityEngine.UIElements
 
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -67,6 +67,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Backing store for the changesPublished event: subscribers attach through their own lifecycle and
+        // re-subscribe after a code reload, so the cleared store refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<ObjectChangeEventsHandler> m_ChangesPublishedEvent = new EventWithPerformanceTracker<ObjectChangeEventsHandler>($"{nameof(ObjectChangeEvents)}.{nameof(changesPublished)}");
 
         // TODO: Once Burst supports internal/external functions in static initializers, this can become

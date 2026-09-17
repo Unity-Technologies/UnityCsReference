@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using System;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -22,10 +21,6 @@ namespace UnityEditor
     [Serializable]
     internal partial class CurveEditorWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal CurveEditorWindow() {}
-        #pragma warning restore UAL0015
-
         public enum NormalizationMode
         {
             None = 0,
@@ -37,6 +32,9 @@ namespace UnityEditor
         const int kPresetsHeight = 50;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Shared window cache: the accessor creates a CurveEditorWindow when this is null and OnEnable assigns
+        // it back, so it returns on the next access.
+        [IgnoreForUAL0015("Shared window cache recreated on demand and reassigned by OnEnable")]
         static CurveEditorWindow s_SharedCurveEditor;
 
         internal CurveEditor m_CurveEditor;
@@ -159,7 +157,7 @@ namespace UnityEditor
 
             m_CurveEditor.FrameSelected(frameH, frameV);
 
-            titleContent = EditorGUIUtility.TrTextContent("Curve");
+            titleContent = L10n.TextContent("Curve", null, null, null);
 
             // deal with window size
             minSize = new Vector2(240, 240 + kPresetsHeight);
@@ -633,4 +631,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

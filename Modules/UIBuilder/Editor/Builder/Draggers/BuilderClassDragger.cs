@@ -109,6 +109,10 @@ namespace Unity.UI.Builder
             if (!element.IsPartOfActiveVisualTreeAsset(paneWindow.document))
                 return false;
 
+            // Dropping a class onto an element writes to the UXML; blocked on a read-only canvas.
+            if (paneWindow.document.isCanvasReadOnly)
+                return false;
+
             return true;
         }
 

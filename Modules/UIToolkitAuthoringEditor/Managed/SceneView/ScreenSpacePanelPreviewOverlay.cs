@@ -13,7 +13,6 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
-using Object = UnityEngine.Object;
 
 namespace Unity.UIToolkit.Editor
 {
@@ -73,6 +72,9 @@ namespace Unity.UIToolkit.Editor
 
         // Previewed panel component; may be a destroyed (fake-null) Object, checked via IsAlive.
         IPanelComponent m_Target;
+
+        // Selected panel components. Update tracks the nearest one becoming previewable.
+        readonly List<IPanelComponent> m_SelectedPanelComponents = new();
 
         // What the preview is bound to; Update re-binds when the selection's document/settings change.
         VisualTreeAsset m_BoundAsset;
@@ -198,6 +200,7 @@ namespace Unity.UIToolkit.Editor
             Selection.selectionChanged += OnSelectionChanged;
             // Re-resolve after undo (it can rebuild the panel / fire selection events).
             Undo.undoRedoPerformed += OnSelectionChanged;
+            ObjectChangeEvents.changesPublished += OnObjectChangesPublished;
             EditorApplication.update += Update;
             // Drives the actual panel render, in a valid render context (see OnBeforeTickingAnyScheduledPanel).
             Panel.beforeTickingAnyScheduledPanel += OnBeforeTickingAnyScheduledPanel;
@@ -221,6 +224,7 @@ namespace Unity.UIToolkit.Editor
         {
             Selection.selectionChanged -= OnSelectionChanged;
             Undo.undoRedoPerformed -= OnSelectionChanged;
+            ObjectChangeEvents.changesPublished -= OnObjectChangesPublished;
             EditorApplication.update -= Update;
             EditorApplication.delayCall -= OnSelectionChanged;
             Panel.beforeTickingAnyScheduledPanel -= OnBeforeTickingAnyScheduledPanel;
@@ -252,6 +256,7 @@ namespace Unity.UIToolkit.Editor
             DestroyPreviewPanel();
 
             m_Target = null;
+            m_SelectedPanelComponents.Clear();
             m_SelectedElements.Clear();
         }
 
@@ -267,6 +272,24 @@ namespace Unity.UIToolkit.Editor
             m_PanelElement.EnableAnimationSystem(false);
             m_PanelElement.pickingMode = PickingMode.Ignore;
             m_PanelElement.AddToClassList(k_PreviewSurfaceUssClass);
+        }
+
+        // Adding a component and reparenting both change which panel component the selection is nearest
+        // to, and neither is a selection change. Update rebinds: building the runtime panel from inside
+        // this callback can land mid layout restore (see OnCreated).
+        void OnObjectChangesPublished(ref ObjectChangeEventStream stream)
+        {
+            for (var i = 0; i < stream.length; i++)
+            {
+                switch (stream.GetEventType(i))
+                {
+                    case ObjectChangeKind.ChangeGameObjectStructure:
+                    case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
+                    case ObjectChangeKind.ChangeGameObjectParent:
+                        RefreshSelectedPanelComponents();
+                        return;
+                }
+            }
         }
 
         void OnSelectionChanged()
@@ -287,6 +310,13 @@ namespace Unity.UIToolkit.Editor
         IPanelComponent ResolveTarget()
         {
             CollectSelectedElements();
+            RefreshSelectedPanelComponents();
+            return FindPreviewable();
+        }
+
+        void RefreshSelectedPanelComponents()
+        {
+            m_SelectedPanelComponents.Clear();
 
             foreach (var obj in Selection.objects)
             {
@@ -306,9 +336,17 @@ namespace Unity.UIToolkit.Editor
                         continue;
                 }
 
+                // Deduped: a selected subtree resolves to one component, and Update scans this per tick.
+                if (IsAlive(component) && !m_SelectedPanelComponents.Contains(component))
+                    m_SelectedPanelComponents.Add(component);
+            }
+        }
+
+        IPanelComponent FindPreviewable()
+        {
+            foreach (var component in m_SelectedPanelComponents)
                 if (IsScreenSpace(component))
                     return component;
-            }
 
             return null;
         }
@@ -615,7 +653,7 @@ namespace Unity.UIToolkit.Editor
             if (visualTreeAsset != null && !IsStaging(visualTreeAsset, panelSettings))
             {
                 var context = new VisualTreeAssetEditingContext(visualTreeAsset, panelSettings);
-                VisualElementEditingStage.GoToStage(context, BreadcrumbBar.SeparatorStyle.Line);
+                UIStageNavigation.Navigate(context, BreadcrumbBar.SeparatorStyle.Line);
             }
 
             EditorWindow.GetWindow<UIViewportWindow>(null, true, typeof(SceneView));
@@ -842,19 +880,23 @@ namespace Unity.UIToolkit.Editor
         // Must NOT render the panel (see OnBeforeTickingAnyScheduledPanel); it only flags a deferred layout.
         void Update()
         {
-            if (m_PanelElement == null)
-                return;
-
-            // Re-resolve if the target died or went world-space.
-            if (m_Target != null && (!IsAlive(m_Target) || !IsScreenSpace(m_Target)))
+            // A still previewable target is kept when the candidates don't name it: a selected element
+            // resolves to nothing while its panel is rebuilt by an undo.
+            var previewable = FindPreviewable();
+            if (previewable != m_Target && (previewable != null || !IsScreenSpace(m_Target)))
             {
                 OnSelectionChanged();
+                // Transient visibility is polled while the Scene view draws; a property change alone
+                // doesn't repaint it.
+                containerWindow?.Repaint();
                 return;
             }
 
+            if (m_Target == null || m_PanelElement == null)
+                return;
+
             // Re-bind if the selection's document / settings reference changed.
-            if (m_Target != null &&
-                (m_Target.visualTreeAsset != m_BoundAsset || m_Target.panelSettings != m_BoundSettings))
+            if (m_Target.visualTreeAsset != m_BoundAsset || m_Target.panelSettings != m_BoundSettings)
             {
                 CollectSelectedElements();
                 ResetCycleState();
@@ -863,7 +905,7 @@ namespace Unity.UIToolkit.Editor
                 return;
             }
 
-            if (displayed && m_Target != null && m_Target.visualTreeAsset != null)
+            if (displayed && m_Target.visualTreeAsset != null)
             {
                 // Re-clone the preview to follow in-place document edits (element created, moved...).
                 if (m_ContentDirty)
@@ -926,11 +968,7 @@ namespace Unity.UIToolkit.Editor
             return settings != null && settings.renderMode != PanelRenderMode.WorldSpace;
         }
 
-        // Backed by a UnityEngine.Object, so use Unity null semantics for destroyed objects.
-        static bool IsAlive(IPanelComponent component)
-        {
-            return component is Object obj ? obj != null : component != null;
-        }
+        static bool IsAlive(IPanelComponent component) => PanelComponentUtils.IsAlive(component);
 
         static bool IsUsable(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
 
@@ -954,6 +992,14 @@ namespace Unity.UIToolkit.Editor
         // --- Test seams ---
 
         internal PanelElement PanelElementForTests => m_PanelElement;
+
+        internal void ResolveTargetForTests() => OnSelectionChanged();
+
+        internal void UpdateForTests() => Update();
+
+        internal void RefreshSelectedPanelComponentsForTests() => RefreshSelectedPanelComponents();
+
+        internal int SelectedPanelComponentCountForTests => m_SelectedPanelComponents.Count;
 
         internal void SetSelectedElementsForTests(params VisualElement[] elements)
         {

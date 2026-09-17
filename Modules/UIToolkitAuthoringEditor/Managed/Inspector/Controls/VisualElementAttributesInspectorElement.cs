@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 #pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
+using System;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
 using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
@@ -30,8 +32,19 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
     internal const string k_NoNameHelpBoxName = "no-name-help-box";
     static readonly string k_NoNameMessage = L10n.Tr("A name is required in order to override attributes.", null);
 
+    internal const string k_NotEditableHelpBoxName = "not-editable-help-box";
+    internal const string k_SelectAncestorLinkId = "select-ancestor";
+    public const string LinkCursorUssClassName = "unity-attributes-inspector__link-cursor";
+    static readonly string k_SelectAncestorMessageFormat = L10n.Tr("This element was created by a control, so its attributes cannot be set here. Select {0} to see the attributes that can be changed.", null);
+    static readonly string k_TemplateInstanceMessageFormat = L10n.Tr("This element was created by a control, so its attributes cannot be set here. Select the {0} instance and open it in context to edit the control.", null);
+    internal static readonly string k_CreatedByControlMessage = L10n.Tr("This element was created by a control, so its attributes cannot be set here.", null);
+    internal static readonly string k_CreatedInScriptMessage = L10n.Tr("Attributes can only be edited for elements authored in UXML. This element was created in a C# script, so its properties must be set in code instead.", null);
+
     readonly UxmlAttributesView m_AttributesView;
     readonly HelpBox m_NoNameHelpBox;
+    readonly HelpBox m_NotEditableHelpBox;
+    readonly Label m_NotEditableLabel;
+    Action m_SelectAncestorAction;
     PropertyField m_RootPropertyField;
 
     private bool m_IsReadOnly;
@@ -87,13 +100,61 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
         m_NoNameHelpBox.style.display = DisplayStyle.None;
         Add(m_NoNameHelpBox);
 
+        m_NotEditableHelpBox = new HelpBox(k_CreatedInScriptMessage, HelpBoxMessageType.Info) { name = k_NotEditableHelpBoxName };
+        m_NotEditableHelpBox.style.display = DisplayStyle.None;
+        Add(m_NotEditableHelpBox);
+
+        m_NotEditableLabel = m_NotEditableHelpBox.Q<Label>();
+
         m_AttributesView = new UxmlAttributesView();
         m_AttributesView.ContextChanged += OnContextChanged;
         Add(m_AttributesView);
-
-        RegisterCallback<AttachToPanelEvent>(_=> BindingsStyleHelpers.HandleRightClickMenu += HandleRightClickMenu);
-        RegisterCallback<DetachFromPanelEvent>(_=> BindingsStyleHelpers.HandleRightClickMenu -= HandleRightClickMenu);
     }
+
+    [EventInterest(typeof(AttachToPanelEvent), typeof(DetachFromPanelEvent))]
+    protected override void HandleEventBubbleUp(EventBase evt)
+    {
+        switch (evt)
+        {
+            case AttachToPanelEvent { destinationPanel: not null }:
+                OnAttachToPanel();
+                break;
+            case DetachFromPanelEvent { originPanel: not null }:
+                OnDetachFromPanel();
+                break;
+        }
+
+        base.HandleEventBubbleUp(evt);
+    }
+
+    void OnAttachToPanel()
+    {
+        BindingsStyleHelpers.HandleRightClickMenu += HandleRightClickMenu;
+
+        if (m_NotEditableLabel == null)
+            return;
+
+        m_NotEditableLabel.RegisterCallback<PointerUpLinkTagEvent>(OnNotEditableLinkClicked);
+        m_NotEditableLabel.RegisterCallback<PointerOverLinkTagEvent>(OnNotEditableLinkOver);
+        m_NotEditableLabel.RegisterCallback<PointerOutLinkTagEvent>(OnNotEditableLinkOut);
+    }
+
+    void OnDetachFromPanel()
+    {
+        BindingsStyleHelpers.HandleRightClickMenu -= HandleRightClickMenu;
+
+        if (m_NotEditableLabel == null)
+            return;
+
+        m_NotEditableLabel.UnregisterCallback<PointerUpLinkTagEvent>(OnNotEditableLinkClicked);
+        m_NotEditableLabel.UnregisterCallback<PointerOverLinkTagEvent>(OnNotEditableLinkOver);
+        m_NotEditableLabel.UnregisterCallback<PointerOutLinkTagEvent>(OnNotEditableLinkOut);
+        m_NotEditableLabel.RemoveFromClassList(LinkCursorUssClassName);
+    }
+
+    void OnNotEditableLinkOver(PointerOverLinkTagEvent evt) => m_NotEditableLabel.AddToClassList(LinkCursorUssClassName);
+
+    void OnNotEditableLinkOut(PointerOutLinkTagEvent evt) => m_NotEditableLabel.RemoveFromClassList(LinkCursorUssClassName);
 
     static void HandleRightClickMenu(VisualElement ve, ref bool handled)
     {
@@ -111,6 +172,57 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
     internal void SetAttributeOverrideHelpboxVisible(bool visible)
     {
         m_NoNameHelpBox.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+    }
+
+    internal enum NotEditableHint
+    {
+        CreatedInScript,      // no authored ancestor anywhere above
+        CreatedByControl,     // an authored ancestor exists, but there is nothing useful to offer
+        SelectAncestor,       // the ancestor takes attribute overrides, so it is worth selecting
+        SelectTemplateInstance // the ancestor cannot take overrides; offer the instance holding it
+    }
+
+    internal void SetNotEditableHelpboxVisible(bool visible, NotEditableHint hint = NotEditableHint.CreatedInScript,
+        string linkText = null, Action onLinkClicked = null)
+    {
+        m_SelectAncestorAction = visible ? onLinkClicked : null;
+
+        if (visible)
+        {
+            var link = FormatAncestorLink(linkText, onLinkClicked != null);
+            m_NotEditableHelpBox.text = hint switch
+            {
+                NotEditableHint.SelectAncestor => string.Format(k_SelectAncestorMessageFormat, link),
+                NotEditableHint.SelectTemplateInstance => string.Format(k_TemplateInstanceMessageFormat, link),
+                NotEditableHint.CreatedByControl => k_CreatedByControlMessage,
+                _ => k_CreatedInScriptMessage
+            };
+        }
+        else
+        {
+            m_NotEditableLabel?.RemoveFromClassList(LinkCursorUssClassName);
+        }
+
+        m_NotEditableHelpBox.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+    }
+
+    static string FormatAncestorLink(string ancestorName, bool clickable)
+    {
+        if (!clickable)
+            return $"<noparse>{ancestorName}</noparse>";
+
+        return $"<link=\"{k_SelectAncestorLinkId}\"><color=#{GetLinkColorHex()}><u><noparse>{ancestorName}</noparse></u></color></link>";
+    }
+
+    static string GetLinkColorHex() => EditorGUIUtility.isProSkin ? "7BA6FF" : "2C5FD8";
+
+    void OnNotEditableLinkClicked(PointerUpLinkTagEvent evt)
+    {
+        if (evt.linkID != k_SelectAncestorLinkId)
+            return;
+
+        evt.StopPropagation();
+        m_SelectAncestorAction?.Invoke();
     }
 
     void OnContextChanged(object sender, UxmlAttributesEditingContext.ContextChangedEventArgs args)

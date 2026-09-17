@@ -20,6 +20,12 @@ namespace Unity.Profiling.Editor
         VisualElement m_JobsProfilerView;
 
         ProfilerModuleViewController m_JobsProfilerDetailsViewController;
+        ProfilerViewType m_ViewType;
+
+        public IProfilerViewOptionsMenuContributor ViewOptionsMenuContributor =>
+            m_ViewType == ProfilerViewType.TimelineV2
+                ? m_JobsProfilerDetailsViewController as IProfilerViewOptionsMenuContributor
+                : null;
 
         public HybridLegacyDetailsViewController(
             ProfilerWindow profilerWindow,
@@ -34,12 +40,15 @@ namespace Unity.Profiling.Editor
 
         public void SetViewType(ProfilerViewType newViewType)
         {
+            m_ViewType = newViewType;
+
             var isJobsProfiler = newViewType == ProfilerViewType.TimelineV2;
             if (isJobsProfiler && m_JobsProfilerDetailsViewController == null)
             {
-                var jobsProfilerModule = m_ProfilerWindow.jobsProfilerModule;
-                m_JobsProfilerDetailsViewController = jobsProfilerModule.CreateDetailsViewController();
-                m_JobsProfilerView.Add(m_JobsProfilerDetailsViewController.View);
+                m_JobsProfilerDetailsViewController = JobsProfilerViewProvider.CreateJobsProfilerViewController(m_ProfilerWindow);
+
+                if (m_JobsProfilerDetailsViewController != null)
+                    m_JobsProfilerView.Add(m_JobsProfilerDetailsViewController.View);
             }
 
             UI.UIUtility.SetElementDisplay(m_LegacyIMGUIView, !isJobsProfiler);

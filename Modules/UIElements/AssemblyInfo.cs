@@ -25,6 +25,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq
 
+[assembly: InternalsVisibleTo("UnityEditor.MultiplayerModule")]
 [assembly: InternalsVisibleTo("UnityEditor.StyleSheetsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIBuilderModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]

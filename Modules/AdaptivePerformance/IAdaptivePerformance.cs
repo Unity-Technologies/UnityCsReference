@@ -109,7 +109,6 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>
         /// Access to the active operation mode.
         /// </summary>
-        /// <value>Interface to read and change the active operation mode provider.</value>
         IOperationModeStatus OperationModeStatus { get; }
 
         /// <summary>

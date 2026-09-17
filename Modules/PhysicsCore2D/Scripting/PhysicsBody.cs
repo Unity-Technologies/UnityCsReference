@@ -24,6 +24,43 @@ namespace Unity.U2D.Physics
     ///
     /// A body is automatically destroyed when the world it is in is destroyed. A body cannot exist outside a world.
     /// </summary>
+    /// <remarks>
+    /// Create a body with <see cref="PhysicsWorld.CreateBody(PhysicsBodyDefinition)"/>, then attach a shape with <see cref="PhysicsBody.CreateShape(CircleGeometry, PhysicsShapeDefinition)"/>. After you create a shape from a geometry object, the shape doesn't change if you later change the geometry object.
+    /// Unity draws shapes as a debug visualization in the Scene view and Game view, with a line indicating the shape's  rotation direction.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Create a body, then attach a circle shape to it.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class CreateWorldAndObjects : MonoBehaviour
+    /// {
+    ///     // Declare definitions that contain default properties for the body and shape.
+    ///     public PhysicsBodyDefinition bodyDefinition = PhysicsBodyDefinition.defaultDefinition;
+    ///     public PhysicsShapeDefinition shapeDefinition = PhysicsShapeDefinition.defaultDefinition;
+    ///
+    ///     void Start()
+    ///     {
+    ///         // Get the default world.
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///
+    ///         // Create the physics body with the body definition.
+    ///         PhysicsBody myObject = world.CreateBody(bodyDefinition);
+    ///
+    ///         // Create the circle geometry.
+    ///         CircleGeometry circleGeometry = new CircleGeometry { radius = 1.5f };
+    ///
+    ///         // Create the shape with both the geometry and the shape definition.
+    ///         myObject.CreateShape(circleGeometry, shapeDefinition);
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsShape"/>
+    /// <seealso cref="PhysicsWorld"/>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
     public readonly partial struct PhysicsBody : IPhysicsHandle<PhysicsBody>, IEquatable<PhysicsBody>
@@ -164,6 +201,49 @@ namespace Unity.U2D.Physics
         /// The method used to Write the body pose to the Transform.
         /// See <see cref="PhysicsWorld.transformWriteMode"/>.
         /// </summary>
+        /// <remarks>
+        /// By default, Unity writes the Transform component after it finishes calculating the physics simulation. Set this mode to `Interpolate` or `Extrapolate` instead to interpolate positions between simulation steps.
+        /// <see cref="PhysicsBody.transformObject"/> is available only in a C# script, not in the Inspector window of a public <see cref="PhysicsBodyDefinition"/> object.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Move a GameObject by creating a dynamic body and writing its Transform.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class MoveGameObject : MonoBehaviour
+        /// {
+        ///     public PhysicsWorld world;
+        ///     public PhysicsWorldDefinition worldDefinition = PhysicsWorldDefinition.defaultDefinition;
+        ///
+        ///     void Awake()
+        ///     {
+        ///         // Enable physics bodies updating transforms.
+        ///         worldDefinition.transformWriteMode = PhysicsWorld.TransformWriteMode.Fast2D;
+        ///         world = PhysicsWorld.Create(worldDefinition);
+        ///     }
+        ///
+        ///     void Start()
+        ///     {
+        ///         // Create a body and shape.
+        ///         PhysicsBody circleBody = world.CreateBody();
+        ///         CircleGeometry circleGeometry = new CircleGeometry { radius = 2f };
+        ///         circleBody.CreateShape(circleGeometry);
+        ///
+        ///         // Set body to dynamic so it falls under gravity.
+        ///         circleBody.type = PhysicsBody.BodyType.Dynamic;
+        ///
+        ///         // Enable this physics body updating transforms.
+        ///         circleBody.transformWriteMode = PhysicsBody.TransformWriteMode.Current;
+        ///
+        ///         // Set the updated transform as the transform of this GameObject.
+        ///         circleBody.transformObject = transform;
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public enum TransformWriteMode
         {
             /// <summary>
@@ -480,7 +560,7 @@ namespace Unity.U2D.Physics
             public float angularDamping { readonly get => m_AngularDamping; set => m_AngularDamping = Mathf.Max(0f, value); }
 
             /// <summary>
-            /// When true, trigger shapes contribute to buoyancy alongside solid shapes.
+            /// When true, trigger shapes contribute to buoyancy alongside non-trigger shapes.
             /// When false, trigger shapes are skipped.
             /// </summary>
             public bool useTriggers { readonly get => m_UseTriggers; set => m_UseTriggers = value; }
@@ -553,7 +633,7 @@ namespace Unity.U2D.Physics
             public float lift { readonly get => m_Lift; set => m_Lift = Mathf.Max(0f, value); }
 
             /// <summary>
-            /// When true, trigger shapes contribute to wind alongside solid shapes.
+            /// When true, trigger shapes contribute to wind alongside non-trigger shapes.
             /// When false, trigger shapes are skipped.
             /// </summary>
             public bool useTriggers { readonly get => m_UseTriggers; set => m_UseTriggers = value; }
@@ -880,6 +960,28 @@ namespace Unity.U2D.Physics
         /// <param name="world">The world to create the body in.</param>
         /// <param name="definition">The body definition to use.</param>
         /// <returns>The created body.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create a body with a body definition, then attach a circle shape to it.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class CreateBodyExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         PhysicsBody myObject = PhysicsBody.Create(world, new PhysicsBodyDefinition
+        ///         {
+        ///             position = new Vector2(0f, 5f)
+        ///         });
+        ///         myObject.CreateShape(new CircleGeometry { radius = 1.5f });
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public static PhysicsBody Create(PhysicsWorld world, PhysicsBodyDefinition definition) => PhysicsBody_Create(world, definition);
 
         /// <summary>
@@ -930,8 +1032,31 @@ namespace Unity.U2D.Physics
         /// Destroy a body, destroying all attached <see cref="PhysicsShape"/> and <see cref="PhysicsJoint"/>.
         /// If the object is owned with <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/> then you must provide the owner key it returned. Failing to do so will return a warning and the body will not be destroyed.
         /// </summary>
+        /// <remarks>
+        /// Unity produces an error in the Console window if you try to destroy a body that no longer exists. Check <see cref="PhysicsBody.isValid"/> first.
+        /// </remarks>
         /// <param name="ownerKey">Optional owner key returned when using <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>.</param>
-        /// <returns>If the body was destroyed or not.</returns>
+        /// <returns>Returns `true` if the body was successfully destroyed. Otherwise, `false`.</returns>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Create a physics body, then destroy it when it's no longer needed.
+        /// using UnityEngine;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DestroyBodyExample : MonoBehaviour
+        /// {
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         PhysicsBody myBody = world.CreateBody();
+        ///         myBody.Destroy();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="PhysicsWorld.DestroyBodyBatch(ReadOnlySpan{PhysicsBody})"/>
         public readonly bool Destroy(int ownerKey = 0) => PhysicsBody_Destroy(this, ownerKey);
 
         /// <summary>
@@ -940,6 +1065,29 @@ namespace Unity.U2D.Physics
         /// Owned bodies will produce a warning and will not be destroyed (See <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>).
         /// </summary>
         /// <param name="bodies">The bodies to destroy.</param>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Destroy every body returned by a batch creation call.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class DestroyBatchExample : MonoBehaviour
+        /// {
+        ///     public PhysicsBodyDefinition bodyDefinition = PhysicsBodyDefinition.defaultDefinition;
+        ///
+        ///     void Start()
+        ///     {
+        ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+        ///         NativeArray<PhysicsBody> bodies = world.CreateBodyBatch(bodyDefinition, 500);
+        ///         PhysicsBody.DestroyBatch(bodies);
+        ///         bodies.Dispose();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public static void DestroyBatch(ReadOnlySpan<PhysicsBody> bodies) => DestroyBatch(bodies, 0);
 
         /// <summary>
@@ -1080,7 +1228,7 @@ namespace Unity.U2D.Physics
         }
 
         /// <undoc/>
-        struct WriteBatchPosesJob : IJobParallelForTransform
+        internal struct WriteBatchPosesJob : IJobParallelForTransform
         {
             [ReadOnly] public NativeArray<BatchTransform> batch;
             [ReadOnly] public PhysicsWorld.TransformPlane transformPlane;
@@ -1470,6 +1618,9 @@ namespace Unity.U2D.Physics
         /// This allows this body to bypass rotational speed limits.
         /// This should only be used for circular objects, such as wheels, balls etc.
         /// </summary>
+        /// <remarks>
+        /// By default, Unity limits how fast a body rotates to avoid forces becoming too large and objects passing through each other incorrectly. Set this property to `true` to remove that limit for this body.
+        /// </remarks>
         public readonly bool fastRotationAllowed { get => PhysicsBody_GetFastRotationAllowed(this); set => PhysicsBody_SetFastRotationAllowed(this, value); }
 
         /// <summary>
@@ -1488,6 +1639,10 @@ namespace Unity.U2D.Physics
         /// They are not a solution for general dynamic-versus-dynamic continuous collision.
         /// They also may interfere with joint constraints.
         /// </summary>
+        /// <remarks>
+        /// The 2D physics system already uses continuous collision detection automatically to prevent tunneling when dynamic bodies approach static bodies.
+        /// If a very fast-moving object still passes through another object, set this property to `true` to force fast collision detection. Enabling this setting can reduce performance, so use it only for the bodies that need it.
+        /// </remarks>
         public readonly bool fastCollisionsAllowed { get => PhysicsBody_GetFastCollisionsAllowed(this); set => PhysicsBody_SetFastCollisionsAllowed(this, value); }
 
         /// <summary>

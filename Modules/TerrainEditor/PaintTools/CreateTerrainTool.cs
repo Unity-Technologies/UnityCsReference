@@ -19,9 +19,9 @@ namespace UnityEditor.TerrainTools
 
         private class Styles
         {
-            public GUIContent fillHeightmapUsingNeighbors = EditorGUIUtility.TrTextContent("Fill Heightmap Using Neighbors", "If selected, it will fill heightmap of the new terrain performing cross blend of heightmaps of its neighbors.");
-            public GUIContent fillAddressMode = EditorGUIUtility.TrTextContent("Fill Heightmap Address Mode", "Type of the terrain's neighbors sampling address mode.");
-            public GUIContent terrainToolPropertyChange = EditorGUIUtility.TrTextContent("Terrain tool property change");
+            public GUIContent fillHeightmapUsingNeighbors = L10n.TextContent("Fill Heightmap Using Neighbors", "If selected, it will fill heightmap of the new terrain performing cross blend of heightmaps of its neighbors.", null, null);
+            public GUIContent fillAddressMode = L10n.TextContent("Fill Heightmap Address Mode", "Type of the terrain's neighbors sampling address mode.", null, null);
+            public GUIContent terrainToolPropertyChange = L10n.TextContent("Terrain tool property change", null, null, null);
         }
 
         private enum FillAddressMode

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -47,10 +46,10 @@ namespace UnityEditor
             int baseWidth = 270;
             m_HeaderState = new MultiColumnHeaderState(new MultiColumnHeaderState.Column[]
             {
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("  Cache Format"), width = baseWidth, autoResize = false},
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("Demand"), width = baseWidth, autoResize = false},
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("Bias"), width = baseWidth, autoResize = false},
-                new MultiColumnHeaderState.Column {headerContent = EditorGUIUtility.TrTextContent("Size"), width = baseWidth, autoResize = false}
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("  Cache Format", null, null, null), width = baseWidth, autoResize = false},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("Demand", null, null, null), width = baseWidth, autoResize = false},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("Bias", null, null, null), width = baseWidth, autoResize = false},
+                new MultiColumnHeaderState.Column {headerContent = L10n.TextContent("Size", null, null, null), width = baseWidth, autoResize = false}
             });
 
             foreach (var column in m_HeaderState.columns)
@@ -427,7 +426,7 @@ namespace UnityEditor
             public static GUIStyle oddStyle;
             public static readonly GUIStyle scrollStyle = "ProfilerScrollviewBackground";
 
-            public static readonly GUIContent helpButtonContent = EditorGUIUtility.TrIconContent("_Help", "Open Manual (in a web browser)");
+            public static readonly GUIContent helpButtonContent = L10n.IconContent("_Help", "Open Manual (in a web browser)", null);
 
             static Styles()
             {
@@ -608,4 +607,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

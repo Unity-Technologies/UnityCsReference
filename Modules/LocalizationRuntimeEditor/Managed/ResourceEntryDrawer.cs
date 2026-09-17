@@ -91,11 +91,17 @@ public abstract partial class ResourceEntryDrawer
     public abstract VisualElement CreateCell(IResourceEntry entry, ResourceEntryContext context);
 
     [AutoStaticsCleanup] // keyed by Type and holds drawer instances; both go stale on reload
+    // Lazily built drawer registry: the resolve path does s_Drawers ??= BuildRegistry(), so it is rebuilt
+    // by reflection on the next use.
+    [IgnoreForUAL0015("Drawer registry rebuilt by BuildRegistry() when null")]
     static Dictionary<Type, ResourceEntryDrawer> s_Drawers;
     [NoAutoStaticsCleanup] // stateless fallback; a readonly field cannot be reassigned anyway
     static readonly ResourceEntryDrawer s_Fallback = new FallbackEntryDrawer();
     // Resolved base-type walks, cached because Get runs per cell while the table scrolls.
     [AutoStaticsCleanup] // caches Type handles a reload invalidates
+    // Memo of the entry-type to drawer walk; a missing entry is re-derived from the registry on the next
+    // resolve, and it must be cleared so it does not hold the previous scope's types.
+    [IgnoreForUAL0015("Drawer resolution memo, re-derived on the next miss")]
     static readonly Dictionary<Type, ResourceEntryDrawer> s_Resolved = new();
 
     internal static ResourceEntryDrawer Get(Type entryType)

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: EditorWindowManagement not yet converted
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 using System.Linq;
@@ -120,7 +119,9 @@ namespace UnityEditor
                 if (m_EnableViewDataPersistence && m_ViewDataDictionary == null)
                 {
                     string editorPrefFileName = this.GetType().ToString();
+#pragma warning disable UAL0018 // m_ViewDataDictionary lives on the EditorWindow instance, which a code reload recreates along with this cache; the fresh window re-resolves its entry from the new view-data singleton on first access
                     m_ViewDataDictionary = UIElements.EditorWindowViewData.instance[editorPrefFileName];
+#pragma warning restore UAL0018
                 }
                 return m_ViewDataDictionary;
             }
@@ -307,7 +308,7 @@ namespace UnityEditor
                     return EditorGUIUtility.TrTextContentWithIcon(attr.title, iconName);
                 }
 
-                return EditorGUIUtility.TrTextContent(attr.title);
+                return L10n.TextContent(attr.title, null, null, null);
             }
 
             // Fallback to type name (Do not localize type name)
@@ -466,6 +467,9 @@ namespace UnityEditor
         static public Action focusedWindowChanged;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         static public event Action windowFocusChanged;
 
         static internal void OnWindowFocusChanged()
@@ -1333,9 +1337,7 @@ namespace UnityEditor
             titleContent.text = GetType().ToString();
             saveChangesMessage = $"{GetType()} has unsaved changes.";
 
-            #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
             UpdateWindowMenuListing();
-            #pragma warning restore UAL0015
         }
 
         void InitializeOverlayCanvas()
@@ -1716,4 +1718,3 @@ namespace UnityEditor
         }
     }
 } //namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

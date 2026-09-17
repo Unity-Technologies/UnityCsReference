@@ -266,6 +266,54 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
+        /// Allocate a <see cref="EffectInstance"/> with the specified processor and control state.
+        /// </summary>
+        /// <seealso cref="IAudioEffect.CreateInstance(ControlContext,UnityEngine.Audio.AudioFormat?,EffectInstance.CreationParameters)"/>
+        /// <param name="nestedFormat">
+        /// If not null, the returned <see cref="EffectInstance"/> will be treated as nested and use this format.
+        /// </param>
+        /// <param name="creationParameters">
+        /// Additional parameters and initialization state for the processor.
+        /// This is generally received from <see cref="IAudioEffect.CreateInstance(ControlContext,UnityEngine.Audio.AudioFormat?,EffectInstance.CreationParameters)"/>
+        /// </param>
+        public readonly EffectInstance AllocateEffect<TProcessor, TControl>(
+            in TProcessor processorState,
+            in TControl controlState,
+            AudioFormat? nestedFormat = null,
+            in EffectInstance.CreationParameters creationParameters = default
+        )
+            where TProcessor : unmanaged, EffectInstance.IRealtime
+            where TControl : unmanaged, EffectInstance.IControl<TProcessor>
+        {
+            m_Handle.CheckValidOrThrow();
+
+            DualThreadHandle createdHandle;
+            {
+                // Stage the ControlStorage on the stack. Native memcpys it into the bridge slab tail; this local
+                // dies as soon as InitializeEffectHandle returns.
+                IEffectControlExtensions.JobStruct<TControl, TProcessor>.ControlStorage storage;
+
+                storage.HeaderAndProcessor.Header = default;
+                storage.HeaderAndProcessor.Header.Processor.ProcessorReflectionData = IEffectProcessorExtensions.GetReflectionData<TProcessor>();
+                storage.HeaderAndProcessor.Header.Processor.ControlReflectionData = IEffectControlExtensions.GetReflectionData<TControl, TProcessor>();
+
+                storage.HeaderAndProcessor.UserProcessor = processorState;
+                storage.UserControl = controlState;
+
+                var config = (nestedFormat ?? default).audioConfiguration;
+
+                createdHandle = ScriptableEffectBindings.InitializeEffectHandle(
+                    ref storage,
+                    m_Header,
+                    nestedFormat.HasValue ? &config : null,
+                    creationParameters.BuildInitializationFlags()
+                );
+            }
+
+            return new EffectInstance(createdHandle);
+        }
+
+        /// <summary>
         /// Allocate a <see cref="RootOutputInstance"/> with the specified processor and control state.
         /// </summary>
         /// <remarks>
@@ -329,6 +377,17 @@ namespace UnityEngine.Audio
             where TControl : unmanaged, RootOutputInstance.IControl<TRealtime>
         {
             return GetProcessorHeader<ProcessorHeader>(processorInstance.Handle).ControlReflectionData == IRootOutputControlExtensions.GetReflectionData<TControl, TRealtime>();
+        }
+
+        /// <summary>
+        /// Test whether <paramref name="processorInstance"/> is an <see cref="EffectInstance"/> built from a
+        /// <typeparamref name="TRealtime"/> and <typeparamref name="TControl"/>.
+        /// </summary>
+        public readonly bool IsEffect<TRealtime, TControl>(ProcessorInstance processorInstance)
+            where TRealtime : unmanaged, EffectInstance.IRealtime
+            where TControl : unmanaged, EffectInstance.IControl<TRealtime>
+        {
+            return GetProcessorHeader<ProcessorHeader>(processorInstance.Handle).ControlReflectionData == IEffectControlExtensions.GetReflectionData<TControl, TRealtime>();
         }
 
         /// <summary>
@@ -421,6 +480,11 @@ namespace UnityEngine.Audio
         public void Destroy(RootOutputInstance rootOutputInstance) => DestroyProcessor(rootOutputInstance.m_ProcessorInstance);
 
         /// <summary>
+        /// Destroy an <see cref="EffectInstance"/> previously allocated with <see cref="ControlContext.AllocateEffect"/>.
+        /// </summary>
+        public void Destroy(EffectInstance effectInstance) => DestroyProcessor(effectInstance.m_Processor);
+
+        /// <summary>
         /// Get the declared configuration <paramref name="generatorInstance"/> runs in.
         /// </summary>
         /// <seealso cref="GeneratorInstance.IControl{TRealtime}.Configure"/>
@@ -483,6 +547,20 @@ namespace UnityEngine.Audio
         public void Update(GeneratorInstance generatorInstance)
         {
             ScriptableProcessorBindings.PerformRecursiveUpdate(generatorInstance.m_ProcessorInstance.Handle, Header);
+        }
+
+        /// <summary>
+        /// Manually update this <see cref="EffectInstance"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is only valid on nested <see cref="ProcessorInstance"/>s.
+        /// You must always update any nested <see cref="ProcessorInstance"/>s you have created.
+        /// </remarks>
+        /// <seealso cref="ControlContext.AllocateEffect"/>
+        /// <seealso cref="ControlContext.Configure"/>
+        public void Update(EffectInstance effectInstance)
+        {
+            ScriptableProcessorBindings.PerformRecursiveUpdate(effectInstance.m_Processor.Handle, Header);
         }
 
         /// <summary>

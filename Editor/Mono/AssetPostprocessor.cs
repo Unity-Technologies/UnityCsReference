@@ -10,10 +10,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.AssetImporters;
+using UnityEditor.Build.Content;
 using Object = UnityEngine.Object;
 using UnityEditor.Profiling;
 using UnityEditor.Callbacks;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
@@ -65,6 +67,10 @@ namespace UnityEditor
 
         // The context of the import, used to specify dependencies
         public AssetImportContext context { get { return m_Context; } internal set { m_Context = value; } }
+
+        // GetPostprocessOrder() as read once after assetPath is assigned, so an implementation answering per asset
+        // answers for this one, and the answer cannot change during the import.
+        internal int m_PostprocessOrder;
 
         // Logs an import warning to the console.
         [ExcludeFromDocs]
@@ -176,6 +182,7 @@ namespace UnityEditor
 
     internal partial class AssetPostprocessingInternal
     {
+
         // What is it:
         // Static postprocessor methods always called for each importer that are part of importer static dependency.
         // No new postprocessors should be added to these lists. Please reach out to #devs-import-workflow to talk about new additions.
@@ -211,6 +218,11 @@ namespace UnityEditor
             "OnPostprocessSprites",
             "OnPostprocessTexture3D",
             "OnPostprocessTexture2DArray"
+        };
+
+        static readonly string[] k_DynamicSinglePassBuildPostprocessors =
+        {
+            "OnProcessScene",
         };
 
         static readonly string[] k_IHVImporterPostprocessors =
@@ -263,6 +275,10 @@ namespace UnityEditor
         {
             "OnPostprocessSprites",
         };
+        static readonly string[] k_DynamicSinglePassBuild_Scene_Postprocessors =
+        {
+            "OnProcessScene",
+        };
 
         [NoAutoStaticsCleanup] // Lookup tables keyed/valued by built-in importer types and fixed dependency-name constants; contents are domain-invariant and safe to persist across reloads.
         static Dictionary<string, string[]> s_PostprocessorMethodsByDependencyKey;
@@ -287,6 +303,7 @@ namespace UnityEditor
             s_DynamicPostprocessorMethodsByImporterType = new Dictionary<Type, string[]>();
             s_DynamicPostprocessorMethodsByImporterType.Add(typeof(ModelImporter), k_DynamicModelImporterPostprocessors);
             s_DynamicPostprocessorMethodsByImporterType.Add(typeof(TextureImporter), k_TextureImporterPostprocessors);
+            s_DynamicPostprocessorMethodsByImporterType.Add(typeof(SinglePassBuildImporter), k_DynamicSinglePassBuildPostprocessors);
 
             s_PostprocessorMethodsByDependencyKey = new Dictionary<string, string[]>();
             s_PostprocessorMethodsByDependencyKey.Add(kCameraPostprocessorDependencyName, k_CameraPostprocessors);
@@ -297,6 +314,7 @@ namespace UnityEditor
             s_PostprocessorMethodsByDependencyKey.Add(kTexture3DPostprocessorDependencyName, k_Texture3DPostprocessors);
             s_PostprocessorMethodsByDependencyKey.Add(kTextureCubePostprocessorDependencyName, k_TextureCubePostprocessors);
             s_PostprocessorMethodsByDependencyKey.Add(kTextureSpritePostprocessorDependencyName, k_SpritePostprocessors);
+            s_PostprocessorMethodsByDependencyKey.Add(kSinglePassBuildSceneProcessorDependencyName, k_DynamicSinglePassBuild_Scene_Postprocessors);
         }
 
         [Serializable]
@@ -419,6 +437,7 @@ namespace UnityEditor
         internal const string kTexture2DArrayPostprocessorDependencyName = "postprocessor/texture2DArray";
         internal const string kTextureSpritePostprocessorDependencyName = "postprocessor/textureSprite";
         internal const string kTexturePreprocessorDependencyName = "postprocessor/texturePreprocessor";
+        internal const string kSinglePassBuildSceneProcessorDependencyName = "postprocessor/build/scene";
 
         [AutoStaticsCleanupOnCodeReload]
         static Stack<SortedSet<AssetPostprocessor>> m_PostprocessStack = null;
@@ -451,6 +470,8 @@ namespace UnityEditor
         static string m_TextureSpriteDependencyName = null;
         [AutoStaticsCleanupOnCodeReload]
         static string m_TexturePreprocessorDependencyName = null;
+        [AutoStaticsCleanupOnCodeReload]
+        static string m_SinglePassBuildSceneProcessorsHashString = null;
 
         [AutoStaticsCleanupOnCodeReload]
         static Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>> s_StaticPostprocessorsPerImporterType = new Dictionary<Type, SortedSet<AssetPostprocessor.PostprocessorInfo>>();
@@ -469,8 +490,7 @@ namespace UnityEditor
             return m_PostprocessorClasses;
         }
 
-        [RequiredByNativeCode]
-        static void InitPostprocessorsForTextureGenerator(string pathName)
+        internal static void InitPostprocessorsForTextureGenerator(string pathName)
         {
             var analyticsEvent = new AssetPostProcessorAnalyticsData();
             analyticsEvent.importActionId = "None";
@@ -482,6 +502,7 @@ namespace UnityEditor
                 var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
                 assetPostprocessor.assetPath = pathName;
                 assetPostprocessor.context = null;
+                assetPostprocessor.m_PostprocessOrder = assetPostprocessor.GetPostprocessOrder();
                 m_ImportProcessors.Add(assetPostprocessor);
             }
 
@@ -490,6 +511,7 @@ namespace UnityEditor
                 var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
                 assetPostprocessor.assetPath = pathName;
                 assetPostprocessor.context = null;
+                assetPostprocessor.m_PostprocessOrder = assetPostprocessor.GetPostprocessOrder();
                 m_ImportProcessors.Add(assetPostprocessor);
             }
 
@@ -499,8 +521,7 @@ namespace UnityEditor
             m_PostprocessStack.Push(m_ImportProcessors);
         }
 
-        [RequiredByNativeCode]
-        static void InitPostprocessors(AssetImportContext context, string pathName, Type importerType, double importStartTime)
+        internal static void InitPostprocessors(AssetImportContext context, string pathName, Type importerType, double importStartTime)
         {
             var analyticsEvent = new AssetPostProcessorAnalyticsData();
             analyticsEvent.importActionId = ((int)Math.Floor(importStartTime * 1000)).ToString();
@@ -512,6 +533,7 @@ namespace UnityEditor
                 var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
                 assetPostprocessor.assetPath = pathName;
                 assetPostprocessor.context = context;
+                assetPostprocessor.m_PostprocessOrder = assetPostprocessor.GetPostprocessOrder();
                 m_ImportProcessors.Add(assetPostprocessor);
             }
 
@@ -520,6 +542,7 @@ namespace UnityEditor
                 var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
                 assetPostprocessor.assetPath = pathName;
                 assetPostprocessor.context = context;
+                assetPostprocessor.m_PostprocessOrder = assetPostprocessor.GetPostprocessOrder();
                 m_ImportProcessors.Add(assetPostprocessor);
             }
 
@@ -529,8 +552,7 @@ namespace UnityEditor
             m_PostprocessStack.Push(m_ImportProcessors);
         }
 
-        [RequiredByNativeCode]
-        static void CleanupPostprocessors()
+        internal static void CleanupPostprocessors()
         {
             if (m_PostprocessStack != null)
             {
@@ -684,42 +706,12 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void PreprocessModel(string pathName)
-        {
-            CallPostProcessMethods("OnPreprocessModel", null);
-        }
-
-        [RequiredByNativeCode]
         static void PreprocessSpeedTree(string pathName)
         {
             CallPostProcessMethods("OnPreprocessSpeedTree", null);
         }
 
-        [RequiredByNativeCode]
-        static void PreprocessAnimation(string pathName)
-        {
-            CallPostProcessMethods("OnPreprocessAnimation", null);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessAnimation(GameObject root, AnimationClip clip)
-        {
-            object[] args = { root, clip };
-            CallPostProcessMethods("OnPostprocessAnimation", args);
-        }
-
-        [RequiredByNativeCode]
-        static Material ProcessMeshAssignMaterial(Renderer renderer, Material material)
-        {
-            object[] args = { material, renderer };
-            Material assignedMaterial;
-            CallPostProcessMethodsUntilReturnedObjectIsValid("OnAssignMaterialModel", args, out assignedMaterial);
-
-            return assignedMaterial;
-        }
-
-        [RequiredByNativeCode]
-        static bool ProcessMeshHasAssignMaterial()
+        internal static bool ProcessMeshHasAssignMaterial()
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
@@ -731,74 +723,13 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void PostprocessMeshHierarchy(GameObject root)
-        {
-            object[] args = { root };
-            CallPostProcessMethods("OnPostprocessMeshHierarchy", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessMesh(GameObject gameObject)
-        {
-            object[] args = { gameObject };
-            CallPostProcessMethods("OnPostprocessModel", args);
-        }
-
-        [RequiredByNativeCode]
         static void PostprocessSpeedTree(GameObject gameObject)
         {
             object[] args = { gameObject };
             CallPostProcessMethods("OnPostprocessSpeedTree", args);
         }
 
-        [RequiredByNativeCode]
-        static void PostprocessMaterial(Material material)
-        {
-            object[] args = { material };
-            CallPostProcessMethods("OnPostprocessMaterial", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PreprocessCameraDescription(AssetImportContext assetImportContext, CameraDescription description, Camera camera, AnimationClip[] animations)
-        {
-            assetImportContext.DependsOnCustomDependency(kCameraPostprocessorDependencyName);
-            object[] args = { description, camera, animations };
-            CallPostProcessMethods("OnPreprocessCameraDescription", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PreprocessLightDescription(AssetImportContext assetImportContext, LightDescription description, Light light, AnimationClip[] animations)
-        {
-            assetImportContext.DependsOnCustomDependency(kLightPostprocessorDependencyName);
-            object[] args = { description, light, animations };
-            CallPostProcessMethods("OnPreprocessLightDescription", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PreprocessMaterialDescription(MaterialDescription description, Material material, AnimationClip[] animations)
-        {
-            object[] args = { description, material, animations };
-            CallPostProcessMethods("OnPreprocessMaterialDescription", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessGameObjectWithUserProperties(GameObject go, string[] prop_names, object[] prop_values)
-        {
-            object[] args = { go, prop_names, prop_values };
-            CallPostProcessMethods("OnPostprocessGameObjectWithUserProperties", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessGameObjectWithAnimatedUserProperties(GameObject go, IntPtr bindingsPtr)
-        {
-            var bindings = AnimationUtility.BindingsArrayPtrToBindingsArray(bindingsPtr);
-            object[] args = { go, bindings };
-            CallPostProcessMethods("OnPostprocessGameObjectWithAnimatedUserProperties", args);
-            AnimationUtility.CopyBindingsArrayToBindingsArrayPtr(bindings, bindingsPtr);
-        }
-
-        [RequiredByNativeCode]
-        static bool HasPostprocessGameObjectWithUserProperties()
+        internal static bool HasPostprocessGameObjectWithUserProperties()
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
@@ -809,8 +740,7 @@ namespace UnityEditor
             return false;
         }
 
-        [RequiredByNativeCode]
-        static bool HasPostprocessGameObjectWithAnimatedUserProperties()
+        internal static bool HasPostprocessGameObjectWithAnimatedUserProperties()
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
             {
@@ -822,110 +752,11 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void PreprocessTexture(string pathName, AssetImportContext context)
+        static void SinglePassBuildProcessScene(AssetImportContext assetImportContext, Scene scene, SceneImportContext sceneContext)
         {
-            if (context != null)
-            {
-                context.DependsOnCustomDependency(kTexturePreprocessorDependencyName);
-            }
-
-            CallPostProcessMethods("OnPreprocessTexture", null);
-        }
-
-        [RequiredByNativeCode]
-        static void PreprocessTextureFromScript(string pathName)
-        {
-            CallPostProcessMethods("OnPreprocessTexture", null);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessTexture(Texture2D tex, string pathName, AssetImportContext context)
-        {
-            if (context != null)
-            {
-                context.DependsOnCustomDependency(kTexture2DPostprocessorDependencyName);
-            }
-            object[] args = { tex };
-            CallPostProcessMethods("OnPostprocessTexture", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessTextureFromScript(Texture2D tex, string pathName)
-        {
-            object[] args = { tex };
-            CallPostProcessMethods("OnPostprocessTexture", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessCubemap(Cubemap tex, string pathName, AssetImportContext context)
-        {
-            if (context != null)
-            {
-                context.DependsOnCustomDependency(kTextureCubePostprocessorDependencyName);
-            }
-            object[] args = { tex };
-            CallPostProcessMethods("OnPostprocessCubemap", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessCubemapFromScript(Cubemap tex, string pathName)
-        {
-            object[] args = { tex };
-            CallPostProcessMethods("OnPostprocessCubemap", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessTexture3D(Texture3D tex, string pathName, AssetImportContext context)
-        {
-            if (context != null)
-            {
-                context.DependsOnCustomDependency(kTexture3DPostprocessorDependencyName);
-            }
-            object[] args = { tex };
-            CallPostProcessMethods("OnPostprocessTexture3D", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessTexture3DFromScript(Texture3D tex, string pathName)
-        {
-            object[] args = { tex };
-            CallPostProcessMethods("OnPostprocessTexture3D", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessTexture2DArray(Texture2DArray tex, string pathName, AssetImportContext context)
-        {
-            if (context != null)
-            {
-                context.DependsOnCustomDependency(kTexture2DArrayPostprocessorDependencyName);
-            }
-            object[] args = { tex };
-            CallPostProcessMethods("OnPostprocessTexture2DArray", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessTexture2DArrayFromScript(Texture2DArray tex, string pathName)
-        {
-            object[] args = { tex };
-            CallPostProcessMethods("OnPostprocessTexture2DArray", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessSprites(Texture2D tex, string pathName, Sprite[] sprites, AssetImportContext context)
-        {
-            if (context != null)
-            {
-                context.DependsOnCustomDependency(kTextureSpritePostprocessorDependencyName);
-            }
-            object[] args = { tex, sprites };
-            CallPostProcessMethods("OnPostprocessSprites", args);
-        }
-
-        [RequiredByNativeCode]
-        static void PostprocessSpritesFromScript(Texture2D tex, string pathName, Sprite[] sprites)
-        {
-            object[] args = { tex, sprites };
-            CallPostProcessMethods("OnPostprocessSprites", args);
+            assetImportContext.DependsOnCustomDependency(kSinglePassBuildSceneProcessorDependencyName);
+            object[] args = { scene, sceneContext };
+            CallPostProcessMethods("OnProcessScene", args);
         }
 
         [RequiredByNativeCode]
@@ -999,6 +830,7 @@ namespace UnityEditor
             AssetDatabase.RegisterCustomDependency(kTexture2DArrayPostprocessorDependencyName, Hash128.Compute(GetTexture2DArrayProcessorsHashString()));
             AssetDatabase.RegisterCustomDependency(kTextureSpritePostprocessorDependencyName, Hash128.Compute(GetTextureSpriteProcessorsHashString()));
             AssetDatabase.RegisterCustomDependency(kTexturePreprocessorDependencyName, Hash128.Compute(GetTexturePreProcessorsHashString()));
+            AssetDatabase.RegisterCustomDependency(kSinglePassBuildSceneProcessorDependencyName, Hash128.Compute(GetSinglePassBuildSceneProcessorsHashString()));
         }
 
         static void GetProcessorHashString(string methodName, ref string hashString)
@@ -1088,34 +920,16 @@ namespace UnityEditor
             return m_TextureSpriteDependencyName;
         }
 
-        static bool IsAssetPostprocessorAnalyticsEnabled()
+        [RequiredByNativeCode]
+        static string GetSinglePassBuildSceneProcessorsHashString()
         {
-            return EditorAnalytics.enabled;
+            GetProcessorHashString("OnProcessScene", ref m_SinglePassBuildSceneProcessorsHashString);
+            return m_SinglePassBuildSceneProcessorsHashString;
         }
 
-        static void CallPostProcessMethodsUntilReturnedObjectIsValid<T>(string methodName, object[] args, out T returnedObject) where T : class
+        internal static bool IsAssetPostprocessorAnalyticsEnabled()
         {
-            returnedObject = default(T);
-            int invocationCount = 0;
-            float startTime = Time.realtimeSinceStartup;
-
-            foreach (AssetPostprocessor inst in m_ImportProcessors)
-            {
-                if (InvokeMethodIfAvailable(inst, methodName, args, ref returnedObject))
-                {
-                    invocationCount++;
-                    break;
-                }
-            }
-
-            if (IsAssetPostprocessorAnalyticsEnabled() && invocationCount > 0)
-            {
-                var methodCallAnalytics = new AssetPostProcessorMethodCallAnalyticsData();
-                methodCallAnalytics.invocationCount = invocationCount;
-                methodCallAnalytics.methodName = methodName;
-                methodCallAnalytics.duration_sec = Time.realtimeSinceStartup - startTime;
-                s_AnalyticsEventsStack.Peek().postProcessorCalls.Add(methodCallAnalytics);
-            }
+            return EditorAnalytics.enabled;
         }
 
         static void CallPostProcessMethods(string methodName, object[] args)
@@ -1162,6 +976,89 @@ namespace UnityEditor
             }
 
             return res;
+        }
+
+        // Runs the postprocessors whose order falls between minOrder and maxOrder, both ends included.
+        // Don't stop at the first one out of range: m_ImportProcessors is sorted using its own call
+        // to GetPostprocessOrder(), which need not match the stored order, so a postprocessor in
+        // range can still turn up later.
+        internal static void CallPostProcessMethodsInRange(string methodName, object[] args, int minOrder, int maxOrder)
+        {
+            if (m_ImportProcessors == null)
+            {
+                throw new Exception("m_ImportProcessors is null, InitPostProcessors should be called before any of the post process methods are called.");
+            }
+
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                if (inst.m_PostprocessOrder < minOrder || inst.m_PostprocessOrder > maxOrder)
+                    continue;
+
+                InvokeMethodIfAvailable(inst, methodName, args);
+            }
+        }
+
+        internal static int CallPostProcessMethodsInRange(string methodName, object[] args, int minOrder, int maxOrder, ref float duration)
+        {
+            if (m_ImportProcessors == null)
+            {
+                throw new Exception("m_ImportProcessors is null, InitPostProcessors should be called before any of the post process methods are called.");
+            }
+
+            int invocationCount = 0;
+            float startTime = Time.realtimeSinceStartup;
+
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                if (inst.m_PostprocessOrder < minOrder || inst.m_PostprocessOrder > maxOrder)
+                    continue;
+
+                if (InvokeMethodIfAvailable(inst, methodName, args))
+                    invocationCount++;
+            }
+
+            duration += Time.realtimeSinceStartup - startTime;
+            return invocationCount;
+        }
+
+        internal static bool CallPostProcessMethodsInRangeUntilReturnedObjectIsValid<T>(string methodName, object[] args, int minOrder, int maxOrder, out T returnedObject, ref float duration) where T : class
+        {
+            if (m_ImportProcessors == null)
+            {
+                throw new Exception("m_ImportProcessors is null, InitPostProcessors should be called before any of the post process methods are called.");
+            }
+
+            returnedObject = default(T);
+            bool found = false;
+            float startTime = Time.realtimeSinceStartup;
+
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                if (inst.m_PostprocessOrder < minOrder || inst.m_PostprocessOrder > maxOrder)
+                    continue;
+
+                if (InvokeMethodIfAvailable(inst, methodName, args, ref returnedObject))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            duration += Time.realtimeSinceStartup - startTime;
+            return found;
+        }
+
+        // Records one entry; invocationCount and duration are the totals for the callback.
+        internal static void RecordPostProcessMethodCallAnalytics(string methodName, int invocationCount, float duration)
+        {
+            if (invocationCount > 0)
+            {
+                var methodCallAnalytics = new AssetPostProcessorMethodCallAnalyticsData();
+                methodCallAnalytics.invocationCount = invocationCount;
+                methodCallAnalytics.methodName = methodName;
+                methodCallAnalytics.duration_sec = duration;
+                s_AnalyticsEventsStack.Peek().postProcessorCalls.Add(methodCallAnalytics);
+            }
         }
 
         static bool InvokeMethodIfAvailable(object target, string methodName, object[] args)

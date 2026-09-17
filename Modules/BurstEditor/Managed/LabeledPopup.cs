@@ -117,7 +117,7 @@ namespace Unity.Burst.Editor
                 {
                     var size = options[i];
 
-                    menu.AddItem(EditorGUIUtility.TrTextContent(size), i == index, PopperCallBack.Instance.SetSelection, new IntegerWrapper(i));
+                    menu.AddItem(L10n.TextContent(size, null, null, null), i == index, PopperCallBack.Instance.SetSelection, new IntegerWrapper(i));
                 }
                 menu.Popup(pos, index);
             }

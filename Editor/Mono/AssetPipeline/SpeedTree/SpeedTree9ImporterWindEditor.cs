@@ -12,10 +12,10 @@ namespace UnityEditor.SpeedTree.Importer
     {
         private class Styles
         {
-            public static readonly GUIContent EnableWind = EditorGUIUtility.TrTextContent("Enable Wind");
-            public static readonly GUIContent StrengthResponse = EditorGUIUtility.TrTextContent("Strength Response", "The strength response of the wind.");
-            public static readonly GUIContent DirectionResponse = EditorGUIUtility.TrTextContent("Direction Response", "The direction response of the wind.");
-            public static readonly GUIContent WindRandomness = EditorGUIUtility.TrTextContent("Randomness", "Amount of world position based noise applied to each tree.");
+            public static readonly GUIContent EnableWind = L10n.TextContent("Enable Wind", null, null, null);
+            public static readonly GUIContent StrengthResponse = L10n.TextContent("Strength Response", "The strength response of the wind.", null, null);
+            public static readonly GUIContent DirectionResponse = L10n.TextContent("Direction Response", "The direction response of the wind.", null, null);
+            public static readonly GUIContent WindRandomness = L10n.TextContent("Randomness", "Amount of world position based noise applied to each tree.", null, null);
         }
 
         private SerializedProperty m_EnableWind;

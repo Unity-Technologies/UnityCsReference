@@ -6,7 +6,6 @@ using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
-using UnityEditor.UIElements;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
@@ -14,28 +13,37 @@ namespace Unity.UIToolkit.Editor;
 
 /// <summary>
 /// Builds the "Overrides" submenu of a Main Stage attribute field: one entry per ancestor document,
-/// nearest first, each with navigation actions targeting that document. Documents that already carry
-/// an override for the attribute are flagged.
+/// nearest first, each opening that document in a stage with the field's element selected and the field
+/// itself focused. Entries note the nearest document and any that already carries an override.
 /// </summary>
 internal static class AttributeOverridesMenu
 {
     internal static readonly string k_OverridesMenuName = L10n.Tr("Overrides", null);
-    internal static readonly string k_SelectInSceneText = L10n.Tr("Select in Scene", null);
-    internal static readonly string k_SelectInProjectText = L10n.Tr("Select in Project", null);
-    internal static readonly string k_OpenInContextText = L10n.Tr("Open in Context", null);
-    internal static readonly string k_OverriddenLabelFormat = L10n.Tr("{0} (overridden)", null);
     internal static readonly string k_UnsavedDocumentText = L10n.Tr("(unsaved document)", null);
     internal static readonly string k_UnresolvedDocumentText = L10n.Tr("(unresolved document)", null);
-    internal static readonly string k_NotInsideDocumentText = L10n.Tr("Only available for elements inside another UXML document", null);
-    internal static readonly string k_UnnamedElementText = L10n.Tr("Add a name to enable overrides", null);
+    internal static readonly string k_NotInsideDocumentText = L10n.Tr("No .uxml above this element", null);
+    internal static readonly string k_UnnamedElementText = L10n.Tr("Give this element a name", null);
+    internal static readonly string k_NearestLabelFormat = L10n.Tr("{0} (nearest)", null);
+    internal static readonly string k_OverriddenLabelFormat = L10n.Tr("{0} (overridden)", null);
+    internal static readonly string k_NearestOverriddenLabelFormat = L10n.Tr("{0} (nearest, overridden)", null);
+
+    static readonly BindingId k_NameAttributePath = nameof(VisualElement.name);
 
     // DropdownMenu treats '/' in item names as submenu nesting, so path-bearing labels use a lookalike
     // that is visually indistinguishable but never starts a submenu.
     const char k_PathSeparatorLookalike = '∕';
 
-    public static void Append(DropdownMenu menu, UxmlAttributesEditingContext context, UxmlSerializedAttributeDescription attribute)
+    public static void Append(DropdownMenu menu, UxmlAttributeFieldDecorator decorator)
     {
+        var context = decorator.context;
+        var attribute = decorator.boundAttributeDescription;
+        var attributePath = decorator.GetFullBindingPath();
+
+        // Every other unlocked inspector rebuilds on the same selection and holds a field for the same
+        // element and path, so the focus request has to name this one.
+        var inspectorPanel = decorator.panel;
         var element = context.element;
+
         using var scopesHandle = ListPool<AncestorOverrideScope>.Get(out var scopes);
         UxmlAssetUtilities.GetAncestorOverrideScopes(element, scopes);
 
@@ -48,20 +56,21 @@ internal static class AttributeOverridesMenu
         // Overrides are authored by name, but a driven unnamed element still needs the navigation.
         if (string.IsNullOrEmpty(element.name) && !UxmlAssetUtilities.TryGetDrivingAttributeOverride(element, attribute, out _))
         {
-            AppendDisabledExplainer(menu, k_UnnamedElementText);
+            AppendNameElementAction(menu, context);
             return;
         }
 
         using var labelsHandle = HashSetPool<string>.Get(out var usedLabels);
-        foreach (var scope in scopes)
+        for (var i = 0; i < scopes.Count; ++i)
         {
+            var scope = scopes[i];
             var document = scope.document;
             var label = Sanitize(StyleSheetAssetUtilities.GetDocumentDisplayName(document));
 
             if (string.IsNullOrEmpty(label))
             {
                 // The instance names a document either not yet persisted or no longer resolvable.
-                label = document ? k_UnsavedDocumentText : k_UnresolvedDocumentText;
+                label = Sanitize(document ? k_UnsavedDocumentText : k_UnresolvedDocumentText);
             }
 
             // Two ancestor documents can share a label; the later one falls back to its full path.
@@ -72,10 +81,21 @@ internal static class AttributeOverridesMenu
                 usedLabels.Add(label);
             }
 
-            if (UxmlAssetUtilities.HasAttributeOverrideFor(scope.instanceAsset, element, attribute))
-                label = string.Format(k_OverriddenLabelFormat, label);
+            var isNearest = i == 0;
+            var isOverridden = UxmlAssetUtilities.HasAttributeOverrideFor(scope.instanceAsset, element, attribute);
+            var format = (isNearest, isOverridden) switch
+            {
+                (true, true) => k_NearestOverriddenLabelFormat,
+                (true, false) => k_NearestLabelFormat,
+                (false, true) => k_OverriddenLabelFormat,
+                _ => null,
+            };
 
-            AppendDocumentActions(menu, $"{k_OverridesMenuName}/{label}", context, document);
+            // A translation can carry a '/' of its own.
+            if (format != null)
+                label = Sanitize(string.Format(format, label));
+
+            AppendDocumentAction(menu, label, context, attributePath, inspectorPanel, document);
         }
     }
 
@@ -85,82 +105,48 @@ internal static class AttributeOverridesMenu
             static _ => DropdownMenuAction.Status.Disabled);
     }
 
-    static string Sanitize(string label) => label?.Replace('/', k_PathSeparatorLookalike) ?? string.Empty;
-
-    static void AppendDocumentActions(DropdownMenu menu, string submenu, UxmlAttributesEditingContext context,
-        VisualTreeAsset document)
+    static void AppendNameElementAction(DropdownMenu menu, UxmlAttributesEditingContext context)
     {
-        // Live targets resolve inside the callbacks; edits between opening the menu and clicking re-clone the panel.
-        menu.AppendAction($"{submenu}/{Sanitize(k_SelectInSceneText)}",
-            _ =>
-            {
-                if (TryGetSceneSelection(context.element, document, out var selection))
-                    Selection.activeObject = selection;
-            },
-            action => TryGetSceneSelection(context.element, document, out _)
+        menu.AppendAction($"{k_OverridesMenuName}/{Sanitize(k_UnnamedElementText)}",
+            _ => NameField(context)?.RevealAndFocus(),
+            _ => NameField(context) != null
                 ? DropdownMenuAction.Status.Normal
                 : DropdownMenuAction.Status.Disabled);
-
-        menu.AppendAction($"{submenu}/{Sanitize(k_SelectInProjectText)}", _ =>
-            {
-                if (!document)
-                    return;
-
-                Selection.activeObject = document;
-                EditorGUIUtility.PingObject(document);
-            },
-            _ => PersistedDocumentStatus(document));
-
-        menu.AppendAction($"{submenu}/{Sanitize(k_OpenInContextText)}", _ =>
-            {
-                var originElement = context.element;
-                if (originElement == null || !document)
-                    return;
-
-                var stage = VisualElementEditingStage.GoToStage(
-                    new VisualTreeAssetEditingContext(document, originElement.GetPanelSettings()),
-                    BreadcrumbBar.SeparatorStyle.Arrow);
-
-                // The switch can be refused, e.g. from an unsaved-changes prompt.
-                if (StageUtility.GetCurrentStage() == stage)
-                    UIToolkitStageUtility.RequestSelectionOnNextUpdate(originElement, document);
-            },
-            _ => LiveDocumentStatus(document));
-
-        menu.AppendAction($"{submenu}/{Sanitize(StageContextMenuUtility.OpenInUIBuilder)}", _ =>
-            {
-                var originElement = context.element;
-                if (originElement?.visualElementAsset == null || !document)
-                    return;
-
-                new LoadUIDocumentCommand
-                {
-                    selectedId = originElement.visualElementAsset.id,
-                    selectedInstanceIds = LoadUIDocumentCommand.GetInstanceIds(originElement, document),
-                    selectedSourceDocument = originElement.visualElementAsset.visualTreeAsset,
-                }.OpenInBuilder(document);
-            },
-            _ => PersistedDocumentStatus(document));
     }
 
-    // Selecting in the Project window and opening in the UI Builder both need a persisted asset.
-    static DropdownMenuAction.Status PersistedDocumentStatus(VisualTreeAsset document)
-        => EditorUtility.IsPersistent(document)
-            ? DropdownMenuAction.Status.Normal
-            : DropdownMenuAction.Status.Disabled;
+    // Null in an inspector with no Name field of its own, such as a drawer without the element header.
+    static UxmlAttributeFieldDecorator NameField(UxmlAttributesEditingContext context)
+        => context.editingController.FindAttributeField(k_NameAttributePath);
 
-    // Staging only needs the asset itself, which an instance naming an unresolvable document lacks.
-    static DropdownMenuAction.Status LiveDocumentStatus(VisualTreeAsset document)
-        => document ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+    static string Sanitize(string label) => label?.Replace('/', k_PathSeparatorLookalike) ?? string.Empty;
 
-    static bool TryGetSceneSelection(VisualElement element, VisualTreeAsset document, out UISelectionObject selection)
+    static void AppendDocumentAction(DropdownMenu menu, string label, UxmlAttributesEditingContext context,
+        BindingId attributePath, IPanel inspectorPanel, VisualTreeAsset document)
     {
-        selection = null;
-        if (element?.panel == null
-            || !UxmlAssetUtilities.TryGetEnclosingDocumentSceneTarget(element, document, out var sceneTarget))
-            return false;
+        // Live targets resolve inside the callback; edits between opening the menu and clicking re-clone the panel.
+        // Staging only needs the asset itself, which an instance naming an unresolvable document lacks.
+        menu.AppendAction($"{k_OverridesMenuName}/{label}",
+            _ => OpenInContext(context, attributePath, inspectorPanel, document),
+            _ => document ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+    }
 
-        selection = sceneTarget.GetSelectionObject();
-        return selection != null;
+    static void OpenInContext(UxmlAttributesEditingContext context, BindingId attributePath, IPanel inspectorPanel,
+        VisualTreeAsset document)
+    {
+        // The asset carries the selection into the stage, so without it there is nothing to land on.
+        var originElement = context.element;
+        if (originElement?.visualElementAsset == null || !document)
+            return;
+
+        var stage = UIStageNavigation.Navigate(
+            new VisualTreeAssetEditingContext(document, originElement.GetPanelSettings()),
+            BreadcrumbBar.SeparatorStyle.Arrow);
+
+        // The switch can be refused, e.g. from an unsaved-changes prompt.
+        if (StageUtility.GetCurrentStage() != stage)
+            return;
+
+        UIToolkitStageUtility.RequestSelectionOnNextUpdate(originElement, document);
+        UIToolkitStageUtility.RequestFocusOfPendingSelection(attributePath, inspectorPanel);
     }
 }

@@ -116,45 +116,45 @@ namespace UnityEditor
             }
             if (anyKeys)
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Clamped Auto"),         allClampedAuto, SetClampedAuto, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Auto"), allAuto, SetAuto, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Free Smooth"),  allFreeSmooth, SetEditable, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Flat"),         allFlat, SetFlat, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Broken"),       allBroken, SetBroken, keyList);
+                menu.AddItem(L10n.TextContent("Clamped Auto", null, null, null),         allClampedAuto, SetClampedAuto, keyList);
+                menu.AddItem(L10n.TextContent("Auto", null, null, null), allAuto, SetAuto, keyList);
+                menu.AddItem(L10n.TextContent("Free Smooth", null, null, null),  allFreeSmooth, SetEditable, keyList);
+                menu.AddItem(L10n.TextContent("Flat", null, null, null),         allFlat, SetFlat, keyList);
+                menu.AddItem(L10n.TextContent("Broken", null, null, null),       allBroken, SetBroken, keyList);
                 menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Left Tangent/Free"),      allLeftFree, SetLeftEditable, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Left Tangent/Linear"),    allLeftLinear, SetLeftLinear, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Left Tangent/Constant"),  allLeftConstant, SetLeftConstant, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Left Tangent/Weighted"),  allLeftWeighted, ToggleLeftWeighted, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Right Tangent/Free"),     allRightFree, SetRightEditable, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Right Tangent/Linear"),   allRightLinear, SetRightLinear, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Right Tangent/Constant"), allRightConstant, SetRightConstant, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Right Tangent/Weighted"),  allRightWeighted, ToggleRightWeighted, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Both Tangents/Free"),     allRightFree && allLeftFree, SetBothEditable, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Both Tangents/Linear"),   allRightLinear && allLeftLinear, SetBothLinear, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Both Tangents/Constant"), allRightConstant && allLeftConstant, SetBothConstant, keyList);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Both Tangents/Weighted"), allRightWeighted && allLeftWeighted, ToggleBothWeighted, keyList);
+                menu.AddItem(L10n.TextContent("Left Tangent/Free", null, null, null),      allLeftFree, SetLeftEditable, keyList);
+                menu.AddItem(L10n.TextContent("Left Tangent/Linear", null, null, null),    allLeftLinear, SetLeftLinear, keyList);
+                menu.AddItem(L10n.TextContent("Left Tangent/Constant", null, null, null),  allLeftConstant, SetLeftConstant, keyList);
+                menu.AddItem(L10n.TextContent("Left Tangent/Weighted", null, null, null),  allLeftWeighted, ToggleLeftWeighted, keyList);
+                menu.AddItem(L10n.TextContent("Right Tangent/Free", null, null, null),     allRightFree, SetRightEditable, keyList);
+                menu.AddItem(L10n.TextContent("Right Tangent/Linear", null, null, null),   allRightLinear, SetRightLinear, keyList);
+                menu.AddItem(L10n.TextContent("Right Tangent/Constant", null, null, null), allRightConstant, SetRightConstant, keyList);
+                menu.AddItem(L10n.TextContent("Right Tangent/Weighted", null, null, null),  allRightWeighted, ToggleRightWeighted, keyList);
+                menu.AddItem(L10n.TextContent("Both Tangents/Free", null, null, null),     allRightFree && allLeftFree, SetBothEditable, keyList);
+                menu.AddItem(L10n.TextContent("Both Tangents/Linear", null, null, null),   allRightLinear && allLeftLinear, SetBothLinear, keyList);
+                menu.AddItem(L10n.TextContent("Both Tangents/Constant", null, null, null), allRightConstant && allLeftConstant, SetBothConstant, keyList);
+                menu.AddItem(L10n.TextContent("Both Tangents/Weighted", null, null, null), allRightWeighted && allLeftWeighted, ToggleBothWeighted, keyList);
             }
             else
             {
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Weighted"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Auto"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Free Smooth"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Flat"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Broken"));
+                menu.AddDisabledItem(L10n.TextContent("Weighted", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Auto", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Free Smooth", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Flat", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Broken", null, null, null));
                 menu.AddSeparator("");
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Left Tangent/Free"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Left Tangent/Linear"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Left Tangent/Constant"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Left Tangent/Weighted"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Right Tangent/Free"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Right Tangent/Linear"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Right Tangent/Constant"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Right Tangent/Weighted"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Both Tangents/Free"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Both Tangents/Linear"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Both Tangents/Constant"));
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Both Tangents/Weighted"));
+                menu.AddDisabledItem(L10n.TextContent("Left Tangent/Free", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Left Tangent/Linear", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Left Tangent/Constant", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Left Tangent/Weighted", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Right Tangent/Free", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Right Tangent/Linear", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Right Tangent/Constant", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Right Tangent/Weighted", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Both Tangents/Free", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Both Tangents/Linear", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Both Tangents/Constant", null, null, null));
+                menu.AddDisabledItem(L10n.TextContent("Both Tangents/Weighted", null, null, null));
             }
         }
 

@@ -12,7 +12,7 @@ namespace UnityEditor
     {
         class Texts
         {
-            public GUIContent color = EditorGUIUtility.TrTextContent("Color", "Controls the color of each particle during its lifetime.");
+            public GUIContent color = L10n.TextContent("Color", "Controls the color of each particle during its lifetime.", null, null);
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache
         static Texts s_Texts;

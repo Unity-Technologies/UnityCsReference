@@ -801,7 +801,11 @@ namespace UnityEditor.Search
             var resolvedRowWidth = m_ScrollView.contentContainer.boundingBox.width;
             var calculatedRowWidth = m_ColumnCount * m_FixedItemWidth;
             var delta = resolvedRowWidth - calculatedRowWidth;
-            var extraElementPadding = Mathf.Ceil(delta / (m_ColumnCount - 1));
+            // Justify.SpaceBetween distributes delta as an exact (non-rounded) gap between items, so the
+            // hit-test pitch must match that exactly. Rounding up here (e.g. via Mathf.Ceil) makes each
+            // column's assumed boundary drift further right than its real rendered position, so clicks
+            // near the left edge of later columns resolve to the previous item (UUM-141693).
+            var extraElementPadding = delta / (m_ColumnCount - 1);
 
             var offset = m_ScrollOffset.y - Mathf.FloorToInt(m_ScrollOffset.y / m_FixedItemHeight) * m_FixedItemHeight;
 

@@ -153,7 +153,7 @@ namespace UnityEngine.UIElements
             mgc.AddMeshGenerationCallback(m_GenerateTextJobifiedCallback, null, MeshGenerationCallbackType.Work, true);
         }
 
-        struct PrepareTextJobData : IJobParallelFor
+        internal struct PrepareTextJobData : IJobParallelFor
         {
             public GCHandle managedJobDataHandle;
 
@@ -211,7 +211,7 @@ namespace UnityEngine.UIElements
             mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
         }
 
-        struct GenerateTextJobData : IJobParallelFor
+        internal struct GenerateTextJobData : IJobParallelFor
         {
             public GCHandle managedJobDataHandle;
             [ReadOnly] public TempMeshAllocator alloc;

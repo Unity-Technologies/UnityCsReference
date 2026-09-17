@@ -214,6 +214,10 @@ namespace Unity.GraphToolkit.Editor
             m_TitleLabel.SetValueWithoutNotify(TransitionModel.Title);
 
             m_EnableToggle.SetValueWithoutNotify(TransitionModel.Enabled);
+
+            var icon = TransitionModel.Icon;
+            m_DebugIcon.image = icon;
+            m_DebugIcon.style.display = icon != null ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         /// <inheritdoc />

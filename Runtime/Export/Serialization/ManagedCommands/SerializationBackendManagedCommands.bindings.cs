@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Serialization not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -24,20 +23,20 @@ namespace UnityEngine.Serialization;
 // variable-sized managed-execution command (fixed-size DirectCopy segments,
 // strings, and any future variable-size payloads).
 //
-// Contract for writerPtr / writerAvailable (see SerializationCommands.h's
+// Contract for writerPtr / writerEnd (see SerializationCommands.h's
 // FlushBufferFunc comment for the canonical description):
 //   - Each flush passes minNextWrite — the size the caller is about to write. On
-//     return (and at entry to the executor) writerPtr points at a writable region of
-//     writerAvailable bytes, sized for it: the cache writer's tail when it holds
+//     return (and at entry to the executor) writerPtr / writerEnd bound a writable
+//     region sized for it: the cache writer's tail when it holds
 //     minNextWrite (zero-copy fast path) or stackBuffer (sized
 //     kManagedBlockSpillBufferSize; native side memcpys it in on the next flush).
 //   - For minNextWrite <= kManagedBlockSpillBufferSize the region always holds it, so
 //     C# can write up to minNextWrite bytes into writerPtr unconditionally, with no
 //     per-site stack-vs-writer branching. A caller that may write more (TryReserve /
-//     Bulk) re-checks writerAvailable and takes its own spill arm.
+//     Bulk) re-checks the region size and takes its own spill arm.
 //
 // Pack = 8 keeps EntityId's UInt64 8-byte aligned on every runtime, matching the
-// native C++ ABI (EntityID.h:68). Without an explicit Pack, some 32-bit Mono
+// native C++ ABI (EntityId.h:68). Without an explicit Pack, some 32-bit Mono
 // configurations reduce the alignment to 4, which would shift hostingEntityId
 // four bytes earlier than the native struct on 32-bit and corrupt the per-block
 // hostingEntityId reads.
@@ -47,7 +46,7 @@ internal unsafe struct NativeBufferContext
     public void*    writer;            // native CachedWriter* — opaque to C#
     public byte*    stackBuffer;       // native-side spill buffer (size = kManagedBlockSpillBufferSize); stable for the lifetime of the call
     public byte*    writerPtr;         // current write destination — writer's tail or stackBuffer; updated by flushBuffer
-    public int      writerAvailable;   // bytes available at writerPtr; updated by flushBuffer; >= the flush's minNextWrite (when that is <= kManagedBlockSpillBufferSize)
+    public byte*    writerEnd;         // one past the writable region at writerPtr; updated by flushBuffer; the region holds the flush's minNextWrite (when that is <= kManagedBlockSpillBufferSize)
     public delegate* unmanaged[Cdecl]<NativeBufferContext*, byte*, int, int, void> flushBuffer;
     public IntPtr   resolverHandle;    // ILSOIResolver*; forwarded to WriteUnityObjectToBuffer. Null falls back to the global PersistentManager path.
     public int      flags;             // UnityObjectTransferFlags bits (write path consults PackEntityIdInLSOI).
@@ -55,14 +54,16 @@ internal unsafe struct NativeBufferContext
     public IntPtr   fuidContext;       // native FieldUniqueIdentifierContext*; forwarded to DictionaryFieldUniqueIdentifierStack.Push/PopDictionaryFUIDFrame. IntPtr.Zero when no transfer-side context is active.
     public EntityId hostingEntityId;   // Resolved once per managed block by the native dispatcher (FUID context's value first, falling back to TryGetHostingEntityIdForUnityObject in editor). EntityId.None when neither yields a value.
     public IntPtr   transferState;     // native ManagedReferencesTransferState*; forwarded to WriteManagedReferenceToBuffer for the [SerializeReference] inline-RefId opcode. IntPtr.Zero on transfers without managed references.
+    public IntPtr   transfer;          // native StreamedBinaryWrite*; opaque to the executor, consumed only by ExternalDynamic dispatchers that Transfer() through it.
+    public byte*    pathSegments;      // template FUID segment table (V2PathSegment entries); null when the template has no FUID consumers.
+    public byte*    pathNames;         // FUID segment name pool; paired with pathSegments.
 }
 
-// Read-side mirror of NativeBufferContext. The C++ dispatcher
-// (Transfer_ManagedBlock_StreamedBinaryRead) populates this once per managed
-// block and hands it to SerializationBufferToObjects; C# walks the entry stream
-// and pulls bytes through readerPtr/readerAvailable, refilling on demand via
-// ensureReadable (segment-sized requests) or readBytesDirect (bulk array bodies
-// that bypass the spill buffer).
+// Read-side mirror of NativeBufferContext. ExecuteV2Read populates this once
+// per object and hands it to SerializationBufferToObjectsV2; C# pulls bytes
+// through readerPtr/readerEnd, refilling on demand via ensureReadable
+// (segment-sized requests) or readBytesDirect (bulk array bodies that bypass
+// the spill buffer).
 //
 // The struct layout must match SerializationCommands.h::NativeReadBufferContext
 // exactly. Field order matters: native code reads/writes by offset.
@@ -74,24 +75,29 @@ internal unsafe struct NativeReadBufferContext
 {
     public void*    reader;            // native CachedReader* — opaque to C#
     public byte*    stackBuffer;       // native-side spill buffer (size = stackBufferSize); stable for the lifetime of the call
-    public byte*    readerPtr;         // current read source — reader's cache or stackBuffer; updated by ensureReadable
-    public int      readerAvailable;   // bytes available at readerPtr; decremented by C# as it consumes; refilled by ensureReadable
+    public byte*    readerPtr;         // current read source — reader's cache or stackBuffer; advanced by C# as it consumes; reset by ensureReadable
+    public byte*    readerEnd;         // one past the readable region at readerPtr; updated by ensureReadable
     public int      stackBufferSize;   // size of stackBuffer; cap on a single ensureReadable request
+    public int      _pad0;             // align ensureReadable to 8-byte boundary
     public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, int, void> ensureReadable;
     public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, byte*, int, void> readBytesDirect;
-    // Rewinds the CachedReader by readerAvailable and empties the spill window before a
-    // SimpleNativeType dispatch reads straight off the CachedReader.
+    // Rewinds the CachedReader by the unconsumed region and empties the spill window
+    // before a SimpleNativeType dispatch reads straight off the CachedReader.
     public delegate* unmanaged[Cdecl]<NativeReadBufferContext*, void> syncReader;
     public IntPtr   resolverHandle;    // ILSOIResolver*; forwarded to ReadUnityObjectFromBuffer. Null falls back to the global PersistentManager path.
     public int      flags;             // UnityObjectTransferFlags bits forwarded to ReadUnityObjectFromBuffer.
     public bool     warnAboutIgnoredEntries;  // True for serialized-file loads and Object.Instantiate clones; false for Inspector ApplyModifiedProperties and other in-memory transfers.
-    public byte     _pad0;
+    public byte     discardCallbackDictSinks;  // V2 read executor only (v1's dispatcher leaves it unset): suppressed-callback transfers discard callback-keyed dictionary sinks. Brackets are handled by stream selection, not a context check.
     public byte     _pad1;
     public byte     _pad2;             // align fuidContext to 8-byte boundary
     public IntPtr   fuidContext;       // native FieldUniqueIdentifierContext*; forwarded to ConsumeDictionaryRead for FUID Push/Pop bracketing. IntPtr.Zero when no transfer-side context is active.
     public EntityId hostingEntityId;   // Resolved once per managed block by the native dispatcher (FUID context's value first, falling back to TryGetHostingEntityIdForUnityObject in editor). EntityId.None when neither yields a value.
     public IntPtr   transferState;     // native ManagedReferencesTransferState*; forwarded to ReadManagedReferenceFromBuffer for the [SerializeReference] inline-RefId read opcode. IntPtr.Zero on transfers without managed references.
     public IntPtr   instance;          // native GeneralMonoObject* (host being read into); forwarded to ReadManagedReferenceFromBuffer for RegisterFixupRequest.
+    public IntPtr   registerSrReferenceField;  // V2 read executor only (v1 leaves it zero): native crossing registering one SR site's property path + RefId with the missing-type field map; non-null doubles as the "missing types live" gate for the segment pass.
+    public IntPtr   transfer;          // native StreamedBinaryRead*; opaque to the executor, consumed only by ExternalDynamic dispatchers that Transfer() through it.
+    public byte*    pathSegments;      // template FUID segment table (V2PathSegment entries); null when the template has no FUID consumers.
+    public byte*    pathNames;         // FUID segment name pool; paired with pathSegments.
 }
 
 [NativeHeader("Runtime/Mono/SerializationBackend_DirectMemoryAccess/WriteUnityObjectToBuffer.h")]
@@ -334,18 +340,14 @@ internal static unsafe partial class SerializationBackendManagedCommands
     // keeps the hot path on managed serialization allocation-free for strings
     // that need more than one buffer flush. Strings that fit the current buffer
     // tail in one shot bypass the encoder entirely (see ConsumeString).
-    [ThreadStatic]
-    [NoAutoStaticsCleanup] // [ThreadStatic] reusable UTF8 encoder, holds no user references, safe to persist
-    private static Encoder s_Utf8Encoder;
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void InvokeFlushBuffer(NativeBufferContext* ctx,
         byte* bufferUsed, int writtenBytes, int minNextWrite)
         => ctx->flushBuffer(ctx, bufferUsed, writtenBytes, minNextWrite);
 
-    // Refills ctx->readerPtr / ctx->readerAvailable so at least `needed` bytes
+    // Refills ctx->readerPtr / ctx->readerEnd so at least `needed` bytes
     // are addressable contiguously at the new readerPtr. Caller invariant: only
-    // call when ctx->readerAvailable < needed.
+    // call when readerEnd - readerPtr < needed.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe void InvokeEnsureReadable(NativeReadBufferContext* ctx, int needed)
         => ctx->ensureReadable(ctx, needed);
@@ -453,114 +455,5 @@ internal static unsafe partial class SerializationBackendManagedCommands
     // BufferDataStager (the deferred-write cursor threaded through the write path) lives in
     // BufferDataStager.cs — a partial-class fragment of this type.
 
-    // Header of ManagedCommandsBlockCommand (SerializationCommands.h). The native
-    // entry bytes are appended inline right after this header, so
-    // entryBytes = (byte*)cmd + sizeof(this). func is a native function pointer we
-    // never invoke here — kept as IntPtr purely so the struct size/alignment match
-    // native (8-byte aligned; static_assert(sizeof % 8 == 0) on the native side).
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct ManagedCommandsBlockCommandHeader
-    {
-        public IntPtr func;
-        public uint   commandSize;
-        public uint   entryBufferSize;
-        public uint   totalPayloadSize;
-    }
-
-    // Serializes a run of ManagedCommandsBlockCommands, returning the first non-managed cursor.
-    // A single BufferDataStager threads across the whole run so consecutive blocks coalesce;
-    // one trailing flush commits the accumulated bytes.
-    [RequiredByNativeCode]
-    public static unsafe IntPtr ObjectsToSerializationBuffer(
-        IntPtr pinnedBase,
-        IntPtr runStart,
-        IntPtr runEnd,
-        IntPtr bufferContext,
-        IntPtr transfer)
-    {
-        var ctx = (NativeBufferContext*)bufferContext;
-
-        // output: base of the fixed segment currently open at the stager's staging tail
-        // (writerPtr + m_Staged); set by each FixedBlockPrefix(N) and indexed by the
-        // DirectCopy entries within it.
-        byte* output = null;
-        // The whole run's deferred-write cursor: one stager threads across every block in
-        // the run (below), so consecutive blocks coalesce; by the time the loop ends it
-        // carries every uncommitted byte, committed by the single flush after it.
-        BufferDataStager bufferDataStager = new BufferDataStager(ctx);
-
-        byte* cmd = (byte*)runStart;
-        byte* end = (byte*)runEnd;
-        // Discriminator: the run is the maximal span of commands sharing the first
-        // block's func (each native command type has a unique func pointer).
-        IntPtr managedFunc = cmd < end ? ((ManagedCommandsBlockCommandHeader*)cmd)->func : IntPtr.Zero;
-        while (cmd < end)
-        {
-            var header = (ManagedCommandsBlockCommandHeader*)cmd;
-            if (header->func != managedFunc)
-                break;
-            byte* entryBytes = cmd + sizeof(ManagedCommandsBlockCommandHeader);
-            ExecuteWriteCommands(ctx, pinnedBase, (IntPtr)entryBytes, (int)header->entryBufferSize, transfer,
-                ref output, ref bufferDataStager, repeatCount: 1, repeatStride: 0);
-            cmd += header->commandSize;
-        }
-
-        // Final commit for the whole run; nothing follows, so no window is needed afterward.
-        bufferDataStager.FlushStaged(0);
-
-        return (IntPtr)cmd;
-    }
-
-
-    // Read counterpart of ObjectsToSerializationBuffer. Reads a run of ManagedCommandsBlockCommands,
-    // returning the first non-managed cursor. ctx carry state (readerPtr/readerAvailable) threads
-    // across the run; the native caller rewinds the surplus once after this returns.
-    [RequiredByNativeCode]
-    public static unsafe IntPtr SerializationBufferToObjects(
-        IntPtr pinnedBase,
-        IntPtr runStart,
-        IntPtr runEnd,
-        IntPtr readContext,
-        IntPtr transfer)
-    {
-        ref byte baseAddr = ref Unsafe.AsRef<byte>((void*)pinnedBase);
-        var ctx = (NativeReadBufferContext*)readContext;
-
-        byte* cmd = (byte*)runStart;
-        byte* end = (byte*)runEnd;
-        IntPtr managedFunc = cmd < end ? ((ManagedCommandsBlockCommandHeader*)cmd)->func : IntPtr.Zero;
-        while (cmd < end)
-        {
-            var header = (ManagedCommandsBlockCommandHeader*)cmd;
-            if (header->func != managedFunc)
-                break;
-            byte* entryBytes = cmd + sizeof(ManagedCommandsBlockCommandHeader);
-            int currentSegmentSize = 0;
-            ExecuteReadCommands(
-                ctx,
-                ref baseAddr,
-                entryBytes, (int)header->entryBufferSize,
-                transfer,
-                ref currentSegmentSize,
-                repeatCount: 1, repeatStride: 0);
-            cmd += header->commandSize;
-        }
-
-        return (IntPtr)cmd;
-    }
-
-    // Commits the current fixed segment on the read side by advancing the
-    // reader cursor past the bytes just read. Called at each segment boundary
-    // — the next leading FBP(N), a variable-sized entry, or end-of-stream.
-    // A zero currentSegmentSize (no open segment) makes this a no-op.
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void CommitReadSegment(
-        NativeReadBufferContext* ctx, ref int currentSegmentSize)
-    {
-        ctx->readerPtr       += currentSegmentSize;
-        ctx->readerAvailable -= currentSegmentSize;
-        currentSegmentSize    = 0;
-    }
 
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

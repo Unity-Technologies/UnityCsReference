@@ -281,6 +281,7 @@ namespace UnityEditor.Modules
             {
                 LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(args, linkerInputDirectory),
                 EditorToLinkerData = AssemblyStripper.WriteEditorData(args, linkerInputDirectory),
+                ManagedCaptureConfigFile = AssemblyStripper.WriteManagedCaptureConfig(linkerInputDirectory),
 #pragma warning disable UAC2001 // Avoid Linq
                 AssembliesToProcess = assembliesToProcess.ToArray(),
 #pragma warning restore UAC2001

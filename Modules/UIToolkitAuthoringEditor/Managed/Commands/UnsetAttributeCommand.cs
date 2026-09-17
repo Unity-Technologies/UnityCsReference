@@ -113,10 +113,38 @@ internal sealed class UnsetAttributeCommand : Command<UnsetAttributeCommand>
 
             AttributeUxmlOwner.RemoveAttribute(AttributeDescription.name);
             AttributeDescription.SyncDefaultValue(OwnerSerializedData, true);
+            ResetLiveValue();
         }
 
         UnsetEnumValue();
         return CommandExecutionStatus.Success;
+    }
+
+    // Applies the now-default serialized data to the live element or component, so that a subsequent live-property
+    // sync does not read a stale value.
+    void ResetLiveValue()
+    {
+        var dataDescription = AttributeDescription.dataDescription;
+
+        // Nested UxmlObject data, such as a Binding, is not applied to an element.
+        if (VisualElement == null || OwnerSerializedData == null || dataDescription.isUxmlObject)
+            return;
+
+        if (dataDescription.isComponent)
+        {
+            // The data writes onto the attached component, so there is nothing live to reset without one.
+            if (!ComponentValueReflection.HasComponent(VisualElement, dataDescription.serializedDataType.DeclaringType))
+                return;
+        }
+        else
+        {
+            // The element's own data carries its bindings, and deserializing over live ones corrupts their data source.
+            UxmlAssetUtilities.ClearLiveBindings(VisualElement);
+        }
+
+        OwnerSerializedData.Deserialize(VisualElement,
+            UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
+        UxmlAssetUtilities.ReapplyAncestorSerializedDataOverrides(VisualElement);
     }
 
     void UnsetEnumValue()

@@ -23,6 +23,8 @@ static partial class ScenarioDialog
             return mockedDialog.Invoke(title, message, ok, cancel);
         }
 
-        return EditorUtility.DisplayDialog(title, message, ok, cancel);
+        return string.IsNullOrEmpty(cancel)
+            ? EditorUtility.DisplayDialog(title, message, ok)
+            : EditorUtility.DisplayDialog(title, message, ok, cancel);
     }
 }

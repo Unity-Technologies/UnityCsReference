@@ -20,8 +20,6 @@ namespace Unity.GraphToolkit.Editor
         static readonly CustomStyleProperty<float> k_WireWidthProperty = new("--wire-width");
         [NoAutoStaticsCleanup] // CSS custom property descriptor; value is a fixed CSS property name
         static readonly CustomStyleProperty<Color> k_WireColorProperty = new("--wire-color");
-        [NoAutoStaticsCleanup] // single reusable Gradient buffer for wire color interpolation; mutated each draw call, no user-type references
-        static readonly Gradient k_Gradient = new Gradient();
 
         /// <summary>
         /// The current zoom level.
@@ -41,17 +39,14 @@ namespace Unity.GraphToolkit.Editor
         const float k_WireTurnRadius = k_WireTurnDiameter * 0.5f;
         const float k_MinWireWidth = 1.75f;
         const float k_MinOpacity = 0.6f;
-        const float k_Offset = 0.1f;
         const float k_DashLength = 10f;
-        const float k_GapLength = 7f;
+        const float k_GapLength = 6f;
 
         protected WireView m_Wire;
 
         float m_Zoom = 1.0f;
 
-        float m_SegmentOffset = -0.3f;
-        float m_AnimationSpeed;
-        bool m_Animating;
+        readonly GradientFlowAnimator m_FlowAnimator = new();
 
         bool? m_IsDashed;
 
@@ -286,13 +281,12 @@ namespace Unity.GraphToolkit.Editor
 
         public void BeginAnimating(float animationSpeed)
         {
-            m_AnimationSpeed = animationSpeed;
-            m_Animating = true;
+            m_FlowAnimator.BeginAnimating(animationSpeed);
         }
 
         public void StopAnimating()
         {
-            m_Animating = false;
+            m_FlowAnimator.StopAnimating();
             MarkDirtyRepaint();
         }
 
@@ -302,18 +296,8 @@ namespace Unity.GraphToolkit.Editor
         /// <param name="deltaTime">Elapsed time in seconds since the last update.</param>
         public void AnimationUpdate(double deltaTime)
         {
-            AdvanceAnimation((float)deltaTime);
+            m_FlowAnimator.AnimationUpdate(deltaTime);
             MarkDirtyRepaint();
-        }
-
-        void AdvanceAnimation(float deltaTime)
-        {
-            if (!m_Animating)
-                return;
-
-            m_SegmentOffset += deltaTime * m_AnimationSpeed;
-            if (m_SegmentOffset > 1.3f)
-                m_SegmentOffset = -0.3f;
         }
 
         /// <inheritdoc />
@@ -459,10 +443,6 @@ namespace Unity.GraphToolkit.Editor
             style.height = dim.y;
         }
 
-        readonly GradientColorKey[] m_ColorKeys = new GradientColorKey[2];
-        readonly GradientAlphaKey[] m_AnimAlphaKeys = new GradientAlphaKey[6];
-        readonly GradientAlphaKey[] m_FillAlphaKeys = new GradientAlphaKey[1];
-
         protected void DrawWire(MeshGenerationContext mgc)
         {
             UnityEngine.Profiling.Profiler.BeginSample("DrawWire");
@@ -511,30 +491,8 @@ namespace Unity.GraphToolkit.Editor
                 : m_Wire.WireModel.Opacity;
             alpha *= opacityMultiplier;
 
-            m_ColorKeys[0] = new GradientColorKey(outColor, 0);
-            m_ColorKeys[1] = new GradientColorKey(inColor, 1);
-
-            if (m_Animating)
-            {
-                float minTransparency = k_MinOpacity * alpha;
-                m_AnimAlphaKeys[0] = new GradientAlphaKey(minTransparency, 0.0f);
-                m_AnimAlphaKeys[1] = new GradientAlphaKey(minTransparency, m_SegmentOffset - k_Offset * 2);
-                m_AnimAlphaKeys[2] = new GradientAlphaKey(alpha, m_SegmentOffset - k_Offset);
-                m_AnimAlphaKeys[3] = new GradientAlphaKey(alpha, m_SegmentOffset + k_Offset);
-                m_AnimAlphaKeys[4] = new GradientAlphaKey(minTransparency, m_SegmentOffset + k_Offset * 2);
-                m_AnimAlphaKeys[5] = new GradientAlphaKey(minTransparency, 1.0f);
-
-                k_Gradient.SetKeys(m_ColorKeys, m_AnimAlphaKeys);
-            }
-            else
-            {
-                m_FillAlphaKeys[0] = new GradientAlphaKey(alpha, 0);
-
-                k_Gradient.SetKeys(m_ColorKeys, m_FillAlphaKeys);
-            }
-
             painter2D.BeginPath();
-            painter2D.strokeGradient = k_Gradient;
+            painter2D.strokeGradient = m_FlowAnimator.BuildStrokeGradient(outColor, inColor, alpha);
 
             var localToWorld = parent.worldTransform;
             var worldToLocal = this.GetWorldTransformInverse();
@@ -581,8 +539,8 @@ namespace Unity.GraphToolkit.Editor
         {
             readonly WireControl m_WireControl;
             public TestAccess(WireControl wireControl) { m_WireControl = wireControl; }
-            public bool IsWireAnimationActive => m_WireControl.m_Animating;
-            public float WireAnimationSegmentOffset => m_WireControl.m_SegmentOffset;
+            public bool IsWireAnimationActive => m_WireControl.m_FlowAnimator.IsAnimating;
+            public float WireAnimationSegmentOffset => m_WireControl.m_FlowAnimator.SegmentOffset;
         }
     }
 }

@@ -23,10 +23,16 @@ namespace UnityEditor.Modules
 
         [NonSerialized]
         [AutoStaticsCleanupOnCodeReload]
+        // The platformSupportModules property calls RegisterPlatformSupportModules() whenever this is null,
+        // so the module set is rediscovered on the next access.
+        [IgnoreForUAL0015("Rediscovered by RegisterPlatformSupportModules() on the next access when null")]
         static Dictionary<string, IPlatformSupportModule> s_PlatformModules;
 
         [NonSerialized]
         [AutoStaticsCleanupOnCodeReload]
+        // The platformSupportModulesByGuid property calls RegisterPlatformSupportModules() whenever this is
+        // null, so the GUID index is rediscovered on the next access.
+        [IgnoreForUAL0015("Rediscovered by RegisterPlatformSupportModules() on the next access when null")]
         static Dictionary<GUID, IPlatformSupportModule> s_PlatformModulesByGuid;
 
         [NonSerialized]

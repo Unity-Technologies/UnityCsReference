@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Linq;
 using System.Reflection;
@@ -150,7 +148,9 @@ namespace UnityEditor.UIElements
                 AddRootElement(root);
             }
 
+#pragma warning disable UAL0018 // a delegate to the window's own method, not a snapshot: it looks the view data up again on every call, and the panel is re-registered with the window after a code reload
             m_Panel.getViewDataDictionary = window.GetViewDataDictionary;
+#pragma warning restore UAL0018
             m_Panel.saveViewData = window.SaveViewData;
             m_Panel.name = window.GetType().Name;
             m_NotificationContainer.onGUIHandler = window.DrawNotification;
@@ -450,7 +450,7 @@ namespace UnityEditor.UIElements
             if (shortcut != null && shortcut.combinations.Count > 0)
                 itemContent += $" {KeyCombination.SequenceToMenuString(shortcut.combinations)}";
 
-            menu.AddItem(EditorGUIUtility.TrTextContent(itemContent), false, DebugWindow, editorWindowModel.window);
+            menu.AddItem(L10n.TextContent(itemContent, null, null, null), false, DebugWindow, editorWindowModel.window);
         }
 
         private void AddUIELayoutDebuggerToMenu(GenericMenu menu)
@@ -480,7 +480,7 @@ namespace UnityEditor.UIElements
             foreach (var optionObj in cachedEnum.values)
             {
                 var name = cachedEnum.displayNames[i++];
-                var content = EditorGUIUtility.TrTextContent($"Binding Console Logs/{name}");
+                var content = L10n.TextContent($"Binding Console Logs/{name}", null, null, null);
                 var isOn = panel.dataBindingManager.logLevel == (BindingLogLevel)optionObj;
                 menu.AddItem(content, isOn, o => SetBindingLogLevel((BindingLogLevel)o), optionObj);
             }
@@ -548,6 +548,8 @@ namespace UnityEditor.UIElements
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Reinstalled on every code load by LiveReloadTrackerCreator.Initialize(); callers null-check it.
+        [IgnoreForUAL0015("Hook reinstalled on every code load by LiveReloadTrackerCreator.Initialize()")]
         internal static Action<bool> SetupLiveReloadPanelTrackers;
 
         private static string GetWindowLiveReloadPreferenceKey(Type windowType)
@@ -571,5 +573,3 @@ namespace UnityEditor.UIElements
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

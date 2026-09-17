@@ -66,3 +66,6 @@ public partial class LocalizedMaterial { }
 
 [UxmlObject]
 public partial class LocalizedFont { }
+
+[UxmlObject]
+public partial class LocalizedAudioClip { }

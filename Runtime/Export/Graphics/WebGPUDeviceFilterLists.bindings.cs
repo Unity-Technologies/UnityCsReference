@@ -142,7 +142,7 @@ namespace UnityEngine
         {
             try
             {
-                // NOTE: C++ defaults to ECMAScript so we need to at least ensure the string is ECMAScript compliant.
+                // NOTE: the player matches these with the browser's RegExp, so the string has to be ECMAScript compliant.
                 // Try to create a regex from the input string to determine if it is a valid regex
                 Regex regex = new Regex(value, RegexOptions.ECMAScript);
             }
@@ -174,10 +174,23 @@ namespace UnityEngine
 
         public static bool HasErrorVersion(string val, string fieldName, out string errorString)
         {
-            if (!string.IsNullOrEmpty(val) && !validVersionString.IsMatch(val))
+            if (!string.IsNullOrEmpty(val))
             {
-                errorString = $"Invalid version string for {fieldName}={val}: {versionErrorMessage}";
-                return true;
+                if (!validVersionString.IsMatch(val))
+                {
+                    errorString = $"Invalid version string for {fieldName}={val}: {versionErrorMessage}";
+                    return true;
+                }
+
+                // The player packs each version number into a ushort, and ignores a filter it cannot parse.
+                foreach (var versionNumber in val.Split('.'))
+                {
+                    if (!ushort.TryParse(versionNumber, out _))
+                    {
+                        errorString = $"Invalid version string for {fieldName}={val}: each version number must be {ushort.MaxValue} or less";
+                        return true;
+                    }
+                }
             }
 
             errorString = null;
@@ -187,7 +200,8 @@ namespace UnityEngine
         internal static void CheckFilterData(WebGPUDeviceFilterData filterData, string filterName)
         {
             // The check will throw an exception if there's an issue with the data.
-            // We need to check the data here, as an invalid regex on the native side, can crash the game.
+            // We need to check the data here, as the player can only warn about an invalid regex in
+            // the browser console, and then matches nothing with it.
             if (!string.IsNullOrEmpty(filterData.browserName))
                 CheckRegex(filterData.browserName, filterName, browserNameString);
             if (!string.IsNullOrEmpty(filterData.browserVersion))
@@ -197,7 +211,8 @@ namespace UnityEngine
         internal static void CheckAllFilterData(WebGPUDeviceFilterData[] filterDataList, string filterName)
         {
             // The check will throw an exception if there's an issue with the data.
-            // We need to check the data here, as an invalid regex on the native side, can crash the game.
+            // We need to check the data here, as the player can only warn about an invalid regex in
+            // the browser console, and then matches nothing with it.
             foreach (var filterData in filterDataList)
             {
                 CheckFilterData(filterData, filterName);

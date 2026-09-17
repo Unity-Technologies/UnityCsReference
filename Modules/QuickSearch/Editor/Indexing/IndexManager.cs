@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -89,7 +88,10 @@ namespace UnityEditor.Search
 
         private static string k_ProjectPath { get { return Application.dataPath.Substring(0, Application.dataPath.Length - "/Assets".Length); } }
 
-        [AutoStaticsCleanupOnCodeReload]
+        // One-shot hand-off from OpenWindow to the window's first list build, which uses it to pick the
+        // row to select. Nothing repopulates it, so clearing it on reload would silently move the user's
+        // selection to the first row. It holds only an EntityId, so keeping it pins nothing.
+        [NoAutoStaticsCleanup]
         private static EntityId s_SelectedAssetOnOpen;
         private int m_PreviousSelectedIndex = -1;
         private int m_IndexToInsertPackagesOnToggle = -1;
@@ -1256,7 +1258,9 @@ namespace UnityEditor.Search
                 var grip = new VisualElement() { name = "ReorderableListViewGrip" };
                 Add(grip);
 
+#pragma warning disable UAL0018 // plain enum value snapshot seeding this row's initial pattern; a reload that resets the remembered pattern to its default is followed by a fresh read on the next row created
                 m_Pattern = m_LastFilePattern;
+#pragma warning restore UAL0018
                 Add(m_EnumField = new EnumField(m_Pattern));
                 m_EnumField.RegisterValueChangedCallback(FilePatternChanged);
 
@@ -1615,4 +1619,3 @@ namespace UnityEditor.Search
         internal void SetSelectionWithoutNotify(int index) => ListView.SetSelectionWithoutNotify(stackalloc int[1] { index });
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

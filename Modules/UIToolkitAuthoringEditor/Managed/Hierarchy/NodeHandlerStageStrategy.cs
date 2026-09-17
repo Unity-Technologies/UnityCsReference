@@ -17,6 +17,12 @@ abstract class NodeHandlerStageStrategy(Stage stage)
     protected Stage Stage => stage;
 
     /// <summary>
+    /// The handler this strategy was wired to, or <see langword="null"/> outside the
+    /// <see cref="Initialize"/>/<see cref="Dispose"/> window.
+    /// </summary>
+    protected VisualElementNodeHandler Handler { get; private set; }
+
+    /// <summary>
     /// Raised when the stage re-clones the document it edits. Every live element of that document is replaced,
     /// so anything resolved from the previous tree has to be resolved again.
     /// </summary>
@@ -31,11 +37,13 @@ abstract class NodeHandlerStageStrategy(Stage stage)
     /// <param name="handler">The handler being wired to the stage.</param>
     public virtual void Initialize(VisualElementNodeHandler handler)
     {
+        Handler = handler;
     }
 
     /// <summary>Undoes <see cref="Initialize"/>.</summary>
     public virtual void Dispose()
     {
+        Handler = null;
     }
 
     public bool IsFullyEditable(VisualElement element) => GetEditFlags(element).IsFullyEditable();
@@ -187,12 +195,10 @@ sealed class UnsupportedNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrat
 
 sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrategy(stage)
 {
-    VisualElementNodeHandler m_Handler;
-
     // Scene documents come and go with the panels of the scene, which the selection registry tracks for us.
     public override void Initialize(VisualElementNodeHandler handler)
     {
-        m_Handler = handler;
+        base.Initialize(handler);
 
         UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
 
@@ -218,13 +224,13 @@ sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrateg
             assetRegistry.AssetDirtyStateChanged -= OnAssetDirtyStateChanged;
 
         var registry = VisualElementSelectionRegistry.Instance;
-        if (registry != null && m_Handler != null)
+        if (registry != null && Handler != null)
         {
-            registry.PanelTracked -= m_Handler.RegisterPanel;
-            registry.PanelUntracked -= m_Handler.UnregisterPanel;
+            registry.PanelTracked -= Handler.RegisterPanel;
+            registry.PanelUntracked -= Handler.UnregisterPanel;
         }
 
-        m_Handler = null;
+        base.Dispose();
     }
 
     // The `Foo.uxml` rows carry the unsaved-changes marker — both the document rows and the template path
@@ -232,10 +238,10 @@ sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrateg
     void OnAssetDirtyStateChanged(UnityEngine.Object asset)
     {
         if (asset is VisualTreeAsset)
-            m_Handler?.MarkHierarchyDirty();
+            Handler?.MarkHierarchyDirty();
     }
 
-    public override bool IsReadOnly => !UIToolkitStageUtility.IsAuthoringEnabledInMainStage;
+    public override bool IsReadOnly => false;
 
     public override VisualElementEditFlags GetEditFlags(VisualElement element)
         => UIToolkitStageUtility.GetMainStageEditFlags(element);
@@ -244,7 +250,10 @@ sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrateg
 
     // Each scene document hangs under the GameObject of the panel component that renders it.
     public override GameObject GetDocumentHostGameObject(VisualElement element)
-        => element is IPanelComponentRootElement rootElement ? rootElement.panelComponent.gameObject : null;
+    {
+        var panelComponent = (element as IPanelComponentRootElement)?.panelComponent;
+        return panelComponent.IsAlive() ? panelComponent.gameObject : null;
+    }
 
     // Scene documents are scoped by their owning panel component: multiple documents in one panel (or two
     // instances of the same UXML) must not collide on identical in-document paths.
@@ -252,7 +261,7 @@ sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrateg
     {
         var rootElement = element as IPanelComponentRootElement
                           ?? element?.GetFirstAncestorOfType<IPanelComponentRootElement>();
-        return rootElement?.panelComponent as UnityEngine.Object;
+        return rootElement?.panelComponent.AliveOrNull() as UnityEngine.Object;
     }
 
     public override void PopulateContextMenu(HierarchyView view, in HierarchyNode node, VisualElement element,
@@ -265,7 +274,10 @@ sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrateg
         => element?.GetFirstOfType<IPanelComponentRootElement>() as VisualElement;
 
     public override VisualTreeAsset ResolveDocumentAsset(VisualElement element)
-        => element?.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent?.visualTreeAsset;
+    {
+        var panelComponent = element?.GetFirstOfType<IPanelComponentRootElement>()?.panelComponent;
+        return panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
+    }
 
     // A document root has no VisualElementAsset of its own, but the document behind it can still receive
     // children and style sheets, so the `Foo.uxml` row is a valid drop target.
@@ -288,24 +300,50 @@ sealed class UIStageNodeHandlerStrategy(VisualElementEditingStage stage) : NodeH
     // The stage owns the single authoring panel its document is cloned into.
     public override void Initialize(VisualElementNodeHandler handler)
     {
+        base.Initialize(handler);
+
         Stage.MainDocumentWasCloned += OnMainDocumentWasCloned;
+        Stage.AuthoringPanelWasCreated += OnAuthoringPanelWasCreated;
 
-        var panel = Stage.GetAuthoringPanel();
-        if (panel != null)
-            handler.RegisterPanel(panel);
+        AttachPanel();
 
-        Stage.RequestRefresh();
+        // A handler only needs the document to be there to populate its nodes; the stage that clones it on its
+        // way open would pay for a second clone of the same tree.
+        Stage.EnsureDocumentShown();
     }
 
     public override void Dispose()
     {
         if (Stage)
+        {
             Stage.MainDocumentWasCloned -= OnMainDocumentWasCloned;
+            Stage.AuthoringPanelWasCreated -= OnAuthoringPanelWasCreated;
+        }
+
+        base.Dispose();
     }
 
     void OnMainDocumentWasCloned(VisualElementEditingStage stage) => RaiseDocumentCloned();
 
-    public override bool IsReadOnly => !UIToolkitAuthoringSettings.EnableInSceneUIAuthoring;
+    void OnAuthoringPanelWasCreated(VisualElementEditingStage stage)
+    {
+        AttachPanel();
+        RaiseDocumentCloned();
+    }
+
+    void AttachPanel()
+    {
+        var panel = Stage.GetAuthoringPanel();
+        if (Handler == null || panel == null)
+            return;
+
+        // The selection registry has to see a panel's changes before the hierarchy does: it computes the
+        // old-instance to new-instance remaps the hierarchy consumes to keep its node map stable.
+        VisualElementSelectionRegistry.Instance?.TrackStagePanel(Stage);
+        Handler.RegisterPanel(panel);
+    }
+
+    public override bool IsReadOnly => false;
 
     public override VisualElementEditFlags GetEditFlags(VisualElement element)
      => Stage.Context.GetElementEditFlags(element);

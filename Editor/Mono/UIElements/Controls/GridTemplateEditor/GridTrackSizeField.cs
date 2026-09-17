@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,7 +12,6 @@ using Unity.Scripting.LifecycleManagement;
 namespace UnityEditor.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-    [NoAutoStaticsCleanup] // Immutable unit lookup tables; safe to persist across reloads.
     internal class GridTrackSizeField : VisualElement
     {
         // Unit popup values. "min"/"max"/"fit" are short labels for min-content/max-content/fit-content.
@@ -21,7 +19,11 @@ namespace UnityEditor.UIElements
             k_Min = "min", k_Max = "max", k_Minmax = "minmax", k_Fit = "fit";
         const int k_UnitWidth = 54;
 
+        // Immutable unit lookup table of string constants; safe to keep for the process.
+        [NoAutoStaticsCleanup]
         static readonly List<string> k_FullUnits = new() { k_Px, k_Pct, k_Fr, k_Auto, k_Min, k_Max, k_Minmax, k_Fit };
+        // Immutable unit lookup table of string constants; safe to keep for the process.
+        [NoAutoStaticsCleanup]
         static readonly List<string> k_SimpleUnits = new() { k_Px, k_Pct, k_Fr, k_Auto, k_Min, k_Max };
 
         readonly VisualElement m_ValueArea;
@@ -227,4 +229,3 @@ namespace UnityEditor.UIElements
         public static readonly string valueAreaUssClassName = ussClassName + "__value-area";
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

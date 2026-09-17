@@ -2,51 +2,101 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ScriptingRuntime not yet converted
 #nullable enable
 using System;
-using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
     [NativeHeader("Runtime/BaseClasses/TypeManager.h")]
-    [NoAutoStaticsCleanup]
     public partial class TypeManagerV2
     {
-        static readonly Dictionary<RuntimeTypeHandle, int> s_TypeHandleToRuntimeIndex = new Dictionary<RuntimeTypeHandle, int>();
+        // Registrations are grouped natively by load context — the code that dies together. On
+        // CoreCLR the registrant is declared by wrapping the registration calls in a
+        // BeginRegistration scope anchored on any type from the registering assembly (the source
+        // generator passes its own per-assembly class); native asks the runtime which ALC owns
+        // the anchor's assembly. Retirement is driven by the ALC's own death notification (fired
+        // as its identity handle is freed, after every unload hook has run), so an assembly can
+        // still resolve its own factories from [OnAssemblyUnloading]. The other backends have no
+        // per-ALC unloads: everything shares one process-wide context, retired below on code
+        // unload (a Mono domain reload; never in players).
+        // Acquired once per domain generation (statics reset on a Mono reload), so the previous
+        // generation's retired-window entry can never block this generation's registrations —
+        // the [OnCodeLoaded] window clear below runs after the [OnAssemblyLoaded] bursts, and
+        // must not need to run first. NoAutoStaticsCleanup: ordinary static reinitialization
+        // is the reset; a scope-transition clear would hand out a stale zero context.
+        [NoAutoStaticsCleanup]
+        static readonly IntPtr s_DomainContext = AcquireDomainContext();
+        static IntPtr DomainContext => s_DomainContext;
 
+
+        // Anchors registrations made inside the scope to the load context of the assembly that
+        // declares the anchor type. Scopes nest; each restores the previous context on dispose.
+        public static RegistrationScope BeginRegistration(RuntimeTypeHandle anchorTypeHandle)
+        {
+            return new RegistrationScope(IntPtr.Zero);
+        }
+
+        public readonly struct RegistrationScope : IDisposable
+        {
+            readonly IntPtr m_Previous;
+
+            internal RegistrationScope(IntPtr previous)
+            {
+                m_Previous = previous;
+            }
+
+            public void Dispose()
+            {
+            }
+        }
+
+        // typeName and hardcodedPersistentId are legacy arguments the source generator still emits;
+        // identity is the type handle alone. typeName only feeds diagnostics.
         public static void RegisterFactory(RuntimeTypeHandle typeHandle, string typeName, IntPtr factoryPtr,
                                            int hardcodedPersistentId = 0)
         {
             if (factoryPtr == IntPtr.Zero)
                 Debug.LogError($"TypeManagerV2.RegisterFactory: factoryPtr is null for type '{typeName}'");
 
-            // Native owns persistent-id assignment. For hybrid types the caller passes the
-            // hardcoded IMPLEMENT_REGISTER_CLASS id; for pure-managed types unique hashes are generated
-            var runtimeTypeIndex = RegisterInstantiationFunctionManaged(typeName, factoryPtr, hardcodedPersistentId);
-            s_TypeHandleToRuntimeIndex[typeHandle] = runtimeTypeIndex;
+            RegisterManagedFactory(typeHandle.Value, factoryPtr, DomainContext);
         }
 
-        // Metadata only, a value-type factory would box. hardcodedPersistentId binds a hybrid to native's RTTI.
+        // Metadata only, a value-type factory would box. Registered with a null factory so
+        // diagnostics can distinguish "registered without a factory" from "never registered".
         public static void RegisterType(RuntimeTypeHandle typeHandle, string typeName,
                                         int hardcodedPersistentId = 0)
         {
-            var runtimeTypeIndex = RegisterInstantiationFunctionManaged(typeName, IntPtr.Zero, hardcodedPersistentId);
-            s_TypeHandleToRuntimeIndex[typeHandle] = runtimeTypeIndex;
+            RegisterManagedFactory(typeHandle.Value, IntPtr.Zero, DomainContext);
+            RegisterComponentTypeClass(typeHandle.Value, DomainContext);
+        }
+
+        // Everything lives and dies with the domain; a Mono reload exits this assembly's own
+        // scope, and players never unload code. Retirement also opens the retired window, which
+        // rejects registrations from teardown code until the new generation clears it below.
+        [OnCodeUnloading]
+        internal static void RetireDomainContext()
+        {
+            RetireManagedFactories(DomainContext);
+        }
+
+        [OnCodeLoaded]
+        internal static void ClearRetiredWindow()
+        {
+            ClearRetiredContextsWindow();
         }
 
         // Used in testing only
         internal static unsafe object? Produce(RuntimeTypeHandle typeHandle)
         {
-            if (!s_TypeHandleToRuntimeIndex.TryGetValue(typeHandle, out int runtimeTypeIndex))
+            if (!IsManagedTypeRegistered(typeHandle.Value))
             {
                 Debug.LogError($"TypeManagerV2.Produce: type '{Type.GetTypeFromHandle(typeHandle)}' is not registered");
                 return null;
             }
 
-            IntPtr factoryPtr = GetManagedFactoryPtr(runtimeTypeIndex);
+            IntPtr factoryPtr = FindManagedFactory(typeHandle.Value);
             if (factoryPtr == IntPtr.Zero)
             {
                 Debug.LogError($"TypeManagerV2.Produce: factory function is null for type '{Type.GetTypeFromHandle(typeHandle)}'");
@@ -57,29 +107,41 @@ namespace UnityEngine
         }
 
         // Used in testing only
-        internal static int GetRuntimeTypeId(RuntimeTypeHandle typeHandle)
+        internal static bool IsRegistered(RuntimeTypeHandle typeHandle)
         {
-            return s_TypeHandleToRuntimeIndex[typeHandle];
+            return IsManagedTypeRegistered(typeHandle.Value);
         }
 
-        // The native side caches a factory IntPtr per registered type. Clearing the map on
-        // unload prevents Produce from reaching a stale function pointer and lets the next
-        // assembly load re-establish the lookup cleanly.
-        [OnAssemblyUnloading]
-        internal static void OnAssemblyUnloading()
+        // Used in testing only: raw backend pointer, for handles carried across a domain reload
+        // as plain numbers (the originating generation's RuntimeTypeHandle no longer exists).
+        internal static bool IsRegistered(IntPtr backendTypePtr)
         {
-            ClearManagedFactoriesForUnload();
-            s_TypeHandleToRuntimeIndex.Clear();
+            return IsManagedTypeRegistered(backendTypePtr);
         }
 
-        [NativeMethod(Name = "TypeManager::RegisterInstantiationFunctionManaged", IsFreeFunction = true)]
-        extern static int RegisterInstantiationFunctionManaged(string name, IntPtr initFunc, int hardcodedPersistentId);
+        [NativeMethod(Name = "TypeManager_RegisterManagedFactory", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static void RegisterManagedFactory(IntPtr backendTypePtr, IntPtr factoryPtr, IntPtr contextHandle);
 
-        [NativeMethod(Name = "TypeManager::GetManagedFactoryPtr", IsFreeFunction = true)]
-        extern static IntPtr GetManagedFactoryPtr(int runtimeTypeIndex);
+        [NativeMethod(Name = "TypeManager_FindManagedFactory", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static IntPtr FindManagedFactory(IntPtr backendTypePtr);
 
-        [NativeMethod(Name = "TypeManager::ClearManagedFactoriesForUnload", IsFreeFunction = true)]
-        extern static void ClearManagedFactoriesForUnload();
+        // Mints the small dense id that EntityId.TypeId carries for value-type components and
+        // records the type's scripting class for the component transfer path; retired with the
+        // context like every other registration.
+        [NativeMethod(Name = "TypeManager_RegisterComponentTypeClass", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static void RegisterComponentTypeClass(IntPtr backendTypePtr, IntPtr contextHandle);
+
+        [NativeMethod(Name = "TypeManager_IsManagedTypeRegistered", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static bool IsManagedTypeRegistered(IntPtr backendTypePtr);
+
+        [NativeMethod(Name = "TypeManager_RetireManagedFactories", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static void RetireManagedFactories(IntPtr contextHandle);
+
+        [NativeMethod(Name = "TypeManager_ClearRetiredContextsWindow", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static void ClearRetiredContextsWindow();
+
+        [NativeMethod(Name = "TypeManager_AcquireDomainContext", IsFreeFunction = true, IsThreadSafe = true)]
+        extern static IntPtr AcquireDomainContext();
+
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

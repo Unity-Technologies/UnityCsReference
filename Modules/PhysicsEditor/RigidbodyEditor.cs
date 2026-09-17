@@ -38,27 +38,27 @@ namespace UnityEditor
 
          private class Styles
         {
-            public static readonly GUIContent mass = EditorGUIUtility.TrTextContent("Mass", "Mass of this rigid body.");
-            public static readonly GUIContent useGravity = EditorGUIUtility.TrTextContent("Use Gravity", "Controls whether gravity affects this rigid body.");
+            public static readonly GUIContent mass = L10n.TextContent("Mass", "Mass of this rigid body.", null, null);
+            public static readonly GUIContent useGravity = L10n.TextContent("Use Gravity", "Controls whether gravity affects this rigid body.", null, null);
 
-            public static readonly GUIContent linearDamping = EditorGUIUtility.TrTextContent("Linear Damping", "Damping factor that affects how this body resists linear motion.");
-            public static readonly GUIContent angularDamping = EditorGUIUtility.TrTextContent("Angular Damping", "Damping factor that affects how this body resists rotations.");
-            public static readonly GUIContent isKinematic = EditorGUIUtility.TrTextContent("Is Kinematic", "Controls whether physics affects the rigidbody.");
-            public static readonly GUIContent interpolate = EditorGUIUtility.TrTextContent("Interpolate", "Smooths out the effect of running physics at a fixed frame rate.");
+            public static readonly GUIContent linearDamping = L10n.TextContent("Linear Damping", "Damping factor that affects how this body resists linear motion.", null, null);
+            public static readonly GUIContent angularDamping = L10n.TextContent("Angular Damping", "Damping factor that affects how this body resists rotations.", null, null);
+            public static readonly GUIContent isKinematic = L10n.TextContent("Is Kinematic", "Controls whether physics affects the rigidbody.", null, null);
+            public static readonly GUIContent interpolate = L10n.TextContent("Interpolate", "Smooths out the effect of running physics at a fixed frame rate.", null, null);
 
-            public static readonly GUIContent implicitCom = EditorGUIUtility.TrTextContent("Automatic Center Of Mass", "Use the calculated center of mass or set it directly.");
-            public static readonly GUIContent implicitTensor = EditorGUIUtility.TrTextContent("Automatic Tensor", "Use the calculated tensor or set it directly.");
-            public static readonly GUIContent centerOfMass = EditorGUIUtility.TrTextContent("Center Of Mass", "The local space coordinates of the center of mass.");
-            public static readonly GUIContent inertiaTensor = EditorGUIUtility.TrTextContent("Inertia Tensor", "The diagonal inertia tensor of mass relative to the center of mass.");
-            public static readonly GUIContent inertiaRotation = EditorGUIUtility.TrTextContent("Inertia Tensor Rotation", "The rotation of the inertia tensor.");
+            public static readonly GUIContent implicitCom = L10n.TextContent("Automatic Center Of Mass", "Use the calculated center of mass or set it directly.", null, null);
+            public static readonly GUIContent implicitTensor = L10n.TextContent("Automatic Tensor", "Use the calculated tensor or set it directly.", null, null);
+            public static readonly GUIContent centerOfMass = L10n.TextContent("Center Of Mass", "The local space coordinates of the center of mass.", null, null);
+            public static readonly GUIContent inertiaTensor = L10n.TextContent("Inertia Tensor", "The diagonal inertia tensor of mass relative to the center of mass.", null, null);
+            public static readonly GUIContent inertiaRotation = L10n.TextContent("Inertia Tensor Rotation", "The rotation of the inertia tensor.", null, null);
 
-            public static readonly GUIContent collisionDetection = EditorGUIUtility.TrTextContent("Collision Detection", "The method to use to detect collisions for child colliders: discrete (default) or various modes of continuous collision detection that can help solving fast moving object issues.");
+            public static readonly GUIContent collisionDetection = L10n.TextContent("Collision Detection", "The method to use to detect collisions for child colliders: discrete (default) or various modes of continuous collision detection that can help solving fast moving object issues.", null, null);
 
-            public static readonly GUIContent freezePositionLabel = EditorGUIUtility.TrTextContent("Freeze Position");
-            public static readonly GUIContent freezeRotationLabel = EditorGUIUtility.TrTextContent("Freeze Rotation");
+            public static readonly GUIContent freezePositionLabel = L10n.TextContent("Freeze Position", null, null, null);
+            public static readonly GUIContent freezeRotationLabel = L10n.TextContent("Freeze Rotation", null, null, null);
 
-            public static readonly GUIContent includeLayers = EditorGUIUtility.TrTextContent("Include Layers", "Layers to include when producing collisions");
-            public static readonly GUIContent excludeLayers = EditorGUIUtility.TrTextContent("Exclude Layers", "Layers to exclude when producing collisions");
+            public static readonly GUIContent includeLayers = L10n.TextContent("Include Layers", "Layers to include when producing collisions", null, null);
+            public static readonly GUIContent excludeLayers = L10n.TextContent("Exclude Layers", "Layers to exclude when producing collisions", null, null);
         }
 
          public void OnEnable()

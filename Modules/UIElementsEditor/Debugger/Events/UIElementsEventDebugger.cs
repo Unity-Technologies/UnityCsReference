@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -45,7 +44,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
         {
             var window = EditorWindow.GetWindow<UIElementsEventsDebugger>();
             window.minSize = new Vector2(640, 480);
-            window.titleContent = EditorGUIUtility.TrTextContent("UI Toolkit Event Debugger");
+            window.titleContent = L10n.TextContent("UI Toolkit Event Debugger", null, null, null);
             window.m_DebuggerImpl.ClearLogs();
         }
 
@@ -1415,4 +1414,3 @@ namespace UnityEditor.UIElements.Experimental.Debugger
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

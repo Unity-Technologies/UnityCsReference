@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AdaptivePerformance not yet converted
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -226,12 +225,18 @@ namespace UnityEngine.AdaptivePerformance
         private float m_LastAverageCpuFrameTime;
         private bool m_IsApplied;
 
+        // Read through Holder.Instance at every use rather than caching it: the instance is owned by
+        // Adaptive Performance's own Initialize/Deinitialize lifecycle and is cleared on code reload,
+        // so a cached reference would survive as a stale non-null value that the null checks below
+        // would wave through.
+        private static IAdaptivePerformance AP => Holder.Instance;
+
         public bool IsRunning { get => m_Scaler != null; }
 
         public void Start(AdaptivePerformanceScaler scaler, bool isApply)
         {
             Debug.Assert(!IsRunning, "AdaptivePerformanceScalerEfficiencyTracker is already running");
-            var ap = Holder.Instance;
+            var ap = AP;
             if (ap == null)
                 return;
             m_Scaler = scaler;
@@ -242,7 +247,7 @@ namespace UnityEngine.AdaptivePerformance
 
         public void Stop()
         {
-            var ap = Holder.Instance;
+            var ap = AP;
             if (ap == null)
             {
                 m_Scaler = null;
@@ -804,4 +809,3 @@ namespace UnityEngine.AdaptivePerformance
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

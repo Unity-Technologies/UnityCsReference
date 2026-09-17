@@ -29,23 +29,23 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent AgentSteeringHeader = EditorGUIUtility.TrTextContent("Steering");
-            public static readonly GUIContent AgentAvoidanceHeader = EditorGUIUtility.TrTextContent("Obstacle Avoidance");
-            public static readonly GUIContent AgentPathFindingHeader = EditorGUIUtility.TrTextContent("Path Finding");
-            public static readonly GUIContent AgentType = EditorGUIUtility.TrTextContent("Agent Type", "The agent characteristics for which a NavMesh has been built.");
-            public static readonly GUIContent BaseOffset = EditorGUIUtility.TrTextContent("Base Offset", "The relative vertical displacement of the owning GameObject.");
-            public static readonly GUIContent Speed = EditorGUIUtility.TrTextContent("Speed", "Maximum movement speed when following a path.");
-            public static readonly GUIContent AngularSpeed = EditorGUIUtility.TrTextContent("Angular Speed", "Maximum turning speed in (deg/s) while following a path.");
-            public static readonly GUIContent Acceleration = EditorGUIUtility.TrTextContent("Acceleration", "The maximum acceleration of an agent as it follows a path, given in units / sec^2.");
-            public static readonly GUIContent StoppingDistance = EditorGUIUtility.TrTextContent("Stopping Distance", "Stop within this distance from the target position.");
-            public static readonly GUIContent AutoBraking = EditorGUIUtility.TrTextContent("Auto Braking", "The agent will avoid overshooting the destination point by slowing down in time.");
-            public static readonly GUIContent Radius = EditorGUIUtility.TrTextContent("Radius", "The minimum distance to keep clear between the center of this agent and any other agents or obstacles nearby.");
-            public static readonly GUIContent Height = EditorGUIUtility.TrTextContent("Height", "The height of the agent for purposes of passing under obstacles.");
-            public static readonly GUIContent Quality = EditorGUIUtility.TrTextContent("Quality", "Higher quality avoidance reduces more the chance of agents overlapping but it is slower to compute than lower quality avoidance.");
-            public static readonly GUIContent Priority = EditorGUIUtility.TrTextContent("Priority", "This agent will ignore all other agents for which this number is higher. A lower value implies higher importance.");
-            public static readonly GUIContent AutoTraverseOffMeshLink = EditorGUIUtility.TrTextContent("Auto Traverse Off Mesh Link", "The agent moves across Off Mesh Links automatically.");
-            public static readonly GUIContent AutoRepath = EditorGUIUtility.TrTextContent("Auto Repath", "The agent will attempt to acquire a new path if the existing path becomes invalid.");
-            public static readonly GUIContent AreaMask = EditorGUIUtility.TrTextContent("Area Mask", "The agent plans a path and moves only through the selected NavMesh area types.");
+            public static readonly GUIContent AgentSteeringHeader = L10n.TextContent("Steering", null, null, null);
+            public static readonly GUIContent AgentAvoidanceHeader = L10n.TextContent("Obstacle Avoidance", null, null, null);
+            public static readonly GUIContent AgentPathFindingHeader = L10n.TextContent("Path Finding", null, null, null);
+            public static readonly GUIContent AgentType = L10n.TextContent("Agent Type", "The agent characteristics for which a NavMesh has been built.", null, null);
+            public static readonly GUIContent BaseOffset = L10n.TextContent("Base Offset", "The relative vertical displacement of the owning GameObject.", null, null);
+            public static readonly GUIContent Speed = L10n.TextContent("Speed", "Maximum movement speed when following a path.", null, null);
+            public static readonly GUIContent AngularSpeed = L10n.TextContent("Angular Speed", "Maximum turning speed in (deg/s) while following a path.", null, null);
+            public static readonly GUIContent Acceleration = L10n.TextContent("Acceleration", "The maximum acceleration of an agent as it follows a path, given in units / sec^2.", null, null);
+            public static readonly GUIContent StoppingDistance = L10n.TextContent("Stopping Distance", "Stop within this distance from the target position.", null, null);
+            public static readonly GUIContent AutoBraking = L10n.TextContent("Auto Braking", "The agent will avoid overshooting the destination point by slowing down in time.", null, null);
+            public static readonly GUIContent Radius = L10n.TextContent("Radius", "The minimum distance to keep clear between the center of this agent and any other agents or obstacles nearby.", null, null);
+            public static readonly GUIContent Height = L10n.TextContent("Height", "The height of the agent for purposes of passing under obstacles.", null, null);
+            public static readonly GUIContent Quality = L10n.TextContent("Quality", "Higher quality avoidance reduces more the chance of agents overlapping but it is slower to compute than lower quality avoidance.", null, null);
+            public static readonly GUIContent Priority = L10n.TextContent("Priority", "This agent will ignore all other agents for which this number is higher. A lower value implies higher importance.", null, null);
+            public static readonly GUIContent AutoTraverseOffMeshLink = L10n.TextContent("Auto Traverse Off Mesh Link", "The agent moves across Off Mesh Links automatically.", null, null);
+            public static readonly GUIContent AutoRepath = L10n.TextContent("Auto Repath", "The agent will attempt to acquire a new path if the existing path becomes invalid.", null, null);
+            public static readonly GUIContent AreaMask = L10n.TextContent("Area Mask", "The agent plans a path and moves only through the selected NavMesh area types.", null, null);
         }
 
         void OnEnable()

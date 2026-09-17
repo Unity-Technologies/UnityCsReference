@@ -73,6 +73,17 @@ namespace UnityEditor.AdaptivePerformance.Editor
             m_BigCores = m_ExtensionFoldout.Q<IntegerField>("cluster-info-big-cores");
             m_MediumCores = m_ExtensionFoldout.Q<IntegerField>("cluster-info-medium-cores");
             m_LittleCores = m_ExtensionFoldout.Q<IntegerField>("cluster-info-little-cores");
+            m_EnergyUsageInterval = m_ExtensionFoldout.Q<LongField>("energy-usage-interval");
+            m_EnergyUsageCpu = m_ExtensionFoldout.Q<LongField>("energy-usage-cpu");
+            m_EnergyUsageCpuAvailable = m_ExtensionFoldout.Q<Toggle>("energy-usage-cpu-available");
+            m_EnergyUsageGpu = m_ExtensionFoldout.Q<LongField>("energy-usage-gpu");
+            m_EnergyUsageGpuAvailable = m_ExtensionFoldout.Q<Toggle>("energy-usage-gpu-available");
+            m_EnergyUsageTpu = m_ExtensionFoldout.Q<LongField>("energy-usage-tpu");
+            m_EnergyUsageTpuAvailable = m_ExtensionFoldout.Q<Toggle>("energy-usage-tpu-available");
+            m_EnergyUsageDisplay = m_ExtensionFoldout.Q<LongField>("energy-usage-display");
+            m_EnergyUsageDisplayAvailable = m_ExtensionFoldout.Q<Toggle>("energy-usage-display-available");
+            m_EnergyUsageMemory = m_ExtensionFoldout.Q<LongField>("energy-usage-memory");
+            m_EnergyUsageMemoryAvailable = m_ExtensionFoldout.Q<Toggle>("energy-usage-memory-available");
 
             // Create settings for each one of the scalers
             Type ti = typeof(AdaptivePerformanceScaler);
@@ -585,6 +596,18 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 subsystem.SetClusterInfo(m_ClusterInfo);
             });
 
+            RegisterEnergyUsageField(m_EnergyUsageInterval);
+            RegisterEnergyUsageField(m_EnergyUsageCpu);
+            m_EnergyUsageCpuAvailable.RegisterCallback<ChangeEvent<bool>>(evt => UpdateEnergyUsageFromUI());
+            RegisterEnergyUsageField(m_EnergyUsageGpu);
+            m_EnergyUsageGpuAvailable.RegisterCallback<ChangeEvent<bool>>(evt => UpdateEnergyUsageFromUI());
+            RegisterEnergyUsageField(m_EnergyUsageTpu);
+            m_EnergyUsageTpuAvailable.RegisterCallback<ChangeEvent<bool>>(evt => UpdateEnergyUsageFromUI());
+            RegisterEnergyUsageField(m_EnergyUsageDisplay);
+            m_EnergyUsageDisplayAvailable.RegisterCallback<ChangeEvent<bool>>(evt => UpdateEnergyUsageFromUI());
+            RegisterEnergyUsageField(m_EnergyUsageMemory);
+            m_EnergyUsageMemoryAvailable.RegisterCallback<ChangeEvent<bool>>(evt => UpdateEnergyUsageFromUI());
+
             EditorApplication.playModeStateChanged += LogPlayModeState;
 
             SyncAPSubsystemSettingsToEditor();
@@ -621,6 +644,17 @@ namespace UnityEditor.AdaptivePerformance.Editor
         IntegerField m_BigCores;
         IntegerField m_MediumCores;
         IntegerField m_LittleCores;
+        LongField m_EnergyUsageInterval;
+        LongField m_EnergyUsageCpu;
+        Toggle m_EnergyUsageCpuAvailable;
+        LongField m_EnergyUsageGpu;
+        Toggle m_EnergyUsageGpuAvailable;
+        LongField m_EnergyUsageTpu;
+        Toggle m_EnergyUsageTpuAvailable;
+        LongField m_EnergyUsageDisplay;
+        Toggle m_EnergyUsageDisplayAvailable;
+        LongField m_EnergyUsageMemory;
+        Toggle m_EnergyUsageMemoryAvailable;
 
         List<AdaptivePerformanceScaler> m_Scalers = new List<AdaptivePerformanceScaler>();
 
@@ -694,6 +728,55 @@ namespace UnityEditor.AdaptivePerformance.Editor
                 return;
 
             subsystem.SetClusterInfo(m_ClusterInfo);
+            UpdateEnergyUsageFromUI();
+        }
+
+        // The UI values are multiplied by 1000 to convert them to the platform units the readings use, so
+        // anything above this overflows the conversion and shows up as a negative reading in play mode.
+        const long k_MaxEnergyUsageValue = long.MaxValue / 1000;
+
+        static long ClampEnergyUsageValue(long value)
+        {
+            return Math.Clamp(value, 0, k_MaxEnergyUsageValue);
+        }
+
+        void RegisterEnergyUsageField(LongField field)
+        {
+            field.RegisterCallback<ChangeEvent<long>>(evt =>
+            {
+                // Negative energy and interval values aren't physically meaningful, and values past the
+                // maximum overflow the conversion to platform units. Both show up as negative readings in
+                // play mode, so put the field back in range instead of forwarding the value to the subsystem.
+                long clamped = ClampEnergyUsageValue(evt.newValue);
+                if (clamped != evt.newValue)
+                    field.SetValueWithoutNotify(clamped);
+
+                UpdateEnergyUsageFromUI();
+            });
+        }
+
+        EnergyUsageReading MakeEnergyUsageReading(LongField energy, Toggle available)
+        {
+            // The UI fields are in milliwatt-seconds and seconds; the reading stores the platform
+            // units of microwatt-seconds and milliseconds.
+            return new EnergyUsageReading(available.value,
+                ClampEnergyUsageValue(energy.value) * 1000,
+                ClampEnergyUsageValue(m_EnergyUsageInterval.value) * 1000);
+        }
+
+        void UpdateEnergyUsageFromUI()
+        {
+            SimulatorAdaptivePerformanceSubsystem subsystem = Subsystem();
+            if (subsystem == null)
+                return;
+
+            var energyUsage = new EnergyUsage(
+                (EnergyUsageSubsystem.Cpu, MakeEnergyUsageReading(m_EnergyUsageCpu, m_EnergyUsageCpuAvailable)),
+                (EnergyUsageSubsystem.Gpu, MakeEnergyUsageReading(m_EnergyUsageGpu, m_EnergyUsageGpuAvailable)),
+                (EnergyUsageSubsystem.Tpu, MakeEnergyUsageReading(m_EnergyUsageTpu, m_EnergyUsageTpuAvailable)),
+                (EnergyUsageSubsystem.Display, MakeEnergyUsageReading(m_EnergyUsageDisplay, m_EnergyUsageDisplayAvailable)),
+                (EnergyUsageSubsystem.Memory, MakeEnergyUsageReading(m_EnergyUsageMemory, m_EnergyUsageMemoryAvailable)));
+            subsystem.SetEnergyUsage(energyUsage);
         }
 
         void SyncScalerSettingsToEditor()

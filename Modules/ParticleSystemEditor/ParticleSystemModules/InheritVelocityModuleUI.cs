@@ -17,13 +17,13 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent mode = EditorGUIUtility.TrTextContent("Mode", "Specifies whether the emitter velocity is inherited as a one-shot when a particle is born, always using the current emitter velocity, or using the emitter velocity when the particle was born.");
-            public GUIContent velocity = EditorGUIUtility.TrTextContent("Multiplier", "Controls the amount of emitter velocity inherited during each particle's lifetime.");
+            public GUIContent mode = L10n.TextContent("Mode", "Specifies whether the emitter velocity is inherited as a one-shot when a particle is born, always using the current emitter velocity, or using the emitter velocity when the particle was born.", null, null);
+            public GUIContent velocity = L10n.TextContent("Multiplier", "Controls the amount of emitter velocity inherited during each particle's lifetime.", null, null);
 
             public GUIContent[] modes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Initial"),
-                EditorGUIUtility.TrTextContent("Current")
+                L10n.TextContent("Initial", null, null, null),
+                L10n.TextContent("Current", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache

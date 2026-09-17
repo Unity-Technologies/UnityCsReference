@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -143,12 +142,12 @@ namespace Unity.Profiling.Editor.UI
             LoadedCapturesHaveChanged();
         }
 
-        public bool ValidateName(string fileName)
+        public static bool ValidateName(string fileName)
         {
             return fileName.IndexOfAny(Path.GetInvalidFileNameChars()) == -1;
         }
 
-        public bool PathLengthIsValid(string sourceFilePath, string targetFileName)
+        public static bool PathLengthIsValid(string sourceFilePath, string targetFileName)
         {
             // The highlights suffix is the longest, and if we're renaming, that
             // will need changing too, so try with that.
@@ -180,7 +179,7 @@ namespace Unity.Profiling.Editor.UI
             return true;
         }
 
-        public bool CanRename(string sourceFilePath, string targetFileName)
+        public static bool CanRename(string sourceFilePath, string targetFileName)
         {
             var isRaw = sourceFilePath.EndsWith(k_FileExtensionRaw);
             var targetFilePath = Path.Combine(
@@ -395,7 +394,7 @@ namespace Unity.Profiling.Editor.UI
             return m_CaptureFolderWatcher.Directory.FullName;
         }
 
-        string GetOrCreateCaptureFolderPath()
+        static string GetOrCreateCaptureFolderPath()
         {
             var captureFolderPath = ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath;
             if (!Directory.Exists(captureFolderPath) && ProfilerUserSettings.UsingDefaultProfilerCaptureStoragePath())
@@ -408,4 +407,3 @@ namespace Unity.Profiling.Editor.UI
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

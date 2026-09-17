@@ -42,10 +42,10 @@ namespace UnityEditorInternal
             public readonly AnimationCurve defaultCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1, 1)) { postWrapMode = WrapMode.ClampForever, preWrapMode = WrapMode.ClampForever };
             public readonly GUIContent[] modes = new[]
             {
-                EditorGUIUtility.TrTextContent("Constant"),
-                EditorGUIUtility.TrTextContent("Curve"),
-                EditorGUIUtility.TrTextContent("Random Between Two Curves"),
-                EditorGUIUtility.TrTextContent("Random Between Two Constants")
+                L10n.TextContent("Constant", null, null, null),
+                L10n.TextContent("Curve", null, null, null),
+                L10n.TextContent("Random Between Two Curves", null, null, null),
+                L10n.TextContent("Random Between Two Constants", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // Readonly eager init re-runs per ALC on code load; GUIContent/Color/AnimationCurve members survive reload.

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphView not yet converted
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -211,9 +210,6 @@ namespace UnityEditor.Experimental.GraphView
 
     internal class GraphViewTemplateWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        public GraphViewTemplateWindow() { }
-        #pragma warning restore UAL0015
 
         private const string k_FavoriteUssClass = "favorite";
         private const string k_TemplateItemUssClass = "template-item";
@@ -549,18 +545,18 @@ namespace UnityEditor.Experimental.GraphView
         {
             m_IndexingBannerMessage = rootVisualElement.Q<Label>("IndexingBannerMessage");
             RefreshIndexingBannerState();
+
+            if (!m_AdbOnly)
+            {
+                Dispatcher.On(SearchEvent.SearchIndexReady, OnSearchIndexReady);
+                rootVisualElement.schedule.Execute(RefreshIndexingBannerState).Every(500);
+            }
         }
 
         private void RefreshIndexingBannerState()
         {
-            if (!m_AdbOnly)
-                Dispatcher.On(SearchEvent.SearchIndexReady, OnSearchIndexReady);
-
             var isIndexing = !m_AdbOnly && !SearchDatabase.GetDefaultSearchDatabase().ready;
             m_IndexingBannerMessage.style.display = isIndexing ? DisplayStyle.Flex : DisplayStyle.None;
-
-            if (!isIndexing)
-                Dispatcher.Off(SearchEvent.SearchIndexReady, OnSearchIndexReady);
 
             RefreshInfoBannerVisibility();
         }
@@ -770,9 +766,10 @@ namespace UnityEditor.Experimental.GraphView
             var isFavorite = false;
             var parent = item.GetFirstAncestorWithClass("unity-tree-view__item");
 
-            // Foldout toggles keep delegated focus even when hidden, so drop the whole subtree.
+            // List view ignores tab navigation
+            RemoveFromTabRing(parent);
+
             var toggle = item.parent?.parent?.Q<Toggle>();
-            RemoveFromTabRing(toggle);
 
             if (data is GraphViewTemplateDescriptor template)
             {
@@ -1220,4 +1217,3 @@ namespace UnityEditor.Experimental.GraphView
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

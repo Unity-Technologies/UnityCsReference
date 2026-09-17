@@ -35,6 +35,7 @@ partial class UxmlAttributesView : VisualElement
             if (m_Context != null)
             {
                 m_Context.contextChanged -= OnContextChanged;
+                m_Context.documentReshaped -= OnDocumentReshaped;
             }
 
             m_Context = value;
@@ -43,6 +44,7 @@ partial class UxmlAttributesView : VisualElement
             if (m_Context != null)
             {
                 m_Context.contextChanged += OnContextChanged;
+                m_Context.documentReshaped += OnDocumentReshaped;
             }
             Rebind();
             UpdateEnabledState();
@@ -95,6 +97,18 @@ partial class UxmlAttributesView : VisualElement
     {
         UpdateEnabledState();
         NotifyContextChanged(args);
+        Rebind();
+    }
+
+    // The consumers that own a root field of their own read the base path off the context when this view
+    // reports a change, so a reshape has to reach them too and not just this view's own rebind.
+    void OnDocumentReshaped()
+    {
+        var element = m_Context.element;
+        var isReadOnly = m_Context.isReadOnly;
+
+        NotifyContextChanged(new UxmlAttributesEditingContext.ContextChangedEventArgs(
+            element, isReadOnly, element, isReadOnly));
         Rebind();
     }
 

@@ -16,7 +16,7 @@ namespace UnityEditor
         private static class Styles
         {
             public static readonly Texture2D smallWarningIcon = EditorGUIUtility.LoadIconRequired("console.warnicon.sml");
-            public static readonly GUIContent restartNeededWarning = EditorGUIUtility.TrTextContent("Some settings will not take effect until you restart Unity.");
+            public static readonly GUIContent restartNeededWarning = L10n.TextContent("Some settings will not take effect until you restart Unity.", null, null, null);
             public static readonly GUIStyle boldFoldout = new GUIStyle(EditorStyles.foldout) {fontStyle = FontStyle.Bold};
         }
 
@@ -259,7 +259,7 @@ namespace UnityEditor
             {
                 var redStyle = new GUIStyle();
                 redStyle.normal.textColor = Color.red;
-                EditorGUI.LabelField(rowRect, labelText, EditorGUIUtility.TrTextContent("Unsupported type: " + diagnosticSwitch.value.GetType().Name), redStyle);
+                EditorGUI.LabelField(rowRect, labelText, L10n.TextContent("Unsupported type: " + diagnosticSwitch.value.GetType().Name, null, null, null), redStyle);
             }
 
             if (EditorGUI.EndChangeCheck())

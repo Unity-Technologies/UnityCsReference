@@ -15,6 +15,36 @@ namespace Unity.U2D.Physics
     /// <summary>
     /// A 64-bit mask, effectively 64 flags. The default enumerator will iterate all the bits that are set (1).
     /// </summary>
+    /// <remarks>
+    /// Use a `PhysicsMask` together with <see cref="PhysicsLayers.GetLayerMask"/> and <see cref="PhysicsShape.ContactFilter"/> to control which objects collide with each other in a script.
+    /// If the field or property that stores a `PhysicsMask` represents a raw bitmask rather than a set of named layers, apply <see cref="PhysicsMask.ShowAsPhysicsMaskAttribute"/> so Unity displays it as bit values in the Inspector window.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Get the physics mask for the "Car" layer, then get another mask for the
+    /// // layers the object should collide with.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class PhysicsMaskExample : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         PhysicsMask objectLayer = PhysicsLayers.GetLayerMask("Car");
+    ///         PhysicsMask contactLayer = PhysicsLayers.GetLayerMask("Walls");
+    ///         PhysicsShape.ContactFilter myContactFilter = new PhysicsShape.ContactFilter
+    ///         {
+    ///             categories = objectLayer,
+    ///             contacts = contactLayer
+    ///         };
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsLayers.GetLayerMask"/>
+    /// <seealso cref="PhysicsShape.ContactFilter"/>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]

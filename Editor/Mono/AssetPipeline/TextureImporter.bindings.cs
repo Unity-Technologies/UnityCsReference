@@ -20,8 +20,10 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterPlatformSettingsUtils.h")]
     [global::UnityEngine.NativeClass("TextureImporter", PersistentTypeId = 1006)]
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
+    [UnityEngine.ExtensionOfNativeClass]
     public sealed partial class TextureImporter : AssetImporter
     {
+
         [FreeFunction]
         internal static extern string GetTexturePlatformSerializationName(string platformName);
 

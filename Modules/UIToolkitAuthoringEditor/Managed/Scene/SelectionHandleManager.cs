@@ -2,13 +2,24 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using Unity.Scripting.LifecycleManagement;
 
 namespace Unity.UIToolkit.Editor;
 
-sealed class SelectionHandleManager(VisualElement handleContainer)
+/// <summary>
+/// Draws a handle per selected element, positioned from the element the canvas actually renders.
+/// </summary>
+/// <remarks>
+/// A selection does not always name that element: outside the UI Stage it names the live scene element while
+/// the canvas shows a preview clone of it, so <paramref name="resolveTarget"/> maps one to the other. It is
+/// re-asked rather than cached because a re-clone replaces the element behind an unchanged selection.
+/// </remarks>
+sealed class SelectionHandleManager(
+    VisualElement handleContainer,
+    Func<VisualElementSelection, VisualElement> resolveTarget)
 {
     const string k_HideHeadersUssClass = "unity-selection-handle-container--no-header";
 
@@ -30,7 +41,7 @@ sealed class SelectionHandleManager(VisualElement handleContainer)
             handleContainer.Add(handle);
         }
 
-        handle.Target = selection.Element;
+        handle.Target = resolveTarget(selection);
         handleContainer.EnableInClassList(k_HideHeadersUssClass, HandleCount > 1);
     }
 
@@ -49,7 +60,7 @@ sealed class SelectionHandleManager(VisualElement handleContainer)
     {
         if (!m_SelectionObjectToHandle.TryGetValue(selection, out var handle))
             return;
-        handle.Target = selection.Element;
+        handle.Target = resolveTarget(selection);
         handle.SetLayoutFromTarget();
     }
 
@@ -57,7 +68,7 @@ sealed class SelectionHandleManager(VisualElement handleContainer)
     {
         foreach (var kvp in m_SelectionObjectToHandle)
         {
-            kvp.Value.Target = kvp.Key.Element;
+            kvp.Value.Target = resolveTarget(kvp.Key);
             kvp.Value.SetLayoutFromTarget();
         }
     }

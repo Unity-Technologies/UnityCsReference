@@ -102,6 +102,11 @@ namespace UnityEditor.Build
         /// <remarks>This value corresponds to <see cref="Build.Reporting.BuildSummary.platform"/>.</remarks>
         public string PlatformName;
 
+        /// <summary>For builds registered with <see cref="BuildHistory.RegisterExternalBuild"/>, the name of the package whose build pipeline made the build. An empty string for all other builds.</summary>
+        /// <remarks>This value corresponds to <see cref="ExternalBuildInfo.ProducerPackage"/>. It is `null` when read
+        /// from a summary written before this field existed, so test it with `string.IsNullOrEmpty`.</remarks>
+        public string ProducerPackage;
+
         /// <summary>The subtarget the build was created for, as an integer.</summary>
         /// <remarks>The integer maps to a platform-specific subtarget enum. For standalone platforms this is <see cref="StandaloneBuildSubtarget"/>.
         /// Valid subtarget values depend on the platform. See <see cref="Build.Reporting.BuildSummary.GetSubtarget{T}"/> for details.</remarks>
@@ -161,6 +166,17 @@ namespace UnityEditor.Build
             File.WriteAllText(outputPath, json);
         }
 
+        internal static void Save(in BuildReportSummary summary, string dirPath)
+        {
+            var outputPath = Path.Combine(dirPath, kBuildReportSummaryFileName);
+            File.WriteAllText(outputPath, ToJson(summary));
+        }
+
+        internal static string ToJson(in BuildReportSummary summary)
+        {
+            return JsonUtility.ToJson(summary, true);
+        }
+
         internal static string ToJson(BuildReport report)
         {
             var summary = report.summary;
@@ -183,6 +199,7 @@ namespace UnityEditor.Build
                 OutputPath = summary.outputPath,
                 Platform = summary.platform,
                 PlatformName = summary.platform.ToString(),
+                ProducerPackage = string.Empty, // only external builds have one
                 Subtarget = summary.subtarget,
                 SubtargetName = summary.GetSubtargetString(),
                 TotalErrors = summary.totalErrors,
@@ -191,7 +208,7 @@ namespace UnityEditor.Build
                 TotalWarnings = summary.totalWarnings,
             };
 
-            return JsonUtility.ToJson(summaryData, true);
+            return ToJson(summaryData);
         }
     }
 }

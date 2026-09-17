@@ -517,12 +517,12 @@ namespace Unity.GraphToolkit.Editor
                 return;
 
             using var copyPasteData = m_ClipboardProvider.DeserializeDataFromClipboard();
-            var enableItemMenu = Transition.CanPasteTransitionsAsNew(copyPasteData);
+            var enableItemMenu = TransitionView.CanPasteTransitionsAsNew(copyPasteData);
 
             Action<DropdownMenuAction> action = null;
             if (transitionSupportModel != null)
             {
-                var transition = transitionSupportModel.GetView<Transition>(View);
+                var transition = transitionSupportModel.GetView<TransitionView>(View);
                 if (transition != null)
                     action = _ => transition.PasteAsNew();
             }

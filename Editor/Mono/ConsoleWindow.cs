@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Kernel not yet converted
 using System;
 using System.Globalization;
 using System.Collections.Generic;
@@ -99,16 +98,16 @@ namespace UnityEditor
             [NoAutoStaticsCleanup] // lazy shared GUIStyle, safe to persist
             public static GUIStyle ConsoleSearchNoResult;
 
-            public static readonly GUIContent Clear = EditorGUIUtility.TrTextContent("Clear", "Clear console entries");
-            public static readonly GUIContent ClearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play");
-            public static readonly GUIContent ClearOnBuild = EditorGUIUtility.TrTextContent("Clear on Build");
-            public static readonly GUIContent ClearOnRecompile = EditorGUIUtility.TrTextContent("Clear on Recompile");
-            public static readonly GUIContent Collapse = EditorGUIUtility.TrTextContent("Collapse", "Collapse identical entries");
-            public static readonly GUIContent ErrorPause = EditorGUIUtility.TrTextContent("Error Pause", "Pause Play Mode on error");
-            public static readonly GUIContent StopForAssert = EditorGUIUtility.TrTextContent("Stop for Assert");
-            public static readonly GUIContent StopForError = EditorGUIUtility.TrTextContent("Stop for Error");
-            public static readonly GUIContent UseMonospaceFont = EditorGUIUtility.TrTextContent("Use Monospace font");
-            public static readonly GUIContent StripLoggingCallstack = EditorGUIUtility.TrTextContent("Strip logging callstack");
+            public static readonly GUIContent Clear = L10n.TextContent("Clear", "Clear console entries", null, null);
+            public static readonly GUIContent ClearOnPlay = L10n.TextContent("Clear on Play", null, null, null);
+            public static readonly GUIContent ClearOnBuild = L10n.TextContent("Clear on Build", null, null, null);
+            public static readonly GUIContent ClearOnRecompile = L10n.TextContent("Clear on Recompile", null, null, null);
+            public static readonly GUIContent Collapse = L10n.TextContent("Collapse", "Collapse identical entries", null, null);
+            public static readonly GUIContent ErrorPause = L10n.TextContent("Error Pause", "Pause Play Mode on error", null, null);
+            public static readonly GUIContent StopForAssert = L10n.TextContent("Stop for Assert", null, null, null);
+            public static readonly GUIContent StopForError = L10n.TextContent("Stop for Error", null, null, null);
+            public static readonly GUIContent UseMonospaceFont = L10n.TextContent("Use Monospace font", null, null, null);
+            public static readonly GUIContent StripLoggingCallstack = L10n.TextContent("Strip logging callstack", null, null, null);
 
             public static int LogStyleLineCount
             {
@@ -1252,10 +1251,10 @@ namespace UnityEditor
 
         public void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
+            menu.AddItem(L10n.TextContent("Open Player Log", null, null, null), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
+            menu.AddItem(L10n.TextContent("Open Editor Log", null, null, null), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Show Timestamp"), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);
+            menu.AddItem(L10n.TextContent("Show Timestamp", null, null, null), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);
 
             if (m_DevBuild)
             {
@@ -1381,7 +1380,7 @@ namespace UnityEditor
                     data.logType = logType;
                     data.stackTraceLogType = stackTraceLogType;
 
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Stack Trace Logging/" + logType + "/" + stackTraceLogType), PlayerSettings.GetStackTraceLogType(logType) == stackTraceLogType,
+                    menu.AddItem(L10n.TextContent("Stack Trace Logging/" + logType + "/" + stackTraceLogType, null, null, null), PlayerSettings.GetStackTraceLogType(logType) == stackTraceLogType,
                         ToggleLogStackTraces, data);
                 }
             }
@@ -1398,7 +1397,7 @@ namespace UnityEditor
 
             foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
             {
-                menu.AddItem(EditorGUIUtility.TrTextContent("Stack Trace Logging/All/" + stackTraceLogType), (StackTraceLogType)stackTraceLogTypeForAll == stackTraceLogType,
+                menu.AddItem(L10n.TextContent("Stack Trace Logging/All/" + stackTraceLogType, null, null, null), (StackTraceLogType)stackTraceLogTypeForAll == stackTraceLogType,
                     ToggleLogStackTracesForAll, stackTraceLogType);
             }
         }
@@ -1571,4 +1570,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

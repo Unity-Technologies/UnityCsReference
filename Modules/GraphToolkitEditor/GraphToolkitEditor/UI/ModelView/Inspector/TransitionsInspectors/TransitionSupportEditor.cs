@@ -55,6 +55,8 @@ namespace Unity.GraphToolkit.Editor
         VisualElement m_Header;
         Toggle m_CollapseButton;
         VisualElement m_Icon;
+        Image m_DebugIcon;
+        Texture2D m_DebugIconOverride;
         bool m_IsSelected;
         Label m_TitleLabel;
         VisualElement m_Container;
@@ -126,6 +128,10 @@ namespace Unity.GraphToolkit.Editor
             m_CollapseButton.focusable = false; //currently a focusable foldout does not have the right styles.
             m_Header.Add(m_CollapseButton);
 
+            m_DebugIcon = new Image();
+            m_DebugIcon.AddToClassList(ussClassName.WithUssElement("debug-icon"));
+            m_Header.Add(m_DebugIcon);
+
             m_Icon = new VisualElement();
             m_Icon.AddToClassList(k_IconUssName);
             m_Header.Add(m_Icon);
@@ -136,7 +142,8 @@ namespace Unity.GraphToolkit.Editor
 
             m_AddButton = new Button() { name = k_AddButtonName };
             m_AddButton.AddToClassList(ussClassName.WithUssElement(k_AddButtonName));
-            m_AddButton.iconImage = Background.FromTexture2D(EditorResources.Load<Texture2D>(EditorGUIUtility.isProSkin ? "Icons/d_CreateAddNew.png" : "Icons/CreateAddNew.png"));
+            m_AddButton.iconImage = Background.FromTexture2D(EditorGUIUtilityBridge.LoadIcon(GraphElementHelper.k_IconFolder + (EditorGUIUtility.isProSkin ? "d_Add@2x.png" : "Add@2x.png")));
+            m_AddButton.tooltip = k_AddTransition;
             m_Header.Add(m_AddButton);
             m_AddButton.clicked += AddTransition;
 
@@ -246,7 +253,7 @@ namespace Unity.GraphToolkit.Editor
             var graphView = (RootView.Window as GraphViewEditorWindow)?.GraphView;
             if (graphView != null)
             {
-                var wireInGraphView = TransitionSupportModel.GetView<Transition>(graphView);
+                var wireInGraphView = TransitionSupportModel.GetView<TransitionView>(graphView);
                 if (wireInGraphView != null)
                 {
                     (RootView.Window as GraphViewEditorWindow)?.GraphView.DispatchFrameAndSelectElementsCommand(false, wireInGraphView);
@@ -263,6 +270,23 @@ namespace Unity.GraphToolkit.Editor
             m_DragBlock.AddToClassList(ussClassName.WithUssElement(k_DragBlockName));
 
             Add(m_Container);
+        }
+
+        /// <summary>
+        /// Sets the icon a visualization <see cref="GraphVisualization.TransitionVisualManager"/> overrides the debug
+        /// icon with, or <c>null</c> to fall back to the transition's own icon.
+        /// </summary>
+        internal void SetIconOverride(Texture2D icon)
+        {
+            m_DebugIconOverride = icon;
+            RefreshDebugIcon();
+        }
+
+        void RefreshDebugIcon()
+        {
+            var debugIcon = m_DebugIconOverride != null ? m_DebugIconOverride : TransitionSupportModel.Icon;
+            m_DebugIcon.image = debugIcon;
+            m_DebugIcon.style.display = debugIcon != null ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         void UpdateTitleFromModel()
@@ -283,6 +307,8 @@ namespace Unity.GraphToolkit.Editor
         public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
         {
             UpdateTitleFromModel();
+
+            RefreshDebugIcon();
 
             var iconPath = TransitionSupportModel.IconPath;
             if (!string.IsNullOrEmpty(iconPath))
@@ -575,6 +601,7 @@ namespace Unity.GraphToolkit.Editor
 
         const float k_DragThresholdSquare = 6 * 6;
         const float k_FragmentSpacing = 4;
+        static readonly string k_AddTransition = L10n.Tr("Add Transition", null);
 
         void OnMouseDownEvent(PointerDownEvent evt)
         {

@@ -21,6 +21,19 @@ internal partial class BuildProfilePlayerSettingsEditor : PlayerSettingsEditor
             m_PlayerSettings = playerSettings;
         }
 
+        public GraphicsDeviceType[] GetGraphicsAPIsWithUGKVariants_Internal(BuildTarget platform)
+        {
+            return m_PlayerSettings.GetGraphicsAPIsWithUGKVariants(platform);
+        }
+        public int[] GetGraphicsAPIUGKFlags_Internal(BuildTarget platform)
+        {
+            return m_PlayerSettings.GetGraphicsAPIUGKFlags(platform);
+        }
+        public void SetGraphicsAPIs_Internal(BuildTarget platform, GraphicsDeviceType[] apis, int[] ugkFlags, bool shouldSync)
+        {
+            m_PlayerSettings.SetGraphicsAPIs(platform, apis, ugkFlags, shouldSync);
+        }
+
         public GraphicsDeviceType[] GetGraphicsAPIs_Internal(BuildTarget platform)
         {
             return m_PlayerSettings.GetGraphicsAPIs(platform);

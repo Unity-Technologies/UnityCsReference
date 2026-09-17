@@ -21,7 +21,7 @@ namespace Unity.Localization.Providers;
 /// for new content authored in the editor.
 /// </remarks>
 /// <example>
-/// <para>Build a chain, choose the default provider, then look one up by type.</para>
+/// Build a chain, choose the default provider, then look one up by type.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetProviderOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="IAssetProvider"/>
@@ -45,7 +45,7 @@ public sealed class AssetProvider : ISerializationCallbackReceiver
     /// <see cref="AddProvider(IAssetProvider)"/> or <see cref="InsertProvider(int,IAssetProvider)"/>.
     /// </remarks>
     /// <example>
-    /// <para>Create a chain and add a provider to it.</para>
+    /// Create a chain and add a provider to it.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetProviderConstructorExample.cs"/>
     /// </example>
     public AssetProvider()
@@ -81,7 +81,7 @@ public sealed class AssetProvider : ISerializationCallbackReceiver
     /// </remarks>
     /// <param name="provider">The provider to add.</param>
     /// <example>
-    /// <para>Append a provider to a chain.</para>
+    /// Append a provider to a chain.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetProviderAddProviderExample.cs"/>
     /// </example>
     public void AddProvider(IAssetProvider provider)
@@ -100,7 +100,7 @@ public sealed class AssetProvider : ISerializationCallbackReceiver
     /// <param name="index">The position to insert at.</param>
     /// <param name="provider">The provider to insert.</param>
     /// <example>
-    /// <para>Insert a provider at the front so it is tried first.</para>
+    /// Insert a provider at the front so it is tried first.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetProviderInsertProviderExample.cs"/>
     /// </example>
     public void InsertProvider(int index, IAssetProvider provider)
@@ -119,7 +119,7 @@ public sealed class AssetProvider : ISerializationCallbackReceiver
     /// <param name="provider">The provider to remove.</param>
     /// <returns><c>true</c> if the provider was present and removed; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Remove a provider and confirm it is gone.</para>
+    /// Remove a provider and confirm it is gone.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetProviderRemoveProviderExample.cs"/>
     /// </example>
     public bool RemoveProvider(IAssetProvider provider)
@@ -140,7 +140,7 @@ public sealed class AssetProvider : ISerializationCallbackReceiver
     /// <typeparam name="T">The provider type to find.</typeparam>
     /// <returns>The first matching provider, or <see langword="null"/> when none is present.</returns>
     /// <example>
-    /// <para>Find a provider of a specific type in the chain.</para>
+    /// Find a provider of a specific type in the chain.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/AssetProviderGetProviderExample.cs"/>
     /// </example>
     public T GetProvider<T>() where T : class, IAssetProvider

@@ -24,7 +24,7 @@ static class MainStageViewportSelection
         foreach (var selected in Selection.objects)
         {
             var panelComponent = Resolve(selected);
-            if (IsAlive(panelComponent))
+            if (panelComponent.IsAlive())
                 return panelComponent;
         }
 
@@ -55,8 +55,4 @@ static class MainStageViewportSelection
                 return null;
         }
     }
-
-    // Unity's fake-null does not survive the cast to IPanelComponent, and the selection objects of a deleted
-    // document hold exactly such a reference until they are reaped, so aliveness is asked of the Object.
-    static bool IsAlive(IPanelComponent panelComponent) => (panelComponent as Object) != null;
 }

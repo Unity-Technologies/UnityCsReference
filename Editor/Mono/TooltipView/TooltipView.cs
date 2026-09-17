@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
@@ -25,6 +24,9 @@ namespace UnityEditor
 
         internal static TooltipView S_guiView { get => s_guiView; }
         [AutoStaticsCleanupOnCodeReload]
+        // Tracks the live tooltip view: OnEnable assigns it and OnDisable clears it, so the view is
+        // re-registered by its own window lifecycle.
+        [IgnoreForUAL0015("Live tooltip view reference, re-registered by OnEnable")]
         static TooltipView s_guiView;
 
         [NoAutoStaticsCleanup] // auto-close timer sentinel (double, defaults to PositiveInfinity via CancelAutoClose); safe to persist across code reload
@@ -146,7 +148,9 @@ namespace UnityEditor
 
             var newWindow = ScriptableObject.CreateInstance<ContainerWindow>();
             newWindow.m_DontSaveToLayout = true;
+#pragma warning disable UAL0018 // the window is being wired to the tooltip view created just above; the two are a pair that ForceClose tears down together, and OnEnable re-registers the view after a reload
             newWindow.rootView = s_guiView;
+#pragma warning restore UAL0018
             newWindow.SetMinMaxSizes(new Vector2(10.0f, 10.0f), new Vector2(2000.0f, 2000.0f));
             s_guiView.SetWindow(newWindow);
 
@@ -191,4 +195,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

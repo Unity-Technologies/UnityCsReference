@@ -1194,6 +1194,15 @@ namespace UnityEditor
                 set;
             }
 
+            // Unity Render Service, Vulkan API only: use android virtual display instead of offscreen swapchain
+            internal static extern bool renderServiceUseVirtualDisplay
+            {
+                [NativeMethod("GetAndroidRenderServiceUseVirtualDisplay")]
+                get;
+                [NativeMethod("SetAndroidRenderServiceUseVirtualDisplay")]
+                set;
+            }
+
             public static TextureCompressionFormat[] textureCompressionFormats
             {
                 get

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using System;
 using System.IO;
 using System.Text;
@@ -20,7 +19,7 @@ namespace Unity.ProjectAuditor.Editor
 
         static class Styles
         {
-            public static readonly GUIContent AskAssistant = EditorGUIUtility.TrTextContentWithIcon("Ask Assistant", "Ask Unity AI Assistant for help with fixing this issue", "AISparkle");
+            public static readonly GUIContent AskAssistant = L10n.TextContentWithIcon("Ask Assistant", "Ask Unity AI Assistant for help with fixing this issue", "AISparkle", null);
         }
 
         public ProjectAuditorAssistantController() : base(k_AssistantRole)
@@ -76,4 +75,3 @@ namespace Unity.ProjectAuditor.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

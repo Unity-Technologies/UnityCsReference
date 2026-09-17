@@ -54,6 +54,9 @@ namespace UnityEngine
         ///<exclude />
         [AutoStaticsCleanupOnCodeReload]
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        // Per-GUI-pass value: BeginGUI (and IMGUIContainer for UI Toolkit) assigns the owning view id at
+        // the start of every pass, so the value reset on reload is overwritten by the next pass.
+        [IgnoreForUAL0015("Per-GUI-pass owner id, reassigned by BeginGUI at the start of every pass")]
         internal static EntityId s_OriginalID;
 
         // IoC callbacks for UIElements
@@ -167,6 +170,10 @@ namespace UnityEngine
         public static object QueryStateObject(Type t, int controlID)       { return GUIStateObjects.QueryStateObject(t, controlID); }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Per-GUI-pass flag: ResetGlobalState clears it at the start of every pass, so the value reset on
+        // reload is what the next pass expects. The IMGUI scope structs that trip this are frame-scoped
+        // IDisposables and cannot outlive the code-loaded scope.
+        [IgnoreForUAL0015("Per-GUI-pass flag cleared by ResetGlobalState at the start of every pass")]
         internal static bool guiIsExiting { get; set; }
 
 

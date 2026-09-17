@@ -22,7 +22,7 @@ namespace UnityEditor.Presets
         internal override string targetTitle => "Preset Manager";
         class Content
         {
-            public static readonly GUIContent presetManager = EditorGUIUtility.TrTextContent("Preset management");
+            public static readonly GUIContent presetManager = L10n.TextContent("Preset management", null, null, null);
         }
 
         struct DefaultPresetListData
@@ -124,7 +124,7 @@ namespace UnityEditor.Presets
                 m_presetPerTypeListVisualAsset.CloneTree(listContainer);
                 listContainer.name = data.className;
                 presetPerTypeListContainer.Add(listContainer);
-                listContainer.Q<Label>("filterLabel").text = EditorGUIUtility.TrTextContent("Filter").text;
+                listContainer.Q<Label>("filterLabel").text = L10n.TextContent("Filter", null, null, null).text;
                 listContainer.Q<Label>("classNameLabel").text = data.className;
                 listContainer.Q<Label>("fullNameLabel").text = $"({data.presetType.GetManagedTypeName()})";
                 listContainer.Q<VisualElement>("icon").style.backgroundImage = data.presetType.GetIcon();

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor;
@@ -2386,9 +2385,9 @@ namespace UnityEditor
                         {
                             GenericMenu menu = new GenericMenu();
                             if (m_AnimationCurves[curveIndex].animationIsEditable)
-                                menu.AddItem(EditorGUIUtility.TrTextContent("Add Key"), false, CreateKeyFromClick, Event.current.mousePosition);
+                                menu.AddItem(L10n.TextContent("Add Key", null, null, null), false, CreateKeyFromClick, Event.current.mousePosition);
                             else
-                                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Add Key"));
+                                menu.AddDisabledItem(L10n.TextContent("Add Key", null, null, null));
 
                             menu.ShowAsContext();
                             Event.current.Use();
@@ -4225,4 +4224,3 @@ namespace UnityEditor
         }
     }
 } // namespace
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

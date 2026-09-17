@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Events;
@@ -56,6 +57,13 @@ namespace UnityEditor.Build.Profile
             /// SDK platform extension) is pending.
             /// </summary>
             AwaitingExtension,
+
+            /// <summary>
+            /// Asset Store entitlements are being claimed for packages that need one before they can
+            /// install. Entered ahead of <see cref="InstallingPackages"/>, and skipped entirely when
+            /// there is nothing to claim.
+            /// </summary>
+            ClaimingEntitlements,
         }
 
         /// <summary>
@@ -75,6 +83,12 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         [SerializeField]
         public BuildProfilePackageAddInfo packageAddInfo;
+
+        /// <summary>
+        /// Asset Store entitlement claim tracker. Null if nothing needs claiming.
+        /// </summary>
+        [SerializeField]
+        public BuildProfileEntitlementClaimInfo entitlementClaimInfo;
 
         /// <summary>
         /// Optional callback invoked when the build profile is <see cref="State.Ready"/>.
@@ -110,7 +124,7 @@ namespace UnityEditor.Build.Profile
         public static BuildProfileInitialization Create(
             BuildProfile profile,
             string profileGUID,
-            string[] packagesToAdd,
+            BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd,
             int preconfiguredSettingsVariant,
             UnityAction<BuildProfile> onProfileReady)
         {
@@ -126,6 +140,7 @@ namespace UnityEditor.Build.Profile
                 {
                     packagesToAdd = packagesToAdd,
                 };
+                init.entitlementClaimInfo = BuildProfileEntitlementClaimInfo.Create(packagesToAdd);
             }
 
             if (onProfileReady != null)
@@ -194,6 +209,8 @@ namespace UnityEditor.Build.Profile
                 {
                     if (RequiresDerivedPlatformActivation(profile))
                         NextState(State.AwaitingDomainReload, profile);
+                    else if (entitlementClaimInfo != null)
+                        NextState(State.ClaimingEntitlements, profile);
                     else if (packageAddInfo != null)
                         NextState(State.InstallingPackages, profile);
                     else if (!AreRequiredExtensionsAvailable(profile))
@@ -205,6 +222,25 @@ namespace UnityEditor.Build.Profile
                 case State.AwaitingDomainReload:
                     if (!m_ReloadPending)
                     {
+                        if (entitlementClaimInfo != null)
+                            NextState(State.ClaimingEntitlements, profile);
+                        else if (packageAddInfo != null)
+                            NextState(State.InstallingPackages, profile);
+                        else if (!AreRequiredExtensionsAvailable(profile))
+                            NextState(State.AwaitingExtension, profile);
+                        else
+                            NextState(State.Ready, profile);
+                    }
+                    break;
+                case State.ClaimingEntitlements:
+                    if (entitlementClaimInfo != null && !entitlementClaimInfo.IsClaimRequestDone())
+                    {
+                        AddEntitlementClaimCallbacks(profile);
+                        entitlementClaimInfo.RequestEntitlementClaims();
+                    }
+                    else
+                    {
+                        DropPackagesWithoutEntitlements();
                         if (packageAddInfo != null)
                             NextState(State.InstallingPackages, profile);
                         else if (!AreRequiredExtensionsAvailable(profile))
@@ -283,6 +319,27 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Removes packages from the install request unless their entitlement is confirmed, or they
+        /// need none at all.
+        /// </summary>
+        void DropPackagesWithoutEntitlements()
+        {
+            if (packageAddInfo == null || entitlementClaimInfo == null)
+                return;
+
+            var packages = packageAddInfo.packagesToAdd;
+            var remaining = new List<BuildTargetDiscovery.PlatformPackageIdentifier>(packages.Length);
+            foreach (var package in packages)
+            {
+                if (entitlementClaimInfo.IsPackageInstallable(package.name))
+                    remaining.Add(package);
+            }
+
+            if (remaining.Count != packages.Length)
+                packageAddInfo.packagesToAdd = remaining.ToArray();
+        }
+
+        /// <summary>
         /// Perform one-time actions upon entering a new state.
         /// </summary>
         void OnEnterState(State state, State previousState, BuildProfile profile)
@@ -337,6 +394,14 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Sets up the entitlement claim completion callback. Re-attached on domain reload.
+        /// </summary>
+        void AddEntitlementClaimCallbacks(BuildProfile profile)
+        {
+            entitlementClaimInfo.OnClaimRequestComplete = () => BuildProfileContext.instance.UpdateBuildProfileInitialization(profile);
+        }
+
+        /// <summary>
         /// Cleanup internal event handlers and serialized references.
         /// </summary>
         void Cleanup()
@@ -346,6 +411,9 @@ namespace UnityEditor.Build.Profile
 
             packageAddInfo?.Cleanup();
             packageAddInfo = null;
+
+            entitlementClaimInfo?.Cleanup();
+            entitlementClaimInfo = null;
         }
 
         bool IsCallbackPersistable(UnityAction callback) => callback.Method.IsStatic || callback.Target is UnityEngine.Object;

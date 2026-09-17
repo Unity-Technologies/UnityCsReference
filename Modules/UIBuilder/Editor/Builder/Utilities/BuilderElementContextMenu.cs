@@ -132,7 +132,7 @@ namespace Unity.UI.Builder
             var linkedOpenVTA = documentElement?.GetProperty(BuilderConstants.ElementLinkedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
 
             var isValidTarget = documentElement != null && !linkedOpenVTA &&
-                (documentElement.IsPartOfActiveVisualTreeAsset(paneWindow.document) ||
+                ((documentElement.IsPartOfActiveVisualTreeAsset(paneWindow.document) && !paneWindow.document.isCanvasReadOnly) ||
                     documentElement.GetStyleComplexSelector() != null);
             var isValidCopyTarget = documentElement != null && !linkedOpenVTA &&
                 (documentElement.IsPartOfCurrentDocument() ||
@@ -216,12 +216,16 @@ namespace Unity.UI.Builder
             var isSelector = documentElement != null && BuilderSharedStyles.IsSelectorElement(documentElement);
             var isStyleSheet = documentElement != null && BuilderSharedStyles.IsStyleSheetElement(documentElement);
 
-            var showOpenInBuilder = linkedInstancedVTA != null;
+            // Sub-document and template editing escape the read-only preview into editing a real file;
+            // hidden on a read-only canvas (StyleSheet Editing Mode).
+            var isReadOnlyCanvas = paneWindow.document.isCanvasReadOnly;
+
+            var showOpenInBuilder = linkedInstancedVTA != null && !isReadOnlyCanvas;
             var showReturnToParentAction = isLinkedOpenVTAActiveVTA && activeOpenUXML.isChildSubDocument;
-            var showOpenInIsolationAction = isLinkedVEADirectChild;
+            var showOpenInIsolationAction = isLinkedVEADirectChild && !isReadOnlyCanvas;
             var showOpenInPlaceAction = showOpenInIsolationAction;
-            var showSiblingOpenActions = !isLinkedOpenVTAActiveVTA && isLinkedInstancedVTAActiveVTA;
-            var showUnpackAction = isLinkedVEADirectChild;
+            var showSiblingOpenActions = !isLinkedOpenVTAActiveVTA && isLinkedInstancedVTAActiveVTA && !isReadOnlyCanvas;
+            var showUnpackAction = isLinkedVEADirectChild && !isReadOnlyCanvas;
 
             // Check if Template Container is allowed as child of parents content container if it exists.
             // eg. Making Tab into TemplateContainer is not allowed because TabView's content container expects only Tabs.
@@ -230,7 +234,7 @@ namespace Unity.UI.Builder
             #pragma warning disable UAC2007 // Avoid Linq
             var showCreateTemplateAction = activeOpenUXML.visualTreeAsset.DepthFirstTraversal().Contains(linkedVEA) &&
 #pragma warning restore UAC2007
-                                           isSingleElementAffected && isTemplateContainerAllowed;
+                                           isSingleElementAffected && isTemplateContainerAllowed && !isReadOnlyCanvas;
 
             if (showOpenInBuilder || showReturnToParentAction || showOpenInIsolationAction || showOpenInPlaceAction || showSiblingOpenActions)
                 evt.menu.AppendSeparator();
@@ -324,7 +328,7 @@ namespace Unity.UI.Builder
                     });
             }
 
-            if (documentElement != null && !isLinkedOpenVTAActiveVTA && !isSelector && !isStyleSheet)
+            if (documentElement != null && !isLinkedOpenVTAActiveVTA && !isSelector && !isStyleSheet && isSingleElementAffected)
             {
                 evt.menu.AppendSeparator();
 

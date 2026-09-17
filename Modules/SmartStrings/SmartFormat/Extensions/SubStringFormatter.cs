@@ -45,10 +45,10 @@ public class SubStringFormatter : FormatterBase
 
     /// <summary>
     /// The string to display for NULL values, defaults to <c>(null)</c>.
-    /// <para>
+    /// 
     /// It will <b>not</b> be used, if a format option is provided to the formatter.
     /// In this case, the child formatter must handle the NULL result.
-    /// </para>
+    /// 
     /// </summary>
     public string NullDisplayString { get => m_NullDisplayString; set => m_NullDisplayString = value; }
 

@@ -143,9 +143,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var analyzers = GetCompatibleAnalyzers(analysisParams);
             var editorSpriteModeIsV2 = EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2;
 
-            var spaceLimit = analysisParams.DiagnosticParams.GetParameter("SpriteAtlasEmptySpaceLimit");
-            var emptySpaceTested = (spaceLimit < 100) && (spaceLimit >= 0);
-
             var context = new SpriteAtlasAnalysisContext
             {
                 // AssetPath set in loop
@@ -188,13 +185,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 // Don't run GetEmptySpacePercentage if disabled, as it's reportedly quite a lengthy analysis on some projects.
                 string reportedFreeSpace;
                 if (!spritesEnabled)
-                    reportedFreeSpace = "Cannot analyse without Sprite Atlas Mode set to \"Sprite Atlas V2 - Enabled\"";
-                else if (!emptySpaceTested)
-                    reportedFreeSpace = "Analysis disabled, SpriteAtlasEmptySpaceLimit is set to 100";
+                {
+                    reportedFreeSpace = "Cannot analyze without Sprite Atlas Mode set to \"Sprite Atlas V2 - Enabled\"";
+                }
                 else
                 {
                     if (context.SpriteAtlas.spriteCount == 0)
+                    {
                         reportedFreeSpace = "No sprites found";
+                    }
                     else
                     {
                         var previewTexture = TextureUtils.GetPreviewTexture(context.SpriteAtlas);
@@ -212,8 +211,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
                             if (context.EmptySpacePercentage < 0)
                             {
-                                Debug.LogError(
-                                    $"Error analysing texture \"{previewTexture.name}\" in sprite atlas \"{context.SpriteAtlas.name}\"");
+                                Debug.LogError($"Error analyzing texture \"{previewTexture.name}\" in sprite atlas \"{context.SpriteAtlas.name}\"");
                                 reportedFreeSpace = "Error";
                             }
                             else

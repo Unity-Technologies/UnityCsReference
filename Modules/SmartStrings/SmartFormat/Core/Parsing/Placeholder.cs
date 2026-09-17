@@ -75,7 +75,7 @@ public class Placeholder : FormatItem
 
     /// <summary>
     /// Return items we own to the object pools.
-    /// <para>This method gets called by <see cref="LiteralTextPool"/> when it releases an instance.</para>
+    /// This method gets called by <see cref="LiteralTextPool"/> when it releases an instance.
     /// </summary>
     public void ReturnToPool()
     {

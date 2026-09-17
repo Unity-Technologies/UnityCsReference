@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Profiling not yet converted
 using JetBrains.Annotations;
 using UnityEngine;
 using System.IO;
@@ -14,31 +13,31 @@ namespace UnityEditor.Profiling
         [UsedImplicitly]
         class Content
         {
-            public static readonly GUIContent k_CapturePathText = EditorGUIUtility.TrTextContent("Profiler Capture Storage Path", "Where Profiler Capture files are saved to.");
-            public static readonly GUIContent k_FrameCountText = EditorGUIUtility.TrTextContent("Frame Count", "Maximum of visible frames in the Profiler Window.");
+            public static readonly GUIContent k_CapturePathText = L10n.TextContent("Profiler Capture Storage Path", "Where Profiler Capture files are saved to.", null, null);
+            public static readonly GUIContent k_FrameCountText = L10n.TextContent("Frame Count", "Maximum of visible frames in the Profiler Window.", null, null);
             public static readonly GUIContent k_FrameCountWarningText = EditorGUIUtility.TrTextContent("Profiler overhead and memory usage can increase significantly the more frames are kept visible in the Profiler Window through the 'Frame Count' setting.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
-            public static readonly GUIContent k_DropFramesOnMemoryPressureText = EditorGUIUtility.TrTextContent("Automatic memory management", "Automatically drop frame data when system memory usage is at critical level and Unity Profiler uses more than 75% of the Editor memory.");
+            public static readonly GUIContent k_DropFramesOnMemoryPressureText = L10n.TextContent("Automatic memory management", "Automatically drop frame data when system memory usage is at critical level and Unity Profiler uses more than 75% of the Editor memory.", null, null);
             public static readonly GUIContent k_DropFramesOnMemoryPressureWarningText = EditorGUIUtility.TrTextContent("Disabled automatic memory management may lead to Unity Editor crashes, system performance degradation and instabilities.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
-            public static readonly GUIContent k_DefaultRecordState = EditorGUIUtility.TrTextContent("Default recording state", "Recording state in which the profiler should start the first time, or when not remembering state.");
-            public static readonly GUIContent k_DefaultTargetMode = EditorGUIUtility.TrTextContent("Default Editor target mode on start", "Default profiler recording target mode, which is set on editor start.");
-            public static readonly GUIContent k_TargetFps = EditorGUIUtility.TrTextContent("Target Frames Per Second (Highlights Module)", "The target frames per second used by the Highlights module.");
-            public static readonly GUIContent k_ShouldOverrideScreenshotIntervalText = EditorGUIUtility.TrTextContent("Override default screenshot frame interval", "Enable to set a non-default interval on the Editor/connected player. See Profiler.SetScreenshotCaptureFrameInterval docs for more info.");
-            public static readonly GUIContent k_ScreenshotFrameInterval = EditorGUIUtility.TrTextContent("Rate at which Profiler captures screenshots", "Can also be controlled via script. See Profiler.SetScreenshotCaptureFrameInterval docs.");
+            public static readonly GUIContent k_DefaultRecordState = L10n.TextContent("Default recording state", "Recording state in which the profiler should start the first time, or when not remembering state.", null, null);
+            public static readonly GUIContent k_DefaultTargetMode = L10n.TextContent("Default Editor target mode on start", "Default profiler recording target mode, which is set on editor start.", null, null);
+            public static readonly GUIContent k_TargetFps = L10n.TextContent("Target Frames Per Second (Highlights Module)", "The target frames per second used by the Highlights module.", null, null);
+            public static readonly GUIContent k_ShouldOverrideScreenshotIntervalText = L10n.TextContent("Override default screenshot frame interval", "Enable to set a non-default interval on the Editor/connected player. See Profiler.SetScreenshotCaptureFrameInterval docs for more info.", null, null);
+            public static readonly GUIContent k_ScreenshotFrameInterval = L10n.TextContent("Rate at which Profiler captures screenshots", "Can also be controlled via script. See Profiler.SetScreenshotCaptureFrameInterval docs.", null, null);
             public static readonly string OnlyRelativePaths = L10n.Tr("Only relative paths are allowed", null);
             public static readonly string OKButton = L10n.Tr("OK", null);
             public static readonly string InvalidPathWindow = L10n.Tr("Invalid Path", null);
 
             public static readonly GUIContent[] k_RecordStates =
             {
-                EditorGUIUtility.TrTextContent("Remember", "The profiler will remember the previous recording state."),
-                EditorGUIUtility.TrTextContent("Enabled", "The profiler starts with recording enabled."),
-                EditorGUIUtility.TrTextContent("Disabled", "The profiler starts with recording disabled.")
+                L10n.TextContent("Remember", "The profiler will remember the previous recording state.", null, null),
+                L10n.TextContent("Enabled", "The profiler starts with recording enabled.", null, null),
+                L10n.TextContent("Disabled", "The profiler starts with recording disabled.", null, null)
             };
 
             public static readonly GUIContent[] k_TargetModes =
             {
-                EditorGUIUtility.TrTextContent("Play Mode", "The editor starts with play mode as a recording target."),
-                EditorGUIUtility.TrTextContent("Edit Mode", "The editor starts with the editor as a recording target.")
+                L10n.TextContent("Play Mode", "The editor starts with play mode as a recording target.", null, null),
+                L10n.TextContent("Edit Mode", "The editor starts with the editor as a recording target.", null, null)
             };
         }
 
@@ -193,4 +192,3 @@ namespace UnityEditor.Profiling
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

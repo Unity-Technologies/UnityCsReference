@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,11 +46,11 @@ namespace UnityEditor
         static class Styles
         {
             public static readonly GUIContent typelessIcon = EditorGUIUtility.IconContent("Prefab Icon");
-            public static readonly GUIContent overridesContent = EditorGUIUtility.TrTextContent("Overrides");
-            public static readonly GUIContent staticContent = EditorGUIUtility.TrTextContent("Static", "Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.");
-            public static readonly GUIContent layerContent = EditorGUIUtility.TrTextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
-            public static readonly GUIContent tagContent = EditorGUIUtility.TrTextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
-            public static readonly GUIContent staticPreviewContent = EditorGUIUtility.TrTextContent("Static Preview", "This asset is greater than 8MB so, by default, the Asset Preview displays a static preview.\nTo view the asset interactively, click the Asset Preview.");
+            public static readonly GUIContent overridesContent = L10n.TextContent("Overrides", null, null, null);
+            public static readonly GUIContent staticContent = L10n.TextContent("Static", "Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.", null, null);
+            public static readonly GUIContent layerContent = L10n.TextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.", null, null);
+            public static readonly GUIContent tagContent = L10n.TextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.", null, null);
+            public static readonly GUIContent staticPreviewContent = L10n.TextContent("Static Preview", "This asset is greater than 8MB so, by default, the Asset Preview displays a static preview.\nTo view the asset interactively, click the Asset Preview.", null, null);
 
             public static readonly float tagFieldWidth = EditorGUI.CalcPrefixLabelWidth(Styles.tagContent, EditorStyles.boldLabel);
             public static readonly float layerFieldWidth = EditorGUI.CalcPrefixLabelWidth(Styles.layerContent, EditorStyles.boldLabel);
@@ -62,18 +61,18 @@ namespace UnityEditor
             public static readonly GUIStyle overridesDropdown = new GUIStyle("MiniPullDown");
             public static readonly GUIStyle prefabButtonsHorizontalLayout = new GUIStyle { fixedHeight = 17, margin = new RectOffset { top = 1, bottom = 1 } };
 
-            public static readonly GUIContent goTypeLabelMultiple = EditorGUIUtility.TrTextContent("Multiple");
-            private static readonly GUIContent regularPrefab = EditorGUIUtility.TrTextContent("Prefab");
-            private static readonly GUIContent disconnectedPrefab = EditorGUIUtility.TrTextContent("Prefab", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert.");
-            private static readonly GUIContent modelPrefab = EditorGUIUtility.TrTextContent("Prefab");
-            private static readonly GUIContent disconnectedModelPrefab =  EditorGUIUtility.TrTextContent("Prefab", "You have broken the prefab connection. Changes to the model will not be applied to this object before you Revert.");
-            private static readonly GUIContent variantPrefab = EditorGUIUtility.TrTextContent("Prefab");
-            private static readonly GUIContent disconnectedVariantPrefab = EditorGUIUtility.TrTextContent("Prefab", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert.");
-            private static readonly GUIContent missingPrefabAsset = EditorGUIUtility.TrTextContent("Prefab", "The source Prefab or Model has been deleted.");
-            public static readonly GUIContent openModel = EditorGUIUtility.TrTextContent("Open", "Open Model in external tool.");
-            public static readonly GUIContent openPrefab = EditorGUIUtility.TrTextContent("Open", "Open Prefab Asset '{0}'\nPress modifier key [Alt] to open in isolation.");
-            public static readonly GUIContent tooltipForObjectFieldForRootInPrefabContents = EditorGUIUtility.TrTextContent("", "Replacing the root Prefab instance in a Variant is not supported since it will break all overrides for existing instances of this Variant, including their positions and rotations.");
-            public static readonly GUIContent tooltipForObjectFieldForNestedPrefabs = EditorGUIUtility.TrTextContent("", "You can only replace outermost Prefab instances. Open Prefab Mode to replace a nested Prefab instance.");
+            public static readonly GUIContent goTypeLabelMultiple = L10n.TextContent("Multiple", null, null, null);
+            private static readonly GUIContent regularPrefab = L10n.TextContent("Prefab", null, null, null);
+            private static readonly GUIContent disconnectedPrefab = L10n.TextContent("Prefab", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert.", null, null);
+            private static readonly GUIContent modelPrefab = L10n.TextContent("Prefab", null, null, null);
+            private static readonly GUIContent disconnectedModelPrefab =  L10n.TextContent("Prefab", "You have broken the prefab connection. Changes to the model will not be applied to this object before you Revert.", null, null);
+            private static readonly GUIContent variantPrefab = L10n.TextContent("Prefab", null, null, null);
+            private static readonly GUIContent disconnectedVariantPrefab = L10n.TextContent("Prefab", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert.", null, null);
+            private static readonly GUIContent missingPrefabAsset = L10n.TextContent("Prefab", "The source Prefab or Model has been deleted.", null, null);
+            public static readonly GUIContent openModel = L10n.TextContent("Open", "Open Model in external tool.", null, null);
+            public static readonly GUIContent openPrefab = L10n.TextContent("Open", "Open Prefab Asset '{0}'\nPress modifier key [Alt] to open in isolation.", null, null);
+            public static readonly GUIContent tooltipForObjectFieldForRootInPrefabContents = L10n.TextContent("", "Replacing the root Prefab instance in a Variant is not supported since it will break all overrides for existing instances of this Variant, including their positions and rotations.", null, null);
+            public static readonly GUIContent tooltipForObjectFieldForNestedPrefabs = L10n.TextContent("", "You can only replace outermost Prefab instances. Open Prefab Mode to replace a nested Prefab instance.", null, null);
             public static readonly string selectString = L10n.Tr("Select", null);
 
             public static readonly float kIconSize = 24;
@@ -1507,4 +1506,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

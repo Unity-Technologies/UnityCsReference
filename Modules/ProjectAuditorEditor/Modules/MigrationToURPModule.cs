@@ -14,7 +14,6 @@ using Module = Unity.ProjectAuditor.Editor.Core.Module;
 
 namespace Unity.ProjectAuditor.Editor.Modules
 {
-    // Run the URP Render Pipeline Converter and report its issues.
     internal class MigrationToURPModule : Module
     {
         const string k_ConvertersTypeName = "UnityEditor.Rendering.Universal.Converters, Unity.RenderPipelines.Universal.Editor";
@@ -25,7 +24,15 @@ namespace Unity.ProjectAuditor.Editor.Modules
         // so a scan can take a while to finish.
         const double k_ScanTimeoutSeconds = 600.0;
 
+        const string k_ModuleName = "Migration To URP";
+
         internal const string PAA7000 = nameof(PAA7000);
+
+        internal static bool ReportRecordsConverterScan(Report report) =>
+            report?.SessionInfo != null &&
+            report.SessionInfo.ReportIncludesUrpMigrationIssues &&
+            report.TryGetModuleResult(k_ModuleName, out var result) &&
+            result == AnalysisResult.Success;
 
         internal static readonly Descriptor k_ConverterItemDescriptor = new Descriptor
             (
@@ -74,7 +81,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
 
         const BindingFlags k_ConverterApiBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        public override string Name => "Migration To URP";
+        public override string Name => k_ModuleName;
 
         public override IReadOnlyCollection<IssueLayout> SupportedLayouts => [AssetsModule.k_IssueLayout, SettingsModule.k_IssueLayout];
 
@@ -261,36 +268,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
 
             return issues;
-        }
-    }
-
-    /// <summary>
-    /// Utilities to help with migration advice to the Universal Render Pipeline.
-    /// </summary>
-    public static class MigrationToURPUtilities
-    {
-        /// <summary>
-        /// Link to the documentation.
-        /// </summary>
-        public static string DocumentationUrl => "https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@latest/index.html?subfolder=/manual/upgrade-guides.html";
-
-        /// <summary>
-        /// Shows where to install the URP package, and opens the Render Pipeline Converter tool.
-        /// </summary>
-        /// <param name="issue">ReportItem triggering this Quick Fix helper.</param>
-        /// <param name="analysisParams">AnalysisParams for the current analysis.</param>
-        /// <returns>Whether the method fixed the issue. Always false for this fixer.</returns>
-        public static bool OpenRenderPipelineConverter(ReportItem issue, AnalysisParams analysisParams)
-        {
-            // When an SRP package is installed, the Render Pipeline Converter is the migration entry point.
-            if (EditorApplication.ExecuteMenuItem("Window/Rendering/Render Pipeline Converter"))
-                return false;
-
-            // No SRP package is installed yet: open Package Manager so the user can add URP first.
-            UnityEditor.PackageManager.UI.Window.Open("com.unity.render-pipelines.universal");
-
-            // Opening a window doesn't migrate the project, so the issue remains until BiRP is no longer in use.
-            return false;
         }
     }
 }

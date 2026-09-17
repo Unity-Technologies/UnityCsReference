@@ -33,13 +33,13 @@ namespace UnityEditor
 
         internal class Styles
         {
-            public static readonly GUIContent kDefineConstraints = EditorGUIUtility.TrTextContent("Define Constraints");
-            public static readonly GUIContent kDefineConstraintsNativePlugin = EditorGUIUtility.TrTextContent("Define Constraints*", "Editor excluded");
-            public static readonly GUIContent kLoadSettings = EditorGUIUtility.TrTextContent("Plugin load settings");
-            public static readonly GUIContent kPreload = EditorGUIUtility.TrTextContent("Load on startup", "Always load plugin during startup instead of on-demand");
-            public static readonly GUIContent kPluginPlatforms = EditorGUIUtility.TrTextContent("Select platforms for plugin");
-            public static readonly GUIContent kPlatformSettings = EditorGUIUtility.TrTextContent("Platform settings");
-            public static readonly GUIContent kInformation = EditorGUIUtility.TrTextContent("Information");
+            public static readonly GUIContent kDefineConstraints = L10n.TextContent("Define Constraints", null, null, null);
+            public static readonly GUIContent kDefineConstraintsNativePlugin = L10n.TextContent("Define Constraints*", "Editor excluded", null, null);
+            public static readonly GUIContent kLoadSettings = L10n.TextContent("Plugin load settings", null, null, null);
+            public static readonly GUIContent kPreload = L10n.TextContent("Load on startup", "Always load plugin during startup instead of on-demand", null, null);
+            public static readonly GUIContent kPluginPlatforms = L10n.TextContent("Select platforms for plugin", null, null, null);
+            public static readonly GUIContent kPlatformSettings = L10n.TextContent("Platform settings", null, null, null);
+            public static readonly GUIContent kInformation = L10n.TextContent("Information", null, null, null);
 
             static readonly string kCompatibleTextIndividual = L10n.Tr("Define constraint is compatible.", null);
             static readonly string kIncompatibleTextIndividual = L10n.Tr("Define constraint is incompatible.", null);
@@ -732,7 +732,7 @@ namespace UnityEditor
 
         private void ShowReferenceOptions()
         {
-            GUILayout.Label(EditorGUIUtility.TrTempContent("General"), EditorStyles.boldLabel);
+            GUILayout.Label(L10n.TempContent("General", null), EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical(GUI.skin.box);
             EditorGUI.BeginChangeCheck();
             m_AutoReferenced = ToggleWithMixedValue(m_AutoReferenced, "Auto Reference");

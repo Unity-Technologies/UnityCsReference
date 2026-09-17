@@ -18,7 +18,7 @@ namespace Unity.GraphToolkit.Editor
         public PortModel PortModel;
 
         /// <summary>
-        /// Index of the type to select (based on the Types collection from the PolymorphicPort)
+        /// Index of the type to select (based on the port's <see cref="PortModel.AllowedTypes"/>).
         /// </summary>
         public uint NewTypeIndex;
 
@@ -40,6 +40,12 @@ namespace Unity.GraphToolkit.Editor
                 throw new ArgumentException("ChangePortTypeCommand can be used only with polymorphic ports");
             }
 
+            var allowedTypes = command.PortModel.AllowedTypes;
+            if (command.NewTypeIndex >= allowedTypes.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(command.NewTypeIndex), "Index is out of the port's AllowedTypes range.");
+            }
+
             using (var undoStateUpdater = undoState.UpdateScope)
             {
                 undoStateUpdater.SaveState(graphModelState);
@@ -48,8 +54,7 @@ namespace Unity.GraphToolkit.Editor
             using (var graphUpdater = graphModelState.UpdateScope)
             using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
-                command.PortModel.PolymorphicPortHandler.SetSelectedTypeIndex(command.NewTypeIndex);
-                command.PortModel.UpdateDatatypeHandler();
+                command.PortModel.DataTypeHandle = allowedTypes[(int)command.NewTypeIndex];
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphicsDebuggingTools not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -96,7 +95,7 @@ namespace UnityEditor
         private bool IsEnablingFrameDebugger => m_EnablingWaitCounter < k_NeedToRepaintFrames;
         private bool HasEventHashChanged => FrameDebuggerUtility.eventsHash != m_FrameEventsHash;
         
-        private readonly Lazy<GUIContent> m_HelpButtonContent = new(() => EditorGUIUtility.TrIconContent("_Help", "Open Manual (in a web browser)"));
+        private readonly Lazy<GUIContent> m_HelpButtonContent = new(() => L10n.IconContent("_Help", "Open Manual (in a web browser)", null));
 
 
         [ShortcutManagement.Shortcut("Analysis/FrameDebugger/Enable")]
@@ -110,7 +109,7 @@ namespace UnityEditor
         public static FrameDebuggerWindow OpenWindow()
         {
             var wnd = GetWindow(typeof(FrameDebuggerWindow)) as FrameDebuggerWindow;
-            wnd.titleContent = EditorGUIUtility.TrTextContent("Frame Debugger");
+            wnd.titleContent = L10n.TextContent("Frame Debugger", null, null, null);
             wnd.minSize = new Vector2(1000f, 500f);
             return wnd;
         }
@@ -543,4 +542,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

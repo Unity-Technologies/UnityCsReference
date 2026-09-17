@@ -25,6 +25,8 @@ namespace Unity.GraphToolkit.Editor
         [SerializeField, HideInInspector]
         string m_Title;
 
+        Texture2D m_Icon;
+
         [FormerlySerializedAs("Condition")]
         [SerializeReference]
         GroupConditionModel m_ConditionModel;
@@ -101,6 +103,17 @@ namespace Unity.GraphToolkit.Editor
             {
                 m_Title = value;
                 GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Data);
+            }
+        }
+
+        /// <inheritdoc />
+        public Texture2D Icon
+        {
+            get => m_Icon;
+            set
+            {
+                m_Icon = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
             }
         }
 

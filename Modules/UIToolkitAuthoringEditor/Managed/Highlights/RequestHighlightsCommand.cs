@@ -39,22 +39,37 @@ class RequestHighlightsCommand : Command<RequestHighlightsCommand>
         UICommandQueue.Execute(command);
     }
 
-    public static RequestHighlightsCommand GetPooled(object source, int veaId)
+    public static RequestHighlightsCommand GetPooled(object source, int veaId, VisualTreeAsset elementDocument)
     {
         var pooled = GetPooled();
         pooled.Source = source;
         pooled.ElementId = veaId;
+        pooled.ElementDocument = elementDocument;
         return pooled;
     }
 
-    public static void Execute(object source, int veaId)
+    public static void Execute(object source, int veaId, VisualTreeAsset elementDocument)
     {
-        using var command = GetPooled(source, veaId);
+        using var command = GetPooled(source, veaId, elementDocument);
         UICommandQueue.Execute(command);
     }
 
     public VisualElement Element { get; private set; }
+
+    /// <summary>
+    /// The authored element to highlight, for a requester that knows an id rather than an instance.
+    /// </summary>
     public int? ElementId { get; private set; }
+
+    /// <summary>
+    /// The document <see cref="ElementId"/> was numbered in.
+    /// </summary>
+    /// <remarks>
+    /// Required alongside the id, because an id is only unique inside its own document and the request is
+    /// answered against every document on screen — two unrelated UXMLs would otherwise collide on it.
+    /// </remarks>
+    public VisualTreeAsset ElementDocument { get; private set; }
+
     public StyleRule Rule { get; private set; }
 
     protected override void Init()
@@ -62,6 +77,7 @@ class RequestHighlightsCommand : Command<RequestHighlightsCommand>
         Element = null;
         Rule = null;
         ElementId = null;
+        ElementDocument = null;
         base.Init();
     }
 

@@ -17,6 +17,9 @@ namespace UnityEngine.UIElements.UIR
         // The editor window's sampleable back buffer (the GUIView aux RT) and its content row order
         // (isTopOrigin: texel row 0 is the top of the window; platform windowing convention).
         [AutoStaticsCleanupOnCodeReload] // delegate into editor code; RetainedMode's cctor re-registers it after reload
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         public static System.Func<(RenderTexture texture, bool isTopOrigin)> editorWindowBackdropSource { private get; set; }
 
         static readonly int s_ColorMatrixId = Shader.PropertyToID("_ColorMatrix");
@@ -86,6 +89,62 @@ namespace UnityEngine.UIElements.UIR
                 renderTreeManager.ReleaseFilterCallbackBlocks(renderTreeManager.GetExtraData(owner).backdropFilterCallbackPropertyBlocks);
         }
 
+        // Scale of the element relative to its render tree root. The backdrop is captured
+        // post-transform, so point-based filter parameters (blur sigma, shadow offsets, capture
+        // margins) must scale by this on top of the DPI factor. Not the full world scale: a nested
+        // tree's compositing transform re-applies the outer scale to the filtered output.
+        static Vector2 ComputeContentScale(RenderData owner)
+        {
+            UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out Matrix4x4 m);
+            return GetScale(in m);
+        }
+
+        static Vector2 GetScale(in Matrix4x4 m)
+        {
+            return new Vector2(
+                new Vector3(m.m00, m.m10, m.m20).magnitude,
+                new Vector3(m.m01, m.m11, m.m21).magnitude);
+        }
+
+        // Smallest per-pass sigma worth downsampling for; below it the kernel is already cheap.
+        const float k_MinChainSigma = 2f;
+
+        // Largest built-in sigma in the chain, in points. Custom filters contribute nothing: their
+        // cost is unknown, so they never trigger downscaling and always run at full resolution.
+        static float ComputeMaxChainSigma(System.ReadOnlySpan<UnmanagedFilterFunction> filters)
+        {
+            float maxSigma = 0f;
+            for (int i = 0; i < filters.Length; i++)
+            {
+                var filterFunc = (FilterFunction)filters[i];
+                if (filterFunc.type == FilterFunctionType.Blur && filterFunc.parameterCount > 0)
+                    maxSigma = Mathf.Max(maxSigma, filterFunc.parameters[0].floatValue);
+                else if (filterFunc.type == FilterFunctionType.DropShadow && filterFunc.parameterCount > 2)
+                    maxSigma = Mathf.Max(maxSigma, filterFunc.parameters[2].floatValue);
+            }
+            return maxSigma;
+        }
+
+        // Number of 2x downscale steps the filter chain runs at, keeping the kernel cost bounded when
+        // the content scale grows (blur(img downscaled by k, sigma/k) upscaled ~= blur(img, sigma)).
+        // Power of two so the update and render phases compute the exact same factor. Bounded by the
+        // content scale (0 at scale <= 1, so unscaled rendering stays bit-identical; never below
+        // authored resolution) and by the chain's largest sigma (a chain without a built-in blur,
+        // e.g. tint-only, must stay crisp).
+        public static int ComputeDownscaleShift(System.ReadOnlySpan<UnmanagedFilterFunction> filters, Vector2 contentScale, float scaledPixelsPerPoint)
+        {
+            float minScale = Mathf.Min(contentScale.x, contentScale.y);
+            if (minScale <= 1f)
+                return 0;
+
+            float sigmaDevice = ComputeMaxChainSigma(filters) * scaledPixelsPerPoint * Mathf.Sqrt(contentScale.x * contentScale.y);
+            float budget = Mathf.Min(minScale, sigmaDevice / k_MinChainSigma);
+            if (budget <= 1f)
+                return 0;
+
+            return Mathf.FloorToInt(Mathf.Log(budget, 2f));
+        }
+
         // Update-phase entry point: populates the per-pass blocks while no render target is bound.
         public static void InvokeBackdropFilterCallbacks(RenderTreeManager renderTreeManager, RenderData owner)
         {
@@ -114,6 +173,13 @@ namespace UnityEngine.UIElements.UIR
             // GetColorSpace() returns Default (sRGB temps), so the shader reads linear even under force-gamma; params track the active color space only.
             bool readsGamma = QualitySettings.activeColorSpace == ColorSpace.Gamma;
 
+            // Per-axis so a non-uniform content scale keeps drop-shadow offsets and per-pass blur
+            // sigmas on the right axis; the downscale shift divides out what the chain will not
+            // render at (see ComputeDownscaleShift).
+            Vector2 contentScale = ComputeContentScale(owner);
+            int downscaleShift = ComputeDownscaleShift(backdropFilters, contentScale, ve.scaledPixelsPerPoint);
+            Vector2 pixelsPerPoint = contentScale * (ve.scaledPixelsPerPoint / (1 << downscaleShift));
+
             // Backdrop-filter preserves the color space across the chain, so every pass writes what it reads.
             FilterHelper.InvokeFilterCallbacks(
                 backdropFilters,
@@ -121,7 +187,7 @@ namespace UnityEngine.UIElements.UIR
                 readsGamma: readsGamma,
                 writesGamma: readsGamma,
                 lastPassWritesGamma: readsGamma,
-                ve.scaledPixelsPerPoint);
+                pixelsPerPoint);
 
             // Renderer-owned (like _MainTex), so set after the callbacks. The Count re-check covers
             // a callback removing the element mid-walk.
@@ -215,6 +281,7 @@ namespace UnityEngine.UIElements.UIR
 
             RectInt pixelRect;
             RectInt captureRect;
+            Vector2 contentScale;
             if (!isNestedRT)
             {
                 pixelRect = RenderChainCommand.RectPointsToPixels(worldBound, drawBounds.min, scaleX, scaleY, activeViewport);
@@ -235,7 +302,9 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 captureRect = pixelRect;
-                InflateCapture(ref captureRect, chainMargins, topOriginRows, scaleX, scaleY);
+                contentScale = ComputeContentScale(owner);
+                InflateCapture(ref captureRect, chainMargins, topOriginRows,
+                    scaleX * contentScale.x, scaleY * contentScale.y);
 
                 if (!ClampCapture(ref captureRect, clipRectInt))
                     return;
@@ -255,7 +324,9 @@ namespace UnityEngine.UIElements.UIR
                     return;
 
                 captureRect = pixelRect;
-                InflateCapture(ref captureRect, chainMargins, topOriginRows, scaleX, scaleY);
+                contentScale = GetScale(in elementToTreeRoot);
+                InflateCapture(ref captureRect, chainMargins, topOriginRows,
+                    scaleX * contentScale.x, scaleY * contentScale.y);
 
                 // Clamp to the ancestor scissor, mapped through the same nested projection as pixelRect. The scissor
                 // stack holds the correct tree-root-space clip here; owner.clippingRect would be the panel rect (UI-5094).
@@ -300,9 +371,46 @@ namespace UnityEngine.UIElements.UIR
                 backdrop = normalized;
             }
 
+            // Run the chain on a downscaled capture when the content scale allows it; the update phase
+            // divided the callbacks' sigma/offsets by the same power of two, so the visual result only
+            // changes by the resampling. Stepped by 2x so each bilinear tap is a proper prefilter.
+            int downscaleShift = ComputeDownscaleShift(ve.computedStyle.backdropFilter, contentScale, ve.scaledPixelsPerPoint);
+            if (downscaleShift > 0)
+            {
+                var resamplePass = new PostProcessingPass { material = normalizeMaterial };
+                for (int i = 0; i < downscaleShift; i++)
+                {
+                    RenderTexture half = RenderTexture.GetTemporary(
+                        Mathf.Max(1, (backdrop.width + 1) >> 1),
+                        Mathf.Max(1, (backdrop.height + 1) >> 1),
+                        0, backdrop.format, colorSpace);
+                    half.filterMode = FilterMode.Bilinear;
+                    s_PropertyBlock.Clear();
+                    FilterHelper.ApplyFilterPass(backdrop, half, resamplePass, s_PropertyBlock, outputLinear: false);
+                    RenderTexture.ReleaseTemporary(backdrop);
+                    backdrop = half;
+                }
+            }
+
             // Filtered alpha = captured coverage scaled by the filter chain (tint/opacity alpha<1 -> translucent,
             // empty capture -> transparent), so compositing premultiplied-over matches the runtime's backdrop opacity.
             RenderTexture filtered = ApplyBackdropFilters(backdrop, ve, owner, colorSpace);
+
+            // Stretch the chain output back to capture resolution so the crop/copy below stays in
+            // source pixels; bilinear upscaling of blurred content is visually lossless.
+            if (downscaleShift > 0)
+            {
+                RenderTexture upscaled = RenderTexture.GetTemporary(captureRect.width, captureRect.height, 0, filtered.format, colorSpace);
+                upscaled.filterMode = FilterMode.Bilinear;
+                var resamplePass = new PostProcessingPass { material = normalizeMaterial };
+                s_PropertyBlock.Clear();
+                FilterHelper.ApplyFilterPass(filtered, upscaled, resamplePass, s_PropertyBlock, outputLinear: false);
+                if (filtered != backdrop)
+                    RenderTexture.ReleaseTemporary(filtered);
+                RenderTexture.ReleaseTemporary(backdrop);
+                backdrop = upscaled;
+                filtered = upscaled;
+            }
 
             void ReleaseCaptures()
             {

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -103,6 +102,9 @@ namespace UnityEditor.Search
     public partial class SearchProvider : ISerializationCallbackReceiver
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Balanced counter incremented in OnEnable and decremented in OnDisable of each provider; the
+        // providers themselves are re-created per code-loaded scope, which re-counts from zero.
+        [IgnoreForUAL0015("Balanced provider-session counter, re-counted as providers are enabled in the new scope")]
         internal static int sessionCounter;
 
         [SerializeField] private string m_Id;
@@ -649,4 +651,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

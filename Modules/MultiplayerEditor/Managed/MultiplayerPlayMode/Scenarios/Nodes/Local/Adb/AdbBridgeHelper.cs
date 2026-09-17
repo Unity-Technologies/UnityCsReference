@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
 using System;
 using System.Reflection;
 using Unity.Scripting.LifecycleManagement;
@@ -28,8 +27,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         [AutoStaticsCleanupOnCodeReload] // lazy detection of Android extension assembly; must re-detect after reload
+        // Resets to Undefined, which is the state that makes the AndroidExtensions getter run the assembly
+        // detection again on the next access.
+        [IgnoreForUAL0015("Detection state resets to Undefined so the next access re-runs the assembly detection")]
         private static ExtensionState s_AndroidExtensionsState = ExtensionState.Undefined;
         [AutoStaticsCleanupOnCodeReload] // cached assembly reference; stale after reload
+        // Cached assembly reference, looked up again by the AndroidExtensions getter on the next access after
+        // cleanup nulls it.
+        [IgnoreForUAL0015("Assembly reference re-resolved by the AndroidExtensions getter after cleanup nulls it")]
         private static Assembly s_AndroidExtensions;
         private static readonly string kAndroidLogcatWarningIssued = nameof(kAndroidLogcatWarningIssued);
 
@@ -74,12 +79,19 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal partial class ADB
         {
             [AutoStaticsCleanupOnCodeReload] // cached reflection type; stale after reload
+            // Lazily resolved from the Android extension assembly on the next UnderlyingType access.
+            [IgnoreForUAL0015("Lazy reflection Type lookup, re-resolved on the next access")]
             private static Type s_ADBType;
             [AutoStaticsCleanupOnCodeReload] // cached reflection method; stale after reload
+            // Lazily resolved by GetMethod on the next GetInstanceMethodInfo access.
+            [IgnoreForUAL0015("Lazy reflection MethodInfo lookup, re-resolved on the next access")]
             private static MethodInfo s_GetInstanceMethodInfo;
             [AutoStaticsCleanupOnCodeReload] // cached reflection method; stale after reload
             private static MethodInfo s_GetADBPathMethodInfo;
             [AutoStaticsCleanupOnCodeReload] // cached reflection method; stale after reload
+            // Lazily re-resolved by the RunMethodInfo getter on the next access; nulling is what we want here,
+            // since a MethodInfo from the previous scope would be stale.
+            [IgnoreForUAL0015("Lazily re-resolved reflection handle, looked up again on the next access")]
             private static MethodInfo s_RunMethodInfo;
 
             private readonly System.Object m_ADBObject;
@@ -160,6 +172,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         internal partial class Device
         {
             [AutoStaticsCleanupOnCodeReload] // cached reflection type; stale after reload
+            // Lazily re-resolved by the UnderlyingType getter, which looks the Android device type up again on the
+            // next access; a Type from the previous scope would be stale.
+            [IgnoreForUAL0015("Lazily re-resolved reflection handle, looked up again on the next access")]
             private static Type s_AndroidDeviceType;
             [AutoStaticsCleanupOnCodeReload] // cached reflection property; stale after reload
             private static PropertyInfo s_PropertiesPropertyInfo;
@@ -287,4 +302,3 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

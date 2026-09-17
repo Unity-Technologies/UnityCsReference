@@ -19,4 +19,7 @@ sealed class UICanvasDropContext : ICanvasDropContext
     public Vector2 WorldToContentPosition(Vector2 worldPosition) => m_Canvas.WorldToSubPanel(worldPosition);
 
     public void PickAll(Vector2 worldPosition, List<VisualElement> results) => m_Canvas.PickAll(worldPosition, results);
+
+    public VisualElement ResolveAuthoritativeElement(VisualElement element)
+        => m_Canvas.DocumentRoot.ResolveAuthoritativeElement(element);
 }

@@ -12,15 +12,15 @@ namespace UnityEditor
 {
     internal abstract class ConstraintStyleBase
     {
-        GUIContent m_Activate = EditorGUIUtility.TrTextContent("Activate", "Activate the constraint at the current offset from the sources.");
-        GUIContent m_Zero = EditorGUIUtility.TrTextContent("Zero", "Activate the constraint at zero offset from the sources.");
+        GUIContent m_Activate = L10n.TextContent("Activate", "Activate the constraint at the current offset from the sources.", null, null);
+        GUIContent m_Zero = L10n.TextContent("Zero", "Activate the constraint at zero offset from the sources.", null, null);
 
-        GUIContent m_Sources = EditorGUIUtility.TrTextContent("Sources");
+        GUIContent m_Sources = L10n.TextContent("Sources", null, null, null);
 
-        GUIContent m_Weight = EditorGUIUtility.TrTextContent("Weight");
+        GUIContent m_Weight = L10n.TextContent("Weight", null, null, null);
 
-        GUIContent m_IsActive = EditorGUIUtility.TrTextContent("Is Active", "When set, the constraint is being evaluated.");
-        GUIContent m_IsLocked = EditorGUIUtility.TrTextContent("Lock", "When set, evaluate with the current offset. When not set, update the offset based on the current transform.");
+        GUIContent m_IsActive = L10n.TextContent("Is Active", "When set, the constraint is being evaluated.", null, null);
+        GUIContent m_IsLocked = L10n.TextContent("Lock", "When set, evaluate with the current offset. When not set, update the offset based on the current transform.", null, null);
 
         GUIContent[] m_Axes =
         {
@@ -29,7 +29,7 @@ namespace UnityEditor
             EditorGUIUtility.TextContent("Z")
         };
 
-        GUIContent m_ConstraintSettings = EditorGUIUtility.TrTextContent("Constraint Settings");
+        GUIContent m_ConstraintSettings = L10n.TextContent("Constraint Settings", null, null, null);
 
         public virtual GUIContent Activate { get { return m_Activate; } }
         public virtual GUIContent Zero { get { return m_Zero; } }

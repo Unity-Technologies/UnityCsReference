@@ -42,7 +42,7 @@ namespace UnityEditor.IMGUI.Controls
                 {
                     s_EditModeButton = new GUIContent(
                         EditorGUIUtility.IconContent("EditCollider").image,
-                        EditorGUIUtility.TrTextContent("Edit bounding volume.\n\n - Hold Alt after clicking control handle to pin center in place.\n - Hold Shift after clicking control handle to scale uniformly.").text
+                        L10n.TextContent("Edit bounding volume.\n\n - Hold Alt after clicking control handle to pin center in place.\n - Hold Shift after clicking control handle to scale uniformly.", null, null, null).text
                     );
                 }
                 return s_EditModeButton;
@@ -50,6 +50,8 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Lazy getter recreates the button content from its icon on the next access after cleanup nulls it.
+        [IgnoreForUAL0015("Lazy GUIContent, recreated from its icon on the next access")]
         private static GUIContent s_EditModeButton;
 
         public static float DefaultMidpointHandleSizeFunction(Vector3 position)

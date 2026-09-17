@@ -32,11 +32,11 @@ namespace UnityEditorInternal
             public readonly float stateButtonWidth = 18;
             public readonly GUIContent[] modes = new[]
             {
-                EditorGUIUtility.TrTextContent("Color"),
-                EditorGUIUtility.TrTextContent("Gradient"),
-                EditorGUIUtility.TrTextContent("Random Between Two Colors"),
-                EditorGUIUtility.TrTextContent("Random Between Two Gradients"),
-                EditorGUIUtility.TrTextContent("Random Color")
+                L10n.TextContent("Color", null, null, null),
+                L10n.TextContent("Gradient", null, null, null),
+                L10n.TextContent("Random Between Two Colors", null, null, null),
+                L10n.TextContent("Random Between Two Gradients", null, null, null),
+                L10n.TextContent("Random Color", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // Readonly eager init re-runs per ALC on code load; GUIContent members survive reload.

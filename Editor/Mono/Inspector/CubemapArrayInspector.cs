@@ -25,7 +25,7 @@ namespace UnityEngine
 
         static class Styles
         {
-            public static readonly GUIContent slice = EditorGUIUtility.TrTextContent("Slice", "Displayed array slice");
+            public static readonly GUIContent slice = L10n.TextContent("Slice", "Displayed array slice", null, null);
             public static readonly GUIStyle toolbarLabel = "toolbarLabel";
         }
 

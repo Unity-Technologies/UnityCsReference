@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Packman not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -79,17 +78,15 @@ namespace UnityEditor
             public static readonly GUIStyle bottomBarBg = "ProjectBrowserBottomBarBg";
             public static readonly GUIStyle topBarBg = "OT TopBar";
             public static readonly GUIStyle loadingTextStyle = "CenteredLabel";
-            public static readonly GUIContent authoringOrg = EditorGUIUtility.TrTextContent("Authoring organization:", "The organization that will be used to sign the exported package.");
-            public static readonly GUIContent allText = EditorGUIUtility.TrTextContent("All");
-            public static readonly GUIContent noneText = EditorGUIUtility.TrTextContent("None");
-            public static readonly GUIContent includeDependenciesText = EditorGUIUtility.TrTextContent("Include dependencies", "Include all dependencies required for the selected items in the export list.");
-            public static readonly GUIContent includeScriptsText = EditorGUIUtility.TrTextContent("Include all scripts", "Include all project scripts in the export list to avoid potential compilation errors.");
-            public static readonly GUIContent header = EditorGUIUtility.TrTextContent("Items to Export");
+            public static readonly GUIContent authoringOrg = L10n.TextContent("Authoring organization:", "The organization that will be used to sign the exported package.", null, null);
+            public static readonly GUIContent allText = L10n.TextContent("All", null, null, null);
+            public static readonly GUIContent noneText = L10n.TextContent("None", null, null, null);
+            public static readonly GUIContent includeDependenciesText = L10n.TextContent("Include dependencies", "Include all dependencies required for the selected items in the export list.", null, null);
+            public static readonly GUIContent includeScriptsText = L10n.TextContent("Include all scripts", "Include all project scripts in the export list to avoid potential compilation errors.", null, null);
+            public static readonly GUIContent header = L10n.TextContent("Items to Export", null, null, null);
         }
 
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         public PackageExport()
-        #pragma warning restore UAL0015
         {
             // Initial pos and minsize
             #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
@@ -353,7 +350,7 @@ namespace UnityEditor
 
             var isOrgIdChosen = isOrgSelected || m_OrganizationInfos.Length == 0;
             GUI.enabled = m_Tree?.isAnyItemEnabled == true && isOrgIdChosen;
-            if (GUILayout.Button(EditorGUIUtility.TrTextContent("Export...")))
+            if (GUILayout.Button(L10n.TextContent("Export...", null, null, null)))
             {
                 string invalidChars = m_EditorUtilityAdapter.GetInvalidFilenameChars();
 #pragma warning disable UAC2001 // Avoid Linq
@@ -531,4 +528,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Concurrent;
@@ -146,9 +144,16 @@ internal partial class LayoutManager : IDisposable
         Shutdown // The SharedManager was disposed and must not re-created
     }
     [AutoStaticsCleanupOnCodeReload]
+    // Every VisualElement construction reaches this gate through SharedManager. Cleanup resets it to
+    // Uninitialized and Initialize() re-creates the shared manager on the next access, so a constructor
+    // that trips the gate leaves nothing stale behind for the next code-loaded scope.
+    [IgnoreForUAL0015("Initialization gate re-evaluated on demand by SharedManager after cleanup resets it")]
     static SharedManagerState s_Initialized;
 
     [AutoStaticsCleanupOnCodeReload]
+    // Initialize() recreates the shared manager on the next SharedManager access after cleanup nulls
+    // this, so a constructor that forces the shared instance leaves nothing stale behind.
+    [IgnoreForUAL0015("Shared instance recreated on demand by Initialize() after cleanup nulls it")]
     static LayoutManager s_SharedInstance = null;
 
     public static bool IsSharedManagerCreated => s_Initialized == SharedManagerState.Initialized;
@@ -163,6 +168,9 @@ internal partial class LayoutManager : IDisposable
     }
 
     [AutoStaticsCleanupOnCodeReload]
+    // Registry of live managers: every LayoutManager adds itself here from its own constructor, so the
+    // list cleared on reload refills itself as managers are recreated in the next code-loaded scope.
+    [IgnoreForUAL0015("Live-manager registry, refilled by each LayoutManager constructor after cleanup")]
     static List<LayoutManager> s_Managers = new List<LayoutManager>();
 
     // Important: Assumptions about Order of operations for Initialize() and Shutdown()
@@ -484,5 +492,3 @@ internal partial class LayoutManager : IDisposable
         m_ManagedBaselineFunctions.UpdateValue(ref index, value);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

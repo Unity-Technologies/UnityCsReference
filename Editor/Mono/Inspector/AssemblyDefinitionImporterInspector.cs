@@ -23,28 +23,28 @@ namespace UnityEditor
     {
         internal class Styles
         {
-            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "The assembly name is used to generate a <name>.dll file on you disk.");
-            public static readonly GUIContent rootNamespace = EditorGUIUtility.TrTextContent("Root Namespace", "Specify the root namespace of the assembly.");
-            public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints", "Specify constraints which determine if the assembly will be compiled or not. The assembly will compile whenever all constraints are met.");
-            public static readonly GUIContent versionDefines = EditorGUIUtility.TrTextContent("Version Defines", "Specify preprocessor symbols to define based on package, module or Unity versions.");
-            public static readonly GUIContent resource = EditorGUIUtility.TrTextContent("If resource", "Select 'Unity' or the package or module that you want to set a define for.");
-            public static readonly GUIContent version = EditorGUIUtility.TrTextContent("version is", "Specify the semantic version of your chosen module, package or Unity Version. You must use mathematical interval notation.");
-            public static readonly GUIContent define = EditorGUIUtility.TrTextContent("set define", "Specify the name you want this define to have. This define is only set if the expression's condition is satisfied.");
-            public static readonly GUIContent expressionOutcome = EditorGUIUtility.TrTextContent("Version expression outcome", "Shows the mathematical equation applied to the version number used determine if the symbol should be defined.");
-            public static readonly GUIContent references = EditorGUIUtility.TrTextContent("Assembly Definition References", "The list of assembly files that this assembly definition should reference.");
-            public static readonly GUIContent precompiledReferences = EditorGUIUtility.TrTextContent("Assembly References", "The list of Precompiled assemblies that this assembly definition should reference.");
-            public static readonly GUIContent generalOptions = EditorGUIUtility.TrTextContent("General Options");
-            public static readonly GUIContent overrideReferences = EditorGUIUtility.TrTextContent("Override References", "When enabled, you can select which specific precompiled assemblies to refer to via a drop-down list that appears. When not enabled, this assembly definition refers to all auto-referenced precompiled assemblies.");
-            public static readonly GUIContent autoReferenced = EditorGUIUtility.TrTextContent("Auto Referenced", "When enabled, this assembly definition is automatically referenced in predefined assemblies.");
-            public static readonly GUIContent useGUIDs = EditorGUIUtility.TrTextContent("Use GUIDs", "Use GUIDs instead of assembly names for Assembly Definition References. Allows referenced assemblies to be renamed without having to update references.");
-            public static readonly GUIContent platforms = EditorGUIUtility.TrTextContent("Platforms", "Select which platforms include or exclude in the build that this assembly definition file is for.");
-            public static readonly GUIContent anyPlatform = EditorGUIUtility.TrTextContent("Any Platform");
-            public static readonly GUIContent includePlatforms = EditorGUIUtility.TrTextContent("Include Platforms");
-            public static readonly GUIContent excludePlatforms = EditorGUIUtility.TrTextContent("Exclude Platforms");
-            public static readonly GUIContent selectAll = EditorGUIUtility.TrTextContent("Select all");
-            public static readonly GUIContent deselectAll = EditorGUIUtility.TrTextContent("Deselect all");
-            public static readonly GUIContent loadError = EditorGUIUtility.TrTextContent("Load error");
-            public static readonly GUIContent noEngineReferences = EditorGUIUtility.TrTextContent("No Engine References", "When enabled, references to UnityEngine/UnityEditor will not be added when compiling this assembly.");
+            public static readonly GUIContent name = L10n.TextContent("Name", "The assembly name is used to generate a <name>.dll file on you disk.", null, null);
+            public static readonly GUIContent rootNamespace = L10n.TextContent("Root Namespace", "Specify the root namespace of the assembly.", null, null);
+            public static readonly GUIContent defineConstraints = L10n.TextContent("Define Constraints", "Specify constraints which determine if the assembly will be compiled or not. The assembly will compile whenever all constraints are met.", null, null);
+            public static readonly GUIContent versionDefines = L10n.TextContent("Version Defines", "Specify preprocessor symbols to define based on package, module or Unity versions.", null, null);
+            public static readonly GUIContent resource = L10n.TextContent("If resource", "Select 'Unity' or the package or module that you want to set a define for.", null, null);
+            public static readonly GUIContent version = L10n.TextContent("version is", "Specify the semantic version of your chosen module, package or Unity Version. You must use mathematical interval notation.", null, null);
+            public static readonly GUIContent define = L10n.TextContent("set define", "Specify the name you want this define to have. This define is only set if the expression's condition is satisfied.", null, null);
+            public static readonly GUIContent expressionOutcome = L10n.TextContent("Version expression outcome", "Shows the mathematical equation applied to the version number used determine if the symbol should be defined.", null, null);
+            public static readonly GUIContent references = L10n.TextContent("Assembly Definition References", "The list of assembly files that this assembly definition should reference.", null, null);
+            public static readonly GUIContent precompiledReferences = L10n.TextContent("Assembly References", "The list of Precompiled assemblies that this assembly definition should reference.", null, null);
+            public static readonly GUIContent generalOptions = L10n.TextContent("General Options", null, null, null);
+            public static readonly GUIContent overrideReferences = L10n.TextContent("Override References", "When enabled, you can select which specific precompiled assemblies to refer to via a drop-down list that appears. When not enabled, this assembly definition refers to all auto-referenced precompiled assemblies.", null, null);
+            public static readonly GUIContent autoReferenced = L10n.TextContent("Auto Referenced", "When enabled, this assembly definition is automatically referenced in predefined assemblies.", null, null);
+            public static readonly GUIContent useGUIDs = L10n.TextContent("Use GUIDs", "Use GUIDs instead of assembly names for Assembly Definition References. Allows referenced assemblies to be renamed without having to update references.", null, null);
+            public static readonly GUIContent platforms = L10n.TextContent("Platforms", "Select which platforms include or exclude in the build that this assembly definition file is for.", null, null);
+            public static readonly GUIContent anyPlatform = L10n.TextContent("Any Platform", null, null, null);
+            public static readonly GUIContent includePlatforms = L10n.TextContent("Include Platforms", null, null, null);
+            public static readonly GUIContent excludePlatforms = L10n.TextContent("Exclude Platforms", null, null, null);
+            public static readonly GUIContent selectAll = L10n.TextContent("Select all", null, null, null);
+            public static readonly GUIContent deselectAll = L10n.TextContent("Deselect all", null, null, null);
+            public static readonly GUIContent loadError = L10n.TextContent("Load error", null, null, null);
+            public static readonly GUIContent noEngineReferences = L10n.TextContent("No Engine References", "When enabled, references to UnityEngine/UnityEditor will not be added when compiling this assembly.", null, null);
 
             // This is used to make everything in reorderable list elements centered vertically.
             public const int kCenterHeightOffset = 1;
@@ -708,11 +708,11 @@ namespace UnityEditor
 
                 if (m_PrecompileReferenceListEntry.Count == 1)
                 {
-                    label = EditorGUIUtility.TrTempContent("No possible references");
+                    label = L10n.TempContent("No possible references", null);
                 }
                 else
                 {
-                    label = EditorGUIUtility.TrTempContent("None");
+                    label = L10n.TempContent("None", null);
                 }
             }
             else

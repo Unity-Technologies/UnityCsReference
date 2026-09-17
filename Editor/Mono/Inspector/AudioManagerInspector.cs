@@ -16,30 +16,30 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static readonly GUIContent Volume                 = EditorGUIUtility.TrTextContent("Global Volume", "Initial volume multiplier (AudioListener.volume)");
-            public static readonly GUIContent RolloffScale           = EditorGUIUtility.TrTextContent("Volume Rolloff Scale", "Global volume rolloff multiplier (applies only to logarithmic volume curves).");
-            public static readonly GUIContent DopplerFactor          = EditorGUIUtility.TrTextContent("Doppler Factor", "Global Doppler speed multiplier for sounds in motion.");
-            public static readonly GUIContent DefaultSpeakerMode     = EditorGUIUtility.TrTextContent("Default Speaker Mode", "Speaker mode at start of the game. This may be changed at runtime using the AudioSettings.Reset function.");
-            public static readonly GUIContent SampleRate             = EditorGUIUtility.TrTextContent("System Sample Rate", "Sample rate at which the output device of the audio system runs. Individual sounds may run at different sample rates and will be slowed down/sped up accordingly to match the output rate.");
-            public static readonly GUIContent DSPBufferSize          = EditorGUIUtility.TrTextContent("DSP Buffer Size", "Length of mixing buffer. This determines the output latency of the game.");
-            public static readonly GUIContent AudioFoundation        = EditorGUIUtility.TrTextContent("Audio Foundation", "Low-level, platform audio layer. Classic is the same, mature platform layer from previous versions of Unity. Enhanced is the new platform audio layer and is supported on Windows, macOS, Linux, iOS, Android (8.1 and later), XBOX Series X|S, XBOX One, PlayStation®5, Nintendo Switch™, and Nintendo Switch™ 2. The benefits include asynchronous starting and stopping of devices and greater control over audio engine behavior. On platforms that don't have enhanced mode yet, the engine will fall back to using classic mode.");
-            public static readonly GUIContent OutputChannelLayout    = EditorGUIUtility.TrTextContent("Output Channel Layout", "The audio engine will always run at the selected channel layout and up-mixing or down-mixing will occur to match the device's native channel layout. Alternatively, if DeviceNative is selected, the engine will always run at the device's native channel count, and will be reset if that native channel count changes (i.e. when the default device changes).");
-            public static readonly GUIContent OutputSamplingRate     = EditorGUIUtility.TrTextContent("Output Sampling Rate", "The audio engine will always run at the selected sampling rate and sample-rate conversion will occur to match the device's native sampling rate. Alternatively, if DeviceNative is selected, the engine will always run at the device's native sampling rate, and will be reset if that native sampling rate changes (i.e. when the default device changes).");
-            public static readonly GUIContent VirtualVoiceCount      = EditorGUIUtility.TrTextContent("Max Virtual Voices", "Maximum number of sounds managed by the system. Even though at most RealVoiceCount of the loudest sounds will be physically playing, the remaining sounds will still be updating their play position.");
-            public static readonly GUIContent RealVoiceCount         = EditorGUIUtility.TrTextContent("Max Real Voices", "Maximum number of actual simultaneously playing sounds.");
-            public static readonly GUIContent SpatializerPlugin      = EditorGUIUtility.TrTextContent("Spatializer Plugin", "Native audio plugin performing spatialized filtering of 3D sources.");
-            public static readonly GUIContent AmbisonicDecoderPlugin = EditorGUIUtility.TrTextContent("Ambisonic Decoder Plugin", "Native audio plugin performing ambisonic-to-binaural filtering of sources.");
-            public static readonly GUIContent DisableAudio           = EditorGUIUtility.TrTextContent("Disable Unity Audio", "Prevent allocating the output device in the runtime. Use this if you want to use other sound systems than the built-in one.");
-            public static readonly GUIContent VirtualizeEffects      = EditorGUIUtility.TrTextContent("Virtualize Effects", "When enabled, dynamically turn off effects and spatializers on AudioSources that are culled in order to save CPU.");
-            public static readonly GUIContent EnableOutputSuspension = EditorGUIUtility.TrTextContent("Enable Output Suspension (editor only)", "When enabled automatically suspends audio output after detecting that the output has been silent for a long duration (editor only). Suspending the audio system disables a mechanism in the operating system that prevents the computer from going into sleep mode.");
+            public static readonly GUIContent Volume                 = L10n.TextContent("Global Volume", "Initial volume multiplier (AudioListener.volume)", null, null);
+            public static readonly GUIContent RolloffScale           = L10n.TextContent("Volume Rolloff Scale", "Global volume rolloff multiplier (applies only to logarithmic volume curves).", null, null);
+            public static readonly GUIContent DopplerFactor          = L10n.TextContent("Doppler Factor", "Global Doppler speed multiplier for sounds in motion.", null, null);
+            public static readonly GUIContent DefaultSpeakerMode     = L10n.TextContent("Default Speaker Mode", "Speaker mode at start of the game. This may be changed at runtime using the AudioSettings.Reset function.", null, null);
+            public static readonly GUIContent SampleRate             = L10n.TextContent("System Sample Rate", "Sample rate at which the output device of the audio system runs. Individual sounds may run at different sample rates and will be slowed down/sped up accordingly to match the output rate.", null, null);
+            public static readonly GUIContent DSPBufferSize          = L10n.TextContent("DSP Buffer Size", "Length of mixing buffer. This determines the output latency of the game.", null, null);
+            public static readonly GUIContent AudioFoundation        = L10n.TextContent("Audio Foundation", "Low-level, platform audio layer. Classic is the same, mature platform layer from previous versions of Unity. Enhanced is the new platform audio layer and is supported on Windows, macOS, Linux, iOS, Android (8.1 and later), XBOX Series X|S, XBOX One, PlayStation®5, Nintendo Switch™, and Nintendo Switch™ 2. The benefits include asynchronous starting and stopping of devices and greater control over audio engine behavior. On platforms that don't have enhanced mode yet, the engine will fall back to using classic mode.", null, null);
+            public static readonly GUIContent OutputChannelLayout    = L10n.TextContent("Output Channel Layout", "The audio engine will always run at the selected channel layout and up-mixing or down-mixing will occur to match the device's native channel layout. Alternatively, if DeviceNative is selected, the engine will always run at the device's native channel count, and will be reset if that native channel count changes (i.e. when the default device changes).", null, null);
+            public static readonly GUIContent OutputSamplingRate     = L10n.TextContent("Output Sampling Rate", "The audio engine will always run at the selected sampling rate and sample-rate conversion will occur to match the device's native sampling rate. Alternatively, if DeviceNative is selected, the engine will always run at the device's native sampling rate, and will be reset if that native sampling rate changes (i.e. when the default device changes).", null, null);
+            public static readonly GUIContent VirtualVoiceCount      = L10n.TextContent("Max Virtual Voices", "Maximum number of sounds managed by the system. Even though at most RealVoiceCount of the loudest sounds will be physically playing, the remaining sounds will still be updating their play position.", null, null);
+            public static readonly GUIContent RealVoiceCount         = L10n.TextContent("Max Real Voices", "Maximum number of actual simultaneously playing sounds.", null, null);
+            public static readonly GUIContent SpatializerPlugin      = L10n.TextContent("Spatializer Plugin", "Native audio plugin performing spatialized filtering of 3D sources.", null, null);
+            public static readonly GUIContent AmbisonicDecoderPlugin = L10n.TextContent("Ambisonic Decoder Plugin", "Native audio plugin performing ambisonic-to-binaural filtering of sources.", null, null);
+            public static readonly GUIContent DisableAudio           = L10n.TextContent("Disable Unity Audio", "Prevent allocating the output device in the runtime. Use this if you want to use other sound systems than the built-in one.", null, null);
+            public static readonly GUIContent VirtualizeEffects      = L10n.TextContent("Virtualize Effects", "When enabled, dynamically turn off effects and spatializers on AudioSources that are culled in order to save CPU.", null, null);
+            public static readonly GUIContent EnableOutputSuspension = L10n.TextContent("Enable Output Suspension (editor only)", "When enabled automatically suspends audio output after detecting that the output has been silent for a long duration (editor only). Suspending the audio system disables a mechanism in the operating system that prevents the computer from going into sleep mode.", null, null);
 
         }
 
         private class StylesNonSearchable
         {
-            public static readonly GUIContent DSPBufferSizeInfo = EditorGUIUtility.TrTextContent("The requested buffer size ({0}) has been overridden to {1} by the operating system");
-            public static readonly GUIContent EnhancedAudioFoundationInfo = EditorGUIUtility.TrTextContent("Enhanced will be used on Windows, macOS, Linux, iOS, Android (8.1 and later), XBOX Series X|S, XBOX One, PlayStation®5, Nintendo Switch™, and Nintendo Switch™ 2. Other platforms will use Classic.");
-            public static readonly GUIContent PassthroughChannelLayoutInfo = EditorGUIUtility.TrTextContent("On Android devices that support spatial audio, on Windows, XBOX Series X|S, XBOX One devices and on Meta Quest devices, this layout is sent directly to the OS spatializer instead of being down-mixed.");
+            public static readonly GUIContent DSPBufferSizeInfo = L10n.TextContent("The requested buffer size ({0}) has been overridden to {1} by the operating system", null, null, null);
+            public static readonly GUIContent EnhancedAudioFoundationInfo = L10n.TextContent("Enhanced will be used on Windows, macOS, Linux, iOS, Android (8.1 and later), XBOX Series X|S, XBOX One, PlayStation®5, Nintendo Switch™, and Nintendo Switch™ 2. Other platforms will use Classic.", null, null, null);
+            public static readonly GUIContent PassthroughChannelLayoutInfo = L10n.TextContent("This layout is sent directly to the OS spatializer instead of being down-mixed on Windows, XBOX Series X|S, XBOX One devices, on Meta Quest devices and on Android devices that support spatial audio.", null, null, null);
         }
 
         static readonly string[] k_AdditionalSearchKeywords =
@@ -49,9 +49,6 @@ namespace UnityEditor
 
         [NoAutoStaticsCleanup] // lazy one-time cache of static GUIContent search keyword strings, no user-code refs; safe to persist
         static List<string> s_SearchKeywords;
-
-        [NoAutoStaticsCleanup] // session-wide flag derived from fixed command-line args; recomputed in OnEnable, safe to persist
-        private static bool m_ShowAudioFoundationUI = Array.Exists(Environment.GetCommandLineArgs(), arg => arg == "-showAudioFoundationUI" || arg == "-enhancedAudioFoundation");
 
         private SerializedProperty m_Volume;
         private SerializedProperty m_RolloffScale;
@@ -90,11 +87,6 @@ namespace UnityEditor
             m_DisableAudio              = serializedObject.FindProperty("m_DisableAudio");
             m_VirtualizeEffects         = serializedObject.FindProperty("m_VirtualizeEffects");
             m_EnableOutputSuspension    = serializedObject.FindProperty("m_EnableOutputSuspension");
-
-            // If the audio foundation UI feature flag is set or this project's audio foundation is set to enhanced when we first start up,
-            // then we show the enhanced audio foundation UI for this entire Editor session.
-            if (m_AudioFoundation.intValue.Equals(1))
-                m_ShowAudioFoundationUI = true;
         }
 
         //This function assumes that index 0 is None...
@@ -127,19 +119,16 @@ namespace UnityEditor
                         m_ActualDSPBufferSize.intValue),
                     MessageType.Info);
 
-            if (m_ShowAudioFoundationUI)
+            EditorGUILayout.PropertyField(m_AudioFoundation, Styles.AudioFoundation);
+            if (m_AudioFoundation.intValue.Equals(1))
             {
-                EditorGUILayout.PropertyField(m_AudioFoundation, Styles.AudioFoundation);
-                if (m_AudioFoundation.intValue.Equals(1))
-                {
-                    EditorGUILayout.HelpBox(StylesNonSearchable.EnhancedAudioFoundationInfo.text, MessageType.Info);
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(m_OutputChannelLayout, Styles.OutputChannelLayout);
-                    if (m_OutputChannelLayout.intValue == (int)ChannelLayoutBehavior.Surround_7_1_4)
-                        EditorGUILayout.HelpBox(StylesNonSearchable.PassthroughChannelLayoutInfo.text, MessageType.Info);
-                    EditorGUILayout.PropertyField(m_OutputSamplingRate, Styles.OutputSamplingRate);
-                    EditorGUI.indentLevel--;
-                }
+                EditorGUILayout.HelpBox(StylesNonSearchable.EnhancedAudioFoundationInfo.text, MessageType.Info);
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(m_OutputChannelLayout, Styles.OutputChannelLayout);
+                if (m_OutputChannelLayout.intValue == (int)ChannelLayoutBehavior.Surround_7_1_4)
+                    EditorGUILayout.HelpBox(StylesNonSearchable.PassthroughChannelLayoutInfo.text, MessageType.Info);
+                EditorGUILayout.PropertyField(m_OutputSamplingRate, Styles.OutputSamplingRate);
+                EditorGUI.indentLevel--;
             }
 
             EditorGUILayout.PropertyField(m_VirtualVoiceCount, Styles.VirtualVoiceCount);

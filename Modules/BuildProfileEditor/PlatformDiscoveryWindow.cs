@@ -55,6 +55,9 @@ namespace UnityEditor.Build.Profile
         Button m_PackageSelectAll;
         Button m_PackageDeselectAll;
         Toggle m_PackageBrowseSampleCheckbox;
+        VisualElement m_LicenseContainer;
+        VisualElement m_LicenseLines;
+        VisualElement m_LicenseAgreement;
 
         VisualElement m_KeyFeaturesContainer;
         Label m_KeyFeaturesContentLabel;
@@ -71,7 +74,6 @@ namespace UnityEditor.Build.Profile
         VisualElement m_ConfigPanel;
         VisualElement m_ConfigHelpBox;
         Label m_AddtionalInfoLabel;
-        Label m_BuildProfileNameLabel;
 
         TextField m_BuildProfileNameTextField;
         List<BuildProfilePlatformGroup> m_PlatformGroups;
@@ -108,7 +110,7 @@ namespace UnityEditor.Build.Profile
 
         static void AddSelectedBuildProfiles(
             BuildProfileCard card, string customProfileName,
-            string[] packagesToAdd, UnityAction<BuildProfile> onCreate)
+            BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd, UnityAction<BuildProfile> onCreate)
         {
             bool wasCallbackRegistered = false;
             bool noneSelected = true;
@@ -164,7 +166,7 @@ namespace UnityEditor.Build.Profile
             string customProfileName,
             string preconfiguredSettingsVariantName,
             int preconfiguredSettingsVariant,
-            string[] packagesToAdd,
+            BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd,
             UnityAction<BuildProfile> onCreate,
             GUID selectedPlatformGuid = default)
         {
@@ -231,10 +233,7 @@ namespace UnityEditor.Build.Profile
                 var preconfiguredSettingsVariants = BuildProfileModuleUtil.BuildPlatformPreconfiguredSettingsVariants(platformId);
                 if (preconfiguredSettingsVariants.Length <= 0)
                 {
-                    var sdkPlatformExtension = BuildProfileModuleUtil.GetSDKPlatformExtension(platformId);
-                    preconfiguredSettingsVariants = (sdkPlatformExtension != null
-                        ? sdkPlatformExtension.preconfiguredSettingsVariants
-                        : BuildProfileModuleUtil.GetBuildProfileExtension(platformId)?.GetPreconfiguredSettingsVariants())
+                    preconfiguredSettingsVariants = BuildProfileModuleUtil.GetBuildProfileExtension(platformId)?.GetPreconfiguredSettingsVariants()
                         ?? Array.Empty<PreconfiguredSettingsVariant>();
                 }
 
@@ -301,8 +300,6 @@ namespace UnityEditor.Build.Profile
             m_PlatformConfigs = rootVisualElement.Q<VisualElement>("platform-configs");
 
             m_BuildProfileNameTextField = rootVisualElement.Q<TextField>("build-profile-name");
-            m_BuildProfileNameLabel = rootVisualElement.Q<Label>("build-profile-name-label");
-            m_BuildProfileNameLabel.text = TrText.buildProfileNameLabel;
 
             m_SupportedPlatformStatusContainer = rootVisualElement.Q<VisualElement>("supported-platform-status-container");
 
@@ -361,6 +358,11 @@ namespace UnityEditor.Build.Profile
             m_PackageDeselectAll.clicked += () => SetAllPackagesShouldInstallToggle(false);
             m_PackageBrowseSampleCheckbox = m_PackageContainer.Q<Toggle>("package-browse-samples-checkbox");
             m_PackageBrowseSampleCheckbox.text = TrText.browseSamplesCheckboxLabel;
+
+            m_LicenseContainer = rootVisualElement.Q<VisualElement>("license-container");
+            m_LicenseContainer.Q<Label>("license-container-title").text = TrText.licenseContainerTitle;
+            m_LicenseLines = m_LicenseContainer.Q<VisualElement>("license-lines");
+            m_LicenseAgreement = rootVisualElement.Q<VisualElement>("license-agreement");
 
             // Apply localized text to static elements.
             rootVisualElement.Q<ToolbarButton>("toolbar-filter-all").text = TrText.all;
@@ -434,7 +436,7 @@ namespace UnityEditor.Build.Profile
                     element.Q<VisualElement>("package-list-item").ToggleInClassList("border-top-1-color-10");
 
                 var packageEntry = listView.itemsSource[index] as PlatformPackageEntry;
-                packageItem.Set(packageEntry);
+                packageItem.Set(packageEntry, UpdateLicenseAgreement);
             };
 
             if (customHeader != null)
@@ -446,18 +448,21 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         void SetAllPackagesShouldInstallToggle(bool selection)
         {
-            SetShouldInstallToggle(m_InternalPackageListView);
-            SetShouldInstallToggle(m_PartnerPackageListView);
+            SetShouldInstall(m_InternalPackageListView);
+            SetShouldInstall(m_PartnerPackageListView);
+            m_InternalPackageListView.RefreshItems();
+            m_PartnerPackageListView.RefreshItems();
+            UpdateLicenseAgreement();
 
-            void SetShouldInstallToggle(ListView packageListView)
+            void SetShouldInstall(ListView listView)
             {
-                for (int i = 0; i < packageListView.itemsSource.Count; ++i)
+                foreach (PlatformPackageEntry entry in listView.itemsSource)
                 {
-                    var item = packageListView.GetRootElementForIndex(i);
-                    if (item is not PlatformPackageItem packageItem)
+                    // Required and already-installed entries are always selected.
+                    if (entry.required || entry.isInstalled)
                         continue;
 
-                    packageItem.SetShouldInstallToggle(selection);
+                    entry.shouldInstalled = selection;
                 }
             }
         }
@@ -526,6 +531,8 @@ namespace UnityEditor.Build.Profile
             m_ConfigHelpBox.Clear();
             m_NameLinks.Clear();
             m_AddtionalInfoLabel.Clear();
+            m_LicenseLines.Clear();
+            m_LicenseAgreement.Clear();
             m_InternalPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
             m_PartnerPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
         }
@@ -670,6 +677,8 @@ namespace UnityEditor.Build.Profile
                 RebuildPackageListView(card.internalPackages, m_InternalPackageListView);
                 RebuildPackageListView(card.partnerPackages, m_PartnerPackageListView);
                 SetEnabledPackageSelectionButtons();
+                UpdateLicenseSection();
+                UpdateLicenseAgreement();
             }
             else if (hasPackages && !isLoggedIn)
             {
@@ -684,10 +693,14 @@ namespace UnityEditor.Build.Profile
                 m_PackageContainer.Show();
                 m_SignInRequiredHelpBox.Show();
                 m_PackageListsAndActionsContainer.Hide();
+                m_LicenseContainer.Hide();
+                m_LicenseAgreement.Hide();
             }
             else
             {
                 m_PackageContainer.Hide();
+                m_LicenseContainer.Hide();
+                m_LicenseAgreement.Hide();
             }
 
             if (!BuildProfileModuleUtil.HasSamplesInPackageManager(card.platformId))
@@ -700,6 +713,100 @@ namespace UnityEditor.Build.Profile
                 m_PackageBrowseSampleCheckbox.value = true;
                 m_PackageBrowseSampleCheckbox.Show();
             }
+        }
+
+        /// <summary>
+        /// Lists which license covers each package offered for the selected platform, one line per distinct
+        /// license. Unlike the footer agreement this covers every package on offer, not just the selected ones,
+        /// so it stays put as the user toggles them.
+        /// </summary>
+        internal void UpdateLicenseSection()
+        {
+            m_LicenseLines.Clear();
+
+            var licenses = CollectLicenses(entry => true);
+            if (licenses.Count == 0)
+            {
+                m_LicenseContainer.Hide();
+                return;
+            }
+
+            foreach (var license in licenses)
+            {
+                var line = new LinkedTextLabel();
+                var format = license.packageNames.Count > 1 ? TrText.licenseLinePlural : TrText.licenseLineSingular;
+                line.text = string.Format(format, JoinForDisplay(license.packageNames), line.Link(license.name, license.url));
+                m_LicenseLines.Add(line);
+            }
+
+            m_LicenseContainer.Show();
+        }
+
+        /// <summary>
+        /// Shows which licenses the user accepts by creating a profile with the currently selected packages.
+        /// </summary>
+        internal void UpdateLicenseAgreement()
+        {
+            m_LicenseAgreement.Clear();
+
+            // An installed package is not installed again, so creating the profile accepts nothing new for it.
+            var licenses = CollectLicenses(entry => !entry.isInstalled && entry.shouldInstalled);
+            if (licenses.Count == 0)
+            {
+                m_LicenseAgreement.Hide();
+                return;
+            }
+
+            var label = new LinkedTextLabel();
+            var links = new List<string>(licenses.Count);
+            foreach (var license in licenses)
+                links.Add(label.Link(license.name, license.url));
+
+            label.text = string.Format(TrText.licenseAgreement, JoinForDisplay(links));
+            m_LicenseAgreement.Add(label);
+            m_LicenseAgreement.Show();
+        }
+
+        /// <summary>
+        /// Groups the packages matching <paramref name="include"/> by the license covering them. Several packages
+        /// commonly share one license document, so grouping is on the license URL.
+        /// </summary>
+        List<(string url, string name, List<string> packageNames)> CollectLicenses(Func<PlatformPackageEntry, bool> include)
+        {
+            var licenses = new List<(string url, string name, List<string> packageNames)>();
+            Collect(m_InternalPackageListView);
+            Collect(m_PartnerPackageListView);
+            return licenses;
+
+            void Collect(ListView listView)
+            {
+                foreach (PlatformPackageEntry entry in listView.itemsSource)
+                {
+                    if (!include(entry) || string.IsNullOrEmpty(entry.licenseUrl))
+                        continue;
+
+                    var displayName = string.IsNullOrEmpty(entry.displayName) ? entry.qualifiedName : entry.displayName;
+                    var index = licenses.FindIndex(existing => existing.url == entry.licenseUrl);
+                    if (index < 0)
+                        licenses.Add((entry.licenseUrl, entry.licenseName, new List<string> { displayName }));
+                    else if (!licenses[index].packageNames.Contains(displayName))
+                        licenses[index].packageNames.Add(displayName);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Joins as an English-style list: "A", "A and B", "A, B and C".
+        /// </summary>
+        static string JoinForDisplay(List<string> parts)
+        {
+            if (parts.Count == 0)
+                return string.Empty;
+            if (parts.Count == 1)
+                return parts[0];
+
+            var head = string.Join(TrText.listSeparator, parts.GetRange(0, parts.Count - 1));
+            return head + TrText.listFinalSeparator + parts[parts.Count - 1];
         }
 
         void RebuildPackageListView(BuildTargetDiscovery.PlatformPackageList packageList, ListView listView)
@@ -791,9 +898,9 @@ namespace UnityEditor.Build.Profile
                 AddSelectedBuildProfiles(card, customProfileName, packagesToAdd, null);
         }
 
-        string[] DeterminePackagesToAdd()
+        BuildTargetDiscovery.PlatformPackageIdentifier[] DeterminePackagesToAdd()
         {
-            List<string> packagesToAdd = new();
+            List<BuildTargetDiscovery.PlatformPackageIdentifier> packagesToAdd = new();
             SetPackagesToAdd(m_InternalPackageListView);
             SetPackagesToAdd(m_PartnerPackageListView);
 
@@ -804,7 +911,9 @@ namespace UnityEditor.Build.Profile
                 foreach (PlatformPackageEntry item in listView.itemsSource)
                 {
                     if (!item.isInstalled && item.shouldInstalled)
-                        packagesToAdd.Add(item.qualifiedName);
+                        packagesToAdd.Add(item.GetPackageIdentifier());
+                    else if (item.isInstalled && item.required)
+                        BuildTargetDiscovery.WarnIfPinnedVersionNotInstalled(item.GetPackageIdentifier());
                 }
             }
         }

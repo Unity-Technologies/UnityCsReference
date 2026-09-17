@@ -1286,7 +1286,7 @@ namespace Unity.GraphToolkit.Editor.Implementation
             }
         }
 
-        public override (Texture2D icon, Color color)? GetDataTypeStyle(Type dataType)
+        public override (Texture2D icon, Color color, bool suppressIcon)? GetDataTypeStyle(Type dataType)
         {
             // Use the Graph's type (instead of the GraphModel's type) to get the correct style since the DataTypeStyleMapperAttribute is defined on Graph types in the public API.
             return BaseDataTypeStyleMapper.GetDataTypeStyle(dataType, Graph.GetType());
@@ -1301,14 +1301,27 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 throw new ArgumentNullException(nameof(hashSet));
 
             foreach (var input in node.GetInputPorts())
-            {
-                hashSet.Add(input.DataType ?? typeof(Untyped));
-            }
+                AddPortTypes(input, hashSet);
 
             foreach (var output in node.GetOutputPorts())
+                AddPortTypes(output, hashSet);
+        }
+
+        static void AddPortTypes(IPort port, HashSet<Type> hashSet)
+        {
+            // For a polymorphic port, every allowed type is a valid variable/constant type in the graph, not just the currently-selected one.
+            if (port is PortModel portModel && portModel.IsPolymorphic)
             {
-                hashSet.Add(output.DataType ?? typeof(Untyped));
+                var allowedTypes = portModel.AllowedTypes;
+                for (var i = 0; i < allowedTypes.Count; i++)
+                {
+                    var t = allowedTypes[i].Resolve();
+                    hashSet.Add(t == typeof(void) || t.ContainsGenericParameters ? typeof(Unknown) : t);
+                }
+                return;
             }
+
+            hashSet.Add(port.DataType ?? typeof(Untyped));
         }
 
         static void InitializeSupportedTypesFromContextNodeType(Type graphType, IGraphNodeCreationData nodeCreationData, Type type, HashSet<Type> supportedTypes)

@@ -227,7 +227,8 @@ class UxmlAttributesEditingContext : IDisposable
     /// </summary>
     public bool isReadOnly { get; private set; }
 
-    bool m_StageShowsAncestorOverrides;
+    bool m_ShowsAncestorOverrides;
+    bool m_StageLocksAncestorDrivenFields;
 
     /// <summary>
     /// True where fields never surface ancestor Attribute Overrides, such as the binding editor.
@@ -237,11 +238,14 @@ class UxmlAttributesEditingContext : IDisposable
     /// <summary>
     /// Whether fields in this context surface Attribute Overrides declared by ancestor UXML instances.
     /// </summary>
-    /// <remarks>
-    /// Snapshot taken when the context is set, so the answer stays consistent with the document chosen
-    /// for editing when a stage opens or closes afterwards.
-    /// </remarks>
-    internal bool showsAncestorOverrides => m_StageShowsAncestorOverrides && !suppressAncestorOverrides;
+    internal bool showsAncestorOverrides => m_ShowsAncestorOverrides && !suppressAncestorOverrides;
+
+    /// <summary>
+    /// Whether an ancestor-driven field is locked as well as marked. Only the Main Stage locks, where the
+    /// edit would write an override the outer instance already shadows; an editing stage edits the
+    /// document's own value, which does take effect.
+    /// </summary>
+    internal bool locksAncestorDrivenFields => showsAncestorOverrides && m_StageLocksAncestorDrivenFields;
 
     internal TempSerializedData tempSerializedData { get; set; }
 
@@ -254,6 +258,11 @@ class UxmlAttributesEditingContext : IDisposable
     /// Event sent when the context changes.
     /// </summary>
     public event EventHandler<ContextChangedEventArgs> contextChanged;
+
+    /// <summary>
+    /// Event sent when the edited document changed shape and the views have to bind again.
+    /// </summary>
+    public event Action documentReshaped;
 
     /// <summary>
     /// Creates a UxmlAttributesAuthoringContext with the specified authoring controller.
@@ -286,6 +295,62 @@ class UxmlAttributesEditingContext : IDisposable
     public void Set(VisualTreeAsset editedVisualTreeAsset, VisualElement element, bool isReadOnly = false)
     {
         SetInternal(editedVisualTreeAsset, element, isReadOnly);
+    }
+
+    /// <summary>
+    /// Re-resolves the serialized path and object after the edited document changed shape, and asks the views
+    /// to bind again.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="serializedBasePath"/> addresses the element by its child indices, so any change to the tree
+    /// above it moves the data the views are bound to. Call this while the serialized object still holds the
+    /// shape the current bindings recorded, before anything re-reads it.
+    /// </remarks>
+    internal void RebuildForDocumentChange()
+    {
+        if (element == null || rootSerializedObject == null)
+            return;
+
+        if (!IsPartOfADocument(elementAsset))
+        {
+            Clear();
+            return;
+        }
+
+        if (!HasElementMoved())
+            return;
+
+        // Tearing the driven values down restores the serialized data from its snapshot, so this only runs
+        // for a command that actually moved this element.
+        editingController.liveAttributePropertyController.RemoveLiveProperties();
+
+        Init(editedVisualTreeAsset);
+
+        editingController.liveAttributePropertyController.SyncLiveProperties(!isReadOnly);
+        documentReshaped?.Invoke();
+    }
+
+    /// <summary>
+    /// Whether the element now sits at a different serialized path than the one the views are bound to.
+    /// </summary>
+    internal bool HasElementMoved()
+    {
+        if (element == null || rootSerializedObject == null || !IsPartOfADocument(elementAsset))
+            return false;
+
+        return GetSerializedPath(elementAsset) != serializedBasePath;
+    }
+
+    // GetSerializedPath throws for an asset the document no longer holds, which a removal leaves behind.
+    static bool IsPartOfADocument(UxmlAsset asset)
+    {
+        for (var current = asset; current != null; current = current.parentAsset)
+        {
+            if (current.isRoot)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -327,7 +392,8 @@ class UxmlAttributesEditingContext : IDisposable
     {
         this.editedVisualTreeAsset = editedVisualTreeAsset;
         isInTemplateInstance = false;
-        m_StageShowsAncestorOverrides = StageUtility.GetCurrentStage() is not VisualElementEditingStage;
+        m_ShowsAncestorOverrides = true;
+        m_StageLocksAncestorDrivenFields = StageUtility.GetCurrentStage() is not VisualElementEditingStage;
 
         if (element != null)
         {

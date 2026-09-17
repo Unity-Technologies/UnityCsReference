@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -43,9 +42,9 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
     internal TextField RunDevice;
     internal Label RunDeviceName;
 
-    private Instance m_Instance;
+    private ControllerRuntime m_Instance;
 
-    internal LocalPlayerInstanceStatusElement(Instance instance, LocalPlayerController.InstanceSettings settings, LocalPlayerController.UserSettings userSettings, SerializedProperty userSettingsProperty)
+    internal LocalPlayerInstanceStatusElement(ControllerRuntime instance, LocalPlayerController.InstanceSettings settings, LocalPlayerController.UserSettings userSettings, SerializedProperty userSettingsProperty)
     {
         m_Instance = instance;
 
@@ -234,4 +233,3 @@ internal class LocalPlayerInstanceStatusElement : VisualElement
         m_ReuseBuildElement?.UpdateButtonStates();
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

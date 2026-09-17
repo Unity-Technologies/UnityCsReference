@@ -79,7 +79,9 @@ internal partial class VisualElementNodeHandler :
     public const string HierarchyItemElementTypeNameClassName = HierarchyItemClassName + "__element-type-name";
     public const string HierarchyItemUssClassName = HierarchyItemClassName + "__element-uss-class";
     public const string HierarchyItemTemplatePath = HierarchyItemClassName + "__template-path";
+    public const string HierarchyItemDocumentExtensionClassName = HierarchyItemClassName + "__document-extension";
     public const string HierarchyItemDisabledClassName = HierarchyItemClassName + "__disabled";
+    public const string HierarchyItemAttributeOverrideBarClassName = HierarchyItemClassName + "__attribute-override-bar";
 
     private const string k_StyleSheetPath = "UIToolkitAuthoring/Hierarchy/VisualElementNodeTypeHandler.uss";
 
@@ -229,12 +231,12 @@ internal partial class VisualElementNodeHandler :
     // on every re-clone of that document.
     VisualElement m_DocumentRoot;
     bool m_ExpandDocumentRootOnNextUpdate;
+    bool m_AttributeOverridesChanged;
 
     HierarchyGameObjectHandler m_GameObjectHandler;
 
     private StyleSheet m_StyleSheet;
     private StyleSheet m_ThemeStyleSheet;
-    private ParsedQuery<VisualElement> m_ParsedQuery;
 
     private UIHierarchyDisplayOptions m_DisplayOptions;
 
@@ -253,6 +255,25 @@ internal partial class VisualElementNodeHandler :
 
     /// <summary>Updates the requests in <see cref="m_NodesToSelect"/> have failed to fully resolve on.</summary>
     int m_SelectionRequestAttempts;
+
+    /// <summary>Whether the element the pending request resolves to is put into rename mode once selected.</summary>
+    bool m_BeginRenameOnResolve;
+
+    /// <summary>The attribute field to focus once the pending request resolves, or null to focus none.</summary>
+    AttributeFocus? m_FocusAttributeOnResolve;
+
+    /// <summary>Which field to focus, and which inspector to focus it in.</summary>
+    readonly struct AttributeFocus
+    {
+        public readonly BindingId AttributePath;
+        public readonly IPanel InspectorPanel;
+
+        public AttributeFocus(BindingId attributePath, IPanel inspectorPanel)
+        {
+            AttributePath = attributePath;
+            InspectorPanel = inspectorPanel;
+        }
+    }
 
     /// <summary>
     /// What to select once the documents a command changed have been cloned again.
@@ -370,8 +391,8 @@ internal partial class VisualElementNodeHandler :
         UICommandQueue.RegisterHandler<PasteElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.RegisterHandler<ReparentElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.RegisterHandler<DuplicateElementsCommand>(OnElementsDuplicated);
-
-        UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnMainStageAuthoringChanged;
+        UICommandQueue.RegisterHandlerForCategory(CommandCategory.Attributes, OnAttributeOverridesChanged);
+        UICommandQueue.GroupEnded += OnCommandGroupEnded;
 
         m_StageStrategy = CreateStageStrategy();
         m_StageStrategy.DocumentCloned += OnDocumentCloned;
@@ -404,7 +425,9 @@ internal partial class VisualElementNodeHandler :
         UICommandQueue.UnregisterHandler<PasteElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.UnregisterHandler<ReparentElementsCommand>(ClearCutFlagsOnSuccess);
         UICommandQueue.UnregisterHandler<DuplicateElementsCommand>(OnElementsDuplicated);
-        UIToolkitAuthoringSettings.MainStageAuthoringChanged -= OnMainStageAuthoringChanged;
+        UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Attributes, OnAttributeOverridesChanged);
+        UICommandQueue.GroupEnded -= OnCommandGroupEnded;
+        m_AttributeOverridesChanged = false;
         m_GlobalObjectIdKeyCache.Clear();
     }
 
@@ -418,10 +441,19 @@ internal partial class VisualElementNodeHandler :
 
     void RefreshDocumentRoot() => m_DocumentRoot = m_StageStrategy?.ValidateDocumentRoot();
 
-    void OnMainStageAuthoringChanged(bool enabled)
+    void OnAttributeOverridesChanged(in CommandContext context)
     {
-        if (Hierarchy.IsCreated)
-            CommandList.SetDirty();
+        if (context.Status == CommandExecutionStatus.Success)
+            m_AttributeOverridesChanged = true;
+    }
+
+    void OnCommandGroupEnded(in GroupEndedContext context)
+    {
+        if (!m_AttributeOverridesChanged)
+            return;
+
+        m_AttributeOverridesChanged = false;
+        MarkHierarchyDirty();
     }
 
     /// <summary>
@@ -443,22 +475,41 @@ internal partial class VisualElementNodeHandler :
 
     #region HierarchyNodeTypeHandler
 
-    /// <inheritdoc cref="HierarchyNodeTypeHandlerBase.SearchBegin"/>
-    protected sealed override void SearchBegin(HierarchySearchQueryDescriptor query)
+    // Per search state, kept on the view model running the pass so two of them never share a parsed query
+    sealed class SearchState : IHierarchyNodeTypeHandlerViewModelState
     {
-        m_ParsedQuery = m_QueryEngine.ParseQuery(query.ToString());
+        public ParsedQuery<VisualElement> ParsedQuery;
+        public string ParsedFrom;
+
+        public void Dispose() { }
+    }
+
+    /// <inheritdoc cref="HierarchyNodeTypeHandlerBase.SearchBegin"/>
+    protected sealed override void SearchBegin(HierarchySearchQueryDescriptor query, HierarchyViewModel viewModel)
+    {
+        // Kept on the view model, otherwise a second one ending its pass would null this out mid search
+        var state = viewModel.GetOrCreateHandlerState<SearchState>(GetNodeType());
+        var queryStr = query.ToString();
+        if (state.ParsedFrom != queryStr)
+        {
+            state.ParsedQuery = m_QueryEngine.ParseQuery(queryStr);
+            state.ParsedFrom = queryStr;
+        }
     }
 
     /// <inheritdoc cref="HierarchyNodeTypeHandlerBase.SearchMatch"/>
-    protected sealed override bool SearchMatch(in HierarchyNode node)
+    protected sealed override bool SearchMatch(in HierarchyNode node, HierarchyViewModel viewModel)
     {
-        return m_Mappings.TryGetValue(node, out var element) && m_ParsedQuery.Test(element);
+        return viewModel.TryGetHandlerState<SearchState>(GetNodeType(), out var state)
+            && m_Mappings.TryGetValue(node, out var element)
+            && state.ParsedQuery.Test(element);
     }
 
     /// <inheritdoc cref="HierarchyNodeTypeHandlerBase.SearchEnd"/>
-    protected sealed override void SearchEnd()
+    protected sealed override void SearchEnd(HierarchyViewModel viewModel)
     {
-        m_ParsedQuery = null;
+        // Invalidated per pass, a stale parsed query makes SearchMatch answer outside an active search
+        viewModel.DestroyHandlerState(GetNodeType());
     }
 
     protected override void OnBindItem(HierarchyViewItem item)
@@ -472,6 +523,7 @@ internal partial class VisualElementNodeHandler :
             }
 
             item.Icon.style.backgroundImage = GetIcon(element);
+            SetAttributeOverrideBar(item, element);
             Bind(item, element);
             BindNavigation(item, element);
             item.RowContainer.RegisterCallback<PointerEnterEvent, VisualElement>(OnStartHover, element);
@@ -480,14 +532,21 @@ internal partial class VisualElementNodeHandler :
         else
         {
             item.Icon.style.backgroundImage = null;
+            SetAttributeOverrideBar(item, null);
             item.EnableInClassList(HierarchyItemDisabledClassName, true);
         }
     }
+
+    static void SetAttributeOverrideBar(HierarchyViewItem item, VisualElement element)
+        => item.OverrideBarContainer.EnableInClassList(HierarchyItemAttributeOverrideBarClassName,
+            UxmlAssetUtilities.HasAncestorAttributeOverride(element));
 
     /// <inheritdoc cref="HierarchyView.UnbindViewItem"/>
     protected override void OnUnbindItem(HierarchyViewItem item)
     {
         item.RowContainer.style.backgroundColor = StyleKeyword.Null;
+
+        SetAttributeOverrideBar(item, null);
 
         if (m_Mappings.TryGetValue(item.Node, out var element))
         {
@@ -506,6 +565,7 @@ internal partial class VisualElementNodeHandler :
             item.LeftCustomContainer.Clear();
             item.parent.Q(className: HierarchyItemElementTypeNameClassName)?.RemoveFromHierarchy();
             item.Q(className: HierarchyItemTemplatePath)?.RemoveFromHierarchy();
+            item.Q<Label>(className: HierarchyItemDocumentExtensionClassName)?.RemoveFromHierarchy();
             UnsetStageNodeNavigation(item);
         }
     }
@@ -590,6 +650,12 @@ internal partial class VisualElementNodeHandler :
         toSelects.Clear();
         m_SelectionRequestAttempts = 0;
 
+        var beginRename = m_BeginRenameOnResolve;
+        m_BeginRenameOnResolve = false;
+
+        var focusAttribute = m_FocusAttributeOnResolve;
+        m_FocusAttributeOnResolve = null;
+
         if (nodes.Count == 0)
             return;
 
@@ -617,6 +683,36 @@ internal partial class VisualElementNodeHandler :
                 selectionSet = true;
             }
         }
+
+        // A rename only makes sense for a single new element; a batch (paste, multi-drop) never asks for one.
+        if (beginRename && nodes.Count == 1)
+            FrameAndBeginRename(nodes[0]);
+
+        // Same for a field to focus: the inspector shows one element's attributes.
+        if (focusAttribute is { } focus && nodes.Count == 1 && TryGetElementFromNode(nodes[0], out var focusElement))
+            AttributeFieldFocusRequest.Set(focusElement, focus.AttributePath, focus.InspectorPanel);
+    }
+
+    /// <summary>
+    /// Puts the row of <paramref name="node"/> into rename mode, in the hierarchy window the user last interacted
+    /// with.
+    /// </summary>
+    /// <remarks>
+    /// Only that one window renames, and only it takes focus; every other one keeps showing the new element
+    /// without stealing the keys the rename field is about to receive.
+    /// </remarks>
+    void FrameAndBeginRename(in HierarchyNode node)
+    {
+        var window = HierarchyWindow.LastInteractedWindow;
+        var view = window ? window.View : null;
+        if (view == null || !IsBoundView(view))
+            return;
+
+        // The rename field only receives keys while its window has focus, and an add started elsewhere (a library
+        // drop on the scene view, a menu create) leaves that other window focused.
+        window.Focus();
+
+        view.ScheduleFrameAndBeginRename(in node);
     }
 
     /// <summary>
@@ -929,9 +1025,14 @@ internal partial class VisualElementNodeHandler :
     /// <param name="element">The <see cref="VisualElement"/> to bind.</param>
     protected virtual void Bind(HierarchyViewItem item, VisualElement element)
     {
-        if (element is IPanelComponentRootElement)
+        // Rows recycle without an unbind, so drop any extension label left over from a previous binding.
+        item.Q<Label>(className: HierarchyItemDocumentExtensionClassName)?.RemoveFromHierarchy();
+
+        if (element is IPanelComponentRootElement rootElement)
         {
-            // We just want to display the name of the file.
+            // The row shows only the file name here; the extension and unsaved marker sit in a separate,
+            // non-editable label so renaming the row edits the name part alone.
+            BindDocumentExtension(item, rootElement);
             return;
         }
 
@@ -963,6 +1064,59 @@ internal partial class VisualElementNodeHandler :
         }
     }
 
+    // The non-editable part of a document root row, right after the renamable name label (see
+    // GetDocumentRowParts, which derives both).
+    void BindDocumentExtension(HierarchyViewItem item, IPanelComponentRootElement rootElement)
+    {
+        var nameElement = item.Q(className: "hierarchy-item__name");
+        if (nameElement == null)
+            return;
+
+        GetDocumentRowParts(rootElement, out _, out var suffix);
+        if (string.IsNullOrEmpty(suffix))
+            return;
+
+        var label = new Label(suffix) { pickingMode = PickingMode.Ignore };
+        label.AddToClassList(HierarchyItemDocumentExtensionClassName);
+        nameElement.parent.Insert(nameElement.parent.IndexOf(nameElement) + 1, label);
+    }
+
+    /// <summary>
+    /// The two halves a document root row reads: the editable file name, and the non-editable suffix carrying the
+    /// file extension and the unsaved-changes marker.
+    /// </summary>
+    /// <remarks>
+    /// Derived together because they come from the same asset path. A row whose halves disagree, a placeholder
+    /// name beside a real file's extension, reads as a file that does not exist.
+    /// </remarks>
+    internal static void GetDocumentRowParts(IPanelComponentRootElement rootElement, out string name, out string suffix,
+        bool includeUnsavedMarker = true)
+    {
+        var panelComponent = rootElement.panelComponent;
+        var vta = panelComponent.IsAlive() ? panelComponent.visualTreeAsset : null;
+        if (!vta)
+        {
+            name = "<none>";
+            suffix = string.Empty;
+            return;
+        }
+
+        var path = AssetDatabase.GetAssetPath(vta);
+        if (!string.IsNullOrEmpty(path))
+        {
+            name = Path.GetFileNameWithoutExtension(path);
+            suffix = Path.GetExtension(path);
+        }
+        else
+        {
+            name = string.IsNullOrEmpty(vta.name) ? "<unsaved file>" : vta.name;
+            suffix = ".uxml";
+        }
+
+        if (includeUnsavedMarker && UIAssetRegistry.LiveInstance?.IsDirty(vta) == true)
+            suffix += "*";
+    }
+
     /// <summary>
     /// Called when a hierarchy view item is unbound from a hierarchy view, allowing cleanup of the view item.
     /// </summary>
@@ -990,7 +1144,7 @@ internal partial class VisualElementNodeHandler :
             var path = AssetDatabase.GetAssetPath(template);
             var filename = Path.GetFileName(path);
 
-            // The same unsaved-changes marker the document rows carry (see GetDisplayNameOverride). An edit on
+            // The same unsaved-changes marker the document rows carry (see GetDocumentRowParts). An edit on
             // an element inside an instance lands in the template's own document, not in the one hosting the
             // instance, so this row is the only place that change shows up. The tooltip stays the bare path.
             if (UIAssetRegistry.LiveInstance?.IsDirty(template) == true)
@@ -1132,12 +1286,8 @@ internal partial class VisualElementNodeHandler :
 
     internal void GoToStage(VisualTreeAssetEditingContext context, BreadcrumbBar.SeparatorStyle separatorStyle)
     {
-        VisualElementEditingStage.GoToStage(context, separatorStyle);
+        UIStageNavigation.Navigate(context, separatorStyle);
     }
-
-
-
-
 
     /// <summary>
     /// Returns the icon to use for a given <see cref="VisualElement"/> instance.
@@ -1306,9 +1456,43 @@ internal partial class VisualElementNodeHandler :
         // The budget belongs to the batch, not to the handler: this request has had no chance to resolve yet,
         // whatever the one it supersedes spent.
         m_SelectionRequestAttempts = 0;
+        m_BeginRenameOnResolve = false;
+        m_FocusAttributeOnResolve = null;
+        AttributeFieldFocusRequest.Clear();
 
         for (var i = 0; i < assets.Count; ++i)
             m_NodesToSelect.Add(new SelectionRequest(assets[i]));
+    }
+
+    /// <summary>
+    /// Asks for the element the pending request resolves to to be put into rename mode once it is selected, for a
+    /// caller that just created it interactively.
+    /// </summary>
+    /// <remarks>
+    /// Kept out of the commands, alongside <see cref="ScopePendingSelectionRequestsTo(VisualElement)"/>: whether a
+    /// create opens the rename field is a property of the user action that started it, not of the edit it makes,
+    /// and a caller driving the command for any other reason gets the selection alone.
+    /// </remarks>
+    internal void RequestRenameOfPendingSelection()
+    {
+        // The setting the GameObject hierarchy shares governs this too.
+        m_BeginRenameOnResolve = m_NodesToSelect is { Count: 1 } && HierarchyPreferences.RenameNewObjects;
+    }
+
+    /// <summary>
+    /// Asks for the attribute field at <paramref name="attributePath"/> to be focused in the inspector on
+    /// <paramref name="inspectorPanel"/> once the pending request is selected, for a caller that sent the user
+    /// somewhere else to edit that attribute.
+    /// </summary>
+    /// <remarks>
+    /// Held until the request resolves, then handed to <see cref="AttributeFieldFocusRequest"/> naming the
+    /// element it resolved to, which is the only point all three are known.
+    /// </remarks>
+    internal void RequestFocusOfPendingSelection(BindingId attributePath, IPanel inspectorPanel)
+    {
+        m_FocusAttributeOnResolve = m_NodesToSelect is { Count: 1 }
+            ? new AttributeFocus(attributePath, inspectorPanel)
+            : null;
     }
 
     /// <summary>
@@ -1542,7 +1726,7 @@ internal partial class VisualElementNodeHandler :
         foreach (var element in changes.stylingContextChanged)
         {
             if (m_Mappings.TryGetValue(element, out var elementNode))
-                CommandList.SetName(elementNode, element.name);
+                CommandList.SetName(elementNode, GetSearchName(element));
         }
     }
 
@@ -1623,7 +1807,7 @@ internal partial class VisualElementNodeHandler :
             CommandList.SetParent(in elementNode, in parentNode);
         }
 
-        CommandList.SetName(in elementNode, element.name);
+        CommandList.SetName(in elementNode, GetSearchName(element));
         CommandList.SetSortIndex(in elementNode, siblingIndex);
     }
 
@@ -1812,7 +1996,21 @@ internal partial class VisualElementNodeHandler :
 
     private static IEnumerable<string> GetSearchData(VisualElement element)
     {
-        yield return element.name;
+        yield return GetSearchName(element);
+    }
+
+    // The native name filter matches the stored node name, so a document row's searchable name carries the
+    // file extension its row displays, not the root element's name. The unsaved-changes marker is left out:
+    // the stored name is only pushed on rename, so a marker in it would outlive the save that cleared it.
+    internal static string GetSearchName(VisualElement element)
+    {
+        if (element is IPanelComponentRootElement rootElement)
+        {
+            GetDocumentRowParts(rootElement, out var name, out var suffix, includeUnsavedMarker: false);
+            return name + suffix;
+        }
+
+        return element.name;
     }
 
     private static bool CompareClasses(VisualElement element, string _, List<string> classes)

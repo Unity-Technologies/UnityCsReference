@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: DirectX12 not yet converted
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -25,21 +24,21 @@ namespace UnityEditor
             public const float kComparatorFieldWidth = 170.0f;
             public const string kGfxJobsNoticeText = "The order of the Graphics Jobs Filters is important. Filtering will use the first passing filter to determine Graphics Jobs Mode at runtime.";
 
-            public static readonly GUIContent preferredGraphicsJobsMode = EditorGUIUtility.TrTextContent("Preferred Graphics Jobs Mode", "Indicates which graphics jobs mode this filter will enforce at runtime.");
+            public static readonly GUIContent preferredGraphicsJobsMode = L10n.TextContent("Preferred Graphics Jobs Mode", "Indicates which graphics jobs mode this filter will enforce at runtime.", null, null);
 
-            public static readonly GUIContent filterList = EditorGUIUtility.TrTextContent("Filters", "List of filters");
-            public static readonly GUIContent vendor = EditorGUIUtility.TrTextContent("Vendor", "Use a regular expression to specify the vendor name of a device");
-            public static readonly GUIContent deviceName = EditorGUIUtility.TrTextContent("Device Name", "Use a regular expression to specify the device name of a device");
+            public static readonly GUIContent filterList = L10n.TextContent("Filters", "List of filters", null, null);
+            public static readonly GUIContent vendor = L10n.TextContent("Vendor", "Use a regular expression to specify the vendor name of a device", null, null);
+            public static readonly GUIContent deviceName = L10n.TextContent("Device Name", "Use a regular expression to specify the device name of a device", null, null);
             public static readonly GUIContent driverVersion =
-                EditorGUIUtility.TrTextContent("Driver Version", "Specify the driver version for a device using the format MajorVersion.MinorVersion(optional).PatchVersion(optional).PatchMinorVersion(optional)");
+                L10n.TextContent("Driver Version", "Specify the driver version for a device using the format MajorVersion.MinorVersion(optional).PatchVersion(optional).PatchMinorVersion(optional)", null, null);
             public static readonly GUIContent featureLevel =
-                EditorGUIUtility.TrTextContent("D3D12 Feature Level", "Specify the D3D12 feature level for a device using the format MajorVersion.MinorVersion(optional)");
+                L10n.TextContent("D3D12 Feature Level", "Specify the D3D12 feature level for a device using the format MajorVersion.MinorVersion(optional)", null, null);
             public static readonly GUIContent graphicsMemory =
-                EditorGUIUtility.TrTextContent("Graphics Memory (MB)", "Specify the amount of graphics memory in megabytes");
-            public static readonly GUIContent processorCount = EditorGUIUtility.TrTextContent("Processor Count", "Specify the number of processors");
-            public static readonly GUIContent deviceType = EditorGUIUtility.TrTextContent("Device Type", "Specify if the GPU is discrete or integrated");
-            public static readonly GUIContent deviceIdentification = EditorGUIUtility.TrTextContent("Device Identification", "");
-            public static readonly GUIContent capabilityMetrics = EditorGUIUtility.TrTextContent("Performance & Capability Metrics", "");
+                L10n.TextContent("Graphics Memory (MB)", "Specify the amount of graphics memory in megabytes", null, null);
+            public static readonly GUIContent processorCount = L10n.TextContent("Processor Count", "Specify the number of processors", null, null);
+            public static readonly GUIContent deviceType = L10n.TextContent("Device Type", "Specify if the GPU is discrete or integrated", null, null);
+            public static readonly GUIContent deviceIdentification = L10n.TextContent("Device Identification", "", null, null);
+            public static readonly GUIContent capabilityMetrics = L10n.TextContent("Performance & Capability Metrics", "", null, null);
 
             // Text
             public static readonly string filterText = "filter";
@@ -515,4 +514,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

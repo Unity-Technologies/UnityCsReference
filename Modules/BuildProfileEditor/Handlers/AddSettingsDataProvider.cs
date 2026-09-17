@@ -53,9 +53,7 @@ namespace UnityEditor.Build.Profile.Handlers
             var genericSettingProviders = new List<IBuildProfileSettingsProvider>(foundPackageProviders.Count);
             for (int i = 0; i < foundPackageProviders.Count; i++)
             {
-                var found = foundPackageProviders[i];
-                var typedInternalProvider = typeof(ScriptableObjectSettingsProvider<>).MakeGenericType(found.settingsType);
-                genericSettingProviders.Add((IBuildProfileSettingsProvider)Activator.CreateInstance(typedInternalProvider, found));
+                genericSettingProviders.Add(CreateGenericProvider(foundPackageProviders[i]));
             }
             genericSettingProviders.Sort((a, b) => a.GetDisplayOrder().CompareTo(b.GetDisplayOrder()));
             s_GenericSettingProviders = genericSettingProviders;
@@ -148,6 +146,15 @@ namespace UnityEditor.Build.Profile.Handlers
             }
 
             return true;
+        }
+
+        internal static IBuildProfileSettingsProvider CreateGenericProvider(BuildProfileSettingsProvider found)
+        {
+            var providerType = found.isStandaloneAsset
+                ? typeof(ReferenceComponentSettingsProvider<>)
+                : typeof(ScriptableObjectSettingsProvider<>);
+            var typedInternalProvider = providerType.MakeGenericType(found.settingsType);
+            return (IBuildProfileSettingsProvider)Activator.CreateInstance(typedInternalProvider, found);
         }
     }
 }

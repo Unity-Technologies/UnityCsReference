@@ -153,5 +153,26 @@ namespace Unity.GraphToolkit.Editor
         /// presence, such as event subscriptions.
         /// </remarks>
         public virtual void OnViewDetached() { }
+
+        /// <summary>
+        /// Called after the condition's data changes and the built-in UI has refreshed to reflect it.
+        /// </summary>
+        /// <remarks>
+        /// Fires after an edit recorded through <see cref="StateMachine.UndoBeginRecordStateMachine(string, Condition[])"/>
+        /// and <see cref="StateMachine.UndoEndRecordStateMachine"/> is applied to <see cref="Condition"/> — whether the
+        /// edit came from the built-in UI (typing in the value field, picking a comparison operator) or from your own
+        /// code. Override this to refresh custom UI you added in <see cref="OnViewBuilt"/> so it reflects the
+        /// condition's current data. Unlike <see cref="OnViewBuilt"/>, this can fire many times over the view's
+        /// lifetime.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// public override void OnConditionChanged()
+        /// {
+        ///     m_IconImage.image = Condition.Icon;
+        /// }
+        /// </code>
+        /// </example>
+        public virtual void OnConditionChanged() { }
     }
 }

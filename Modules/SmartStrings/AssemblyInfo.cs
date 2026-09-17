@@ -5,5 +5,7 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("UnityEditor.SmartStringsModule")]
+// The localization package's upgrade wizard configures the project's Smart Strings settings.
+[assembly: InternalsVisibleTo("Unity.Localization.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.SmartStrings.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.SmartStrings.Tests.Playmode")]

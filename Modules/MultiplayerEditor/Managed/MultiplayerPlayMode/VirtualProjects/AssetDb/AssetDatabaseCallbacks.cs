@@ -32,6 +32,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         }
 
         [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
+        // The main editor systems subscribe from their Listen call, which the editor contexts run again from
+        // their [OnCodeLoaded] initializer, so the handler is re-registered on every code load.
+        [IgnoreForUAL0015("Event re-subscribed by MainEditorSystems.Listen from the [OnCodeLoaded] context initializer")]
         public static event Action<bool, int> OnPostprocessAllAssetsCallback;
     }
 }

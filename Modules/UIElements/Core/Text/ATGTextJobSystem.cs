@@ -125,7 +125,7 @@ internal partial class ATGTextJobSystem
 
     List<TextElement> m_PrepareShapingDataList = new();
 
-    struct PrepareShapingJob : IJobFor
+    internal struct PrepareShapingJob : IJobFor
     {
         public GCHandle managedJobDataHandle;
         public void Execute(int index)
@@ -221,7 +221,7 @@ internal partial class ATGTextJobSystem
         mgc.AddMeshGenerationCallback(m_GenerateTextJobifiedCallback, null, mgct, false);
     }
 
-    struct GenerateTextJobData : IJobFor
+    internal struct GenerateTextJobData : IJobFor
     {
         public GCHandle managedJobDataHandle;
         [ReadOnly] public TempMeshAllocator alloc;
@@ -248,7 +248,7 @@ internal partial class ATGTextJobSystem
         }
     }
 
-    struct ConvertToUIRVertexJobData : IJobFor
+    internal struct ConvertToUIRVertexJobData : IJobFor
     {
         public GCHandle managedJobDataHandle;
         [ReadOnly] public TempMeshAllocator alloc;

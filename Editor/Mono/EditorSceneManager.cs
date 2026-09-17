@@ -31,6 +31,9 @@ namespace UnityEditor.SceneManagement
         }
 
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
+        // Backing store for the activeSceneChangedInEditMode event: subscribers attach through their own
+        // lifecycle and re-subscribe after a code reload, so the cleared store refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<UnityAction<Scene, Scene>> m_ActiveSceneChangedInEditModeEvent = new EventWithPerformanceTracker<UnityAction<Scene, Scene>>($"{nameof(EditorSceneManager)}.{nameof(activeSceneChangedInEditMode)}");
 
         private static void PlayModeStateChangedCallback(PlayModeStateChange state)

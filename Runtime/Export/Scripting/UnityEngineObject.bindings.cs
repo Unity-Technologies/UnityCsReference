@@ -138,6 +138,7 @@ namespace UnityEngine
     [Serializable]
     [NativeClass("EntityId")]
     [NativeHeader("Runtime/BaseClasses/BaseObject.h")]
+    [NativeHeader("ManagedKernel/BaseClasses/EntityId.bindings.h")]
     [NativeHeader("Runtime/BaseClasses/EntityIdStore.h")]
     public struct EntityId : IEquatable<EntityId>, IComparable<EntityId>, IFormattable
     {
@@ -177,7 +178,7 @@ namespace UnityEngine
             return this != EntityId.None;
         }
 
-        // Bit layout matches native EntityId (see Modules/NativeKernel/Include/NativeKernel/BaseClasses/EntityID.h):
+        // Bit layout matches native EntityId (see Modules/NativeKernel/Include/NativeKernel/BaseClasses/EntityId.h):
         //   [Version:24 | TypeId:12 | Index:28]
         //   Index:   bits  0–27 (mask 0x0FFFFFFF)
         //   TypeId:  bits 28–39
@@ -271,10 +272,6 @@ namespace UnityEngine
         [System.Security.SecuritySafeCritical]
         public unsafe EntityId GetEntityId()
         {
-            //Because in the player we dissalow calling GetInstanceID() on a non-mainthread, we're also
-            //doing this in the editor, so people notice this problem early. even though technically in the editor,
-            //it is a threadsafe operation.
-            EnsureRunningOnMainThread();
             return m_EntityId;
         }
 
@@ -334,12 +331,6 @@ namespace UnityEngine
             if (lhsNull) return !IsNativeObjectAlive(rhs);
 
             return lhs.m_EntityId == rhs.m_EntityId;
-        }
-
-        private void EnsureRunningOnMainThread()
-        {
-            if (!CurrentThreadIsMainThread())
-                throw new System.InvalidOperationException("EnsureRunningOnMainThread can only be called from the main thread");
         }
 
         static bool IsNativeObjectAlive(UnityEngine.Object o)

@@ -28,8 +28,8 @@ namespace UnityEditorInternal.Profiling
 
         static class Content
         {
-            public static readonly GUIContent selectionHighlightLabelBaseText = EditorGUIUtility.TrTextContent("Selected: {0}", "Selected Sample Stack: {0}");
-            public static readonly GUIContent selectionHighlightNonMainThreadLabelBaseText = EditorGUIUtility.TrTextContent("Selected: {0} (Thread: {1})", "Selected Sample Stack: {0} (Thread: {1})");
+            public static readonly GUIContent selectionHighlightLabelBaseText = L10n.TextContent("Selected: {0}", "Selected Sample Stack: {0}", null, null);
+            public static readonly GUIContent selectionHighlightNonMainThreadLabelBaseText = L10n.TextContent("Selected: {0} (Thread: {1})", "Selected Sample Stack: {0} (Thread: {1})", null, null);
             public static readonly string gpuModulePerformanceWarning = L10n.Tr("The GPU Module is currently enabled, thus disabling graphics jobs. This greatly reduces the accuracy of the CPU Module and increases the load on main and render thread.\n\n" +
                 "Close the GPU module to access accurate data about your application's CPU performance. ", null);
         }
@@ -149,6 +149,11 @@ namespace UnityEditorInternal.Profiling
         {
             m_DetailsViewController = new HybridLegacyDetailsViewController(ProfilerWindow, this, m_ViewType);
             return m_DetailsViewController;
+        }
+
+        protected override void AddViewOptionsMenuItems(GenericMenu menu)
+        {
+            m_DetailsViewController?.ViewOptionsMenuContributor?.AddViewOptionsMenuItems(menu);
         }
 
         protected void CPUViewTypeChanged(ProfilerViewType newViewType)

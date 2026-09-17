@@ -164,6 +164,23 @@ namespace Unity.GraphToolkit.Editor.Implementation
                 m_Node.SetImplementation(this);
         }
 
+        protected override void OnDefineOptions(StateDefinitionScope scope)
+        {
+            base.OnDefineOptions(scope);
+
+            if (m_Node == null)
+                return;
+
+            try
+            {
+                m_Node.CallOnDefineOptions(scope);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e, GraphModel?.GraphObject);
+            }
+        }
+
         public override void OnCreateNode()
         {
             CallOnEnable();

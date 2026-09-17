@@ -18,10 +18,10 @@ namespace UnityEditor
             public GUIStyle downSwatch = "Grad Down Swatch";
             public GUIStyle downSwatchOverlay = "Grad Down Swatch Overlay";
 
-            public GUIContent modeText = EditorGUIUtility.TrTextContent("Mode");
-            public GUIContent alphaText = EditorGUIUtility.TrTextContent("Alpha");
-            public GUIContent colorText = EditorGUIUtility.TrTextContent("Color");
-            public GUIContent locationText = EditorGUIUtility.TrTextContent("Location");
+            public GUIContent modeText = L10n.TextContent("Mode", null, null, null);
+            public GUIContent alphaText = L10n.TextContent("Alpha", null, null, null);
+            public GUIContent colorText = L10n.TextContent("Color", null, null, null);
+            public GUIContent locationText = L10n.TextContent("Location", null, null, null);
             public GUIContent percentText = new GUIContent("%");
 
             static GUIStyle GetStyle(string name)
@@ -32,9 +32,9 @@ namespace UnityEditor
 
             public readonly GUIContent[] modeTexts =
             {
-                EditorGUIUtility.TrTextContent("Blend (Classic)"),
-                EditorGUIUtility.TrTextContent("Blend (Perceptual)"),
-                EditorGUIUtility.TrTextContent("Fixed")
+                L10n.TextContent("Blend (Classic)", null, null, null),
+                L10n.TextContent("Blend (Perceptual)", null, null, null),
+                L10n.TextContent("Fixed", null, null, null)
             };
             public readonly int[] modeValues =
             {

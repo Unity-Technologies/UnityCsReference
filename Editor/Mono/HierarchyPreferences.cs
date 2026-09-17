@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: NativeHierarchyContainer not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.SceneManagement;
@@ -45,17 +44,45 @@ namespace UnityEditor
         /// </summary>
         [VisibleToOtherModules("HierarchyModule", "MultiplayerEditorModule")]
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         internal static event Action AnyPreferenceChanged;
 
         static void FireAnyPreferenceChanged() => AnyPreferenceChanged?.Invoke();
 
-        static HierarchyPreferences()
+        // Runs on every code load because useLegacyHierarchyChanged is cleared on reload (a static
+        // constructor would only subscribe on the first load). The SavedValue instances persist across
+        // reloads, so Shutdown unsubscribes their handlers before the old code unloads.
+        [OnCodeLoaded]
+        static void Initialize()
         {
-            RenameNewObjects.valueChanged         += FireAnyPreferenceChanged;
-            UseQueryBuilder.valueChanged          += FireAnyPreferenceChanged;
-            AlternatingRowBackground.valueChanged    += FireAnyPreferenceChanged;
+            RenameNewObjects.valueChanged += FireAnyPreferenceChanged;
+            UseQueryBuilder.valueChanged += FireAnyPreferenceChanged;
+            AlternatingRowBackground.valueChanged += FireAnyPreferenceChanged;
+            GameObjectIconMode.valueChanged += FireAnyPreferenceChanged;
             EditorSettings.useLegacyHierarchyChanged += FireAnyPreferenceChanged;
-            GameObjectIconMode.valueChanged        += FireAnyPreferenceChanged;
+        }
+
+        // useLegacyHierarchyChanged is not unsubscribed here: it is cleared on reload
+        // ([AutoStaticsCleanupOnCodeReload]), so only the persistent SavedValue events need it.
+        [OnCodeUnloading]
+        static void Shutdown()
+        {
+            RenameNewObjects.valueChanged -= FireAnyPreferenceChanged;
+            UseQueryBuilder.valueChanged -= FireAnyPreferenceChanged;
+            AlternatingRowBackground.valueChanged -= FireAnyPreferenceChanged;
+            GameObjectIconMode.valueChanged -= FireAnyPreferenceChanged;
+        }
+
+        [OnCodeUnloading]
+        static void Uninitialize()
+        {
+            RenameNewObjects.valueChanged         -= FireAnyPreferenceChanged;
+            UseQueryBuilder.valueChanged          -= FireAnyPreferenceChanged;
+            AlternatingRowBackground.valueChanged    -= FireAnyPreferenceChanged;
+            EditorSettings.useLegacyHierarchyChanged -= FireAnyPreferenceChanged;
+            GameObjectIconMode.valueChanged        -= FireAnyPreferenceChanged;
         }
 
         public static void EnsureCorrectHierarchyIsInUse(EditorWindow window)
@@ -98,4 +125,3 @@ namespace UnityEditor
         internal static Type HierarchyV2WindowType;
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

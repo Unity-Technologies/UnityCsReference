@@ -18,35 +18,35 @@ namespace UnityEditor
         {
             public GUIContent[] muscleBodyGroup =
             {
-                EditorGUIUtility.TrTextContent("Body"),
-                EditorGUIUtility.TrTextContent("Head"),
-                EditorGUIUtility.TrTextContent("Left Arm"),
-                EditorGUIUtility.TrTextContent("Left Fingers"),
-                EditorGUIUtility.TrTextContent("Right Arm"),
-                EditorGUIUtility.TrTextContent("Right Fingers"),
-                EditorGUIUtility.TrTextContent("Left Leg"),
-                EditorGUIUtility.TrTextContent("Right Leg")
+                L10n.TextContent("Body", null, null, null),
+                L10n.TextContent("Head", null, null, null),
+                L10n.TextContent("Left Arm", null, null, null),
+                L10n.TextContent("Left Fingers", null, null, null),
+                L10n.TextContent("Right Arm", null, null, null),
+                L10n.TextContent("Right Fingers", null, null, null),
+                L10n.TextContent("Left Leg", null, null, null),
+                L10n.TextContent("Right Leg", null, null, null)
             };
 
             public GUIContent[] muscleTypeGroup =
             {
-                EditorGUIUtility.TrTextContent("Open Close"),
-                EditorGUIUtility.TrTextContent("Left Right"),
-                EditorGUIUtility.TrTextContent("Roll Left Right"),
-                EditorGUIUtility.TrTextContent("In Out"),
-                EditorGUIUtility.TrTextContent("Roll In Out"),
-                EditorGUIUtility.TrTextContent("Finger Open Close"),
-                EditorGUIUtility.TrTextContent("Finger In Out")
+                L10n.TextContent("Open Close", null, null, null),
+                L10n.TextContent("Left Right", null, null, null),
+                L10n.TextContent("Roll Left Right", null, null, null),
+                L10n.TextContent("In Out", null, null, null),
+                L10n.TextContent("Roll In Out", null, null, null),
+                L10n.TextContent("Finger Open Close", null, null, null),
+                L10n.TextContent("Finger In Out", null, null, null)
             };
 
-            public GUIContent armTwist = EditorGUIUtility.TrTextContent("Upper Arm Twist");
-            public GUIContent foreArmTwist = EditorGUIUtility.TrTextContent("Lower Arm Twist");
-            public GUIContent upperLegTwist = EditorGUIUtility.TrTextContent("Upper Leg Twist");
-            public GUIContent legTwist = EditorGUIUtility.TrTextContent("Lower Leg Twist");
-            public GUIContent armStretch = EditorGUIUtility.TrTextContent("Arm Stretch");
-            public GUIContent legStretch = EditorGUIUtility.TrTextContent("Leg Stretch");
-            public GUIContent feetSpacing = EditorGUIUtility.TrTextContent("Feet Spacing");
-            public GUIContent hasTranslationDoF = EditorGUIUtility.TrTextContent("Translation DoF");
+            public GUIContent armTwist = L10n.TextContent("Upper Arm Twist", null, null, null);
+            public GUIContent foreArmTwist = L10n.TextContent("Lower Arm Twist", null, null, null);
+            public GUIContent upperLegTwist = L10n.TextContent("Upper Leg Twist", null, null, null);
+            public GUIContent legTwist = L10n.TextContent("Lower Leg Twist", null, null, null);
+            public GUIContent armStretch = L10n.TextContent("Arm Stretch", null, null, null);
+            public GUIContent legStretch = L10n.TextContent("Leg Stretch", null, null, null);
+            public GUIContent feetSpacing = L10n.TextContent("Feet Spacing", null, null, null);
+            public GUIContent hasTranslationDoF = L10n.TextContent("Translation DoF", null, null, null);
 
             public GUIStyle box = "OL box noexpand";
             public GUIStyle title = "OL TITLE";
@@ -54,8 +54,8 @@ namespace UnityEditor
             public GUIStyle toolbar = "TE Toolbar";
             public GUIStyle toolbarDropDown = "TE ToolbarDropDown";
 
-            public GUIContent muscle = EditorGUIUtility.TrTextContent("Muscles");
-            public GUIContent resetMuscle = EditorGUIUtility.TrTextContent("Reset");
+            public GUIContent muscle = L10n.TextContent("Muscles", null, null, null);
+            public GUIContent resetMuscle = L10n.TextContent("Reset", null, null, null);
         }
 
         [AutoStaticsCleanupOnCodeReload]

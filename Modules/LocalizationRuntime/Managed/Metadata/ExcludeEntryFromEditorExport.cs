@@ -17,7 +17,7 @@ namespace Unity.Localization;
 /// entries, and limits each target to a single instance.
 /// </remarks>
 /// <example>
-/// <para>Flag an entry so the editor export skips it.</para>
+/// Flag an entry so the editor export skips it.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Metadata/ExcludeEntryFromExportExample.cs"/>
 /// </example>
 /// <seealso cref="ExcludeEntryFromPlayerExport"/>

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneManagement not yet converted
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,21 +22,21 @@ namespace UnityEditor.SceneManagement
     {
         static class Styles
         {
-            public static readonly GUIContent autoSaveGUIContent = EditorGUIUtility.TrTextContent("Auto Save", "When Auto Save is enabled, every change you make is automatically saved to the Prefab Asset. Disable Auto Save if you experience long import times.");
-            public static readonly GUIContent saveButtonContent = EditorGUIUtility.TrTextContent("Save");
-            public static readonly GUIContent checkoutButtonContent = EditorGUIUtility.TrTextContent("Check Out");
-            public static readonly GUIContent autoSavingBadgeContent = EditorGUIUtility.TrTextContent("Auto Saving...");
-            public static readonly GUIContent immutablePrefabContent = EditorGUIUtility.TrTextContent("Immutable Prefab");
+            public static readonly GUIContent autoSaveGUIContent = L10n.TextContent("Auto Save", "When Auto Save is enabled, every change you make is automatically saved to the Prefab Asset. Disable Auto Save if you experience long import times.", null, null);
+            public static readonly GUIContent saveButtonContent = L10n.TextContent("Save", null, null, null);
+            public static readonly GUIContent checkoutButtonContent = L10n.TextContent("Check Out", null, null, null);
+            public static readonly GUIContent autoSavingBadgeContent = L10n.TextContent("Auto Saving...", null, null, null);
+            public static readonly GUIContent immutablePrefabContent = L10n.TextContent("Immutable Prefab", null, null, null);
             public static readonly GUIStyle saveToggle;
             public static readonly GUIStyle button;
             public static readonly GUIStyle savingBadge = "Badge";
             public static readonly GUIStyle exposablePopup = "ExposablePopupMenu";
             public static readonly GUIStyle exposablePopupItem = "ExposablePopupItem";
-            public static readonly GUIContent contextLabel = EditorGUIUtility.TrTextContent("Context:");
-            public static readonly GUIContent[] contextRenderModeTexts = new[] { EditorGUIUtility.TrTextContent("Normal"), EditorGUIUtility.TrTextContent("Gray"), EditorGUIUtility.TrTextContent("Hidden") };
+            public static readonly GUIContent contextLabel = L10n.TextContent("Context:", null, null, null);
+            public static readonly GUIContent[] contextRenderModeTexts = new[] { L10n.TextContent("Normal", null, null, null), L10n.TextContent("Gray", null, null, null), L10n.TextContent("Hidden", null, null, null) };
             public static readonly StageUtility.ContextRenderMode[] contextRenderModeOptions = new[] { StageUtility.ContextRenderMode.Normal, StageUtility.ContextRenderMode.GreyedOut, StageUtility.ContextRenderMode.Hidden };
-            public static readonly GUIContent showOverridesLabel = EditorGUIUtility.TrTextContent("Show Overrides", "Visualize property overrides from the Prefab instance on the Prefab Asset. Overrides on the root Transform are always visualized.");
-            public static readonly GUIContent showOverridesLabelWithTooManyOverridesTooltip = EditorGUIUtility.TrTextContent("Show Overrides", "Show Overrides are disabled because there are too many overrides to visualize. Overrides on the root Transform are always visualized though.");
+            public static readonly GUIContent showOverridesLabel = L10n.TextContent("Show Overrides", "Visualize property overrides from the Prefab instance on the Prefab Asset. Overrides on the root Transform are always visualized.", null, null);
+            public static readonly GUIContent showOverridesLabelWithTooManyOverridesTooltip = L10n.TextContent("Show Overrides", "Show Overrides are disabled because there are too many overrides to visualize. Overrides on the root Transform are always visualized though.", null, null);
 
             static Styles()
             {
@@ -57,8 +56,14 @@ namespace UnityEditor.SceneManagement
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action<PrefabStage> prefabStageOpened;
         [AutoStaticsCleanupOnCodeReload]
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action<PrefabStage> prefabStageClosing;
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<PrefabStage> prefabStageDirtied;
@@ -2240,4 +2245,3 @@ namespace UnityEditor.SceneManagement
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -116,11 +116,11 @@ namespace UnityEngine.UIElements.StyleSheets
             int currentStyleSheetIndexInStack,
             bool testRootRange)
         {
-            int descriptorCount = cacheEntry.m_AllDescriptorsCount;
-            if (descriptorCount == 0)
+            var core = cacheEntry.m_Core;
+            if (core == null || core->allDescriptorsCount == 0)
                 return;
 
-            var ranges = cacheEntry.m_MatcherRanges;
+            int descriptorCount = core->allDescriptorsCount;
 
             // NoOp returns null with no side effects, so the JIT folds the profiler branches
             // below out of the unprofiled matcher.
@@ -138,13 +138,8 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 matchedCount = NativeSelectorMatcher.MatchSheetFlat(
                     context.currentElement.selectorDataPtr,
-                    cacheEntry.m_AllDescriptorsPtr,
-                    descriptorCount,
-                    cacheEntry.m_KeyIndexPtr,
-                    cacheEntry.m_AllSelectorsPtr,
-                    cacheEntry.m_AllPartsPtr,
+                    core,
                     pAncestorFilter,
-                    &ranges,
                     context.applyPseudoMasks,
                     testRootRange,
                     pMatchedIndices,

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using UnityEngine;
 using UnityEditor.Experimental;
 using System;
@@ -30,14 +29,14 @@ namespace UnityEditor
 
         public CacheServerWindow()
         {
-            m_StatusMessageDisabled = EditorGUIUtility.TrTextContent("No cache server connected");
-            m_StatusMessageConnected = EditorGUIUtility.TrTextContent("Connected");
-            m_StatusMessageError = EditorGUIUtility.TrTextContent("Attempting to reconnect");
-            m_OpenProjectSettings = EditorGUIUtility.TrTextContent("Open Project Settings...");
+            m_StatusMessageDisabled = L10n.TextContent("No cache server connected", null, null, null);
+            m_StatusMessageConnected = L10n.TextContent("Connected", null, null, null);
+            m_StatusMessageError = L10n.TextContent("Attempting to reconnect", null, null, null);
+            m_OpenProjectSettings = L10n.TextContent("Open Project Settings...", null, null, null);
             m_UploadArtifacts = EditorGUIUtility.TrTextContent("Upload Artifacts", m_UploadArtifactsDefaultToolip);
             m_UploadShaderCache = EditorGUIUtility.TrTextContent("Upload Shader Cache", m_UploadShaderCacheDefaultToolip);
             m_UploadAllRevisions = EditorGUIUtility.TrTextContent("Upload All Revisions", m_UploadAllRevisionsDefaultToolip);
-            m_RefreshIcon = EditorGUIUtility.TrIconContent("Refresh", "Refresh connection");
+            m_RefreshIcon = L10n.IconContent("Refresh", "Refresh connection", null);
 
             m_WindowStyle = new GUIStyle { padding = new RectOffset(6, 6, 6, 6) };
         }
@@ -204,4 +203,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -23,8 +24,15 @@ namespace Unity.GraphToolkit.Editor
 
         bool m_Active;
         bool m_IsMovingFromConnector;
-        bool m_MenuInitiated;
+        MouseButton m_ActiveButton = MouseButton.LeftMouse;
+        bool m_ClickToFinish;
+        bool m_ArmOnRelease;
         Vector2 m_MouseDownPosition;
+
+        /// <summary>
+        /// Whether a transition is currently being created or manipulated by this manipulator.
+        /// </summary>
+        public bool IsActive => m_Active;
 
         /// <summary>
         /// The element that owns this manipulator.
@@ -88,14 +96,18 @@ namespace Unity.GraphToolkit.Editor
                 return;
             }
 
-            if (!CanStartManipulation(e))
+            // The create transition binding is checked first: it can be rebound to a button or modifiers
+            // no activator covers, and it takes precedence over starting from the state's edge.
+            var matchesBinding = MatchesCreateTransitionBinding(e, GraphView?.GraphTool);
+            if (!matchesBinding && !CanStartManipulation(e))
             {
                 return;
             }
 
+            m_ActiveButton = (MouseButton)e.button;
             m_MouseDownPosition = e.localMousePosition;
 
-            if (HandleMouseDown(e))
+            if (HandleMouseDown(e, matchesBinding))
             {
                 m_Active = true;
                 target.CaptureMouse();
@@ -107,10 +119,15 @@ namespace Unity.GraphToolkit.Editor
         /// Handles a mouse down event.
         /// </summary>
         /// <param name="evt">The mouse down event.</param>
-        protected bool HandleMouseDown(MouseDownEvent evt)
+        /// <param name="matchesCreateTransitionBinding">Whether the event matches the binding that starts
+        /// a transition from anywhere on the state, rather than only from its edge.</param>
+        protected bool HandleMouseDown(MouseDownEvent evt, bool matchesCreateTransitionBinding)
         {
             if (PlaceholderModelHelper.IsMissingTypeModel(OwnerModel))
                 return false;
+
+            if (matchesCreateTransitionBinding)
+                return StartFromAnywhereOnOwner(evt);
 
             var border = OwnerElement?.Border;
 
@@ -205,6 +222,73 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <summary>
+        /// Whether a mouse event matches the binding that starts a transition from anywhere on a state.
+        /// </summary>
+        /// <param name="evt">The mouse event.</param>
+        /// <param name="tool">The tool whose bindings to check.</param>
+        /// <returns>True if the event matches the binding.</returns>
+        public static bool MatchesCreateTransitionBinding(IMouseEvent evt, GraphTool tool)
+        {
+            if (evt == null || tool == null)
+                return false;
+
+            // Built through the shortcut system's own conversion so that the platform's mapping of the
+            // action modifier is applied the same way here as it is when a binding is matched.
+            var pressed = KeyCombination.FromKeyboardInput((KeyCode)((int)KeyCode.Mouse0 + evt.button), evt.modifiers);
+
+            foreach (var combination in GetCreateTransitionBinding(tool).keyCombinationSequence)
+            {
+                if (combination.Equals(pressed))
+                    return true;
+            }
+
+            return false;
+        }
+
+        static ShortcutBinding GetCreateTransitionBinding(GraphTool tool)
+        {
+            try
+            {
+                return ShortcutCreateTransitionEvent.GetCurrentBinding(tool);
+            }
+            catch (ArgumentException)
+            {
+                // ShortcutManager throws for a tool that has not registered the shortcut, which is that
+                // tool declining it, and is honoured like a cleared binding: nothing matches.
+                return ShortcutBinding.empty;
+            }
+        }
+
+        /// <summary>
+        /// Starts a transition from a press anywhere on the owner state, anchored at the point of its
+        /// border nearest the mouse.
+        /// </summary>
+        /// <remarks>
+        /// Dragging from here finishes the transition on release, exactly like dragging from the state's
+        /// edge. Releasing without dragging instead arms the same click-to-finish flow the "Create
+        /// Transition" menu item uses, so the target can be picked with a second click.
+        /// </remarks>
+        /// <param name="evt">The mouse down event that started the transition.</param>
+        bool StartFromAnywhereOnOwner(MouseDownEvent evt)
+        {
+            if (OwnerElement == null || GraphView == null)
+                return false;
+
+            CreateTransitionCandidate();
+            if (m_TransitionCandidate == null)
+                return false;
+
+            var (anchorPoint, anchorSide, anchorOffset) = SnapToOwnerBorder(evt.mousePosition);
+
+            InitOutgoingCandidateFromOwner(anchorPoint, anchorSide, anchorOffset, evt.mousePosition);
+            ShowNodeConnector(OwnerElement);
+            m_TransitionCandidate.DoCompleteUpdate();
+
+            m_ArmOnRelease = true;
+            return true;
+        }
+
+        /// <summary>
         /// Starts a transition from the "Create Transition" menu item. Like dragging from a
         /// state's edge, anchored where the menu was opened (snapped to the border) and finalized
         /// by a click.
@@ -225,8 +309,9 @@ namespace Unity.GraphToolkit.Editor
             ShowNodeConnector(OwnerElement);
             m_TransitionCandidate.DoCompleteUpdate();
 
-            m_MenuInitiated = true;
+            m_ClickToFinish = true;
             m_Active = true;
+            m_ActiveButton = MouseButton.LeftMouse;
             target.CaptureMouse();
         }
 
@@ -293,21 +378,34 @@ namespace Unity.GraphToolkit.Editor
 
         void OnMouseUp(MouseUpEvent e)
         {
-            if (!m_Active || !CanStopManipulation(e))
+            if (!m_Active || (MouseButton)e.button != m_ActiveButton)
                 return;
+
+            var dragged = Vector2.Distance(m_MouseDownPosition, e.localMousePosition) > k_WireCreationDistanceThreshold;
+
+            // A modifier-initiated press that never turned into a drag is a request to enter transition
+            // creation mode, not to cancel: stay active, keep the mouse captured, and let the next click
+            // pick the target.
+            if (m_ArmOnRelease && !dragged)
+            {
+                m_ArmOnRelease = false;
+                m_ClickToFinish = true;
+                e.StopPropagation();
+                return;
+            }
 
             try
             {
-                // The menu flow has no initial press, so the click always finalizes.
-                var canConnect = m_MenuInitiated || Vector2.Distance(m_MouseDownPosition, e.localMousePosition) > k_WireCreationDistanceThreshold;
-                if (canConnect)
+                // The menu and click-to-finish flows have no initial press, so the click always finalizes.
+                if (m_ClickToFinish || dragged)
                     HandleMouseUp(e);
                 else
                     Reset();
             }
             finally
             {
-                m_MenuInitiated = false;
+                m_ClickToFinish = false;
+                m_ArmOnRelease = false;
                 m_Active = false;
                 target.ReleaseMouse();
                 e.StopPropagation();
@@ -482,7 +580,8 @@ namespace Unity.GraphToolkit.Editor
 
             m_ConnectionTargetState = null;
             m_AnchorStateModel = null;
-            m_MenuInitiated = false;
+            m_ClickToFinish = false;
+            m_ArmOnRelease = false;
         }
 
         void ShowNodeConnector(GraphElement node)
@@ -505,6 +604,7 @@ namespace Unity.GraphToolkit.Editor
         {
             GraphElement snappedElement = null;
             StateModel snappedStateModel = null;
+            var snappedDistance = float.MaxValue;
 
             foreach (var nodeModel in GraphView.GraphModel.NodeModels)
             {
@@ -521,9 +621,15 @@ namespace Unity.GraphToolkit.Editor
                         bounds = interactionBorder.worldBound;
                     if (bounds.Contains(globalPoint))
                     {
-                        snappedElement = stateUI;
-                        snappedStateModel = stateModel;
-                        break;
+                        // The interaction borders of neighbouring states overlap, so pick the closest state
+                        // rather than the first one found.
+                        var distance = RectUtils.SqrDistanceToPoint(stateUI.worldBound, globalPoint);
+                        if (distance < snappedDistance)
+                        {
+                            snappedElement = stateUI;
+                            snappedStateModel = stateModel;
+                            snappedDistance = distance;
+                        }
                     }
                 }
             }

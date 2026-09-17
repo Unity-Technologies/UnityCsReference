@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -34,6 +35,7 @@ namespace Unity.Hierarchy
         ReadOnlyNativeVector<HierarchyNode> m_Nodes;
         int m_Version;
         readonly bool m_IsOwner;
+        Dictionary<int, IHierarchyNodeTypeHandlerViewModelState> m_HandlerStates;
 
         /// <summary>
         /// Delegate that is invoked when flags on hierarchy nodes are changed.
@@ -195,8 +197,70 @@ namespace Unity.Hierarchy
         /// </summary>
         public void Dispose()
         {
+            DestroyHandlerStates();
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Gets the state a node type handler keeps for this view model.
+        /// </summary>
+        /// <param name="nodeType">The node type of the handler owning the state.</param>
+        /// <param name="state">When this method returns, the state, or <see langword="null"/> when there is none.</param>
+        /// <typeparam name="T">The type of state the handler stores.</typeparam>
+        /// <returns><see langword="true"/> if the handler has state of that type, <see langword="false"/> otherwise.</returns>
+        public bool TryGetHandlerState<T>(HierarchyNodeType nodeType, out T state)
+            where T : class, IHierarchyNodeTypeHandlerViewModelState
+        {
+            state = m_HandlerStates != null && m_HandlerStates.TryGetValue(nodeType.Id, out var existing) ? existing as T : null;
+            return state != null;
+        }
+
+        /// <summary>
+        /// Gets the state a node type handler keeps for this view model, creating it when there is none.
+        /// </summary>
+        /// <param name="nodeType">The node type of the handler owning the state.</param>
+        /// <typeparam name="T">The type of state the handler stores.</typeparam>
+        /// <returns>The state.</returns>
+        public T GetOrCreateHandlerState<T>(HierarchyNodeType nodeType)
+            where T : class, IHierarchyNodeTypeHandlerViewModelState, new()
+        {
+            if (TryGetHandlerState<T>(nodeType, out var existing))
+                return existing;
+
+            var state = new T();
+            m_HandlerStates ??= new Dictionary<int, IHierarchyNodeTypeHandlerViewModelState>();
+            if (m_HandlerStates.TryGetValue(nodeType.Id, out var previous))
+                previous?.Dispose();
+
+            m_HandlerStates[nodeType.Id] = state;
+            return state;
+        }
+
+        /// <summary>
+        /// Disposes and forgets the state a node type handler keeps for this view model.
+        /// </summary>
+        /// <param name="nodeType">The node type of the handler owning the state.</param>
+        /// <returns><see langword="true"/> if there was state to destroy, <see langword="false"/> otherwise.</returns>
+        public bool DestroyHandlerState(HierarchyNodeType nodeType)
+        {
+            if (m_HandlerStates == null || !m_HandlerStates.TryGetValue(nodeType.Id, out var state))
+                return false;
+
+            state?.Dispose();
+            return m_HandlerStates.Remove(nodeType.Id);
+        }
+
+        // Handler state belongs to this view model, so nothing else is going to release it
+        internal void DestroyHandlerStates()
+        {
+            if (m_HandlerStates == null)
+                return;
+
+            foreach (var state in m_HandlerStates.Values)
+                state?.Dispose();
+
+            m_HandlerStates.Clear();
         }
 
         void Dispose(bool disposing)
@@ -987,7 +1051,7 @@ namespace Unity.Hierarchy
         {
             var viewModel = FromIntPtr(handlePtr);
             foreach (var handler in viewModel.m_Hierarchy.EnumerateNodeTypeHandlersBase())
-                handler.Internal_SearchBegin(viewModel.Query);
+                handler.Internal_SearchBegin(viewModel.Query, viewModel);
         }
         #endregion
     }

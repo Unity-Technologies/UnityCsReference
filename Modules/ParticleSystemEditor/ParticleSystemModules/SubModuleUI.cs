@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: VisualEffects not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
@@ -32,18 +31,18 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent create = EditorGUIUtility.TrTextContent("", "Create and assign a Particle System as sub-emitter.");
-            public GUIContent inherit = EditorGUIUtility.TrTextContent("Inherit", "Determines what properties to inherit from the Parent System.");
-            public GUIContent emitProbability = EditorGUIUtility.TrTextContent("Emit Probability", "Determines the proportion of sub-emitter spawn events that successfully triggers the associated sub-emitter.");
-            public GUIContent invalidSubEmitterParenting = EditorGUIUtility.TrTextContent("The following sub-emitters are not descendents of their owning Particle System. Reparent the sub-emitters so that they are children of their owning system:");
+            public GUIContent create = L10n.TextContent("", "Create and assign a Particle System as sub-emitter.", null, null);
+            public GUIContent inherit = L10n.TextContent("Inherit", "Determines what properties to inherit from the Parent System.", null, null);
+            public GUIContent emitProbability = L10n.TextContent("Emit Probability", "Determines the proportion of sub-emitter spawn events that successfully triggers the associated sub-emitter.", null, null);
+            public GUIContent invalidSubEmitterParenting = L10n.TextContent("The following sub-emitters are not descendents of their owning Particle System. Reparent the sub-emitters so that they are children of their owning system:", null, null, null);
 
             public GUIContent[] subEmitterTypes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Birth"),
-                EditorGUIUtility.TrTextContent("Collision"),
-                EditorGUIUtility.TrTextContent("Death"),
-                EditorGUIUtility.TrTextContent("Trigger"),
-                EditorGUIUtility.TrTextContent("Manual")
+                L10n.TextContent("Birth", null, null, null),
+                L10n.TextContent("Collision", null, null, null),
+                L10n.TextContent("Death", null, null, null),
+                L10n.TextContent("Trigger", null, null, null),
+                L10n.TextContent("Manual", null, null, null)
             };
 
             // Keep in sync with SubModule::InheritedProperties
@@ -372,4 +371,3 @@ namespace UnityEditor
         }
     }
 } // namespace UnityEditor
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

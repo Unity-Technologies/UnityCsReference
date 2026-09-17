@@ -20,6 +20,9 @@ namespace Unity.UI.Builder
     internal partial class BuilderAssetModificationProcessor : UnityEditor.AssetModificationProcessor
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Registry of live modification processors: each owner registers itself from its own
+        // initialization, so the cleared set refills as those owners come back.
+        [IgnoreForUAL0015("Processor registry refilled as owners re-register from their own initialization")]
         private static readonly HashSet<IBuilderAssetModificationProcessor> m_ModificationProcessors = new HashSet<IBuilderAssetModificationProcessor>();
 
         public static void Register(IBuilderAssetModificationProcessor modificationProcessor)

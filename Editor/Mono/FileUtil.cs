@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -299,6 +300,82 @@ namespace UnityEditor
         {
             // IO functions do not like mixing of \ and / slashes, esp. for windows network paths (\\path)
             return Application.platform == RuntimePlatform.WindowsEditor ? unityPath.Replace("/", @"\") : unityPath;
+        }
+
+        const int k_WindowsMaxPath = 260;
+        const string k_WindowsExtendedPathPrefix = @"\\?\";
+        const string k_WindowsExtendedUncPathPrefix = @"\\?\UNC\";
+
+        /// <summary>
+        /// Returns <paramref name="path"/> in a form the platform file APIs accept regardless of its
+        /// length, by applying the Windows extended-length prefix to paths that would otherwise exceed
+        /// MAX_PATH. A no-op off Windows, and for paths that already fit.
+        /// </summary>
+        /// <remarks>
+        /// Managed <c>System.IO</c> calls are not long-path aware, unlike the native file system layer,
+        /// so a deeply nested asset otherwise fails to open with <see cref="DirectoryNotFoundException"/>.
+        /// </remarks>
+        internal static string ToExtendedLengthPath(string path)
+        {
+            if (string.IsNullOrEmpty(path) || path.Length < k_WindowsMaxPath)
+                return path;
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return path;
+
+            ReadOnlySpan<char> span = path.AsSpan();
+
+            // The prefix suppresses normalisation, so it only works on a fully qualified, backslash-separated path.
+            if (span.Length >= 4 && IsSlash(span[0]) && IsSlash(span[1]) && span[2] == '?' && IsSlash(span[3]))
+            {
+                if (span.IndexOf('/') < 0)
+                    return path;
+
+                return string.Create(path.Length, path, static (dest, src) =>
+                {
+                    CopyReplacingSlashes(src.AsSpan(), dest);
+                });
+            }
+
+            if (span.Length >= 2 && IsSlash(span[0]) && IsSlash(span[1]))
+            {
+                return string.Create(k_WindowsExtendedUncPathPrefix.Length + path.Length - 2, path, static (dest, src) =>
+                {
+                    k_WindowsExtendedUncPathPrefix.AsSpan().CopyTo(dest);
+                    CopyReplacingSlashes(src.AsSpan(2), dest.Slice(k_WindowsExtendedUncPathPrefix.Length));
+                });
+            }
+
+            if (span.Length >= 3 && char.IsLetter(span[0]) && span[1] == ':' && IsSlash(span[2]))
+            {
+                return string.Create(k_WindowsExtendedPathPrefix.Length + path.Length, path, static (dest, src) =>
+                {
+                    k_WindowsExtendedPathPrefix.AsSpan().CopyTo(dest);
+                    CopyReplacingSlashes(src.AsSpan(), dest.Slice(k_WindowsExtendedPathPrefix.Length));
+                });
+            }
+
+            return path;
+
+            static bool IsSlash(char c) => c == '\\' || c == '/';
+
+            static void CopyReplacingSlashes(ReadOnlySpan<char> source, Span<char> destination)
+            {
+                for (int i = 0; i < source.Length; i++)
+                    destination[i] = source[i] == '/' ? '\\' : source[i];
+            }
+        }
+
+        /// <summary>
+        /// Resolves <paramref name="path"/> as <see cref="PathToAbsolutePath"/> does, but returns a
+        /// result that stays usable with managed <c>System.IO</c> calls when it exceeds MAX_PATH.
+        /// Note that such a result uses Windows path separators rather than Unity ones.
+        /// </summary>
+        /// <param name="path">The file or directory for which to obtain absolute path information.</param>
+        [VisibleToOtherModules("UnityEditor.UIElementsModule")]
+        internal static string PathToAbsolutePathForFileIO(string path)
+        {
+            return ToExtendedLengthPath(PathToAbsolutePath(path));
         }
 
         internal static string UnityGetFileNameWithoutExtension(string path)

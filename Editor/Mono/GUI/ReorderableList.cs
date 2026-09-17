@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using UnityEngine;
 using UnityEditor;
 using System;
@@ -115,6 +114,9 @@ namespace UnityEditorInternal
         internal bool m_PropertyCacheValid = false;
         PropertyCacheEntry[] m_PropertyCache = Array.Empty<PropertyCacheEntry>();
         [AutoStaticsCleanupOnCodeReload]
+        // Transient invalidation markers: InvalidateParentCaches re-adds a path whenever a nested list
+        // changes and the consuming list removes its own entry, so the list is empty at rest.
+        [IgnoreForUAL0015("Transient invalidation markers re-added by InvalidateParentCaches")]
         static List<string> m_OutdatedProperties = new List<string>();
 
         static string GetParentListPath(string propertyPath)
@@ -165,9 +167,9 @@ namespace UnityEditorInternal
         // class for default rendering and behavior of reorderable list - stores styles and is statically available as s_Defaults
         public class Defaults
         {
-            public GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add to the list");
-            public GUIContent iconToolbarPlusMore = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Choose to add to the list");
-            public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from the list");
+            public GUIContent iconToolbarPlus = L10n.IconContent("Toolbar Plus", "Add to the list", null);
+            public GUIContent iconToolbarPlusMore = L10n.IconContent("Toolbar Plus More", "Choose to add to the list", null);
+            public GUIContent iconToolbarMinus = L10n.IconContent("Toolbar Minus", "Remove selection from the list", null);
             public readonly GUIStyle draggingHandle = "RL DragHandle";
             public readonly GUIStyle headerBackground = "RL Header";
             public readonly GUIStyle emptyHeaderBackground = "RL Empty Header";
@@ -183,7 +185,7 @@ namespace UnityEditorInternal
             const float elementPadding = 2;
             private int ArrayCountInPropertyPath(SerializedProperty prop) => Regex.Matches(prop.propertyPath, ".Array.data").Count;
             private float FieldLabelSize(Rect r, SerializedProperty prop) => r.width * 0.45f - 20 - ArrayCountInPropertyPath(prop) * 22 + (prop.depth < 2 ? 7 : 0);
-            private static readonly GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
+            private static readonly GUIContent s_ListIsEmpty = L10n.TextContent("List is Empty", null, null, null);
             internal static readonly string undoAdd = "Add Element To Array";
             internal static readonly string undoRemove = "Remove Element From Array";
             internal static readonly string undoMove = "Reorder Element In Array";
@@ -196,7 +198,7 @@ namespace UnityEditorInternal
                 defaultLabel.alignment = TextAnchor.MiddleCenter;
             }
 
-            private static GUIContent OverMaxMultiEditLimit(int maxMultiEditElementCount) => EditorGUIUtility.TrTextContent($"This field cannot display arrays with more than {maxMultiEditElementCount} elements when multiple objects are selected.");
+            private static GUIContent OverMaxMultiEditLimit(int maxMultiEditElementCount) => L10n.TextContent($"This field cannot display arrays with more than {maxMultiEditElementCount} elements when multiple objects are selected.", null, null, null);
 
             // draw the default footer
             public void DrawFooter(Rect rect, ReorderableList list)
@@ -446,6 +448,9 @@ namespace UnityEditorInternal
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Live-instance registry: every ReorderableList adds a weak reference to itself while initializing
+        // from its constructors, so the list cleared on reload refills as lists are recreated.
+        [IgnoreForUAL0015("Live-instance registry, refilled by each ReorderableList constructor")]
         static List<WeakReference<ReorderableList>> s_Instances = new List<WeakReference<ReorderableList>>();
         internal static void InvalidateExistingListCaches() => s_Instances.ForEach(list =>
         {
@@ -1460,4 +1465,3 @@ namespace UnityEditorInternal
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -47,6 +47,82 @@ namespace Unity.GraphToolkit.Editor
         IEnumerable<ITransitionRule> GetRules();
 
         /// <summary>
+        /// The icon displayed for this transition in the transition inspector, or <see langword="null"/> if none is set.
+        /// </summary>
+        Texture2D Icon { get; set; }
+
+        /// <summary>
+        /// The fill color of the transition's arrow.
+        /// </summary>
+        /// <remarks>
+        /// This value sets the transition arrow's fill color only. Use <see cref="LineColor"/> to color the transition wire and arrow border.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// ITransition startTransition = myStateMachine.GetTransitions(startState, nextState).First();
+        /// startTransition.FillColor = Color.green;
+        /// </code>
+        /// </example>
+        Color FillColor { get; set; }
+
+        /// <summary>
+        /// The color of the transition's wire and arrow border.
+        /// </summary>
+        /// <remarks>
+        /// This value sets the transition's wire and arrow border color only. Use <see cref="FillColor"/> to set the transition arrow's fill color.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// ITransition startTransition = myStateMachine.GetTransitions(startState, nextState).First();
+        /// startTransition.LineColor = Color.green;
+        /// </code>
+        /// </example>
+        Color LineColor { get; set; }
+
+        /// <summary>
+        /// The line width override applied to the transition.
+        /// </summary>
+        /// <remarks>
+        /// Setting the value to 0 removes the width override on the transition, so the transition reverts to the default thickness.
+        /// On a state-to-state transition, this property sets the width of the transition's wire and of the border
+        /// of its arrow. On a self transition, this property sets the width of the transition arrow's border.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// ITransition startTransition = myStateMachine.GetTransitions(startState, nextState).First();
+        /// startTransition.WidthOverride = 4f;
+        /// </code>
+        /// </example>
+        float WidthOverride { get; set; }
+
+        /// <summary>
+        /// The opacity multiplier applied to the transition.
+        /// </summary>
+        /// <remarks>
+        /// The opacity multiplier is clamped to the [0, 1] range when set.
+        /// On a transition between two states, this property fades the transition wire and leaves the arrow solid.
+        /// On a self transition, this property fades the transition arrow's border, leaving the arrow head solid.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// ITransition startTransition = myStateMachine.GetTransitions(startState, nextState).First();
+        /// startTransition.Opacity = 0.5f;
+        /// </code>
+        /// </example>
+        float Opacity { get; set; }
+
+        /// <summary>
+        /// Whether the transition is drawn with a dashed pattern.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// ITransition startTransition = myStateMachine.GetTransitions(startState, nextState).First();
+        /// startTransition.IsDashed = true;
+        /// </code>
+        /// </example>
+        bool IsDashed { get; set; }
+
+        /// <summary>
         /// The number of rules stacked on this transition.
         /// </summary>
         int RuleCount { get; }

@@ -31,10 +31,10 @@ namespace UnityEditor
 
         internal class Styles
         {
-            public static readonly GUIContent togglePreprocess = EditorGUIUtility.TrTextContent("Preprocess only", "Show preprocessor output instead of compiled shader code");
-            public static readonly GUIContent toggleStripLineDirective = EditorGUIUtility.TrTextContent("Strip #line directives", "Strip #line directives from preprocessor output");
-            public static readonly GUIContent showCompiled = EditorGUIUtility.TrTextContent("Show compiled code");
-            public static readonly GUIContent kernelsHeading = EditorGUIUtility.TrTextContent("Kernels:");
+            public static readonly GUIContent togglePreprocess = L10n.TextContent("Preprocess only", "Show preprocessor output instead of compiled shader code", null, null);
+            public static readonly GUIContent toggleStripLineDirective = L10n.TextContent("Strip #line directives", "Strip #line directives from preprocessor output", null, null);
+            public static readonly GUIContent showCompiled = L10n.TextContent("Show compiled code", null, null, null);
+            public static readonly GUIContent kernelsHeading = L10n.TextContent("Kernels:", null, null, null);
         }
 
         static List<KernelInfo> GetKernelDisplayInfo(ComputeShader cs)

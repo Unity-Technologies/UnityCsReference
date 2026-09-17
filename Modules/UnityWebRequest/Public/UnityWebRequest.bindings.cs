@@ -103,6 +103,10 @@ namespace UnityEngine.Networking
     ///</example>
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UnityWebRequest/Public/UnityWebRequest.h")]
+    // For enableProfilerBodyCapture, which binds straight to the profiler's own switch rather than
+    // going through a forwarding static on UnityWebRequest - the class is a template on its transport,
+    // so a static there would be templated too.
+    [NativeHeader("Modules/UnityWebRequest/Profiler/WebRequestProfilerCapture.h")]
     public partial class UnityWebRequest : IDisposable
     {
         [System.NonSerialized]
@@ -272,6 +276,29 @@ namespace UnityEngine.Networking
         }
 
         private static extern void ClearCookieCache(string domain, string path);
+
+        ///<summary>Whether the Profiler captures the bodies of web requests.</summary>
+        ///<remarks>
+        ///Off by default, and off is the safe setting: request and response bodies routinely carry
+        ///access tokens, personal data and payment details, and a Profiler capture is saved to a .raw
+        ///file that gets shared and attached to bug reports. Switch it on only while you need it.
+        ///
+        ///At most 16 KB of each body is kept, so 32 KB per request, and only for text-like content
+        ///types - JSON, XML, plain text, form encoding and the +json and +xml suffixes. A longer body
+        ///is truncated and the Profiler says so; a binary one is not captured at all and the Profiler
+        ///says that instead.
+        ///
+        ///Set it in the code of the player you are profiling. Setting it in the Editor covers requests
+        ///the Editor itself makes, which includes Play mode, but does not reach a connected player.
+        ///</remarks>
+        [NativeConditional("ENABLE_UNITYWEBREQUEST")]
+        public extern static bool enableProfilerBodyCapture
+        {
+            [NativeMethod(Name = "WebRequestProfiler::GetCaptureBodies", IsFreeFunction = true)]
+            get;
+            [NativeMethod(Name = "WebRequestProfiler::SetCaptureBodies", IsFreeFunction = true)]
+            set;
+        }
 
         [NativeMethod(ThrowsException = true)]
         internal extern static IntPtr Create();
@@ -1507,7 +1534,11 @@ namespace UnityEngine.Networking
         {
             get
             {
-                return new Version(responseVersionString);
+                // No version is reported until the server has actually replied, so an aborted or
+                // failed request yields null/empty here. Version's constructor rejects both, and
+                // throwing out of this getter would strand callers waiting on the response.
+                var version = responseVersionString;
+                return string.IsNullOrEmpty(version) ? null : new Version(version);
             }
         }
 

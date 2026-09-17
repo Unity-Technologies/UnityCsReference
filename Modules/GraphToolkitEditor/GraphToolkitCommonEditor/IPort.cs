@@ -121,5 +121,19 @@ namespace Unity.GraphToolkit.Editor
         /// The globally unique identifier for this port.
         /// </summary>
         Hash128 ID { get; }
+
+        /// <summary>
+        /// Changes the current <see cref="DataType"/> of a polymorphic port.
+        /// </summary>
+        /// <param name="type">The type to assign to the port. Must be one of the types the port was declared to support (see <c>IInputPortBuilder.WithDataTypes</c> / <c>IOutputPortBuilder.WithDataTypes</c>).</param>
+        /// <returns><c>true</c> if the type was applied; <c>false</c> if the port is not polymorphic or if <paramref name="type"/> is not one of the port's supported types.</returns>
+        /// <remarks>
+        /// Use this method to programmatically drive the type selection of a polymorphic port (the same selection the user changes through the port's dropdown in the UI).
+        /// This method has no effect on non-polymorphic ports.
+        /// </remarks>
+        bool TrySetDataType(Type type)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

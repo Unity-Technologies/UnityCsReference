@@ -42,21 +42,21 @@ namespace UnityEditor
             public GUIStyle oddRow = "CN EntryBackOdd";
             public GUIStyle platformSelector = "PlayerSettingsPlatform";
 
-            public GUIContent platformTitle = EditorGUIUtility.TrTextContent("Platform", "Which platform to build for");
-            public GUIContent switchPlatform = EditorGUIUtility.TrTextContent("Switch Platform");
-            public GUIContent build = EditorGUIUtility.TrTextContent("Build");
-            public GUIContent buildAndRun = EditorGUIUtility.TrTextContent("Build And Run");
-            public GUIContent scenesInBuild = EditorGUIUtility.TrTextContent("Scenes In Build", "Which scenes to include in the build");
-            public GUIContent checkOut = EditorGUIUtility.TrTextContent("Check out");
-            public GUIContent addOpenSource = EditorGUIUtility.TrTextContent("Add Open Scenes");
+            public GUIContent platformTitle = L10n.TextContent("Platform", "Which platform to build for", null, null);
+            public GUIContent switchPlatform = L10n.TextContent("Switch Platform", null, null, null);
+            public GUIContent build = L10n.TextContent("Build", null, null, null);
+            public GUIContent buildAndRun = L10n.TextContent("Build And Run", null, null, null);
+            public GUIContent scenesInBuild = L10n.TextContent("Scenes In Build", "Which scenes to include in the build", null, null);
+            public GUIContent checkOut = L10n.TextContent("Check out", null, null, null);
+            public GUIContent addOpenSource = L10n.TextContent("Add Open Scenes", null, null, null);
             public string noModuleLoaded = L10n.Tr("No {0} module loaded.", null);
-            public GUIContent openDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
-            public GUIContent installModuleWithHub = EditorGUIUtility.TrTextContent("Install with Unity Hub");
+            public GUIContent openDownloadPage = L10n.TextContent("Open Download Page", null, null, null);
+            public GUIContent installModuleWithHub = L10n.TextContent("Install with Unity Hub", null, null, null);
             public string EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules", null);
             public string infoText = L10n.Tr("{0} is not included in your Unity Pro license. Your {0} build will include a Unity Personal Edition splash screen.\n\nYou must be eligible to use Unity Personal Edition to use this build option. Please refer to our EULA for further information.", null);
-            public GUIContent eula = EditorGUIUtility.TrTextContent("Eula");
+            public GUIContent eula = L10n.TextContent("Eula", null, null, null);
             public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license", null);
-            public GUIContent installInBuildFolder = EditorGUIUtility.TrTextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code");
+            public GUIContent installInBuildFolder = L10n.TextContent("Install into source code 'build' folder", "Install into source checkout 'build' folder, for debugging with source code", null, null);
 
             public Texture2D activePlatformIcon = EditorGUIUtility.IconContent("BuildSettings.SelectedIcon").image as Texture2D;
 
@@ -70,31 +70,31 @@ namespace UnityEditor
             }
 
             // string and matching enum values for standalone subtarget dropdowm
-            public GUIContent debugBuild = EditorGUIUtility.TrTextContent("Development Build");
-            public GUIContent autoconnectProfiler = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "When the build is started, an open Profiler Window will automatically connect to the Player and start profiling. The \"Build And Run\" option will also automatically open the Profiler Window.");
-            public GUIContent autoconnectProfilerDisabled = EditorGUIUtility.TrTextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.");
-            public GUIContent buildWithDeepProfiler = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.");
-            public GUIContent buildWithDeepProfilerDisabled = EditorGUIUtility.TrTextContent("Deep Profiling Support", "Profiling is only enabled in a Development Player.");
-            public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging", "Enable this setting to allow your script code to be debugged.");
-            public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution. Can also use volume Up or Down button to confirm on Android.");
-            public GUIContent managedDebuggerFixedPort = EditorGUIUtility.TrTextContent("Managed Debugger Fixed Port", "Use the specified port to attach to the managed debugger. If 0, the port will be automatically selected.");
-            public GUIContent explicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
-            public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TrTextContent("Divide By Zero Checks");
-            public GUIContent explicitArrayBoundsChecks = EditorGUIUtility.TrTextContent("Array Bounds Checks");
-            public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TrTextContent("Learn about Unity Build Automation");
-            public GUIContent compressionMethod = EditorGUIUtility.TrTextContent("Compression Method", "Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
+            public GUIContent debugBuild = L10n.TextContent("Development Build", null, null, null);
+            public GUIContent autoconnectProfiler = L10n.TextContent("Autoconnect Profiler", "When the build is started, an open Profiler Window will automatically connect to the Player and start profiling. The \"Build And Run\" option will also automatically open the Profiler Window.", null, null);
+            public GUIContent autoconnectProfilerDisabled = L10n.TextContent("Autoconnect Profiler", "Profiling is only enabled in a Development Player.", null, null);
+            public GUIContent buildWithDeepProfiler = L10n.TextContent("Deep Profiling Support", "Build Player with Deep Profiling Support. This might affect Player performance.", null, null);
+            public GUIContent buildWithDeepProfilerDisabled = L10n.TextContent("Deep Profiling Support", "Profiling is only enabled in a Development Player.", null, null);
+            public GUIContent allowDebugging = L10n.TextContent("Script Debugging", "Enable this setting to allow your script code to be debugged.", null, null);
+            public GUIContent waitForManagedDebugger = L10n.TextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution. Can also use volume Up or Down button to confirm on Android.", null, null);
+            public GUIContent managedDebuggerFixedPort = L10n.TextContent("Managed Debugger Fixed Port", "Use the specified port to attach to the managed debugger. If 0, the port will be automatically selected.", null, null);
+            public GUIContent explicitNullChecks = L10n.TextContent("Explicit Null Checks", null, null, null);
+            public GUIContent explicitDivideByZeroChecks = L10n.TextContent("Divide By Zero Checks", null, null, null);
+            public GUIContent explicitArrayBoundsChecks = L10n.TextContent("Array Bounds Checks", null, null, null);
+            public GUIContent learnAboutUnityCloudBuild = L10n.TextContent("Learn about Unity Build Automation", null, null, null);
+            public GUIContent compressionMethod = L10n.TextContent("Compression Method", "Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.", null, null);
 
-            public readonly GUIContent assetImportOverrides = EditorGUIUtility.TrTextContent("Asset Import Overrides", "Asset import overrides for local development. Reducing maximum texture size or compression settings can speed up asset imports and platform switches.");
-            public readonly GUIContent maxTextureSize = EditorGUIUtility.TrTextContent("Max Texture Size", "Maximum texture import size for local development. Reducing maximum texture size can speed up asset imports and platform switches.");
+            public readonly GUIContent assetImportOverrides = L10n.TextContent("Asset Import Overrides", "Asset import overrides for local development. Reducing maximum texture size or compression settings can speed up asset imports and platform switches.", null, null);
+            public readonly GUIContent maxTextureSize = L10n.TextContent("Max Texture Size", "Maximum texture import size for local development. Reducing maximum texture size can speed up asset imports and platform switches.", null, null);
             public readonly GUIContent[] maxTextureSizeLabels =
             {
-                EditorGUIUtility.TrTextContent("No Override", "Use maximum texture size as specified in per-texture import settings."),
-                EditorGUIUtility.TrTextContent("Max 2048", "Make imported textures never exceed 2048 pixels in width or height."),
-                EditorGUIUtility.TrTextContent("Max 1024", "Make imported textures never exceed 1024 pixels in width or height."),
-                EditorGUIUtility.TrTextContent("Max 512", "Make imported textures never exceed 512 pixels in width or height."),
-                EditorGUIUtility.TrTextContent("Max 256", "Make imported textures never exceed 256 pixels in width or height."),
-                EditorGUIUtility.TrTextContent("Max 128", "Make imported textures never exceed 128 pixels in width or height."),
-                EditorGUIUtility.TrTextContent("Max 64", "Make imported textures never exceed 64 pixels in width or height."),
+                L10n.TextContent("No Override", "Use maximum texture size as specified in per-texture import settings.", null, null),
+                L10n.TextContent("Max 2048", "Make imported textures never exceed 2048 pixels in width or height.", null, null),
+                L10n.TextContent("Max 1024", "Make imported textures never exceed 1024 pixels in width or height.", null, null),
+                L10n.TextContent("Max 512", "Make imported textures never exceed 512 pixels in width or height.", null, null),
+                L10n.TextContent("Max 256", "Make imported textures never exceed 256 pixels in width or height.", null, null),
+                L10n.TextContent("Max 128", "Make imported textures never exceed 128 pixels in width or height.", null, null),
+                L10n.TextContent("Max 64", "Make imported textures never exceed 64 pixels in width or height.", null, null),
             };
             public readonly int[] maxTextureSizeValues =
             {
@@ -108,10 +108,10 @@ namespace UnityEditor
             };
             public readonly GUIContent[] textureCompressionLabels =
             {
-                EditorGUIUtility.TrTextContent("No Override", "Do not modify texture import compression settings."),
-                EditorGUIUtility.TrTextContent("Force Fast Compressor", "Use a faster but lower quality texture compression mode for all compressed textures. Turn off Crunch compression."),
-                EditorGUIUtility.TrTextContent("Force Uncompressed", "Do not compress textures."),
-                EditorGUIUtility.TrTextContent("Force No Crunch", "Disable crunch compression on textures.")
+                L10n.TextContent("No Override", "Do not modify texture import compression settings.", null, null),
+                L10n.TextContent("Force Fast Compressor", "Use a faster but lower quality texture compression mode for all compressed textures. Turn off Crunch compression.", null, null),
+                L10n.TextContent("Force Uncompressed", "Do not compress textures.", null, null),
+                L10n.TextContent("Force No Crunch", "Disable crunch compression on textures.", null, null)
             };
             public readonly int[] textureCompressionValues =
             {
@@ -121,8 +121,8 @@ namespace UnityEditor
                 (int)OverrideTextureCompression.ForceNoCrunchCompression
             };
 
-            public readonly GUIContent textureCompression = EditorGUIUtility.TrTextContent("Texture Compression", "Texture compression override for local development. Fast or Uncompressed can speed up asset imports and platform switches.");
-            public readonly GUIContent applyOverrides = EditorGUIUtility.TrTextContent("Apply Overrides", "Apply asset import override settings");
+            public readonly GUIContent textureCompression = L10n.TextContent("Texture Compression", "Texture compression override for local development. Fast or Uncompressed can speed up asset imports and platform switches.", null, null);
+            public readonly GUIContent applyOverrides = L10n.TextContent("Apply Overrides", "Apply asset import override settings", null, null);
 
             public Compression[] compressionTypes =
             {
@@ -133,9 +133,9 @@ namespace UnityEditor
 
             public GUIContent[] compressionStrings =
             {
-                EditorGUIUtility.TrTextContent("Default"),
-                EditorGUIUtility.TrTextContent("LZ4"),
-                EditorGUIUtility.TrTextContent("LZ4HC"),
+                L10n.TextContent("Default", null, null, null),
+                L10n.TextContent("LZ4", null, null, null),
+                L10n.TextContent("LZ4HC", null, null, null),
             };
 
             [NoAutoStaticsCleanup] // GUIStyle wrapping EditorStyles.foldout; survives code reload
@@ -240,7 +240,7 @@ namespace UnityEditor
             s_CurrOverrideMaxTextureSize = -1;
             minSize = new Vector2(640, 580);
             position = new Rect(50, 50, minSize.x, minSize.y);
-            titleContent = EditorGUIUtility.TrTextContent("Build Settings");
+            titleContent = L10n.TextContent("Build Settings", null, null, null);
         }
 
         BuildPlayerSceneTreeView m_TreeView;
@@ -420,7 +420,7 @@ namespace UnityEditor
             // Switch build target
             BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             GUI.enabled = BuildPipeline.IsBuildPlatformSupported(selectedTarget);
-            if (GUILayout.Button(EditorGUIUtility.TrTextContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
+            if (GUILayout.Button(L10n.TextContent("Player Settings...", null, null, null), GUILayout.Width(Styles.kButtonWidth)))
             {
                 SettingsService.OpenProjectSettings("Project/Player");
                 GUIUtility.ExitGUI();
@@ -447,7 +447,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
             GUILayout.BeginVertical();
-            EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent("Unable to access Unity services. Please log in, or request membership to this project to use these services.").text, MessageType.Warning);
+            EditorGUILayout.HelpBox(L10n.TextContent("Unable to access Unity services. Please log in, or request membership to this project to use these services.", null, null, null).text, MessageType.Warning);
             GUILayout.EndVertical();
             GUILayout.Space(5);
             GUILayout.EndHorizontal();

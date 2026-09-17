@@ -110,9 +110,17 @@ namespace Unity.GraphToolkit.Editor
                 if (m_Zoom != value)
                 {
                     m_Zoom = value;
+                    OnZoomChanged();
                     MarkDirtyRepaint();
                 }
             }
+        }
+
+        /// <summary>
+        /// Called when <see cref="Zoom"/> changes, before the border is repainted.
+        /// </summary>
+        protected virtual void OnZoomChanged()
+        {
         }
 
         /// <summary>

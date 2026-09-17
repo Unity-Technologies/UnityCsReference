@@ -13,7 +13,7 @@ namespace UnityEditor.Lighting.LightingSearch
     static class SearchColumnProvidersLightingSettings
     {
         [SearchColumnProvider(LightingSearchPaths.k_MixedLightingModePath)]
-        public static void MixedLightingModeSearchColumnProvider(SearchColumn column)
+        internal static void MixedLightingModeSearchColumnProvider(SearchColumn column)
         {
             column.getter = args =>
             {

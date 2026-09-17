@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneView not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
@@ -66,6 +65,9 @@ namespace UnityEditor
         float iconTextRightAlign;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Cache of the open gizmos popup, which a code reload closes anyway; ShowAtPosition creates a
+        // new instance whenever this is null.
+        [IgnoreForUAL0015("Popup instance recreated by ShowAtPosition when the cached one is null")]
         static AnnotationWindow s_AnnotationWindow = null;
         [NoAutoStaticsCleanup] // safe: timestamp guard, intentionally persisted across reloads
         static long s_LastClosedTime;
@@ -84,19 +86,19 @@ namespace UnityEditor
 
         const int maxShowRecent = 5;
         readonly string textGizmoVisible = L10n.Tr("Show/Hide Gizmo", null);
-        GUIContent generalContent = EditorGUIUtility.TrTextContent("General");
-        GUIContent iconToggleContent = EditorGUIUtility.TrTextContent("", "Show/Hide Icon");
-        GUIContent iconSelectContent = EditorGUIUtility.TrTextContent("", "Select Icon");
-        GUIContent icon3dGizmoContent = EditorGUIUtility.TrTextContent("3D Icons");
-        GUIContent terrainDebugWarnings = EditorGUIUtility.TrTextContent("Terrain Debug Warnings");
-        GUIContent showOutlineContent = EditorGUIUtility.TrTextContent("Selection Outline");
-        GUIContent showWireframeContent = EditorGUIUtility.TrTextContent("Selection Wire");
-        GUIContent showLODLabelContent = EditorGUIUtility.TrTextContent("LOD Labels", "Show or Hide LOD Labels for Mesh LOD and LODGroup. Disabled if MeshRenderer, SkinnedMeshRenderer or LODGroup Gizmos are are hidden");
-        GUIContent fadeGizmosContent = EditorGUIUtility.TrTextContent("Fade Gizmos", "Fade out and stop rendering gizmos that are small on screen");
-        GUIContent lightProbeVisualizationContent = EditorGUIUtility.TrTextContent("Light Probe Visualization");
-        GUIContent displayWeightsContent = EditorGUIUtility.TrTextContent("Display Weights");
-        GUIContent displayOcclusionContent = EditorGUIUtility.TrTextContent("Display Occlusion");
-        GUIContent highlightInvalidCellsContent = EditorGUIUtility.TrTextContent("Highlight Invalid Cells", "Highlight the invalid cells that cannot be used for probe interpolation.");
+        GUIContent generalContent = L10n.TextContent("General", null, null, null);
+        GUIContent iconToggleContent = L10n.TextContent("", "Show/Hide Icon", null, null);
+        GUIContent iconSelectContent = L10n.TextContent("", "Select Icon", null, null);
+        GUIContent icon3dGizmoContent = L10n.TextContent("3D Icons", null, null, null);
+        GUIContent terrainDebugWarnings = L10n.TextContent("Terrain Debug Warnings", null, null, null);
+        GUIContent showOutlineContent = L10n.TextContent("Selection Outline", null, null, null);
+        GUIContent showWireframeContent = L10n.TextContent("Selection Wire", null, null, null);
+        GUIContent showLODLabelContent = L10n.TextContent("LOD Labels", "Show or Hide LOD Labels for Mesh LOD and LODGroup. Disabled if MeshRenderer, SkinnedMeshRenderer or LODGroup Gizmos are are hidden", null, null);
+        GUIContent fadeGizmosContent = L10n.TextContent("Fade Gizmos", "Fade out and stop rendering gizmos that are small on screen", null, null);
+        GUIContent lightProbeVisualizationContent = L10n.TextContent("Light Probe Visualization", null, null, null);
+        GUIContent displayWeightsContent = L10n.TextContent("Display Weights", null, null, null);
+        GUIContent displayOcclusionContent = L10n.TextContent("Display Occlusion", null, null, null);
+        GUIContent highlightInvalidCellsContent = L10n.TextContent("Highlight Invalid Cells", "Highlight the invalid cells that cannot be used for probe interpolation.", null, null);
         private bool m_IsGameView;
 
         string m_SearchFilter = string.Empty;
@@ -786,4 +788,3 @@ namespace UnityEditor
 
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

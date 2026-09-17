@@ -59,22 +59,22 @@ namespace UnityEditor
 
         internal class Texts
         {
-            public GUIContent previewSpeed = EditorGUIUtility.TrTextContent("Playback Speed", "Playback Speed is also affected by the Time Scale setting in the Time Manager.");
-            public GUIContent previewSpeedDisabled = EditorGUIUtility.TrTextContent("Playback Speed", "Playback Speed is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.");
-            public GUIContent previewTime = EditorGUIUtility.TrTextContent("Playback Time", "Playback Time since the Particle System has started");
-            public GUIContent particleCount = EditorGUIUtility.TrTextContent("Particles", "Particles count");
-            public GUIContent subEmitterParticleCount = EditorGUIUtility.TrTextContent("Sub Emitter Particles");
-            public GUIContent particleSpeeds = EditorGUIUtility.TrTextContent("Speed Range", "Start speed minimum and maximum values");
-            public GUIContent play = EditorGUIUtility.TrTextContent("Play", "Play Particle System");
-            public GUIContent playDisabled = EditorGUIUtility.TrTextContent("Play", "Play is disabled, because the Time Scale in the Time Manager is set to 0.0.");
-            public GUIContent stop = EditorGUIUtility.TrTextContent("Stop", "Stop Particle System");
-            public GUIContent pause = EditorGUIUtility.TrTextContent("Pause", "Pause Particle System");
-            public GUIContent restart = EditorGUIUtility.TrTextContent("Restart", "Restart Particle System");
-            public GUIContent addParticleSystem = EditorGUIUtility.TrTextContent("", "Create Particle System");
-            public GUIContent showBounds = EditorGUIUtility.TrTextContent("Show Bounds", "Show world space bounding boxes.");
-            public GUIContent showOnlySelected = EditorGUIUtility.TrTextContent("Show Only Selected", "Hide all unselected Particle Systems in the current Effect.");
-            public GUIContent resimulation = EditorGUIUtility.TrTextContent("Resimulate", "If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform).");
-            public GUIContent previewLayers = EditorGUIUtility.TrTextContent("Simulate Layers", "Automatically preview all looping Particle Systems on the chosen layers, in addition to the selected Game Objects.");
+            public GUIContent previewSpeed = L10n.TextContent("Playback Speed", "Playback Speed is also affected by the Time Scale setting in the Time Manager.", null, null);
+            public GUIContent previewSpeedDisabled = L10n.TextContent("Playback Speed", "Playback Speed is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.", null, null);
+            public GUIContent previewTime = L10n.TextContent("Playback Time", "Playback Time since the Particle System has started", null, null);
+            public GUIContent particleCount = L10n.TextContent("Particles", "Particles count", null, null);
+            public GUIContent subEmitterParticleCount = L10n.TextContent("Sub Emitter Particles", null, null, null);
+            public GUIContent particleSpeeds = L10n.TextContent("Speed Range", "Start speed minimum and maximum values", null, null);
+            public GUIContent play = L10n.TextContent("Play", "Play Particle System", null, null);
+            public GUIContent playDisabled = L10n.TextContent("Play", "Play is disabled, because the Time Scale in the Time Manager is set to 0.0.", null, null);
+            public GUIContent stop = L10n.TextContent("Stop", "Stop Particle System", null, null);
+            public GUIContent pause = L10n.TextContent("Pause", "Pause Particle System", null, null);
+            public GUIContent restart = L10n.TextContent("Restart", "Restart Particle System", null, null);
+            public GUIContent addParticleSystem = L10n.TextContent("", "Create Particle System", null, null);
+            public GUIContent showBounds = L10n.TextContent("Show Bounds", "Show world space bounding boxes.", null, null);
+            public GUIContent showOnlySelected = L10n.TextContent("Show Only Selected", "Hide all unselected Particle Systems in the current Effect.", null, null);
+            public GUIContent resimulation = L10n.TextContent("Resimulate", "If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform).", null, null);
+            public GUIContent previewLayers = L10n.TextContent("Simulate Layers", "Automatically preview all looping Particle Systems on the chosen layers, in addition to the selected Game Objects.", null, null);
             public string secondsFloatFieldFormatString = "f2";
             public string speedFloatFieldFormatString = "f1";
         }

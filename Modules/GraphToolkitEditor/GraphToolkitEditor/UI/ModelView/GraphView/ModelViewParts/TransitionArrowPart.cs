@@ -86,19 +86,28 @@ namespace Unity.GraphToolkit.Editor
                 m_Arrow.ReplaceAndCacheClassName(shortArrowUssClassName, ref m_ShortLongClassName);
             }
 
-            if (m_Model is SelfTransitionModel transition)
+            var hasStyleChange = visitor.ChangeHints.HasChange(ChangeHint.Style);
+
+            if (hasStyleChange && m_Model is TransitionSupportModel transition)
             {
-                if (visitor.ChangeHints.HasChange(ChangeHint.Style))
-                {
-                    m_Arrow.FillColor = transition.DefaultColor;
-                    m_Arrow.tooltip = transition.Tooltip ?? string.Empty;
-                }
+                m_Arrow.ModelFillColor = transition.DefaultColor == default ? null : transition.DefaultColor;
+                m_Arrow.ModelOpacity = transition.Opacity;
+                m_Arrow.tooltip = transition.Tooltip ?? string.Empty;
+                m_Arrow.ModelOuterLineWidth = transition.WidthOverride == 0 ? null : transition.WidthOverride;
+                m_Arrow.ModelOuterLineColor = transition.LineColor == default ? null : transition.LineColor;
+
+                // IsDashed only reaches the arrow on a self transition
+                if (m_Arrow.IsSelfTransition)
+                    m_Arrow.ModelIsDashed = transition.IsDashed;
             }
 
             if (visitor.ChangeHints.HasChange(ChangeHint.Layout) || visitor.ChangeHints.HasChange(ChangeHint.Data))
             {
                 m_Arrow.UpdateLayout();
             }
+
+            if (hasStyleChange)
+                m_Arrow.MarkDirtyRepaint();
         }
     }
 }

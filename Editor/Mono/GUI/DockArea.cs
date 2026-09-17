@@ -702,20 +702,20 @@ namespace UnityEditor
             if (view)
             {
                 if (parent.window.showMode == ShowMode.MainWindow && view.CanMaximize())
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Maximize"), !(parent is SplitView), Maximize, view);
+                    menu.AddItem(L10n.TextContent("Maximize", null, null, null), !(parent is SplitView), Maximize, view);
                 else
-                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Maximize"));
+                    menu.AddDisabledItem(L10n.TextContent("Maximize", null, null, null));
             }
 
             bool closeAllowed = (window.showMode != ShowMode.MainWindow || AllowTabAction());
             if (closeAllowed)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Close Tab"), false, Close, view);
+                menu.AddItem(L10n.TextContent("Close Tab", null, null, null), false, Close, view);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Close Tab"));
+                menu.AddDisabledItem(L10n.TextContent("Close Tab", null, null, null));
             menu.AddSeparator("");
 
             IEnumerable<Type> types = GetPaneTypes();
-            GUIContent baseContent = EditorGUIUtility.TrTextContent("Add Tab");
+            GUIContent baseContent = L10n.TextContent("Add Tab", null, null, null);
             foreach (Type t in types)
             {
                 if (t == null)
@@ -1396,12 +1396,12 @@ namespace UnityEditor
         {
             base.AddDefaultItemsToMenu(menu, window);
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Maximize"), !(parent is SplitView), Unmaximize, window);
-            menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Close Tab"));
+            menu.AddItem(L10n.TextContent("Maximize", null, null, null), !(parent is SplitView), Unmaximize, window);
+            menu.AddDisabledItem(L10n.TextContent("Close Tab", null, null, null));
             menu.AddSeparator("");
             IEnumerable<Type> types = GetPaneTypes();
 
-            GUIContent baseContent = EditorGUIUtility.TrTextContent("Add Tab");
+            GUIContent baseContent = L10n.TextContent("Add Tab", null, null, null);
             foreach (Type t in types)
             {
                 if (t == null)

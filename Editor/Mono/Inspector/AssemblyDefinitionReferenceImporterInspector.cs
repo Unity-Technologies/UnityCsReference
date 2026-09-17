@@ -18,9 +18,9 @@ namespace UnityEditor
     {
         internal class Styles
         {
-            public static readonly GUIContent assemblyDefinition = EditorGUIUtility.TrTextContent("Assembly Definition");
-            public static readonly GUIContent loadError = EditorGUIUtility.TrTextContent("Load error");
-            public static readonly GUIContent useGUID = EditorGUIUtility.TrTextContent("Use GUID", "Use the Assembly Definition asset GUID instead of name for referencing. Allows the referenced assembly to be renamed without having to update references.");
+            public static readonly GUIContent assemblyDefinition = L10n.TextContent("Assembly Definition", null, null, null);
+            public static readonly GUIContent loadError = L10n.TextContent("Load error", null, null, null);
+            public static readonly GUIContent useGUID = L10n.TextContent("Use GUID", "Use the Assembly Definition asset GUID instead of name for referencing. Allows the referenced assembly to be renamed without having to update references.", null, null);
         }
 
         GUIStyle m_TextStyle;

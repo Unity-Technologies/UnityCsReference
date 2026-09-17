@@ -24,7 +24,7 @@ namespace Unity.Localization;
 /// <see cref="Add"/> returns the name a variable was actually stored under.
 /// </remarks>
 /// <example>
-/// <para>Add a variable and check that it exists.</para>
+/// Add a variable and check that it exists.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalVariablesGroupOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedString"/>
@@ -108,7 +108,7 @@ public class LocalVariablesGroup : IVariableGroup, ISerializationCallbackReceive
     /// <param name="name">The variable name to look for.</param>
     /// <returns><c>true</c> when a variable is stored under the name; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Check whether a variable exists before using it.</para>
+    /// Check whether a variable exists before using it.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalVariablesGroupContainsNameExample.cs"/>
     /// </example>
     public bool ContainsName(string name) => !string.IsNullOrEmpty(name) && Lookup.ContainsKey(Normalize(name));
@@ -126,7 +126,7 @@ public class LocalVariablesGroup : IVariableGroup, ISerializationCallbackReceive
     /// <returns>The unique name that the variable was stored under.</returns>
     /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="variable"/> is null.</exception>
     /// <example>
-    /// <para>Add a variable and keep the name it was stored under.</para>
+    /// Add a variable and keep the name it was stored under.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalVariablesGroupAddExample.cs"/>
     /// </example>
     public string Add(IVariable variable, string name = null)
@@ -146,7 +146,7 @@ public class LocalVariablesGroup : IVariableGroup, ISerializationCallbackReceive
     /// <param name="name">The name of the variable to remove.</param>
     /// <returns><c>true</c> when a variable was removed; otherwise, <c>false</c>.</returns>
     /// <example>
-    /// <para>Remove a variable by name.</para>
+    /// Remove a variable by name.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalVariablesGroupRemoveExample.cs"/>
     /// </example>
     public bool Remove(string name)
@@ -171,7 +171,7 @@ public class LocalVariablesGroup : IVariableGroup, ISerializationCallbackReceive
     /// </summary>
     /// <remarks>Leaves the group empty, so Smart String placeholders that referenced the removed variables no longer resolve.</remarks>
     /// <example>
-    /// <para>Remove all variables.</para>
+    /// Remove all variables.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalVariablesGroupClearExample.cs"/>
     /// </example>
     public void Clear()

@@ -250,7 +250,7 @@ namespace UnityEditor.Lighting.LightingSearch
                 slider.style.display = shouldBeVisible ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
-            public static SearchWindowCustomPanelConfig CreateLightingCustomPanel()
+            internal static SearchWindowCustomPanelConfig CreateLightingCustomPanel()
             {
                 return new SearchWindowCustomPanelConfig(LightmapSearchProvider.ProviderId)
                 {

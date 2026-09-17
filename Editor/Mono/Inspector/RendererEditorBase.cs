@@ -25,16 +25,16 @@ namespace UnityEditor
             private SerializedProperty m_ProbeAnchor;
             private SerializedProperty m_ReceiveShadows;
 
-            private GUIContent m_LightProbeUsageStyle = EditorGUIUtility.TrTextContent("Light Probes", "Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to receive Global Illumination from lightmaps.");
-            private GUIContent m_LightProbeVolumeOverrideStyle = EditorGUIUtility.TrTextContent("Proxy Volume Override", "If set, the Renderer will use the Light Probe Proxy Volume component from another GameObject.");
-            private GUIContent m_ReflectionProbeUsageStyle = EditorGUIUtility.TrTextContent("Reflection Probes", "Specifies if or how the object is affected by reflections in the Scene.  This property cannot be disabled in deferred rendering modes.");
-            private GUIContent m_ProbeAnchorStyle = EditorGUIUtility.TrTextContent("Anchor Override", "Specifies the Transform position that will be used for sampling the light probes and reflection probes.");
-            private GUIContent m_ProbeAnchorNoReflectionProbesStyle = EditorGUIUtility.TrTextContent("Anchor Override", "Specifies the Transform position that will be used for sampling the light probes.");
-            private GUIContent m_DeferredNote = EditorGUIUtility.TrTextContent("In Deferred Shading, all objects receive shadows and get per-pixel reflection probes.");
-            private GUIContent m_LightProbeVolumeNote = EditorGUIUtility.TrTextContent("A valid Light Probe Proxy Volume component could not be found.");
-            private GUIContent m_LightProbeVolumeUnsupportedNote = EditorGUIUtility.TrTextContent("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.");
-            private GUIContent m_LightProbeVolumeUnsupportedOnTreesNote = EditorGUIUtility.TrTextContent("The Light Probe Proxy Volume feature is not supported on tree rendering. Simple 'Blend Probes' mode will be used instead.");
-            private GUIContent m_LightProbeCustomNote = EditorGUIUtility.TrTextContent("The Custom Provided mode requires SH properties to be sent via MaterialPropertyBlock.");
+            private GUIContent m_LightProbeUsageStyle = L10n.TextContent("Light Probes", "Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to receive Global Illumination from lightmaps.", null, null);
+            private GUIContent m_LightProbeVolumeOverrideStyle = L10n.TextContent("Proxy Volume Override", "If set, the Renderer will use the Light Probe Proxy Volume component from another GameObject.", null, null);
+            private GUIContent m_ReflectionProbeUsageStyle = L10n.TextContent("Reflection Probes", "Specifies if or how the object is affected by reflections in the Scene.  This property cannot be disabled in deferred rendering modes.", null, null);
+            private GUIContent m_ProbeAnchorStyle = L10n.TextContent("Anchor Override", "Specifies the Transform position that will be used for sampling the light probes and reflection probes.", null, null);
+            private GUIContent m_ProbeAnchorNoReflectionProbesStyle = L10n.TextContent("Anchor Override", "Specifies the Transform position that will be used for sampling the light probes.", null, null);
+            private GUIContent m_DeferredNote = L10n.TextContent("In Deferred Shading, all objects receive shadows and get per-pixel reflection probes.", null, null, null);
+            private GUIContent m_LightProbeVolumeNote = L10n.TextContent("A valid Light Probe Proxy Volume component could not be found.", null, null, null);
+            private GUIContent m_LightProbeVolumeUnsupportedNote = L10n.TextContent("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.", null, null, null);
+            private GUIContent m_LightProbeVolumeUnsupportedOnTreesNote = L10n.TextContent("The Light Probe Proxy Volume feature is not supported on tree rendering. Simple 'Blend Probes' mode will be used instead.", null, null, null);
+            private GUIContent m_LightProbeCustomNote = L10n.TextContent("The Custom Provided mode requires SH properties to be sent via MaterialPropertyBlock.", null, null, null);
             private GUIContent[] m_ReflectionProbeUsageOptions = Array.ConvertAll(Enum.GetNames(typeof(ReflectionProbeUsage)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
 
             private GUIContent probeAnchorStyle
@@ -327,24 +327,24 @@ namespace UnityEditor
 
         class Styles
         {
-            public static readonly GUIContent materials = EditorGUIUtility.TrTextContent("Materials");
-            public static readonly GUIContent probeSettings = EditorGUIUtility.TrTextContent("Probes");
-            public static readonly GUIContent otherSettings = EditorGUIUtility.TrTextContent("Additional Settings");
-            public static readonly GUIContent meshLodSettings = EditorGUIUtility.TrTextContent("Mesh LOD");
+            public static readonly GUIContent materials = L10n.TextContent("Materials", null, null, null);
+            public static readonly GUIContent probeSettings = L10n.TextContent("Probes", null, null, null);
+            public static readonly GUIContent otherSettings = L10n.TextContent("Additional Settings", null, null, null);
+            public static readonly GUIContent meshLodSettings = L10n.TextContent("Mesh LOD", null, null, null);
 
-            public static readonly GUIContent maskInteractionLabel = EditorGUIUtility.TrTextContent("Mask Interaction", "Renderer's interaction with a Sprite Mask");
-            public static readonly GUIContent dynamicOcclusion = EditorGUIUtility.TrTextContent("Dynamic Occlusion", "Controls if dynamic occlusion culling should be performed for this renderer.");
-            public static readonly GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Mesh Renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
-            public static readonly GUIContent skinnedMotionVectors = EditorGUIUtility.TrTextContent("Skinned Motion Vectors", "Enabling Skinned Motion Vectors will allow generation of high precision motion vectors for the Skinned Mesh. This is achieved by keeping the skinning results of the previous frame in memory thus increasing the memory usage.");
-            public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
-            public static readonly GUIContent rendererPriority = EditorGUIUtility.TrTextContent("Priority", "Sets the priority value that the render pipeline uses to calculate the rendering order.");
-            public static readonly GUIContent rayTracingModeStyle = EditorGUIUtility.TrTextContent("Ray Tracing Mode", "Describes how the acceleration structure associated with a renderer will update for ray tracing.");
+            public static readonly GUIContent maskInteractionLabel = L10n.TextContent("Mask Interaction", "Renderer's interaction with a Sprite Mask", null, null);
+            public static readonly GUIContent dynamicOcclusion = L10n.TextContent("Dynamic Occlusion", "Controls if dynamic occlusion culling should be performed for this renderer.", null, null);
+            public static readonly GUIContent motionVectors = L10n.TextContent("Motion Vectors", "Specifies whether the Mesh Renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.", null, null);
+            public static readonly GUIContent skinnedMotionVectors = L10n.TextContent("Skinned Motion Vectors", "Enabling Skinned Motion Vectors will allow generation of high precision motion vectors for the Skinned Mesh. This is achieved by keeping the skinning results of the previous frame in memory thus increasing the memory usage.", null, null);
+            public static readonly GUIContent renderingLayerMask = L10n.TextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.", null, null);
+            public static readonly GUIContent rendererPriority = L10n.TextContent("Priority", "Sets the priority value that the render pipeline uses to calculate the rendering order.", null, null);
+            public static readonly GUIContent rayTracingModeStyle = L10n.TextContent("Ray Tracing Mode", "Describes how the acceleration structure associated with a renderer will update for ray tracing.", null, null);
             public static readonly GUIContent[] rayTracingModeOptions = Array.ConvertAll(Enum.GetNames(typeof(RayTracingMode)), x => new GUIContent(ObjectNames.NicifyVariableName(x)));
-            public static readonly GUIContent rayTracingGeomStyle = EditorGUIUtility.TrTextContent("Procedural Geometry", "Specifies whether to treat geometry as procedurally defined by an intersection shader or as a Mesh.");
-            public static readonly GUIContent rayTracingAccelStructBuildFlagsStyle = EditorGUIUtility.TrTextContent("Acceleration Structure Build Flags", "Specifies whether this renderer overrides the default build flags that you specified when you created a RayTracingAccelerationStructure.");
-            public static readonly GUIContent forceMeshLodStyle = EditorGUIUtility.TrTextContent("LOD Override", "Disable automatic LOD selection and set the LOD index to the value in the Override Level property.");
-            public static readonly GUIContent forcedMeshLodLevelStyle = EditorGUIUtility.TrTextContent("Override Level", "Set the LOD index to this value.");
-            public static readonly GUIContent meshLodSelectionBiasStyle = EditorGUIUtility.TrTextContent("LOD Selection Bias", "The value that Unity adds to the calculated LOD index. Increasing this value results in Unity selecting less detailed LODs, reducing the value - in more detailed LODs.");
+            public static readonly GUIContent rayTracingGeomStyle = L10n.TextContent("Procedural Geometry", "Specifies whether to treat geometry as procedurally defined by an intersection shader or as a Mesh.", null, null);
+            public static readonly GUIContent rayTracingAccelStructBuildFlagsStyle = L10n.TextContent("Acceleration Structure Build Flags", "Specifies whether this renderer overrides the default build flags that you specified when you created a RayTracingAccelerationStructure.", null, null);
+            public static readonly GUIContent forceMeshLodStyle = L10n.TextContent("LOD Override", "Disable automatic LOD selection and set the LOD index to the value in the Override Level property.", null, null);
+            public static readonly GUIContent forcedMeshLodLevelStyle = L10n.TextContent("Override Level", "Set the LOD index to this value.", null, null);
+            public static readonly GUIContent meshLodSelectionBiasStyle = L10n.TextContent("LOD Selection Bias", "The value that Unity adds to the calculated LOD index. Increasing this value results in Unity selecting less detailed LODs, reducing the value - in more detailed LODs.", null, null);
         }
 
         private bool m_IsPrefab;

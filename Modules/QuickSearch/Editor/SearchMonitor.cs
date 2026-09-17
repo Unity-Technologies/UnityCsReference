@@ -201,8 +201,14 @@ namespace UnityEditor.Search
     public static partial class SearchMonitor
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Guard for the monitor initialization: false is the pre-init value, and Init runs again from the
+        // code-loaded hook and sets it back to true.
+        [IgnoreForUAL0015("Initialization guard reset to its pre-init value and set again by Init")]
         static volatile bool s_Initialize = false;
         [AutoStaticsCleanupOnCodeReload]
+        // Mirrors whether contentRefreshed has any subscriber: it is turned on by the event's add accessor
+        // and off when the last one leaves, so false is the correct resting value next to a cleared event.
+        [IgnoreForUAL0015("Gate derived from the contentRefreshed subscriber count, re-enabled on the first re-subscription")]
         static bool s_ContentRefreshedEnabled;
 
         [AutoStaticsCleanupOnCodeReload]
@@ -213,10 +219,18 @@ namespace UnityEditor.Search
         static readonly HashSet<string> s_MovedItems = new HashSet<string>();
 
         [AutoStaticsCleanupOnCodeReload]
+        // Cancel handle for the pending delayed content-refresh call: it is replaced on every content change
+        // and nulled once the refresh is raised, so the next change installs a new one.
+        [IgnoreForUAL0015("Cancel handle for the delayed content refresh, reinstalled on the next content change")]
         static Action s_ContentRefreshOff;
         [AutoStaticsCleanupOnCodeReload]
+        // Debounce helper recreated by Init, which runs again on every code load.
+        [IgnoreForUAL0015("Debounce helper recreated by Init on every code load")]
         static Delayer s_DelayedInvalidate = null;
         [AutoStaticsCleanupOnCodeReload]
+        // Transient invalidation batch: entries are added as documents change and the set is drained and
+        // cleared by the delayed invalidate pass, so it refills from the next batch of changes.
+        [IgnoreForUAL0015("Transient invalidation batch, drained and cleared by the delayed invalidate pass")]
         static readonly HashSet<ulong> s_DocumentsToInvalidate = new HashSet<ulong>();
 
         public static bool pending => s_UpdatedItems.Count > 0 || s_RemovedItems.Count > 0 || s_MovedItems.Count > 0;
@@ -224,26 +238,45 @@ namespace UnityEditor.Search
         internal static bool enabled => InternalEditorUtility.isHumanControllingUs || File.Exists("Assets/Editor/test_search_monitor.txt");
 
         [AutoStaticsCleanupOnCodeReload]
+        // Search providers subscribe from their onEnable handler, which runs again once the providers are
+        // recreated after a code load, so the handlers come back with them.
+        [IgnoreForUAL0015("Provider notification re-subscribed by the search providers when they are re-enabled")]
         public static event Action sceneChanged;
         [AutoStaticsCleanupOnCodeReload]
+        // Search providers subscribe from their onEnable handler, which runs again once the providers are
+        // recreated after a code load, so the handlers come back with them.
+        [IgnoreForUAL0015("Provider notification re-subscribed by the search providers when they are re-enabled")]
         public static event ObjectChangeEvents.ObjectChangeEventsHandler objectChanged;
         [AutoStaticsCleanupOnCodeReload]
+        // Search providers subscribe from their onEnable handler, which runs again once the providers are
+        // recreated after a code load, so the handlers come back with them.
+        [IgnoreForUAL0015("Provider notification re-subscribed by the search providers when they are re-enabled")]
         public static event Action documentsInvalidated;
 
         internal const string k_TransactionDatabasePath = "Library/Search/transactions.db";
         [AutoStaticsCleanupOnCodeReload]
+        // Handle to the on-disk transaction database, recreated and re-initialized by Init on every code
+        // load; the transactions themselves live in the database file.
+        [IgnoreForUAL0015("Transaction-database handle recreated by Init on every code load")]
         static TransactionManager s_TransactionManager = null;
         // Internal for testing only
         internal static TransactionManager transactionManager => s_TransactionManager;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Handle to the on-disk property database, recreated by Init on every code load.
+        [IgnoreForUAL0015("Property-database handle recreated by Init on every code load")]
         private static PropertyDatabase propertyDatabase = null;
         [AutoStaticsCleanupOnCodeReload]
+        // Handle to the on-disk property alias database, recreated by Init on every code load.
+        [IgnoreForUAL0015("Property-alias database handle recreated by Init on every code load")]
         private static PropertyDatabase propertyAliases = null;
 
         [NoAutoStaticsCleanup]
         static readonly object s_ContentRefreshedLock = new object();
         [AutoStaticsCleanupOnCodeReload]
+        // Backing store for the contentRefreshed event: subscribers attach through their own lifecycle and
+        // re-subscribe after a code reload, so the cleared store refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         static event Action<string[], string[], string[]> s_ContentRefreshed;
         public static event Action<string[], string[], string[]> contentRefreshed
         {

@@ -22,69 +22,69 @@ namespace UnityEditor
     {
         class ContentNonSearchable
         {
-            public static readonly GUIContent kGeneralSettingsWarning = EditorGUIUtility.TrTextContent("Changing Memory setup values can cause severe performance degradation.");
-            public static readonly GUIContent kEditorSettingsWarning = EditorGUIUtility.TrTextContent("Changing the memory setup for editor will update the ProjectSettings/boot.config file. This file is loaded at Editor startup, so will take effect at next startup.");
+            public static readonly GUIContent kGeneralSettingsWarning = L10n.TextContent("Changing Memory setup values can cause severe performance degradation.", null, null, null);
+            public static readonly GUIContent kEditorSettingsWarning = L10n.TextContent("Changing the memory setup for editor will update the ProjectSettings/boot.config file. This file is loaded at Editor startup, so will take effect at next startup.", null, null, null);
         }
 
         class Content
         {
-            public static readonly GUIContent kMainAllocatorsTitle = EditorGUIUtility.TrTextContent("Main Allocators");
+            public static readonly GUIContent kMainAllocatorsTitle = L10n.TextContent("Main Allocators", null, null, null);
 
-            public static readonly GUIContent kMainAllocatorTitle = EditorGUIUtility.TrTextContent("Main Allocator");
-            public static readonly GUIContent kMainAllocatorBlockSize = EditorGUIUtility.TrTextContent("Main Thread Block Size", "Block size used by main thread allocator");
-            public static readonly GUIContent kThreadAllocatorBlockSize = EditorGUIUtility.TrTextContent("Shared Thread Block Size", "Block size used by shared thread allocator");
+            public static readonly GUIContent kMainAllocatorTitle = L10n.TextContent("Main Allocator", null, null, null);
+            public static readonly GUIContent kMainAllocatorBlockSize = L10n.TextContent("Main Thread Block Size", "Block size used by main thread allocator", null, null);
+            public static readonly GUIContent kThreadAllocatorBlockSize = L10n.TextContent("Shared Thread Block Size", "Block size used by shared thread allocator", null, null);
 
-            public static readonly GUIContent kMainAllocatorMimallocEnabled = EditorGUIUtility.TrTextContent("Mimalloc enabled", "Use Mimalloc as main allocator");
+            public static readonly GUIContent kMainAllocatorMimallocEnabled = L10n.TextContent("Mimalloc enabled", "Use Mimalloc as main allocator", null, null);
 
-            public static readonly GUIContent kGfxAllocatorTitle = EditorGUIUtility.TrTextContent("Gfx Allocator");
-            public static readonly GUIContent kMainGfxBlockSize = EditorGUIUtility.TrTextContent("Main Thread Block Size", "Block size used by main thread for gfx allocations");
-            public static readonly GUIContent kThreadGfxBlockSize = EditorGUIUtility.TrTextContent("Shared Thread Block Size", "Block size used by shared threads for gfx allocations");
+            public static readonly GUIContent kGfxAllocatorTitle = L10n.TextContent("Gfx Allocator", null, null, null);
+            public static readonly GUIContent kMainGfxBlockSize = L10n.TextContent("Main Thread Block Size", "Block size used by main thread for gfx allocations", null, null);
+            public static readonly GUIContent kThreadGfxBlockSize = L10n.TextContent("Shared Thread Block Size", "Block size used by shared threads for gfx allocations", null, null);
 
-            public static readonly GUIContent kExtraAllocatorTitle = EditorGUIUtility.TrTextContent("Other Allocators");
-            public static readonly GUIContent kCacheBlockSize = EditorGUIUtility.TrTextContent("File Cache Block Size", "Block size used by file cache allocator. Setting this value to 0 will cause the file cache allocations to be passed to the main allocator");
-            public static readonly GUIContent kTypetreeBlockSize = EditorGUIUtility.TrTextContent("Type Tree Block Size", "Block size used by the tree allocator. Setting this value to 0 will cause the type tree allocations to be passed to the main allocator");
-            public static readonly GUIContent kRemapperInitialCapacity = EditorGUIUtility.TrTextContent("Remapper Initial Capacity", "Initial capacity of the Remapper allocation");
+            public static readonly GUIContent kExtraAllocatorTitle = L10n.TextContent("Other Allocators", null, null, null);
+            public static readonly GUIContent kCacheBlockSize = L10n.TextContent("File Cache Block Size", "Block size used by file cache allocator. Setting this value to 0 will cause the file cache allocations to be passed to the main allocator", null, null);
+            public static readonly GUIContent kTypetreeBlockSize = L10n.TextContent("Type Tree Block Size", "Block size used by the tree allocator. Setting this value to 0 will cause the type tree allocations to be passed to the main allocator", null, null);
+            public static readonly GUIContent kRemapperInitialCapacity = L10n.TextContent("Remapper Initial Capacity", "Initial capacity of the Remapper allocation", null, null);
 
-            public static readonly GUIContent kTempAllocatorTitle_Player = EditorGUIUtility.TrTextContent("Fast Per Thread Temporary Allocators", "Block size can grow to twice the initial size");
-            public static readonly GUIContent kTempAllocatorTitle_Editor = EditorGUIUtility.TrTextContent("Fast Per Thread Temporary Allocators", "Block size can grow to 8 times the initial size");
-            public static readonly GUIContent kTempAllocatorSizeMain = EditorGUIUtility.TrTextContent("Main Thread Block Size", "Initial size for main thread temp allocator");
-            public static readonly GUIContent kTempAllocatorSizeJobWorker = EditorGUIUtility.TrTextContent("Job Worker Block Size", "Block size for worker job temp allocators");
-            public static readonly GUIContent kTempAllocatorSizeBackgroundWorker = EditorGUIUtility.TrTextContent("Background Job Worker Block Size", "Block size for worker job temp allocators");
-            public static readonly GUIContent kTempAllocatorSizePreloadManager = EditorGUIUtility.TrTextContent("Preload Block Size", "Block size for worker job temp allocators");
-            public static readonly GUIContent kTempAllocatorSizeAudioWorker = EditorGUIUtility.TrTextContent("Audio Worker Block Size", "Block size for worker job temp allocators");
-            public static readonly GUIContent kTempAllocatorSizeCloudWorker = EditorGUIUtility.TrTextContent("Cloud Worker Block Size", "Block size for worker job temp allocators");
-            public static readonly GUIContent kTempAllocatorSizeGfx = EditorGUIUtility.TrTextContent("Gfx Thread Block Size", "Block size for worker job temp allocators");
-            public static readonly GUIContent kTempAllocatorSizeGIBakingWorker = EditorGUIUtility.TrTextContent("GI Baking Block Size", "Block size for GI baking workers temp allocators");
-            public static readonly GUIContent kTempAllocatorSizeNavMeshWorker = EditorGUIUtility.TrTextContent("NavMesh Worker Block Size", "Block size for worker job temp allocators");
+            public static readonly GUIContent kTempAllocatorTitle_Player = L10n.TextContent("Fast Per Thread Temporary Allocators", "Block size can grow to twice the initial size", null, null);
+            public static readonly GUIContent kTempAllocatorTitle_Editor = L10n.TextContent("Fast Per Thread Temporary Allocators", "Block size can grow to 8 times the initial size", null, null);
+            public static readonly GUIContent kTempAllocatorSizeMain = L10n.TextContent("Main Thread Block Size", "Initial size for main thread temp allocator", null, null);
+            public static readonly GUIContent kTempAllocatorSizeJobWorker = L10n.TextContent("Job Worker Block Size", "Block size for worker job temp allocators", null, null);
+            public static readonly GUIContent kTempAllocatorSizeBackgroundWorker = L10n.TextContent("Background Job Worker Block Size", "Block size for worker job temp allocators", null, null);
+            public static readonly GUIContent kTempAllocatorSizePreloadManager = L10n.TextContent("Preload Block Size", "Block size for worker job temp allocators", null, null);
+            public static readonly GUIContent kTempAllocatorSizeAudioWorker = L10n.TextContent("Audio Worker Block Size", "Block size for worker job temp allocators", null, null);
+            public static readonly GUIContent kTempAllocatorSizeCloudWorker = L10n.TextContent("Cloud Worker Block Size", "Block size for worker job temp allocators", null, null);
+            public static readonly GUIContent kTempAllocatorSizeGfx = L10n.TextContent("Gfx Thread Block Size", "Block size for worker job temp allocators", null, null);
+            public static readonly GUIContent kTempAllocatorSizeGIBakingWorker = L10n.TextContent("GI Baking Block Size", "Block size for GI baking workers temp allocators", null, null);
+            public static readonly GUIContent kTempAllocatorSizeNavMeshWorker = L10n.TextContent("NavMesh Worker Block Size", "Block size for worker job temp allocators", null, null);
 
             // TODO: guard input parameters
-            public static readonly GUIContent kJobTempAllocatorTitle = EditorGUIUtility.TrTextContent("Fast Thread Shared Temporary Allocators");
-            public static readonly GUIContent kJobTempAllocatorBlockSize = EditorGUIUtility.TrTextContent("Job Allocator Block Size", "Block size for worker job temp allocators. Can grow to 64 blocks");
-            public static readonly GUIContent kBackgroundJobTempAllocatorBlockSize = EditorGUIUtility.TrTextContent("Background Job Allocator Block Size", "Block size for background worker job temp allocators. Can grow to 64 blocks");
-            public static readonly GUIContent kJobTempAllocatorReducedBlockSize = EditorGUIUtility.TrTextContent("Job Allocator Block Sizes on low memory platform", "Block sizes for job and background if platform has less than 2GB memory");
+            public static readonly GUIContent kJobTempAllocatorTitle = L10n.TextContent("Fast Thread Shared Temporary Allocators", null, null, null);
+            public static readonly GUIContent kJobTempAllocatorBlockSize = L10n.TextContent("Job Allocator Block Size", "Block size for worker job temp allocators. Can grow to 64 blocks", null, null);
+            public static readonly GUIContent kBackgroundJobTempAllocatorBlockSize = L10n.TextContent("Background Job Allocator Block Size", "Block size for background worker job temp allocators. Can grow to 64 blocks", null, null);
+            public static readonly GUIContent kJobTempAllocatorReducedBlockSize = L10n.TextContent("Job Allocator Block Sizes on low memory platform", "Block sizes for job and background if platform has less than 2GB memory", null, null);
 
-            public static readonly GUIContent kBucketAllocatorTitle = EditorGUIUtility.TrTextContent("Shared Bucket Allocator");
-            public static readonly GUIContent kBucketAllocatorGranularity = EditorGUIUtility.TrTextContent("Bucket Allocator Granularity", "Bucket allocator bucket granularity");
-            public static readonly GUIContent kBucketAllocatorBucketsCount = EditorGUIUtility.TrTextContent("Bucket Allocator BucketCount", "Number of bucket size increments of bucket granularity");
-            public static readonly GUIContent kBucketAllocatorBlockSize = EditorGUIUtility.TrTextContent("Bucket Allocator Block Size", "Bucket allocator block size");
-            public static readonly GUIContent kBucketAllocatorBlockCount = EditorGUIUtility.TrTextContent("Bucket Allocator Block Count", "Bucket allocator block count");
+            public static readonly GUIContent kBucketAllocatorTitle = L10n.TextContent("Shared Bucket Allocator", null, null, null);
+            public static readonly GUIContent kBucketAllocatorGranularity = L10n.TextContent("Bucket Allocator Granularity", "Bucket allocator bucket granularity", null, null);
+            public static readonly GUIContent kBucketAllocatorBucketsCount = L10n.TextContent("Bucket Allocator BucketCount", "Number of bucket size increments of bucket granularity", null, null);
+            public static readonly GUIContent kBucketAllocatorBlockSize = L10n.TextContent("Bucket Allocator Block Size", "Bucket allocator block size", null, null);
+            public static readonly GUIContent kBucketAllocatorBlockCount = L10n.TextContent("Bucket Allocator Block Count", "Bucket allocator block count", null, null);
 
-            public static readonly GUIContent kProfilerAllocatorTitle = EditorGUIUtility.TrTextContent("Profiler Allocators");
-            public static readonly GUIContent kProfilerBlockSize = EditorGUIUtility.TrTextContent("Profiler Block Size", "Block size used by main profiler allocations");
-            public static readonly GUIContent kProfilerEditorBlockSize = EditorGUIUtility.TrTextContent("Editor Profiler Block Size", "Editor only: Block size used by editor specific profiler allocations");
+            public static readonly GUIContent kProfilerAllocatorTitle = L10n.TextContent("Profiler Allocators", null, null, null);
+            public static readonly GUIContent kProfilerBlockSize = L10n.TextContent("Profiler Block Size", "Block size used by main profiler allocations", null, null);
+            public static readonly GUIContent kProfilerEditorBlockSize = L10n.TextContent("Editor Profiler Block Size", "Editor only: Block size used by editor specific profiler allocations", null, null);
 
-            public static readonly GUIContent kProfilerBucketAllocatorTitle = EditorGUIUtility.TrTextContent("Shared Profiler Bucket Allocator");
-            public static readonly GUIContent kProfilerBucketAllocatorGranularity = EditorGUIUtility.TrTextContent("Bucket Allocator Granularity", "Bucket allocator bucket granularity");
-            public static readonly GUIContent kProfilerBucketAllocatorBucketsCount = EditorGUIUtility.TrTextContent("Bucket Allocator BucketCount", "Number of bucket size increments of bucket granularity");
-            public static readonly GUIContent kProfilerBucketAllocatorBlockSize = EditorGUIUtility.TrTextContent("Bucket Allocator Block Size", "Bucket allocator block size");
-            public static readonly GUIContent kProfilerBucketAllocatorBlockCount = EditorGUIUtility.TrTextContent("Bucket Allocator Block Count", "Bucket allocator block count");
+            public static readonly GUIContent kProfilerBucketAllocatorTitle = L10n.TextContent("Shared Profiler Bucket Allocator", null, null, null);
+            public static readonly GUIContent kProfilerBucketAllocatorGranularity = L10n.TextContent("Bucket Allocator Granularity", "Bucket allocator bucket granularity", null, null);
+            public static readonly GUIContent kProfilerBucketAllocatorBucketsCount = L10n.TextContent("Bucket Allocator BucketCount", "Number of bucket size increments of bucket granularity", null, null);
+            public static readonly GUIContent kProfilerBucketAllocatorBlockSize = L10n.TextContent("Bucket Allocator Block Size", "Bucket allocator block size", null, null);
+            public static readonly GUIContent kProfilerBucketAllocatorBlockCount = L10n.TextContent("Bucket Allocator Block Count", "Bucket allocator block count", null, null);
 
-            public static readonly GUIContent kEntitiesAllocatorTitle = EditorGUIUtility.TrTextContent("Entities Allocators", "Memory allocators used by the Unity.Entities package");
-            public static readonly GUIContent kEntitiesArchetypeAllocatorBudget = EditorGUIUtility.TrTextContent("Archetype Allocator Budget", "Memory budget for Entity archetype metadata. Default is 16 MB.");
-            public static readonly GUIContent kEntitiesQueryAllocatorBudget = EditorGUIUtility.TrTextContent("Query Allocator Budget", "Memory budget for EntityQuery data. Default is 16 MB.");
+            public static readonly GUIContent kEntitiesAllocatorTitle = L10n.TextContent("Entities Allocators", "Memory allocators used by the Unity.Entities package", null, null);
+            public static readonly GUIContent kEntitiesArchetypeAllocatorBudget = L10n.TextContent("Archetype Allocator Budget", "Memory budget for Entity archetype metadata. Default is 16 MB.", null, null);
+            public static readonly GUIContent kEntitiesQueryAllocatorBudget = L10n.TextContent("Query Allocator Budget", "Memory budget for EntityQuery data. Default is 16 MB.", null, null);
 
-            public static readonly GUIContent kEditorLabel = EditorGUIUtility.TrTextContent("Editor", "Editor settings");
-            public static readonly GUIContent kPlayerLabel = EditorGUIUtility.TrTextContent("Players", "player settings");
+            public static readonly GUIContent kEditorLabel = L10n.TextContent("Editor", "Editor settings", null, null);
+            public static readonly GUIContent kPlayerLabel = L10n.TextContent("Players", "player settings", null, null);
         }
 
         class Styles

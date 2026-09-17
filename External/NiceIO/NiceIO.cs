@@ -1,4 +1,3 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: BuildSystems not yet converted
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
@@ -641,10 +640,24 @@ namespace NiceIO
         /// Provides a quoted version of the path as a string, with the requested path separator type.
         /// </summary>
         /// <param name="slashMode">The path separator to use. See the <see cref="SlashMode">SlashMode</see> enum for an explanation of the values. Defaults to <c>SlashMode.Forward</c>.</param>
+        /// <param name="quoteMode">When to add the quotes. See the <see cref="QuoteMode">QuoteMode</see> enum for an explanation of the values. Defaults to <c>QuoteMode.Always</c>.</param>
         /// <returns>The path, with the requested path separator type, in quotes.</returns>
-        public string InQuotes(SlashMode slashMode = SlashMode.Forward)
+        public string InQuotes(SlashMode slashMode = SlashMode.Forward, QuoteMode quoteMode = QuoteMode.Always)
         {
-            return "\"" + ToString(slashMode) + "\"";
+            var result = ToString(slashMode);
+
+            if (quoteMode == QuoteMode.WhenContainsWhitespace)
+            {
+                foreach (var c in result)
+                {
+                    if (Char.IsWhiteSpace(c))
+                        return "\"" + result + "\"";
+                }
+
+                return result;
+            }
+
+            return "\"" + result + "\"";
         }
 
         /// <summary>
@@ -1580,14 +1593,19 @@ namespace NiceIO
         /// Shorthand for .ResolveWithFileSystem.InQuotes()
         /// </summary>
         /// <param name="slashMode"></param>
+        /// <param name="quoteMode"></param>
         /// <returns></returns>
-        public string InQuotesResolved(SlashMode slashMode = SlashMode.Forward) => ResolveWithFileSystem().InQuotes(slashMode);
+        public string InQuotesResolved(SlashMode slashMode = SlashMode.Forward, QuoteMode quoteMode = QuoteMode.Always) => ResolveWithFileSystem().InQuotes(slashMode, quoteMode);
 
         /// <summary>
         /// Abstract baseclass you can use to plug in different underlying filesystem behaviour for NPath to operate on
         /// </summary>
         public abstract class FileSystem : IDisposable
         {
+            // Build-logic projects compile this file without a Unity.Scripting reference, so the
+            // attribute is spelled out in full. The guard must be UNITY_EDITOR, not
+            // UNITY_MODULE_EDITOR, which would miss the monolithic editor compile.
+            [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
             [ThreadStatic] internal static FileSystem _active;
 
             /// <summary>
@@ -2688,11 +2706,12 @@ namespace NiceIO
         /// </summary>
         /// <param name="self">The paths to convert.</param>
         /// <param name="slashMode">The path separator type to use. Defaults to <c>SlashMode.Forward</c>.</param>
+        /// <param name="quoteMode">When to add the quotes. See the <see cref="QuoteMode">QuoteMode</see> enum for an explanation of the values. Defaults to <c>QuoteMode.Always</c>.</param>
         /// <returns>The paths, converted to quoted strings.</returns>
         public static IEnumerable<string> InQuotes(this IEnumerable<NPath> self,
-            SlashMode slashMode = SlashMode.Forward)
+            SlashMode slashMode = SlashMode.Forward, QuoteMode quoteMode = QuoteMode.Always)
         {
-            return self.Select(p => p.InQuotes(slashMode));
+            return self.Select(p => p.InQuotes(slashMode, quoteMode));
         }
 
         /// <summary>
@@ -2726,8 +2745,10 @@ namespace NiceIO
         /// Invokes InQuotesResolved on all NPaths
         /// </summary>
         /// <param name="paths"></param>
+        /// <param name="slashMode"></param>
+        /// <param name="quoteMode"></param>
         /// <returns></returns>
-        public static string[] InQuotesResolved(this IEnumerable<NPath> paths) => paths.Select(p => p.InQuotesResolved()).ToArray();
+        public static string[] InQuotesResolved(this IEnumerable<NPath> paths, SlashMode slashMode = SlashMode.Forward, QuoteMode quoteMode = QuoteMode.Always) => paths.Select(p => p.InQuotesResolved(slashMode, quoteMode)).ToArray();
     }
 
     /// <summary>
@@ -2749,6 +2770,23 @@ namespace NiceIO
         /// Use backslashes as path separators.
         /// </summary>
         Backward
+    }
+
+    /// <summary>
+    /// Describes the different circumstances under which NPaths get quoted when converting them back into strings.
+    /// </summary>
+    internal enum QuoteMode
+    {
+        /// <summary>
+        /// Always surround the path with quotes.
+        /// </summary>
+        Always,
+
+        /// <summary>
+        /// Only surround the path with quotes if it contains whitespace. Note that this considers whitespace only, and
+        /// not other characters that a shell may treat as significant.
+        /// </summary>
+        WhenContainsWhitespace
     }
 
     /// <summary>
@@ -2774,4 +2812,3 @@ namespace NiceIO
     {
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

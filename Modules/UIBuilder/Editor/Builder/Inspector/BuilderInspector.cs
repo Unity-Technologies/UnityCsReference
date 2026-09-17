@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIBuilder not yet converted
 using System;
 using System.IO;
 using UnityEngine.UIElements;
@@ -270,6 +269,7 @@ namespace Unity.UI.Builder
             BindAdvancedTextUI();
             m_CurvatureStyleRow = this.Query<BuilderStyleRow>()
                 .Where(r => r.bindingPath == "-unity-curvature").First();
+            UIToolkitProjectSettings.onEnableCurvedUIChanged += UpdateCurvatureRowVisibility;
             BindFontUI();
 
             // Get the scroll view.
@@ -460,6 +460,7 @@ namespace Unity.UI.Builder
             m_PreviewWindow?.Close();
             batchedChangesController.Dispose();
             BindingsStyleHelpers.HandleRightClickMenu -= HandleRightClickMenu;
+            UIToolkitProjectSettings.onEnableCurvedUIChanged -= UpdateCurvatureRowVisibility;
         }
 
         public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)
@@ -633,8 +634,7 @@ namespace Unity.UI.Builder
         }
 
         // Experimental -unity-curvature row (queried once in the constructor, like the warning rows above):
-        // hidden until enabled in Project Settings > UI Toolkit; re-checked on every refresh so toggling the
-        // setting applies live.
+        // hidden until enabled in Project Settings > UI Toolkit.
         BuilderStyleRow m_CurvatureStyleRow;
         void UpdateCurvatureRowVisibility()
         {
@@ -1416,8 +1416,12 @@ namespace Unity.UI.Builder
             bool selectionInControlInstance = m_Selection.selectionType == BuilderSelectionType.ElementInControlInstance;
             bool selectionInParentSelector = m_Selection.selectionType == BuilderSelectionType.ParentStyleSelector;
             bool selectionInParentDocument = m_Selection.selectionType == BuilderSelectionType.ElementInParentDocument;
+            // On a read-only canvas a selected preview element is a plain Element: grey its inspector
+            // too (selector selections stay editable — they are the stylesheet being edited).
+            bool selectionIsReadOnlyPreviewElement = document.isCanvasReadOnly
+                && m_Selection.selectionType == BuilderSelectionType.Element;
 
-            if (selectionInTemplateInstance || selectionInParentSelector || selectionInParentDocument || selectionInControlInstance)
+            if (selectionInTemplateInstance || selectionInParentSelector || selectionInParentDocument || selectionInControlInstance || selectionIsReadOnlyPreviewElement)
             {
                 DisableFields();
             }
@@ -2061,4 +2065,3 @@ namespace Unity.UI.Builder
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -23,8 +23,14 @@ namespace UnityEditor.Search
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Both attribute tables are rebuilt together by the reflection scan whenever this one is null, and
+        // every lookup checks for null first.
+        [IgnoreForUAL0015("Attribute table rebuilt by the reflection scan when null")]
         static Dictionary<string, ListBlockData> s_IdToAttribute;
         [AutoStaticsCleanupOnCodeReload]
+        // Rebuilt together with the id table by the reflection scan, which the lookups trigger whenever the
+        // tables are null.
+        [IgnoreForUAL0015("Attribute table rebuilt by the reflection scan when null")]
         static Dictionary<Type, ListBlockData> s_TypeToAttribute;
 
         public QueryListBlockAttribute(string category, string name, string id, string op = "=")

@@ -75,39 +75,39 @@ namespace UnityEditor
 
         private class Styles
         {
-            public static readonly GUIContent shape = EditorGUIUtility.TrTextContent("Shape", "The bounding shape that forces are applied inside.");
-            public static readonly GUIContent startRange = EditorGUIUtility.TrTextContent("Start Range", "The inner extent of the bounding shape.");
-            public static readonly GUIContent endRange = EditorGUIUtility.TrTextContent("End Range", "The outer extent of the bounding shape.");
-            public static readonly GUIContent length = EditorGUIUtility.TrTextContent("Length", "The length of the cylinder.");
-            public static readonly GUIContent directionX = EditorGUIUtility.TrTextContent("X", "The force to apply along the X axis.");
-            public static readonly GUIContent directionY = EditorGUIUtility.TrTextContent("Y", "The force to apply along the Y axis.");
-            public static readonly GUIContent directionZ = EditorGUIUtility.TrTextContent("Z", "The force to apply along the Z axis.");
-            public static readonly GUIContent gravity = EditorGUIUtility.TrTextContent("Strength", "The strength of the gravity effect.");
-            public static readonly GUIContent gravityFocus = EditorGUIUtility.TrTextContent("Focus", "Choose a band within the volume that particles will be attracted towards.");
-            public static readonly GUIContent rotationSpeed = EditorGUIUtility.TrTextContent("Speed", "The speed at which particles are propelled around the vortex.");
-            public static readonly GUIContent rotationAttraction = EditorGUIUtility.TrTextContent("Attraction", "Controls how strongly particles are dragged into the vortex motion.");
-            public static readonly GUIContent rotationRandomness = EditorGUIUtility.TrTextContent("Randomness", "Propel particles around random axes of the shape.");
-            public static readonly GUIContent drag = EditorGUIUtility.TrTextContent("Strength", "The strength of the drag effect.");
-            public static readonly GUIContent multiplyDragByParticleSize = EditorGUIUtility.TrTextContent("Multiply by Size", "Adjust the drag based on the size of the particles.");
-            public static readonly GUIContent multiplyDragByParticleVelocity = EditorGUIUtility.TrTextContent("Multiply by Velocity", "Adjust the drag based on the velocity of the particles.");
-            public static readonly GUIContent vectorField = EditorGUIUtility.TrTextContent("Volume Texture", "The texture used for the vector field.");
-            public static readonly GUIContent vectorFieldSpeed = EditorGUIUtility.TrTextContent("Speed", "The speed multiplier applied to particles traveling through the vector field.");
-            public static readonly GUIContent vectorFieldAttraction = EditorGUIUtility.TrTextContent("Attraction", "Controls how strongly particles are dragged into the vector field motion.");
+            public static readonly GUIContent shape = L10n.TextContent("Shape", "The bounding shape that forces are applied inside.", null, null);
+            public static readonly GUIContent startRange = L10n.TextContent("Start Range", "The inner extent of the bounding shape.", null, null);
+            public static readonly GUIContent endRange = L10n.TextContent("End Range", "The outer extent of the bounding shape.", null, null);
+            public static readonly GUIContent length = L10n.TextContent("Length", "The length of the cylinder.", null, null);
+            public static readonly GUIContent directionX = L10n.TextContent("X", "The force to apply along the X axis.", null, null);
+            public static readonly GUIContent directionY = L10n.TextContent("Y", "The force to apply along the Y axis.", null, null);
+            public static readonly GUIContent directionZ = L10n.TextContent("Z", "The force to apply along the Z axis.", null, null);
+            public static readonly GUIContent gravity = L10n.TextContent("Strength", "The strength of the gravity effect.", null, null);
+            public static readonly GUIContent gravityFocus = L10n.TextContent("Focus", "Choose a band within the volume that particles will be attracted towards.", null, null);
+            public static readonly GUIContent rotationSpeed = L10n.TextContent("Speed", "The speed at which particles are propelled around the vortex.", null, null);
+            public static readonly GUIContent rotationAttraction = L10n.TextContent("Attraction", "Controls how strongly particles are dragged into the vortex motion.", null, null);
+            public static readonly GUIContent rotationRandomness = L10n.TextContent("Randomness", "Propel particles around random axes of the shape.", null, null);
+            public static readonly GUIContent drag = L10n.TextContent("Strength", "The strength of the drag effect.", null, null);
+            public static readonly GUIContent multiplyDragByParticleSize = L10n.TextContent("Multiply by Size", "Adjust the drag based on the size of the particles.", null, null);
+            public static readonly GUIContent multiplyDragByParticleVelocity = L10n.TextContent("Multiply by Velocity", "Adjust the drag based on the velocity of the particles.", null, null);
+            public static readonly GUIContent vectorField = L10n.TextContent("Volume Texture", "The texture used for the vector field.", null, null);
+            public static readonly GUIContent vectorFieldSpeed = L10n.TextContent("Speed", "The speed multiplier applied to particles traveling through the vector field.", null, null);
+            public static readonly GUIContent vectorFieldAttraction = L10n.TextContent("Attraction", "Controls how strongly particles are dragged into the vector field motion.", null, null);
 
             public static readonly GUIContent[] shapeOptions =
             {
-                EditorGUIUtility.TrTextContent("Sphere"),
-                EditorGUIUtility.TrTextContent("Hemisphere"),
-                EditorGUIUtility.TrTextContent("Cylinder"),
-                EditorGUIUtility.TrTextContent("Box")
+                L10n.TextContent("Sphere", null, null, null),
+                L10n.TextContent("Hemisphere", null, null, null),
+                L10n.TextContent("Cylinder", null, null, null),
+                L10n.TextContent("Box", null, null, null)
             };
 
-            public static readonly GUIContent shapeHeading = EditorGUIUtility.TrTextContent("Shape");
-            public static readonly GUIContent directionHeading = EditorGUIUtility.TrTextContent("Direction");
-            public static readonly GUIContent gravityHeading = EditorGUIUtility.TrTextContent("Gravity");
-            public static readonly GUIContent rotationHeading = EditorGUIUtility.TrTextContent("Rotation");
-            public static readonly GUIContent dragHeading = EditorGUIUtility.TrTextContent("Drag");
-            public static readonly GUIContent vectorFieldHeading = EditorGUIUtility.TrTextContent("Vector Field");
+            public static readonly GUIContent shapeHeading = L10n.TextContent("Shape", null, null, null);
+            public static readonly GUIContent directionHeading = L10n.TextContent("Direction", null, null, null);
+            public static readonly GUIContent gravityHeading = L10n.TextContent("Gravity", null, null, null);
+            public static readonly GUIContent rotationHeading = L10n.TextContent("Rotation", null, null, null);
+            public static readonly GUIContent dragHeading = L10n.TextContent("Drag", null, null, null);
+            public static readonly GUIContent vectorFieldHeading = L10n.TextContent("Vector Field", null, null, null);
         }
 
         void OnEnable()

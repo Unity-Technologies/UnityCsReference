@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitDevTools not yet converted
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -29,9 +28,9 @@ namespace UnityEditor
         {
             public static readonly string defaultWindowPopupText = "<Please Select>";
 
-            public static readonly GUIContent inspectedWindowLabel = EditorGUIUtility.TrTextContent("Inspected View: ");
-            public static readonly GUIContent pickStyleLabel = EditorGUIUtility.TrTextContent("Pick Style");
-            public static readonly GUIContent pickingStyleLabel = EditorGUIUtility.TrTextContent("Picking   ");
+            public static readonly GUIContent inspectedWindowLabel = L10n.TextContent("Inspected View: ", null, null, null);
+            public static readonly GUIContent pickStyleLabel = L10n.TextContent("Pick Style", null, null, null);
+            public static readonly GUIContent pickingStyleLabel = L10n.TextContent("Picking   ", null, null, null);
 
             public static readonly GUIStyle listItem = "PR Label";
             public static readonly GUIStyle listItemBackground = "CN EntryBackOdd";
@@ -111,9 +110,7 @@ namespace UnityEditor
         public IBaseInspectView instructionModeView { get { return m_InstructionModeView; } }
         IBaseInspectView m_InstructionModeView;
 
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
         protected GUIViewDebuggerWindow()
-        #pragma warning restore UAL0015
         {
             m_InstructionModeView = new StyleDrawInspectView(this);
             m_Highlighter = new ElementHighlighter();
@@ -200,7 +197,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            titleContent =  EditorGUIUtility.TrTextContent("IMGUI Debugger");
+            titleContent =  L10n.TextContent("IMGUI Debugger", null, null, null);
             GUIViewDebuggerHelper.onViewInstructionsChanged += OnInspectedViewChanged;
             GUIViewDebuggerHelper.onDebuggingViewchanged += OnDebuggedViewChanged;
             GUIView serializedInspected = m_Inspected;
@@ -332,7 +329,7 @@ namespace UnityEditor
 
                 List<GUIContent> options = new List<GUIContent>(views.Count + 1);
 
-                options.Add(EditorGUIUtility.TrTextContent("None"));
+                options.Add(L10n.TextContent("None", null, null, null));
 
                 int selectedIndex = 0;
                 List<GUIView> selectableViews = new List<GUIView>(views.Count + 1);
@@ -455,6 +452,9 @@ namespace UnityEditor
     internal static partial class GUIViewDebuggerHelper
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Only the GUI debugger window subscribes, from its OnEnable, so a code reload that clears the
+        // handlers is followed by the window re-enabling and subscribing again.
+        [IgnoreForUAL0015("Subscribers re-register from GUIViewDebuggerWindow.OnEnable after reload")]
         internal static event Action onViewInstructionsChanged = null;
         [AutoStaticsCleanupOnCodeReload]
         internal static event Action<GUIView, bool> onDebuggingViewchanged = null;
@@ -472,4 +472,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

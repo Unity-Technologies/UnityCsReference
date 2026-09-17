@@ -10,7 +10,6 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
-    [InitializeOnLoad]
     static partial class PlayModeTintResolver
     {
         const string k_PlayModeTintPrefKey = "Playmode tint";
@@ -35,11 +34,22 @@ namespace UnityEditor
         [AutoStaticsCleanupOnCodeReload]
         public static event Action<Color> activePlayModeTintChanged;
 
-        static PlayModeTintResolver()
+        // Both events are cleared on code reload, so these subscriptions have to be re-established on
+        // every load; a static constructor would only run once per domain, and the play-mode tint would
+        // stop tracking play-mode and preference changes after the first reload.
+        [OnCodeLoaded]
+        static void Initialize()
         {
             s_ActiveTint = ComputeTint();
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorPrefs.onValueWasUpdated += OnEditorPrefChanged;
+        }
+
+        [OnCodeUnloading]
+        static void Uninitialize()
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorPrefs.onValueWasUpdated -= OnEditorPrefChanged;
         }
 
         static void OnPlayModeStateChanged(PlayModeStateChange state)

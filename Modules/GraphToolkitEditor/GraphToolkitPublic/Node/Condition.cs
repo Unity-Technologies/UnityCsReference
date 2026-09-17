@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.GraphToolkit.Editor.GraphVisualization;
 using Unity.GraphToolkit.Editor.Implementation;
 using UnityEngine;
 
@@ -68,6 +69,27 @@ namespace Unity.GraphToolkit.Editor
         /// is not part of a state machine.
         /// </summary>
         public StateMachine StateMachine => (m_Implementation?.GraphModel as GraphModelImp)?.Graph as StateMachine;
+
+        /// <summary>
+        /// The icon displayed for this condition in the transition inspector, or <see langword="null"/> if none is set.
+        /// </summary>
+        /// <remarks>
+        /// Not persisted with the graph. Set this to one of <see cref="DebugStyles.TrueIcon"/>,
+        /// <see cref="DebugStyles.FalseIcon"/>, <see cref="DebugStyles.PendingIcon"/>, or a custom icon, to visually
+        /// indicate the evaluation status of this condition. A visualization tool that doesn't own the graph asset
+        /// can override the displayed icon without changing this value; see
+        /// <see cref="Unity.GraphToolkit.Editor.GraphVisualization.ConditionReference.Icon"/>.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// Icon = DebugStyles.PendingIcon;
+        /// </code>
+        /// </example>
+        public Texture2D Icon
+        {
+            get => GetImplementation().Icon;
+            set => GetImplementation().Icon = value;
+        }
 
         /// <summary>
         /// The label displayed for the condition in the transition inspector.

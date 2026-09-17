@@ -16,8 +16,8 @@ namespace UnityEditor
             [NoAutoStaticsCleanup] // lazily built from EditorStyles.popup (a GUIStyle); rebuilt on demand and safe to persist
             private static GUIStyle m_BoldPopupStyle;
 
-            public static readonly GUIContent m_SortingLayerStyle = EditorGUIUtility.TrTextContent("Sorting Layer", "Name of the Renderer's sorting layer");
-            public static readonly GUIContent m_SortingOrderStyle = EditorGUIUtility.TrTextContent("Order in Layer", "Renderer's order within a sorting layer");
+            public static readonly GUIContent m_SortingLayerStyle = L10n.TextContent("Sorting Layer", "Name of the Renderer's sorting layer", null, null);
+            public static readonly GUIContent m_SortingOrderStyle = L10n.TextContent("Order in Layer", "Renderer's order within a sorting layer", null, null);
 
             public static GUIStyle boldPopupStyle
             {

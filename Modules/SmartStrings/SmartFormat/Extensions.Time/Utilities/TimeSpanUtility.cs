@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 //
 // Copyright SmartFormat Project maintainers and contributors.
 // Licensed under the MIT license.
@@ -17,14 +15,23 @@ namespace Unity.SmartStrings.Extensions.Time.Utilities;
 /// <summary>
 /// Utility class to format a <see cref="TimeSpan"/> as a <see langword="string"/>.
 /// </summary>
-[NoAutoStaticsCleanup] // plain-value formatting state and options; holds no references to reloadable code
 static class TimeSpanUtility
 {
+    // Scratch state for the in-progress ToTimeString() call: each field is written near the top of that
+    // call before it is read, so nothing meaningful survives the call, let alone a code reload. s_Round
+    // and s_TimeTextInfo only ever hold values the caller passed in or this type's own rounding
+    // helpers, so neither can pin reloadable user code.
+    [NoAutoStaticsCleanup]
     static TimeSpanFormatOptions s_RangeMin;
+    [NoAutoStaticsCleanup]
     static TimeSpanFormatOptions s_Truncate;
+    [NoAutoStaticsCleanup]
     static bool s_LessThan;
+    [NoAutoStaticsCleanup]
     static bool s_Abbreviate;
+    [NoAutoStaticsCleanup]
     static Func<double, double> s_Round;
+    [NoAutoStaticsCleanup]
     static TimeTextInfo s_TimeTextInfo;
 
     static TimeSpanUtility()
@@ -40,14 +47,14 @@ static class TimeSpanUtility
     }
 
     /// <summary>
-    /// <para>Turns a TimeSpan into a human-readable text.</para>
-    /// <para>Uses the specified timeSpanFormatOptions.</para>
-    /// <para>For example: "31.23:59:00.555" = "31 days 23 hours 59 minutes 0 seconds 555 milliseconds"</para>
+    /// Turns a TimeSpan into a human-readable text.
+    /// Uses the specified timeSpanFormatOptions.
+    /// For example: "31.23:59:00.555" = "31 days 23 hours 59 minutes 0 seconds 555 milliseconds"
     /// </summary>
     /// <param name="fromTime"></param>
     /// <param name="options">
-    /// <para>A combination of flags that determine the formatting options.</para>
-    /// <para>These will be combined with the default timeSpanFormatOptions.</para>
+    /// A combination of flags that determine the formatting options.
+    /// These will be combined with the default timeSpanFormatOptions.
     /// </param>
     /// <param name="timeTextInfo">An object that supplies the text to use for output</param>
     public static string ToTimeString(this TimeSpan fromTime, TimeSpanFormatOptions options,
@@ -204,17 +211,22 @@ static class TimeSpanUtility
     /// <summary>
     /// These are the default options that will be used when no option is specified.
     /// </summary>
+    // Plain flags value seeded by the static constructor; callers may override it for the process
+    // lifetime, and resetting it on code reload would silently discard that choice.
+    [NoAutoStaticsCleanup]
     public static TimeSpanFormatOptions DefaultFormatOptions { get; set; }
 
     /// <summary>
     /// These are the absolute default options that will be used as
     /// a safeguard, just in case DefaultFormatOptions is missing a value.
     /// </summary>
+    // Constant safeguard value, assigned once by the static constructor and never reassigned.
+    [NoAutoStaticsCleanup]
     public static TimeSpanFormatOptions AbsoluteDefaults { get; }
 
     /// <summary>
-    /// <para>Returns the <see cref="TimeSpan"/> closest to the specified interval.</para>
-    /// <para>For example: <c>Round("00:57:00", TimeSpan.TicksPerMinute * 5) =&gt; "00:55:00"</c></para>
+    /// Returns the <see cref="TimeSpan"/> closest to the specified interval.
+    /// For example: <c>Round("00:57:00", TimeSpan.TicksPerMinute * 5) =&gt; "00:55:00"</c>
     /// </summary>
     /// <param name="fromTime">A <see cref="TimeSpan"/> to be rounded.</param>
     /// <param name="intervalTicks">Specifies the interval for rounding. Use <c>TimeSpan.TicksPer...</c> constants.</param>
@@ -225,5 +237,3 @@ static class TimeSpanUtility
         return TimeSpan.FromTicks(fromTime.Ticks - extra);
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -801,7 +801,7 @@ namespace UnityEditor.AssetImporters
                 {
                     Expanded = false,
                     Methods = processor.Methods,
-                    Name = processor.Type.FullName
+                    Name = processor.Type.FullName,
                 });
             }
 
@@ -861,6 +861,7 @@ namespace UnityEditor.AssetImporters
             EditorGUIUtility.systemCopyBuffer = (string)userdata;
         }
 
+
         private void DrawAssetPostprocessors()
         {
             if (m_Postprocessors.Count > 0)
@@ -875,6 +876,7 @@ namespace UnityEditor.AssetImporters
                 }
             }
         }
+
     }
 
     // Part of the class handling the ImporterSelection
@@ -882,7 +884,7 @@ namespace UnityEditor.AssetImporters
     {
         static partial class Styles
         {
-            public static readonly GUIContent ImporterSelection = EditorGUIUtility.TrTextContent("Importer");
+            public static readonly GUIContent ImporterSelection = L10n.TextContent("Importer", null, null, null);
             public static readonly string defaultImporterName = L10n.Tr("{0} (Default)", null);
         }
 

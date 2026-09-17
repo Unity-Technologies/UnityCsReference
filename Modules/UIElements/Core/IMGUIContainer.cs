@@ -64,7 +64,6 @@ namespace UnityEngine.UIElements
         // This is not nice but needed until we properly remove the dependency on GUIView's own ObjectGUIState
         // At least this implementation is not needed for users, only for containers created to wrap each GUIView
         internal bool useOwnerObjectGUIState;
-        internal Rect lastWorldClip { get; set; }
 
         // If true, skip OnGUI() calls when outside the viewport
         private bool m_CullingEnabled = false;
@@ -167,7 +166,7 @@ namespace UnityEngine.UIElements
         internal static readonly int ussFoldoutMaxDepth = FoldoutConstants.ussFoldoutMaxDepth;
 
 
-        [NoAutoStaticsCleanup]
+        [NoAutoStaticsCleanup] // built once per domain in the static ctor below; converting to [OnCodeLoaded]/[OnCodeUnloading] crashes CodeReloadManagerCoreClr.BeginCodeReload_CommonScriptingClassesIsAssigned (bisected, see PR discussion) - revisit before retrying that conversion
         internal static readonly List<UniqueStyleString> ussFoldoutChildDepthClassNames;
 
         internal struct UITKScope : IDisposable { private bool wasUITK; public UITKScope() { wasUITK = GUIUtility.isUITK; GUIUtility.isUITK = true; } public void Dispose() { GUIUtility.isUITK = wasUITK; } }
@@ -223,8 +222,6 @@ namespace UnityEngine.UIElements
                 Debug.LogError($"{nameof(IMGUIContainer)} cannot be used in a runtime panel.");
                 return;
             }
-
-            lastWorldClip = Rect.zero;
 
             // Access to the painter is internal and is not exposed to public
             // The IStylePainter is kept as an interface rather than a concrete class for now to support tests
@@ -508,6 +505,15 @@ namespace UnityEngine.UIElements
 
                     RestoreGlobals();
                 }
+                else if (s_ContainerStack.Count > 0)
+                {
+                    // Unwinding through a re-entrant dispatch (UUM-47254): end our own container without
+                    // the EndContainerGUI ceremony, whose end callbacks can dispatch new events mid-unwind.
+                    // This used to be deferred to EndContainerGUIFromException, which could instead end a
+                    // suspended pass's container when the exception came from outside one (UUM-148153).
+                    GUIUtility.EndContainer();
+                    s_ContainerStack.Pop();
+                }
 
                 guiClipFinalCount = GUIClip.Internal_GetCount();
 
@@ -578,7 +584,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool SendEventToIMGUI(EventBase evt, bool canAffectFocus = true, bool verifyBounds = true)
+        internal bool SendEventToIMGUI(EventBase evt, bool canAffectFocus = true)
         {
             if (evt is IPointerEvent)
             {
@@ -614,7 +620,7 @@ namespace UnityEngine.UIElements
 
                     if (sendPointerEvent)
                     {
-                        bool result = SendEventToIMGUIRaw(evt, canAffectFocus, verifyBounds);
+                        bool result = SendEventToIMGUIRaw(evt, canAffectFocus);
                         evt.imguiEvent.type = originalEventType;
                         return result;
                     }
@@ -623,14 +629,14 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
-            return SendEventToIMGUIRaw(evt, canAffectFocus, verifyBounds);
+            return SendEventToIMGUIRaw(evt, canAffectFocus);
         }
 
-        private bool SendEventToIMGUIRaw(EventBase evt, bool canAffectFocus, bool verifyBounds)
+        private bool SendEventToIMGUIRaw(EventBase evt, bool canAffectFocus)
         {
-            if (verifyBounds && !VerifyBounds(evt))
-                return false;
-
+            // Delivery is decided by UITK routing (picking, capture, bubbling); a container-side rect
+            // test could only disagree with it and silently swallow input (UUM-148486). IMGUI's own
+            // clips still filter events within the container's content.
             bool result;
             using (new EventDebuggerLogIMGUICall(evt))
             {
@@ -639,7 +645,11 @@ namespace UnityEngine.UIElements
             return result;
         }
 
-        private bool VerifyBounds(EventBase evt)
+        // An unclaimed event (broadcast to all containers because routing found no target under the
+        // pointer) is only offered to containers that could plausibly own it. Routed events are never
+        // filtered here: routing already decided the target (UUM-148486). Classic windows got this
+        // per-editor selectivity from their group clips, which UITK-hosted containers do not have.
+        internal bool ShouldReceiveBroadcastEvent(EventBase evt)
         {
             return IsContainerCapturingTheMouse() || !IsLocalEvent(evt) || IsEventInsideLocalWindow(evt) || IsDockAreaMouseUp(evt);
         }
@@ -660,7 +670,23 @@ namespace UnityEngine.UIElements
 
         private bool IsEventInsideLocalWindow(EventBase evt)
         {
-            Rect clippingRect = GetCurrentClipRect();
+            Rect clippingRect = worldBound;
+
+            // A container inside a scroll view keeps a worldBound that extends past the viewport; only
+            // the visible part may claim a broadcast event. The stored clip is unreliable without
+            // render data or inside a nested render tree (it mixes coordinate spaces there); worldBound
+            // is the best available rect in those cases.
+            var tree = renderData?.renderTree;
+            if (tree != null && tree.isRootRenderTree)
+            {
+                Rect clip = this.worldClip;
+                clippingRect = Rect.MinMaxRect(
+                    Mathf.Max(clippingRect.xMin, clip.xMin), Mathf.Max(clippingRect.yMin, clip.yMin),
+                    Mathf.Min(clippingRect.xMax, clip.xMax), Mathf.Min(clippingRect.yMax, clip.yMax));
+                if (!(clippingRect.width > 0f) || !(clippingRect.height > 0f))
+                    return false;
+            }
+
             string pointerType = (evt as IPointerEvent)?.pointerType;
             bool isDirectManipulationDevice = (pointerType == PointerType.touch || pointerType == PointerType.pen);
             return GUIUtility.HitTest(clippingRect, evt.originalMousePosition, isDirectManipulationDevice);
@@ -679,9 +705,11 @@ namespace UnityEngine.UIElements
 
         internal bool HandleIMGUIEvent(Event e, Action onGUIHandler, bool canAffectFocus)
         {
-            GetCurrentTransformAndClip(this, out m_CachedTransform, out m_CachedClippingRect);
+            // Do not store these: the cached transform and clip belong to the repaint (which has the
+            // real worldClip); an event stamping worldBound over them would leak into the next measure.
+            GetCurrentTransformAndClip(this, out var transform, out var clipRect);
 
-            return HandleIMGUIEvent(e, m_CachedTransform, m_CachedClippingRect, onGUIHandler, canAffectFocus);
+            return HandleIMGUIEvent(e, transform, clipRect, onGUIHandler, canAffectFocus);
         }
 
         // Pooled backups of the shared, process-wide Event.current so a nested HandleIMGUIEvent can restore it.
@@ -996,21 +1024,11 @@ namespace UnityEngine.UIElements
             return new Vector2(measuredWidth, measuredHeight);
         }
 
-        private Rect GetCurrentClipRect()
-        {
-            Rect clipRect = this.lastWorldClip;
-            if (clipRect.width == 0.0f || clipRect.height == 0.0f)
-            {
-                // lastWorldClip will be empty until the first repaint occurred,
-                // we fall back on the worldBound in this case.
-                clipRect = this.worldBound;
-            }
-            return clipRect;
-        }
-
         private static void GetCurrentTransformAndClip(IMGUIContainer container, out Matrix4x4 transform, out Rect clipRect)
         {
-            clipRect = container.GetCurrentClipRect();
+            // The dispatch clip is the container's canvas; it must not be zero or IMGUI code lays out
+            // against a zero visibleRect mid-event. IMGUI's own clips (scroll views, groups) stack on top.
+            clipRect = container.worldBound;
             transform = container.worldTransform;
         }
 
@@ -1053,14 +1071,9 @@ namespace UnityEngine.UIElements
 
         private static bool EndContainerGUIFromException(Exception exception)
         {
-
-            // only End if we have a current container
-            if (s_ContainerStack.Count > 0)
-            {
-                GUIUtility.EndContainer();
-                s_ContainerStack.Pop();
-            }
-
+            // Every DoOnGUI ends its own container, even mid-unwind; ending the topmost container
+            // here would steal a suspended pass's container and its guiDepth when the exception
+            // came from outside any container pass (UUM-148153).
             return GUIUtility.ShouldRethrowException(exception);
         }
 

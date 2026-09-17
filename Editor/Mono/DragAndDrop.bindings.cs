@@ -53,6 +53,9 @@ namespace UnityEditor
     public partial class DragAndDrop
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Drag payload for the gesture in progress: PrepareStartDrag clears it and SetGenericData refills it
+        // at the start of every drag, and a code reload ends any drag, so nothing is left to lose.
+        [IgnoreForUAL0015("Per-gesture drag payload, cleared and refilled at the start of every drag")]
         private static Hashtable s_GenericData;
         [AutoStaticsCleanupOnCodeReload]
         private static Dictionary<int, List<Delegate>> m_DropHandlers;

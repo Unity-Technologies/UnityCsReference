@@ -308,18 +308,18 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         internal static class Contents
         {
-            public static readonly GUIContent Ignore = EditorGUIUtility.TrTextContent("Ignore Issue", "Ignore selected issue");
-            public static readonly GUIContent IgnoreAll = EditorGUIUtility.TrTextContent("Ignore Issues", "Ignore selected issues");
-            public static readonly GUIContent Suppress = EditorGUIUtility.TrTextContent("Suppress Issue Type", "Add this issue type to the list of suppressed issues that are not included in future reports");
-            public static readonly GUIContent SuppressAll = EditorGUIUtility.TrTextContent("Suppress Issue Types", "Add these issue types to the list of suppressed issues that are not included in future reports");
-            public static readonly GUIContent Display = EditorGUIUtility.TrTextContent("Display Issues", "Show selected issue");
-            public static readonly GUIContent DisplayAll = EditorGUIUtility.TrTextContent("Display Issues", "Show selected issues");
-            public static readonly GUIContent Unsuppress = EditorGUIUtility.TrTextContent("Unsuppress Issue Type", "Include this issue type in future reports");
-            public static readonly GUIContent UnsuppressAll = EditorGUIUtility.TrTextContent("Unsuppress Issue Types", "Include these issue types in future reports");
-            public static readonly GUIContent OnlyMajor = EditorGUIUtility.TrTextContent("Only Major/Critical", "Only display the most important issues");
-            public static readonly GUIContent OnlyQuickFixes = EditorGUIUtility.TrTextContent("Only Quick Fixes", "Only show issues where a Quick Fix is available");
-            public static readonly GUIContent OnlyPerformanceCritical = EditorGUIUtility.TrTextContent("Only Performance Critical", "Only show issues occurring in frequently executed code, such as per-frame Update loops");
-            public static readonly GUIContent UpgradeTargetVersion = EditorGUIUtility.TrTextContent("Upgrade Target Version:");
+            public static readonly GUIContent Ignore = L10n.TextContent("Ignore Issue", "Ignore selected issue", null, null);
+            public static readonly GUIContent IgnoreAll = L10n.TextContent("Ignore Issues", "Ignore selected issues", null, null);
+            public static readonly GUIContent Suppress = L10n.TextContent("Suppress Issue Type", "Add this issue type to the list of suppressed issues that are not included in future reports", null, null);
+            public static readonly GUIContent SuppressAll = L10n.TextContent("Suppress Issue Types", "Add these issue types to the list of suppressed issues that are not included in future reports", null, null);
+            public static readonly GUIContent Display = L10n.TextContent("Display Issues", "Show selected issue", null, null);
+            public static readonly GUIContent DisplayAll = L10n.TextContent("Display Issues", "Show selected issues", null, null);
+            public static readonly GUIContent Unsuppress = L10n.TextContent("Unsuppress Issue Type", "Include this issue type in future reports", null, null);
+            public static readonly GUIContent UnsuppressAll = L10n.TextContent("Unsuppress Issue Types", "Include these issue types in future reports", null, null);
+            public static readonly GUIContent OnlyMajor = L10n.TextContent("Only Major/Critical", "Only display the most important issues", null, null);
+            public static readonly GUIContent OnlyQuickFixes = L10n.TextContent("Only Quick Fixes", "Only show issues where a Quick Fix is available", null, null);
+            public static readonly GUIContent OnlyPerformanceCritical = L10n.TextContent("Only Performance Critical", "Only show issues occurring in frequently executed code, such as per-frame Update loops", null, null);
+            public static readonly GUIContent UpgradeTargetVersion = L10n.TextContent("Upgrade Target Version:", null, null, null);
 
             public static readonly string SuppressTitle = L10n.Tr("Suppress Issue Type", null);
             public static readonly string SuppressAllTitle = L10n.Tr("Suppress Issue Types", null);

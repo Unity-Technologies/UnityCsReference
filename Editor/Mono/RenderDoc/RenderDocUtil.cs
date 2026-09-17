@@ -14,7 +14,7 @@ namespace UnityEditor
         public const string captureStartEndRenderDocShortcutID = "Start-End Window Capture frame with RenderDoc";
         public const string openInRenderDocTooltip = "Capture the current view and open in RenderDoc";
 
-        public static GUIContent LoadRenderDocMenuItem => EditorGUIUtility.TrTextContent($"Load RenderDoc " +
-            $"{KeyCombination.SequenceToMenuString(ShortcutManager.instance.GetShortcutBinding(captureRenderDocShortcutID).keyCombinationSequence)}");
+        public static GUIContent LoadRenderDocMenuItem => L10n.TextContent($"Load RenderDoc " +
+            $"{KeyCombination.SequenceToMenuString(ShortcutManager.instance.GetShortcutBinding(captureRenderDocShortcutID).keyCombinationSequence)}", null, null, null);
     }
 }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -68,6 +67,9 @@ namespace UnityEditor.Search
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Queries are stored in the project and user settings folders and reloaded by the searchQueries
+        // getter while the list is null.
+        [IgnoreForUAL0015("Query list reloaded from the settings folders by the searchQueries getter")]
         private static List<SearchQuery> s_SearchQueries;
         [SerializeField] private string m_GUID;
         [SerializeField] Texture2D m_Thumbnail;
@@ -384,4 +386,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

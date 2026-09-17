@@ -16,6 +16,52 @@ namespace Unity.U2D.Physics
     /// <summary>
     /// Provides the ability to compose geometry using specific operations on layers in a specific order.
     /// </summary>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // The following example combines a circle and a capsule shape. Attach this
+    /// // script to a GameObject, then enter Play mode to check the combined shape.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    /// using Unity.Collections;
+    ///
+    /// public class CombineShapes : MonoBehaviour
+    /// {
+    ///     // Create the definition for a circle object.
+    ///     public CircleGeometry circleGeometry = CircleGeometry.defaultGeometry;
+    ///     public PhysicsTransform circleTransform = new Vector2(0f, 0f);
+    ///
+    ///     // Create the definition for a capsule object.
+    ///     public CapsuleGeometry capsuleGeometry = CapsuleGeometry.defaultGeometry;
+    ///     public PhysicsTransform capsuleTransform = new Vector2(0.75f, 0f);
+    ///
+    ///     private void Awake()
+    ///     {
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///
+    ///         // Create a composer to combine shapes.
+    ///         PhysicsComposer composer = PhysicsComposer.Create(Allocator.Temp);
+    ///
+    ///         // Add both shapes to the composer.
+    ///         composer.AddLayer(circleGeometry, circleTransform);
+    ///         composer.AddLayer(capsuleGeometry, capsuleTransform, PhysicsComposer.Operation.OR);
+    ///
+    ///         // Combine the shapes.
+    ///         using NativeArray<PolygonGeometry> combinedShape = composer.CreatePolygonGeometry(new Vector2(1f, 1f), Allocator.Temp);
+    ///
+    ///         // Create a body with the combined shapes.
+    ///         PhysicsBody body = world.CreateBody();
+    ///         using NativeArray<PhysicsShape> shapes = body.CreateShapeBatch(combinedShape, PhysicsShapeDefinition.defaultDefinition);
+    ///
+    ///         // Destroy the composer to also destroy the temporary allocator.
+    ///         composer.Destroy();
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsComposer.Operation"/>
+    /// <seealso cref="PhysicsBody.CreateShapeBatch(ReadOnlySpan{CircleGeometry}, PhysicsShapeDefinition, Allocator)"/>
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
     public readonly struct PhysicsComposer : IEquatable<PhysicsComposer>, IDisposable
@@ -256,6 +302,36 @@ namespace Unity.U2D.Physics
         /// <summary>
         /// A composer operation.
         /// </summary>
+        /// <remarks>
+        /// Pass an operation into <see cref="PhysicsComposer.AddLayer(CircleGeometry, PhysicsTransform, PhysicsComposer.Operation, int, float, bool)"/> to control how each new layer combines with the layers already added to the <see cref="PhysicsComposer"/>.
+        /// `OR` adds the shape, `AND` keeps only the areas where the new shape and the existing shapes overlap, `NOT` subtracts the new shape from the existing shapes, and `XOR` removes overlapping areas but keeps the non-overlapping areas.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// // Add a circle layer, then subtract a capsule layer from it.
+        /// using UnityEngine;
+        /// using Unity.Collections;
+        /// using Unity.U2D.Physics;
+        ///
+        /// public class ComposerOperationExample : MonoBehaviour
+        /// {
+        ///     public CircleGeometry circleGeometry = CircleGeometry.defaultGeometry;
+        ///     public CapsuleGeometry capsuleGeometry = CapsuleGeometry.defaultGeometry;
+        ///
+        ///     void Start()
+        ///     {
+        ///         PhysicsComposer composer = PhysicsComposer.Create(Allocator.Temp);
+        ///         composer.AddLayer(circleGeometry, PhysicsTransform.identity, PhysicsComposer.Operation.OR);
+        ///         composer.AddLayer(capsuleGeometry, PhysicsTransform.identity, PhysicsComposer.Operation.NOT);
+        ///
+        ///         // Destroy the composer to also destroy the temporary allocator.
+        ///         composer.Destroy();
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public enum Operation
         {
             /// <summary>

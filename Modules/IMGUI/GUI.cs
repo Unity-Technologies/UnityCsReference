@@ -4763,6 +4763,9 @@ namespace UnityEngine
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Per-GUI-pass stack: ResetGlobalState clears it at the start of every pass and BeginScrollView
+        // pushes the state the matching EndScrollView pops, so nothing survives a pass anyway.
+        [IgnoreForUAL0015("Per-GUI-pass scroll-view stack, cleared by ResetGlobalState at the start of every pass")]
         internal static UnityEngineInternal.GenericStack scrollViewStates { get; set; } = new UnityEngineInternal.GenericStack();
 
         ///<summary>Begin a scrolling view inside your GUI.</summary>

@@ -15,8 +15,8 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent HighpassResonanceQTooltip = EditorGUIUtility.TrTextContent("Highpass Resonance Q", "Determines how much the filter's self-resonance is dampened");
-            public static readonly GUIContent CutoffFrequencyTooltip = EditorGUIUtility.TrTextContent("Cutoff Frequency", "Highpass cutoff frequency in Hz");
+            public static readonly GUIContent HighpassResonanceQTooltip = L10n.TextContent("Highpass Resonance Q", "Determines how much the filter's self-resonance is dampened", null, null);
+            public static readonly GUIContent CutoffFrequencyTooltip = L10n.TextContent("Cutoff Frequency", "Highpass cutoff frequency in Hz", null, null);
         }
 
         void OnEnable()

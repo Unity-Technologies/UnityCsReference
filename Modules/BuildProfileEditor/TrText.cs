@@ -76,6 +76,9 @@ namespace UnityEditor.Build.Profile
         // Build Profile Quality Settings
         public static readonly string qualitySettings = L10n.Tr("Quality Settings", null);
 
+        // Build Profile Reference Component Settings
+        public static readonly string referenceComponentSource = L10n.Tr("Source", null);
+
         // Build Profile Build Destination Settings
         public static readonly string buildDestinationSettings = L10n.Tr("Build Destination", null);
         public static readonly string buildDestinationBrowseButton = L10n.Tr("Browse", null);
@@ -86,6 +89,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string buildProfilePreparation = L10n.Tr("Preparing Build Profile...", null);
         public static readonly string buildProfileActivatingPlatform = L10n.Tr("Activating platform...", null);
         public static readonly string buildProfileLoadingExtension = L10n.Tr("Loading extensions...", null);
+        public static readonly string buildProfileClaimingEntitlements = L10n.Tr("Checking package entitlements...", null);
         public static readonly string packageAddDownloading = L10n.Tr("Downloading package...", null);
         public static readonly string packageAddInstalling = L10n.Tr("Installing package...", null);
         public static readonly string packageAddError = L10n.Tr("Error adding package {0}!", null);
@@ -118,7 +122,17 @@ namespace UnityEditor.Build.Profile
         public static readonly string publisherLabel = L10n.Tr("Publisher: {0}", null);
         public static readonly string selectAll = L10n.Tr("Select All", null);
         public static readonly string deselectAll = L10n.Tr("Deselect All", null);
-        public static readonly string buildProfileNameLabel = L10n.Tr("Name", null);
+        // Copy owned by DOCR-6805, to be replaced with the reviewed wording.
+        public static readonly string licenseContainerTitle = L10n.Tr("License and Entitlements", null);
+        public static readonly string licenseLineSingular = L10n.Tr("{0} is under the license {1}.", null);
+        public static readonly string licenseLinePlural = L10n.Tr("{0} are under the license {1}.", null);
+        public static readonly string licenseAgreement = L10n.Tr("By clicking \"Add Build Profile\" I agree to the {0}.", null);
+        // Stand in for packages whose product info names no license, by how the package was obtained.
+        public static readonly string unityEulaName = L10n.Tr("Unity EULA", null);
+        public static readonly string unityTermsOfServiceName = L10n.Tr("Unity Terms of Service", null);
+        public static readonly string licenseFallbackName = L10n.Tr("License", null);
+        public static readonly string listSeparator = L10n.Tr(", ", null);
+        public static readonly string listFinalSeparator = L10n.Tr(" and ", null);
         public static readonly string buildProfileConfigurationLabel = L10n.Tr("Build Profile Configurations", null);
         public static readonly string noVariantSelectionWarning = L10n.Tr("Select one or more configurations to create Build Profiles.", null);
         public static readonly string browseSamplesCheckboxLabel = L10n.Tr("Browse related samples in package manager.", null);

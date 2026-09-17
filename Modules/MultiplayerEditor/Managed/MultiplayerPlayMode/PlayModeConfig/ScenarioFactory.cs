@@ -54,9 +54,14 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
         }
 
-        public static Scenario CreateScenario(OrchestratedScenario owner, IEnumerable<IPlayModeControllerItem> instanceItems)
+        public static Scenario CreateScenario(
+            OrchestratedScenario owner,
+            IEnumerable<IPlayModeControllerItem> instanceItems,
+            IEnumerable<IPlayModeControllerItem> scenarioItems = null)
         {
             var scenario = Scenario.Create(owner != null ? owner.name : "");
+
+            AddScenarioControllers(scenario, scenarioItems, owner);
 
             CategorizeInstances(instanceItems, out var serverDescriptList, out var clientDescriptList);
 
@@ -80,7 +85,36 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return scenario;
         }
 
-        private static Instance ConnectOrCreateInstance(IPlayModeControllerItem instanceItem, OrchestratedScenario owner)
+        private static void AddScenarioControllers(Scenario scenario, IEnumerable<IPlayModeControllerItem> scenarioItems, OrchestratedScenario owner)
+        {
+            foreach (var controllerType in PlayModeControllerRegistry.GetScenarioTypes())
+            {
+                var scenarioItem = IPlayModeControllerItem.FindByControllerType(scenarioItems, controllerType);
+
+                // An item is what carries settings, so a kind that has them but has no item yet is one
+                // OrchestratedScenarioSettings.SyncScenarioItems has not caught up with - registration can
+                // arrive after the asset's OnEnable. Building the controller anyway would leave its Settings
+                // dereferencing a null item; skipping it defers the kind to the next refresh instead.
+                if (scenarioItem == null && PlayModeController.IsControllerWithSettings(controllerType))
+                    continue;
+
+                var controller = scenarioItem != null
+                    ? scenarioItem.CreateController(owner)
+                    : PlayModeController.CreateInstance(controllerType, null, owner);
+
+                scenario.AddScenarioController(CreateScenarioControllerRuntime(scenarioItem, controller));
+            }
+        }
+
+        private static ControllerRuntime CreateScenarioControllerRuntime(IPlayModeControllerItem scenarioItem, PlayModeController controller)
+        {
+            var graphBuilder = new ExecutionGraphBuilder();
+            controller.SetupExecutionGraph(graphBuilder);
+
+            return ControllerRuntime.Create(scenarioItem, controller, new List<PlayModeControllerDecorator>(), graphBuilder.Build());
+        }
+
+        private static ControllerRuntime ConnectOrCreateInstance(IPlayModeControllerItem instanceItem, OrchestratedScenario owner)
         {
             // If an Existing Instance is Actively Free Running, we connect that instance to this new Scenario.
             if (PlayModeScenarioManager.ActiveScenario is OrchestratedScenario config &&
@@ -101,7 +135,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             return CreateInstance(instanceItem, owner);
         }
 
-        private static Instance CreateInstance(IPlayModeControllerItem instanceItem, OrchestratedScenario owner)
+        private static ControllerRuntime CreateInstance(IPlayModeControllerItem instanceItem, OrchestratedScenario owner)
         {
             var controller = instanceItem.CreateController(owner);
             var decorators = CreateDecoratorsForInstance(instanceItem, owner);
@@ -114,7 +148,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
             }
 
             var executionGraph = graphBuilder.Build();
-            return Instance.Create(instanceItem, controller, decorators, executionGraph);
+            return ControllerRuntime.Create(instanceItem, controller, decorators, executionGraph);
         }
 
         private static List<PlayModeControllerDecorator> CreateDecoratorsForInstance(IPlayModeControllerItem instanceItem, OrchestratedScenario owner)
@@ -124,7 +158,7 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
             foreach (var decoratorType in decorators)
             {
-                if (!PlayModeControllerDecorator.IsDecoratorWithSettings(decoratorType))
+                if (!PlayModeController.IsControllerWithSettings(decoratorType))
                 {
                     decoratorList.Add((PlayModeControllerDecorator)PlayModeController.CreateInstance(decoratorType, instanceItem, owner));
                 }

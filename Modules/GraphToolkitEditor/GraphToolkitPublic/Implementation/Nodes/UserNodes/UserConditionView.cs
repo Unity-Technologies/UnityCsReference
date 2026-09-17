@@ -157,6 +157,23 @@ namespace Unity.GraphToolkit.Editor.Implementation
             var comparison = UserConditionModel.Comparison;
             if (m_OperatorField != null && m_OperatorField.choices.Contains(comparison))
                 m_OperatorField.SetValueWithoutNotify(comparison);
+
+            NotifyConditionChanged();
+        }
+
+        internal void NotifyConditionChanged()
+        {
+            if (m_UserView == null)
+                return;
+
+            try
+            {
+                m_UserView.OnConditionChanged();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
     }
 

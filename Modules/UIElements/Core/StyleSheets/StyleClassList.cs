@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections;
@@ -19,9 +17,12 @@ namespace UnityEngine.UIElements.StyleSheets;
 /// <summary>
 /// A mutable collection of VisualElement style class names.
 /// </summary>
-[NoAutoStaticsCleanup] // statics are torn down via UnloadingUtility (ClearInstances) and re-created by ResetStaticState
 internal unsafe struct StyleClassList : IEnumerable<UniqueStyleString>
 {
+    // Every static below is torn down via UnloadingUtility (ClearInstances) and re-created by
+    // ResetStaticState, so the code-reload cleanup must not also reset them: they own native memory
+    // whose release is sequenced by that teardown, not by the code-loaded scope.
+    [NoAutoStaticsCleanup]
     private static readonly MemoryLabel k_MemoryLabel = new(nameof(UIElements), nameof(Record));
 
     // Per record data
@@ -1084,5 +1085,3 @@ internal static class StyleClassListManager
 {
     public static extern unsafe void SetClassIdBasePtr(int* ptr);
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

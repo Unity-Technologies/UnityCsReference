@@ -305,9 +305,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
        private bool FindTrustIssuePackagesAndShowPopUp(PackageCollection requestResult)
        {
-            var viewData = ActiveTrustWindow.CreateViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion, m_SettingsProxy.trustPolicyLevel);
+            var viewData = TrustWindow.CreateViewData(m_UpmCache, requestResult, addAndRemoveOperation.operationType, m_Application.shortUnityVersion, m_SettingsProxy.trustPolicyLevel);
             if (viewData != null)
-                return ActiveTrustWindow.Show(viewData) == ActiveTrustReturnValue.ProceedAnyway;
+                return TrustWindow.Show(viewData) == TrustWindowReturnValue.ProceedAnyway;
             return true;
        }
 

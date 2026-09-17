@@ -1,4 +1,3 @@
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: GraphicsDeviceFeatures not yet converted
 using UnityEngine;
 using UnityEngine.Rendering;
 using System;
@@ -7,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEditor;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEngine.NVIDIA
 {
@@ -459,8 +459,9 @@ namespace UnityEngine.NVIDIA
         private NativeData<DLSSCommandExecutionData> m_ExecData = new NativeData<DLSSCommandExecutionData>();
 
         // UUM-134012: Rate-limited logging for pool exhaustion errors
+        [NoAutoStaticsCleanup]
         private static float s_LastPoolExhaustedLogTime = 0;
-        internal static float poolExhaustedLogIntervalSeconds = 1.0f;
+        internal const float poolExhaustedLogIntervalSeconds = 1.0f;
 
         ///<summary>The immutable initialization data the DLSSContext requires.</summary>
         ///<seealso cref="NVIDIA.DLSSCommandInitializationData" />
@@ -562,4 +563,3 @@ namespace UnityEngine.NVIDIA
 
     #endregion
 } // namespace NVIDIA
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014

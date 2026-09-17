@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -179,7 +178,9 @@ namespace UnityEditor.Search
         private void DeferRefreshBuilder()
         {
             m_RefreshBuilderOff?.Invoke();
+#pragma warning disable UAL0018 // the stored handle only cancels the pending call against the live tick list; it snapshots nothing, so a reload that drops the pending call leaves it a no-op
             m_RefreshBuilderOff = Utils.CallDelayed(RefreshBuilder, 0.1f);
+#pragma warning restore UAL0018
         }
 
         private void RefreshBuilder(ISearchEvent evt)
@@ -232,4 +233,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

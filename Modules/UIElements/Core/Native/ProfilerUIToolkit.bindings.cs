@@ -264,8 +264,13 @@ namespace UnityEngine.UIElements
         // array (rather than List<T> or NativeArray) so the flush path can pin it via `fixed`
         // without per-frame allocations.
         [AutoStaticsCleanupOnCodeReload]
+        // Per-frame in-flight buffer: EnqueuePanelEvent refills it every frame and FlushPendingEvents
+        // drains it, so the buffer reset on reload is refilled by the next frame's captures.
+        [IgnoreForUAL0015("Per-frame event buffer, refilled every frame by EnqueuePanelEvent")]
         static UIToolkitPanelEventInfo[] s_PendingEvents = new UIToolkitPanelEventInfo[64];
         [AutoStaticsCleanupOnCodeReload]
+        // Write cursor for s_PendingEvents above; reset to 0 alongside the buffer it indexes.
+        [IgnoreForUAL0015("Write cursor for the per-frame event buffer, reset in step with it")]
         static int s_PendingEventsCount;
 
         // Per-session de-duplicated string pool for captured events: event type names plus each
@@ -297,10 +302,17 @@ namespace UnityEngine.UIElements
         // Wiped on code reload (mirrors the old domain-reload behavior): the Type keys and pooled
         // strings would otherwise pin the unloaded ALC, and a fresh session re-interns from scratch.
         [AutoStaticsCleanupOnCodeReload]
+        // Interning happens lazily per capture session; the cleared table re-interns from scratch.
+        [IgnoreForUAL0015("Per-session event-type interning table, re-interned on demand after cleanup")]
         static readonly Dictionary<Type, ushort> s_EventTypeNameIndices = new();
         [AutoStaticsCleanupOnCodeReload]
+        // Interning happens lazily per capture session; the cleared pool re-interns from scratch, so a
+        // constructor that interns a style string leaves nothing stale behind.
+        [IgnoreForUAL0015("Per-session string interning pool, re-interned on demand after cleanup")]
         static readonly Dictionary<int, ushort> s_StyleStringIndices = new();
         [AutoStaticsCleanupOnCodeReload]
+        // Backing pool for the two interning tables above; a fresh session re-interns from scratch.
+        [IgnoreForUAL0015("Per-session interned string pool, repopulated on demand after cleanup")]
         static readonly List<string> s_InternedStrings = new();
         [AutoStaticsCleanupOnCodeReload]
         static int s_EmittedInternedStringCount;

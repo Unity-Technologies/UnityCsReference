@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
+    [Icon("UIToolkit/Icons/CustomCSharpElement.png")]
     public sealed class MainToolbarCustomElement : MainToolbarElement
     {
         readonly Func<VisualElement> m_CreateElement;

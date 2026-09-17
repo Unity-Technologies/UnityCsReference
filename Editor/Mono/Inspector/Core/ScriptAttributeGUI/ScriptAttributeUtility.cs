@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -34,28 +33,39 @@ namespace UnityEditor
         }
 
         // Internal API members
-        [AutoStaticsCleanupOnCodeReload] // holds PropertyDrawer instances, which can be user-defined types
+        // Every cache below is keyed by, or holds, drawer and render-pipeline Types belonging to the
+        // current code-loaded scope, so each is cleared on reload and rebuilt by reflection on next use.
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Per-draw drawer stack, pushed and popped around each property draw")]
         internal static Stack<PropertyDrawer> s_DrawerStack = new Stack<PropertyDrawer>();
         [NoAutoStaticsCleanup]
         private static Dictionary<string, List<PropertyAttribute>> s_BuiltinAttributes = null;
-        [AutoStaticsCleanupOnCodeReload] // keyed/valued by Type/FieldInfo, which can pin a user-script assembly
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Per-Type reflection memo, rebuilt on demand on the next miss")]
         static Dictionary<Type, List<FieldInfo>> s_AutoLoadProperties;
         [NoAutoStaticsCleanup]
         private static PropertyHandler s_SharedNullHandler = new PropertyHandler();
-        [AutoStaticsCleanupOnCodeReload] // reusable PropertyHandler scratch instance, can reference a user PropertyDrawer
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Scratch handler reused per property lookup and re-populated before each use")]
         private static PropertyHandler s_NextHandler = new PropertyHandler();
 
-        [AutoStaticsCleanupOnCodeReload] // caches PropertyHandler instances, which can reference user PropertyDrawers
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Handler cache refilled on demand as properties are drawn")]
         private static PropertyHandlerCache s_GlobalCache = new PropertyHandlerCache();
-        [AutoStaticsCleanupOnCodeReload] // caches PropertyHandler instances, which can reference user PropertyDrawers
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Points at whichever handler cache the current inspector pass is using")]
         private static PropertyHandlerCache s_CurrentCache = null;
 
-        [AutoStaticsCleanupOnCodeReload] // Lazy<T> holder; values keyed by Type/CustomPropertyDrawerContainer.drawerType, which can be a user-defined type
+        // Replaced wholesale on cleanup so the next .Value re-runs BuildDrawerTypeForTypeDictionary.
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Lazy drawer table re-evaluated by BuildDrawerTypeForTypeDictionary on the next access")]
         static Lazy<Dictionary<Type, CustomPropertyDrawerContainer[]>> k_DrawerTypeForType = new(BuildDrawerTypeForTypeDictionary);
-        [AutoStaticsCleanupOnCodeReload] // keyed/valued by Type, which can pin a user-script assembly; readonly removed per CS8785
-        static Dictionary<Type, Type> k_DrawerStaticTypesCache = new();
-        [AutoStaticsCleanupOnCodeReload] // keyed/valued by Type, which can pin a user-script assembly; readonly removed per CS8785
-        static Dictionary<Type, Type[]> k_SupportedRenderPipelinesForSerializedObject = new();
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Per-Type drawer memo, refilled on demand on the next miss")]
+        static readonly Dictionary<Type, Type> k_DrawerStaticTypesCache = new();
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Per-SerializedObject render-pipeline memo, refilled on demand on the next miss")]
+        static readonly Dictionary<Type, Type[]> k_SupportedRenderPipelinesForSerializedObject = new();
 
         [NoAutoStaticsCleanup]
         static readonly Comparer<CustomPropertyDrawerContainer> k_RenderPipelineTypeComparer
@@ -68,7 +78,9 @@ namespace UnityEditor
             });
 
 
-        [AutoStaticsCleanupOnCodeReload] // caches a Type that can come from a user-defined render pipeline asset
+        // Holds render-pipeline asset Types from the current scope; re-derived by the property below.
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Re-derived from the active render pipeline by the currentRenderPipelineAssetTypeArray property")]
         static Type[] s_CurrentRenderPipelineAssetTypeArray;
 
         static Type[] currentRenderPipelineAssetTypeArray
@@ -582,7 +594,10 @@ namespace UnityEditor
             public Type type;
         }
 
-        [AutoStaticsCleanupOnCodeReload] // FieldInfoCache holds FieldInfo/Type, which can pin a user-script assembly
+        // Caches FieldInfo and Type values belonging to the current code-loaded scope, so it is cleared on
+        // reload and refilled by GetFieldInfoFromPropertyPath on the next miss.
+        [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Per-property-path reflection memo, refilled on demand by GetFieldInfoFromPropertyPath")]
         static Dictionary<Cache, FieldInfoCache> s_FieldInfoFromPropertyPathCache = new Dictionary<Cache, FieldInfoCache>();
 
         // Precompiled regexes used by GetFieldInfoFromPropertyPath on cache misses to avoid pattern parsing
@@ -755,4 +770,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

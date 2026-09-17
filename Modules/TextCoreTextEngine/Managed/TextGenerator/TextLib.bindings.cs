@@ -299,6 +299,12 @@ namespace UnityEngine.TextCore.Text
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         public static extern float GetLineBaselineY(IntPtr ptr, int lineNumber);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        public static extern float GetLineXOrigin(IntPtr ptr, int lineNumber);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        public static extern float GetLineWidth(IntPtr ptr, int lineNumber);
     }
 
     [NativeHeader("Modules/TextCoreTextEngine/Native/OSFontFallback.h")]

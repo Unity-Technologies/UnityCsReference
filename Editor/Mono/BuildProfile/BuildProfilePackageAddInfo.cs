@@ -30,10 +30,12 @@ namespace UnityEditor.Build.Profile
         public record struct ProgressEntry(ProgressState state, string name, int packageCount);
 
         /// <summary>
-        /// Packages pending installation.
+        /// Packages pending installation. Each entry keeps its name and optional pinned version
+        /// apart, so lookups can match on the name while the install request uses both.
         /// </summary>
         [field: SerializeField]
-        public string[] packagesToAdd { get; set; } = Array.Empty<string>();
+        public BuildTargetDiscovery.PlatformPackageIdentifier[] packagesToAdd { get; set; }
+            = Array.Empty<BuildTargetDiscovery.PlatformPackageIdentifier>();
 
         public Action OnPackageAddProgress;
         public Action OnPackageAddComplete;
@@ -56,7 +58,11 @@ namespace UnityEditor.Build.Profile
 
             if (packagesToAdd.Length > 0)
             {
-                m_PackageAddRequest = PackageManager.Client.AddAndRemove(packagesToAdd);
+                var installIdentifiers = new string[packagesToAdd.Length];
+                for (int i = 0; i < packagesToAdd.Length; i++)
+                    installIdentifiers[i] = packagesToAdd[i].GetInstallIdentifier();
+
+                m_PackageAddRequest = PackageManager.Client.AddAndRemove(installIdentifiers);
                 m_PackageAddRequest.progressUpdated += HandlePackageAddProgress;
 
                 EditorApplication.update += CheckCompletion;
@@ -74,7 +80,7 @@ namespace UnityEditor.Build.Profile
         {
             foreach (var package in packagesToAdd)
             {
-                if (!PackageManager.PackageInfo.IsPackageRegistered(package))
+                if (!PackageManager.PackageInfo.IsPackageRegistered(package.name))
                     return false;
             }
 
@@ -121,7 +127,7 @@ namespace UnityEditor.Build.Profile
         {
             foreach (var package in packagesToAdd)
             {
-                if (package == name)
+                if (package.name == name)
                     return true;
             }
             return false;
@@ -137,7 +143,7 @@ namespace UnityEditor.Build.Profile
             if (m_PackageAddRequest.Status >= PackageManager.StatusCode.Failure)
                 Debug.LogError(m_PackageAddRequest.Error.message);
 
-            packagesToAdd = Array.Empty<string>();
+            packagesToAdd = Array.Empty<BuildTargetDiscovery.PlatformPackageIdentifier>();
             OnPackageAddComplete?.Invoke();
         }
 

@@ -169,10 +169,10 @@ namespace UnityEditorInternal.Profiling
 
         static readonly GUIContent[] k_ProfilerViewFilteringOptions =
         {
-            EditorGUIUtility.TrTextContent("Collapse EditorOnly Samples", "Samples that are only created due to profiling the editor are collapsed by default, renamed to EditorOnly [<FunctionName>] and any GC Alloc incurred by them will not be accumulated."),
-            EditorGUIUtility.TrTextContent("Show Full Scripting Method Names", "Display fully qualified method names including assembly name and namespace."),
-            EditorGUIUtility.TrTextContent("Show Flow Events", "Visualize job scheduling and execution."),
-            EditorGUIUtility.TrTextContent("Hide 0ms Samples", "Hides samples displayed as 0 ms: (< 0.01 ms CPU Profiler, < 0.001 ms GPU Profiler). In the CPU Profiler, samples with GC Alloc are kept." ),
+            L10n.TextContent("Collapse EditorOnly Samples", "Samples that are only created due to profiling the editor are collapsed by default, renamed to EditorOnly [<FunctionName>] and any GC Alloc incurred by them will not be accumulated.", null, null),
+            L10n.TextContent("Show Full Scripting Method Names", "Display fully qualified method names including assembly name and namespace.", null, null),
+            L10n.TextContent("Show Flow Events", "Visualize job scheduling and execution.", null, null),
+            L10n.TextContent("Hide 0ms Samples", "Hides samples displayed as 0 ms: (< 0.01 ms CPU Profiler, < 0.001 ms GPU Profiler). In the CPU Profiler, samples with GC Alloc are kept." , null, null),
         };
 
         [SerializeField]
@@ -306,11 +306,6 @@ namespace UnityEditorInternal.Profiling
             if (m_ViewType != ProfilerViewType.TimelineV2)
                 m_ViewType = loaded;
 
-            // catches the case where jobs profiler has been removed from the project
-            var jobsProfilerModule = ProfilerWindow.jobsProfilerModule;
-            if (jobsProfilerModule == null && m_ViewType == ProfilerViewType.TimelineV2)
-                m_ViewType = ProfilerViewType.Timeline;
-
             m_ProfilerViewFilteringOptions = SessionState.GetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
         }
 
@@ -372,8 +367,15 @@ namespace UnityEditorInternal.Profiling
 
                     pm.AddItem(k_ProfilerViewFilteringOptions[i], OptionEnabled(option), () => ToggleOption(option));
                 }
+
+                AddViewOptionsMenuItems(pm);
+
                 pm.Popup(position, -1);
             }
+        }
+
+        protected virtual void AddViewOptionsMenuItems(GenericMenu menu)
+        {
         }
 
         bool OptionEnabled(ProfilerViewFilteringOptions option)
@@ -405,9 +407,53 @@ namespace UnityEditorInternal.Profiling
             m_FrameDataHierarchyView.DoGUI(fetchData ? GetFrameDataView() : null, fetchData, ref updateViewLive, m_ViewType);
         }
 
-        HierarchyFrameDataView GetFrameDataView()
+        internal HierarchyFrameDataView GetFrameDataView()
         {
-            return GetFrameDataView(m_FrameDataHierarchyView.groupName, m_FrameDataHierarchyView.threadName, m_FrameDataHierarchyView.threadId);
+            var frameDataView = GetFrameDataView(m_FrameDataHierarchyView.groupName, m_FrameDataHierarchyView.threadName, m_FrameDataHierarchyView.threadId);
+
+            // GPU samples can resolve on any thread (e.g. the render thread under multithreaded
+            // rendering), not necessarily the one shown here (there is no GPU thread selector), so
+            // fall back to whichever thread actually has GPU data rather than always showing N/A.
+            // Also gated on the frame having any gathered GPU data at all: this runs every repaint
+            // via IMGUIContainer, and without the gate, a frame with no GPU data anywhere (e.g. GPU
+            // profiling unsupported under graphics jobs) would build and discard a full
+            // HierarchyFrameDataView per thread on every single repaint for nothing.
+            if (IsGpuView && frameDataView != null && frameDataView.valid && !frameDataView.hasGpuSamples
+                && (ProfilerDriver.GetGpuStatisticsAvailabilityState((int)ProfilerWindow.selectedFrameIndex) & GpuProfilingStatisticsAvailabilityStates.Gathered) != 0)
+            {
+                // ProfilerWindow.GetFrameDataView caches its result in a single shared field, reusing
+                // and disposing it on every call - so the search below invalidates frameDataView itself.
+                // Re-fetch it afterwards rather than falling back to the now possibly-disposed reference.
+                var gpuThreadDataView = FindThreadWithGpuSamples();
+                if (gpuThreadDataView != null)
+                    return gpuThreadDataView;
+
+                return GetFrameDataView(m_FrameDataHierarchyView.groupName, m_FrameDataHierarchyView.threadName, m_FrameDataHierarchyView.threadId);
+            }
+
+            return frameDataView;
+        }
+
+        HierarchyFrameDataView FindThreadWithGpuSamples()
+        {
+            // Rejected candidates are deliberately left undisposed here: ProfilerWindow.GetFrameDataView
+            // caches its result in a single shared field and may return the tree's own currently-displayed
+            // view unchanged (a cache hit) rather than a fresh instance, so disposing it directly would
+            // bypass ProfilerWindow's frameDataViewAboutToBeDisposed notification for a view the tree still
+            // holds. The next GetFrameDataView call (the next sweep iteration, or the caller's own re-fetch)
+            // disposes it properly through that same shared cache instead.
+            using (var iter = new ProfilerFrameDataIterator())
+            {
+                var threadCount = iter.GetThreadCount((int)ProfilerWindow.selectedFrameIndex);
+                for (var threadIndex = 0; threadIndex < threadCount; ++threadIndex)
+                {
+                    var candidate = GetFrameDataView(threadIndex);
+                    if (candidate != null && candidate.valid && candidate.hasGpuSamples)
+                        return candidate;
+                }
+            }
+
+            return null;
         }
 
         HierarchyFrameDataView GetFrameDataView(string threadGroupName, string threadName, ulong threadId)

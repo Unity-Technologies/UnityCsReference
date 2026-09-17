@@ -18,9 +18,9 @@ namespace UnityEditor
             public static GUIContent Get3DLayoutContent(MaterialProperty property)
             {
                 if (s_Stereo3DLayoutContent == null)
-                    s_Stereo3DLayoutContent = EditorGUIUtility.TrTextContent(
+                    s_Stereo3DLayoutContent = L10n.TextContent(
                         property.displayName,
-                        "Layout of 3D content in the source. Only meaningful when stereoscopic render is used.");
+                        "Layout of 3D content in the source. Only meaningful when stereoscopic render is used.", null, null);
 
                 return s_Stereo3DLayoutContent;
             }

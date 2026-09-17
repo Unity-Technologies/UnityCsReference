@@ -25,9 +25,12 @@ class WireVisualData
     public float AnimationSpeed { get; set; } = 1f;
 
     /// <summary>
-    /// Whether the wire is drawn with a dashed pattern.
+    /// Whether the wire is drawn with a dashed pattern, or null to use the wire's own value.
     /// </summary>
-    public bool IsDashed { get; set; }
+    /// <remarks>
+    /// Nullable so that an explicit <c>false</c> is distinguishable from "never set".
+    /// </remarks>
+    public bool? IsDashed { get; set; }
 
     /// <summary>
     /// The line width to use on the graph canvas, or <c>0f</c> to use the default width.
@@ -43,7 +46,7 @@ class WireVisualData
     {
         return !IsAnimating
             && Mathf.Approximately(AnimationSpeed, 1f)
-            && !IsDashed
+            && IsDashed == null
             && Mathf.Approximately(WidthOverride, 0f)
             && Mathf.Approximately(Opacity, 1f);
     }

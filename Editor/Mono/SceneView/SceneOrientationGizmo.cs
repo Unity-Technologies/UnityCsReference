@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneView not yet converted
 using System;
 using UnityEditor;
 using UnityEditor.AnimatedValues;
@@ -18,6 +17,10 @@ using BlendMode = UnityEngine.Rendering.BlendMode;
 sealed class SceneOrientationGizmo : IMGUIOverlay
 {
     static readonly Color k_PickingClearColor = Color.magenta;
+
+    // Negative axis cones, labels and the rotation lock icon are not meant to be customizable
+    // via the "Center Axis" color preference, which should only affect the center cube.
+    static readonly Color k_GizmoNeutralColor = new Color(0.8f, 0.8f, 0.8f, 0.93f);
     const int kRotationSize = 100;
     const float kRotationLockedAlpha = 0.4f;
     const int kPerspOrthoLabelHeight = 16;
@@ -111,8 +114,8 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         public static readonly GUIStyle viewLabelStyleCentered = "SC ViewLabelCentered";
         public static readonly GUIStyle viewAxisLabelStyle = "SC ViewAxisLabel";
         public static readonly GUIStyle lockStyle = "CenteredLabel";
-        public static readonly GUIContent unlockedRotationIcon = EditorGUIUtility.TrIconContent("LockIcon", "Click to lock the rotation in the current direction.");
-        public static readonly GUIContent lockedRotationIcon = EditorGUIUtility.TrIconContent("LockIcon-On", "Click to unlock the rotation.");
+        public static readonly GUIContent unlockedRotationIcon = L10n.IconContent("LockIcon", "Click to lock the rotation in the current direction.", null);
+        public static readonly GUIContent lockedRotationIcon = L10n.IconContent("LockIcon-On", "Click to unlock the rotation.", null);
     }
 
     struct BlendingScope : IDisposable
@@ -252,7 +255,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
                     c = Handles.zAxisColor;
                     break;
                 default:
-                    c = Handles.centerColor;
+                    c = k_GizmoNeutralColor;
                     break;
             }
 
@@ -377,7 +380,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         float lockCenterY = 17;
         Rect lockRect = new Rect(lockCenterX - (clickWidth / 2), lockCenterY - (clickHeight / 2), clickWidth,
             clickHeight);
-        Color c = Handles.centerColor;
+        Color c = k_GizmoNeutralColor;
         c.a *= m_Visible.faded;
         if (c.a > 0.0f)
         {
@@ -450,7 +453,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
             {
                 if (i == index2D) // Future proof even if we add more labels after the 2D one
                     continue;
-                Color c = Handles.centerColor;
+                Color c = k_GizmoNeutralColor;
                 c.a *= dirNameVisible[i].faded * fadedRotationLock;
                 if (c.a > 0.0f)
                 {
@@ -461,7 +464,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
 
             // Then draw just the label for 2D. It uses the original labelRect, and with a style where the text is horizontally centered.
             {
-                Color c = Handles.centerColor;
+                Color c = k_GizmoNeutralColor;
                 c.a *= faded2Dgray * fadedVisibility;
                 if (c.a > 0.0f)
                 {
@@ -804,4 +807,3 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         m_Visible.target = (newVisible != 8);
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

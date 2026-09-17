@@ -27,17 +27,17 @@ namespace UnityEditor
         internal class Styles
         {
             // copy pasted from TextureImporterInspector.TextureSettingsGUI()
-            public static readonly GUIContent readWrite     = EditorGUIUtility.TrTextContent("Read/Write", "Enable to be able to access the raw pixel data from code.");
-            public static readonly GUIContent sRGBTexture   = EditorGUIUtility.TrTextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
-            public static readonly GUIContent wrapMode      = EditorGUIUtility.TrTextContent("Wrap Mode");
-            public static readonly GUIContent filterMode    = EditorGUIUtility.TrTextContent("Filter Mode");
+            public static readonly GUIContent readWrite     = L10n.TextContent("Read/Write", "Enable to be able to access the raw pixel data from code.", null, null);
+            public static readonly GUIContent sRGBTexture   = L10n.TextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).", null, null);
+            public static readonly GUIContent wrapMode      = L10n.TextContent("Wrap Mode", null, null, null);
+            public static readonly GUIContent filterMode    = L10n.TextContent("Filter Mode", null, null, null);
             public static readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Stream Mipmap Levels", "Only load larger mipmap levels as needed to render the current game cameras.");
             public static readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Priority", "Mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
 
             public static readonly int[] filterModeValues           =
             { (int)FilterMode.Point, (int)FilterMode.Bilinear, (int)FilterMode.Trilinear };
             public static readonly GUIContent[] filterModeOptions   =
-            { EditorGUIUtility.TrTextContent("Point (no filter)"), EditorGUIUtility.TrTextContent("Bilinear"), EditorGUIUtility.TrTextContent("Trilinear") };
+            { L10n.TextContent("Point (no filter)", null, null, null), L10n.TextContent("Bilinear", null, null, null), L10n.TextContent("Trilinear", null, null, null) };
         }
 
 

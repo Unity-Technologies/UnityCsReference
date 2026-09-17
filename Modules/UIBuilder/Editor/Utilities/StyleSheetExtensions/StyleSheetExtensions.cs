@@ -103,12 +103,18 @@ namespace Unity.UI.Builder
             if (selector == null)
                 return;
 
+            // An orphaned selector — its sheet was reloaded underneath it, e.g. by a discard (the fake
+            // pseudo-state selector of a still-selected row is the usual case) — has nothing left to
+            // remove, and must not stamp an undo record onto the freshly reverted sheet.
+            var rule = selector.rule;
+            if (rule?.complexSelectors == null)
+                return;
+
             // Undo/Redo
             if (string.IsNullOrEmpty(undoMessage))
                 undoMessage = "Delete UI Style Selector";
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
-            var rule = selector.rule;
             // If this was the last selector for the rule, we remove the rule instead.
             if (rule.complexSelectors.Length == 1 && rule.complexSelectors[0] == selector)
             {

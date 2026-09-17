@@ -41,5 +41,10 @@ namespace Unity.GraphToolkit.Editor
         /// The transition this rule is stacked on, or <c>null</c> when the rule is not part of one.
         /// </summary>
         ITransition Transition { get; }
+
+        /// <summary>
+        /// The icon displayed for this rule in the transition inspector, or <see langword="null"/> if none is set.
+        /// </summary>
+        Texture2D Icon { get; set; }
     }
 }

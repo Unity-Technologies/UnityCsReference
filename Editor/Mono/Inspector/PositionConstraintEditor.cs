@@ -29,10 +29,10 @@ namespace UnityEditor
 
         private class Styles : ConstraintStyleBase
         {
-            GUIContent m_RestTranslation = EditorGUIUtility.TrTextContent("Position At Rest");
-            GUIContent m_TranslationOffset = EditorGUIUtility.TrTextContent("Position Offset");
+            GUIContent m_RestTranslation = L10n.TextContent("Position At Rest", null, null, null);
+            GUIContent m_TranslationOffset = L10n.TextContent("Position Offset", null, null, null);
 
-            GUIContent m_TranslationAxes = EditorGUIUtility.TrTextContent("Freeze Position Axes");
+            GUIContent m_TranslationAxes = L10n.TextContent("Freeze Position Axes", null, null, null);
 
             public override GUIContent AtRest { get { return m_RestTranslation; } }
             public override GUIContent Offset { get { return m_TranslationOffset; }  }

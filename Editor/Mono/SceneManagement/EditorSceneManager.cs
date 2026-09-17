@@ -52,6 +52,9 @@ namespace UnityEditor.SceneManagement
             remove => m_SceneOpenedEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
+        // Backing store for the sceneOpened event: subscribers attach through their own lifecycle and
+        // re-subscribe after a code reload, so the cleared store refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<SceneOpenedCallback> m_SceneOpenedEvent = new EventWithPerformanceTracker<SceneOpenedCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneOpened)}");
 
         public static event SceneClosingCallback sceneClosing
@@ -68,6 +71,9 @@ namespace UnityEditor.SceneManagement
             remove => m_SceneClosedEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
+        // Backing store for the sceneClosed event: subscribers attach through their own lifecycle and
+        // re-subscribe after a code reload, so the cleared store refills itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<SceneClosedCallback> m_SceneClosedEvent = new EventWithPerformanceTracker<SceneClosedCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneClosed)}");
         public static event SceneSavingCallback sceneSaving
         {
@@ -82,6 +88,10 @@ namespace UnityEditor.SceneManagement
             remove => m_SceneSavedEvent.Remove(value);
         }
         [AutoStaticsCleanupOnCodeReload(CleanupStrategy = CleanupStrategy.Clear)]
+        // Backing store for the sceneSaved event: subscribers attach through their own lifecycle - scene
+        // visibility, the hierarchy handlers, the scene template service - so the cleared store refills
+        // itself.
+        [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
         private static EventWithPerformanceTracker<SceneSavedCallback> m_SceneSavedEvent = new EventWithPerformanceTracker<SceneSavedCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneSaved)}");
         public static event SceneDirtiedCallback sceneDirtied
         {

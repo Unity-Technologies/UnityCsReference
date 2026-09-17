@@ -30,6 +30,11 @@ namespace Unity.UIToolkit.Editor
                 _ => base.GetEditorToolType(tool),
             };
         }
+
+        public override void PopulateMenu(DropdownMenu menu)
+        {
+            UIViewportContextMenuUtility.PopulateMenu(menu, CommandSources.Menus);
+        }
     }
 
     [InitializeOnLoad]
@@ -38,15 +43,11 @@ namespace Unity.UIToolkit.Editor
         static SelectionContextRouter()
         {
             Selection.selectionChanged += OnStateChanged;
-            StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnStageChanged;
-            UIToolkitAuthoringSettings.MainStageAuthoringChanged += OnAuthoringSettingChanged;
-            UIToolkitAuthoringSettings.EnableInSceneAuthoringChanged += OnAuthoringSettingChanged;
+            UIStageNavigation.StageSettled += OnStageChanged;
             OnStateChanged();
         }
 
         static void OnStageChanged(Stage _) => OnStateChanged();
-
-        static void OnAuthoringSettingChanged(bool _) => OnStateChanged();
 
         static void OnStateChanged()
         {

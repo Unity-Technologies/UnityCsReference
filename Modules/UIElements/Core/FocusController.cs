@@ -43,8 +43,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         public abstract FocusController focusController { get; }
 
-        private bool m_Focusable;
-
         /// <summary>
         /// Whether an element can potentially receive focus.
         /// </summary>
@@ -56,12 +54,13 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public virtual bool focusable
         {
-            get => m_Focusable;
+            get => GetFlag(VisualElementFlags.IsFocusable);
             set
             {
-                if (m_Focusable == value)
+                // Reads the stored bit, not the virtual getter, which a subclass may override.
+                if (GetFlag(VisualElementFlags.IsFocusable) == value)
                     return;
-                m_Focusable = value;
+                SetFlag(VisualElementFlags.IsFocusable, value);
                 NotifyPropertyChanged(focusableProperty);
             }
         }
@@ -88,8 +87,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        bool m_DelegatesFocus;
-
         /// <summary>
         /// Whether the element delegates the focus to its children.
         /// </summary>
@@ -115,12 +112,12 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public bool delegatesFocus
         {
-            get { return m_DelegatesFocus; }
+            get => GetFlag(VisualElementFlags.DelegatesFocus);
             set
             {
-                if (m_DelegatesFocus == value)
+                if (GetFlag(VisualElementFlags.DelegatesFocus) == value)
                     return;
-                m_DelegatesFocus = value;
+                SetFlag(VisualElementFlags.DelegatesFocus, value);
                 NotifyPropertyChanged(delegatesFocusProperty);
             }
         }
@@ -128,18 +125,17 @@ namespace UnityEngine.UIElements
         // Used when we want then children of a composite to appear at
         // composite root tabIndex position in the focus ring, but
         // we do not want the root itself to be part of the ring.
-        bool m_ExcludeFromFocusRing;
         internal bool excludeFromFocusRing
         {
             [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
-            get { return m_ExcludeFromFocusRing; }
+            get => GetFlag(VisualElementFlags.ExcludeFromFocusRing);
             set
             {
                 if (!((VisualElement)this).isCompositeRoot)
                 {
                     throw new InvalidOperationException("excludeFromFocusRing should only be set on composite roots.");
                 }
-                m_ExcludeFromFocusRing = value;
+                SetFlag(VisualElementFlags.ExcludeFromFocusRing, value);
             }
         }
 
@@ -148,11 +144,12 @@ namespace UnityEngine.UIElements
         /// This property is used to prevent certain elements from receiving the focus in this case (e.g Foldout)
         /// <see cref="FocusController.GetFocusableParentForPointerEvent(Focusable, out Focusable)"/>
         /// </summary>
+        // Defaults to true: its bit is part of VisualElementFlags.Init.
         internal bool isEligibleToReceiveFocusFromDisabledChild
         {
-            get;
-            set;
-        } = true;
+            get => GetFlag(VisualElementFlags.EligibleToReceiveFocusFromDisabledChild);
+            set => SetFlag(VisualElementFlags.EligibleToReceiveFocusFromDisabledChild, value);
+        }
 
         /// <summary>
         /// Whether the element can be focused.

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Terrain not yet converted
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -25,17 +24,17 @@ namespace UnityEditor
 
         private class Styles
         {
-            public readonly GUIContent diffuseTexture = EditorGUIUtility.TrTextContent("Diffuse", "Depending on your terrain material type, the Alpha channel can be:\n\n  Built-in diffuse: Unused\n  Built-in specular: Gloss\n  Built-in standard or HDRP TerrainLit: Smoothness");
-            public readonly GUIContent diffuseTextureMaskMapEnabled = EditorGUIUtility.TrTextContent("Diffuse", "Depending on your terrain material type, the Alpha channel can be:\n\n  Built-in diffuse: Unused\n  Built-in specular: Gloss\n  Built-in standard: Smoothness\n  HDRP TerrainLit: Density");
-            public readonly GUIContent normalMapTexture = EditorGUIUtility.TrTextContent("Normal Map");
-            public readonly GUIContent maskMapTexture = EditorGUIUtility.TrTextContent("Mask Map", "HDRP TerrainLit shader uses this texture for:\n\n  R: Metallic\n  G: AO\n  B: Height\n  A: Smoothness (Diffuse Alpha becomes Density)\n\nCustom shaders can use this texture for whatever purpose.");
-            public readonly GUIContent channelRemapping = EditorGUIUtility.TrTextContent("Channel Remapping");
-            public readonly GUIContent red = EditorGUIUtility.TrTextContent("Red");
-            public readonly GUIContent green = EditorGUIUtility.TrTextContent("Green");
-            public readonly GUIContent blue = EditorGUIUtility.TrTextContent("Blue");
-            public readonly GUIContent alpha = EditorGUIUtility.TrTextContent("Alpha");
-            public readonly GUIContent min = EditorGUIUtility.TrTextContent("Min", "The value when the texture channel is 0");
-            public readonly GUIContent max = EditorGUIUtility.TrTextContent("Max", "The value when the texture channel is 1");
+            public readonly GUIContent diffuseTexture = L10n.TextContent("Diffuse", "Depending on your terrain material type, the Alpha channel can be:\n\n  Built-in diffuse: Unused\n  Built-in specular: Gloss\n  Built-in standard or HDRP TerrainLit: Smoothness", null, null);
+            public readonly GUIContent diffuseTextureMaskMapEnabled = L10n.TextContent("Diffuse", "Depending on your terrain material type, the Alpha channel can be:\n\n  Built-in diffuse: Unused\n  Built-in specular: Gloss\n  Built-in standard: Smoothness\n  HDRP TerrainLit: Density", null, null);
+            public readonly GUIContent normalMapTexture = L10n.TextContent("Normal Map", null, null, null);
+            public readonly GUIContent maskMapTexture = L10n.TextContent("Mask Map", "HDRP TerrainLit shader uses this texture for:\n\n  R: Metallic\n  G: AO\n  B: Height\n  A: Smoothness (Diffuse Alpha becomes Density)\n\nCustom shaders can use this texture for whatever purpose.", null, null);
+            public readonly GUIContent channelRemapping = L10n.TextContent("Channel Remapping", null, null, null);
+            public readonly GUIContent red = L10n.TextContent("Red", null, null, null);
+            public readonly GUIContent green = L10n.TextContent("Green", null, null, null);
+            public readonly GUIContent blue = L10n.TextContent("Blue", null, null, null);
+            public readonly GUIContent alpha = L10n.TextContent("Alpha", null, null, null);
+            public readonly GUIContent min = L10n.TextContent("Min", "The value when the texture channel is 0", null, null);
+            public readonly GUIContent max = L10n.TextContent("Max", "The value when the texture channel is 1", null, null);
         }
 
         [NoAutoStaticsCleanup] // GUIContent/GUIStyle styles holder; editor infra, no user refs
@@ -240,8 +239,14 @@ namespace UnityEditor
             // See also: TerrainLitGUI in HDRP, TerrainLitShaderGUI in URP.
             if (diffuseTexture != null && TextureHasAlpha(ref diffuseTexture))
             {
-                terrainLayer.smoothnessSource = (UnityEngine.TerrainLayerSmoothnessSource)EditorGUILayout.EnumPopup(
-                    EditorGUIUtility.TrTextContent("Smoothness Source"), terrainLayer.smoothnessSource);
+                EditorGUI.BeginChangeCheck();
+                var smoothnessSource = (UnityEngine.TerrainLayerSmoothnessSource)EditorGUILayout.EnumPopup(
+                    L10n.TextContent("Smoothness Source", null, null, null), terrainLayer.smoothnessSource);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(terrainLayer, "Terrain Layer Smoothness Source");
+                    terrainLayer.smoothnessSource = smoothnessSource;
+                }
                 if (terrainLayer.smoothnessSource == TerrainLayerSmoothnessSource.DiffuseAlphaChannel)
                 {
                     GUIStyle warnStyle = new GUIStyle(GUI.skin.label);
@@ -464,9 +469,9 @@ namespace UnityEditor
             {
                 if (s_previewTerrain.terrainData != null)
                 {
-                    #pragma warning disable UAL0018 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
+#pragma warning disable UAL0018 // hands the pre-drag layer list back to the terrain asset at the end of the same drag gesture; a reload clears the snapshot, and the null check above then skips the restore instead of writing a stale list
                     s_previewTerrain.terrainData.terrainLayers = s_originalLayers;
-                    #pragma warning restore UAL0018
+#pragma warning restore UAL0018
                 }
                 
                 EditorUtility.SetDirty(s_previewTerrain);
@@ -484,4 +489,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

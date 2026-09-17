@@ -55,22 +55,23 @@ namespace Unity.Loading
         [VisibleToOtherModules] internal GUID m_GUID;
         [VisibleToOtherModules] internal FileIdentifierType m_FileIdentifierType;
         [VisibleToOtherModules] internal long m_LocalIdentifierInFile;
-        internal Hash128 m_ObjectIdHash;
+        internal Hash128 m_StableFileId;
 
         /// <summary>
         /// True if this LoadableObjectId is initialized with valid data.
         /// </summary>
-        public readonly bool IsValid => ((!m_GUID.Empty() && m_LocalIdentifierInFile != 0) || m_ObjectIdHash.isValid);
+        public readonly bool IsValid => ((!m_GUID.Empty() && m_LocalIdentifierInFile != 0) || m_StableFileId.isValid);
 
         [ExcludeFromDocs]
         public static bool operator ==(LoadableObjectId x, LoadableObjectId y)
         {
-            if (x.m_ObjectIdHash.isValid != y.m_ObjectIdHash.isValid)
+            if (x.m_StableFileId.isValid != y.m_StableFileId.isValid)
                 return false;
 
-            if (x.m_ObjectIdHash.isValid)
+            if (x.m_StableFileId.isValid)
             {
-                return x.m_ObjectIdHash == y.m_ObjectIdHash;
+                return x.m_StableFileId == y.m_StableFileId &&
+                       x.m_LocalIdentifierInFile == y.m_LocalIdentifierInFile;
             }
 
             // Otherwise use the guid, type, and fileid
@@ -102,8 +103,8 @@ namespace Unity.Loading
         {
             unchecked
             {
-                if (m_ObjectIdHash.isValid)
-                    return m_ObjectIdHash.GetHashCode();
+                if (m_StableFileId.isValid)
+                    return (m_StableFileId.GetHashCode() * 397) ^ m_LocalIdentifierInFile.GetHashCode();
 
                 var hashCode = m_GUID.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)m_FileIdentifierType;
@@ -121,9 +122,10 @@ namespace Unity.Loading
             if (!IsValid)
                 return "{ Invalid }";
 
-            return $"{{ oid-{GetOrCalculateObjectIdHash()}, guid: {m_GUID}, fileID: {m_LocalIdentifierInFile}, type: {(int)m_FileIdentifierType} }}";
-        }
+            if (m_StableFileId.isValid)
+                return $"{{ file: {m_StableFileId}, fileID: {m_LocalIdentifierInFile} }}";
 
-        internal extern Hash128 GetOrCalculateObjectIdHash();
+            return $"{{ guid: {m_GUID}, fileID: {m_LocalIdentifierInFile}, type: {(int)m_FileIdentifierType} }}";
+        }
     }
 }

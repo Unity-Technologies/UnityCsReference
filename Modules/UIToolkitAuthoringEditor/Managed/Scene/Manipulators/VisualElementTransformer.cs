@@ -111,8 +111,13 @@ abstract class VisualElementTransformer : VisualElementManipulator
 
     protected sealed class DragManipulator : PointerManipulator
     {
+        // Minimum pointer travel (in screen pixels) before a press is treated as a drag.
+        // This prevents clicks and double-clicks from triggering OnStartDrag.
+        const float k_DragThreshold = 4f;
+
         Vector3 m_Start;
-        bool m_Active;
+        bool m_Active;   // drag started (past threshold, OnStartDrag has been called)
+        bool m_Pending;  // pointer is down but has not yet crossed the threshold
 
         readonly Action<VisualElement> m_StartDrag;
         readonly Action m_EndDrag;
@@ -147,7 +152,7 @@ abstract class VisualElementTransformer : VisualElementManipulator
 
         void OnPointerDown(PointerDownEvent e)
         {
-            if (m_Active || target.ClassListContains(k_DisabledHandleUssClass))
+            if (m_Active || m_Pending || target.ClassListContains(k_DisabledHandleUssClass))
             {
                 e.StopImmediatePropagation();
                 return;
@@ -160,18 +165,36 @@ abstract class VisualElementTransformer : VisualElementManipulator
             if (e.clickCount == 2)
                 return;
 
-            m_StartDrag(target);
+            // Capture the mouse immediately so PointerMove events reach us even outside the handle,
+            // but defer OnStartDrag until the pointer has actually moved past the threshold.
             m_Start = e.position;
-            m_Active = true;
+            m_Pending = true;
             target.CaptureMouse();
             e.StopPropagation();
-            target.AddToClassList(k_ActiveHandleUssClass);
         }
 
         void OnPointerMove(PointerMoveEvent e)
         {
-            if (!m_Active || !target.HasMouseCapture())
+            if (!m_Pending && !m_Active)
                 return;
+            if (!target.HasMouseCapture())
+                return;
+
+            if (!m_Active)
+            {
+                // Still waiting for the threshold — absorb the event but don't act yet.
+                if ((e.position - m_Start).sqrMagnitude < k_DragThreshold * k_DragThreshold)
+                {
+                    e.StopPropagation();
+                    return;
+                }
+
+                // Threshold crossed: commit to a drag.
+                m_Pending = false;
+                m_StartDrag(target);
+                m_Active = true;
+                target.AddToClassList(k_ActiveHandleUssClass);
+            }
 
             m_DragAction(e.position - m_Start);
             e.StopPropagation();
@@ -179,7 +202,7 @@ abstract class VisualElementTransformer : VisualElementManipulator
 
         void OnPointerUp(PointerUpEvent e)
         {
-            if (!m_Active || !target.HasMouseCapture() || !CanStopManipulation(e))
+            if ((!m_Active && !m_Pending) || !target.HasMouseCapture() || !CanStopManipulation(e))
                 return;
 
             target.ReleaseMouse();
@@ -188,11 +211,15 @@ abstract class VisualElementTransformer : VisualElementManipulator
 
         void OnPointerCaptureOut(PointerCaptureOutEvent e)
         {
-            if (!m_Active) return;
+            if (!m_Active && !m_Pending) return;
 
+            var wasActive = m_Active;
             m_Active = false;
+            m_Pending = false;
             target.RemoveFromClassList(k_ActiveHandleUssClass);
-            m_EndDrag();
+            // Only call OnEndDrag if the drag actually started (OnStartDrag was called).
+            if (wasActive)
+                m_EndDrag();
         }
     }
 }

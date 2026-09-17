@@ -366,6 +366,10 @@ namespace UnityEditor
 
         [VisibleToOtherModules]
         [AutoStaticsCleanupOnCodeReload]
+        // The hierarchy windows subscribe in OnEnable and unsubscribe in OnDisable, and the
+        // HierarchyPreferences relay re-subscribes from its [OnCodeLoaded] Initialize() on every code
+        // load, so all handlers are restored after a reload.
+        [IgnoreForUAL0015("Subscribers re-register via OnEnable or [OnCodeLoaded] after a code reload")]
         internal static Action useLegacyHierarchyChanged;
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]

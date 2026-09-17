@@ -29,7 +29,7 @@ sealed partial class EditorGUILayout
 
     internal static readonly SavedBool s_SelectedDefault = new SavedBool("Platform.ShownDefaultTab", true);
 
-    // Keep in sync with Tests/EditModeAndPlayModeTests/PlayerSettings/Assets/Editor/PlayerSettingsApplicationIdentifierTests.cs.
+    // Keep in sync with Modules/Core/Tests/UTFTests/PlayerSettings/Editor/PlayerSettingsApplicationIdentifierTests.cs.
     static readonly GUIStyle s_TabOnlyOne = "Tab onlyOne";
     static readonly GUIStyle s_TabFirst = "Tab first";
     static readonly GUIStyle s_TabMiddle = "Tab middle";

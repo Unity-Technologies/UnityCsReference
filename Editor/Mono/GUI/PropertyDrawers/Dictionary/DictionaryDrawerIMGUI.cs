@@ -2,12 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: IMGUIControls not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.UIElements;
@@ -91,6 +90,7 @@ internal partial class DictionaryDrawer
             public const float k_EmptyLabelIndent = 18f;
             public const float k_IgnoredHelpBoxTopMargin = 4f;
             public const float k_IgnoredHelpBoxBottomMargin = 4f;
+            public const float k_FoldoutInfoRightInset = 4f;
 
             public static readonly GUIStyle headerBackground = "RL Header";
             public static readonly GUIStyle boxBackground = "RL Background";
@@ -99,8 +99,8 @@ internal partial class DictionaryDrawer
             public static readonly GUIStyle columnLabel = "MultiColumnHeader";
             public static readonly GUIStyle columnLabelClipped = new GUIStyle(columnLabel) { clipping = TextClipping.Ellipsis };
 
-            public static readonly GUIContent iconPlus = EditorGUIUtility.TrIconContent("Toolbar Plus");
-            public static readonly GUIContent iconMinus = EditorGUIUtility.TrIconContent("Toolbar Minus");
+            public static readonly GUIContent iconPlus = L10n.IconContent("Toolbar Plus", null, null);
+            public static readonly GUIContent iconMinus = L10n.IconContent("Toolbar Minus", null, null);
 
             public static readonly Texture2D sortAscIcon = EditorGUIUtility.LoadIconRequired("UIPackageResources/Images/scrollup_uielements.png");
             public static readonly Texture2D sortDescIcon = EditorGUIUtility.LoadIconRequired("UIPackageResources/Images/scrolldown_uielements.png");
@@ -1151,8 +1151,19 @@ internal partial class DictionaryDrawer
             float helpBoxY = startY + Styles.k_IgnoredHelpBoxTopMargin;
             var helpBoxRect = new Rect(position.x, helpBoxY, position.width, helpBoxHeight);
 
-            if (DrawerEditorGUI.HelpBoxWithButton(helpBoxRect, MessageType.Warning, helpBoxText, Texts.SelectFirstIgnoredButtonLabel))
+            if (duplicateEntryIndices.Count + nullKeyEntryIndices.Count == 1)
+            {
+                if (DrawerEditorGUI.HelpBoxWithButton(helpBoxRect, MessageType.Warning, helpBoxText, Texts.SelectIgnoredButtonLabel))
+                    SelectFirstIgnored();
+                return;
+            }
+
+            int pressedIndex = DrawerEditorGUI.HelpBoxWithButtons(helpBoxRect, MessageType.Warning, helpBoxText,
+                Texts.SelectFirstIgnoredButtonLabel, Texts.SelectAllIgnoredButtonLabel);
+            if (pressedIndex == 0)
                 SelectFirstIgnored();
+            else if (pressedIndex == 1)
+                SelectAllIgnored();
         }
 
         void SelectFirstIgnored()
@@ -1166,6 +1177,22 @@ internal partial class DictionaryDrawer
 
             treeView.SetSelection(new[] { firstDisplayIndex }, TreeViewSelectionOptions.RevealAndFrame);
             treeView.SetFocus();
+        }
+
+        void SelectAllIgnored()
+        {
+            if (treeView == null)
+                return;
+
+            using (ListPool<int>.Get(out var displayIndices))
+            {
+                CollectIgnoredDisplayIndices(duplicateEntryIndices, nullKeyEntryIndices, sortedIndices, displayIndices);
+                if (displayIndices.Count == 0)
+                    return;
+
+                treeView.SetSelection(displayIndices, TreeViewSelectionOptions.RevealAndFrame);
+                treeView.SetFocus();
+            }
         }
 
         void DrawFoldoutHeader(Rect rect, SerializedProperty property, GUIContent label)
@@ -1188,9 +1215,15 @@ internal partial class DictionaryDrawer
             }
 
             var infoSize = EditorStyles.miniLabel.CalcSize(new GUIContent(infoText));
-            var infoRect = new Rect(rect.xMax - infoSize.x - 4f, rect.y, infoSize.x, rect.height);
+            float infoRight = rect.xMax - Styles.k_FoldoutInfoRightInset;
+            float minInfoX = rect.x + EditorStyles.foldout.CalcSize(label).x;
+            float infoX = Mathf.Max(minInfoX, infoRight - infoSize.x);
+            var infoRect = new Rect(infoX, rect.y, infoRight - infoX, rect.height);
 
             property.isExpanded = EditorGUI.Foldout(rect, property.isExpanded, label, true);
+            if (infoRect.width <= 0f)
+                return;
+
             using (new EditorGUI.DisabledScope(true))
                 EditorGUI.LabelField(infoRect, infoText, EditorStyles.miniLabel);
         }
@@ -1655,7 +1688,7 @@ internal partial class DictionaryDrawer
                     var menu = new GenericMenu();
 
                     // The three layouts form a radio group (the active one is checked),
-                    // followed by a separator and the "Reset to Defaults" action.
+                    // followed by a separator and the "Reset Layout" action.
                     AddLayoutItem(menu, Texts.TwoColumnsLayoutLabel, DictionaryLayout.TwoColumns, instance);
                     AddLayoutItem(menu, Texts.OneColumnWithValueFoldoutLayoutLabel, DictionaryLayout.OneColumnWithValueFoldout, instance);
                     AddLayoutItem(menu, Texts.OneColumnWithValueVisibleLayoutLabel, DictionaryLayout.OneColumnWithValueVisible, instance);
@@ -1667,14 +1700,14 @@ internal partial class DictionaryDrawer
 
                     if (instance.header.HasCachedState)
                     {
-                        menu.AddItem(new GUIContent(Texts.ResetToDefaultsLabel), false, () =>
+                        menu.AddItem(new GUIContent(Texts.ResetLayoutLabel), false, () =>
                         {
                             instance.ResetToDefaults();
                         });
                     }
                     else
                     {
-                        menu.AddDisabledItem(new GUIContent(Texts.ResetToDefaultsLabel));
+                        menu.AddDisabledItem(new GUIContent(Texts.ResetLayoutLabel));
                     }
 
                     menu.ShowAsContext();
@@ -2325,6 +2358,10 @@ internal static class DrawerEditorGUI
     const float k_HelpBoxButtonHeight = 20f;
     const float k_HelpBoxButtonMinWidth = 60f;
     const float k_HelpBoxButtonInset = 4f;
+    const float k_HelpBoxButtonSpacing = 2f;
+    // EditorStyles.helpBox scales its icon down by whatever room is left after the text, so the
+    // icon would otherwise change size with the message and feed back into the text height.
+    static readonly Vector2 k_HelpBoxIconSize = new Vector2(16f, 16f);
 
     // EditorStyles.helpBox uses MiddleLeft vertical alignment, which would vertically
     // center the icon+text inside the (intentionally taller-than-text) HelpBoxWithButton
@@ -2350,8 +2387,11 @@ internal static class DrawerEditorGUI
     public static float GetHelpBoxWithButtonHeight(MessageType messageType, string message, float width)
     {
         var content = EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(messageType));
-        float textHeight = helpBoxUpperLeft.CalcHeight(content, width);
-        return textHeight + k_HelpBoxButtonGap + k_HelpBoxButtonHeight;
+        using (new EditorGUIUtility.IconSizeScope(k_HelpBoxIconSize))
+        {
+            float textHeight = helpBoxUpperLeft.CalcHeight(content, width);
+            return textHeight + k_HelpBoxButtonGap + k_HelpBoxButtonHeight;
+        }
     }
 
     // Draws an EditorGUI.HelpBox-styled box (with the icon for the given MessageType)
@@ -2360,16 +2400,38 @@ internal static class DrawerEditorGUI
     // using the same style we draw it with, so longer labels stay readable without truncation.
     public static bool HelpBoxWithButton(Rect position, MessageType messageType, string message, string buttonText)
     {
+        return HelpBoxWithButtons(position, messageType, message, buttonText, null) == 0;
+    }
+
+    public static int HelpBoxWithButtons(
+        Rect position, MessageType messageType, string message, string firstButtonText, string secondButtonText)
+    {
         var content = EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(messageType));
-        GUI.Label(position, content, helpBoxUpperLeft);
+        using (new EditorGUIUtility.IconSizeScope(k_HelpBoxIconSize))
+            GUI.Label(position, content, helpBoxUpperLeft);
+
+        float rightEdge = position.xMax - k_HelpBoxButtonInset;
+        float minX = position.x + helpBoxUpperLeft.padding.left;
+        float buttonY = position.yMax - k_HelpBoxButtonHeight - k_HelpBoxButtonInset;
+
+        int pressedIndex = -1;
+        if (DrawHelpBoxButton(secondButtonText, buttonY, minX, ref rightEdge))
+            pressedIndex = 1;
+        if (DrawHelpBoxButton(firstButtonText, buttonY, minX, ref rightEdge))
+            pressedIndex = 0;
+        return pressedIndex;
+    }
+
+    static bool DrawHelpBoxButton(string buttonText, float buttonY, float minX, ref float rightEdge)
+    {
+        if (string.IsNullOrEmpty(buttonText) || rightEdge <= minX)
+            return false;
 
         var buttonContent = EditorGUIUtility.TempContent(buttonText);
         float buttonWidth = Mathf.Max(k_HelpBoxButtonMinWidth, GUI.skin.button.CalcSize(buttonContent).x);
-        var buttonRect = new Rect(
-            position.xMax - buttonWidth - k_HelpBoxButtonInset,
-            position.yMax - k_HelpBoxButtonHeight - k_HelpBoxButtonInset,
-            buttonWidth,
-            k_HelpBoxButtonHeight);
+        float buttonX = Mathf.Max(minX, rightEdge - buttonWidth);
+        var buttonRect = new Rect(buttonX, buttonY, rightEdge - buttonX, k_HelpBoxButtonHeight);
+        rightEdge = buttonX - k_HelpBoxButtonSpacing;
         return GUI.Button(buttonRect, buttonContent);
     }
 
@@ -2393,5 +2455,3 @@ internal static class DrawerEditorGUI
 }
 
 } // end of namespace
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

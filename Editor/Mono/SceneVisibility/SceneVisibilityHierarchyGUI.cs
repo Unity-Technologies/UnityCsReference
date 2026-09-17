@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: SceneView not yet converted
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Experimental;
 using UnityEditor.IMGUI.Controls;
@@ -33,27 +32,27 @@ namespace UnityEditor
             [NoAutoStaticsCleanup] // readonly icon set (GUIContent), safe to persist
             public static readonly IconState iconNormal = new IconState
             {
-                visibleAll = EditorGUIUtility.TrIconContent("scenevis_visible"),
-                visibleMixed = EditorGUIUtility.TrIconContent("scenevis_visible-mixed"),
-                hiddenAll = EditorGUIUtility.TrIconContent("scenevis_hidden"),
-                hiddenMixed = EditorGUIUtility.TrIconContent("scenevis_hidden-mixed"),
-                pickingEnabledAll = EditorGUIUtility.TrIconContent("scenepicking_pickable"),
-                pickingEnabledMixed = EditorGUIUtility.TrIconContent("scenepicking_pickable-mixed"),
-                pickingDisabledAll = EditorGUIUtility.TrIconContent("scenepicking_notpickable"),
-                pickingDisabledMixed = EditorGUIUtility.TrIconContent("scenepicking_notpickable-mixed"),
+                visibleAll = L10n.IconContent("scenevis_visible", null, null),
+                visibleMixed = L10n.IconContent("scenevis_visible-mixed", null, null),
+                hiddenAll = L10n.IconContent("scenevis_hidden", null, null),
+                hiddenMixed = L10n.IconContent("scenevis_hidden-mixed", null, null),
+                pickingEnabledAll = L10n.IconContent("scenepicking_pickable", null, null),
+                pickingEnabledMixed = L10n.IconContent("scenepicking_pickable-mixed", null, null),
+                pickingDisabledAll = L10n.IconContent("scenepicking_notpickable", null, null),
+                pickingDisabledMixed = L10n.IconContent("scenepicking_notpickable-mixed", null, null),
             };
 
             [NoAutoStaticsCleanup] // readonly icon set (GUIContent), safe to persist
             public static readonly IconState iconHovered = new IconState
             {
-                visibleAll = EditorGUIUtility.TrIconContent("scenevis_visible_hover"),
-                visibleMixed = EditorGUIUtility.TrIconContent("scenevis_visible-mixed_hover"),
-                hiddenAll = EditorGUIUtility.TrIconContent("scenevis_hidden_hover"),
-                hiddenMixed = EditorGUIUtility.TrIconContent("scenevis_hidden-mixed_hover"),
-                pickingEnabledAll = EditorGUIUtility.TrIconContent("scenepicking_pickable_hover"),
-                pickingEnabledMixed = EditorGUIUtility.TrIconContent("scenepicking_pickable-mixed_hover"),
-                pickingDisabledAll = EditorGUIUtility.TrIconContent("scenepicking_notpickable_hover"),
-                pickingDisabledMixed = EditorGUIUtility.TrIconContent("scenepicking_notpickable-mixed_hover"),
+                visibleAll = L10n.IconContent("scenevis_visible_hover", null, null),
+                visibleMixed = L10n.IconContent("scenevis_visible-mixed_hover", null, null),
+                hiddenAll = L10n.IconContent("scenevis_hidden_hover", null, null),
+                hiddenMixed = L10n.IconContent("scenevis_hidden-mixed_hover", null, null),
+                pickingEnabledAll = L10n.IconContent("scenepicking_pickable_hover", null, null),
+                pickingEnabledMixed = L10n.IconContent("scenepicking_pickable-mixed_hover", null, null),
+                pickingDisabledAll = L10n.IconContent("scenepicking_notpickable_hover", null, null),
+                pickingDisabledMixed = L10n.IconContent("scenepicking_notpickable-mixed_hover", null, null),
             };
 
             public static readonly Color backgroundColor = EditorResources.GetStyle("game-object-tree-view-scene-visibility")
@@ -302,4 +301,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

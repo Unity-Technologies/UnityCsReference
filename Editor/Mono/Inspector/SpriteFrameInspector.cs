@@ -20,13 +20,13 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent nameLabel = EditorGUIUtility.TrTextContent("Name", "The name for the Sprite.");
-            public static readonly GUIContent spriteAlignmentLabel = EditorGUIUtility.TrTextContent("Pivot", "The value is normalized to the Sprite's size where (0, 0) is the lower left and (1, 1) is the upper right. May be used for syncing animation frames of different sizes.");
-            public static readonly GUIContent spriteAlignmentText = EditorGUIUtility.TrTextContent("X:{0:0.##}, Y:{1:0.##}");
-            public static readonly GUIContent borderLabel = EditorGUIUtility.TrTextContent("Border", "Border values for the Sprite set in Sprite Editor window. May be useful for 9-Slicing Sprites. The values are in pixels units.");
-            public static readonly GUIContent borderText = EditorGUIUtility.TrTextContent("L:{0:0.##} B:{1:0.##} R:{2:0.##} T:{3:0.##}");
-            public static readonly GUIContent multiValueText = EditorGUIUtility.TrTextContent("-");
-            public static readonly GUIContent elemenText = EditorGUIUtility.TrTextContent("Element {0}");
+            public static readonly GUIContent nameLabel = L10n.TextContent("Name", "The name for the Sprite.", null, null);
+            public static readonly GUIContent spriteAlignmentLabel = L10n.TextContent("Pivot", "The value is normalized to the Sprite's size where (0, 0) is the lower left and (1, 1) is the upper right. May be used for syncing animation frames of different sizes.", null, null);
+            public static readonly GUIContent spriteAlignmentText = L10n.TextContent("X:{0:0.##}, Y:{1:0.##}", null, null, null);
+            public static readonly GUIContent borderLabel = L10n.TextContent("Border", "Border values for the Sprite set in Sprite Editor window. May be useful for 9-Slicing Sprites. The values are in pixels units.", null, null);
+            public static readonly GUIContent borderText = L10n.TextContent("L:{0:0.##} B:{1:0.##} R:{2:0.##} T:{3:0.##}", null, null, null);
+            public static readonly GUIContent multiValueText = L10n.TextContent("-", null, null, null);
+            public static readonly GUIContent elemenText = L10n.TextContent("Element {0}", null, null, null);
         }
 
         SerializedProperty m_Name;
@@ -110,7 +110,7 @@ namespace UnityEditor
                 var image = new Image()
                 {
                     image = EditorGUIUtility.GetHelpIcon(MessageType.Warning),
-                    tooltip = EditorGUIUtility.TrTextContent("ScriptableObject that was previously assigned is no longer available.").text,
+                    tooltip = L10n.TextContent("ScriptableObject that was previously assigned is no longer available.", null, null, null).text,
                     style =
                     {
                         maxHeight = EditorGUI.kSingleLineHeight,

@@ -19,6 +19,9 @@ namespace Unity.GraphToolkit.Editor
         /// </summary>
         public new static readonly string ussClassName = "ge-port-connector-polymorphic-part";
 
+        static readonly string menuOpenModifierUssClassName = ussClassName.WithUssModifier("menu-open");
+        static readonly string polymorphicModifierUssClassName = ussClassName.WithUssModifier("polymorphic");
+
         public static readonly string menuIconUssName = "ge-data-type-icon";
 
         /// <summary>
@@ -49,18 +52,23 @@ namespace Unity.GraphToolkit.Editor
         PortConnectorPolymorphicPart(string name, Model model, ChildView ownerElement, string parentClassName)
             : base(name, model, ownerElement, parentClassName) { }
 
+        VisualElement m_Arrow;
+        Button m_Button;
+
         /// <inheritdoc />
         protected override void BuildUI(VisualElement container)
         {
             base.BuildUI(container);
 
             m_Icon.RemoveFromHierarchy();
-            var button = new Button { name = "PolymorphicDropDown" };
-            button.RegisterCallback<ClickEvent>(ShowPolymorphicMenu);
-            button.Add(m_Icon);
-            button.Add(new VisualElement { name = "arrow" });
-            Root.Add(button);
-            button.PlaceBehind(m_ConnectorLabel);
+            m_Button = new Button { name = "PolymorphicDropDown" };
+            m_Button.RegisterCallback<ClickEvent>(ShowPolymorphicMenu);
+            m_Button.RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
+            m_Button.Add(m_Icon);
+            m_Arrow = new VisualElement { name = "arrow" };
+            m_Button.Add(m_Arrow);
+            Root.Add(m_Button);
+            m_Button.PlaceBehind(m_ConnectorLabel);
         }
 
         /// <inheritdoc />
@@ -71,23 +79,63 @@ namespace Unity.GraphToolkit.Editor
             Root.AddPackageStylesheet("PortConnectorPolymorphicPart.uss");
         }
 
+        /// <inheritdoc />
+        public override void UpdateUIFromModel(UpdateFromModelVisitor visitor)
+        {
+            base.UpdateUIFromModel(visitor);
+
+            // The dropdown arrow only makes sense on a polymorphic port. When the port is redefined as non-polymorphic,
+            // the connector part stays the same but the arrow must disappear.
+            if (m_Model is PortModel portModel)
+            {
+                var isPolymorphic = portModel.IsPolymorphic;
+                Root.EnableInClassList(polymorphicModifierUssClassName, isPolymorphic);
+                if (m_Arrow != null)
+                    m_Arrow.style.display = isPolymorphic ? DisplayStyle.Flex : DisplayStyle.None;
+                if (m_Button != null)
+                {
+                    m_Button.pickingMode = isPolymorphic ? PickingMode.Position : PickingMode.Ignore;
+                    m_Button.focusable = isPolymorphic;
+                }
+            }
+        }
+
         void OnPortTypeChanged(uint index)
         {
             if (m_Model is PortModel portModel)
                 m_OwnerElement.RootView.Dispatch(new ChangePortTypeCommand { PortModel = portModel, NewTypeIndex = index });
         }
 
+        void OnNavigationSubmit(NavigationSubmitEvent evt)
+        {
+            OpenPolymorphicMenu();
+            evt.StopPropagation();
+        }
+
         void ShowPolymorphicMenu(ClickEvent evt)
         {
-            if (m_Model is PortModel portModel && portModel.PolymorphicPortHandler != null)
+            OpenPolymorphicMenu();
+        }
+
+        void OpenPolymorphicMenu()
+        {
+            if (m_Model is PortModel portModel && portModel.IsPolymorphic)
             {
                 var rootMenu = new GenericDropdownMenu();
                 var rootMenuRoot = rootMenu.contentContainer.parent.parent.parent.parent;
                 rootMenuRoot.AddPackageStylesheet($"View_{(EditorGUIUtility.isProSkin ? "dark" : "light")}.uss");
                 rootMenuRoot.AddPackageStylesheet("PortConnectorPolymorphicPart.uss");
                 rootMenuRoot.AddPackageStylesheet("TypeIcons.uss");
-                var selectedIndex = portModel.PolymorphicPortHandler.SelectedTypeIndex;
-                var types = portModel.PolymorphicPortHandler.Types;
+                var types = portModel.AllowedTypes;
+                uint selectedIndex = 0;
+                for (var i = 0; i < types.Count; i++)
+                {
+                    if (types[i] == portModel.DataTypeHandle)
+                    {
+                        selectedIndex = (uint)i;
+                        break;
+                    }
+                }
                 uint currentIndex = 0;
                 foreach (var type in types)
                 {
@@ -95,7 +143,8 @@ namespace Unity.GraphToolkit.Editor
                     var label = type.FriendlyName;
                     icon.pickingMode = PickingMode.Ignore;
                     icon.AddToClassList(menuIconUssName);
-                    icon.AddToClassList($"ge-icon--data-type-{label.Replace(" ", string.Empty).ToLower()}");
+                    // Use the framework's canonical USS name for the type (kebab-case) so it matches the rules in TypeIcons.uss.
+                    m_OwnerElement.RootView.TypeHandleInfos.AddUssClasses(GraphElementHelper.iconDataTypeClassPrefix, icon, type);
                     var index = currentIndex++;
                     rootMenu.AddItem(label, index == selectedIndex, () => OnPortTypeChanged(index));
                     var menuItem = rootMenu.contentContainer.Query<VisualElement>(null, GenericDropdownMenu.itemContentUssClassName).Last();
@@ -104,8 +153,10 @@ namespace Unity.GraphToolkit.Editor
                 }
 
                 FixMenu(rootMenu, types.Count);
-                rootMenu.DropDown(new Rect(new Vector2(evt.position.x, evt.position.y), Vector2.right * 200), evt.target as VisualElement
-                    , DropdownMenuSizeMode.Fixed);
+                Root.AddToClassList(menuOpenModifierUssClassName);
+                rootMenuRoot.RegisterCallbackOnce<DetachFromPanelEvent>(_ => Root.RemoveFromClassList(menuOpenModifierUssClassName));
+                var arrowBound = m_Arrow.worldBound;
+                rootMenu.DropDown(new Rect(arrowBound.center.x, arrowBound.yMin, 200, arrowBound.height), m_Button, DropdownMenuSizeMode.Fixed);
             }
         }
 

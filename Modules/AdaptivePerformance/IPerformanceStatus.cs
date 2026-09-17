@@ -192,8 +192,15 @@ namespace UnityEngine.AdaptivePerformance
         /// <see cref="Provider.Feature.LowPowerMode"/>. False when the capability
         /// is unsupported by the active provider.
         /// </summary>
-        /// <value>True when the device is under a low-power condition.</value>
         public bool LowPowerMode { get; set; }
+
+        /// <summary>
+        /// Latest cross-platform per-subsystem energy consumption since energy-usage tracking was started or reset.
+        /// Only meaningful while energy-usage tracking is active (see <see cref="IEnergyUsageControl"/>) and the active
+        /// provider supports <see cref="Provider.Feature.EnergyUsage"/>. Updates at the platform's native cadence,
+        /// which can be considerably slower than once per frame.
+        /// </summary>
+        public EnergyUsage EnergyUsage { get; set; }
     }
 
     /// <summary>

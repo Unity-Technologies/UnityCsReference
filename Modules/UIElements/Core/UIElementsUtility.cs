@@ -18,10 +18,19 @@ namespace UnityEngine.UIElements
 
 
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static Action<IMGUIContainer> s_BeginContainerCallback;
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static Action<IMGUIContainer> s_EndContainerCallback;
         [AutoStaticsCleanupOnCodeReload]
+        // Installed by RetainedMode.Initialize(), which runs on every code load, so the slot cleared by
+        // cleanup is wired again before any editor UI uses it.
+        [IgnoreForUAL0015("Editor IoC slot reinstalled on every code load by RetainedMode.Initialize()")]
         internal static Action<IMGUIContainer> s_FocusOutContainerCallback;
 
 
@@ -113,8 +122,9 @@ namespace UnityEngine.UIElements
         LayoutManager,
         SelectorAccelerationCache,
         StyleClassList,
-        NativeTextBufferReclaimer,
+        TextBufferStore,
         ComponentManager,
+        ComponentTypeSet,
         Count
     }
 
@@ -266,8 +276,15 @@ namespace UnityEngine.UIElements
             {
                 ComponentManager.SharedManager.Collect();
             }
-			
-            NativeTextBufferReclaimer.Collect();
+
+            // Not inside ComponentManager.Collect: that manager exists only once an unmanaged component
+            // does, while a managed-only composition still queues finalizer releases.
+            ComponentTypeSet.DrainPendingReleases();
+
+            if (TextBufferStore.IsSharedManagerCreated)
+            {
+                TextBufferStore.SharedManager.Collect();
+            }
 
             // Since updating schedulers jumps into user code, the panels list might change while we're iterating,
             // we make a copy first.

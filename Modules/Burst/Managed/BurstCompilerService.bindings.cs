@@ -61,7 +61,11 @@ namespace Unity.Burst.LowLevel
 
         public static extern bool LoadBurstLibrary(string fullPathToLibBurstGenerated);
 
-       [RequiredByNativeCode]
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool IsInBurstedJob();
+
+        [RequiredByNativeCode]
         private static MethodInfo GetMethodInfoForDelegate(System.Delegate targetMethod)
         {
             return targetMethod.Method;

@@ -24,19 +24,20 @@ namespace Unity.Localization;
 /// keys by text.
 /// </remarks>
 /// <example>
-/// <para>Create a table, add a string, and read it back.</para>
+/// Create a table, add a string, and read it back.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceTableOverviewExample.cs"/>
 /// </example>
 /// <seealso cref="SharedTableData"/>
 /// <seealso cref="IResourceEntry"/>
 /// <seealso cref="IStringEntry"/>
 /// <seealso cref="Unity.Localization.LocaleIdentifier"/>
+[HelpURL("localization/localization-tables")]
 public sealed class ResourceTable : ScriptableObject, ISerializationCallbackReceiver
 {
-    [SerializeField] string m_LocaleCode;
-    [SerializeField] SharedTableData m_SharedData;
-    [SerializeField] MetadataCollection m_Metadata = new();
-    [SerializeReference] List<IResourceEntry> m_Entries = new();
+    [SerializeField, HideInInspector] string m_LocaleCode;
+    [SerializeField, HideInInspector] SharedTableData m_SharedData;
+    [SerializeField, HideInInspector] MetadataCollection m_Metadata = new();
+    [SerializeReference, HideInInspector] List<IResourceEntry> m_Entries = new();
 
     Dictionary<long, IResourceEntry> m_EntryCache;
 
@@ -147,7 +148,7 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     /// <param name="keyId">The stable key id to look up.</param>
     /// <returns>The matching entry, or <see langword="null"/> when none exists.</returns>
     /// <example>
-    /// <para>Look up an entry by the key id of a previously added string.</para>
+    /// Look up an entry by the key id of a previously added string.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceTableGetEntryByIdExample.cs"/>
     /// </example>
     /// <seealso cref="GetEntry{T}(long)"/>
@@ -167,7 +168,7 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     /// <param name="keyId">The stable key id to look up.</param>
     /// <returns>The matching entry as <typeparamref name="T"/>, or <see langword="null"/> when it is missing or a different kind.</returns>
     /// <example>
-    /// <para>Read a value by fetching the entry as a typed string entry.</para>
+    /// Read a value by fetching the entry as a typed string entry.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceTableGetEntryOfTypeByIdExample.cs"/>
     /// </example>
     /// <seealso cref="GetEntry(long)"/>
@@ -186,7 +187,7 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     /// <param name="key">The key text to look up.</param>
     /// <returns>The matching entry, or <see langword="null"/> when none exists.</returns>
     /// <example>
-    /// <para>Look up an entry by its key text.</para>
+    /// Look up an entry by its key text.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceTableGetEntryByKeyExample.cs"/>
     /// </example>
     /// <seealso cref="GetEntry{T}(string)"/>
@@ -211,7 +212,7 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     /// <param name="key">The key text to look up.</param>
     /// <returns>The matching entry as <typeparamref name="T"/>, or <see langword="null"/> when it is missing or a different kind.</returns>
     /// <example>
-    /// <para>Read a value by fetching the entry for a key as a typed string entry.</para>
+    /// Read a value by fetching the entry for a key as a typed string entry.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceTableGetEntryOfTypeByKeyExample.cs"/>
     /// </example>
     /// <seealso cref="GetEntry(string)"/>
@@ -230,7 +231,7 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     /// </remarks>
     /// <param name="entry">The entry to add.</param>
     /// <example>
-    /// <para>Add a shared key, then store a string entry for it in this locale.</para>
+    /// Add a shared key, then store a string entry for it in this locale.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceTableAddEntryExample.cs"/>
     /// </example>
     /// <seealso cref="AddStringEntry(string, string, bool?)"/>
@@ -264,7 +265,7 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     /// <param name="isSmart">Whether the value is a Smart String, formatted at resolve time; omit it to leave the key's flag unchanged.</param>
     /// <returns>The added or updated entry, or <see langword="null"/> when it cannot be added.</returns>
     /// <example>
-    /// <para>Add plain and Smart String entries to a table.</para>
+    /// Add plain and Smart String entries to a table.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceTableAddStringEntryExample.cs"/>
     /// </example>
     /// <seealso cref="AddEntry(IResourceEntry)"/>
@@ -291,6 +292,111 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     }
 
     /// <summary>
+    /// Adds or updates a variant value for a string key in this table.
+    /// </summary>
+    /// <remarks>
+    /// Makes the key variant-driven when it is not already: the key is created when missing, a plain string entry
+    /// is promoted to a variant entry keeping its value as the default, and the variant key is registered on the
+    /// key's <see cref="VariantSelectorMetadata"/>, created without a selector when the key has none, so the key
+    /// inherits the collection or global selector. The value applies when the selector's
+    /// <see cref="IVariantSelector.CurrentKey"/> equals <paramref name="variantKey"/>; otherwise resolution falls
+    /// back to the entry's default value. Returns <see langword="null"/> when no shared data is assigned, either
+    /// name is empty, or the key holds a non-string entry.
+    /// </remarks>
+    /// <param name="key">The key text; added to the shared data when new.</param>
+    /// <param name="variantKey">The selector key this value applies to, for example <c>"Steam"</c>.</param>
+    /// <param name="value">The localized value to store for this locale and variant.</param>
+    /// <returns>The added or updated entry, or <see langword="null"/> when it cannot be added.</returns>
+    /// <example>
+    /// Make a key vary by storefront from script.
+    /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/AddVariantByScriptExample.cs"/>
+    /// </example>
+    /// <seealso cref="AddStringEntry(string, string, bool?)"/>
+    /// <seealso cref="RemoveVariant(string, string)"/>
+    /// <seealso cref="IVariantSelector"/>
+    public StringEntry AddStringVariant(string key, string variantKey, string value)
+    {
+        if (m_SharedData == null || string.IsNullOrEmpty(key) || string.IsNullOrEmpty(variantKey))
+            return null;
+        var shared = m_SharedData.AddKey(key);
+        if (shared == null)
+            return null;
+
+        VariantStringEntry variantEntry;
+        switch (GetEntry(shared.Id))
+        {
+            case VariantStringEntry existing:
+                variantEntry = existing;
+                break;
+            case StringEntry plain:
+                variantEntry = new VariantStringEntry(shared.Id, plain.Value);
+                foreach (var entryMetadata in plain.Metadata.GetMetadatas<IMetadata>())
+                    variantEntry.Metadata.AddMetadata(entryMetadata);
+                RemoveEntry(shared.Id);
+                AddEntry(variantEntry);
+                break;
+            case null:
+                variantEntry = new VariantStringEntry(shared.Id, string.Empty);
+                AddEntry(variantEntry);
+                break;
+            default:
+                return null;
+        }
+
+        var metadata = shared.Metadata.GetMetadata<VariantSelectorMetadata>();
+        if (metadata == null)
+        {
+            metadata = new VariantSelectorMetadata();
+            // Per-key metadata takes precedence, so seed it with the collection's authored keys or they vanish.
+            if (m_SharedData.Metadata.GetMetadata<VariantSelectorMetadata>() is { } inherited)
+            {
+                for (var i = 0; i < inherited.Keys.Count; i++)
+                    metadata.AddKey(inherited.Keys[i]);
+            }
+            shared.Metadata.AddMetadata(metadata);
+        }
+        metadata.AddKey(variantKey);
+
+        variantEntry.RemoveVariant(variantKey);
+        variantEntry.Variants.Add(new Variant<string>(variantKey, value));
+        return variantEntry;
+    }
+
+    /// <summary>
+    /// Removes one variant value from a key's entry in this table.
+    /// </summary>
+    /// <remarks>
+    /// Removes the value stored for <paramref name="variantKey"/> in this locale's table only. The entry and its
+    /// default value stay, and resolution for that variant key falls back to the default. The key stays registered
+    /// on the shared <see cref="VariantSelectorMetadata"/>, because other locale tables may still hold values for
+    /// it; unregister it with <see cref="VariantSelectorMetadata.RemoveKey(string)"/> once every locale has dropped
+    /// it. Does nothing when the key or variant does not exist.
+    /// </remarks>
+    /// <param name="key">The key text.</param>
+    /// <param name="variantKey">The selector key to remove the value for.</param>
+    /// <returns><see langword="true"/> when the entry held variants; otherwise <see langword="false"/>.</returns>
+    /// <example>
+    /// Make a key vary by storefront from script.
+    /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/AddVariantByScriptExample.cs"/>
+    /// </example>
+    /// <seealso cref="AddStringVariant(string, string, string)"/>
+    /// <seealso cref="IVariantSelector"/>
+    public bool RemoveVariant(string key, string variantKey)
+    {
+        if (m_SharedData == null || string.IsNullOrEmpty(key) || string.IsNullOrEmpty(variantKey))
+            return false;
+        var shared = m_SharedData.GetEntry(key);
+        if (shared == null)
+            return false;
+        if (GetEntry(shared.Id) is IVariantEntry variantEntry)
+        {
+            variantEntry.RemoveVariant(variantKey);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Removes the entry for a stable key id from this table.
     /// </summary>
     /// <remarks>
@@ -300,7 +406,7 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     /// </remarks>
     /// <param name="keyId">The stable key id of the entry to remove.</param>
     /// <example>
-    /// <para>Remove a single entry and confirm it is gone.</para>
+    /// Remove a single entry and confirm it is gone.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceTableRemoveEntryExample.cs"/>
     /// </example>
     /// <seealso cref="RemoveAllEntries()"/>
@@ -326,7 +432,7 @@ public sealed class ResourceTable : ScriptableObject, ISerializationCallbackRece
     /// locale tables are untouched.
     /// </remarks>
     /// <example>
-    /// <para>Clear all of a table's per-locale values.</para>
+    /// Clear all of a table's per-locale values.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Tables/ResourceTableRemoveAllEntriesExample.cs"/>
     /// </example>
     /// <seealso cref="RemoveEntry(long)"/>

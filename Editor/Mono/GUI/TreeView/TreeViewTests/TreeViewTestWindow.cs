@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using UnityEngine;
 
 
@@ -29,7 +28,7 @@ namespace UnityEditor.TreeViewExamples
 
         public TreeViewTestWindow()
         {
-            titleContent = EditorGUIUtility.TrTextContent("TreeView Test");
+            titleContent = L10n.TextContent("TreeView Test", null, null, null);
         }
 
         void OnEnable()
@@ -89,9 +88,8 @@ namespace UnityEditor.TreeViewExamples
 
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Large TreeView"), m_TestType == TestType.LargeTreesWithStandardGUI, () => m_TestType = TestType.LargeTreesWithStandardGUI);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Custom Item Height TreeView"), m_TestType == TestType.TreeWithCustomItemHeight, () => m_TestType = TestType.TreeWithCustomItemHeight);
+            menu.AddItem(L10n.TextContent("Large TreeView", null, null, null), m_TestType == TestType.LargeTreesWithStandardGUI, () => m_TestType = TestType.LargeTreesWithStandardGUI);
+            menu.AddItem(L10n.TextContent("Custom Item Height TreeView", null, null, null), m_TestType == TestType.TreeWithCustomItemHeight, () => m_TestType = TestType.TreeWithCustomItemHeight);
         }
     }
 } // UnityEditor
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

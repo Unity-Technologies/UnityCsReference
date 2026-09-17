@@ -88,11 +88,5 @@ namespace UnityEditor.UIElements
             var clip = new UIAnimationClip();
             ProjectWindowUtil.CreateAsset(clip, "New UI Animation Clip.asset");
         }
-
-        [MenuItem("Assets/Create/UI Toolkit/UI Animation Clip", validate = true)]
-        static bool ValidateCreateUIAnimationClip()
-        {
-            return UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot;
-        }
     }
 }

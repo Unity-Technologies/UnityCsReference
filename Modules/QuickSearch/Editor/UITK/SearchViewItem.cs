@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -122,6 +121,7 @@ namespace UnityEditor.Search
             m_FavoriteButton.BoundItem = m_BindedItem;
 
             UpdatePreview();
+            m_Thumbnail.tintColor = new Color(1f, 1f, 1f, item.thumbnailAlpha);
             if (CanFetchPreview())
             {
                 // Last tries at getting the preview. (For the AssetStoreProvider).
@@ -215,11 +215,15 @@ namespace UnityEditor.Search
                 if (GetExistingPreview())
                     return;
 
+#pragma warning disable UAL0018 // the stored handle only cancels the pending fetch against the live tick list; it snapshots nothing, so a reload that drops the pending fetch leaves it a no-op
                 m_FetchPreviewOff = m_ViewModel.previewManager.FetchPreview(m_BindedItem, context, m_PreviewKey, FetchPreview, OnPreviewReady);
+#pragma warning restore UAL0018
             }
             else
             {
+#pragma warning disable UAL0018 // the stored handle only cancels the pending call against the live tick list; it snapshots nothing, so a reload that drops the pending call leaves it a no-op
                 m_FetchPreviewOff = Utils.CallDelayed(AsyncFetchPreview, 0.01d); // To make sure the style is resolved.
+#pragma warning restore UAL0018
             }
         }
 
@@ -311,4 +315,3 @@ namespace UnityEditor.Search
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

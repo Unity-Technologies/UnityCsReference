@@ -23,6 +23,10 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
 
     UxmlAttributesEditingContext m_Context;
 
+    // The context's old element may already be detached when the context changes, so the panel this controller
+    // registered its change processing with is remembered at registration time.
+    Panel m_ProcessorPanel;
+
     bool m_HasPendingSync;
 
     /// <summary>
@@ -73,8 +77,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     {
         args.oldElement?.UnregisterCallback<PropertyChangedEvent>(OnElementPropertyChange);
 
-        if (args.oldElement?.panel is Panel panel)
-            panel.UnregisterChangeProcessor(this);
+        UnregisterChangeProcessor();
 
         if (context.element != null && context.uxmlSerializedData != null)
         {
@@ -104,8 +107,16 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
             if (context.element?.panel is Panel targetPanel)
             {
                 targetPanel.RegisterChangeProcessor(this);
+                m_ProcessorPanel = targetPanel;
             }
         }
+    }
+
+    void UnregisterChangeProcessor()
+    {
+        // Safe on a disposed panel: its authoring updater's processor lists are already cleared, so this no-ops.
+        m_ProcessorPanel?.UnregisterChangeProcessor(this);
+        m_ProcessorPanel = null;
     }
 
     void SyncToggleButtonGroupLength()
@@ -141,6 +152,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     {
         if (m_HasPendingSync)
             EditorApplication.delayCall -= Sync;
+        UnregisterChangeProcessor();
         liveAttributePropertyController.RemoveLiveProperties();
         attributeChangeHandler.StopTrackingChanges();
         UICommandQueue.UnregisterHandler<SetAttributeOverrideCommand>(OnAttributeOverrideSet);
@@ -175,33 +187,15 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
 
     internal void DeserializeElement()
     {
-        if (context == null || context.element == null || context.uxmlSerializedData == null)
+        if (context == null || context.element == null || context.element.resourcesReleased || context.uxmlSerializedData == null)
             return;
 
         // We need to clear bindings before calling Init to avoid corrupting the data source.
-        ClearUxmlBindings();
+        UxmlAssetUtilities.ClearLiveBindings(context.element);
         context.uxmlSerializedData.Deserialize(context.element, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
 
         // The deserialize above resets values driven by ancestor AttributeOverrides; restore them.
         UxmlAssetUtilities.ReapplyAncestorSerializedDataOverrides(context.element);
-    }
-
-    void ClearUxmlBindings()
-    {
-        using var pool = ListPool<BindingId>.Get(out var idsToRemove);
-        foreach (var bindingInfo in context.element.GetBindingInfos())
-        {
-            var bindingId = bindingInfo.binding.property;
-            if (bindingId != BindingId.Invalid)
-            {
-                idsToRemove.Add(bindingId);
-            }
-        }
-
-        foreach (var bindingId in idsToRemove)
-        {
-            context.element.ClearBinding(bindingId);
-        }
     }
 
     public void RegisterUxmlAttributeFieldDecorator(UxmlAttributeFieldDecorator decorator)
@@ -221,6 +215,26 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
     {
         foreach (var decorator in m_RegisteredDecorators)
             decorator.ScheduleRefresh();
+    }
+
+    /// <summary>
+    /// The displayed field for <paramref name="path"/>, or null when this context has none. Fields of every
+    /// view sharing this context count, the element header's included.
+    /// </summary>
+    /// <remarks>
+    /// Registrations outlive the panel: a decorator only leaves this list when its context changes, so a
+    /// rebuilt inspector leaves the one it replaced behind. Only a decorator still in a panel is a field the
+    /// user can be sent to.
+    /// </remarks>
+    public UxmlAttributeFieldDecorator FindAttributeField(BindingId path)
+    {
+        foreach (var decorator in m_RegisteredDecorators)
+        {
+            if (decorator.panel != null && decorator.GetFullBindingPath() == path)
+                return decorator;
+        }
+
+        return null;
     }
 
     public void BeginProcessing(BaseVisualElementPanel panel)
@@ -298,8 +312,22 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
         // Clear the context if the element asset of the context was removed from its visual tree asset
         if (m_Context?.elementAsset == null || m_Context.visualTreeAsset == null)
             return;
-        if (m_Context.elementAsset.visualTreeAsset == m_Context.visualTreeAsset)
+        if (m_Context.elementAsset.visualTreeAsset != m_Context.visualTreeAsset)
+        {
+            m_Context.Clear();
             return;
-        m_Context.Clear();
+        }
+
+        // Both ahead of the stage refresh the command triggers, which clones the tree and binds against
+        // whatever the context still points at. The release is safe here only because the rebuild binds
+        // again straight after it.
+        if (m_Context.HasElementMoved())
+        {
+            foreach (var decorator in m_RegisteredDecorators)
+                decorator.ReleaseBoundProperties();
+        }
+
+        m_Context.RebuildForDocumentChange();
     }
+
 }

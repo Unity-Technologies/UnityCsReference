@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Camera not yet converted
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -28,41 +27,41 @@ namespace UnityEditor
     {
         internal static class Styles
         {
-            public static readonly GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove command buffer");
-            public static readonly GUIContent clearFlags = EditorGUIUtility.TrTextContent("Clear Flags", "What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas.");
-            public static readonly GUIContent background = EditorGUIUtility.TrTextContent("Background", "The Camera clears the screen to this color before rendering.");
-            public static readonly GUIContent cullingMask = EditorGUIUtility.TrTextContent("Culling Mask");
-            public static readonly GUIContent projection = EditorGUIUtility.TrTextContent("Projection", "How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective.");
-            public static readonly GUIContent size = EditorGUIUtility.TrTextContent("Size", "The vertical size of the camera view.");
-            public static readonly GUIContent fieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The camera's view angle measured in degrees along the selected axis.");
-            public static readonly GUIContent viewportRect = EditorGUIUtility.TrTextContent("Viewport Rect", "Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0-1).");
-            public static readonly GUIContent sensorSize = EditorGUIUtility.TrTextContent("Sensor Size", "The size of the camera sensor in millimeters.");
-            public static readonly GUIContent lensShift = EditorGUIUtility.TrTextContent("Lens Shift", "Offset from the camera sensor. Use these properties to simulate a shift lens. Measured as a multiple of the sensor size.");
-            public static readonly GUIContent iso = EditorGUIUtility.TrTextContent("ISO", "The sensor sensitivity (ISO).");
-            public static readonly GUIContent shutterSpeed = EditorGUIUtility.TrTextContent("Shutter Speed", "The exposure time, in second.");
-            public static readonly GUIContent aperture = EditorGUIUtility.TrTextContent("Aperture", "The aperture number, in f-stop.");
-            public static readonly GUIContent focusDistance = EditorGUIUtility.TrTextContent("Focus Distance", "The focus distance of the lens. The Depth of Field Volume override uses this value if you set focusDistanceMode to FocusDistanceMode.Camera.");
-            public static readonly GUIContent bladeCount = EditorGUIUtility.TrTextContent("Blade Count", "The number of diaphragm blades.");
-            public static readonly GUIContent curvature = EditorGUIUtility.TrTextContent("Curvature", "Maps an aperture range to blade curvature.");
-            public static readonly GUIContent barrelClipping = EditorGUIUtility.TrTextContent("Barrel Clipping", "The strength of the \"cat eye\" effect on bokeh (optical vignetting).");
-            public static readonly GUIContent anamorphism = EditorGUIUtility.TrTextContent("Anamorphism", "Stretches the sensor to simulate an anamorphic look. Positive values distort the Camera vertically, negative will distort the Camera horizontally.");
-            public static readonly GUIContent physicalCamera = EditorGUIUtility.TrTextContent("Physical Camera", "Enables Physical camera mode. When checked, the field of view is calculated from properties for simulating physical attributes (focal length, sensor size, and lens shift)");
-            public static readonly GUIContent cameraType = EditorGUIUtility.TrTextContent("Sensor Type", "Common sensor sizes. Choose an item to set Sensor Size, or edit Sensor Size for your custom settings.");
-            public static readonly GUIContent renderingPath = EditorGUIUtility.TrTextContent("Rendering Path", "Choose a rendering method for this camera.\n\nUse Graphics Settings to use the rendering path specified in graphics settings.\n\nUse Forward to render all objects with one pass per light.\n\nUse Deferred to draw all objects once without lighting and then draw the lighting of all objects at the end of the render queue.\n\nUse Legacy Vertex Lit to render all lights in a single pass, calculated at vertices.");
-            public static readonly GUIContent focalLength = EditorGUIUtility.TrTextContent("Focal Length", "The simulated distance between the lens and the sensor of the physical camera. Larger values give a narrower field of view.");
-            public static readonly GUIContent allowOcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Occlusion Culling disables rendering of objects when they are not currently seen by the camera because they are obscured (occluded) by other objects.");
-            public static readonly GUIContent allowHDR = EditorGUIUtility.TrTextContent("HDR", "High Dynamic Range gives you a wider range of light intensities, so your lighting looks more realistic. With it, you can still see details and experience less saturation even with bright light.");
-            public static readonly GUIContent allowMSAA = EditorGUIUtility.TrTextContent("MSAA", "Use Multi Sample Anti-aliasing to reduce aliasing.");
-            public static readonly GUIContent gateFit = EditorGUIUtility.TrTextContent("Gate Fit", "Determines how the rendered area (resolution gate) fits into the sensor area (film gate).");
-            public static readonly GUIContent allowDynamicResolution = EditorGUIUtility.TrTextContent("Allow Dynamic Resolution", "Scales render textures to support dynamic resolution if the target platform/graphics API supports it.");
-            public static readonly GUIContent FOVAxisMode = EditorGUIUtility.TrTextContent("FOV Axis", "Field of view axis.");
-            public static readonly GUIContent targetDisplay = EditorGUIUtility.TrTextContent("Target Display", "Set the target display for this camera.");
-            public static readonly GUIContent xrTargetEye = EditorGUIUtility.TrTextContent("Target Eye", "Allows XR rendering for target eye. This disables stereo rendering and only works for the selected eye.");
+            public static readonly GUIContent iconRemove = L10n.IconContent("Toolbar Minus", "Remove command buffer", null);
+            public static readonly GUIContent clearFlags = L10n.TextContent("Clear Flags", "What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas.", null, null);
+            public static readonly GUIContent background = L10n.TextContent("Background", "The Camera clears the screen to this color before rendering.", null, null);
+            public static readonly GUIContent cullingMask = L10n.TextContent("Culling Mask", null, null, null);
+            public static readonly GUIContent projection = L10n.TextContent("Projection", "How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective.", null, null);
+            public static readonly GUIContent size = L10n.TextContent("Size", "The vertical size of the camera view.", null, null);
+            public static readonly GUIContent fieldOfView = L10n.TextContent("Field of View", "The camera's view angle measured in degrees along the selected axis.", null, null);
+            public static readonly GUIContent viewportRect = L10n.TextContent("Viewport Rect", "Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0-1).", null, null);
+            public static readonly GUIContent sensorSize = L10n.TextContent("Sensor Size", "The size of the camera sensor in millimeters.", null, null);
+            public static readonly GUIContent lensShift = L10n.TextContent("Lens Shift", "Offset from the camera sensor. Use these properties to simulate a shift lens. Measured as a multiple of the sensor size.", null, null);
+            public static readonly GUIContent iso = L10n.TextContent("ISO", "The sensor sensitivity (ISO).", null, null);
+            public static readonly GUIContent shutterSpeed = L10n.TextContent("Shutter Speed", "The exposure time, in second.", null, null);
+            public static readonly GUIContent aperture = L10n.TextContent("Aperture", "The aperture number, in f-stop.", null, null);
+            public static readonly GUIContent focusDistance = L10n.TextContent("Focus Distance", "The focus distance of the lens. The Depth of Field Volume override uses this value if you set focusDistanceMode to FocusDistanceMode.Camera.", null, null);
+            public static readonly GUIContent bladeCount = L10n.TextContent("Blade Count", "The number of diaphragm blades.", null, null);
+            public static readonly GUIContent curvature = L10n.TextContent("Curvature", "Maps an aperture range to blade curvature.", null, null);
+            public static readonly GUIContent barrelClipping = L10n.TextContent("Barrel Clipping", "The strength of the \"cat eye\" effect on bokeh (optical vignetting).", null, null);
+            public static readonly GUIContent anamorphism = L10n.TextContent("Anamorphism", "Stretches the sensor to simulate an anamorphic look. Positive values distort the Camera vertically, negative will distort the Camera horizontally.", null, null);
+            public static readonly GUIContent physicalCamera = L10n.TextContent("Physical Camera", "Enables Physical camera mode. When checked, the field of view is calculated from properties for simulating physical attributes (focal length, sensor size, and lens shift)", null, null);
+            public static readonly GUIContent cameraType = L10n.TextContent("Sensor Type", "Common sensor sizes. Choose an item to set Sensor Size, or edit Sensor Size for your custom settings.", null, null);
+            public static readonly GUIContent renderingPath = L10n.TextContent("Rendering Path", "Choose a rendering method for this camera.\n\nUse Graphics Settings to use the rendering path specified in graphics settings.\n\nUse Forward to render all objects with one pass per light.\n\nUse Deferred to draw all objects once without lighting and then draw the lighting of all objects at the end of the render queue.\n\nUse Legacy Vertex Lit to render all lights in a single pass, calculated at vertices.", null, null);
+            public static readonly GUIContent focalLength = L10n.TextContent("Focal Length", "The simulated distance between the lens and the sensor of the physical camera. Larger values give a narrower field of view.", null, null);
+            public static readonly GUIContent allowOcclusionCulling = L10n.TextContent("Occlusion Culling", "Occlusion Culling disables rendering of objects when they are not currently seen by the camera because they are obscured (occluded) by other objects.", null, null);
+            public static readonly GUIContent allowHDR = L10n.TextContent("HDR", "High Dynamic Range gives you a wider range of light intensities, so your lighting looks more realistic. With it, you can still see details and experience less saturation even with bright light.", null, null);
+            public static readonly GUIContent allowMSAA = L10n.TextContent("MSAA", "Use Multi Sample Anti-aliasing to reduce aliasing.", null, null);
+            public static readonly GUIContent gateFit = L10n.TextContent("Gate Fit", "Determines how the rendered area (resolution gate) fits into the sensor area (film gate).", null, null);
+            public static readonly GUIContent allowDynamicResolution = L10n.TextContent("Allow Dynamic Resolution", "Scales render textures to support dynamic resolution if the target platform/graphics API supports it.", null, null);
+            public static readonly GUIContent FOVAxisMode = L10n.TextContent("FOV Axis", "Field of view axis.", null, null);
+            public static readonly GUIContent targetDisplay = L10n.TextContent("Target Display", "Set the target display for this camera.", null, null);
+            public static readonly GUIContent xrTargetEye = L10n.TextContent("Target Eye", "Allows XR rendering for target eye. This disables stereo rendering and only works for the selected eye.", null, null);
 
-            public static readonly GUIContent orthoDeferredWarning = EditorGUIUtility.TrTextContent("Deferred rendering does not work with Orthographic camera, will use Forward.");
+            public static readonly GUIContent orthoDeferredWarning = L10n.TextContent("Deferred rendering does not work with Orthographic camera, will use Forward.", null, null, null);
             public static readonly GUIContent orthoXRWarning = EditorGUIUtility.TrTextContent("Orthographic projection is not supported when running in XR.", "One or more XR Plug-in providers were detected in your project. Using Orthographic projection is not supported when running in XR and enabling this may cause problems.", EditorGUIUtility.warningIcon);
-            public static readonly GUIContent deferredMSAAWarning = EditorGUIUtility.TrTextContent("The target texture is using MSAA. Note that this will not affect MSAA behaviour of this camera. MSAA rendering for cameras is configured through the 'MSAA' camera setting and related project settings. The target texture will always contain resolved pixel data.");
-            public static readonly GUIContent dynamicResolutionTimingWarning = EditorGUIUtility.TrTextContent("It is recommended to enable Frame Timing Statistics under Rendering Player Settings when using dynamic resolution cameras.");
+            public static readonly GUIContent deferredMSAAWarning = L10n.TextContent("The target texture is using MSAA. Note that this will not affect MSAA behaviour of this camera. MSAA rendering for cameras is configured through the 'MSAA' camera setting and related project settings. The target texture will always contain resolved pixel data.", null, null, null);
+            public static readonly GUIContent dynamicResolutionTimingWarning = L10n.TextContent("It is recommended to enable Frame Timing Statistics under Rendering Player Settings when using dynamic resolution cameras.", null, null, null);
 
             public static readonly GUIStyle invisibleButton = new GUIStyle("InvisibleButton");
 
@@ -174,10 +173,10 @@ namespace UnityEditor
             // in different order than they appear in the enum.
             internal static readonly GUIContent[] k_CameraRenderPaths =
             {
-                EditorGUIUtility.TrTextContent("Use Graphics Settings"),
-                EditorGUIUtility.TrTextContent("Forward"),
-                EditorGUIUtility.TrTextContent("Deferred"),
-                EditorGUIUtility.TrTextContent("Legacy Vertex Lit")
+                L10n.TextContent("Use Graphics Settings", null, null, null),
+                L10n.TextContent("Forward", null, null, null),
+                L10n.TextContent("Deferred", null, null, null),
+                L10n.TextContent("Legacy Vertex Lit", null, null, null)
             };
 
             internal static readonly int[] k_CameraRenderPathValues =
@@ -190,8 +189,8 @@ namespace UnityEditor
 
             internal static readonly GUIContent[] k_DefaultOptions =
             {
-                EditorGUIUtility.TrTextContent("Off"),
-                EditorGUIUtility.TrTextContent("Use Graphics Settings"),
+                L10n.TextContent("Off", null, null, null),
+                L10n.TextContent("Use Graphics Settings", null, null, null),
             };
 
             internal static readonly int[] k_DefaultOptionValues =
@@ -202,10 +201,10 @@ namespace UnityEditor
 
             internal static readonly GUIContent[] k_TargetEyes =
             {
-                EditorGUIUtility.TrTextContent("Both"),
-                EditorGUIUtility.TrTextContent("Left"),
-                EditorGUIUtility.TrTextContent("Right"),
-                EditorGUIUtility.TrTextContent("None (Main Display)"),
+                L10n.TextContent("Both", null, null, null),
+                L10n.TextContent("Left", null, null, null),
+                L10n.TextContent("Right", null, null, null),
+                L10n.TextContent("None (Main Display)", null, null, null),
             };
 
             internal static readonly int[] k_TargetEyeValues =
@@ -1304,4 +1303,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -156,11 +156,11 @@ public class IsMatchFormatter : FormatterBase, IInitializer, IFormatterLiteralEx
 
     /// <summary>
     /// The name of the placeholder used to output RegEx matching group values.
-    /// <para>
+    /// 
     /// Example:<br/>
     /// {value:ismatch(regex):First match in '{}'\\: {m[1]}|No match}<br/>
     /// "m" is the PlaceholderNameForMatches
-    /// </para>
+    /// 
     /// </summary>
     public string PlaceholderNameForMatches { get => m_PlaceholderNameForMatches; set => m_PlaceholderNameForMatches = value; }
 

@@ -44,7 +44,7 @@ public class ParsingErrors : Exception   //NOSONAR
 
     /// <summary>
     /// Clears the <see cref="Issues"/> list.
-    /// <para>This method gets called by <see cref="ParsingErrorsPool"/> when it releases an instance.</para>
+    /// This method gets called by <see cref="ParsingErrorsPool"/> when it releases an instance.
     /// </summary>
     public void Clear()
     {

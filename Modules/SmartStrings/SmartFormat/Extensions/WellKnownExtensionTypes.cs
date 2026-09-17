@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 //
 // Copyright SmartFormat Project maintainers and contributors.
 // Licensed under the MIT license.
@@ -18,12 +16,14 @@ namespace Unity.SmartStrings.Extensions;
 /// <summary>
 /// Helper class for dealing with well-known <see cref="ISource"/> and <see cref="IFormatter"/> extensions.
 /// </summary>
-[NoAutoStaticsCleanup] // immutable well-known type-name -> order lookups
 static class WellKnownExtensionTypes
 {
     /// <summary>
     /// Well-known <see cref="ISource"/> implementations in the sequence how they should (not must!) be invoked.
     /// </summary>
+    // Immutable string -> int ordering table, populated once from literals and never mutated: it names
+    // extension types by string rather than holding Type references, so nothing reloadable is pinned.
+    [NoAutoStaticsCleanup]
     public static Dictionary<string, int> Sources { get; } = new(StringComparer.Ordinal)
     {
         // { "SmartFormat.Extensions.GlobalVariablesSource", 1000 },
@@ -39,6 +39,8 @@ static class WellKnownExtensionTypes
     /// <summary>
     /// Well-known <see cref="IFormatter"/> implementations in the sequence how they should (not must!) be invoked.
     /// </summary>
+    // Same immutable string -> int ordering shape as Sources above.
+    [NoAutoStaticsCleanup]
     public static Dictionary<string, int> Formatters { get; } = new(StringComparer.Ordinal)
     {
         { "Unity.SmartStrings.Extensions.ListFormatter", 1000 },
@@ -89,5 +91,3 @@ static class WellKnownExtensionTypes
         return 0;
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

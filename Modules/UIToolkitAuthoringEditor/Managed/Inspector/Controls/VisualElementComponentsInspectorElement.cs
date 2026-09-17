@@ -149,6 +149,10 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 }
 
                 var componentType = description.serializedDataType.DeclaringType;
+                // A [HideInInspector] component can still be authored in UXML text; the UI never shows it.
+                if (VisualElementComponentVisibility.IsHidden(componentType))
+                    continue;
+
                 var entry = new ComponentEntryView(m_Target, description, m_IsReadOnly,
                     CanEdit ? () => RemoveComponent(componentType) : null);
                 m_Entries.Add(entry);
@@ -197,7 +201,7 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 continue;
 
             var componentType = description.serializedDataType?.DeclaringType;
-            if (componentType == null)
+            if (componentType == null || VisualElementComponentVisibility.IsHidden(componentType))
                 continue;
 
             // [RequiresElementOfType]: only offer components whose owner constraint the element satisfies.

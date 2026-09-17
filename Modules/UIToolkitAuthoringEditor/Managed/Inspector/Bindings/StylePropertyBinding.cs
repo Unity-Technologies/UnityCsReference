@@ -325,19 +325,17 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         {
             case StyleDiff.ContextType.VisualElement:
             {
+                // A non-null controller means recording is active: record recordable changes and drop the
+                // rest, never writing an inline style while recording.
                 if (authoringContext.AnimationController != null)
                 {
-                    Debug.Assert(AnimationMode.InAnimationRecording(),
-                        "AnimationController is set but AnimationMode.InAnimationRecording() is false.");
                     if (StyleDebug.IsShorthandProperty(binding.stylePropertyId))
                         break;
-                    var inspectedElement = styleDiff.currentTarget;
-                    AnimationRecordingStyleBridge.TryRecordStylePropertyChange(inspectedElement, binding.stylePropertyId, false, in value, in value);
+                    if (!authoringContext.AnimationController.IsPropertyRecordable(binding.stylePropertyId))
+                        break;
+                    AnimationRecordingStyleBridge.TryRecordStylePropertyChange(styleDiff.currentTarget, binding.stylePropertyId, false, in value, in value);
                     break;
                 }
-
-                Debug.Assert(!AnimationMode.InAnimationRecording(),
-                    "AnimationMode is recording but AnimationController is null. Refresh must run before ProcessChange.");
 
                 SetInlineStylePropertyCommand<T>.Execute(CommandSources.Inspector, styleDiff.currentTarget, binding.stylePropertyId, setter, value);
                 break;
@@ -1006,8 +1004,6 @@ sealed partial class StylePropertyBinding : CustomBinding, ITrackablePropertyPro
         OnTrackedPropertySourceChanged?.Invoke(this, styleProperty, value.uxmlValue.requireVariableResolve, value.binding != null, animationSubState.IsAnimationDriven());
 
         var inRecording = authoringContext.AnimationController != null;
-        Debug.Assert(inRecording == AnimationMode.InAnimationRecording(),
-            $"AnimationController presence ({inRecording}) must match AnimationMode.InAnimationRecording() ({AnimationMode.InAnimationRecording()}).");
         var propertyRecordable = !inRecording || authoringContext.AnimationController.IsPropertyRecordable(stylePropertyId);
         targetEnabled &= propertyRecordable;
         targetEnabled &= !authoringContext.IsReadOnly;

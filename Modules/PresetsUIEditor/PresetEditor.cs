@@ -22,13 +22,13 @@ namespace UnityEditor.Presets
     {
         static class Style
         {
-            public static readonly GUIContent presetType = EditorGUIUtility.TrTextContent("Preset Type", "The Object type this Preset can be applied to.");
+            public static readonly GUIContent presetType = L10n.TextContent("Preset Type", "The Object type this Preset can be applied to.", null, null);
             public static readonly GUIStyle centerStyle = new GUIStyle() { alignment = TextAnchor.MiddleCenter };
 
-            public static readonly GUIContent addToDefault = EditorGUIUtility.TrTextContent("Add to {0} default", "The Preset will be added first in the default list with an empty filter.");
-            public static readonly GUIContent removeFromDefault = EditorGUIUtility.TrTextContent("Remove from {0} default", "All entry using this Preset will be removed from the default list.");
-            public static readonly GUIContent enableProperty = EditorGUIUtility.TrTextContent("Include Property");
-            public static readonly GUIContent disableProperty = EditorGUIUtility.TrTextContent("Exclude Property");
+            public static readonly GUIContent addToDefault = L10n.TextContent("Add to {0} default", "The Preset will be added first in the default list with an empty filter.", null, null);
+            public static readonly GUIContent removeFromDefault = L10n.TextContent("Remove from {0} default", "All entry using this Preset will be removed from the default list.", null, null);
+            public static readonly GUIContent enableProperty = L10n.TextContent("Include Property", null, null, null);
+            public static readonly GUIContent disableProperty = L10n.TextContent("Exclude Property", null, null, null);
 
             public const string presetEditorStyles = "StyleSheets/Preset/PresetEditor.uss";
             public static readonly string excludedUssClassName = "unity-binding--preset-ignore";

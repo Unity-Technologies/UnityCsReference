@@ -458,8 +458,6 @@ namespace UnityEngine.UIElements.UIR
                 m_Stats.elementsRemoved = removedThisFrame;
                 m_TotalVisualElements += (int)addedThisFrame - (int)removedThisFrame;
 
-                shaderInfoAllocator.storageCompareWrites = m_ShaderInfoUpdateGuard.compareWrites;
-
                 m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
                 m_Compositor.Update(m_RootRenderTree);
                 device.AdvanceFrame(); // Before making any changes to the buffers
@@ -739,15 +737,24 @@ namespace UnityEngine.UIElements.UIR
                 if (onlyDynamicColorIsDirty)
                 {
                     UIEOnVisualsChanged(ve, false);
+                    ve.MarkRenderHintsClean();
                 }
                 else
                 {
-                    UIEOnChildRemoving(ve);
-                    UIEOnChildAdded(ve);
+                    UIEOnRenderTreeStructureChanged(ve);
                 }
-
-                ve.MarkRenderHintsClean();
             }
+        }
+
+        // Forces the remove/re-add rebuild; UIEOnRenderHintsChanged's DynamicColor fast path must not swallow structural changes.
+        public void UIEOnRenderTreeStructureChanged(VisualElement ve)
+        {
+            if (ve.renderData == null)
+                return;
+
+            UIEOnChildRemoving(ve);
+            UIEOnChildAdded(ve);
+            ve.MarkRenderHintsClean();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

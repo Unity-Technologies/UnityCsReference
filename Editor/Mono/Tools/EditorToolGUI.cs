@@ -200,9 +200,9 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static readonly GUIContent selectionTools = EditorGUIUtility.TrTextContent("Selection");
-            public static readonly GUIContent globalTools = EditorGUIUtility.TrTextContent("Global");
-            public static readonly GUIContent noToolsAvailable = EditorGUIUtility.TrTextContent("No custom tools available");
+            public static readonly GUIContent selectionTools = L10n.TextContent("Selection", null, null, null);
+            public static readonly GUIContent globalTools = L10n.TextContent("Global", null, null, null);
+            public static readonly GUIContent noToolsAvailable = L10n.TextContent("No custom tools available", null, null, null);
         }
 
         [NoAutoStaticsCleanup] // Fixed-size toolbar icon buffer overwritten each layout; safe to persist.

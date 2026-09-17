@@ -26,10 +26,6 @@ namespace Unity.SmartStrings;
 [Serializable]
 public class SmartFormatter : ISerializationCallbackReceiver
 {
-    // Deprecated
-    [SerializeReference, HideInInspector] SmartSettings m_Settings;
-    [SerializeReference, HideInInspector] Parser m_Parser;
-
     [SerializeField] SmartSettings m_SmartSettings = new SmartSettings();
     [SerializeReference] List<ISource> m_Sources = new();
     [SerializeReference] List<IFormatter> m_Formatters = new();
@@ -65,36 +61,37 @@ public class SmartFormatter : ISerializationCallbackReceiver
     /// <summary>
     /// Gets the list of <see cref="ISource" /> source extensions.
     /// </summary>
-    internal List<ISource> SourceExtensions => m_Sources;
+    // Deserialization can leave a SerializeReference list null, so every reader goes through this.
+    internal List<ISource> SourceExtensions => m_Sources ??= new List<ISource>();
 
     /// <summary>
     /// Gets the <see cref="ISource" /> source extensions registered with this formatter.
     /// </summary>
     /// <returns>A read-only list of the registered <see cref="ISource"/> extensions.</returns>
-    public IReadOnlyList<ISource> GetSourceExtensions() => m_Sources.AsReadOnly();
+    public IReadOnlyList<ISource> GetSourceExtensions() => SourceExtensions.AsReadOnly();
 
     /// <summary>
     /// Gets the list of <see cref="IFormatter" /> formatter extensions.
     /// </summary>
-    internal List<IFormatter> FormatterExtensions => m_Formatters;
+    internal List<IFormatter> FormatterExtensions => m_Formatters ??= new List<IFormatter>();
 
     /// <summary>
     /// Gets the <see cref="IFormatter" /> formatter extensions registered with this formatter.
     /// </summary>
     /// <returns>A read-only list of the registered <see cref="IFormatter"/> extensions.</returns>
-    public IReadOnlyList<IFormatter> GetFormatterExtensions() => m_Formatters.AsReadOnly();
+    public IReadOnlyList<IFormatter> GetFormatterExtensions() => FormatterExtensions.AsReadOnly();
 
     /// <summary>
     /// Adds <see cref="ISource"/> extensions to the <see cref="GetSourceExtensions()"/> list of this formatter,
     /// if the <see cref="Type"/> has not been added before. <see cref="WellKnownExtensionTypes.Sources"/> are inserted
     /// at the recommended position, all others are added at the end of the list.
-    /// <para>
+    /// 
     /// If the extension implements <see cref="IInitializer"/>, <see cref="IInitializer.Initialize"/> will be invoked.
-    /// </para>
-    /// <para>
+    /// 
+    /// 
     /// Extensions implementing <see cref="ISource"/> <b>and</b> <see cref="IFormatter"/>
     /// will be auto-registered for both.
-    /// </para>
+    /// 
     /// </summary>
     /// <param name="sourceExtensions"><see cref="ISource"/> extensions in an arbitrary order.</param>
     /// <returns>This <see cref="SmartFormatter"/> instance.</returns>
@@ -116,13 +113,13 @@ public class SmartFormatter : ISerializationCallbackReceiver
     /// Adds <see cref="IFormatter"/> extensions to the <see cref="GetFormatterExtensions()"/> list of this formatter,
     /// if the <see cref="Type"/> has not been added before. <see cref="WellKnownExtensionTypes.Formatters"/> are inserted
     /// at the recommended position, all others are added at the end of the list.
-    /// <para>
+    /// 
     /// If the extension implements <see cref="IInitializer"/>, <see cref="IInitializer.Initialize"/> will be invoked.
-    /// </para>
-    /// <para>
+    /// 
+    /// 
     /// Extensions implementing <see cref="ISource"/> <b>and</b> <see cref="IFormatter"/>
     /// will be auto-registered for both.
-    /// </para>
+    /// 
     /// </summary>
     /// <param name="formatterExtensions"><see cref="IFormatter"/> extensions in an arbitrary order.</param>
     /// <returns>This <see cref="SmartFormatter"/> instance.</returns>
@@ -155,12 +152,12 @@ public class SmartFormatter : ISerializationCallbackReceiver
     /// </exception>
     public SmartFormatter InsertExtension(int position, ISource sourceExtension)
     {
-        if (m_Sources.Exists(sx => sx.GetType() == sourceExtension.GetType())) return this;
+        if (SourceExtensions.Exists(sx => sx.GetType() == sourceExtension.GetType())) return this;
 
         if (sourceExtension is IInitializer sourceToInitialize)
             sourceToInitialize.Initialize(this);
 
-        m_Sources.Insert(position, sourceExtension);
+        SourceExtensions.Insert(position, sourceExtension);
 
         return this;
     }
@@ -180,16 +177,16 @@ public class SmartFormatter : ISerializationCallbackReceiver
     /// </exception>
     public SmartFormatter InsertExtension(int position, IFormatter formatterExtension)
     {
-        if (m_Formatters.Exists(sx => sx.GetType() == formatterExtension.GetType())) return this;
+        if (FormatterExtensions.Exists(sx => sx.GetType() == formatterExtension.GetType())) return this;
 
         // Extension name is in use by a different type
-        if (m_Formatters.Exists(fx => fx.Name.Equals(formatterExtension.Name)))
+        if (FormatterExtensions.Exists(fx => fx.Name.Equals(formatterExtension.Name)))
             throw new ArgumentException($"Formatter '{formatterExtension.GetType().Name}' uses existing name.", nameof(formatterExtension));
 
         if (formatterExtension is IInitializer formatterToInitialize)
             formatterToInitialize.Initialize(this);
 
-        m_Formatters.Insert(position, formatterExtension);
+        FormatterExtensions.Insert(position, formatterExtension);
 
         return this;
     }
@@ -202,7 +199,7 @@ public class SmartFormatter : ISerializationCallbackReceiver
     /// <returns>The class implementing <see cref="ISource"/> if found, else <see langword="null"/>.</returns>
     public T GetSourceExtension<T>() where T : class, ISource
     {
-        return m_Sources.Find(s => s is T) as T;
+        return SourceExtensions.Find(s => s is T) as T;
     }
 
     /// <summary>
@@ -213,7 +210,7 @@ public class SmartFormatter : ISerializationCallbackReceiver
     /// <returns>The class implementing <see cref="IFormatter"/> if found, else <see langword="null"/>.</returns>
     public T GetFormatterExtension<T>() where T : class, IFormatter
     {
-        return m_Formatters.Find(f => f is T) as T;
+        return FormatterExtensions.Find(f => f is T) as T;
     }
 
     /// <summary>
@@ -223,8 +220,8 @@ public class SmartFormatter : ISerializationCallbackReceiver
     /// <returns><see langword="true"/>, if the extension was found and could be removed.</returns>
     public bool RemoveSourceExtension<T>() where T : class, ISource
     {
-        var source = m_Sources.Find(s => s is T) as T;
-        return source is not null && m_Sources.Remove(source);
+        var source = SourceExtensions.Find(s => s is T) as T;
+        return source is not null && SourceExtensions.Remove(source);
     }
 
     /// <summary>
@@ -234,8 +231,8 @@ public class SmartFormatter : ISerializationCallbackReceiver
     /// <returns><see langword="true"/>, if the extension was found and could be removed.</returns>
     public bool RemoveFormatterExtension<T>() where T : class, IFormatter
     {
-        var format = m_Formatters.Find(f => f is T) as T;
-        return format is not null && m_Formatters.Remove(format);
+        var format = FormatterExtensions.Find(f => f is T) as T;
+        return format is not null && FormatterExtensions.Remove(format);
     }
 
     /// <summary>
@@ -521,10 +518,10 @@ public class SmartFormatter : ISerializationCallbackReceiver
 
     void CheckForExtensions()
     {
-        if (m_Sources.Count == 0)
+        if (SourceExtensions.Count == 0)
             throw new InvalidOperationException(
                 "No source extensions are available. Please add at least one source extension, such as the DefaultSource.");
-        if (m_Formatters.Count == 0)
+        if (FormatterExtensions.Count == 0)
             throw new InvalidOperationException(
                 "No formatter extensions are available. Please add at least one formatter extension, such as the DefaultFormatter.");
     }
@@ -574,7 +571,7 @@ public class SmartFormatter : ISerializationCallbackReceiver
     bool InvokeSourceExtensions(FormattingInfo formattingInfo)
     {
         // less GC than using Linq
-        foreach (var sourceExtension in m_Sources)
+        foreach (var sourceExtension in SourceExtensions)
         {
             var handled = sourceExtension.TryEvaluateSelector(formattingInfo);
             if (handled) return true;
@@ -616,7 +613,7 @@ public class SmartFormatter : ISerializationCallbackReceiver
         if (Settings.StringFormatCompatibility)
         {
             return
-                m_Formatters.Find(fe => fe is DefaultFormatter)
+                FormatterExtensions.Find(fe => fe is DefaultFormatter)
                     .TryEvaluateFormat(formattingInfo);
         }
 
@@ -625,7 +622,7 @@ public class SmartFormatter : ISerializationCallbackReceiver
         {
             IFormatter formatterExtension = null;
             // less GC than using Linq
-            foreach (var fe in m_Formatters)
+            foreach (var fe in FormatterExtensions)
             {
                 if (!fe.Name.Equals(formatterName, comparison)) continue;
 
@@ -642,7 +639,7 @@ public class SmartFormatter : ISerializationCallbackReceiver
 
         // Go through all (implicit) formatters which contain an empty name
         // much higher performance and less GC than using Linq
-        foreach (var fe in m_Formatters)
+        foreach (var fe in FormatterExtensions)
         {
             if (!fe.CanAutoDetect) continue;
             if (fe.TryEvaluateFormat(formattingInfo)) return true;
@@ -659,53 +656,21 @@ public class SmartFormatter : ISerializationCallbackReceiver
     {
         Parser = new Parser(Settings);
 
+        // An extension whose type no longer resolves deserializes as null, and would fail every later format call.
+        SourceExtensions.RemoveAll(source => source == null);
+        FormatterExtensions.RemoveAll(formatter => formatter == null);
+
         // We initialize each time to set the non serialized values.
-        foreach (var formatter in m_Formatters)
+        foreach (var formatter in FormatterExtensions)
         {
             if (formatter is IInitializer initializer)
                 initializer.Initialize(this);
         }
 
-        foreach (var source in m_Sources)
+        foreach (var source in SourceExtensions)
         {
             if (source is IInitializer initializer)
                 initializer.Initialize(this);
-        }
-
-        // Perform upgrade
-        if (m_Settings != null)
-        {
-            m_SmartSettings.Formatter.ErrorAction = (FormatErrorAction)(int)m_Settings.m_FormatErrorAction;
-            m_SmartSettings.Parser.ErrorAction = (ParseErrorAction)(int)m_Settings.m_ParseErrorAction;
-            m_SmartSettings.Parser.ConvertCharacterStringLiterals = m_Settings.m_ConvertCharacterStringLiterals;
-            m_Settings = null;
-        }
-
-        if (m_Parser != null)
-        {
-            var parserSettings = m_SmartSettings.Parser;
-            if (m_Parser.m_OpeningBrace != parserSettings.PlaceholderBeginChar)
-                Debug.LogWarning($"Smart Format: Can not upgrade opening brace to `{m_Parser.m_OpeningBrace}`. Support for customizing the opening brace has been removed. Opening braces must now always be `{parserSettings.PlaceholderBeginChar}`.");
-
-            if (m_Parser.m_ClosingBrace != parserSettings.PlaceholderEndChar)
-                Debug.LogWarning($"Smart Format: Can not upgrade closing brace to `{m_Parser.m_ClosingBrace}`. Support for customizing the closing brace has been removed. Closing braces must now always be `{parserSettings.PlaceholderEndChar}`.");
-
-            if (!m_Parser.m_AlphanumericSelectors)
-                Debug.LogWarning("Smart Format: Support for disabling alphanumeric selectors has been removed. They are now always supported.");
-
-            if (!string.IsNullOrEmpty(m_Parser.m_AllowedSelectorChars))
-                parserSettings.AddCustomSelectorChars(m_Parser.m_AllowedSelectorChars.ToCharArray());
-
-            if (!string.IsNullOrEmpty(m_Parser.m_Operators))
-                parserSettings.AddCustomOperatorChars(m_Parser.m_Operators.ToCharArray());
-
-            if (!m_Parser.m_AlternativeEscaping)
-                Debug.LogWarning("Smart Format: String.Format escaping is no longer supported. Please upgrade escaped brackets. {{ should be \\{ and }} should be \\}");
-
-            if (m_Parser.m_AlternativeEscapeChar != parserSettings.CharLiteralEscapeChar)
-                Debug.LogWarning($"Smart Format: Can not upgrade alternative escape character to `{m_Parser.m_AlternativeEscapeChar}`. Support for customizing the alternative escape character has been removed. Alternative escape must now always be `{parserSettings.CharLiteralEscapeChar}`.");
-
-            m_Parser = null;
         }
     }
 }

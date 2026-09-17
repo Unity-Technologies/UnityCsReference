@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ShaderSystem not yet converted
 using System;
 using UnityEngine;
 using System.Collections.Generic;
@@ -52,21 +51,21 @@ namespace UnityEditor
             public static readonly Texture2D errorIcon = EditorGUIUtility.LoadIcon("console.erroricon.sml");
             public static readonly Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon.sml");
 
-            public static readonly GUIContent togglePreprocess = EditorGUIUtility.TrTextContent("Preprocess only", "Show preprocessor output instead of compiled shader code");
-            public static readonly GUIContent toggleStripLineDirective = EditorGUIUtility.TrTextContent("Strip #line directives", "Strip #line directives from preprocessor output");
-            public static readonly GUIContent showSurface = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a surface shader");
-            public static readonly GUIContent showFF = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a fixed function shader");
-            public static readonly GUIContent showCurrent = EditorGUIUtility.TrTextContent("Compile and show code \u007C \u25BE");  // vertical bar & dropdow arrow - due to lacking editor style of "mini button with a dropdown"
-            public static readonly GUIContent overridableKeywords = EditorGUIUtility.TrTextContent("Overridable", "Shader keywords overridable by global shader keyword state");
-            public static readonly GUIContent notOverridableKeywords = EditorGUIUtility.TrTextContent("Not overridable", "Shader keywords not overridable by global shader keyword state");
+            public static readonly GUIContent togglePreprocess = L10n.TextContent("Preprocess only", "Show preprocessor output instead of compiled shader code", null, null);
+            public static readonly GUIContent toggleStripLineDirective = L10n.TextContent("Strip #line directives", "Strip #line directives from preprocessor output", null, null);
+            public static readonly GUIContent showSurface = L10n.TextContent("Show generated code", "Show generated code of a surface shader", null, null);
+            public static readonly GUIContent showFF = L10n.TextContent("Show generated code", "Show generated code of a fixed function shader", null, null);
+            public static readonly GUIContent showCurrent = L10n.TextContent("Compile and show code \u007C \u25BE", null, null, null);  // vertical bar & dropdow arrow - due to lacking editor style of "mini button with a dropdown"
+            public static readonly GUIContent overridableKeywords = L10n.TextContent("Overridable", "Shader keywords overridable by global shader keyword state", null, null);
+            public static readonly GUIContent notOverridableKeywords = L10n.TextContent("Not overridable", "Shader keywords not overridable by global shader keyword state", null, null);
 
             public static readonly GUIStyle messageStyle = "CN StatusInfo";
             public static readonly GUIStyle evenBackground = "CN EntryBackEven";
 
-            public static readonly GUIContent no = EditorGUIUtility.TrTextContent("no");
-            public static readonly GUIContent builtinShader = EditorGUIUtility.TrTextContent("Built-in shader");
+            public static readonly GUIContent no = L10n.TextContent("no", null, null, null);
+            public static readonly GUIContent builtinShader = L10n.TextContent("Built-in shader", null, null, null);
 
-            public static readonly GUIContent arrayValuePopupButton = EditorGUIUtility.TrTextContent("...");
+            public static readonly GUIContent arrayValuePopupButton = L10n.TextContent("...", null, null, null);
         }
         static readonly int kErrorViewHash = "ShaderErrorView".GetHashCode();
 
@@ -326,7 +325,7 @@ namespace UnityEditor
                     // need to copy current value to be used in delegate
                     // (C# closures close over variables, not their values)
                     var errorIndex = i;
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Copy error text"), false, delegate {
+                    menu.AddItem(L10n.TextContent("Copy error text", null, null, null), false, delegate {
                         string errMsg = messages[errorIndex].message;
                         if (!string.IsNullOrEmpty(messages[errorIndex].messageDetails))
                         {
@@ -802,4 +801,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

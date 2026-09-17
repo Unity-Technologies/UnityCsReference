@@ -37,6 +37,9 @@ namespace Unity.GraphToolkit.Editor
         public static readonly string multilineUssClassName = ussClassName.WithUssModifier(GraphElementHelper.multilineUssModifier);
 
         [AutoStaticsCleanupOnCodeReload]
+        // Rebuilt by the custom-builder reflection scan the next time a field is created, since that path
+        // rescans whenever this is null.
+        [IgnoreForUAL0015("Custom-builder table rebuilt by its reflection scan when null")]
         static Dictionary<Type, Type> s_CustomPropertyFieldBuilders;
 
         Func<object, object> m_ValueToDisplay = null;

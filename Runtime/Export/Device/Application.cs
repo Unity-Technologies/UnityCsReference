@@ -11,6 +11,11 @@ namespace UnityEngine.Device
     public static class Application
     {
         public static string absoluteURL => ShimManager.applicationShim.absoluteURL;
+        public static bool backButtonLeavesApp
+        {
+            get => ShimManager.applicationShim.backButtonLeavesApp;
+            set => ShimManager.applicationShim.backButtonLeavesApp = value;
+        }
         public static UnityEngine.ThreadPriority backgroundLoadingPriority
         {
             get => ShimManager.applicationShim.backgroundLoadingPriority;

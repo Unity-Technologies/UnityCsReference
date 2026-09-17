@@ -19,7 +19,7 @@ namespace Unity.Localization.UI;
 /// setting them in UXML has no effect.
 /// </remarks>
 /// <example>
-/// <para>Adds a language radio button group to a panel from code.</para>
+/// Adds a language radio button group to a panel from code.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/UI/LanguageRadioButtonGroupExample.cs"/>
 /// </example>
 /// <seealso cref="LanguageDropdown"/>
@@ -39,6 +39,7 @@ public partial class LanguageRadioButtonGroup : RadioButtonGroup
     /// </summary>
 #pragma warning disable UAL0015 // LocaleSelectionBridge only (un)subscribes on AttachToPanelEvent/DetachFromPanelEvent, so it re-syncs on the next attach after any reload
     public LanguageRadioButtonGroup() : this(null)
+#pragma warning restore UAL0015
     {
     }
 
@@ -48,7 +49,11 @@ public partial class LanguageRadioButtonGroup : RadioButtonGroup
     /// <param name="label">The label to display for the group.</param>
     public LanguageRadioButtonGroup(string label) : base(label)
     {
+        // The bridge subscribes to the localization events on panel attach and unsubscribes on detach,
+        // so nothing is subscribed here and the subscription cannot outlive this element's panel.
+#pragma warning disable UAL0015 // bridge defers its subscription to panel attach
         m_Bridge = new LocaleSelectionBridge(this, Refresh);
+#pragma warning restore UAL0015
         this.RegisterValueChangedCallback(evt => m_Bridge.Select(LocaleAt(evt.newValue)));
     }
 #pragma warning restore UAL0015

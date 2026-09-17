@@ -14,8 +14,14 @@ namespace UnityEditor
         const string k_StyleDark = "StyleSheets/SceneViewToolbarElements/SceneViewToolbarElementsDark.uss";
 
         [AutoStaticsCleanupOnCodeReload]
+        // AddStyleSheets reloads the style sheet whenever this is null, so it comes back the next time a
+        // toolbar element is styled.
+        [IgnoreForUAL0015("Lazy style sheet cache, reloaded on demand by AddStyleSheets")]
         static StyleSheet s_Style;
         [AutoStaticsCleanupOnCodeReload]
+        // AddStyleSheets reloads the skin style sheet whenever this is null, so it comes back the next time
+        // a toolbar element is styled.
+        [IgnoreForUAL0015("Lazy style sheet cache, reloaded on demand by AddStyleSheets")]
         static StyleSheet s_Skin;
         internal static  void AddStyleSheets(VisualElement ve)
         {

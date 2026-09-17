@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _2D not yet converted
 using UnityEditor.AnimatedValues;
 using UnityEditorInternal;
 using UnityEngine;
@@ -29,14 +28,14 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent animationFrameRateLabel = EditorGUIUtility.TrTextContent("Animation Frame Rate", "Frame rate for playing animated tiles in the tilemap");
-            public static readonly GUIContent tilemapColorLabel = EditorGUIUtility.TrTextContent("Color", "Color tinting all Sprites from tiles in the tilemap");
-            public static readonly GUIContent tileAnchorLabel = EditorGUIUtility.TrTextContent("Tile Anchor", "Anchoring position for Sprites from tiles in the tilemap");
-            public static readonly GUIContent orientationLabel = EditorGUIUtility.TrTextContent("Orientation", "Orientation for tiles in the tilemap");
+            public static readonly GUIContent animationFrameRateLabel = L10n.TextContent("Animation Frame Rate", "Frame rate for playing animated tiles in the tilemap", null, null);
+            public static readonly GUIContent tilemapColorLabel = L10n.TextContent("Color", "Color tinting all Sprites from tiles in the tilemap", null, null);
+            public static readonly GUIContent tileAnchorLabel = L10n.TextContent("Tile Anchor", "Anchoring position for Sprites from tiles in the tilemap", null, null);
+            public static readonly GUIContent orientationLabel = L10n.TextContent("Orientation", "Orientation for tiles in the tilemap", null, null);
 
-            public static readonly GUIContent usedTilesLabel = EditorGUIUtility.TrTextContent("Tiles", "Tiles used in the Tilemap");
-            public static readonly GUIContent usedSpritesLabel = EditorGUIUtility.TrTextContent("Sprites", "Sprites used in the Tilemap");
-            public static readonly GUIContent noneUsedLabel = EditorGUIUtility.TrTextContent("None");
+            public static readonly GUIContent usedTilesLabel = L10n.TextContent("Tiles", "Tiles used in the Tilemap", null, null);
+            public static readonly GUIContent usedSpritesLabel = L10n.TextContent("Sprites", "Sprites used in the Tilemap", null, null);
+            public static readonly GUIContent noneUsedLabel = L10n.TextContent("None", null, null, null);
 
             public static readonly GUIContent noGridAttachedLabel = EditorGUIUtility.TrTextContent("This Tilemap does not have an enabled Grid component attached to it. This will cause Tiles to be placed together and disable GameObject instantiation.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
         }
@@ -191,4 +190,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

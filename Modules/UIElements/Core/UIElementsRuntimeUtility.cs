@@ -367,7 +367,14 @@ namespace UnityEngine.UIElements
                 ComponentManager.SharedManager.Collect();
             }
 
-            NativeTextBufferReclaimer.Collect();
+            // Not inside ComponentManager.Collect: that manager exists only once an unmanaged component
+            // does, while a managed-only composition still queues finalizer releases.
+            ComponentTypeSet.DrainPendingReleases();
+
+            if (TextBufferStore.IsSharedManagerCreated)
+            {
+                TextBufferStore.SharedManager.Collect();
+            }
 
             using (s_PreUpdatePanelRenderersMarker.Auto())
             {

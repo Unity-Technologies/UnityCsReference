@@ -328,6 +328,33 @@ namespace Unity.Hierarchy
         internal void SetParent(ReadOnlySpan<HierarchyNode> nodes, in HierarchyNode parent, int index) => SetNodesParentAt(nodes, in parent, index);
 
         /// <summary>
+        /// Severs a hierarchy node from its parent, without removing it from the hierarchy.
+        /// </summary>
+        /// <remarks>
+        /// A detached node keeps its own children but is no longer reachable from <see cref="Root"/>, so it does not
+        /// appear in a <see cref="HierarchyFlattened"/> or a <see cref="HierarchyViewModel"/>. Nothing reclaims it: the
+        /// caller must either re-attach it with <see cref="SetParent(in HierarchyNode, in HierarchyNode)"/> or delete it
+        /// with <see cref="Remove"/>.
+        /// </remarks>
+        /// <param name="node">The hierarchy node to detach.</param>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void Detach(in HierarchyNode node);
+
+        /// <summary>
+        /// Severs every child of a hierarchy node from it, without removing them from the hierarchy.
+        /// </summary>
+        /// <remarks>
+        /// Equivalent to calling <see cref="Detach"/> on each child, but the node's children are severed in a single
+        /// operation. Each detached child keeps its own children and is no longer reachable from <see cref="Root"/>, so
+        /// none of them appear in a <see cref="HierarchyFlattened"/> or a <see cref="HierarchyViewModel"/>. Nothing
+        /// reclaims them: the caller must either re-attach them with
+        /// <see cref="SetParent(in HierarchyNode, in HierarchyNode)"/> or delete them with <see cref="Remove"/>.
+        /// </remarks>
+        /// <param name="node">The hierarchy node whose children are detached.</param>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void DetachChildren(in HierarchyNode node);
+
+        /// <summary>
         /// Gets the parent of a hierarchy node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>

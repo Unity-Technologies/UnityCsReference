@@ -20,6 +20,9 @@ namespace UnityEditor
         {
             // The global shared popup state
             [AutoStaticsCleanupOnCodeReload]
+            // In-flight mask dropdown state: a fresh instance is created every time the mask menu is displayed and
+            // is only read while that menu hands its selection back to OnGUI.
+            [IgnoreForUAL0015("Transient mask-dropdown state recreated each time the menu is displayed")]
             public static MaskCallbackInfo m_Instance;
 
             // Name of the command event sent from the popup menu to OnGUI when user has changed selection

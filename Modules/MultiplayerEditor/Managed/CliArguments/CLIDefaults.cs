@@ -16,13 +16,13 @@ namespace Unity.DedicatedServer
     {
         class SettingsContent
         {
-            public static readonly GUIContent listenPort = EditorGUIUtility.TrTextContent("Port", "Port server listens on");
-            public static readonly GUIContent targetFramerate = EditorGUIUtility.TrTextContent("Target Framerate", "rate server ticks");
-            public static readonly GUIContent logLevel = EditorGUIUtility.TrTextContent("Log level", "minimum log level");
-            public static readonly GUIContent logPath = EditorGUIUtility.TrTextContent("Log path", "directory for log files");
-            public static readonly GUIContent queryPort = EditorGUIUtility.TrTextContent("Query port", "Port for server status queries");
-            public static readonly GUIContent queryType = EditorGUIUtility.TrTextContent("Query type", "protocol for server status queries");
-            public static readonly GUIContent argumentErrorPolicy = EditorGUIUtility.TrTextContent("Argument error policy", "how arguement errors are to be handled");
+            public static readonly GUIContent listenPort = L10n.TextContent("Port", "Port server listens on", null, null);
+            public static readonly GUIContent targetFramerate = L10n.TextContent("Target Framerate", "rate server ticks", null, null);
+            public static readonly GUIContent logLevel = L10n.TextContent("Log level", "minimum log level", null, null);
+            public static readonly GUIContent logPath = L10n.TextContent("Log path", "directory for log files", null, null);
+            public static readonly GUIContent queryPort = L10n.TextContent("Query port", "Port for server status queries", null, null);
+            public static readonly GUIContent queryType = L10n.TextContent("Query type", "protocol for server status queries", null, null);
+            public static readonly GUIContent argumentErrorPolicy = L10n.TextContent("Argument error policy", "how arguement errors are to be handled", null, null);
         }
 
         class CLIDefault

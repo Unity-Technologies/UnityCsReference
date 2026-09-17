@@ -17,11 +17,24 @@ namespace Unity.GraphToolkit.Editor
         [SerializeField]
         string m_Title;
 
+        Texture2D m_Icon;
+
         /// <inheritdoc />
         public string Title
         {
             get => m_Title;
             set => m_Title = value;
+        }
+
+        /// <inheritdoc />
+        public Texture2D Icon
+        {
+            get => m_Icon;
+            set
+            {
+                m_Icon = value;
+                GraphModel?.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+            }
         }
 
         public virtual TransitionModel Transition { get; set; }

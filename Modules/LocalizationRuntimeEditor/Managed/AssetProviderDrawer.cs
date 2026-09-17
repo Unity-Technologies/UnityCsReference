@@ -24,7 +24,7 @@ class AssetProviderDrawer : PropertyDrawer
         var listView = new ListView
         {
             showFoldoutHeader = true,
-            headerTitle = L10n.Tr("Asset Providers", null),
+            headerTitle = LocLabels.AssetProviders,
             showAddRemoveFooter = true,
             reorderable = true,
             reorderMode = ListViewReorderMode.Animated,

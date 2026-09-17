@@ -49,11 +49,11 @@ class ResourceTableCollectionPostprocessor : AssetPostprocessor
                     Register(collection, registered);
                     break;
                 case SharedTableData shared:
-                    foreach (var owner in CollectionsUsing(shared))
+                    foreach (var owner in AssetProviderEditors.CollectionsUsing(shared))
                         Register(owner, registered);
                     break;
                 case ResourceTable table:
-                    foreach (var owner in CollectionsWith(table))
+                    foreach (var owner in AssetProviderEditors.CollectionsWith(table))
                         Register(owner, registered);
                     break;
             }
@@ -95,37 +95,6 @@ class ResourceTableCollectionPostprocessor : AssetPostprocessor
             return false;
         var other = AssetDatabase.LoadAssetAtPath<ResourceTableCollection>(path);
         return other != null && other != except && other.SharedData == shared;
-    }
-
-    static IEnumerable<ResourceTableCollection> CollectionsUsing(SharedTableData shared)
-    {
-        foreach (var collection in AssetProviderEditors.FindAllCollections())
-        {
-            if (collection != null && collection.SharedData == shared)
-                yield return collection;
-        }
-    }
-
-    static IEnumerable<ResourceTableCollection> CollectionsWith(ResourceTable table)
-    {
-        foreach (var collection in AssetProviderEditors.FindAllCollections())
-        {
-            if (collection == null)
-                continue;
-            if (collection.SharedData != null && collection.SharedData == table.SharedData)
-            {
-                yield return collection;
-                continue;
-            }
-            foreach (var owned in collection.Tables)
-            {
-                if (owned == table)
-                {
-                    yield return collection;
-                    break;
-                }
-            }
-        }
     }
 }
 

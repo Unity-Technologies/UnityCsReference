@@ -21,7 +21,7 @@ namespace UnityEditor.XR
         {
             internal const string s_InstallationHelpText = "In order to use the new XR Plugin system you need to install the XR Plugin Management package. Clicking the button below will install the latest XR Plugin Management package and allow you to configure your project for XR.";
             internal const string s_SettingsRootTitle = "Project/XR Plugin Management";
-            internal static readonly GUIContent s_AddXrManagement = EditorGUIUtility.TrTextContent("Install XR Plugin Management");
+            internal static readonly GUIContent s_AddXrManagement = L10n.TextContent("Install XR Plugin Management", null, null, null);
             internal static readonly GUIContent s_DownloadingText = new GUIContent("Downloading XR Management system...");
             internal static readonly GUIContent s_InstallingText = new GUIContent("Installing XR Management system...");
         }

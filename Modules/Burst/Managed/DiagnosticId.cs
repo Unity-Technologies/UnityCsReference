@@ -227,5 +227,7 @@ namespace Unity.Burst
         // StringInterpolatedTransform
         ERR_DefaultStringInterpolatedHandlerConstructorNotSupported = 1386,
         ERR_DefaultStringInterpolatedHandlerInvalidControlFlow = 1387,
+
+        ERR_RuntimeInternalCallNotSupported = 1388,
     }
 }

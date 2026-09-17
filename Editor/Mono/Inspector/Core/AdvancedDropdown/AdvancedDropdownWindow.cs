@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
@@ -16,14 +15,9 @@ namespace UnityEditor.IMGUI.Controls
 {
     internal class AdvancedDropdownWindow : EditorWindow
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        internal AdvancedDropdownWindow() { }
-        #pragma warning restore UAL0015
-
         private static class Styles
         {
-            [NoAutoStaticsCleanup] // mutated in static ctor (padding), cannot be readonly
-            public static GUIStyle background = "DD Background";
+            public static GUIStyle background => EditorStyles.advancedDropdownBackground;
             [NoAutoStaticsCleanup] // mutated in static ctor (padding), cannot be readonly
             public static GUIStyle previewHeader = new GUIStyle(EditorStyles.label);
             [NoAutoStaticsCleanup] // mutated in static ctor (padding), cannot be readonly
@@ -712,4 +706,3 @@ namespace UnityEditor.IMGUI.Controls
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -977,6 +977,9 @@ namespace UnityEngine
         private static int s_NextId = 0;
         private readonly int m_Id;
         [AutoStaticsCleanupOnCodeReload]
+        // Live-instance registry: every TextGenerator registers itself from its own constructor, so the
+        // registry cleared on reload refills as generators are recreated.
+        [IgnoreForUAL0015("Live-instance registry, refilled by each TextGenerator constructor")]
         private static Dictionary<int, WeakReference> s_Instances = new Dictionary<int, WeakReference>();
 
         ///<summary>Extents of the generated text in rect format.</summary>

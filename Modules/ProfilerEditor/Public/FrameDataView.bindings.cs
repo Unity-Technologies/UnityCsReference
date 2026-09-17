@@ -156,6 +156,12 @@ namespace UnityEditor.Profiling
             get;
         }
 
+        internal extern bool hasGpuSamples
+        {
+            [NativeMethod(Name = "HasGpuSamples", IsThreadSafe = true)]
+            get;
+        }
+
         public extern ulong frameGpuTimeNs
         {
             [NativeMethod(IsThreadSafe = true)]

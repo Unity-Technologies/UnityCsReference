@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: HeadlessRuntime not yet converted
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -22,7 +20,9 @@ namespace Unity.Multiplayer.Editor
 {
     internal partial class ContentSelectionBuildPreprocessor: IPreprocessBuildWithContext
     {
+        // Re-subscribed on every code load by ContentSelectionSettings.ResubscribeBuildPreprocessor().
         [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
+        [IgnoreForUAL0015("Event re-subscribed on every code load by ContentSelectionSettings.ResubscribeBuildPreprocessor()")]
         public static event Action<BuildCallbackContext> OnPreprocessBuildCallback = null;
 
         public int callbackOrder { get { return 0; } }
@@ -35,8 +35,24 @@ namespace Unity.Multiplayer.Editor
     }
 
     [FilePath("ProjectSettings/Packages/com.unity.dedicated-server/ContentSelectionSettings.asset", FilePathAttribute.Location.ProjectFolder)]
-    internal class ContentSelectionSettings : SyncedSingleton<ContentSelectionSettings>
+    internal partial class ContentSelectionSettings : SyncedSingleton<ContentSelectionSettings>
     {
+        // Only the instance constructor registers the build preprocessor callback, and the singleton can
+        // survive a code reload, in which case the constructor never runs again while the event has been
+        // cleared — the callback must fire, or content selection data is not written to the multiplayer
+        // manager before a build. Registering a static forwarder re-establishes it on every load without
+        // resolving the singleton here: touching `instance` during code load would load its settings
+        // asset, pulling serialization in before the built-in resources are ready.
+        [OnCodeLoaded]
+        private static void ResubscribeBuildPreprocessor()
+        {
+            ContentSelectionBuildPreprocessor.OnPreprocessBuildCallback -= ForwardPreprocessBuild;
+            ContentSelectionBuildPreprocessor.OnPreprocessBuildCallback += ForwardPreprocessBuild;
+        }
+
+        // Resolves the singleton only when a build actually runs.
+        private static void ForwardPreprocessBuild(BuildCallbackContext ctx) => instance.OnPreprocessBuild(ctx);
+
         [InitializeOnLoadMethod]
         private static void Initialize()
         {
@@ -62,13 +78,16 @@ namespace Unity.Multiplayer.Editor
             EditorApplication.quitting -= SaveIfDirty;
             EditorApplication.quitting += SaveIfDirty;
 
-            ContentSelectionBuildPreprocessor.OnPreprocessBuildCallback -= OnPreprocessBuild;
-            ContentSelectionBuildPreprocessor.OnPreprocessBuildCallback += OnPreprocessBuild;
+            // The build-preprocessor registration now happens once per code load in
+            // ResubscribeBuildPreprocessor() above, which covers both a freshly created and a
+            // reload-surviving instance; registering here as well would invoke it twice per build.
         }
 
 #pragma warning disable UA5000 // The Avoid Finalizer Analyzer produces compile errors for any new finalizers. This pre-existing finalizer declaration has been suppressed, but should be rewritten if possible.
         ~ContentSelectionSettings()
         {
+            // Kept for any handler registered against this instance directly; the per-code-load
+            // registration uses a static forwarder and is torn down with the code-loaded scope.
             ContentSelectionBuildPreprocessor.OnPreprocessBuildCallback -= OnPreprocessBuild;
         }
 #pragma warning restore UA5000
@@ -170,5 +189,3 @@ namespace Unity.Multiplayer.Editor
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

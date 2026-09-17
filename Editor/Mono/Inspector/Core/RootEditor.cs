@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,9 +54,13 @@ namespace UnityEditor
             public bool usesMetaData;
         }
 
+        // Transient guard toggled around a single root-editor query; false is the correct resting value.
         [AutoStaticsCleanupOnCodeReload]
         private static bool s_SuppressRootEditor = false;
-        [AutoStaticsCleanupOnCodeReload] // holds handler delegates found via reflection; Rebuild() (called from Initialize's [OnCodeLoaded]) clears and repopulates it
+
+        // Holds handlers pointing at reloadable editor types, so it must not survive a reload; the
+        // [OnCodeLoaded] Initialize() below rebuilds it from the attributes on every load.
+        [AutoStaticsCleanupOnCodeReload]
         private static List<RootEditorDesc> kSRootEditor = new List<RootEditorDesc>();
 
         [OnCodeLoaded]
@@ -168,4 +171,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

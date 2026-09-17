@@ -187,6 +187,9 @@ namespace UnityEditor.UIElements
         // Shared between this field and BackgroundGradientField. Reset on reload so the
         // warning can re-arm instead of being permanently suppressed.
         [AutoStaticsCleanupOnCodeReload]
+        // Latch that keeps the too-many-gradient-keys warning to once; resetting it only allows the same
+        // warning to be logged one more time, it changes no field behaviour.
+        [IgnoreForUAL0015("Warn-once latch, only affects whether the warning is logged again")]
         static bool s_WarnedTooManyGradientKeys;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

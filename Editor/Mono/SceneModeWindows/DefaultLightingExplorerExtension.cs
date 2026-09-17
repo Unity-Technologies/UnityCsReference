@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Lighting not yet converted
 using UnityEngine;
 using System.Linq;
 using UnityEngine.Rendering;
@@ -17,50 +16,50 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent[] ProjectionStrings = { EditorGUIUtility.TrTextContent("Infinite"), EditorGUIUtility.TrTextContent("Box") };
+            public static readonly GUIContent[] ProjectionStrings = { L10n.TextContent("Infinite", null, null, null), L10n.TextContent("Box", null, null, null) };
             // The two arrays below needs to match
             public static readonly string[] EmissionOptions = { L10n.Tr("Realtime", null), L10n.Tr("Baked", null) };
             public static readonly MaterialGlobalIlluminationFlags[] EmissionOptionsInternal = { MaterialGlobalIlluminationFlags.RealtimeIndirectEmission, MaterialGlobalIlluminationFlags.BakedEmission };
-            public static readonly GUIContent Name = EditorGUIUtility.TrTextContent("Name");
-            public static readonly GUIContent Enabled = EditorGUIUtility.TrTextContent("Enabled");
-            public static readonly GUIContent Type = EditorGUIUtility.TrTextContent("Type");
-            public static readonly GUIContent Shape = EditorGUIUtility.TrTextContent("Shape");
-            public static readonly GUIContent Mode = EditorGUIUtility.TrTextContent("Mode");
-            public static readonly GUIContent Color = EditorGUIUtility.TrTextContent("Color");
-            public static readonly GUIContent Range = EditorGUIUtility.TrTextContent("Range");
-            public static readonly GUIContent Intensity = EditorGUIUtility.TrTextContent("Intensity");
-            public static readonly GUIContent IndirectMultiplier = EditorGUIUtility.TrTextContent("Indirect Multiplier");
-            public static readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadows");
-            public static readonly GUIContent Projection = EditorGUIUtility.TrTextContent("Projection");
-            public static readonly GUIContent HDR = EditorGUIUtility.TrTextContent("HDR");
-            public static readonly GUIContent ShadowDistance = EditorGUIUtility.TrTextContent("Shadow Distance");
-            public static readonly GUIContent NearPlane = EditorGUIUtility.TrTextContent("Near Plane");
-            public static readonly GUIContent FarPlane = EditorGUIUtility.TrTextContent("Far Plane");
-            public static readonly GUIContent GlobalIllumination = EditorGUIUtility.TrTextContent("Global Illumination");
+            public static readonly GUIContent Name = L10n.TextContent("Name", null, null, null);
+            public static readonly GUIContent Enabled = L10n.TextContent("Enabled", null, null, null);
+            public static readonly GUIContent Type = L10n.TextContent("Type", null, null, null);
+            public static readonly GUIContent Shape = L10n.TextContent("Shape", null, null, null);
+            public static readonly GUIContent Mode = L10n.TextContent("Mode", null, null, null);
+            public static readonly GUIContent Color = L10n.TextContent("Color", null, null, null);
+            public static readonly GUIContent Range = L10n.TextContent("Range", null, null, null);
+            public static readonly GUIContent Intensity = L10n.TextContent("Intensity", null, null, null);
+            public static readonly GUIContent IndirectMultiplier = L10n.TextContent("Indirect Multiplier", null, null, null);
+            public static readonly GUIContent ShadowType = L10n.TextContent("Shadows", null, null, null);
+            public static readonly GUIContent Projection = L10n.TextContent("Projection", null, null, null);
+            public static readonly GUIContent HDR = L10n.TextContent("HDR", null, null, null);
+            public static readonly GUIContent ShadowDistance = L10n.TextContent("Shadow Distance", null, null, null);
+            public static readonly GUIContent NearPlane = L10n.TextContent("Near Plane", null, null, null);
+            public static readonly GUIContent FarPlane = L10n.TextContent("Far Plane", null, null, null);
+            public static readonly GUIContent GlobalIllumination = L10n.TextContent("Global Illumination", null, null, null);
             public static readonly GUIContent SelectObjects = EditorGUIUtility.TextContent("");
-            public static readonly GUIContent SelectObjectsButton = EditorGUIUtility.TrTextContentWithIcon("", "Find References in Scene", "UnityEditor.FindDependencies");
+            public static readonly GUIContent SelectObjectsButton = L10n.TextContentWithIcon("", "Find References in Scene", "UnityEditor.FindDependencies", null);
 
-            public static readonly GUIContent LightCookieSprite = EditorGUIUtility.TrTextContent("Sprite");
-            public static readonly GUIContent FallOff = EditorGUIUtility.TrTextContent("Falloff");
-            public static readonly GUIContent FallOffStrength = EditorGUIUtility.TrTextContent("Falloff Strength");
-            public static readonly GUIContent TargetSortingLayer = EditorGUIUtility.TrTextContent("Target Sorting Layer");
-            public static readonly GUIContent All = EditorGUIUtility.TrTextContent("All");
-            public static readonly GUIContent None = EditorGUIUtility.TrTextContent("None");
-            public static readonly GUIContent Mixed = EditorGUIUtility.TrTextContent("Mixed...");
-            public static readonly GUIContent ShadowIntensityEnabled = EditorGUIUtility.TrTextContent("Shadow");
-            public static readonly GUIContent ShadowIntensity = EditorGUIUtility.TrTextContent("Shadow Strength");
-            public static readonly GUIContent Light2DParametric = EditorGUIUtility.TrTextContentWithIcon("Parametric", "Parametric Lights have been deprecated. To continue, upgrade your Parametric Lights to Freeform Lights to enjoy similar light functionality.", MessageType.Warning);
+            public static readonly GUIContent LightCookieSprite = L10n.TextContent("Sprite", null, null, null);
+            public static readonly GUIContent FallOff = L10n.TextContent("Falloff", null, null, null);
+            public static readonly GUIContent FallOffStrength = L10n.TextContent("Falloff Strength", null, null, null);
+            public static readonly GUIContent TargetSortingLayer = L10n.TextContent("Target Sorting Layer", null, null, null);
+            public static readonly GUIContent All = L10n.TextContent("All", null, null, null);
+            public static readonly GUIContent None = L10n.TextContent("None", null, null, null);
+            public static readonly GUIContent Mixed = L10n.TextContent("Mixed...", null, null, null);
+            public static readonly GUIContent ShadowIntensityEnabled = L10n.TextContent("Shadow", null, null, null);
+            public static readonly GUIContent ShadowIntensity = L10n.TextContent("Shadow Strength", null, null, null);
+            public static readonly GUIContent Light2DParametric = L10n.TextContentWithIcon("Parametric", "Parametric Lights have been deprecated. To continue, upgrade your Parametric Lights to Freeform Lights to enjoy similar light functionality.", MessageType.Warning, null);
 
-            public static readonly GUIContent[] LightmapBakeTypeTitles = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Mixed"), EditorGUIUtility.TrTextContent("Baked") };
+            public static readonly GUIContent[] LightmapBakeTypeTitles = { L10n.TextContent("Realtime", null, null, null), L10n.TextContent("Mixed", null, null, null), L10n.TextContent("Baked", null, null, null) };
             public static readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
 
-            public static readonly GUIContent[] LightTypeTitles = { EditorGUIUtility.TrTextContent("Spot"), EditorGUIUtility.TrTextContent("Directional"), EditorGUIUtility.TrTextContent("Point"), EditorGUIUtility.TrTextContent("Area (baked only)") };
+            public static readonly GUIContent[] LightTypeTitles = { L10n.TextContent("Spot", null, null, null), L10n.TextContent("Directional", null, null, null), L10n.TextContent("Point", null, null, null), L10n.TextContent("Area (baked only)", null, null, null) };
             public static readonly int[] LightTypeValues = { (int)LightType.Spot, (int)LightType.Directional, (int)LightType.Point, (int)LightType.Rectangle };
 
-            public static readonly GUIContent[] LightShapeTitles = { EditorGUIUtility.TrTextContent("Rectangle"), EditorGUIUtility.TrTextContent("Disc") };
+            public static readonly GUIContent[] LightShapeTitles = { L10n.TextContent("Rectangle", null, null, null), L10n.TextContent("Disc", null, null, null) };
             public static readonly int[] LightShapeValues = { (int)LightType.Rectangle, (int)LightType.Disc };
 
-            public static readonly GUIContent[] Light2DTypeTitles = { EditorGUIUtility.TrTextContent("Freeform"), EditorGUIUtility.TrTextContent("Sprite"), EditorGUIUtility.TrTextContent("Spot"), EditorGUIUtility.TrTextContent("Global") };
+            public static readonly GUIContent[] Light2DTypeTitles = { L10n.TextContent("Freeform", null, null, null), L10n.TextContent("Sprite", null, null, null), L10n.TextContent("Spot", null, null, null), L10n.TextContent("Global", null, null, null) };
 #pragma warning disable UAC2001 // Avoid Linq
             public static readonly int[] Light2DTypeValues = Enumerable.Range(0, Light2DTypeTitles.Length).ToArray();
 #pragma warning restore UAC2001
@@ -460,7 +459,7 @@ namespace UnityEditor
             return GetObjectsForLightingExplorer<MeshRenderer>().Where((MeshRenderer mr) =>
 #pragma warning restore UAC2001
             {
-                return GameObjectUtility.AreStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.ContributeGI);
+                return GameObjectUtility.AnyStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.ContributeGI);
             }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) =>
 
             {
@@ -619,4 +618,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

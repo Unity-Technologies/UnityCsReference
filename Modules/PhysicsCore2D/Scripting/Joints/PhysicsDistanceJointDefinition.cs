@@ -13,6 +13,39 @@ namespace Unity.U2D.Physics
     /// <summary>
     /// A joint definition used to specify properties when creating a <see cref="PhysicsDistanceJoint"/>.
     /// </summary>
+    /// <remarks>
+    /// Set <see cref="PhysicsDistanceJointDefinition.bodyA"/> and <see cref="PhysicsDistanceJointDefinition.bodyB"/> to the two bodies you want to connect, then pass the definition into <see cref="PhysicsWorld.CreateJoint(PhysicsDistanceJointDefinition)"/> to constrain them to a fixed distance apart.
+    /// For more information about definitions, refer to <see cref="PhysicsBodyDefinition"/>.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Connect two existing bodies with a distance joint set to 2 meters apart.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class CreateDistanceJointDefinitionExample : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///         PhysicsBody body1 = world.CreateBody();
+    ///         PhysicsBody body2 = world.CreateBody();
+    ///
+    ///         PhysicsDistanceJointDefinition jointDefinition = new PhysicsDistanceJointDefinition
+    ///         {
+    ///             bodyA = body1,
+    ///             bodyB = body2,
+    ///             autoDistance = false,
+    ///             distance = 2f
+    ///         };
+    ///         PhysicsJoint distanceJoint = world.CreateJoint(jointDefinition);
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsJoint"/>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]

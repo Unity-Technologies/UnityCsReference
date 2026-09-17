@@ -127,21 +127,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             }
         };
 
-        static readonly IssueLayout k_DomainReloadIssueLayout = new IssueLayout
-        {
-            Category = IssueCategory.DomainReload,
-            Properties = new[]
-            {
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Code), Format = PropertyFormat.String, Name = "Code", IsDefaultGroup = true},
-                new PropertyDefinition { Type = PropertyType.Description, Name = "Issue", LongName = "Issue description", MaxAutoWidth = 800 },
-                new PropertyDefinition { Type = PropertyType.Filename, Name = "Filename", LongName = "Filename and line number"},
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.Assembly), Format = PropertyFormat.String, Name = "Assembly", LongName = "Managed Assembly name" },
-                new PropertyDefinition { Type = PropertyTypeUtil.FromCustom(CompilerMessageProperty.CodeLocation), Format = PropertyFormat.String, Name = "Location", LongName = "Code Location" },
-                new PropertyDefinition { Type = PropertyType.Descriptor, Name = "Descriptor"},
-                new PropertyDefinition { Type = PropertyType.IsIgnored, Name = "Ignored"},
-            }
-        };
-
         static readonly IssueLayout k_ObsoleteApiLayout = new IssueLayout
         {
             Category = IssueCategory.ObsoleteAPI,
@@ -173,7 +158,6 @@ namespace Unity.ProjectAuditor.Editor.Modules
             k_AssemblyLayout,
             k_PrecompiledAssemblyLayout,
             k_CompilerMessageLayout,
-            k_DomainReloadIssueLayout,
             k_ObsoleteApiLayout
         };
 
@@ -820,23 +804,25 @@ namespace Unity.ProjectAuditor.Editor.Modules
                 if (!RoslynTextLookup.GetDescription(message.Code, out var description, out var recommendation))
                     description = message.Message;
 
+                string title = message.Code.StartsWith("UDR") ? "Domain Reload issue" : "Lifecycle API issue"; // Temporary because we currently only catch UDR and UAL issues.
+
                 var descriptor = new Descriptor(
                     message.Code,
-                    message.Message,
-                    Areas.IterationTime,
+                    title,
+                    Areas.IterationTime | Areas.MigrationToCoreCLR,
                     description,
                     recommendation);
 
                 DescriptorLibrary.RegisterDescriptor(descriptor.Id, descriptor);
 
-                return context.CreateIssue(IssueCategory.DomainReload, descriptor.Id)
+                return context.CreateIssue(IssueCategory.Code, descriptor.Id)
                     .WithLocation(relativePath, message.Line)
                     .WithLogLevel(CompilerMessageTypeToLogLevel(message.Type))
                     .WithCustomProperties(
                     [
-                        message.Code,
                         assemblyInfo.Name,
-                        assemblyInfo.GetTypeString()
+                        assemblyInfo.GetTypeString(),
+                        false
                     ]);
             }
             else

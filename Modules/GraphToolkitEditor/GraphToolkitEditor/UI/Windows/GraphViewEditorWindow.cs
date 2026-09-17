@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: GraphToolkit not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: GraphToolkit not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -230,6 +228,8 @@ Would you like to save these changes?
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Last-focused window id, reassigned by OnFocus the next time a graph window takes focus.
+        [IgnoreForUAL0015("Last-focused window id reassigned by OnFocus")]
         static EntityId s_LastFocusedEditor = EntityId.None;
 
         [NoAutoStaticsCleanup] // monotonically-increasing counter for unique window names
@@ -1482,14 +1482,15 @@ Would you like to save these changes?
 
             foreach (var window in windows)
             {
-                if (window.GetEntityId() != s_LastFocusedEditor)
+                // Skip self and the currently focused window; only check other background windows.
+                if (window == this || window.GetEntityId() == s_LastFocusedEditor)
+                    continue;
+
+                var otherGraph = window.GraphTool?.ToolState?.GraphModel;
+                if (otherGraph != null && currentAsset.GraphModel == otherGraph)
                 {
-                    var otherGraph = window.GraphTool?.ToolState?.GraphModel;
-                    if (otherGraph != null && currentAsset.GraphModel == otherGraph)
-                    {
-                        m_HasMultipleWindowsForSameGraph = true;
-                        break;
-                    }
+                    m_HasMultipleWindowsForSameGraph = true;
+                    break;
                 }
             }
 
@@ -1711,5 +1712,3 @@ Would you like to save these changes?
         }
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

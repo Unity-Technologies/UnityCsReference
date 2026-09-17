@@ -60,6 +60,14 @@ namespace Unity.GraphToolkit.Editor
             return minY <= maxY;
         }
 
+        // The squared distance from a rectangle to a point, or zero if the point is inside it.
+        public static float SqrDistanceToPoint(Rect rect, Vector2 point)
+        {
+            var dx = Mathf.Max(Mathf.Max(rect.xMin - point.x, point.x - rect.xMax), 0f);
+            var dy = Mathf.Max(Mathf.Max(rect.yMin - point.y, point.y - rect.yMax), 0f);
+            return dx * dx + dy * dy;
+        }
+
         public static Rect Encompass(Rect a, Rect b)
         {
             return new Rect

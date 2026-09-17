@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: ProjectBrowser not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
@@ -73,7 +72,7 @@ namespace UnityEditor
             public static readonly GUIStyle subAssetExpandButtonMedium = new GUIStyle("ProjectBrowserSubAssetExpandBtnMedium");
             public static readonly GUIStyle subAssetExpandButtonSmall = new GUIStyle("ProjectBrowserSubAssetExpandBtnSmall");
 
-            public static readonly GUIContent maxmumItemCountInfo = EditorGUIUtility.TrTextContent("NOTE: Maximum item count is reached, not all items are shown. Narrow your search.");
+            public static readonly GUIContent maxmumItemCountInfo = L10n.TextContent("NOTE: Maximum item count is reached, not all items are shown. Narrow your search.", null, null, null);
         }
 
         // State persisted across assembly reloads
@@ -1474,4 +1473,3 @@ namespace UnityEditor
         }
     }
 }  // namespace UnityEditor
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: _2D not yet converted
 using UnityEngine;
 using UnityEngine.U2D;
 
@@ -19,14 +18,14 @@ namespace UnityEditor.U2D
 
         private static class Styles
         {
-            public static readonly GUIContent fillMaterialLabel = EditorGUIUtility.TrTextContent("Fill Material", "Fill Material to be used by SpriteShapeRenderer");
-            public static readonly GUIContent edgeMaterialLabel = EditorGUIUtility.TrTextContent("Edge Material", "Edge Material to be used by SpriteShapeRenderer");
-            public static readonly GUIContent colorLabel = EditorGUIUtility.TrTextContent("Color", "Rendering color for the Sprite graphic");
+            public static readonly GUIContent fillMaterialLabel = L10n.TextContent("Fill Material", "Fill Material to be used by SpriteShapeRenderer", null, null);
+            public static readonly GUIContent edgeMaterialLabel = L10n.TextContent("Edge Material", "Edge Material to be used by SpriteShapeRenderer", null, null);
+            public static readonly GUIContent colorLabel = L10n.TextContent("Color", "Rendering color for the Sprite graphic", null, null);
             public static readonly Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon");
 
             public static readonly string mainTexErrorText = L10n.Tr("Material does not have a _MainTex texture property. It is required for SpriteShapeRenderer.", null);
             public static readonly string offsetScaleErrorText = L10n.Tr("Material texture property _MainTex has offset/scale set. It is incompatible with SpriteShapeRenderer.", null);
-            public static readonly GUIContent spriteSortPointLabel = EditorGUIUtility.TrTextContent("SpriteShape Sort Point", "Determines which position of the SpriteShape is used for sorting.");
+            public static readonly GUIContent spriteSortPointLabel = L10n.TextContent("SpriteShape Sort Point", "Determines which position of the SpriteShape is used for sorting.", null, null);
         }
 
         public override void OnEnable()
@@ -97,4 +96,3 @@ namespace UnityEditor.U2D
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

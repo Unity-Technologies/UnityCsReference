@@ -18,7 +18,7 @@ namespace Unity.Localization.Components;
 /// code by hand.
 /// </remarks>
 /// <example>
-/// <para>Forward the resolved string to a UI text field.</para>
+/// Forward the resolved string to a UI text field.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/LocalizeStringEventBindingExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedString"/>

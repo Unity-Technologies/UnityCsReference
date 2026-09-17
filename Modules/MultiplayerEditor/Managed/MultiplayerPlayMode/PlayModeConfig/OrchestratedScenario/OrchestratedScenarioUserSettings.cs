@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: HeadlessRuntime not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: HeadlessRuntime not yet converted
 using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
@@ -22,17 +20,29 @@ partial class OrchestratedScenarioUserSettings : ScriptableSingleton<Orchestrate
 {
     internal const string k_AssetPath = "UserSettings/OrchestratedScenarioUserSettings.asset";
 
-    [AutoStaticsCleanupOnCodeReload] // domain-reload detection flag; persisting true could cause premature save during shutdown
+    // Only the instance constructor sets this, and the ScriptableSingleton instance can survive a code
+    // reload, in which case the constructor never runs again. Resetting the flag to false would leave
+    // CleanUpAndSave() silently skipping the save, so the user's orchestrated scenario settings would stop
+    // being persisted for the rest of the session. The quitting subscription that delivers the save is
+    // re-established per code load by ResubscribeQuitting() below.
+    [NoAutoStaticsCleanup]
     static bool s_Loaded;
 
     SerializedObject m_SerializedObject;
 
+    // EditorApplication.quitting is cleared on code reload, and the surviving singleton's constructor
+    // never runs again to re-subscribe, so the registration has to happen once per code load here.
+    // CleanUpAndSave is guarded by s_Loaded, so this never resolves the singleton at code-load time.
+    [OnCodeLoaded]
+    static void ResubscribeQuitting()
+    {
+        EditorApplication.quitting -= CleanUpAndSave;
+        EditorApplication.quitting += CleanUpAndSave;
+    }
+
     OrchestratedScenarioUserSettings()
     {
         s_Loaded = true;
-
-        EditorApplication.quitting -= CleanUpAndSave;
-        EditorApplication.quitting += CleanUpAndSave;
     }
 
     [SerializeField] CustomAssetsData m_UsersSettingsData = new();
@@ -103,5 +113,3 @@ partial class OrchestratedScenarioUserSettings : ScriptableSingleton<Orchestrate
         }   
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

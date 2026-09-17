@@ -62,7 +62,7 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.EditorToolbarForTarget(EditorGUIUtility.TrTempContent("Edit Collider"), this);
+            EditorGUILayout.EditorToolbarForTarget(L10n.TempContent("Edit Collider", null), this);
             GUILayout.Space(5);
             EditorGUILayout.PropertyField(m_IsTrigger, BaseStyles.triggerContent);
             EditorGUILayout.PropertyField(m_ProvidesContacts, BaseStyles.providesContacts);

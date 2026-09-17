@@ -1226,7 +1226,9 @@ namespace UnityEditor
         private extern static void _RefreshSettings();
         public static void RefreshSettings() => _RefreshSettings();
 
+        // Re-subscribed on every domain reload by CacheServerToggle's static constructor.
         [AutoStaticsCleanupOnCodeReload]
+        [IgnoreForUAL0015("Event re-subscribed on every domain reload by CacheServerToggle's static constructor")]
         public static event Action<CacheServerConnectionChangedParameters> cacheServerConnectionChanged;
         [RequiredByNativeCode]
         private static void OnCacheServerConnectionChanged()

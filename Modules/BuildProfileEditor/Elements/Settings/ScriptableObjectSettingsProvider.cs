@@ -61,13 +61,22 @@ namespace UnityEditor.Build.Profile.Elements
 
         public void OnAdd(BuildProfile profile)
         {
-            var instance = ScriptableObject.CreateInstance<T>();
+            T instance = null;
+            if (m_SettingsObjectInfo.onAddSetting != null)
+            {
+                instance = m_SettingsObjectInfo.onAddSetting.Invoke(profile) as T;
+
+                if (instance != null && AssetDatabase.Contains(instance))
+                    throw new InvalidOperationException(
+                        $"onAddSetting {typeof(T).Name} must not be a project asset when isStandaloneAsset = false.");
+            }
+            if (instance is null)
+                instance = ScriptableObject.CreateInstance<T>();
             profile.AddComponent(instance);
 
             if (m_SettingsObjectInfo.isRequired)
             {
                 var componentRef = profile.GetComponent<T>() as ScriptableObject;
-
                 var result = new List<ScriptableObject>(profile.requiredComponents);
                 result.Add(componentRef);
                 profile.requiredComponents = result.ToArray();
@@ -117,5 +126,3 @@ namespace UnityEditor.Build.Profile.Elements
         }
     }
 }
-
-

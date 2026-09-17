@@ -337,9 +337,10 @@ namespace UnityEngine.UIElements
                 TrickleDown.TrickleDown);
         }
 
+        // The owner is not necessarily a PanelSettings (test panels use a plain PanelOwner).
         protected internal override PanelSettings GetLinkedPanelSettings()
         {
-            return (PanelSettings)ownerObject;
+            return ownerObject as PanelSettings;
         }
 
         internal bool? animationPlaybackEnabledOverride { get; set; }

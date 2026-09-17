@@ -22,6 +22,12 @@ namespace UnityEngine
 
         public virtual string absoluteURL => UnityEngine.Application.absoluteURL;
 
+        public virtual bool backButtonLeavesApp
+        {
+            get => UnityEngine.Application.backButtonLeavesApp;
+            set => UnityEngine.Application.backButtonLeavesApp = value;
+        }
+
         public virtual UnityEngine.ThreadPriority backgroundLoadingPriority
         {
             get => UnityEngine.Application.backgroundLoadingPriority;

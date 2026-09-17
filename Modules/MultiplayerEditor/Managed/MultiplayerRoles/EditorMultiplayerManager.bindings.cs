@@ -3,20 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.DedicatedServer.Editor.Internal;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Multiplayer.Internal;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using UnityEditor.Toolbars;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
 using Unity.Multiplayer;
+using Unity.Multiplayer.Editor;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditor.Multiplayer.Internal
 {
     [NativeHeader("Modules/Multiplayer/MultiplayerManager.h")]
+    [NativeHeader("Modules/Multiplayer/MultiplayerRolesStripping.h")]
     [StaticAccessor("GetMultiplayerManager()", StaticAccessorType.Dot)]
     internal static partial class EditorMultiplayerManager
     {
@@ -32,6 +35,10 @@ namespace UnityEditor.Multiplayer.Internal
         public static extern void SetStrippingTypesForRole(MultiplayerRole role, Type[] types);
 
         public static extern bool ShouldStripComponentType(MultiplayerRoleFlags activeRoleMask, Component component);
+
+        [StaticAccessor("MultiplayerRolesStripping", StaticAccessorType.DoubleColon)]
+        public static extern void StripSceneObjects(MultiplayerRoleFlags activeRoleMask, Scene scene);
+
         public static extern Hash128 ComputeDependencyHash();
 
 
@@ -40,6 +47,9 @@ namespace UnityEditor.Multiplayer.Internal
         [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
         public static event Action<EditorToolbarDropdown> creatingMultiplayerRoleDropdown;
         [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
+        // Subscribers attach through their own lifecycle and re-subscribe after a code reload, so the
+        // cleared invocation list refills itself.
+        [IgnoreForUAL0015("Event whose subscribers re-register through their own lifecycle after a code reload")]
         public static event Action activeMultiplayerRoleChanged;
         [AutoStaticsCleanupOnCodeReload] // static event; stale handlers after reload pin old ALC
         public static event Action enableMultiplayerRolesChanged;
@@ -85,6 +95,27 @@ namespace UnityEditor.Multiplayer.Internal
                 : BuildTargetDiscovery.GetGUIDFromBuildTarget(buildTarget);
 
             return platformGuid.ToString();
+        }
+
+        [RequiredByNativeCode]
+        static MultiplayerRoleFlags GetMultiplayerRoleFromCurrentBuildProcess()
+        {
+            var profile = BuildProfile.GetActiveBuildProfile();
+            MultiplayerRoleFlags multiplayerRole;
+            if (profile != null)
+            {
+                multiplayerRole = EditorMultiplayerRolesManager.GetMultiplayerRoleForBuildProfile(profile);
+            }
+            else if (InternalUtility.IsStandalonePlatform(EditorUserBuildSettings.activeBuildTarget))
+            {
+                multiplayerRole = EditorMultiplayerRolesManager.GetMultiplayerRoleForClassicTarget(EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.standaloneBuildSubtarget);
+            }
+            else
+            {
+                multiplayerRole = EditorMultiplayerRolesManager.GetMultiplayerRoleForClassicTarget(EditorUserBuildSettings.activeBuildTarget);
+            }
+
+            return multiplayerRole;
         }
     }
 }

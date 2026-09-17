@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AudioAuthoring not yet converted
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,10 +17,6 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Audio Mixer", icon = "Audio Mixer")]
     internal partial class AudioMixerWindow : EditorWindow, IHasCustomMenu
     {
-        #pragma warning disable UAL0015 // this side effect does not outlive the current call (global trigger / lazily-loaded asset re-fetched on next access); a stale reference is harmlessly replaced
-        public AudioMixerWindow() { }
-        #pragma warning restore UAL0015
-
         [AutoStaticsCleanupOnCodeReload]
         static AudioMixerWindow s_Instance;
 
@@ -120,7 +115,7 @@ namespace UnityEditor
             public GUIContents()
             {
                 #pragma warning disable UAL0015 // lazily-loaded icon re-fetched on next access; a stale reference is harmlessly replaced
-                editSnapShots = EditorGUIUtility.TrTextContent("Edit in Play Mode", "Edit in playmode and your changes are automatically saved. Note when editing is disabled, live values are shown.", EditorGUIUtility.TrIconContent("Animation.Record", "Are scene and inspector changes recorded into the animation curves?").image);
+                editSnapShots = EditorGUIUtility.TrTextContent("Edit in Play Mode", "Edit in playmode and your changes are automatically saved. Note when editing is disabled, live values are shown.", L10n.IconContent("Animation.Record", "Are scene and inspector changes recorded into the animation curves?", null).image);
                 #pragma warning restore UAL0015
             }
         }
@@ -729,31 +724,31 @@ namespace UnityEditor
         // Add items to the context menu for the AudioMixerWindow (the tree horizontal lines, upper right corner)
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Sort groups alphabetically"), m_SortGroupsAlphabetically, delegate { m_SortGroupsAlphabetically = !m_SortGroupsAlphabetically; });
-            menu.AddItem(EditorGUIUtility.TrTextContent("Show referenced groups"), m_ShowReferencedBuses, delegate { m_ShowReferencedBuses = !m_ShowReferencedBuses; });
-            menu.AddItem(EditorGUIUtility.TrTextContent("Show group connections"), m_ShowBusConnections, delegate { m_ShowBusConnections = !m_ShowBusConnections; });
+            menu.AddItem(L10n.TextContent("Sort groups alphabetically", null, null, null), m_SortGroupsAlphabetically, delegate { m_SortGroupsAlphabetically = !m_SortGroupsAlphabetically; });
+            menu.AddItem(L10n.TextContent("Show referenced groups", null, null, null), m_ShowReferencedBuses, delegate { m_ShowReferencedBuses = !m_ShowReferencedBuses; });
+            menu.AddItem(L10n.TextContent("Show group connections", null, null, null), m_ShowBusConnections, delegate { m_ShowBusConnections = !m_ShowBusConnections; });
             if (m_ShowBusConnections)
-                menu.AddItem(EditorGUIUtility.TrTextContent("Only highlight selected group connections"), m_ShowBusConnectionsOfSelection, delegate { m_ShowBusConnectionsOfSelection = !m_ShowBusConnectionsOfSelection; });
+                menu.AddItem(L10n.TextContent("Only highlight selected group connections", null, null, null), m_ShowBusConnectionsOfSelection, delegate { m_ShowBusConnectionsOfSelection = !m_ShowBusConnectionsOfSelection; });
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TrTextContent("Vertical layout"), layoutMode == LayoutMode.Vertical, delegate { layoutMode = LayoutMode.Vertical; });
-            menu.AddItem(EditorGUIUtility.TrTextContent("Horizontal layout"), layoutMode == LayoutMode.Horizontal, delegate { layoutMode = LayoutMode.Horizontal; });
+            menu.AddItem(L10n.TextContent("Vertical layout", null, null, null), layoutMode == LayoutMode.Vertical, delegate { layoutMode = LayoutMode.Vertical; });
+            menu.AddItem(L10n.TextContent("Horizontal layout", null, null, null), layoutMode == LayoutMode.Horizontal, delegate { layoutMode = LayoutMode.Horizontal; });
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TrTextContent("Use RMS metering for display"), EditorPrefs.GetBool(kAudioMixerUseRMSMetering, true), delegate { EditorPrefs.SetBool(kAudioMixerUseRMSMetering, true); });
-            menu.AddItem(EditorGUIUtility.TrTextContent("Use peak metering for display"), !EditorPrefs.GetBool(kAudioMixerUseRMSMetering, true), delegate { EditorPrefs.SetBool(kAudioMixerUseRMSMetering, false); });
+            menu.AddItem(L10n.TextContent("Use RMS metering for display", null, null, null), EditorPrefs.GetBool(kAudioMixerUseRMSMetering, true), delegate { EditorPrefs.SetBool(kAudioMixerUseRMSMetering, true); });
+            menu.AddItem(L10n.TextContent("Use peak metering for display", null, null, null), !EditorPrefs.GetBool(kAudioMixerUseRMSMetering, true), delegate { EditorPrefs.SetBool(kAudioMixerUseRMSMetering, false); });
             if (Unsupported.IsDeveloperMode())
             {
                 menu.AddSeparator("");
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Groups Rendered Above"), m_GroupsRenderedAboveSections, delegate { m_GroupsRenderedAboveSections = !m_GroupsRenderedAboveSections; });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Build 10 groups"), false, delegate { m_Controller.BuildTestSetup(0, 7, 10); });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Build 20 groups"), false, delegate { m_Controller.BuildTestSetup(0, 7, 20); });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Build 40 groups"), false, delegate { m_Controller.BuildTestSetup(0, 7, 40); });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Build 80 groups"), false, delegate { m_Controller.BuildTestSetup(0, 7, 80); });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Build 160 groups"), false, delegate { m_Controller.BuildTestSetup(0, 7, 160); });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Build chain of 10 groups"), false, delegate { m_Controller.BuildTestSetup(1, 1, 10); });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Build chain of 20 groups "), false, delegate { m_Controller.BuildTestSetup(1, 1, 20); });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Build chain of 40 groups"), false, delegate { m_Controller.BuildTestSetup(1, 1, 40); });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Build chain of 80 groups"), false, delegate { m_Controller.BuildTestSetup(1, 1, 80); });
-                menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Show overlays"), m_ShowDeveloperOverlays, delegate { m_ShowDeveloperOverlays = !m_ShowDeveloperOverlays; });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Groups Rendered Above", null, null, null), m_GroupsRenderedAboveSections, delegate { m_GroupsRenderedAboveSections = !m_GroupsRenderedAboveSections; });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Build 10 groups", null, null, null), false, delegate { m_Controller.BuildTestSetup(0, 7, 10); });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Build 20 groups", null, null, null), false, delegate { m_Controller.BuildTestSetup(0, 7, 20); });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Build 40 groups", null, null, null), false, delegate { m_Controller.BuildTestSetup(0, 7, 40); });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Build 80 groups", null, null, null), false, delegate { m_Controller.BuildTestSetup(0, 7, 80); });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Build 160 groups", null, null, null), false, delegate { m_Controller.BuildTestSetup(0, 7, 160); });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Build chain of 10 groups", null, null, null), false, delegate { m_Controller.BuildTestSetup(1, 1, 10); });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Build chain of 20 groups ", null, null, null), false, delegate { m_Controller.BuildTestSetup(1, 1, 20); });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Build chain of 40 groups", null, null, null), false, delegate { m_Controller.BuildTestSetup(1, 1, 40); });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Build chain of 80 groups", null, null, null), false, delegate { m_Controller.BuildTestSetup(1, 1, 80); });
+                menu.AddItem(L10n.TextContent("DEVELOPER/Show overlays", null, null, null), m_ShowDeveloperOverlays, delegate { m_ShowDeveloperOverlays = !m_ShowDeveloperOverlays; });
             }
         }
     }
@@ -779,7 +774,7 @@ namespace UnityEditor
             }
             else
             {
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("No Audio Mixers found in this project"));
+                menu.AddDisabledItem(L10n.TextContent("No Audio Mixers found in this project", null, null, null));
             }
             menu.DropDown(buttonRect);
         }
@@ -792,4 +787,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

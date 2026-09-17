@@ -4,6 +4,7 @@
 
 #pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
+using System.IO;
 using Unity.Properties;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
@@ -21,7 +22,6 @@ internal sealed partial class VisualElementInspector : UIInspector
     public static readonly BindingId EditFlagsProperty = nameof(EditFlags);
 
     public const string UssClass = "unity-visual-element-inspector";
-    public const string AssetNotEditableHelpBoxUssClass = UssClass + "__not-editable-help-box";
     public const string BindingsSectionViewClass = UssClass + "__bindings-section";
     public const string ClassListClass = UssClass + "__class-list";
     public const string MatchingSelectorsClass = UssClass + "__matching-selectors";
@@ -36,10 +36,10 @@ internal sealed partial class VisualElementInspector : UIInspector
     private VisualElement m_Element;
     private VisualElementEditFlags m_EditFlags;
 
-    private readonly VisualElement m_AssetNotEditableHelpBox;
     private readonly VisualElementBindingsInspectorElement m_BindingsInspector;
     private readonly VisualElementAttributesInspectorElement m_AttributesInspector;
     private readonly VisualElementComponentsInspectorElement m_ComponentsInspector;
+    private readonly OverrideFoldout m_ComponentsFoldout;
     private readonly ClassListElement m_ClassListElement;
     private readonly MatchingSelectorsElement m_MatchingSelectorsElement;
     private readonly StyleInspectorElement m_StyleInspector;
@@ -86,9 +86,7 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_MatchingSelectorsElement.Target = m_Element;
                 m_StyleInspector.Target = new StyleInspectorTarget(m_Element);
                 m_AttributesInspector.Target = m_Element;
-                var showComponentsInspector = UIToolkitProjectSettings.enableUIComponents;
-                m_ComponentsInspector.style.display = showComponentsInspector ? DisplayStyle.Flex : DisplayStyle.None;
-                m_ComponentsInspector.Target = showComponentsInspector ? m_Element : null;
+                ApplyComponentsSetting();
                 m_VariablesSection?.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule,
                     m_Element.visualTreeAssetSource);
             }
@@ -122,14 +120,13 @@ internal sealed partial class VisualElementInspector : UIInspector
         var styleSheet = EditorGUIUtility.Load(styleSheetPath) as StyleSheet;
         styleSheets.Add(styleSheet);
 
-        m_AssetNotEditableHelpBox = this.Q(className:AssetNotEditableHelpBoxUssClass);
-
         // Attributes
         m_AttributesInspector = this.Q<VisualElementAttributesInspectorElement>();
 
         // Components
         m_ComponentsInspector = this.Q<VisualElementComponentsInspectorElement>();
-        m_ComponentsInspector.style.display = UIToolkitProjectSettings.enableUIComponents ? DisplayStyle.Flex : DisplayStyle.None;
+        m_ComponentsFoldout = this.Q<OverrideFoldout>("ComponentsFoldout");
+        ApplyComponentsSetting();
 
         // Bindings
         m_BindingsInspector = this.Q<VisualElementBindingsInspectorElement>();
@@ -213,6 +210,14 @@ internal sealed partial class VisualElementInspector : UIInspector
         m_StyleInspector.Refresh();
     }
 
+    void ApplyComponentsSetting()
+    {
+        var enabled = UIToolkitProjectSettings.enableUIComponents;
+        // StyleKeyword.Null, not DisplayStyle.Flex: an inline display defeats the class-based hiding of inspector search.
+        m_ComponentsFoldout.style.display = enabled ? StyleKeyword.Null : DisplayStyle.None;
+        m_ComponentsInspector.Target = enabled ? m_Element : null;
+    }
+
     void RefreshAttributeOverrideHelpbox()
     {
         var stage = StageUtility.GetCurrentStage() as VisualElementEditingStage;
@@ -224,6 +229,72 @@ internal sealed partial class VisualElementInspector : UIInspector
             && m_Element.visualTreeAssetSource != stage.EditedVisualTreeAsset;
 
         m_AttributesInspector.SetAttributeOverrideHelpboxVisible(isUnnamedTemplateElement);
+
+        if (!IsCreatedInScript(m_Element))
+        {
+            m_AttributesInspector.SetNotEditableHelpboxVisible(false);
+            return;
+        }
+
+        var ancestor = GetAuthoredAncestor(m_Element);
+
+        if (ancestor == null)
+        {
+            m_AttributesInspector.SetNotEditableHelpboxVisible(true);
+            return;
+        }
+
+        if (CanOverrideAttributes(ancestor))
+        {
+            m_AttributesInspector.SetNotEditableHelpboxVisible(true,
+                VisualElementAttributesInspectorElement.NotEditableHint.SelectAncestor,
+                TypeUtility.GetTypeDisplayName(ancestor.GetType()),
+                () => SelectElement(ancestor));
+            return;
+        }
+
+        var instance = ancestor.GetFirstAncestorOfType<TemplateContainer>();
+        var sourcePath = instance?.templateSource == null
+            ? null
+            : AssetDatabase.GetAssetPath(instance.templateSource);
+
+        if (string.IsNullOrEmpty(sourcePath))
+        {
+            m_AttributesInspector.SetNotEditableHelpboxVisible(true,
+                VisualElementAttributesInspectorElement.NotEditableHint.CreatedByControl);
+            return;
+        }
+
+        m_AttributesInspector.SetNotEditableHelpboxVisible(true,
+            VisualElementAttributesInspectorElement.NotEditableHint.SelectTemplateInstance,
+            Path.GetFileName(sourcePath),
+            () => SelectElement(instance));
+    }
+
+    static bool CanOverrideAttributes(VisualElement element)
+    {
+        var editedDocument = (StageUtility.GetCurrentStage() as VisualElementEditingStage)?.EditedVisualTreeAsset;
+        if (editedDocument == null || element.visualTreeAssetSource == editedDocument)
+            return true;
+
+        return !string.IsNullOrEmpty(element.name);
+    }
+
+    static bool IsCreatedInScript(VisualElement element)
+    {
+        return element != null && element.visualElementAsset == null;
+    }
+
+    static VisualElement GetAuthoredAncestor(VisualElement element)
+    {
+        return element.GetFirstAncestorWhere(e => e.visualElementAsset != null);
+    }
+
+    static void SelectElement(VisualElement element)
+    {
+        var selectionObject = element.GetSelectionObject();
+        if (selectionObject)
+            Selection.entityIds = new[] { selectionObject.GetEntityId() };
     }
 
     void UpdateControlsState()
@@ -245,14 +316,6 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_RecordingBanner.style.display = DisplayStyle.None;
             }
         }
-
-        var inStaging = StageUtility.GetCurrentStage() is VisualElementEditingStage;
-        var editableHelpBoxVisible = DisplayStyle.None;
-
-        if (!m_IsRecording && m_EditFlags == VisualElementEditFlags.None && !inStaging)
-            editableHelpBoxVisible = DisplayStyle.Flex;
-
-        m_AssetNotEditableHelpBox.style.display = editableHelpBoxVisible;
     }
 
     /// <summary>
@@ -278,7 +341,8 @@ internal sealed partial class VisualElementInspector : UIInspector
                 m_StyleInspector.contentContainer.Add(m_StyleInspectorDefaultContent = StyleInspectorDefaultContent.Get());
                 InitializeVariablesSection();
                 InitializeAnimationSectionVisibility();
-                InitializeZIndexFieldVisibility();
+                ApplyComponentsSetting();
+                UIToolkitProjectSettings.onEnableUIComponentsChanged += ApplyComponentsSetting;
                 UICommandQueue.RegisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
                 break;
             }
@@ -290,9 +354,8 @@ internal sealed partial class VisualElementInspector : UIInspector
                 {
                     m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGeneratedForVariables;
                     m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGeneratedForAnimation;
-                    m_StyleInspectorDefaultContent.contentWasGenerated -= OnDefaultContentGeneratedForZIndex;
                 }
-                UIToolkitProjectSettings.onEnableZIndexChanged -= OnEnableZIndexChanged;
+                UIToolkitProjectSettings.onEnableUIComponentsChanged -= ApplyComponentsSetting;
                 UICommandQueue.UnregisterHandlerForCategory(CommandCategory.Variables, OnVariableChange);
                 m_StyleInspectorDefaultContent?.RemoveFromHierarchy();
                 StyleInspectorDefaultContent.Release(m_StyleInspectorDefaultContent);
@@ -338,8 +401,7 @@ internal sealed partial class VisualElementInspector : UIInspector
             if (m_Element == null || inlineSheet == null || inlineRule == null)
                 return;
 
-            m_Element.UpdateInlineRule(inlineSheet, inlineRule);
-            m_Element.IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Styles);
+            VisualElementUtility.UpdateInlineRuleOnAllClones(m_Element, inlineSheet, inlineRule);
 
             m_VariablesSection?.Refresh(GetInlineStyleRule(), GetOrCreateInlineStyleRule, m_Element.visualTreeAssetSource);
         }
@@ -349,7 +411,6 @@ internal sealed partial class VisualElementInspector : UIInspector
     {
         if (m_StyleInspectorDefaultContent.Q(StyleRuleInspector.AnimationFoldoutName) != null)
         {
-            UpdateAnimationSectionVisibility(m_StyleInspectorDefaultContent);
             StyleRuleInspector.HookGridSectionVisibility(m_StyleInspectorDefaultContent);
             AnimationClipNewButtonController.ConnectButton(m_StyleInspectorDefaultContent, GetAnimationClipDialogSubject);
             return;
@@ -361,7 +422,6 @@ internal sealed partial class VisualElementInspector : UIInspector
     void OnDefaultContentGeneratedForAnimation(StyleInspectorDefaultContent content)
     {
         content.contentWasGenerated -= OnDefaultContentGeneratedForAnimation;
-        UpdateAnimationSectionVisibility(content);
         StyleRuleInspector.HookGridSectionVisibility(content);
         AnimationClipNewButtonController.ConnectButton(content, GetAnimationClipDialogSubject);
     }
@@ -372,48 +432,6 @@ internal sealed partial class VisualElementInspector : UIInspector
             return null;
         // Use the element name when available; fall back to the type for unnamed elements.
         return string.IsNullOrEmpty(m_Element.name) ? m_Element.GetType().Name : m_Element.name;
-    }
-
-    static void UpdateAnimationSectionVisibility(VisualElement content)
-    {
-        var animationSection = content.Q(StyleRuleInspector.AnimationFoldoutName);
-        if (animationSection != null)
-            // Use StyleKeyword.Null (not DisplayStyle.Flex) to avoid setting an inline style when enabling.
-            // It breaks the behavior of inspector search otherwise.
-            animationSection.style.display = UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot ? StyleKeyword.Null : DisplayStyle.None;
-    }
-
-    void InitializeZIndexFieldVisibility()
-    {
-        if (m_StyleInspectorDefaultContent.Q<ZIndexStyleIntField>() != null)
-        {
-            UpdateZIndexFieldVisibility(m_StyleInspectorDefaultContent);
-            UIToolkitProjectSettings.onEnableZIndexChanged += OnEnableZIndexChanged;
-            return;
-        }
-
-        m_StyleInspectorDefaultContent.contentWasGenerated += OnDefaultContentGeneratedForZIndex;
-    }
-
-    void OnDefaultContentGeneratedForZIndex(StyleInspectorDefaultContent content)
-    {
-        content.contentWasGenerated -= OnDefaultContentGeneratedForZIndex;
-        UpdateZIndexFieldVisibility(content);
-        UIToolkitProjectSettings.onEnableZIndexChanged += OnEnableZIndexChanged;
-    }
-
-    void OnEnableZIndexChanged()
-    {
-        if (m_StyleInspectorDefaultContent != null)
-            UpdateZIndexFieldVisibility(m_StyleInspectorDefaultContent);
-    }
-
-    static void UpdateZIndexFieldVisibility(VisualElement content)
-    {
-        var zIndexField = content.Q<ZIndexStyleIntField>();
-        var row = zIndexField?.GetFirstAncestorOfType<OverrideRow>();
-        if (row != null)
-            row.style.display = UIToolkitProjectSettings.enableZIndex ? StyleKeyword.Null : DisplayStyle.None;
     }
 
     StyleRule GetInlineStyleRule()

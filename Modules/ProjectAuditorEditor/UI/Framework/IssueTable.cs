@@ -32,7 +32,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         protected override void AddColumnHeaderContextMenuItems(GenericMenu menu)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Resize to Fit"), false, new GenericMenu.MenuFunction(ResizeToFit));
+            menu.AddItem(L10n.TextContent("Resize to Fit", null, null, null), false, new GenericMenu.MenuFunction(ResizeToFit));
             menu.AddSeparator("");
             for (int userData = 0; userData < state.columns.Length; ++userData)
             {
@@ -1153,8 +1153,8 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         static class Styles
         {
-            public static readonly GUIContent MixedArea = EditorGUIUtility.TrTextContent("Mixed", "Areas that this issue might have an impact on");
-            public static readonly GUIContent MixedSeverity = EditorGUIUtility.TrTextContent("Mixed");
+            public static readonly GUIContent MixedArea = L10n.TextContent("Mixed", "Areas that this issue might have an impact on", null, null);
+            public static readonly GUIContent MixedSeverity = L10n.TextContent("Mixed", null, null, null);
         }
     }
 }

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: Search not yet converted
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -746,8 +745,13 @@ namespace UnityEditor.Search
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Per-Type icon memo: GetTypeIcon looks the icon up again and re-adds it on a miss, and it must be
+        // cleared so it does not hold the previous scope's Types or their textures.
+        [IgnoreForUAL0015("Per-Type icon memo, looked up again on the next miss")]
         static readonly Dictionary<Type, Texture2D> s_TypeIcons = new Dictionary<Type, Texture2D>();
-        [AutoStaticsCleanupOnCodeReload] // lazy-loaded icon texture; recreated on reload
+        [AutoStaticsCleanupOnCodeReload]
+        // Re-fetched through AssetPreview.GetMiniTypeThumbnail on the next access when it is null.
+        [IgnoreForUAL0015("Lazy default icon, re-fetched on the next access when null")]
         static Texture2D s_DefaultIcon;
         public static Texture2D GetTypeIcon(in Type type)
         {
@@ -1162,6 +1166,9 @@ namespace UnityEditor.Search
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Type-name lookup memo: every miss re-resolves the name and stores the result (including the null
+        // result), so the cache emptied on reload refills on demand.
+        [IgnoreForUAL0015("Type-name lookup memo, re-resolved on the next miss")]
         static readonly Dictionary<string, Type> s_CachedTypes = new();
         internal static Type FindType<T>(in string typeString)
         {
@@ -1176,6 +1183,7 @@ namespace UnityEditor.Search
             var type = Type.GetType(typeString);
             if (type != null)
                 return s_CachedTypes[typeString] = type;
+#pragma warning disable UAL0018 // the memo written here is the cleaned cache itself, so the entry is dropped with it and the next miss re-resolves the name
             foreach (var t in TypeCache.GetTypesDerivedFrom<T>())
             {
                 if (!t.IsVisible)
@@ -1188,6 +1196,7 @@ namespace UnityEditor.Search
                     return s_CachedTypes[typeString] = t;
                 }
             }
+#pragma warning restore UAL0018
             return s_CachedTypes[typeString] = null;
         }
 
@@ -2123,4 +2132,3 @@ namespace UnityEditor.Search
     }
 }
 
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

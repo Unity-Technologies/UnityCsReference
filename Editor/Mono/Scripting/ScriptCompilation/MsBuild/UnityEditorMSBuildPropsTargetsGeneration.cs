@@ -97,7 +97,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
         UpdateSystemSearchPaths(buildTarget);
         UpdateRoslynAnalyzersProps(globalAnalyzers);
 
-        PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath);
+        PropsGenerator.Instance.UpdateUnityContentLocation(EditorApplication.applicationScriptingPath, EditorApplication.applicationBuildPipelinePath);
         PropsGenerator.Instance.UpdateBuildConfigurationProperties(buildTarget.ToString(), CompilationPipeline.codeOptimization == CodeOptimization.Release);
     }
 
@@ -147,6 +147,7 @@ class UnityEditorMSBuildPropsTargetsGeneration
 
         PropsGenerator.Instance.UpdateEssentialPropsOnly(
             EditorApplication.applicationScriptingPath,
+            EditorApplication.applicationBuildPipelinePath,
             editorVersion);
     }
 

@@ -159,7 +159,7 @@ namespace UnityEditor
         {
             public override GUIContent toolbarIcon
             {
-                get { return EditorGUIUtility.TrIconContent("ParticleShapeTool", "Shape module gizmo editing mode."); }
+                get { return L10n.IconContent("ParticleShapeTool", "Shape module gizmo editing mode.", null); }
             }
 
             public override void OnToolGUI(EditorWindow window)
@@ -178,7 +178,7 @@ namespace UnityEditor
         {
             public override GUIContent toolbarIcon
             {
-                get { return EditorGUIUtility.TrIconContent("TransformTool", "Shape module transform editing mode."); }
+                get { return L10n.IconContent("TransformTool", "Shape module transform editing mode.", null); }
             }
 
             public override void OnToolGUI(EditorWindow window)
@@ -216,38 +216,38 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent shape = EditorGUIUtility.TrTextContent("Shape", "Defines the shape of the volume from which particles can be emitted, and the direction of the start velocity.");
-            public GUIContent radius = EditorGUIUtility.TrTextContent("Radius", "Radius of the shape.");
-            public GUIContent radiusThickness = EditorGUIUtility.TrTextContent("Radius Thickness", "Control the thickness of the spawn volume, from 0 to 1.");
-            public GUIContent coneAngle = EditorGUIUtility.TrTextContent("Angle", "Angle of the cone.");
-            public GUIContent coneLength = EditorGUIUtility.TrTextContent("Length", "Length of the cone.");
-            public GUIContent boxThickness = EditorGUIUtility.TrTextContent("Box Thickness", "When using shell/edge modes, control the thickness of the spawn volume, from 0 to 1.");
-            public GUIContent meshType = EditorGUIUtility.TrTextContent("Type", "Generate particles from vertices, edges or triangles.");
-            public GUIContent mesh = EditorGUIUtility.TrTextContent("Mesh", "Mesh that the particle system will emit from.");
-            public GUIContent meshRenderer = EditorGUIUtility.TrTextContent("Mesh", "MeshRenderer that the particle system will emit from.");
-            public GUIContent skinnedMeshRenderer = EditorGUIUtility.TrTextContent("Mesh", "SkinnedMeshRenderer that the particle system will emit from.");
-            public GUIContent sprite = EditorGUIUtility.TrTextContent("Sprite", "Sprite that the particle system will emit from.");
-            public GUIContent spriteRenderer = EditorGUIUtility.TrTextContent("Sprite", "SpriteRenderer that the particle system will emit from.");
-            public GUIContent meshMaterialIndex = EditorGUIUtility.TrTextContent("Single Material", "Only emit from a specific material of the mesh.");
-            public GUIContent useMeshColors = EditorGUIUtility.TrTextContent("Use Mesh Colors", "Modulate particle color with mesh vertex colors, or if they don't exist, use the shader color property \"_Color\" or \"_TintColor\" from the material. Does not read texture colors.");
-            public GUIContent meshNormalOffset = EditorGUIUtility.TrTextContent("Normal Offset", "Offset particle spawn positions along the mesh normal.");
-            public GUIContent texture = EditorGUIUtility.TrTextContent("Texture", "Texture that the particles will sample their color from.");
-            public GUIContent textureClipChannel = EditorGUIUtility.TrTextContent("Clip Channel", "Select a channel to use for discarding particles.");
-            public GUIContent textureClipThreshold = EditorGUIUtility.TrTextContent("Clip Threshold", "Only emit from parts of the texture where the Clip Channel is greater than or equal to this value.");
-            public GUIContent textureColorAffectsParticles = EditorGUIUtility.TrTextContent("Color affects Particles", "Multiply the particle color by the texture RGB value.");
-            public GUIContent textureAlphaAffectsParticles = EditorGUIUtility.TrTextContent("Alpha affects Particles", "Multiply the particle alpha by the texture alpha value.");
-            public GUIContent textureBilinearFiltering = EditorGUIUtility.TrTextContent("Bilinear Filtering", "Blend between pixels on the texture.");
-            public GUIContent textureUVChannel = EditorGUIUtility.TrTextContent("UV Channel", "Use the selected UV channel from the source mesh, for reading the texture.");
-            public GUIContent alignToDirection = EditorGUIUtility.TrTextContent("Align To Direction", "Automatically align particles based on their initial direction of travel.");
-            public GUIContent randomDirectionAmount = EditorGUIUtility.TrTextContent("Randomize Direction", "Override the initial direction of travel with a random direction.");
-            public GUIContent sphericalDirectionAmount = EditorGUIUtility.TrTextContent("Spherize Direction", "Override the initial direction of travel with a direction that projects particles outwards from the center of the Shape Transform.");
-            public GUIContent randomPositionAmount = EditorGUIUtility.TrTextContent("Randomize Position", "Move the starting positions by a random amount, up to this maximum value.");
-            public GUIContent emitFrom = EditorGUIUtility.TrTextContent("Emit from:", "Specifies from where particles are emitted.");
-            public GUIContent donutRadius = EditorGUIUtility.TrTextContent("Donut Radius", "The radius of the donut. Used to control the thickness of the ring.");
-            public GUIContent position = EditorGUIUtility.TrTextContent("Position", "Translate the emission shape.");
-            public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Rotate the emission shape.");
-            public GUIContent scale = EditorGUIUtility.TrTextContent("Scale", "Scale the emission shape.");
-            public GUIContent sceneTools = EditorGUIUtility.TrTextContent("Scene Tools");
+            public GUIContent shape = L10n.TextContent("Shape", "Defines the shape of the volume from which particles can be emitted, and the direction of the start velocity.", null, null);
+            public GUIContent radius = L10n.TextContent("Radius", "Radius of the shape.", null, null);
+            public GUIContent radiusThickness = L10n.TextContent("Radius Thickness", "Control the thickness of the spawn volume, from 0 to 1.", null, null);
+            public GUIContent coneAngle = L10n.TextContent("Angle", "Angle of the cone.", null, null);
+            public GUIContent coneLength = L10n.TextContent("Length", "Length of the cone.", null, null);
+            public GUIContent boxThickness = L10n.TextContent("Box Thickness", "When using shell/edge modes, control the thickness of the spawn volume, from 0 to 1.", null, null);
+            public GUIContent meshType = L10n.TextContent("Type", "Generate particles from vertices, edges or triangles.", null, null);
+            public GUIContent mesh = L10n.TextContent("Mesh", "Mesh that the particle system will emit from.", null, null);
+            public GUIContent meshRenderer = L10n.TextContent("Mesh", "MeshRenderer that the particle system will emit from.", null, null);
+            public GUIContent skinnedMeshRenderer = L10n.TextContent("Mesh", "SkinnedMeshRenderer that the particle system will emit from.", null, null);
+            public GUIContent sprite = L10n.TextContent("Sprite", "Sprite that the particle system will emit from.", null, null);
+            public GUIContent spriteRenderer = L10n.TextContent("Sprite", "SpriteRenderer that the particle system will emit from.", null, null);
+            public GUIContent meshMaterialIndex = L10n.TextContent("Single Material", "Only emit from a specific material of the mesh.", null, null);
+            public GUIContent useMeshColors = L10n.TextContent("Use Mesh Colors", "Modulate particle color with mesh vertex colors, or if they don't exist, use the shader color property \"_Color\" or \"_TintColor\" from the material. Does not read texture colors.", null, null);
+            public GUIContent meshNormalOffset = L10n.TextContent("Normal Offset", "Offset particle spawn positions along the mesh normal.", null, null);
+            public GUIContent texture = L10n.TextContent("Texture", "Texture that the particles will sample their color from.", null, null);
+            public GUIContent textureClipChannel = L10n.TextContent("Clip Channel", "Select a channel to use for discarding particles.", null, null);
+            public GUIContent textureClipThreshold = L10n.TextContent("Clip Threshold", "Only emit from parts of the texture where the Clip Channel is greater than or equal to this value.", null, null);
+            public GUIContent textureColorAffectsParticles = L10n.TextContent("Color affects Particles", "Multiply the particle color by the texture RGB value.", null, null);
+            public GUIContent textureAlphaAffectsParticles = L10n.TextContent("Alpha affects Particles", "Multiply the particle alpha by the texture alpha value.", null, null);
+            public GUIContent textureBilinearFiltering = L10n.TextContent("Bilinear Filtering", "Blend between pixels on the texture.", null, null);
+            public GUIContent textureUVChannel = L10n.TextContent("UV Channel", "Use the selected UV channel from the source mesh, for reading the texture.", null, null);
+            public GUIContent alignToDirection = L10n.TextContent("Align To Direction", "Automatically align particles based on their initial direction of travel.", null, null);
+            public GUIContent randomDirectionAmount = L10n.TextContent("Randomize Direction", "Override the initial direction of travel with a random direction.", null, null);
+            public GUIContent sphericalDirectionAmount = L10n.TextContent("Spherize Direction", "Override the initial direction of travel with a direction that projects particles outwards from the center of the Shape Transform.", null, null);
+            public GUIContent randomPositionAmount = L10n.TextContent("Randomize Position", "Move the starting positions by a random amount, up to this maximum value.", null, null);
+            public GUIContent emitFrom = L10n.TextContent("Emit from:", "Specifies from where particles are emitted.", null, null);
+            public GUIContent donutRadius = L10n.TextContent("Donut Radius", "The radius of the donut. Used to control the thickness of the ring.", null, null);
+            public GUIContent position = L10n.TextContent("Position", "Translate the emission shape.", null, null);
+            public GUIContent rotation = L10n.TextContent("Rotation", "Rotate the emission shape.", null, null);
+            public GUIContent scale = L10n.TextContent("Scale", "Scale the emission shape.", null, null);
+            public GUIContent sceneTools = L10n.TextContent("Scene Tools", null, null, null);
 
             public readonly string undoSphereThickness = L10n.Tr("Sphere Thickness Handle Change", null);
             public readonly string undoSphere = L10n.Tr("Sphere Handle Change", null);
@@ -269,62 +269,62 @@ namespace UnityEditor
 
             public GUIContent[] shapeTypes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Sphere"),
-                EditorGUIUtility.TrTextContent("Hemisphere"),
-                EditorGUIUtility.TrTextContent("Cone"),
-                EditorGUIUtility.TrTextContent("Donut"),
-                EditorGUIUtility.TrTextContent("Box"),
-                EditorGUIUtility.TrTextContent("Mesh"),
-                EditorGUIUtility.TrTextContent("Mesh Renderer"),
-                EditorGUIUtility.TrTextContent("Skinned Mesh Renderer"),
+                L10n.TextContent("Sphere", null, null, null),
+                L10n.TextContent("Hemisphere", null, null, null),
+                L10n.TextContent("Cone", null, null, null),
+                L10n.TextContent("Donut", null, null, null),
+                L10n.TextContent("Box", null, null, null),
+                L10n.TextContent("Mesh", null, null, null),
+                L10n.TextContent("Mesh Renderer", null, null, null),
+                L10n.TextContent("Skinned Mesh Renderer", null, null, null),
                 EditorGUIUtility.TextContent("Sprite"),
                 EditorGUIUtility.TextContent("Sprite Renderer"),
-                EditorGUIUtility.TrTextContent("Circle"),
-                EditorGUIUtility.TrTextContent("Edge"),
-                EditorGUIUtility.TrTextContent("Rectangle")
+                L10n.TextContent("Circle", null, null, null),
+                L10n.TextContent("Edge", null, null, null),
+                L10n.TextContent("Rectangle", null, null, null)
             };
 
             public GUIContent[] boxTypes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Volume"),
-                EditorGUIUtility.TrTextContent("Shell"),
-                EditorGUIUtility.TrTextContent("Edge")
+                L10n.TextContent("Volume", null, null, null),
+                L10n.TextContent("Shell", null, null, null),
+                L10n.TextContent("Edge", null, null, null)
             };
 
             public GUIContent[] coneTypes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Base"),
-                EditorGUIUtility.TrTextContent("Volume")
+                L10n.TextContent("Base", null, null, null),
+                L10n.TextContent("Volume", null, null, null)
             };
 
             public GUIContent[] meshTypes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Vertex"),
-                EditorGUIUtility.TrTextContent("Edge"),
-                EditorGUIUtility.TrTextContent("Triangle")
+                L10n.TextContent("Vertex", null, null, null),
+                L10n.TextContent("Edge", null, null, null),
+                L10n.TextContent("Triangle", null, null, null)
             };
 
             public GUIContent[] emissionModes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Random"),
-                EditorGUIUtility.TrTextContent("Loop"),
-                EditorGUIUtility.TrTextContent("Ping-Pong"),
-                EditorGUIUtility.TrTextContent("Burst Spread")
+                L10n.TextContent("Random", null, null, null),
+                L10n.TextContent("Loop", null, null, null),
+                L10n.TextContent("Ping-Pong", null, null, null),
+                L10n.TextContent("Burst Spread", null, null, null)
             };
 
             public GUIContent[] emissionModesMesh = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Random"),
-                EditorGUIUtility.TrTextContent("Loop"),
-                EditorGUIUtility.TrTextContent("Ping-Pong")
+                L10n.TextContent("Random", null, null, null),
+                L10n.TextContent("Loop", null, null, null),
+                L10n.TextContent("Ping-Pong", null, null, null)
             };
 
             public GUIContent[] textureClipChannels = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Red"),
-                EditorGUIUtility.TrTextContent("Green"),
-                EditorGUIUtility.TrTextContent("Blue"),
-                EditorGUIUtility.TrTextContent("Alpha")
+                L10n.TextContent("Red", null, null, null),
+                L10n.TextContent("Green", null, null, null),
+                L10n.TextContent("Blue", null, null, null),
+                L10n.TextContent("Alpha", null, null, null)
             };
         }
 
@@ -575,7 +575,7 @@ namespace UnityEditor
                                 int tintColorName = Shader.PropertyToID("_TintColor");
                                 if (!material.HasProperty(colorName) && !material.HasProperty(tintColorName) && !srcMesh.HasVertexAttribute(VertexAttribute.Color))
                                 {
-                                    GUIContent warning = EditorGUIUtility.TrTextContent("To use mesh colors, your source mesh must either provide vertex colors, or its shader must contain a color property named \"_Color\" or \"_TintColor\".");
+                                    GUIContent warning = L10n.TextContent("To use mesh colors, your source mesh must either provide vertex colors, or its shader must contain a color property named \"_Color\" or \"_TintColor\".", null, null, null);
                                     EditorGUILayout.HelpBox(warning.text, MessageType.Warning, true);
                                 }
                             }
@@ -693,8 +693,8 @@ namespace UnityEditor
                 if (!InternalEditorUtility.IsReadOnlyAsset(texturePath, out var isEngineAsset))
                 {
                     if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System's Texture. The Particle System requires it to access Texture data at runtime."),
-                        EditorGUIUtility.TrTextContent("Enable")))
+                        L10n.TextContent("Read/Write is disabled on the Particle System's Texture. The Particle System requires it to access Texture data at runtime.", null, null, null),
+                        L10n.TextContent("Enable", null, null, null)))
                     {
                         InternalEditorUtility.ImportTextureAsReadable(texture);
                     }
@@ -704,8 +704,8 @@ namespace UnityEditor
                     var advice = isEngineAsset ? $"'{texture.name}' is an engine asset and cannot be modified nor copied. It is recommended to choose another asset." : "Modify a copy of the Texture because it is not editable.";
 
                     if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent($"Read/Write is disabled on the Particle System's Texture. The Particle System requires it to access Texture data at runtime. {advice}"),
-                        EditorGUIUtility.TrTextContent("View")))
+                        L10n.TextContent($"Read/Write is disabled on the Particle System's Texture. The Particle System requires it to access Texture data at runtime. {advice}", null, null, null),
+                        L10n.TextContent("View", null, null, null)))
                     {
                         Selection.objects = new UnityEngine.Object[] { texture };
                     }
@@ -728,8 +728,8 @@ namespace UnityEditor
                 if (InternalEditorUtility.CanMeshBeModifiedFromCode(meshPath))
                 {
                     if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System Shape Module's Mesh."),
-                        EditorGUIUtility.TrTextContent("Enable")))
+                        L10n.TextContent("Read/Write is disabled on the Particle System Shape Module's Mesh.", null, null, null),
+                        L10n.TextContent("Enable", null, null, null)))
                     {
                         InternalEditorUtility.ImportMeshAsReadable(mesh);
                     }
@@ -737,8 +737,8 @@ namespace UnityEditor
                 else
                 {
                     if (InternalEditorUtility.DrawWarningHelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent("Read/Write is disabled on the Particle System Shape Module's Mesh."),
-                        EditorGUIUtility.TrTextContent("View")))
+                        L10n.TextContent("Read/Write is disabled on the Particle System Shape Module's Mesh.", null, null, null),
+                        L10n.TextContent("View", null, null, null)))
                     {
                         Selection.objects = new UnityEngine.Object[] { mesh };
                     }

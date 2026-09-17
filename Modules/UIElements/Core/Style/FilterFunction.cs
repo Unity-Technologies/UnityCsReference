@@ -389,6 +389,31 @@ namespace UnityEngine.UIElements
             return FilterFunctionDefinitionUtils.GetBuiltinDefinition(m_Type);
         }
 
+        // Clamping happens at consumption (margins/settings callbacks), not at parse or data entry,
+        // so an out-of-range specified value (e.g. blur(10000) from USS) can't hang the GPU (UUM-134044).
+        internal FilterFunction GetClampedToDefinition()
+        {
+            var def = GetDefinition();
+            var declarations = def != null ? def.parameters : null;
+            if (declarations == null)
+                return this;
+
+            var result = this;
+            int count = Math.Min(m_ParameterCount, declarations.Length);
+            for (int i = 0; i < count; ++i)
+            {
+                var p = m_Parameters[i];
+                if (p.type != FilterParameterType.Float)
+                    continue;
+
+                float clamped = declarations[i].ClampFloat(p.floatValue);
+                if (clamped != p.floatValue)
+                    result.m_Parameters[i] = new FilterParameter(clamped);
+            }
+
+            return result;
+        }
+
         /// <undoc/>
         public static bool operator==(FilterFunction lhs, FilterFunction rhs)
         {

@@ -18,13 +18,13 @@ namespace UnityEditor.UIElements
         const string k_ToggleText = "Generate Accessibility Hierarchies for Runtime Panels";
         const string k_ToggleTooltip =
             "Automatically generate and keep in sync the accessibility hierarchies that screen readers use to read " +
-            "and operate runtime UI Toolkit content. Applies in Play mode and ships with player builds.";
+            "and operate runtime screen-space UI Toolkit content. Applies in Play mode and ships with player builds.";
         const string k_HelpText =
             "When enabled, UI Toolkit automatically generates and maintains accessibility hierarchies visible to " +
-            "screen readers for the runtime panels of the application's main window. Individual UI Document and " +
-            "Panel Renderer components can be opted out in their Inspector. The generated hierarchy can be inspected " +
-            "in the Accessibility Hierarchy Viewer during Play mode.\n\nThis feature is supported on Android, iOS, " +
-            "macOS, and Windows. It is experimental and not ready for production use.";
+            "screen readers for the screen-space runtime panels of the application's main window. Individual UI " +
+            "Document and Panel Renderer components can be opted out in their Inspector. The generated hierarchy can " +
+            "be inspected in the Accessibility Hierarchy Viewer during Play mode.\n\nThis feature is supported on " +
+            "Android, iOS, macOS, and Windows. It is experimental and not ready for production use.";
         const string k_HelpButtonText = "Open Accessibility Hierarchy Viewer";
         const string k_HierarchyViewerMenuPath = "Window/Accessibility/Hierarchy Viewer";
 

@@ -783,6 +783,21 @@ namespace UnityEngine
             get { return SupportsIndirectArgumentsBuffer(); }
         }
 
+        public static bool supportsMultiDrawIndirect
+        {
+            get { return SupportsMultiDrawIndirect(); }
+        }
+
+        public static bool supportsMultiDrawIndirectCountBuffer
+        {
+            get { return SupportsMultiDrawIndirectCountBuffer(); }
+        }
+
+        public static uint maxDrawIndirectCount
+        {
+            get { return MaxDrawIndirectCount(); }
+        }
+
         public static bool supportsDepthFetchInRenderPass
         {
             get { return SupportsDepthFetchInRenderPass(); }
@@ -1165,6 +1180,15 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsIndirectArgumentsBuffer")]
         static extern bool SupportsIndirectArgumentsBuffer();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultiDrawIndirect")]
+        static extern bool SupportsMultiDrawIndirect();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultiDrawIndirectCountBuffer")]
+        static extern bool SupportsMultiDrawIndirectCountBuffer();
+
+        [FreeFunction("ScriptingGraphicsCaps::MaxDrawIndirectCount")]
+        static extern uint MaxDrawIndirectCount();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsDepthFetchInRenderPass")]
         static extern bool SupportsDepthFetchInRenderPass();

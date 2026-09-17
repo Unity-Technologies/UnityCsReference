@@ -29,6 +29,7 @@ namespace UnityEditor
             base.OnEnable();
         }
 
+
         internal override void PostSerializedObjectCreation()
         {
             if(tabs != null)

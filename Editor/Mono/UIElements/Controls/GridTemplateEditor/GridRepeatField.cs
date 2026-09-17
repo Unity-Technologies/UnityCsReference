@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,9 +10,11 @@ using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.UIElements
 {
-    [NoAutoStaticsCleanup] // Immutable repeat-mode lookup table; safe to persist across reloads.
     internal class GridRepeatField : VisualElement
     {
+        // Immutable repeat-mode lookup table, built once from enum literals; holds no reloadable
+        // references, so it is safe to keep for the process.
+        [NoAutoStaticsCleanup]
         static readonly List<GridTemplateRepeatMode> k_Modes = new()
         {
             GridTemplateRepeatMode.None, GridTemplateRepeatMode.AutoFill,
@@ -118,4 +119,3 @@ namespace UnityEditor.UIElements
         public static readonly string ussClassName = "grid-repeat-field";
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -226,6 +226,11 @@ namespace UnityEngine
         }
 
         extern public LODGroup LODGroup { get; }
+
+        extern public uint lodGroupMask
+        {
+            [FreeFunction(Name = "RendererScripting::GetLODGroupMask", HasExplicitThis = true)] get;
+        }
     }
 
     [global::UnityEngine.NativeClass("TrailRenderer", PersistentTypeId = 96)]

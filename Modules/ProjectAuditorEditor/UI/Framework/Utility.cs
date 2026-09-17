@@ -98,7 +98,10 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         [NoAutoStaticsCleanup] // Lazily loaded from asset database by fixed name; survives code reload
         static Texture2D s_FoldoutFoldedIcon;
 
-        [AutoStaticsCleanupOnCodeReload]
+        // Spinner icon frames: 12 fixed built-in WaitSpin icons (strings + native-backed textures, nothing
+        // reloadable), safe to keep across code reloads like the other icon caches in this class. Clearing
+        // it instead made GetIcon's return value trip UAL0018 at every call site that stores the result.
+        [NoAutoStaticsCleanup]
         static GUIContent[] s_StatusWheel;
 
         [NoAutoStaticsCleanup]
@@ -108,11 +111,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         [NoAutoStaticsCleanup]
         static GUIContent s_TempContent;
 
-        public static readonly GUIContent ClearSelection = EditorGUIUtility.TrTextContent("Clear Selection");
-        public static readonly GUIContent CopyRowToClipboard = EditorGUIUtility.TrTextContent("Copy Row(s) to Clipboard");
-        public static readonly GUIContent CopyCellToClipboard = EditorGUIUtility.TrTextContent("Copy Column Item(s) to Clipboard");
-        public static readonly GUIContent OpenIssue = EditorGUIUtility.TrTextContent("Open Issue");
-        public static readonly GUIContent OpenScriptReference = EditorGUIUtility.TrTextContent("Open Script Reference");
+        public static readonly GUIContent ClearSelection = L10n.TextContent("Clear Selection", null, null, null);
+        public static readonly GUIContent CopyRowToClipboard = L10n.TextContent("Copy Row(s) to Clipboard", null, null, null);
+        public static readonly GUIContent CopyCellToClipboard = L10n.TextContent("Copy Column Item(s) to Clipboard", null, null, null);
+        public static readonly GUIContent OpenIssue = L10n.TextContent("Open Issue", null, null, null);
+        public static readonly GUIContent OpenScriptReference = L10n.TextContent("Open Script Reference", null, null, null);
 
         internal class DropdownItem
         {
@@ -248,15 +251,15 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 case IconType.Info:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Info";
-                    return EditorGUIUtility.TrIconContent(k_InfoIconName, tooltip);
+                    return L10n.IconContent(k_InfoIconName, tooltip, null);
                 case IconType.Warning:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Warning";
-                    return EditorGUIUtility.TrIconContent(k_WarningIconName, tooltip);
+                    return L10n.IconContent(k_WarningIconName, tooltip, null);
                 case IconType.Error:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Error";
-                    return EditorGUIUtility.TrIconContent(k_ErrorIconName, tooltip);
+                    return L10n.IconContent(k_ErrorIconName, tooltip, null);
 
                 // Severity icons
                 case IconType.Critical:
@@ -264,75 +267,75 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                         tooltip = "Critical";
                     if (s_CriticalIcon == null)
                         s_CriticalIcon = LoadIcon(k_CriticalIconName, "d_");
-                    return EditorGUIUtility.TrIconContent(s_CriticalIcon, tooltip);
+                    return L10n.IconContent(s_CriticalIcon, tooltip, null);
                 case IconType.Major:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Major";
                     if (s_MajorIcon == null)
                         s_MajorIcon = LoadIcon(k_MajorIconName, "d_");
-                    return EditorGUIUtility.TrIconContent(s_MajorIcon, tooltip);
+                    return L10n.IconContent(s_MajorIcon, tooltip, null);
                 case IconType.Moderate:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Moderate";
                     if (s_ModerateIcon == null)
                         s_ModerateIcon = LoadIcon(k_ModerateIconName, "d_");
-                    return EditorGUIUtility.TrIconContent(s_ModerateIcon, tooltip);
+                    return L10n.IconContent(s_ModerateIcon, tooltip, null);
                 case IconType.Minor:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Minor";
                     if (s_MinorIcon == null)
                         s_MinorIcon = LoadIcon(k_MinorIconName, "d_");
-                    return EditorGUIUtility.TrIconContent(s_MinorIcon, tooltip);
+                    return L10n.IconContent(s_MinorIcon, tooltip, null);
                 case IconType.Ignored:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Ignored";
                     if (s_IgnoredIcon == null)
                         s_IgnoredIcon = LoadIcon(k_IgnoredIconName, "d_");
-                    return EditorGUIUtility.TrIconContent(s_IgnoredIcon, tooltip);
+                    return L10n.IconContent(s_IgnoredIcon, tooltip, null);
 
                 case IconType.AdditionalAnalysis:
                     if (string.IsNullOrEmpty(tooltip))
                         tooltip = "Not Analyzed";
                     if (s_AdditionalAnalysisIcon == null)
                         s_AdditionalAnalysisIcon = LoadIcon(k_AdditionalAnalysisIconName, "d_");
-                    return EditorGUIUtility.TrIconContent(s_AdditionalAnalysisIcon, tooltip);
+                    return L10n.IconContent(s_AdditionalAnalysisIcon, tooltip, null);
                 case IconType.FoldoutExpanded:
                     if (s_FoldoutExpandedIcon == null)
                         s_FoldoutExpandedIcon = LoadIcon(k_FoldoutExpandedIconName);
-                    return EditorGUIUtility.TrIconContent(s_FoldoutExpandedIcon);
+                    return L10n.IconContent(s_FoldoutExpandedIcon, null, null);
                 case IconType.FoldoutFolded:
                     if (s_FoldoutFoldedIcon == null)
                         s_FoldoutFoldedIcon = LoadIcon(k_FoldoutFoldedIconName);
-                    return EditorGUIUtility.TrIconContent(s_FoldoutFoldedIcon);
+                    return L10n.IconContent(s_FoldoutFoldedIcon, null, null);
 
                 case IconType.Hierarchy:
-                    return EditorGUIUtility.TrIconContent(k_HierarchyIconName, tooltip);
+                    return L10n.IconContent(k_HierarchyIconName, tooltip, null);
                 case IconType.ZoomTool:
-                    return EditorGUIUtility.TrIconContent(k_ZoomToolIconName, tooltip);
+                    return L10n.IconContent(k_ZoomToolIconName, tooltip, null);
                 case IconType.Fix:
-                    return EditorGUIUtility.TrIconContent(k_FixIconName, tooltip);
+                    return L10n.IconContent(k_FixIconName, tooltip, null);
                 case IconType.Download:
-                    return EditorGUIUtility.TrIconContent(k_DownloadIconName, tooltip);
+                    return L10n.IconContent(k_DownloadIconName, tooltip, null);
                 case IconType.View:
-                    return EditorGUIUtility.TrIconContent(k_ViewIconName, tooltip);
+                    return L10n.IconContent(k_ViewIconName, tooltip, null);
                 case IconType.Help:
-                    return EditorGUIUtility.TrIconContent(k_HelpIconName, tooltip);
+                    return L10n.IconContent(k_HelpIconName, tooltip, null);
                 case IconType.Refresh:
-                    return EditorGUIUtility.TrIconContent(k_RefreshIconName, tooltip);
+                    return L10n.IconContent(k_RefreshIconName, tooltip, null);
                 case IconType.Settings:
-                    return EditorGUIUtility.TrIconContent(k_SettingsIconName, tooltip);
+                    return L10n.IconContent(k_SettingsIconName, tooltip, null);
                 case IconType.Load:
-                    return EditorGUIUtility.TrIconContent(k_LoadIconName, tooltip);
+                    return L10n.IconContent(k_LoadIconName, tooltip, null);
                 case IconType.Save:
-                    return EditorGUIUtility.TrIconContent(k_SaveIconName, tooltip);
+                    return L10n.IconContent(k_SaveIconName, tooltip, null);
                 case IconType.Trash:
-                    return EditorGUIUtility.TrIconContent(k_TrashIconName, tooltip);
+                    return L10n.IconContent(k_TrashIconName, tooltip, null);
                 case IconType.StatusWheel:
                     return GetStatusWheel();
                 case IconType.WhiteCheckMark:
-                    return EditorGUIUtility.TrIconContent(k_WhiteCheckMarkIconName, tooltip);
+                    return L10n.IconContent(k_WhiteCheckMarkIconName, tooltip, null);
                 case IconType.GreenCheckMark:
-                    return EditorGUIUtility.TrIconContent(k_GreenCheckMarkIconName, tooltip);
+                    return L10n.IconContent(k_GreenCheckMarkIconName, tooltip, null);
             }
 
             return null;
@@ -343,7 +346,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             switch (iconType)
             {
                 case IconType.Refresh:
-                    return EditorGUIUtility.TrTextContentWithIcon(displayName, tooltip, k_RefreshIconName);
+                    return L10n.TextContentWithIcon(displayName, tooltip, k_RefreshIconName, null);
             }
 
             return null;
@@ -364,6 +367,28 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        static readonly Color[] k_DarkSkinSeverityColors =
+        [
+            new Color(0.6627f, 0.4118f, 0.9059f),   // Critical
+            new Color(1.0000f, 0.2196f, 0.2078f),   // Major
+            new Color(0.9608f, 0.5059f, 0.0000f),   // Moderate
+            new Color(0.3137f, 0.5843f, 0.7922f),   // Minor
+            new Color(0.6700f, 0.6700f, 0.6700f)    // Ignored
+        ];
+
+        static readonly Color[] k_LightSkinSeverityColors =
+        [
+            new Color(0.5529f, 0.1059f, 0.8706f),   // Critical
+            new Color(0.7020f, 0.1725f, 0.0000f),   // Major
+            new Color(0.8431f, 0.4275f, 0.0000f),   // Moderate
+            new Color(0.2235f, 0.5373f, 0.7725f),   // Minor
+            new Color(0.4300f, 0.4300f, 0.4300f)    // Ignored
+        ];
+
+        public static Color[] GetSeverityColors()
+        {
+            return SharedStyles.IsDarkMode ? k_DarkSkinSeverityColors : k_LightSkinSeverityColors;
+        }
         public static GUIContent GetSeverityIcon(Severity severity)
         {
             switch (severity)
@@ -406,7 +431,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 case Severity.Error:
                     return EditorGUIUtility.TrTextContentWithIcon("Error", k_ErrorIconName);
                 default:
-                    return EditorGUIUtility.TrTextContentWithIcon("Unknown", MessageType.None);
+                    return L10n.TextContentWithIcon("Unknown", MessageType.None, null);
             }
         }
 
@@ -431,7 +456,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public static GUIContent GetTextContentWithAssetIcon(string displayName, string assetPath)
         {
             var icon = AssetDatabase.GetCachedIcon(assetPath);
-            return EditorGUIUtility.TrTextContentWithIcon(displayName, assetPath, icon);
+            return L10n.TextContentWithIcon(displayName, assetPath, icon, null);
         }
 
         static Texture2D LoadIcon(string iconName, string darkModePrefix = "")

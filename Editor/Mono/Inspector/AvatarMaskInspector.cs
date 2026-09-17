@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: MecanimAnimation not yet converted
 using System;
 using UnityEngine;
 using System.Collections.Generic;
@@ -165,27 +164,27 @@ namespace UnityEditor
         private static class Styles
         {
             // Model Importer related options
-            public static readonly GUIContent MaskDefinition = EditorGUIUtility.TrTextContent("Definition", "Choose between Create From This Model, Copy From Other Avatar. The first one creates a Mask for this file and the second one uses a Mask from another file to import animation.");
+            public static readonly GUIContent MaskDefinition = L10n.TextContent("Definition", "Choose between Create From This Model, Copy From Other Avatar. The first one creates a Mask for this file and the second one uses a Mask from another file to import animation.", null, null);
             public static readonly GUIContent[] MaskDefinitionOpt =
             {
-                EditorGUIUtility.TrTextContent("Create From This Model", "Create a Mask based on the model from this file. For Humanoid rig all the human transforms are always imported and converted to muscle curve, thus they cannot be unchecked."),
-                EditorGUIUtility.TrTextContent("Copy From Other Mask", "Copy a Mask from another file to import animation clip."),
-                EditorGUIUtility.TrTextContent("None ", " Import Everything")
+                L10n.TextContent("Create From This Model", "Create a Mask based on the model from this file. For Humanoid rig all the human transforms are always imported and converted to muscle curve, thus they cannot be unchecked.", null, null),
+                L10n.TextContent("Copy From Other Mask", "Copy a Mask from another file to import animation clip.", null, null),
+                L10n.TextContent("None ", " Import Everything", null, null)
             };
-            public static readonly GUIContent CopyFromOtherSource = EditorGUIUtility.TrTextContent("Source", "Select from which AvatarMask the animation should take the mask information");
-            public static readonly GUIContent CreateMask = EditorGUIUtility.TrTextContent("Create Mask", "Create a new mask from this model avatar.");
+            public static readonly GUIContent CopyFromOtherSource = L10n.TextContent("Source", "Select from which AvatarMask the animation should take the mask information", null, null);
+            public static readonly GUIContent CreateMask = L10n.TextContent("Create Mask", "Create a new mask from this model avatar.", null, null);
 
             // Avatar mask options
-            public static readonly GUIContent SelectAvatarReference = EditorGUIUtility.TrTextContent("Use skeleton from", "The selected avatar is never linked here and only used to populate the list of transform.");
-            public static readonly GUIContent ImportAvatarReference = EditorGUIUtility.TrTextContent("Import skeleton", "Generates new transform data based on the selected avatar skeleton");
+            public static readonly GUIContent SelectAvatarReference = L10n.TextContent("Use skeleton from", "The selected avatar is never linked here and only used to populate the list of transform.", null, null);
+            public static readonly GUIContent ImportAvatarReference = L10n.TextContent("Import skeleton", "Generates new transform data based on the selected avatar skeleton", null, null);
 
             // Avatar mask foldouts
-            public static readonly GUIContent BodyMask = EditorGUIUtility.TrTextContent("Humanoid", "Define which body part are active. Also define which animation curves will be imported for an Animation Clip.");
-            public static readonly GUIContent TransformMask = EditorGUIUtility.TrTextContent("Transform", "Define which transform are active. Also define which animation curves will be imported for an Animation Clip.");
+            public static readonly GUIContent BodyMask = L10n.TextContent("Humanoid", "Define which body part are active. Also define which animation curves will be imported for an Animation Clip.", null, null);
+            public static readonly GUIContent TransformMask = L10n.TextContent("Transform", "Define which transform are active. Also define which animation curves will be imported for an Animation Clip.", null, null);
 
             // TreeView columns
-            public static readonly GUIContent TransformName = EditorGUIUtility.TrTextContent("Node Name");
-            public static readonly GUIContent EnableName = EditorGUIUtility.TrTextContent("Use", "Maintain Alt/Option key to enable or disable all children");
+            public static readonly GUIContent TransformName = L10n.TextContent("Node Name", null, null, null);
+            public static readonly GUIContent EnableName = L10n.TextContent("Use", "Maintain Alt/Option key to enable or disable all children", null, null);
         }
 
         //Interpolation strings for foldout settings, both embedded and standalone.
@@ -793,4 +792,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

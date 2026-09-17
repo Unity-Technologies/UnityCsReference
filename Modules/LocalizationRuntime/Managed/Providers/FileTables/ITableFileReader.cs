@@ -17,7 +17,7 @@ namespace Unity.Localization.Providers.FileTables;
 /// <see cref="JsonResourceProvider"/> pairs the default <see cref="JsonTableReader"/> for JSON.
 /// </remarks>
 /// <example>
-/// <para>Add a runtime table format by pairing a reader with a provider.</para>
+/// Add a runtime table format by pairing a reader with a provider.
 /// <code source="../../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Providers/CustomFileTableProviderExample.cs"/>
 /// </example>
 /// <seealso cref="FileTableProvider"/>

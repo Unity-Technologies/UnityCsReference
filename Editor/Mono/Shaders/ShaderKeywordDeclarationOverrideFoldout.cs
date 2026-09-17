@@ -21,8 +21,10 @@ namespace UnityEditor.Shaders
         private VisualElement m_Header;
         private TextField m_KeywordsField;
         private DropdownField m_VariantGenerationModeDropdown;
+        private Label m_VariantGenerationModeLabel;
         private Label m_NumKeywordsLabel;
         private HelpBox m_ErrorBox;
+        private bool m_IsReadOnly;
 
         public ShaderKeywordDeclarationOverrideFoldout() : base()
         {
@@ -61,6 +63,7 @@ namespace UnityEditor.Shaders
             // Register state change callbacks on the UI elements in the header
             m_KeywordsField = m_Header.Q<TextField>("KeywordListField");
             m_VariantGenerationModeDropdown = m_Header.Q<DropdownField>("VariantGenerationModeDropdown");
+            m_VariantGenerationModeLabel = m_Header.Q<Label>("VariantGenerationModeLabel");
             m_NumKeywordsLabel = m_Header.Q<Label>("SelectedKeywordsLabel");
 
             // Collapse foldout by default
@@ -84,6 +87,24 @@ namespace UnityEditor.Shaders
         {
             m_KeywordsField.UnregisterCallback<ChangeEvent<string>>(OnKeywordListChanged);
             m_VariantGenerationModeDropdown.UnregisterCallback<ChangeEvent<string>>(OnVariantGenerationModeDropdownChanged);
+        }
+
+        public void SetVariantGenerationMode(ShaderBuildSettings.ShaderVariantGenerationMode mode)
+        {
+            // The choices are declared in ShaderKeywordDeclarationOverride.uxml in ShaderVariantGenerationMode order.
+            var modeName = m_VariantGenerationModeDropdown.choices[(int)mode];
+            m_VariantGenerationModeDropdown.SetValueWithoutNotify(modeName);
+            m_VariantGenerationModeLabel.text = modeName;
+        }
+
+        // Fast Build resolves the table itself, so the controls would have nowhere to write. The
+        // dropdown is swapped for a label rather than disabled, which would read as access lost.
+        public void SetReadOnly(bool readOnly)
+        {
+            m_IsReadOnly = readOnly;
+            m_KeywordsField.isReadOnly = readOnly;
+            m_VariantGenerationModeDropdown.style.display = readOnly ? DisplayStyle.None : DisplayStyle.Flex;
+            m_VariantGenerationModeLabel.style.display = readOnly ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         public void SetKeywords(ShaderBuildSettings.KeywordOverrideInfo[] keywords)
@@ -121,7 +142,10 @@ namespace UnityEditor.Shaders
                     contentContainer.Add(element);
                 }
                 toggle.userData = i;
+                toggle.SetEnabled(!m_IsReadOnly);
                 toggle.SetValueWithoutNotify(keywords[i].keepInBuild);
+                // Rows are recycled and this runs on every bind, so drop any handler left from the last one.
+                toggle.UnregisterCallback<ChangeEvent<bool>>(OnKeywordIncludedToggleChanged);
                 toggle.RegisterCallback<ChangeEvent<bool>>(OnKeywordIncludedToggleChanged);
 
                 if (keywords[i].keepInBuild)

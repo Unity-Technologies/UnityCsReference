@@ -13,6 +13,41 @@ namespace Unity.U2D.Physics
     /// <summary>
     /// A <see cref="PhysicsBody"/> definition used to specify important initial properties.
     /// </summary>
+    /// <remarks>
+    /// To configure the properties of a physics world and its objects, such as gravity, friction, position, and shape, use definitions. Definitions are objects that store physics properties and values. You create a definition, then pass it into the world, body, or shape you create.
+    /// Definitions optimize physics performance by letting you avoid setting properties after you create a world, body, or shape, which can make the CPU do extra work. Definitions also allow you to pass around and reuse sets of values.
+    /// If a script that holds a definition is in a `MonoBehaviour` class attached to a GameObject and the definition is a `public` field, Unity displays its properties in the Inspector window so you can configure them there instead of in code.
+    /// Because definitions are large `struct` types, pass them into other methods using the `ref` or `in` keyword to avoid the extra memory cost of copying the structure.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Declare a body definition, configure it, then create a body from it.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class CreateObjectsWithDefinitions : MonoBehaviour
+    /// {
+    ///     // Declare a definition with default properties for the body.
+    ///     public PhysicsBodyDefinition bodyDefinition = new PhysicsBodyDefinition();
+    ///
+    ///     void Start()
+    ///     {
+    ///         // Get the default world.
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///
+    ///         // Set the position of the body using the body definition.
+    ///         bodyDefinition.position = new Vector2(0f, 5f);
+    ///
+    ///         // Create the physics body with the body definition.
+    ///         PhysicsBody myObject = world.CreateBody(bodyDefinition);
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsWorldDefinition"/>
+    /// <seealso cref="PhysicsShapeDefinition"/>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]

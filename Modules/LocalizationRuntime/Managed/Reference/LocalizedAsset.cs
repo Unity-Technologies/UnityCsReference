@@ -21,7 +21,7 @@ namespace Unity.Localization;
 /// </remarks>
 /// <typeparam name="TObject">The type of asset to resolve, which must derive from <see cref="UnityEngine.Object"/>.</typeparam>
 /// <example>
-/// <para>Resolve a localized texture and apply it whenever the locale changes.</para>
+/// Resolve a localized texture and apply it whenever the locale changes.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedAssetTextureExample.cs"/>
 /// </example>
 /// <seealso cref="ResourceDatabase"/>
@@ -49,7 +49,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
     /// Removing the last handler stops the reference from listening for locale changes.
     /// </remarks>
     /// <example>
-    /// <para>Swap a texture whenever the localized asset changes.</para>
+    /// Swap a texture whenever the localized asset changes.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedAssetChangedExample.cs"/>
     /// </example>
     /// <seealso cref="RefreshAsset"/>
@@ -137,7 +137,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
     /// </remarks>
     /// <returns>An awaitable that produces the loaded asset, or null when it cannot be resolved.</returns>
     /// <example>
-    /// <para>Load a localized asset.</para>
+    /// Load a localized asset.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedAssetLoadAsyncExample.cs"/>
     /// </example>
     public Awaitable<TObject> GetLocalizedAssetAsync()
@@ -175,7 +175,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
     /// </remarks>
     /// <returns>The resolved asset, or null when it cannot be resolved synchronously.</returns>
     /// <example>
-    /// <para>Read a localized asset synchronously.</para>
+    /// Read a localized asset synchronously.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedAssetSyncExample.cs"/>
     /// </example>
     public TObject GetLocalizedAsset()
@@ -196,7 +196,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
     /// when an external input requires a reload.
     /// </remarks>
     /// <example>
-    /// <para>Force a reload of the localized asset.</para>
+    /// Force a reload of the localized asset.
     /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedAssetRefreshExample.cs"/>
     /// </example>
     public void RefreshAsset()
@@ -267,7 +267,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
 /// can be serialized and shown in the Inspector.
 /// </remarks>
 /// <example>
-/// <para>Load a localized texture.</para>
+/// Load a localized texture.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedTextureExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedAsset{TObject}"/>
@@ -283,7 +283,7 @@ public partial class LocalizedTexture : LocalizedAsset<Texture> { }
 /// so it can be serialized and shown in the Inspector.
 /// </remarks>
 /// <example>
-/// <para>Load a localized prefab.</para>
+/// Load a localized prefab.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedGameObjectExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedAsset{TObject}"/>
@@ -300,7 +300,7 @@ public partial class LocalizedGameObject : LocalizedAsset<GameObject> { }
 /// type such as <see cref="LocalizedTexture"/>.
 /// </remarks>
 /// <example>
-/// <para>Load a localized asset of an unknown type.</para>
+/// Load a localized asset of an unknown type.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedObjectExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedAsset{TObject}"/>
@@ -316,7 +316,7 @@ public partial class LocalizedObject : LocalizedAsset<Object> { }
 /// be serialized and shown in the Inspector. Prefer it over <see cref="LocalizedTexture"/> for UI images, which take a sprite.
 /// </remarks>
 /// <example>
-/// <para>Load a localized sprite.</para>
+/// Load a localized sprite.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedSpriteExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedAsset{TObject}"/>
@@ -332,7 +332,7 @@ public partial class LocalizedSprite : LocalizedAsset<Sprite> { }
 /// can be serialized and shown in the Inspector.
 /// </remarks>
 /// <example>
-/// <para>Load a localized material.</para>
+/// Load a localized material.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedMaterialExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedAsset{TObject}"/>
@@ -349,10 +349,26 @@ public partial class LocalizedMaterial : LocalizedAsset<Material> { }
 /// script needs.
 /// </remarks>
 /// <example>
-/// <para>Load a localized font.</para>
+/// Load a localized font.
 /// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedFontExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizedAsset{TObject}"/>
 /// <seealso cref="ResourceDatabase"/>
 [Serializable]
 public partial class LocalizedFont : LocalizedAsset<Font> { }
+
+/// <summary>
+/// A serializable reference to a localized audio clip asset.
+/// </summary>
+/// <remarks>
+/// A <see cref="LocalizedAudioClip"/> is a <see cref="LocalizedAsset{TObject}"/> specialized for <see cref="AudioClip"/>, so
+/// it can be serialized and shown in the Inspector. Use it for voice-over lines or any sound recorded per language.
+/// </remarks>
+/// <example>
+/// Load a localized audio clip.
+/// <code source="../../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Reference/LocalizedAudioClipExample.cs"/>
+/// </example>
+/// <seealso cref="LocalizedAsset{TObject}"/>
+/// <seealso cref="ResourceDatabase"/>
+[Serializable]
+public partial class LocalizedAudioClip : LocalizedAsset<AudioClip> { }

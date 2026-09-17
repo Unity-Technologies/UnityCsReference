@@ -22,10 +22,12 @@ namespace Unity.GraphToolkit.Editor
         static readonly CustomStyleProperty<float> s_TransitionPaddingProperty = new("--wire-padding");
         [NoAutoStaticsCleanup] // CSS custom property descriptor; value is a fixed CSS property name
         static readonly CustomStyleProperty<Color> s_TransitionColorProperty = new("--wire-color");
+        [NoAutoStaticsCleanup] // CSS custom property descriptor; value is a fixed CSS property name
+        static readonly CustomStyleProperty<Color> s_TransitionHighlightColorProperty = new("--wire-highlight-color");
 
         static readonly float k_DefaultPadding = 10.0f;
 
-        protected Transition m_Transition;
+        protected TransitionView m_Transition;
 
         // The points that will be rendered. Expressed in coordinates local to the element.
         protected Vector2[] m_ControlPoints = new Vector2[4];
@@ -53,17 +55,26 @@ namespace Unity.GraphToolkit.Editor
         static readonly float k_LineSelectionPadding = 7.5f;
 
         const float k_MinWireWidth = 1.75f;
+        const float k_DashLength = 10f;
+        const float k_GapLength = 6f;
 
         float m_Zoom = 1.0f;
 
-        protected Color m_Color = Color.grey;
-        protected bool m_ColorOverridden;
+        Color? m_ColorOverride;
+        Color? m_ModelColor;
 
-        protected float m_LineWidth = WireUtilities.DefaultWireWidth;
-        protected bool m_WidthOverridden;
+        // The highlight color the style sheet resolves under :hover and :checked.
+        Color m_StyleHighlightColor;
+        bool m_StyleHighlightColorSet;
 
-        protected float m_Padding = k_DefaultPadding;
-        protected bool m_PaddingOverridden;
+        float? m_LineWidthOverride;
+        float? m_ModelWidth;
+
+        float? m_PaddingOverride;
+
+        bool? m_IsDashedOverride;
+
+        protected float m_OpacityMultiplier = 1f;
 
         protected float StyleLineWidth { get; set; } = WireUtilities.DefaultWireWidth;
 
@@ -89,56 +100,139 @@ namespace Unity.GraphToolkit.Editor
         Vector2 To => m_Transition.GetTo();
 
         /// <summary>
-        /// The color of the wire.
+        /// The color of the wire: the override when one is set, else the model color, else the USS value.
         /// </summary>
-        public Color Color
-        {
-            get => m_Color;
-            set
-            {
-                m_ColorOverridden = true;
-
-                if (m_Color != value)
-                {
-                    m_Color = value;
-                    MarkDirtyRepaint();
-                }
-            }
-        }
+        public Color Color => m_ColorOverride ?? m_ModelColor ?? StyleColor;
 
         /// <summary>
-        /// The width of the wire.
+        /// The wire color override. Set to null to fall back to <see cref="ModelColor"/> or the USS value.
         /// </summary>
-        public float LineWidth
+        public Color? ColorOverride
         {
-            get => m_LineWidth;
+            get => m_ColorOverride;
             set
             {
-                m_WidthOverridden = true;
-
-                if (Math.Abs(m_LineWidth - value) < 0.05)
+                if (m_ColorOverride == value)
                     return;
 
-                m_LineWidth = value;
-                UpdateLayout(); // The layout depends on the wires width
+                m_ColorOverride = value;
                 MarkDirtyRepaint();
             }
         }
 
         /// <summary>
-        /// The length of the line coming straight out of the node.
+        /// The wire color read from the transition model, used when no <see cref="ColorOverride"/> is set. Set to null
+        /// to fall back to the USS value.
         /// </summary>
-        public float Padding
+        public Color? ModelColor
         {
-            get => m_Padding;
+            get => m_ModelColor;
             set
             {
-                m_PaddingOverridden = true;
-
-                if (Math.Abs(m_Padding - value) < 0.05)
+                if (m_ModelColor == value)
                     return;
 
-                m_Padding = value;
+                m_ModelColor = value;
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// The width of the wire: the override when one is set, else the model width, else the USS value.
+        /// </summary>
+        public float LineWidth => m_LineWidthOverride ?? m_ModelWidth ?? StyleLineWidth;
+
+        /// <summary>
+        /// The wire width override. Set to null to fall back to <see cref="ModelWidth"/> or the USS value.
+        /// </summary>
+        public float? LineWidthOverride
+        {
+            get => m_LineWidthOverride;
+            set
+            {
+                if (m_LineWidthOverride == value)
+                    return;
+
+                m_LineWidthOverride = value;
+                UpdateLayout(); // The layout depends on the wire's width
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// The wire width read from the transition model, used when no <see cref="LineWidthOverride"/> is set. Set to
+        /// null to fall back to the USS value.
+        /// </summary>
+        public float? ModelWidth
+        {
+            get => m_ModelWidth;
+            set
+            {
+                if (m_ModelWidth == value)
+                    return;
+
+                m_ModelWidth = value;
+                UpdateLayout(); // The layout depends on the wire's width
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// Whether the wire is drawn with a dashed pattern: the override when one is set, else the model value.
+        /// </summary>
+        public bool IsDashed => m_IsDashedOverride ?? (m_Transition?.WireModel?.IsDashed ?? false);
+
+        /// <summary>
+        /// The dashed state override. Set to null to fall back to the model value.
+        /// </summary>
+        public bool? IsDashedOverride
+        {
+            get => m_IsDashedOverride;
+            set
+            {
+                if (m_IsDashedOverride == value)
+                    return;
+
+                m_IsDashedOverride = value;
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// The opacity multiplier of the wire.
+        /// </summary>
+        /// <remarks>The opacity multiplier is clamped to the [0, 1] range</remarks>
+        public float OpacityMultiplier
+        {
+            get => m_OpacityMultiplier;
+            set
+            {
+                var clampedValue = Mathf.Clamp01(value);
+                if (Mathf.Approximately(m_OpacityMultiplier, clampedValue))
+                    return;
+
+                m_OpacityMultiplier = clampedValue;
+                MarkDirtyRepaint();
+            }
+        }
+
+        /// <summary>
+        /// The length of the line coming straight out of the node: the override when one is set, else the USS value.
+        /// </summary>
+        public float Padding => m_PaddingOverride ?? StylePadding;
+
+        /// <summary>
+        /// The padding override. Set to null to fall back to the USS value.
+        /// </summary>
+        public float? PaddingOverride
+        {
+            get => m_PaddingOverride;
+            set
+            {
+                if (m_PaddingOverride == value)
+                    return;
+
+                m_PaddingOverride = value;
                 UpdateLayout();
                 MarkDirtyRepaint();
             }
@@ -150,10 +244,16 @@ namespace Unity.GraphToolkit.Editor
         public TransitionArrow TransitionArrow { get; set; }
 
         /// <summary>
+        /// The gradient flow animator that drives this transition's line sweep, owned by the parent <see cref="TransitionView"/>
+        /// so its arrow shares the same clock.
+        /// </summary>
+        internal GradientFlowAnimator FlowAnimator => m_Transition.FlowAnimator;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TransitionControl"/> class.
         /// </summary>
         /// <param name="transition">The transition this control is attached to.</param>
-        public TransitionControl(Transition transition)
+        public TransitionControl(TransitionView transition)
         {
             m_Transition = transition;
             generateVisualContent += OnGenerateVisualContent;
@@ -163,34 +263,34 @@ namespace Unity.GraphToolkit.Editor
 
         void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
-            if (e.customStyle.TryGetValue(s_TransitionWidthProperty, out var wireWidthValue))
-                StyleLineWidth = wireWidthValue;
-
-            if (e.customStyle.TryGetValue(s_TransitionColorProperty, out var wireColorValue))
-                StyleColor = wireColorValue;
-
-            if (e.customStyle.TryGetValue(s_TransitionPaddingProperty, out var paddingValue))
-                StylePadding = paddingValue;
-
             var updateLayout = false;
             var repaint = false;
-            if (!m_WidthOverridden)
+
+            if (e.customStyle.TryGetValue(s_TransitionWidthProperty, out var wireWidthValue))
             {
-                m_LineWidth = StyleLineWidth;
-                updateLayout = true; // The layout depends on the wires width
+                StyleLineWidth = wireWidthValue;
+                updateLayout = true; // The layout depends on the wire's width
                 repaint = true;
             }
 
-            if (!m_ColorOverridden)
+            if (e.customStyle.TryGetValue(s_TransitionColorProperty, out var wireColorValue))
             {
-                m_Color = StyleColor;
+                StyleColor = wireColorValue;
                 repaint = true;
             }
 
-            if (!m_PaddingOverridden)
+            if (e.customStyle.TryGetValue(s_TransitionPaddingProperty, out var paddingValue))
             {
-                m_Padding = StylePadding;
+                StylePadding = paddingValue;
                 updateLayout = true;
+                repaint = true;
+            }
+
+            var highlightColorSet = e.customStyle.TryGetValue(s_TransitionHighlightColorProperty, out var highlightColorValue);
+            if (highlightColorSet != m_StyleHighlightColorSet || m_StyleHighlightColor != highlightColorValue)
+            {
+                m_StyleHighlightColorSet = highlightColorSet;
+                m_StyleHighlightColor = highlightColorValue;
                 repaint = true;
             }
 
@@ -201,36 +301,19 @@ namespace Unity.GraphToolkit.Editor
                 MarkDirtyRepaint();
         }
 
-        /// <summary>
-        /// Resets the line width to the default value.
-        /// </summary>
-        public void ResetLineWidth()
-        {
-            m_WidthOverridden = false;
-            m_LineWidth = StyleLineWidth;
-        }
-
-        /// <summary>
-        /// Resets the color to the default value.
-        /// </summary>
-        public void ResetColor()
-        {
-            m_ColorOverridden = false;
-            Color = StyleColor;
-        }
-
-        /// <summary>
-        /// Resets the padding to the default value.
-        /// </summary>
-        public void ResetPadding()
-        {
-            m_PaddingOverridden = false;
-            Padding = StylePadding;
-        }
-
         void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
             DrawWire(mgc);
+        }
+
+        Color ResolveColor()
+        {
+            return m_StyleHighlightColorSet ? m_StyleHighlightColor : Color;
+        }
+
+        float ResolveOpacity()
+        {
+            return !Mathf.Approximately(m_OpacityMultiplier, 1f) ? m_OpacityMultiplier : m_Transition.WireModel.Opacity;
         }
 
         /// <inheritdoc />
@@ -386,18 +469,29 @@ namespace Unity.GraphToolkit.Editor
             if (LineWidth <= 0)
                 return;
 
-            Color color = Color;
+            var color = ResolveColor();
 
             color *= this.GetPlayModeTintColor();
 
             var painter2D = mgc.painter2D;
 
+            if (IsDashed)
+                painter2D.SetDashPattern(k_DashLength, k_GapLength);
+
             float width = LineWidth;
-            if (LineWidth * Zoom < k_MinWireWidth)
+
+            if (width * Zoom < k_MinWireWidth)
                 width = k_MinWireWidth / Zoom;
 
+            color.a *= ResolveOpacity();
+
             painter2D.BeginPath();
-            painter2D.strokeColor = color;
+
+            if (FlowAnimator.IsAnimating)
+                painter2D.strokeGradient = FlowAnimator.BuildStrokeGradient(color, color, color.a);
+            else
+                painter2D.strokeColor = color;
+
             painter2D.miterLimit = 2;
 
             painter2D.lineWidth = width;
@@ -408,6 +502,16 @@ namespace Unity.GraphToolkit.Editor
                     painter2D.LineTo(parent.ChangeCoordinatesTo(this, m_ControlPoints[i]));
 
             painter2D.Stroke();
+        }
+
+        internal class TestAccess
+        {
+            readonly TransitionControl m_TransitionControl;
+            public TestAccess(TransitionControl transitionControl) { m_TransitionControl = transitionControl; }
+
+            public Color ResolveColor() => m_TransitionControl.ResolveColor();
+            public float ResolveOpacity() => m_TransitionControl.ResolveOpacity();
+            public bool IsHighlighted => m_TransitionControl.m_StyleHighlightColorSet;
         }
     }
 }

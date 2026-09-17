@@ -150,6 +150,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
     static partial class DuplicateKeyChecker
     {
         [AutoStaticsCleanupOnCodeReload] // keys re-registered on reload; old keys would cause false-positive duplicate exceptions
+        // Duplicate-key guard set: keys are added as repositories register them, so the set cleared on reload
+        // refills as those registrations happen again (and stale keys would report false duplicates).
+        [IgnoreForUAL0015("Duplicate-key guard set refilled as repository keys are registered again")]
         static HashSet<string> RuntimeCheckOfNonDuplicateKeys = new HashSet<string>();
 
         public static void Clear()

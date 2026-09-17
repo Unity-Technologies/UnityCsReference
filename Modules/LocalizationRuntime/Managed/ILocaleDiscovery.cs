@@ -19,7 +19,7 @@ namespace Unity.Localization;
 /// that only serve the locales shipped with the project do not need this interface.
 /// </remarks>
 /// <example>
-/// <para>Discover locales from installed data files and register each one at startup.</para>
+/// Discover locales from installed data files and register each one at startup.
 /// <code source="../../../Modules/LocalizationRuntime/Tests/UTFTests/Localization.Samples/Components/DiskLocaleProviderExample.cs"/>
 /// </example>
 /// <seealso cref="LocalizationSettings"/>

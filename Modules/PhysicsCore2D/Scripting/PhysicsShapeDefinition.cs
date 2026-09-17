@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.Serialization;
 using static Unity.U2D.Physics.Scripting2D;
 
 namespace Unity.U2D.Physics
@@ -13,10 +14,36 @@ namespace Unity.U2D.Physics
     /// <summary>
     /// A <see cref="PhysicsShape"/> definition used to specify important initial properties.
     /// </summary>
+    /// <remarks>
+    /// For more information about definitions, refer to <see cref="PhysicsBodyDefinition"/>.
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // Create a shape definition, configure its density, then create a shape from it.
+    /// using UnityEngine;
+    /// using Unity.U2D.Physics;
+    ///
+    /// public class ShapeDefinitionExample : MonoBehaviour
+    /// {
+    ///     void Start()
+    ///     {
+    ///         PhysicsWorld world = PhysicsWorld.defaultWorld;
+    ///         PhysicsBody myBody = world.CreateBody();
+    ///
+    ///         PhysicsShapeDefinition shapeDefinition = new PhysicsShapeDefinition();
+    ///         shapeDefinition.density = 5f;
+    ///         PhysicsShape shape = myBody.CreateShape(new CircleGeometry { radius = 1.5f }, shapeDefinition);
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <seealso cref="PhysicsBodyDefinition"/>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [MovedFrom(autoUpdateAPI: ScriptUpdateConstants.AutoUpdateAPI, sourceNamespace: ScriptUpdateConstants.SourceNamespace, sourceAssembly: ScriptUpdateConstants.SourceAssembly)]
-    public record struct PhysicsShapeDefinition
+    public partial record struct PhysicsShapeDefinition
     {
         /// <summary>
         /// Create a default <see cref="PhysicsShape"/> definition.
@@ -80,12 +107,15 @@ namespace Unity.U2D.Physics
         public bool contactFilterCallbacks { readonly get => m_ContactFilterCallbacks; set => m_ContactFilterCallbacks = value; }
 
         /// <summary>
-        /// Controls whether this shape produces pre-solve callbacks.
+        /// Controls whether this shape produces pre-contact and pre-continuous callbacks.
         /// This only applies to Dynamic bodies and is ignored for triggers.
         /// These are relatively expensive so disabling them can provide a significant performance benefit.
-        /// A pre-solve callback will call the <see cref="PhysicsShape.callbackTarget"/> for both shapes involved if they implement <see cref="PhysicsCallbacks.IPreSolveCallback"/>.
         /// </summary>
-        public bool preSolveCallbacks { readonly get => m_PreSolveCallbacks; set => m_PreSolveCallbacks = value; }
+        /// <remarks>
+        /// A pre-contact callback calls the <see cref="PhysicsShape.callbackTarget"/> if it implements <see cref="PhysicsCallbacks.IPreContactCallback"/>, and a pre-continuous callback if it implements <see cref="PhysicsCallbacks.IPreContinuousCallback"/>.
+        /// The deprecated <see cref="PhysicsCallbacks.IPreSolveCallback"/> is also driven by this switch, for targets that only implement it.
+        /// </remarks>
+        public bool preContactCallbacks { readonly get => m_PreContactCallbacks; set => m_PreContactCallbacks = value; }
 
         /// <summary>
         /// Normally shapes on Static bodies don't create contacts when they are added to the world.
@@ -137,7 +167,7 @@ namespace Unity.U2D.Physics
         [SerializeField] bool m_ContactEvents;
         [SerializeField] bool m_HitEvents;
         [SerializeField] bool m_ContactFilterCallbacks;
-        [SerializeField] bool m_PreSolveCallbacks;
+        [SerializeField] [FormerlySerializedAs("m_PreSolveCallbacks")] bool m_PreContactCallbacks;
         [SerializeField] bool m_StartStaticContacts;
         [SerializeField] bool m_StartMassUpdate;
         [SerializeField] bool m_WorldDrawing;

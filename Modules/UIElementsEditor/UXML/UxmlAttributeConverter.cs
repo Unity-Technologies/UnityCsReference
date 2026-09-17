@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitFramework not yet converted
-#pragma warning disable UAL0010,UAL0011,UAL0012,UAL0013,UAL0014 // AutoStaticsCleanup: UIToolkitFramework not yet converted
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -85,10 +83,19 @@ namespace UnityEditor.UIElements
     internal static partial class UxmlAttributeConverter
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Rebuilt from scratch on every code load by the [OnCodeLoaded] Initialize() scan below, and
+        // TryGetConverterType re-adds the derived enum/List/array entries on the next miss.
+        [IgnoreForUAL0015("Rebuilt on every code load by [OnCodeLoaded] Initialize() and re-filled on demand")]
         private static Dictionary<Type, Type> s_RegisteredConverterTypes = new();
-        [NoAutoStaticsCleanup]
-        private static readonly Dictionary<Type, IUxmlAttributeConverter> s_Converters = new();
+        [AutoStaticsCleanupOnCodeReload]
+        // Holds instances of IUxmlAttributeConverter, an interface user code can implement; clear on
+        // reload so a stale converter instance for a changed/removed type doesn't pin the old ALC.
+        [IgnoreForUAL0015("Lazy converter cache, re-created on demand by GetOrCreateConverter after cleanup")]
+        private static Dictionary<Type, IUxmlAttributeConverter> s_Converters = new();
 
+        // s_RegisteredConverterTypes is cleared on code reload, and the create-on-miss fallback in
+        // TryGetConverterType only derives enum/List/array shapes from the entries registered here, so
+        // the scan has to re-run on every code load rather than once per static-constructor run.
         [OnCodeLoaded]
         static void Initialize()
         {
@@ -2164,5 +2171,3 @@ namespace UnityEditor.UIElements
         public override string ToString(AnimationIterationCount value) => value.ToString();
     }
 }
-#pragma warning restore UAL0010,UAL0011,UAL0012,UAL0013,UAL0014
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

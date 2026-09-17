@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: InspectorFramework not yet converted
 using UnityEngine;
 using Unity.Scripting.LifecycleManagement;
 
@@ -21,6 +20,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Cache of the open icon-selector popup; ShowAtPosition creates a new instance whenever this is
+        // null, and closing the popup nulls it as well.
+        [IgnoreForUAL0015("Popup instance recreated by ShowAtPosition when the cached one is null")]
         static IconSelector s_IconSelector = null;
         [NoAutoStaticsCleanup] // value-type popup close-time used to debounce reopen; safe to persist across reload
         static long s_LastClosedTime = 0;
@@ -29,7 +31,7 @@ namespace UnityEditor
         static readonly int s_HashIconSelector = "IconSelector".GetHashCode();
         [NoAutoStaticsCleanup] // lazy GUIStyle/GUIContent Styles holder; safe to persist across reload
         static Styles m_Styles;
-        static readonly GUIContent s_Other = EditorGUIUtility.TrTextContent("Other...");
+        static readonly GUIContent s_Other = L10n.TextContent("Other...", null, null, null);
 
         Object m_TargetObject;
         Object[] m_TargetObjectList;
@@ -410,4 +412,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

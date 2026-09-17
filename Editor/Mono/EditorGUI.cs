@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: IMGUIControls not yet converted
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -40,9 +39,15 @@ namespace UnityEditor
     public sealed partial class EditorGUI
     {
         [AutoStaticsCleanupOnCodeReload]
+        // Points at the text editor currently being edited: BeginEditing assigns it when a field takes
+        // focus and EndEditing clears it, so the next edited field repopulates it.
+        [IgnoreForUAL0015("Active text editor slot, reassigned by BeginEditing on the next edited field")]
         private static RecycledTextEditor activeEditor;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Shared delayed text editor, re-created by the s_DelayedTextEditor accessor on the next access once
+        // the text system is ready.
+        [IgnoreForUAL0015("Shared delayed text editor re-created on the next access when null")]
         internal static DelayedTextEditor s_DelayedTextEditorInternal;
         internal static DelayedTextEditor s_DelayedTextEditor
         {
@@ -55,6 +60,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Shared scratch text editor, re-created by the s_RecycledEditor accessor on the next access once the
+        // text system is ready.
+        [IgnoreForUAL0015("Shared scratch text editor re-created on the next access when null")]
         internal static RecycledTextEditor s_RecycledEditorInternal;
         internal static RecycledTextEditor s_RecycledEditor
         {
@@ -207,14 +215,14 @@ namespace UnityEditor
 
         private static readonly GUIContent[] s_WHLabels = {EditorGUIUtility.TextContent("W"), EditorGUIUtility.TextContent("H")};
 
-        private static readonly GUIContent s_CenterLabel = EditorGUIUtility.TrTextContent("Center");
-        private static readonly GUIContent s_ExtentLabel = EditorGUIUtility.TrTextContent("Extent");
-        private static readonly GUIContent s_PositionLabel = EditorGUIUtility.TrTextContent("Position");
-        private static readonly GUIContent s_SizeLabel = EditorGUIUtility.TrTextContent("Size");
-        internal static readonly GUIContent s_PleasePressAKey = EditorGUIUtility.TrTextContent("[Please press a key]");
+        private static readonly GUIContent s_CenterLabel = L10n.TextContent("Center", null, null, null);
+        private static readonly GUIContent s_ExtentLabel = L10n.TextContent("Extent", null, null, null);
+        private static readonly GUIContent s_PositionLabel = L10n.TextContent("Position", null, null, null);
+        private static readonly GUIContent s_SizeLabel = L10n.TextContent("Size", null, null, null);
+        internal static readonly GUIContent s_PleasePressAKey = L10n.TextContent("[Please press a key]", null, null, null);
 
-        internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TrTextContent("Clipping Planes", "The distances from the Camera where rendering starts and stops.");
-        internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TrTextContent("Near", "The closest point to the Camera where drawing occurs."), EditorGUIUtility.TrTextContent("Far", "The furthest point from the Camera that drawing occurs.") };
+        internal static readonly GUIContent s_ClipingPlanesLabel = L10n.TextContent("Clipping Planes", "The distances from the Camera where rendering starts and stops.", null, null);
+        internal static readonly GUIContent[] s_NearAndFarLabels = { L10n.TextContent("Near", "The closest point to the Camera where drawing occurs.", null, null), L10n.TextContent("Far", "The furthest point from the Camera that drawing occurs.", null, null) };
         internal const float kNearFarLabelsWidth = 35f;
 
         [NoAutoStaticsCleanup] // transient control id; value type
@@ -273,7 +281,7 @@ namespace UnityEditor
         [NoAutoStaticsCleanup] // auto-prop; transient bool state
         public static bool showMixedValue { get; set; }
 
-        private static readonly GUIContent s_MixedValueContent = EditorGUIUtility.TrTextContent("\u2014", "Mixed Values");
+        private static readonly GUIContent s_MixedValueContent = L10n.TextContent("\u2014", "Mixed Values", null, null);
 
         internal static GUIContent mixedValueContent => s_MixedValueContent;
 
@@ -882,21 +890,21 @@ namespace UnityEditor
             if (RecycledTextEditor.s_AllowContextCutOrPaste)
             {
                 if ((s_RecycledEditor.hasSelection || s_DelayedTextEditor.hasSelection) && !s_RecycledEditor.isPasswordField && enabled && !EditorGUI.showMixedValue)
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, new PopupMenuEvent(EventCommandNames.Cut, GUIView.current).SendEvent);
+                    pm.AddItem(L10n.TextContent("Cut", null, null, null), false, new PopupMenuEvent(EventCommandNames.Cut, GUIView.current).SendEvent);
                 else
-                    pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
+                    pm.AddDisabledItem(L10n.TextContent("Cut", null, null, null));
             }
 
             // Copy -- when GUI is disabled, allow Copy even with no selection (will copy everything)
             if (((s_RecycledEditor.hasSelection || s_DelayedTextEditor.hasSelection) || !enabled) && !s_RecycledEditor.isPasswordField && !EditorGUI.showMixedValue)
-                pm.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, new PopupMenuEvent(EventCommandNames.Copy, GUIView.current).SendEvent);
+                pm.AddItem(L10n.TextContent("Copy", null, null, null), false, new PopupMenuEvent(EventCommandNames.Copy, GUIView.current).SendEvent);
             else
-                pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
+                pm.AddDisabledItem(L10n.TextContent("Copy", null, null, null));
 
             // Paste
             if (s_RecycledEditor.CanPaste() && RecycledTextEditor.s_AllowContextCutOrPaste && enabled)
             {
-                pm.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, new PopupMenuEvent(EventCommandNames.Paste, GUIView.current).SendEvent);
+                pm.AddItem(L10n.TextContent("Paste", null, null, null), false, new PopupMenuEvent(EventCommandNames.Paste, GUIView.current).SendEvent);
             }
             else
             {
@@ -3513,7 +3521,7 @@ namespace UnityEditor
                             pm.AddSeparator("");
                         }
 
-                        pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
+                        pm.AddItem(L10n.TextContent("Duplicate Array Element", null, null, null), false, (a) =>
                         {
                             var list = ReorderableList.GetReorderableListFromSerializedProperty(parentArrayProperty);
 
@@ -3572,7 +3580,7 @@ namespace UnityEditor
                             }
                             EditorGUIUtility.editingTextField = false;
                         }, propertyWithPath);
-                        pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
+                        pm.AddItem(L10n.TextContent("Delete Array Element", null, null, null), false, (a) =>
                         {
                             var list = ReorderableList.GetReorderableListFromSerializedProperty(parentArrayProperty);
 
@@ -3646,7 +3654,7 @@ namespace UnityEditor
             {
                 if (pm.GetItemCount() > 0)
                     pm.AddSeparator("");
-                pm.AddItem(EditorGUIUtility.TrTextContent("Print Property Path"), false, e => Debug.Log(((SerializedProperty)e).propertyPath), propertyWithPath);
+                pm.AddItem(L10n.TextContent("Print Property Path", null, null, null), false, e => Debug.Log(((SerializedProperty)e).propertyPath), propertyWithPath);
             }
 
             // If property is a reference and we're using VCS, add item to check it out
@@ -4184,8 +4192,14 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Scratch slot for one enum popup: assigned right before PopupInternal and cleared right after, so it
+        // is repopulated by the next enum popup.
+        [IgnoreForUAL0015("Per-call scratch slot, assigned and cleared around each enum popup")]
         private static Func<Enum, bool> s_CurrentCheckEnumEnabled;
         [AutoStaticsCleanupOnCodeReload]
+        // Enum data for the popup currently being shown; reassigned from the cached enum data on every enum
+        // popup call.
+        [IgnoreForUAL0015("Per-call enum data, reassigned on every enum popup call")]
         private static EnumData s_CurrentEnumData;
 
         private static bool CheckCurrentEnumTypeEnabled(int value)
@@ -4340,6 +4354,9 @@ namespace UnityEditor
         {
             // The global shared popup state
             [AutoStaticsCleanupOnCodeReload]
+            // In-flight popup state: a fresh instance is created every time a popup menu is displayed, and it is
+            // nulled once the selection has been handed back to OnGUI.
+            [IgnoreForUAL0015("Transient popup state recreated each time a popup menu is displayed")]
             public static PopupCallbackInfo instance = null;
 
             // Name of the command event sent from the popup menu to OnGUI when user has changed selection
@@ -7513,8 +7530,14 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Deferred keyboard command for the property being drawn: set by BeginProperty and consumed and
+        // nulled again by EndProperty in the same GUI pass, so nothing needs to survive a reload.
+        [IgnoreForUAL0015("Per-GUI-pass slot, set on BeginProperty and consumed by EndProperty")]
         private static SerializedProperty s_PendingPropertyKeyboardHandling = null;
         [AutoStaticsCleanupOnCodeReload]
+        // Deferred delete command for the property being drawn: set while handling the event and executed and
+        // nulled once the property stack unwinds in the same GUI pass.
+        [IgnoreForUAL0015("Per-GUI-pass slot, set while handling the event and executed as the property stack unwinds")]
         private static SerializedProperty s_PendingPropertyDelete = null;
 
         private static void DoPropertyFieldKeyboardHandling(SerializedProperty property)
@@ -7965,7 +7988,7 @@ namespace UnityEditor
             return ScriptAttributeUtility.GetHandler(property).OnGUI(position, property, label, includeChildren);
         }
 
-        static readonly string s_ArrayMultiInfoFormatString = EditorGUIUtility.TrTextContent("This field cannot display arrays with more than {0} elements when multiple objects are selected.").text;
+        static readonly string s_ArrayMultiInfoFormatString = L10n.TextContent("This field cannot display arrays with more than {0} elements when multiple objects are selected.", null, null, null).text;
         static readonly GUIContent s_ArrayMultiInfoContent = new GUIContent();
 
         static readonly ProfilerMarker s_EvalExpressionMarker = new ProfilerMarker("Inspector.EvaluateMultiExpression");
@@ -9497,15 +9520,17 @@ namespace UnityEditor
         // Cleanup is registered manually below instead of via [AutoStaticsCleanupOnCodeReload].
         internal static class EnumNamesCache
         {
-            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
+            // Each cache below is reset by the hand-written __AutoStaticsCleanup() further down rather
+            // than by generated cleanup, so the analyzer must not manage them.
+            [NoAutoStaticsCleanup]
             static Dictionary<Type, GUIContent[]> s_EnumTypeLocalizedGUIContents = new();
-            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
+            [NoAutoStaticsCleanup]
             static Dictionary<int, GUIContent[]> s_SerializedPropertyEnumLocalizedGUIContents = new();
-            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
+            [NoAutoStaticsCleanup]
             static Dictionary<Type, bool> s_IsEnumTypeUsingFlagsAttribute = new();
-            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
+            [NoAutoStaticsCleanup]
             static Dictionary<Type, string[]> s_SerializedPropertyEnumDisplayNames = new();
-            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
+            [NoAutoStaticsCleanup]
             static Dictionary<Type, string[]> s_SerializedPropertyEnumNames = new();
 
             [System.Runtime.CompilerServices.CompilerGenerated]
@@ -9612,9 +9637,10 @@ namespace UnityEditor
         // Not partial: same compiler PDB bug as EnumNamesCache above.
         static class HelpButtonCache
         {
-            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
+            // Reset by the hand-written __AutoStaticsCleanup() below rather than generated cleanup.
+            [NoAutoStaticsCleanup]
             static Dictionary<Type, bool> s_TypeIsPartOfTargetAssembliesMap = new();
-            [NoAutoStaticsCleanup] // cleared manually by __AutoStaticsCleanup via the __autoCleanup registration below
+            [NoAutoStaticsCleanup]
             static Dictionary<Type, bool> s_ObjectHasHelp = new();
 
             [System.Runtime.CompilerServices.CompilerGenerated]
@@ -9681,4 +9707,3 @@ namespace UnityEditor
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

@@ -23,13 +23,13 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static readonly GUIContent Start = EditorGUIUtility.TrTextContent("Start", "The transform representing the start position of the link.");
-            public static readonly GUIContent End = EditorGUIUtility.TrTextContent("End", "The transform representing the end position of the link.");
-            public static readonly GUIContent CostOverride = EditorGUIUtility.TrTextContent("Cost Override", "A positive value here modifies the cost of the link that is normally given by Navigation Area.");
-            public static readonly GUIContent BiDirectional = EditorGUIUtility.TrTextContent("Bidirectional", "When selected, agents can traverse the link also from End to Start, otherwise only from Start to End.");
-            public static readonly GUIContent Activated = EditorGUIUtility.TrTextContent("Activated", "Makes the link available for pathfinding.");
-            public static readonly GUIContent AutoUpdatePositions = EditorGUIUtility.TrTextContent("Auto Update Positions", "Automatically update the link's endpoints to match the positions of the Start and End transforms.");
-            public static readonly GUIContent NavigationArea = EditorGUIUtility.TrTextContent("Navigation Area", "It assigns a specific cost to the link. Only NavMeshAgents with this area type in their Area Mask are allowed to pass through it.");
+            public static readonly GUIContent Start = L10n.TextContent("Start", "The transform representing the start position of the link.", null, null);
+            public static readonly GUIContent End = L10n.TextContent("End", "The transform representing the end position of the link.", null, null);
+            public static readonly GUIContent CostOverride = L10n.TextContent("Cost Override", "A positive value here modifies the cost of the link that is normally given by Navigation Area.", null, null);
+            public static readonly GUIContent BiDirectional = L10n.TextContent("Bidirectional", "When selected, agents can traverse the link also from End to Start, otherwise only from Start to End.", null, null);
+            public static readonly GUIContent Activated = L10n.TextContent("Activated", "Makes the link available for pathfinding.", null, null);
+            public static readonly GUIContent AutoUpdatePositions = L10n.TextContent("Auto Update Positions", "Automatically update the link's endpoints to match the positions of the Start and End transforms.", null, null);
+            public static readonly GUIContent NavigationArea = L10n.TextContent("Navigation Area", "It assigns a specific cost to the link. Only NavMeshAgents with this area type in their Area Mask are allowed to pass through it.", null, null);
         }
 
         void OnEnable()

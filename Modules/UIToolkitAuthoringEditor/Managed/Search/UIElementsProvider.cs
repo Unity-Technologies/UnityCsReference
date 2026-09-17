@@ -9,6 +9,7 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.Search;
 using UnityEditor.UIElements;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
@@ -403,7 +404,7 @@ namespace Unity.UIToolkit.Editor
 
                 var name = Path.GetFileName(assetPath);
                 var folder = Path.GetDirectoryName(assetPath);
-                folder = string.IsNullOrEmpty(folder) ? string.Empty : folder.Replace('\\', '/');
+                folder = string.IsNullOrEmpty(folder) ? string.Empty : folder.ConvertSeparatorsToUnity();
 
                 yield return new LibraryItem(name, assetPath, folder);
             }

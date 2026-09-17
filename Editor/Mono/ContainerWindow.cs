@@ -50,11 +50,27 @@ namespace UnityEditor
         static internal bool macEditor => Application.platform == RuntimePlatform.OSXEditor;
 
         [AutoStaticsCleanupOnCodeReload]
+        // Flag that is only true inside a modal window loop and set back to false when it ends, so false
+        // is the correct resting value; the next modal window sets it again.
+        [IgnoreForUAL0015("Transient modal-loop flag, set again by the next modal window")]
         static internal bool s_Modal = false;
         [AutoStaticsCleanupOnCodeReload]
+        // Cache of the window that Show(ShowMode.MainWindow) registered. Cleared on code reload, but the
+        // native window outlives the scope, so the getter below rediscovers it on the next access.
+        [IgnoreForUAL0015("Main-window cache rediscovered on demand by the mainWindow getter after cleanup")]
         private static ContainerWindow s_MainWindow;
 
-        static internal ContainerWindow mainWindow { get => s_MainWindow; }
+        static internal ContainerWindow mainWindow
+        {
+            get
+            {
+                // A code reload clears the cache without re-running Show(), so recover the still-live
+                // main window the way WindowLayout does rather than reporting that there is none.
+                if (!s_MainWindow)
+                    s_MainWindow = WindowLayout.FindMainWindow();
+                return s_MainWindow;
+            }
+        }
 
         static readonly string s_ContextMenuID = "UnityEditor.UIElements.EditorMenuExtensions+ContextMenu";
 
@@ -81,6 +97,9 @@ namespace UnityEditor
         }
 
         [AutoStaticsCleanupOnCodeReload]
+        // Callback installed by SetMppmCanCloseCallback from the multiplayer clone systems, which are
+        // recreated on load and install it again; a null slot means the default "can close" answer.
+        [IgnoreForUAL0015("Callback reinstalled by SetMppmCanCloseCallback when the clone systems are recreated")]
         private static Func<bool> MppmCloseCallback;
 
         internal void __internalAwake()
@@ -182,7 +201,9 @@ namespace UnityEditor
         {
             try
             {
-                if (showMode == ShowMode.MainWindow && s_MainWindow && s_MainWindow != this)
+                // Read through the mainWindow getter so the guard still sees a live main window after a
+                // code reload has cleared the s_MainWindow cache.
+                if (showMode == ShowMode.MainWindow && mainWindow && mainWindow != this)
                     throw new InvalidOperationException("Trying to create a second main window from layout when one already exists.");
 
                 bool useMousePos = showMode == ShowMode.AuxWindow;

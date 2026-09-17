@@ -95,8 +95,27 @@ namespace UnityEngine.UIElements
         public bool drawStats { get; set; }
         public bool breakBatches { get; set; }
 
+        static void MarkParentMayHaveZIndexedChildren(VisualElement ve, int zIndex)
+        {
+            if (zIndex == int.MinValue)
+                return;
+
+            var parent = ve.hierarchy.parent;
+            if (parent != null)
+                parent.transformFlags |= VisualElementTransformFlags.MayHaveZIndexedChildren;
+        }
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
+            bool repaintChanged = (versionChangeType & VersionChangeType.Repaint) != 0;
+            bool hierarchyChanged = (versionChangeType & VersionChangeType.Hierarchy) != 0;
+            var zIndex = ve.computedStyle.zIndex;
+
+            // Picking reads MayHaveZIndexedChildren before the next repaint, so update it eagerly.
+            if (hierarchyChanged || (repaintChanged && ve.renderData == null)
+                || (ve.renderData != null && zIndex != ve.renderData.zIndex))
+                MarkParentMayHaveZIndexedChildren(ve, zIndex);
+
             if (renderTreeManager == null)
                 return;
 
@@ -107,19 +126,23 @@ namespace UnityEngine.UIElements
             bool borderWidthChanged = (versionChangeType & VersionChangeType.BorderWidth) != 0;
             bool renderHintsChanged = (versionChangeType & VersionChangeType.RenderHints) != 0;
             bool disableRenderingChanged = (versionChangeType & VersionChangeType.DisableRendering) != 0;
-            bool repaintChanged = (versionChangeType & VersionChangeType.Repaint) != 0;
 
             // Check if we now need to render to a texture or not. If this change, this is equivalent to
             // changing the DynamicPostprocessing render hint.
             bool renderTextureChanged = false;
             bool stackingContextChanged = false;
+            bool renderChainCutChanged = false;
             if (ve.renderData != null)
             {
                 renderTextureChanged = ve.useRenderTexture == ((ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) == 0);
-                stackingContextChanged = (ve.renderData.zIndex == int.MinValue) != (ve.computedStyle.zIndex == int.MinValue);
+                stackingContextChanged = (ve.renderData.zIndex == int.MinValue) != (zIndex == int.MinValue);
+                // A stale cut sends promoted descendants to another component's command list, so the subtree must be rebuilt.
+                renderChainCutChanged = ve.renderData.cutsRenderChain != ve.isWorldSpaceRootPanelComponent;
             }
 
-            if (renderHintsChanged || renderTextureChanged || stackingContextChanged)
+            if (renderTextureChanged || stackingContextChanged || renderChainCutChanged)
+                renderTreeManager.UIEOnRenderTreeStructureChanged(ve);
+            else if (renderHintsChanged)
                 renderTreeManager.UIEOnRenderHintsChanged(ve);
 
             if (transformChanged || sizeChanged || borderWidthChanged)
@@ -138,7 +161,7 @@ namespace UnityEngine.UIElements
                 renderTreeManager.UIEOnVisualsChanged(ve, false);
 
             if (repaintChanged && ve.renderData != null
-                && ve.computedStyle.zIndex != ve.renderData.zIndex && !stackingContextChanged)
+                && zIndex != ve.renderData.zIndex && !stackingContextChanged)
                 renderTreeManager.UIEOnZIndexChanged(ve);
 
             if (disableRenderingChanged && !repaintChanged) // The disable rendering will be taken care of by the repaint (it clear all commands)

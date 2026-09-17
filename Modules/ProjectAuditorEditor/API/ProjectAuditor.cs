@@ -73,6 +73,7 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         /// <param name="progress"> Progress bar, if applicable </param>
         /// <returns> Generated report </returns>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
         public Report Audit(IProgress progress = null)
         {
             return Audit(new AnalysisParams(), progress);
@@ -84,6 +85,7 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="analysisParams"> Parameters to control the audit process </param>
         /// <param name="progress"> Progress bar, if applicable </param>
         /// <returns> Generated report </returns>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
         public Report Audit(AnalysisParams analysisParams, IProgress progress = null)
         {
             Report report = null;
@@ -107,8 +109,12 @@ namespace Unity.ProjectAuditor.Editor
         /// </summary>
         /// <param name="analysisParams"> Parameters to control the audit process </param>
         /// <param name="progress"> Progress bar, if applicable </param>
+        /// <exception cref="System.InvalidOperationException">Thrown if the Project Auditor Rules package is not installed.</exception>
         public void AuditAsync(AnalysisParams analysisParams, IProgress progress = null)
         {
+            if (!ProjectAuditorRulesPackage.IsInstalled)
+                throw new InvalidOperationException("Install the Project Auditor Rules package before using Project Auditor");
+
             if (analysisParams.Platform == BuildTarget.NoTarget)
                 analysisParams.Platform = EditorUserBuildSettings.activeBuildTarget;
 
@@ -160,7 +166,12 @@ namespace Unity.ProjectAuditor.Editor
 #pragma warning disable UAC2001 // Avoid Linq
             var requestedModules = categories.SelectMany(GetModules).Distinct().ToArray();
             var supportedModules = requestedModules.Where(m => m != null).ToArray();
+#pragma warning restore UAC2001
 
+            if (Array.Exists(supportedModules, m => m is MigrationToURPModule))
+                report.SessionInfo.ReportIncludesUrpMigrationIssues = MigrationToURPUtilities.IsProjectFullyOnUrp();
+
+#pragma warning disable UAC2001 // Avoid Linq
             analysisParams.OnStarted?.Invoke(
                 report,
                 supportedModules.Select(m => m.Name).ToArray(),
@@ -334,6 +345,9 @@ namespace Unity.ProjectAuditor.Editor
 
         internal void DelayedPostBuildAudit()
         {
+            // Unsubscribe before auditing in case an exception is thrown.
+            EditorApplication.update -= DelayedPostBuildAudit;
+
             var report = Audit();
 
             var numIssues = report.NumTotalIssues;
@@ -344,8 +358,6 @@ namespace Unity.ProjectAuditor.Editor
                 else
                     Debug.Log($"[{DisplayName}] Analysis found " + numIssues + " issues");
             }
-
-            EditorApplication.update -= DelayedPostBuildAudit;
         }
 
         /// <summary>

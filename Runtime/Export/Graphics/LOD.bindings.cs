@@ -66,7 +66,8 @@ namespace UnityEngine
             set;
         }
 
-        internal int globalIlluminationLOD
+        // The LOD level used for global illumination (-1 means the LODGroup does not contribute to GI)
+        public int globalIlluminationLOD
         {
             get
             {

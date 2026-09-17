@@ -946,8 +946,6 @@ namespace Unity.UIToolkit.Editor
                 return set;
             if (!AnimationMode.InAnimationRecording())
                 return set;
-            if (!UIToolkitProjectSettings.s_EnablePanelRendererAnimationAtBoot)
-                return set;
 
             var bindings = AnimationUtility.GetAnimatableBindings(panelRootGameObject, panelRootGameObject);
             var panelRendererType = typeof(UnityEngine.UIElements.PanelRenderer);

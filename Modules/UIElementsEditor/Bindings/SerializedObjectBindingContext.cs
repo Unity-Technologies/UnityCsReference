@@ -966,6 +966,9 @@ internal partial class SerializedObjectBindingContext
     }
 
     [AutoStaticsCleanupOnCodeReload]
+    // Backing store for the PostProcessTrackedPropertyChanges event: subscribers attach through their
+    // own lifecycle and re-subscribe after a code reload, so the cleared store refills itself.
+    [IgnoreForUAL0015("Event backing store whose subscribers re-register through their own lifecycle")]
     private static event Action<uint,uint> m_PostProcessTrackedPropertyChanges;
 
 

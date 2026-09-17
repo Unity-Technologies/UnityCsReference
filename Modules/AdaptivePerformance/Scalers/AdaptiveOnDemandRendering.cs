@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-#pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: AdaptivePerformance not yet converted
 namespace UnityEngine.AdaptivePerformance
 {
     /// <summary>
@@ -54,7 +53,11 @@ namespace UnityEngine.AdaptivePerformance
         /// </summary>
         protected override void OnEnabled()
         {
+            // Plain int snapshot taken on every enable, so no reference is retained and a reload that
+            // resets the interval to its default is followed by a fresh read on the next OnEnabled.
+#pragma warning disable UAL0018 // int value snapshot, re-read on each enable
             m_DefaultRenderingInterval = Rendering.OnDemandRendering.renderFrameInterval;
+#pragma warning restore UAL0018
         }
 
         /// <summary>
@@ -70,4 +73,3 @@ namespace UnityEngine.AdaptivePerformance
         }
     }
 }
-#pragma warning restore UAL0015,UAL0018,UAL0019,UAL0020,UAL0021

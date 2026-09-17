@@ -19,3 +19,11 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Multiplayer.Workflows.IntegrationTests.PlayMode.Editor")]
 [assembly: InternalsVisibleTo("Unity.Multiplayer.Workflows.Tests.Common.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.QuickSearchModule")]
+
+// Multiplayer Center's Common types are internal to this assembly; the quickstart package's
+// integrations assembly is their one external consumer.
+[assembly: InternalsVisibleTo("Unity.Multiplayer.Center.Integrations")]
+[assembly: InternalsVisibleTo("Unity.Modules.Multiplayer.Center.Tests.Editor")]
+
+// Early adopters of the extensibility API. Remove once API is public.
+[assembly: InternalsVisibleTo("Unity.Services.CloudCode.PlayMode.Editor")]

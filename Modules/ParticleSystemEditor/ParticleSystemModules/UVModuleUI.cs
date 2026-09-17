@@ -29,47 +29,47 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent mode = EditorGUIUtility.TrTextContent("Mode", "Animation frames can either be specified on a regular grid texture, or as a list of Sprites.");
-            public GUIContent timeMode = EditorGUIUtility.TrTextContent("Time Mode", "Play frames either based on the lifetime of the particle, the speed of the particle, or at a constant FPS, regardless of particle lifetime.");
-            public GUIContent fps = EditorGUIUtility.TrTextContent("FPS", "Specify the Frames Per Second of the animation.");
-            public GUIContent frameOverTime = EditorGUIUtility.TrTextContent("Frame over Time", "Controls the uv animation frame of each particle over its lifetime. On the horizontal axis you will find the lifetime. On the vertical axis you will find the sheet index.");
-            public GUIContent startFrame = EditorGUIUtility.TrTextContent("Start Frame", "Phase the animation, so it starts on a frame other than 0.");
-            public GUIContent speedRange = EditorGUIUtility.TrTextContent("Speed Range", "Remaps speed in the defined range to a 0-1 value through the animation.");
-            public GUIContent tiles = EditorGUIUtility.TrTextContent("Tiles", "Defines the tiling of the texture.");
+            public GUIContent mode = L10n.TextContent("Mode", "Animation frames can either be specified on a regular grid texture, or as a list of Sprites.", null, null);
+            public GUIContent timeMode = L10n.TextContent("Time Mode", "Play frames either based on the lifetime of the particle, the speed of the particle, or at a constant FPS, regardless of particle lifetime.", null, null);
+            public GUIContent fps = L10n.TextContent("FPS", "Specify the Frames Per Second of the animation.", null, null);
+            public GUIContent frameOverTime = L10n.TextContent("Frame over Time", "Controls the uv animation frame of each particle over its lifetime. On the horizontal axis you will find the lifetime. On the vertical axis you will find the sheet index.", null, null);
+            public GUIContent startFrame = L10n.TextContent("Start Frame", "Phase the animation, so it starts on a frame other than 0.", null, null);
+            public GUIContent speedRange = L10n.TextContent("Speed Range", "Remaps speed in the defined range to a 0-1 value through the animation.", null, null);
+            public GUIContent tiles = L10n.TextContent("Tiles", "Defines the tiling of the texture.", null, null);
             public GUIContent tilesX = EditorGUIUtility.TextContent("X");
             public GUIContent tilesY = EditorGUIUtility.TextContent("Y");
-            public GUIContent animation = EditorGUIUtility.TrTextContent("Animation", "Specifies the animation type: Whole Sheet or Single Row. Whole Sheet will animate over the whole texture sheet from left to right, top to bottom. Single Row will animate a single row in the sheet from left to right.");
-            public GUIContent rowMode = EditorGUIUtility.TrTextContent("Row Mode", "Determine how the row is selected for each particle.");
-            public GUIContent row = EditorGUIUtility.TrTextContent("Row", "The row in the sheet which will be played.");
-            public GUIContent sprites = EditorGUIUtility.TrTextContent("Sprites", "The list of Sprites to be played.");
-            public GUIContent frame = EditorGUIUtility.TrTextContent("Frame", "The frame in the sheet which will be used.");
-            public GUIContent cycles = EditorGUIUtility.TrTextContent("Cycles", "Specifies how many times the animation will loop during the lifetime of the particle.");
-            public GUIContent uvChannelMask = EditorGUIUtility.TrTextContent("Affected UV Channels", "Specifies which UV channels will be animated.");
+            public GUIContent animation = L10n.TextContent("Animation", "Specifies the animation type: Whole Sheet or Single Row. Whole Sheet will animate over the whole texture sheet from left to right, top to bottom. Single Row will animate a single row in the sheet from left to right.", null, null);
+            public GUIContent rowMode = L10n.TextContent("Row Mode", "Determine how the row is selected for each particle.", null, null);
+            public GUIContent row = L10n.TextContent("Row", "The row in the sheet which will be played.", null, null);
+            public GUIContent sprites = L10n.TextContent("Sprites", "The list of Sprites to be played.", null, null);
+            public GUIContent frame = L10n.TextContent("Frame", "The frame in the sheet which will be used.", null, null);
+            public GUIContent cycles = L10n.TextContent("Cycles", "Specifies how many times the animation will loop during the lifetime of the particle.", null, null);
+            public GUIContent uvChannelMask = L10n.TextContent("Affected UV Channels", "Specifies which UV channels will be animated.", null, null);
 
             public GUIContent[] modes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Grid"),
-                EditorGUIUtility.TrTextContent("Sprites")
+                L10n.TextContent("Grid", null, null, null),
+                L10n.TextContent("Sprites", null, null, null)
             };
 
             public GUIContent[] timeModes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Lifetime"),
-                EditorGUIUtility.TrTextContent("Speed"),
-                EditorGUIUtility.TrTextContent("FPS")
+                L10n.TextContent("Lifetime", null, null, null),
+                L10n.TextContent("Speed", null, null, null),
+                L10n.TextContent("FPS", null, null, null)
             };
 
             public GUIContent[] types = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Whole Sheet"),
-                EditorGUIUtility.TrTextContent("Single Row")
+                L10n.TextContent("Whole Sheet", null, null, null),
+                L10n.TextContent("Single Row", null, null, null)
             };
 
             public GUIContent[] rowModes = new GUIContent[]
             {
-                EditorGUIUtility.TrTextContent("Custom"),
-                EditorGUIUtility.TrTextContent("Random"),
-                EditorGUIUtility.TrTextContent("Mesh Index")
+                L10n.TextContent("Custom", null, null, null),
+                L10n.TextContent("Random", null, null, null),
+                L10n.TextContent("Mesh Index", null, null, null)
             };
         }
         [NoAutoStaticsCleanup] // lazy-initialized UI text cache

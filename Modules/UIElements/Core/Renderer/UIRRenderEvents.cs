@@ -118,6 +118,7 @@ namespace UnityEngine.UIElements.UIR
             if (zIndex != int.MinValue && parent != null)
                 parent.transformFlags |= VisualElementTransformFlags.MayHaveZIndexedChildren;
             bool isReparentedAcrossDepth = false;
+            ve.transformFlags &= ~VisualElementTransformFlags.ZIndexPromotedOutOfParent;
 
             // Regular RenderData
             renderData = renderTreeManager.GetPooledRenderData();
@@ -129,6 +130,9 @@ namespace UnityEngine.UIElements.UIR
 
             if (ve.useRenderTexture)
                 renderData.flags |= RenderDataFlags.IsSubTreeQuad;
+
+            if (ve.isWorldSpaceRootPanelComponent)
+                renderData.flags |= RenderDataFlags.CutsRenderChain;
 
             if (parent == null)
             {
@@ -147,6 +151,8 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 isReparentedAcrossDepth = parentRenderData != visualParentRenderData;
+                if (isReparentedAcrossDepth)
+                    ve.transformFlags |= VisualElementTransformFlags.ZIndexPromotedOutOfParent;
 
                 renderData.parent = parentRenderData;
                 renderData.renderTree = renderData.parent.renderTree;
@@ -402,7 +408,8 @@ namespace UnityEngine.UIElements.UIR
             while (renderData.parent != null)
             {
                 // A group transform is a coordinate and scissor-clip boundary; a z-index element must not escape it or its draw commands fall outside the group's scissor range.
-                if (renderData.zIndex != int.MinValue || renderData.isGroupTransform || EstablishesStatefulClipBoundary(renderTreeManager, renderData))
+                // A world-space root panel component cuts the render chain into a per-renderer command list; escaping it would send the draws to another component's renderer, or to the discarded default command list.
+                if (renderData.zIndex != int.MinValue || renderData.isGroupTransform || renderData.cutsRenderChain || EstablishesStatefulClipBoundary(renderTreeManager, renderData))
                     return renderData;
                 renderData = renderData.parent;
             }

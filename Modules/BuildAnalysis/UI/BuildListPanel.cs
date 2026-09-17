@@ -138,7 +138,9 @@ namespace UnityEditor.Build.Analysis
 
         private void SetupSettingsMenu()
         {
-            m_SettingsMenu.menu.AppendAction("Delete All...", _ => m_Actions.DeleteAllBuilds());
+            // The status callback runs each time the menu opens, so the item tracks the current build count.
+            m_SettingsMenu.menu.AppendAction("Delete All...", _ => m_Actions.DeleteAllBuilds(),
+                _ => m_AllBuilds.Length > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }
 
         private VisualElement MakeListItem()
@@ -252,7 +254,8 @@ namespace UnityEditor.Build.Analysis
             if (m_SelectedBuild == null)
                 return;
 
-            var index = FindIndex(m_FilteredBuilds, m_SelectedBuild.BuildSessionGUID);
+            var selectedGUID = m_SelectedBuild.BuildSessionGUID;
+            var index = FindIndex(m_FilteredBuilds, selectedGUID);
             if (index >= 0)
             {
                 // Refresh the cached reference so consumers see the latest metadata
@@ -262,10 +265,16 @@ namespace UnityEditor.Build.Analysis
                 return;
             }
 
-            // Selected build is no longer in the filtered view. Clear and notify.
-            m_SelectedBuild = null;
-            m_BuildListView.SetSelectionWithoutNotify((IEnumerable<int>)Array.Empty<int>());
-            SelectionChanged?.Invoke(null);
+            // The selected build is not in the filtered view, either because the search filter
+            // hides it or because it has left the build history.
+            var allIndex = FindIndex(m_AllBuilds, selectedGUID);
+            var leftHistory = allIndex < 0;
+            m_SelectedBuild = leftHistory ? null : m_AllBuilds[allIndex];
+
+            m_BuildListView.ClearSelection();
+
+            if (leftHistory)
+                SelectionChanged?.Invoke(null);
         }
 
         private static int FindIndex(BuildEntry[] builds, GUID buildSessionGUID)

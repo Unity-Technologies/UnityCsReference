@@ -89,7 +89,6 @@ namespace UnityEditor
         ///<seealso cref="EditorUserBuildSettings.standaloneBuildSubtarget" />
         ///<seealso cref="EditorUserBuildSettings.androidBuildSubtarget" />
         ///<seealso cref="EditorUserBuildSettings.webGLBuildSubtarget" />
-        ///<seealso cref="EditorUserBuildSettings.ps4BuildSubtarget" />
         public int subtarget { get; set; }
         ///<summary>The <see cref="BuildOptions" /> flags to apply when building the Player.</summary>
         ///<remarks>Set this property to a bitwise combination of <see cref="BuildOptions" /> values before you pass <see cref="BuildPlayerOptions" /> to <see cref="BuildPipeline.BuildPlayer" />. For example, set <c>options = BuildOptions.Development | BuildOptions.AutoRunPlayer</c> to create a development build and run it automatically after the build completes.</remarks>
