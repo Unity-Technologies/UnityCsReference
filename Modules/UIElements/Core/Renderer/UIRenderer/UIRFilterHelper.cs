@@ -50,24 +50,43 @@ namespace UnityEngine.UIElements.UIR
             return ids;
         }
 
+        // Hard cap, in points, for each side of a pass's read/write margins. Uncapped margins let a
+        // filter inflate its render texture beyond the GPU limit (UUM-134044). 512 comfortably covers
+        // the clamped built-in filters (blur margins peak at 3*k_MaxBlurSigma+1) and bounds custom ones.
+        public const float k_MaxPostProcessingMargin = 512;
+
+        static PostProcessingMargins CapMargins(PostProcessingMargins margins)
+        {
+            return new PostProcessingMargins {
+                left = Mathf.Min(margins.left, k_MaxPostProcessingMargin),
+                top = Mathf.Min(margins.top, k_MaxPostProcessingMargin),
+                right = Mathf.Min(margins.right, k_MaxPostProcessingMargin),
+                bottom = Mathf.Min(margins.bottom, k_MaxPostProcessingMargin),
+            };
+        }
+
         public static PostProcessingMargins GetReadMargins(PostProcessingPass pass, FilterFunction filterFunc)
         {
-            return pass.computeRequiredReadMarginsCallback != null
+            filterFunc = filterFunc.GetClampedToDefinition();
+            var margins = pass.computeRequiredReadMarginsCallback != null
                 ? pass.computeRequiredReadMarginsCallback(filterFunc)
                 : pass.readMargins;
+            return CapMargins(margins);
         }
 
         public static PostProcessingMargins GetWriteMargins(PostProcessingPass pass, FilterFunction filterFunc)
         {
-            return pass.computeRequiredWriteMarginsCallback != null
+            filterFunc = filterFunc.GetClampedToDefinition();
+            var margins = pass.computeRequiredWriteMarginsCallback != null
                 ? pass.computeRequiredWriteMarginsCallback(filterFunc)
                 : pass.writeMargins;
+            return CapMargins(margins);
         }
 
         // Total input inflation (in points) needed so every pass of the chain can read valid data
         // when producing the nominal output rect. Summing per-pass read margins is conservative.
-        // Deliberately uncapped: drop-shadow offsets are translations, so truncating them displaces
-        // the shadow visibly; memory stays bounded by the clip/source clamps at the capture site.
+        // Each pass contributes at most k_MaxPostProcessingMargin per side (see GetReadMargins);
+        // drop-shadow offsets are range-limited to that same cap so translations never truncate.
         public static PostProcessingMargins ComputeChainReadMargins(ReadOnlySpan<UnmanagedFilterFunction> filters)
         {
             return SumChainReadMargins(filters, capturePassesOnly: false);
@@ -277,6 +296,7 @@ namespace UnityEngine.UIElements.UIR
             if (pass.parameterBindings == null)
                 return;
 
+            filter = filter.GetClampedToDefinition();
             var parameters = filter.parameters;
             int count = filter.parameterCount;
             for (int i = 0; i < pass.parameterBindings.Length; ++i)
@@ -378,7 +398,7 @@ namespace UnityEngine.UIElements.UIR
             int flatBlockIndex = 0;
             for (int i = 0; i < filters.Length; i++)
             {
-                var filterFunc = (FilterFunction)filters[i];
+                var filterFunc = ((FilterFunction)filters[i]).GetClampedToDefinition();
                 var filterDef = filterFunc.GetDefinition();
 
                 if (filterDef == null || filterDef.passes == null)

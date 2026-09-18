@@ -314,8 +314,18 @@ namespace Unity.Hierarchy
             if (m_Node == HierarchyNode.Null)
                 return;
 
-            if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler && !editorHandler.CanSetName(m_View, in m_Node))
-                return;
+            if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler)
+            {
+                if (!editorHandler.CanSetName(m_View, in m_Node))
+                    return;
+
+                var renameText = editorHandler.GetRenameTextOverride(m_View, in m_Node);
+                if (renameText != null)
+                {
+                    m_Name.BeginRename(renameText);
+                    return;
+                }
+            }
 
             m_Name.BeginRename();
         }
@@ -352,9 +362,17 @@ namespace Unity.Hierarchy
                 return;
 
             if (m_Handler is IHierarchyEditorNodeTypeHandler editorHandler)
+            {
                 editorHandler.OnSetName(m_View, in m_Node, text);
+
+                // The label was just set to the committed text, which carries none of the decorations the
+                // handler adds, and a rejected or no-op rename asks for no re-bind that would restore them.
+                m_Name.Text = editorHandler.GetDisplayName(m_View, in m_Node);
+            }
             else
+            {
                 m_View.Source.SetName(in m_Node, text);
+            }
         }
 
         internal Rect GetRenameRect()

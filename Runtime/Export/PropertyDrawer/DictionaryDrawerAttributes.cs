@@ -32,7 +32,7 @@ namespace UnityEngine
     //
     // The user can still override the layout (from the header context menu) and the key column
     // width (by dragging the splitter); their choices persist and win over the defaults declared
-    // here. The context menu's 'Reset to Defaults' returns to the values defined by this attribute.
+    // here. The context menu's 'Reset Layout' returns to the values defined by this attribute.
     // A field-level attribute takes precedence over any assembly-level one.
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public class DictionaryDisplayAttribute : Attribute

@@ -1446,11 +1446,10 @@ namespace UnityEditor
             else
                 CurrentLoadedCaptureFile = path;
 
-            // Stop current profiling if data was loaded successfully
-            ProfilerDriver.enabled = m_Recording = false;
-            SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
-            if (ProfilerUserSettings.rememberLastRecordState)
-                EditorPrefs.SetBool(kProfilerEnabledSessionKey, m_Recording);
+            // Stop current profiling if data was loaded successfully. Through SetRecordingEnabled
+            // rather than inline, so recordingStateChanged fires: subscribers can only observe a stop
+            // through that event, and it must arrive once ProfilerDriver.enabled is already false.
+            SetRecordingEnabled(false);
 
             // If there's an existing screenshot, start with that. If the user adds to this capture and saves,
             // it'll be better to have the old screenshot to show than nothing.
@@ -1880,9 +1879,10 @@ namespace UnityEditor
             }
         }
 
-        void OnModuleEditorChangesConfirmed(ReadOnlyCollection<ModuleData> modules, ReadOnlyCollection<ModuleData> deletedModules)
+        // internal for tests: the production trigger is the Module Editor's confirm button.
+        internal void OnModuleEditorChangesConfirmed(ReadOnlyCollection<ModuleData> modules, ReadOnlyCollection<ModuleData> deletedModules)
         {
-            var selectedModuleIndexCached = m_SelectedModuleIndex;
+            var selectedModuleCached = selectedModule;
 
             int index = 0;
             foreach (var moduleData in modules)
@@ -1897,7 +1897,13 @@ namespace UnityEditor
 
                     case ModuleData.EditedState.Updated:
                     {
-                        UpdateProfilerModule(moduleData, index, selectedModuleIndexCached);
+                        UpdateProfilerModule(moduleData, index);
+                        break;
+                    }
+
+                    default:
+                    {
+                        SetProfilerModuleOrderIndex(moduleData, index);
                         break;
                     }
                 }
@@ -1910,7 +1916,11 @@ namespace UnityEditor
                 DeleteProfilerModule(moduleData);
             }
 
-            // If any modules were deleted, all existing modules should update/refresh their order index.
+            SortModuleCollectionInPlace(ref m_AllModules);
+
+            // Deleting leaves gaps in the order indices, so renumber to close them. This has to run
+            // after sorting: until then m_AllModules is still in its previous order, and renumbering
+            // by position would discard the indices a reorder in the same change just assigned.
             bool hasDeletedModules = deletedModules.Count > 0;
             if (hasDeletedModules)
             {
@@ -1921,7 +1931,17 @@ namespace UnityEditor
                 }
             }
 
-            SortModuleCollectionInPlace(ref m_AllModules);
+            // Deleting and sorting move modules within m_AllModules, so re-resolve the selection
+            // from the module itself, once, here. Setting it earlier would write a post-sort
+            // position while m_AllModules is still unsorted, and the deletions in between consult
+            // it. A deleted one is absent, leaving its replacement intact.
+            if (selectedModuleCached != null)
+            {
+                var reresolvedSelectedModuleIndex = IndexOfModule(selectedModuleCached);
+                if (reresolvedSelectedModuleIndex != k_NoModuleSelected)
+                    m_SelectedModuleIndex = reresolvedSelectedModuleIndex;
+            }
+
             UpdateVisualTreeModulesOrder();
             UpdatePinnedModulesOrder();
             PersistDynamicModulesToEditorPrefs();
@@ -1947,7 +1967,7 @@ namespace UnityEditor
             module.OnEnable();
         }
 
-        void UpdateProfilerModule(ModuleData moduleData, int orderIndex, int selectedModuleIndexCached)
+        void UpdateProfilerModule(ModuleData moduleData, int orderIndex)
         {
             var currentProfilerModuleIdentifier = moduleData.currentProfilerModuleIdentifier;
             int updatedModuleIndex = IndexOfModuleWithIdentifier(currentProfilerModuleIdentifier);
@@ -1957,7 +1977,6 @@ namespace UnityEditor
             }
 
             var module = m_AllModules[updatedModuleIndex];
-            var isSelectedIndex = (module.orderIndex == selectedModuleIndexCached);
 
             var chartCounters = new List<ProfilerCounterData>(moduleData.chartCounters);
             var detailCounters = new List<ProfilerCounterData>(moduleData.detailCounters);
@@ -1968,10 +1987,17 @@ namespace UnityEditor
                 legacyModule.SetCounters(chartCounters, detailCounters);
             }
             module.orderIndex = orderIndex;
+        }
 
-            if (isSelectedIndex)
+        // Unchanged modules carry a requested position too. Leaving them on their old order index
+        // lets one collide with the index given to a created or updated module, which the sort then
+        // resolves by name rather than by the order the Module Editor asked for.
+        void SetProfilerModuleOrderIndex(ModuleData moduleData, int orderIndex)
+        {
+            var moduleIndex = IndexOfModuleWithIdentifier(moduleData.currentProfilerModuleIdentifier);
+            if (moduleIndex >= 0)
             {
-                m_SelectedModuleIndex = orderIndex;
+                m_AllModules[moduleIndex].orderIndex = orderIndex;
             }
         }
 
@@ -1997,6 +2023,13 @@ namespace UnityEditor
             // Clears the reference as well as disposing, so nothing can reach the dead controller.
             moduleToDelete.DisposeChartViewController();
             m_AllModules.RemoveAt(index);
+
+            // m_SelectedModuleIndex is a position in m_AllModules, so removing an earlier
+            // element leaves it naming a different module (UUM-149160).
+            if (index < m_SelectedModuleIndex)
+                m_SelectedModuleIndex--;
+            else if (index == m_SelectedModuleIndex)
+                m_SelectedModuleIndex = k_NoModuleSelected;
         }
 
         int IndexOfModuleWithIdentifier(string moduleIdentifier)

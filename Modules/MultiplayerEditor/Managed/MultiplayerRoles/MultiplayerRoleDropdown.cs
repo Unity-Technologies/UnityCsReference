@@ -60,10 +60,12 @@ namespace UnityEditor.Multiplayer.Internal
 
         static void ShowDropdownMenu(Rect dropDownRect)
         {
+            var activeRole = EditorMultiplayerManager.activeMultiplayerRoleMask;
+
             var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Client"), false, () => ChangeMultiplayerRole(MultiplayerRoleFlags.Client));
-            menu.AddItem(new GUIContent("Server"), false, () => ChangeMultiplayerRole(MultiplayerRoleFlags.Server));
-            menu.AddItem(new GUIContent("Client and Server"), false, () => ChangeMultiplayerRole(MultiplayerRoleFlags.ClientAndServer));
+            menu.AddItem(new GUIContent("Client"), activeRole == MultiplayerRoleFlags.Client, () => ChangeMultiplayerRole(MultiplayerRoleFlags.Client));
+            menu.AddItem(new GUIContent("Server"), activeRole == MultiplayerRoleFlags.Server, () => ChangeMultiplayerRole(MultiplayerRoleFlags.Server));
+            menu.AddItem(new GUIContent("Client and Server"), activeRole == MultiplayerRoleFlags.ClientAndServer, () => ChangeMultiplayerRole(MultiplayerRoleFlags.ClientAndServer));
             menu.DropDown(dropDownRect);
         }
 

@@ -31,7 +31,9 @@ namespace UnityEditor.Connect
         CloudPackagesApi = 11,
         CloudPackagesKey = 12,
         CloudAssetStoreUrl = 13,
-        ServicesGateway = 20 // these get marshalled to native, and the native side has extra entries.
+        // these get marshalled to native, and the native side has extra entries.
+        ServicesGateway = 20,
+        EcosystemApi = 23
     }
 
     internal enum COPPACompliance

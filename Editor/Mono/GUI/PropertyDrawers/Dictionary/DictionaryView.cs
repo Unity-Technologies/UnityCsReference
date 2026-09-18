@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Profiling;
 using Unity.Profiling.LowLevel;
 using UnityEditor.UIElements;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.Internal;
 using UnityEditor;
 using Unity.Scripting.LifecycleManagement;
@@ -69,6 +70,7 @@ internal partial class DictionaryView : ListView
     static readonly string k_RowOneColumnClass = k_RowClass + "--one-column";
     static readonly string k_HelpBoxClass = ussClassName + "__helpbox";
     static readonly string k_HelpBoxIgnoredClass = ussClassName + "__helpbox--duplicates";
+    static readonly string k_HelpBoxButtonRowClass = ussClassName + "__helpbox__buttons";
     static readonly string k_HelpBoxSelectIgnoredClass = ussClassName + "__helpbox__select-duplicate";
     static readonly string k_HeaderSpacerClass = ussClassName + "__header-spacer";
     static readonly string k_ToggleLabelClass = ussClassName + "__toggle-label";
@@ -94,6 +96,8 @@ internal partial class DictionaryView : ListView
     // Static bold "Value" header shown in the OneColumnWithValueVisible layout in place of a
     // foldout, so the value is always visible and the header is plain, non-interactive text.
     static readonly string k_RowValueHeaderClass = ussClassName + "__row-value-header";
+
+    const float k_ScrolledToBottomTolerance = 1f;
 
     // Holds the live DictionaryView siblings that share one persisted DictionaryState — the elements of a
     // List/array/Dictionary of dictionaries, whose paths all normalize to the same key. Because
@@ -136,6 +140,8 @@ internal partial class DictionaryView : ListView
 
     HelpBox m_MultiEditHelpBox;
     HelpBox m_IgnoredHelpBox;
+    Button m_SelectAllIgnoredButton;
+    Button m_SelectFirstIgnoredButton;
 
     readonly HashSet<int> m_DuplicateEntryIndices = new();
     readonly HashSet<int> m_NullKeyEntryIndices = new();
@@ -424,6 +430,8 @@ internal partial class DictionaryView : ListView
         {
             m_IgnoredHelpBox.RemoveFromHierarchy();
             m_IgnoredHelpBox = null;
+            m_SelectAllIgnoredButton = null;
+            m_SelectFirstIgnoredButton = null;
         }
         if (m_ListHeader != null)
         {
@@ -559,14 +567,32 @@ internal partial class DictionaryView : ListView
         m_IgnoredHelpBox.AddToClassList(k_HelpBoxClass);
         m_IgnoredHelpBox.AddToClassList(k_HelpBoxIgnoredClass);
 
-        var selectButton = new Button(OnSelectFirstIgnoredClicked)
-        {
-            text = DictionaryDrawer.Texts.SelectFirstIgnoredButtonLabel
-        };
-        selectButton.AddToClassList(k_HelpBoxSelectIgnoredClass);
-        m_IgnoredHelpBox.Add(selectButton);
+        var buttonRow = new VisualElement();
+        buttonRow.AddToClassList(k_HelpBoxButtonRowClass);
+        m_IgnoredHelpBox.Add(buttonRow);
+
+        m_SelectFirstIgnoredButton = new Button(OnSelectFirstIgnoredClicked);
+        m_SelectFirstIgnoredButton.AddToClassList(k_HelpBoxSelectIgnoredClass);
+        buttonRow.Add(m_SelectFirstIgnoredButton);
+
+        m_SelectAllIgnoredButton = new Button(OnSelectAllIgnoredClicked);
+        m_SelectAllIgnoredButton.AddToClassList(k_HelpBoxSelectIgnoredClass);
+        buttonRow.Add(m_SelectAllIgnoredButton);
 
         parent.Add(m_IgnoredHelpBox);
+    }
+
+    void UpdateIgnoredHelpBoxButtons(int ignoredCount)
+    {
+        if (m_SelectAllIgnoredButton == null || m_SelectFirstIgnoredButton == null)
+            return;
+
+        bool isSingle = ignoredCount == 1;
+        m_SelectAllIgnoredButton.style.display = isSingle ? DisplayStyle.None : DisplayStyle.Flex;
+        m_SelectAllIgnoredButton.text = DictionaryDrawer.Texts.SelectAllIgnoredButtonLabel;
+        m_SelectFirstIgnoredButton.text = isSingle
+            ? DictionaryDrawer.Texts.SelectIgnoredButtonLabel
+            : DictionaryDrawer.Texts.SelectFirstIgnoredButtonLabel;
     }
 
     void OnSelectFirstIgnoredClicked()
@@ -578,6 +604,20 @@ internal partial class DictionaryView : ListView
         SetSelection(firstDisplayIndex);
         ScrollToItem(firstDisplayIndex);
         FocusContentContainer();
+    }
+
+    void OnSelectAllIgnoredClicked()
+    {
+        using (ListPool<int>.Get(out var displayIndices))
+        {
+            DictionaryDrawer.CollectIgnoredDisplayIndices(m_DuplicateEntryIndices, m_NullKeyEntryIndices, m_SortedIndexMap, displayIndices);
+            if (displayIndices.Count == 0)
+                return;
+
+            SetSelection(displayIndices);
+            ScrollToItem(displayIndices[0]);
+            FocusContentContainer();
+        }
     }
 
     VisualElement BuildColumnHeader()
@@ -627,7 +667,7 @@ internal partial class DictionaryView : ListView
         header.AddManipulator(new ContextualMenuManipulator(evt =>
         {
             // The three layouts form a radio group (the active one is checked), followed
-            // by a separator and the "Reset to Defaults" action.
+            // by a separator and the "Reset Layout" action.
             AppendLayoutAction(evt.menu, DictionaryDrawer.Texts.TwoColumnsLayoutLabel, DictionaryLayout.TwoColumns);
             AppendLayoutAction(evt.menu, DictionaryDrawer.Texts.OneColumnWithValueFoldoutLayoutLabel, DictionaryLayout.OneColumnWithValueFoldout);
             AppendLayoutAction(evt.menu, DictionaryDrawer.Texts.OneColumnWithValueVisibleLayoutLabel, DictionaryLayout.OneColumnWithValueVisible);
@@ -636,7 +676,7 @@ internal partial class DictionaryView : ListView
                 _ => DictionaryDrawer.SetShowSerializedOrder(!DictionaryDrawer.ShowSerializedOrder),
                 _ => DictionaryDrawer.ShowSerializedOrder ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             evt.menu.AppendSeparator();
-            evt.menu.AppendAction(DictionaryDrawer.Texts.ResetToDefaultsLabel,
+            evt.menu.AppendAction(DictionaryDrawer.Texts.ResetLayoutLabel,
                 _ => ResetToDefaults(),
                 _ => DictionaryDrawer.HasCachedState(m_StateCacheKey) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
         }));
@@ -1530,6 +1570,7 @@ internal partial class DictionaryView : ListView
             if (hasIgnored)
             {
                 m_IgnoredHelpBox.text = DictionaryDrawer.Texts.GetIgnoredHelpBoxText(duplicateCount, nullKeyCount);
+                UpdateIgnoredHelpBoxButtons(ignoredCount);
                 m_IgnoredHelpBox.style.display = DisplayStyle.Flex;
             }
             else
@@ -1544,6 +1585,8 @@ internal partial class DictionaryView : ListView
         var selected = SelectedDisplayIndices;
         int newSelectedDisplayIndex = selected.Count == 1 ? selected[0] : -1;
 
+        bool wasScrolledToBottom = IsScrolledToBottom();
+
         var removed = selected.Count > 0 ?
             DictionaryDrawer.RemoveEntriesAtDisplayIndices(m_ArrayProperty, selected, m_SortedIndexMap) :
             DictionaryDrawer.RemoveEntryAtDisplayIndex(m_ArrayProperty, m_ArrayProperty.arraySize - 1, m_SortedIndexMap);
@@ -1555,12 +1598,37 @@ internal partial class DictionaryView : ListView
         UpdateHeaderInfo();
 
         int newSize = displayedItemCount;
-        if (newSize <= 0 || newSelectedDisplayIndex < 0)
+        int selectedDisplayIndex = newSize > 0 && newSelectedDisplayIndex >= 0
+            ? Mathf.Min(newSelectedDisplayIndex, newSize - 1)
+            : -1;
+
+        if (selectedDisplayIndex < 0)
             ClearSelection();
         else
-            SetSelection(Mathf.Min(newSelectedDisplayIndex, newSize - 1));
+            SetSelection(selectedDisplayIndex);
 
         FocusContentContainer();
+
+        bool stickToBottom = wasScrolledToBottom && newSize > 0 &&
+            (selectedDisplayIndex < 0 || selectedDisplayIndex == newSize - 1);
+
+        if (stickToBottom)
+        {
+            schedule.Execute(() => ScrollToItem(-1));
+        }
+        else if (selectedDisplayIndex >= 0)
+        {
+            schedule.Execute(() => ScrollToItem(selectedDisplayIndex));
+        }
+    }
+
+    bool IsScrolledToBottom()
+    {
+        var scroller = scrollView?.verticalScroller;
+        if (scroller == null || scroller.highValue <= 0f)
+            return false;
+
+        return scroller.value >= scroller.highValue - k_ScrolledToBottomTolerance;
     }
 
     /// <summary>

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Profiling;
 
@@ -26,8 +27,7 @@ namespace UnityEngine.UIElements.UIR
         NativeArray<Vector4> m_Texels; // Owned by the texture. Usable between GetRawTextureData and Apply.
 
         bool m_Dirty; // texel content changed since the last Apply
-        bool m_CompareWritesNow; // effective flag; cleared on the first change, restored on upload
-        bool m_CompareWritesRequested; // externally requested policy
+        bool m_CompareWritesNow; // skip-identical-writes switch; cleared on the first change, re-armed on upload
 
         public ShaderInfoStorage(int initialSize = 64, int maxSize = 4096)
         {
@@ -76,19 +76,6 @@ namespace UnityEngine.UIElements.UIR
 
         // True when texels were written since the last UpdateTexture (an upload is pending).
         public bool hasPendingChanges => m_Dirty;
-
-        // When true, SetTexel compares against the stored value and skips
-        // identical writes, so redundant record updates don't dirty the storage (and thus don't upload).
-        // Single-flag scheme so the SetTexel hot path tests one bool.
-        public bool compareWrites
-        {
-            get => m_CompareWritesRequested;
-            set
-            {
-                m_CompareWritesRequested = value;
-                m_CompareWritesNow = value && !m_Dirty;
-            }
-        }
 
         public bool AllocateRect(int width, int height, out RectInt uvs)
         {
@@ -140,13 +127,32 @@ namespace UnityEngine.UIElements.UIR
             // UpdateTexture restores it (single-bool check on the hot path).
             if (m_CompareWritesNow)
             {
-                if (value.Equals(m_Texels[index])) // must be exact: texels hold arbitrary payloads (rects, indices, flags...), and Vector4 == is approximate
+                if (SameBits(value, m_Texels[index]))
                     return;
                 m_CompareWritesNow = false;
             }
 
             m_Texels[index] = value;
             m_Dirty = true;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        struct TexelData
+        {
+            [FieldOffset(0)] public Vector4 v;
+            [FieldOffset(0)] public ulong u0;
+            [FieldOffset(8)] public ulong u1;
+        }
+
+        // Bit-level equality: texels hold arbitrary payloads (rects, indices, flags...), so the
+        // compare must be exact — Vector4 == is approximate, and float == never matches a NaN
+        // payload against itself, which would make its rewrites dirty the storage forever.
+        static bool SameBits(in Vector4 a, in Vector4 b)
+        {
+            TexelData ta = default, tb = default;
+            ta.v = a;
+            tb.v = b;
+            return ta.u0 == tb.u0 && ta.u1 == tb.u1;
         }
 
         public void UpdateTexture()
@@ -164,7 +170,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_Texture.Apply(false, false);
                 m_Dirty = false;
-                m_CompareWritesNow = m_CompareWritesRequested; // re-arm comparing for the next batch
+                m_CompareWritesNow = true; // re-arm comparing for the next batch
                 // The native array can't be used after Apply has been called. By reseting it, we implicitly set IsCreated
                 // to false, which we use as the early-exit condition to prevent unnecessary calls to Apply.
                 m_Texels = new NativeArray<Vector4>();

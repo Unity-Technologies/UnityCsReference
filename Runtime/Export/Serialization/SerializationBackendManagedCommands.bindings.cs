@@ -4049,6 +4049,10 @@ internal static unsafe class SerializationBackendManagedCommands
                 // can key the duplicate-row cache by it. Empty when no FUID context or
                 // no template — duplicate-row tracking simply doesn't apply in those cases.
                 string dictionaryIdentifier = string.Empty;
+                // Gated with the extern itself: [FreeFunction] can't be redeclared as an
+                // InternalCall, and the BindingsGenerator doesn't run for TestAssembly.dll.
+                // The identifier only keys the duplicate-row cache, which native tests don't
+                // exercise, so an empty one is the correct degradation there.
                 if (ctx->hostingEntityId != EntityId.None
                     && header->fieldUniqueIdentifierTemplate != IntPtr.Zero)
                 {

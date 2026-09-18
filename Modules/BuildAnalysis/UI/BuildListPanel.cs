@@ -38,6 +38,7 @@ namespace UnityEditor.Build.Analysis
         private BuildEntry[] m_FilteredBuilds = Array.Empty<BuildEntry>();
         private string m_CurrentSearchText = string.Empty;
         private BuildEntry m_SelectedBuild;
+        private int m_PendingScrollIndex = -1;
 
         public BuildEntry SelectedBuild => m_SelectedBuild;
 
@@ -81,6 +82,33 @@ namespace UnityEditor.Build.Analysis
                 RestoreSelectionFromPrefs();
         }
 
+        public bool SelectBuild(GUID buildSessionGUID)
+        {
+            if (buildSessionGUID.Empty())
+                return false;
+
+            if (FindIndex(m_AllBuilds, buildSessionGUID) < 0)
+                return false; // No build with this GUID.
+
+            var index = FindIndex(m_FilteredBuilds, buildSessionGUID);
+            if (index < 0)
+            {
+                // An active search filter is hiding the target.
+                // Clear it so the re-query below sees the rebuilt list so the build becomes selectable.
+                m_SearchField.SetValueWithoutNotify(string.Empty);
+                ApplyFilter(string.Empty);
+                index = FindIndex(m_FilteredBuilds, buildSessionGUID);
+            }
+
+            if (index >= 0)
+            {
+                m_BuildListView.SetSelection(index); // fires OnListSelectionChanged → SelectionChanged
+                ScrollToIndex(index);                // SetSelection does not scroll the row into view
+            }
+
+            return true;
+        }
+
         public void ClearSelection()
         {
             var hadSelection = m_SelectedBuild != null;
@@ -97,6 +125,7 @@ namespace UnityEditor.Build.Analysis
 
         private void SetupBuildListView()
         {
+            m_BuildListView.viewDataKey = null;
             m_BuildListView.makeItem = MakeListItem;
             m_BuildListView.bindItem = BindListItem;
             m_BuildListView.selectionType = SelectionType.Single;
@@ -223,23 +252,57 @@ namespace UnityEditor.Build.Analysis
             if (m_SelectedBuild == null)
                 return;
 
-            var selectedGuid = m_SelectedBuild.BuildSessionGUID;
-            for (var i = 0; i < m_FilteredBuilds.Length; i++)
+            var index = FindIndex(m_FilteredBuilds, m_SelectedBuild.BuildSessionGUID);
+            if (index >= 0)
             {
-                if (m_FilteredBuilds[i].BuildSessionGUID == selectedGuid)
-                {
-                    // Refresh the cached reference so consumers see the latest metadata
-                    // for this GUID (size/duration/result may have changed across rebuilds).
-                    m_SelectedBuild = m_FilteredBuilds[i];
-                    m_BuildListView.SetSelectionWithoutNotify((IEnumerable<int>)new[] { i });
-                    return;
-                }
+                // Refresh the cached reference so consumers see the latest metadata
+                // for this GUID (size/duration/result may have changed across rebuilds).
+                m_SelectedBuild = m_FilteredBuilds[index];
+                m_BuildListView.SetSelectionWithoutNotify((IEnumerable<int>)new[] { index });
+                return;
             }
 
             // Selected build is no longer in the filtered view. Clear and notify.
             m_SelectedBuild = null;
             m_BuildListView.SetSelectionWithoutNotify((IEnumerable<int>)Array.Empty<int>());
             SelectionChanged?.Invoke(null);
+        }
+
+        private static int FindIndex(BuildEntry[] builds, GUID buildSessionGUID)
+        {
+            for (var i = 0; i < builds.Length; i++)
+            {
+                if (builds[i].BuildSessionGUID == buildSessionGUID)
+                    return i;
+            }
+            return -1;
+        }
+
+        // Scrolls the row at the given filtered index into view. On a freshly-opened window this can run
+        // from CreateGUI before the ListView has its first layout, where ScrollToItem can't position
+        // against an unresolved viewport — so defer to the first geometry pass in that case.
+        private void ScrollToIndex(int index)
+        {
+            if (m_BuildListView.layout.height > 0f)
+            {
+                m_BuildListView.ScrollToItem(index);
+                return;
+            }
+
+            var alreadyPending = m_PendingScrollIndex >= 0;
+            m_PendingScrollIndex = index;
+            if (!alreadyPending)
+                m_BuildListView.RegisterCallback<GeometryChangedEvent>(OnScrollOnGeometryChanged);
+        }
+
+        private void OnScrollOnGeometryChanged(GeometryChangedEvent _)
+        {
+            m_BuildListView.UnregisterCallback<GeometryChangedEvent>(OnScrollOnGeometryChanged);
+            if (m_PendingScrollIndex >= 0)
+            {
+                m_BuildListView.ScrollToItem(m_PendingScrollIndex);
+                m_PendingScrollIndex = -1;
+            }
         }
 
         private void OnListSelectionChanged(IEnumerable<object> selectedItems)
@@ -270,13 +333,11 @@ namespace UnityEditor.Build.Analysis
             if (string.IsNullOrEmpty(storedGuidString) || !GUID.TryParse(storedGuidString, out var storedGuid))
                 return;
 
-            for (var i = 0; i < m_FilteredBuilds.Length; i++)
+            var index = FindIndex(m_FilteredBuilds, storedGuid);
+            if (index >= 0)
             {
-                if (m_FilteredBuilds[i].BuildSessionGUID == storedGuid)
-                {
-                    m_BuildListView.SetSelection(i); // fires OnListSelectionChanged → SelectionChanged event
-                    return;
-                }
+                m_BuildListView.SetSelection(index); // fires OnListSelectionChanged → SelectionChanged event
+                ScrollToIndex(index);
             }
         }
 

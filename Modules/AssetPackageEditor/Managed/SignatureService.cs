@@ -38,7 +38,7 @@ namespace UnityEditor.AssetPackage
         public SignatureService()
         {
             // We get those here while in the main thread to make sure UnityConnect is properly initialized and we have the correct access token and base url even if they change during the editor session
-            m_BaseUrl = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPackagesApi);
+            m_BaseUrl = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.EcosystemApi);
 
             // This should only be called in the main thread as it relies on UnityConnect which is not thread safe, but we want to be able to update the access token in case it changes during the editor session
             m_AccessToken = UnityConnect.instance.GetAccessToken();

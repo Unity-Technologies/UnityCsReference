@@ -160,6 +160,7 @@ namespace UnityEngine.UIElements
             hierarchy.Add(m_Container);
 
             m_OptionsPopup.RegisterValueChangedCallback(OnPopupFieldValueChange);
+            RegisterCallback<NavigationMoveEvent>(OnNavigationMove, TrickleDown.TrickleDown);
             UpdateFields();
             showUnitAsDropdown = true;
         }
@@ -442,6 +443,14 @@ namespace UnityEngine.UIElements
             var isValid = string.Compare(unitStr, s_NoOptionString, StringComparison.OrdinalIgnoreCase) != 0;
             if (isValid)
                 m_OptionsPopup.SetValueWithoutNotify(unitStr);
+        }
+
+        void OnNavigationMove(NavigationMoveEvent evt)
+        {
+            // Stop the navigation event before the field's own tab handling re-routes focus back onto
+            // the unit selector and traps it there (UUM-147715).
+            if (evt.elementTarget?.parent == m_OptionsPopup)
+                evt.StopPropagation();
         }
 
         void OnPopupFieldValueChange(ChangeEvent<string> evt)

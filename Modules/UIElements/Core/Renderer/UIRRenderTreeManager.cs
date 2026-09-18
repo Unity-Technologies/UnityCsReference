@@ -445,8 +445,6 @@ namespace UnityEngine.UIElements.UIR
                 m_Stats.elementsRemoved = removedThisFrame;
                 m_TotalVisualElements += (int)addedThisFrame - (int)removedThisFrame;
 
-                shaderInfoAllocator.storageCompareWrites = m_ShaderInfoUpdateGuard.compareWrites;
-
                 m_BlockDirtyRegistration = true; // The repaint updater is not supposed to register new changes while processing sub-trees
                 m_Compositor.Update(m_RootRenderTree);
                 device.AdvanceFrame(); // Before making any changes to the buffers

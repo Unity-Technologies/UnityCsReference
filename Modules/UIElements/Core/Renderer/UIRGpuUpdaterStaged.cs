@@ -128,7 +128,6 @@ namespace UnityEngine.UIElements.UIR
         // When negative, it means the number of frames since last used (decrements every unused frame)
         // When [0,1,2,...,k_MaxQueuedFrameCount[ it means the frame index where it is being used
         int m_CurrentFrameIndex;
-        int m_TotalDirtyCount;
         int m_TotalCpuCopyRanges; // Total number of CPU copy ranges prepared
 
         // Job handle for the pending CPU copy job from the vertex/index buffers to the staging buffers
@@ -152,13 +151,8 @@ namespace UnityEngine.UIElements.UIR
             Debug.Assert(dataSet.bufferType == m_BufferType);
             Debug.Assert(dataSet.cpuData.Stride == m_StagingElementStride, "DataSet stride must match the updater's element stride");
 
-            int dirtyCount = dataSet.dirtyRanges.Count;
-
-            if (dirtyCount > 0)
-            {
-                m_TotalDirtyCount += dirtyCount;
+            if (dataSet.dirtyRanges.Count > 0)
                 m_DirtyDataSets.Add(dataSet);
-            }
         }
 
         public override void CompleteUpdate()
@@ -178,6 +172,10 @@ namespace UnityEngine.UIElements.UIR
             // Find all the available staging buffers for this frame
             GatherAvailableStagingBuffers();
 
+            // Consolidate before sizing/sorting so the reservation and the sort key reflect the final range set.
+            foreach (DataSet dataSet in m_DirtyDataSets)
+                dataSet.ConsolidateRanges();
+
             // Sort the dirty data sets by total dirty size from largest to smallest
             m_DirtyDataSets.Sort(k_DataSetSort);
 
@@ -187,7 +185,7 @@ namespace UnityEngine.UIElements.UIR
             // Process data sets, packing them into available buffers
             foreach (DataSet dataSet in m_DirtyDataSets)
             {
-                StagingBufferInfo targetBuffer = FindOrAllocateBuffer(m_AvailableStagingBuffers, (int)dataSet.totalDirtyCount);
+                StagingBufferInfo targetBuffer = FindOrAllocateBuffer(m_AvailableStagingBuffers, GetRequiredStagingLength(dataSet));
                 targetBuffer.frameUsed = m_CurrentFrameIndex;
 
                 // Determine the required copy offsets between the staging buffer and the data set
@@ -243,8 +241,6 @@ namespace UnityEngine.UIElements.UIR
             foreach (DataSet dataSet in m_DirtyDataSets)
                 dataSet.ResetDirtyRanges();
             m_DirtyDataSets.Clear();
-
-            m_TotalDirtyCount = 0;
 
             // Clear the available buffers list to prevent memory retention
             m_AvailableStagingBuffers.Clear();
@@ -325,6 +321,33 @@ namespace UnityEngine.UIElements.UIR
                 m_StagingBuffers.RemoveRange(writeIndex, elementsToRemove);
         }
 
+        const int k_MaxRangesForExactStagingLength = 16;
+
+        int GetRequiredStagingLength(DataSet dataSet)
+        {
+            if (m_BufferType != Utility.GPUBufferType.Index)
+                // Vertices are always aligned
+                return (int)dataSet.totalDirtyCount;
+
+            var dirtyRanges = dataSet.dirtyRanges;
+            if (dirtyRanges.Count > k_MaxRangesForExactStagingLength)
+                // Many ranges, use worst-case estimate
+                // Each range can require up to 2 extra indices to be uploaded (start and end get aligned)
+                return (int)dataSet.totalDirtyCount + dirtyRanges.Count * 2 * ((int)k_IndexAlignment - 1);
+
+            // Few ranges, compute exact alignment
+            // Avoids problematic cases like 8192 becoming 8194 and requiring a much larger staging buffer
+            int requiredLength = 0;
+            foreach (var range in dirtyRanges)
+            {
+                uint start = range.start;
+                uint count = range.count;
+                AlignIndexRange(ref start, ref count);
+                requiredLength += (int)count;
+            }
+            return requiredLength;
+        }
+
         int FindSuitableBufferLength(int requiredLength)
         {
             // Find the smallest supported buffer length that fits the required length
@@ -373,7 +396,6 @@ namespace UnityEngine.UIElements.UIR
         unsafe void PrepareCopyRanges(DataSet dataSet, StagingBufferInfo stagingBuffer)
         {
             // Allocate ranges for this destination
-            dataSet.ConsolidateRanges();
             var dirtyRanges = dataSet.dirtyRanges;
             int rangeCount = dirtyRanges.Count;
             NativeSlice<GfxCopyBufferRange> copyRanges = m_GpuCopyRangesPool.Allocate(rangeCount);
@@ -402,6 +424,11 @@ namespace UnityEngine.UIElements.UIR
                 stagingBuffer.usedCount += (int)count;
                 rangeIndex++;
             }
+
+            // The copies below are unchecked memcpys and GPU range copies, so an under-sized reservation here
+            // silently corrupts memory rather than failing.
+            Debug.Assert(stagingBuffer.usedCount <= stagingBuffer.capacity,
+                "The staging buffer is too small for the ranges being copied into it");
 
             Debug.Assert(dataSet.gpuData != null);
 

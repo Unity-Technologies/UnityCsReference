@@ -217,6 +217,25 @@ namespace UnityEngine.UIElements
 
         IPanelComponent IPanelComponent.parentUI => m_ParentUI;
 
+        /// <summary>
+        /// Finds the UIDocument whose UI hierarchy contains the given element.
+        /// </summary>
+        /// <remarks>
+        /// If the element is inside a nested UIDocument, the closest one is returned.
+        /// </remarks>
+        /// <param name="ve">The element to search from.</param>
+        /// <returns>The UIDocument containing the element, or null if the element is not part of a UIDocument.</returns>
+        public static UIDocument FindUIDocument(VisualElement ve)
+        {
+            for (var current = ve; current != null; current = current.hierarchy.parent)
+            {
+                if (current is IPanelComponentRootElement { panelComponent: UIDocument document })
+                    return document;
+            }
+
+            return null;
+        }
+
         [SerializeField]
         private UIDocument m_ParentUI;
 

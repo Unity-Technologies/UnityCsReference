@@ -821,6 +821,27 @@ internal static class UxmlAssetUtilities
     }
 
     /// <summary>
+    /// Removes every binding currently registered on the element, so that deserializing the element's serialized
+    /// data can recreate them. Deserializing over live bindings corrupts their data source.
+    /// </summary>
+    public static void ClearLiveBindings(VisualElement element)
+    {
+        if (element == null)
+            return;
+
+        using var _ = ListPool<BindingId>.Get(out var boundIds);
+
+        foreach (var bindingInfo in element.GetBindingInfos())
+        {
+            if (bindingInfo.bindingId != BindingId.Invalid)
+                boundIds.Add(bindingInfo.bindingId);
+        }
+
+        foreach (var bindingId in boundIds)
+            element.ClearBinding(bindingId);
+    }
+
+    /// <summary>
     /// Indicates whether the specified uxml attribute is inlined or template overridden.
     /// </summary>
     /// <param name="editedVisualTreeAsset">The edited Visual Tree Asset</param>

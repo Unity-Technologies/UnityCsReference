@@ -129,8 +129,16 @@ namespace UnityEditor
         public static void TilingSettingsUI(TerrainLayer terrainLayer)
         {
             GUILayout.Label(s_Styles.tilingSettings, EditorStyles.boldLabel);
-            terrainLayer.tileSize = EditorGUILayout.Vector2Field(s_Styles.tilingSize, terrainLayer.tileSize);
-            terrainLayer.tileOffset = EditorGUILayout.Vector2Field(s_Styles.tilingOffset, terrainLayer.tileOffset);
+
+            EditorGUI.BeginChangeCheck();
+            var tileSize = EditorGUILayout.Vector2Field(s_Styles.tilingSize, terrainLayer.tileSize);
+            var tileOffset = EditorGUILayout.Vector2Field(s_Styles.tilingOffset, terrainLayer.tileOffset);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(terrainLayer, "Terrain Layer Tiling Settings");
+                terrainLayer.tileSize = tileSize;
+                terrainLayer.tileOffset = tileOffset;
+            }
         }
 
         public static void TilingSettingsUI(SerializedProperty tileSize, SerializedProperty tileOffset)

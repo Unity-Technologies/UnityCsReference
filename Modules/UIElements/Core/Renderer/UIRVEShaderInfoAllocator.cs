@@ -364,7 +364,6 @@ namespace UnityEngine.UIElements.UIR
         {
             // Because we want predictable placement of first pages, 64 will fit all default allocs
             m_Storage = new ShaderInfoStorage(64);
-            m_Storage.compareWrites = m_CompareWrites;
 
             // The order of allocation from the atlas below is important. See the comment at the beginning of Construct().
             RectInt rcTransform, rcClipRect, rcOpacity, rcColor, rcTextCoreSettings;
@@ -489,19 +488,6 @@ namespace UnityEngine.UIElements.UIR
 
             m_Storage.UpdateTexture();
             return true;
-        }
-
-        // Forwarded to the storage; survives lazy storage creation.
-        bool m_CompareWrites;
-        public bool storageCompareWrites
-        {
-            get => m_CompareWrites;
-            set
-            {
-                m_CompareWrites = value;
-                if (m_Storage != null)
-                    m_Storage.compareWrites = value;
-            }
         }
 
         public BMPAlloc AllocTransform()

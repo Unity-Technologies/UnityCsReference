@@ -48,6 +48,31 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
 
         internal FilterParameter defaultValue;
+
+        // Code-only (not serialized): default(struct) must mean "no clamp" so declarations without
+        // an explicit range (e.g. deserialized custom definitions) stay unclamped.
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal bool hasFloatRange;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal float minFloatValue;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal float maxFloatValue;
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
+        internal float ClampFloat(float value)
+        {
+            if (!hasFloatRange)
+                return value;
+
+            // Mathf.Clamp compares, so NaN passes through both tests unchanged and would reach the
+            // shader; 0 is the neutral value for every ranged parameter. Infinities clamp normally.
+            if (float.IsNaN(value))
+                value = 0.0f;
+
+            return Mathf.Clamp(value, minFloatValue, maxFloatValue);
+        }
     }
 
     /// <summary>

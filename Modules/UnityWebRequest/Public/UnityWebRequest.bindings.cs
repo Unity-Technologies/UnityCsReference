@@ -700,7 +700,11 @@ namespace UnityEngine.Networking
         {
             get
             {
-                return new Version(responseVersionString);
+                // No version is reported until the server has actually replied, so an aborted or
+                // failed request yields null/empty here. Version's constructor rejects both, and
+                // throwing out of this getter would strand callers waiting on the response.
+                var version = responseVersionString;
+                return string.IsNullOrEmpty(version) ? null : new Version(version);
             }
         }
 

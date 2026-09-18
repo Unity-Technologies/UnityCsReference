@@ -51,7 +51,9 @@ namespace Unity.Hierarchy
             TextField.RegisterCallback<BlurEvent>(OnBlurEvent);
         }
 
-        public void BeginRename()
+        public void BeginRename() => BeginRename(Text);
+
+        internal void BeginRename(string initialText)
         {
             if (IsRenaming)
                 return;
@@ -63,7 +65,7 @@ namespace Unity.Hierarchy
             Label.style.display = DisplayStyle.None;
             TextField.style.display = DisplayStyle.Flex;
 
-            TextField.value = Text;
+            TextField.value = initialText;
             TextField.Q<TextElement>().Focus();
 
             OnBeginRename?.Invoke();

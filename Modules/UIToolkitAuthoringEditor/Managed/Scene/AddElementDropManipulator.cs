@@ -116,6 +116,9 @@ sealed class AddElementDropManipulator : Manipulator
 
             AddElementCommand.Execute(CommandSources.Scene, libraryItem.libraryType.type, EditedVisualTreeAsset, placement.ParentVea, placement.Index, libraryItem.libraryType.variantName);
 
+            // A create the user asked for, so the new element opens its rename field.
+            UIToolkitStageUtility.RequestRenameOfPendingSelection();
+
             RequestRefresh?.Invoke();
             evt.StopPropagation();
             return;

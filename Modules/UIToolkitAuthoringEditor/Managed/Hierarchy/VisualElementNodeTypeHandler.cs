@@ -210,6 +210,9 @@ internal abstract class VisualElementNodeTypeHandler :
 
     internal List<VisualElementAsset> m_NodesToSelect;
 
+    /// <summary>Whether the element the pending request resolves to is put into rename mode once selected.</summary>
+    private bool m_BeginRenameOnResolve;
+
     protected IVisualElementSelectionHandler SelectionHandler => m_SelectionHandler;
 
     /// <summary>
@@ -458,6 +461,11 @@ internal abstract class VisualElementNodeTypeHandler :
             return false;
         }
 
+        // The row displays the name as "#name". It is not part of the name and never valid in one, so it is dropped
+        // rather than rejected.
+        if (name.StartsWith('#'))
+            name = name[1..];
+
         if (!ValidateName(name))
         {
             CommandList.SetDirty();
@@ -470,6 +478,11 @@ internal abstract class VisualElementNodeTypeHandler :
             CommandList.SetDirty();
             return false;
         }
+
+        // Name has not changed.
+        if (string.CompareOrdinal(element.name, name) == 0)
+            return true;
+
         SetElementNameCommand.Execute(this, elementVea, name);
         element.name = name;
         return true;
@@ -481,6 +494,16 @@ internal abstract class VisualElementNodeTypeHandler :
             return "<null>";
 
         return GetDisplayName(view, node, element);
+    }
+
+    string IHierarchyEditorNodeTypeHandler.GetRenameTextOverride(HierarchyView view, in HierarchyNode node)
+    {
+        if (!m_Mappings.TryGetValue(node, out var element) || element == null)
+            return null;
+
+        // A document row shows the file name it already reads; an element row edits the raw name, without the "#"
+        // the row prefixes it with.
+        return element is IPanelComponentRootElement ? null : element.name ?? string.Empty;
     }
 
     bool IHierarchyEditorNodeTypeHandler.CanDuplicate(HierarchyView view)
@@ -1199,8 +1222,59 @@ internal abstract class VisualElementNodeTypeHandler :
 
     internal void RequestSelectionOnNextUpdate(IList<VisualElementAsset> assets)
     {
+        m_BeginRenameOnResolve = false;
         m_NodesToSelect ??= new List<VisualElementAsset>();
         m_NodesToSelect.AddRange(assets);
+    }
+
+    /// <summary>
+    /// Asks for the element the pending request resolves to to be put into rename mode once it is selected, for a
+    /// caller that just created it interactively.
+    /// </summary>
+    /// <remarks>
+    /// Kept out of the commands: whether a create opens the rename field is a property of the user action that
+    /// started it, not of the edit it makes, and a caller driving the command for any other reason gets the
+    /// selection alone.
+    /// </remarks>
+    internal void RequestRenameOfPendingSelection()
+    {
+        // The setting the GameObject hierarchy shares governs this too.
+        m_BeginRenameOnResolve = m_NodesToSelect is { Count: 1 } && HierarchyPreferences.RenameNewObjects;
+    }
+
+    /// <summary>
+    /// Whether the selection request being resolved asked for a rename; reading it consumes the ask.
+    /// </summary>
+    protected bool ConsumeBeginRenameRequest()
+    {
+        var beginRename = m_BeginRenameOnResolve;
+        m_BeginRenameOnResolve = false;
+        return beginRename;
+    }
+
+    /// <summary>
+    /// Puts the row of <paramref name="node"/> into rename mode, in the hierarchy window the user last interacted
+    /// with.
+    /// </summary>
+    /// <remarks>
+    /// Only that one window renames, and only it takes focus; every other one keeps showing the new element
+    /// without stealing the keys the rename field is about to receive.
+    /// </remarks>
+    protected void FrameAndBeginRename(in HierarchyNode node)
+    {
+        var window = HierarchyWindow.LastInteractedWindow;
+        if (!window || window.Hierarchy != Hierarchy)
+            return;
+
+        var view = window.View;
+        if (view == null)
+            return;
+
+        // The rename field only receives keys while its window has focus, and an add started elsewhere (a library
+        // drop on the scene view, a menu create) leaves that other window focused.
+        window.Focus();
+
+        view.ScheduleFrameAndBeginRename(in node);
     }
 
     protected List<VisualElementAsset> GetDelayedSelectionRequests()

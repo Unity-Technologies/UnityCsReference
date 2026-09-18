@@ -222,8 +222,6 @@ namespace Unity.UI.Builder
 
             foreach (var element in m_Selection.selection)
                 m_CutElements.Add(element);
-
-            JustNotify();
         }
 
         public void DuplicateSelection()
@@ -614,12 +612,6 @@ namespace Unity.UI.Builder
         public void ClearSelectionNotify()
         {
             m_Selection.ClearSelection(null);
-            m_Selection.NotifyOfHierarchyChange(null);
-            m_Selection.NotifyOfStylingChange(null);
-        }
-
-        public void JustNotify()
-        {
             m_Selection.NotifyOfHierarchyChange(null);
             m_Selection.NotifyOfStylingChange(null);
         }

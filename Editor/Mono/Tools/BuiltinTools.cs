@@ -487,6 +487,9 @@ namespace UnityEditor
 
         const float kMinVisibleSize = 0.2f;
 
+        const EventModifiers kIgnoredDragModifiers =
+            EventModifiers.CapsLock | EventModifiers.Numeric | EventModifiers.FunctionKey;
+
         public override GUIContent toolbarIcon
         {
             get { return EditorGUIUtility.TrTextContentWithIcon("Rect Tool", "Rect Tool", "RectTool"); }
@@ -874,7 +877,8 @@ namespace UnityEditor
                     {
                         acceptClick =
                             evt.button == 0 &&
-                            evt.modifiers == 0 &&
+                            // Test against the flipped mask of modifiers to ignore.
+                            (evt.modifiers & ~kIgnoredDragModifiers) == 0 &&
                             RectHandles.RaycastGUIPointToWorldHit(evt.mousePosition, guiPlane, out s_StartMouseWorldPos) &&
                             (
                                 SceneViewDistanceToRectangle(corners, evt.mousePosition) == 0f ||

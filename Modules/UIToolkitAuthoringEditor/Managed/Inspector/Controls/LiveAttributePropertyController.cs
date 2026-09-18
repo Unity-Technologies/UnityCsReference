@@ -334,7 +334,7 @@ class LiveAttributePropertyController
                     attribute = attributeDescription,
                     property = property,
                     valueType = LiveAttributePropertyModificationValueType.BoxedValue,
-                    value = value,
+                    value = attributeDescription.ConvertToSerializedFieldValue(value),
                     isBound = isBound,
                 });
             }

@@ -322,9 +322,16 @@ namespace UnityEditor.Shaders
 
         internal static bool SplitAndValidateDefine(string define, out string identifier, out string value, out string msg)
         {
-            var sections = define.Split((char[])null, StringSplitOptions.RemoveEmptyEntries); // null catches all whitespace variants
             identifier = "";
             value = "";
+
+            if (string.IsNullOrWhiteSpace(define))
+            {
+                msg = "Invalid empty define. Use identifier and numeric value pair separated with a whitespace.";
+                return false;
+            }
+
+            var sections = define.Split((char[])null, StringSplitOptions.RemoveEmptyEntries); // null catches all whitespace variants
 
             if (sections.Length != 2)
             {

@@ -109,6 +109,12 @@ namespace Unity.IO.Archive
         internal static extern ArchiveHandle MountAsync(ContentNamespace namespaceId, string filePath, string prefix, ManagedArchiveOptions options);
         public static ArchiveHandle MountAsync(ContentNamespace namespaceId, string filePath, string prefix)
         {
+            if (!namespaceId.IsValid)
+                throw new ArgumentException("The provided namespace is invalid. Use ContentNamespace.Default or ContentNamespace.GetOrCreateNamespace to obtain a valid namespace.", nameof(namespaceId));
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
+            if (prefix == null)
+                throw new ArgumentNullException(nameof(prefix));
             return MountAsync(namespaceId, filePath, prefix, ManagedArchiveOptions.None);
         }
         public static extern ArchiveHandle[] GetMountedArchives(ContentNamespace namespaceId);

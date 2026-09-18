@@ -238,16 +238,25 @@ namespace UnityEditor.UIElements
             GradientPicker.Show(rawValue, hdr, colorSpace, OnGradientChanged, OnPickerClosed);
         }
 
+        internal event Action pickerClosed;
+
         void OnPickerClosed()
         {
-            // Increment and name a new group before collapsing so that any redo entries created
-            // by mid-session undos are truncated from the stack. (UUM-142114)
-            if (m_PickerHasChanges)
+            try
             {
-                Undo.IncrementCurrentGroup();
-                Undo.SetCurrentGroupName("Modify Gradient");
+                pickerClosed?.Invoke();
             }
-            Undo.CollapseUndoOperations(m_PickerUndoGroup);
+            finally
+            {
+                // Increment and name a new group before collapsing so that any redo entries created
+                // by mid-session undos are truncated from the stack. (UUM-142114)
+                if (m_PickerHasChanges)
+                {
+                    Undo.IncrementCurrentGroup();
+                    Undo.SetCurrentGroupName("Modify Gradient");
+                }
+                Undo.CollapseUndoOperations(m_PickerUndoGroup);
+            }
         }
 
         // We dont want Undo operations to be combined when the picker is still open so we will handle the collapsing. (UUM-142114)

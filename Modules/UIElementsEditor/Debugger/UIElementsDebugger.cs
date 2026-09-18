@@ -1254,14 +1254,7 @@ namespace UnityEditor.UIElements.Debugger
                 && ve == m_Context.selectedElement)
                 m_StylesDebuggerContainer.UpdateMatches();
 
-            if (panelDebug?.debuggerOverlayPanel != null)
-            {
-                panelDebug.debuggerOverlayPanel.visualTree.style.position = Position.Absolute;
-                panelDebug.debuggerOverlayPanel.visualTree.style.top = panel.visualTree.layout.yMin;
-                panelDebug.debuggerOverlayPanel.visualTree.style.left = panel.visualTree.layout.xMin;
-                panelDebug.debuggerOverlayPanel.visualTree.style.width = panel.visualTree.layout.width;
-                panelDebug.debuggerOverlayPanel.visualTree.style.height = panel.visualTree.layout.height;
-            }
+            (panelDebug as PanelDebug)?.UpdateOverlayPanelSize();
         }
 
         static UIRRepaintUpdater GetRepaintUpdater(IPanel panel)

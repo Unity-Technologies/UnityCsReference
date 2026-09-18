@@ -46,11 +46,9 @@ namespace UnityEngine.TextCore
         /// </summary>
         public float scale { get { return m_Scale; } set { m_Scale = value; } }
 
-        /// <summary>
-        /// The units per EM for the font face.
-        /// </summary>
-        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
-        internal int unitsPerEM { get { return m_UnitsPerEM; } set { m_UnitsPerEM = value; } }
+        ///<summary>The number of font units per EM square for the font face.</summary>
+        ///<remarks>Metrics stored in font units can be converted to a given size with size / unitsPerEM.</remarks>
+        public int unitsPerEM { get { return m_UnitsPerEM; } set { m_UnitsPerEM = value; } }
 
         // Key metrics for the typeface
 

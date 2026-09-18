@@ -166,6 +166,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 [assembly: InternalsVisibleTo("PlaymodeTests")]
 [assembly: InternalsVisibleTo("ContentBuildLoadPreview")]
+[assembly: InternalsVisibleTo("ContentBuildLoadPreview.Editor")]
 [assembly: InternalsVisibleTo("Unity.CrossModule.PlayMode.Tests.Runtime")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-firstpass-testable")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.GameObject.Tests.Editor")]

@@ -177,26 +177,8 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
             return;
 
         // We need to clear bindings before calling Init to avoid corrupting the data source.
-        ClearUxmlBindings();
+        UxmlAssetUtilities.ClearLiveBindings(context.element);
         context.uxmlSerializedData.Deserialize(context.element, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
-    }
-
-    void ClearUxmlBindings()
-    {
-        using var pool = ListPool<BindingId>.Get(out var idsToRemove);
-        foreach (var bindingInfo in context.element.GetBindingInfos())
-        {
-            var bindingId = bindingInfo.binding.property;
-            if (bindingId != BindingId.Invalid)
-            {
-                idsToRemove.Add(bindingId);
-            }
-        }
-
-        foreach (var bindingId in idsToRemove)
-        {
-            context.element.ClearBinding(bindingId);
-        }
     }
 
     public void RegisterUxmlAttributeFieldDecorator(UxmlAttributeFieldDecorator decorator)

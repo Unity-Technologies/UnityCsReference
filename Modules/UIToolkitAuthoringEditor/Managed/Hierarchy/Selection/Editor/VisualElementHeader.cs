@@ -36,6 +36,7 @@ partial class VisualElementHeader : UISelectionObjectHeader
 
     private VisualElement m_Element;
     readonly UxmlAttributesView m_AttributesView;
+    readonly TextField m_NameField;
 
     readonly VisualElement m_AssetPathContainer;
     readonly Image m_AssetPathTypeIcon;
@@ -162,6 +163,10 @@ partial class VisualElementHeader : UISelectionObjectHeader
 
         m_AttributesView = this.Q<UxmlAttributesView>();
 
+        m_NameField = this.Q<TextField>("ElementName");
+        // Registered before the field is bound, so this runs before the binding's own trickle-down callback writes.
+        m_NameField.RegisterCallback<ChangeEvent<string>>(OnNameChanged, TrickleDown.TrickleDown);
+
         m_AssetPathContainer = new VisualElement();
         m_AssetPathContainer.AddToClassList(AssetPathContainerUssClass);
 
@@ -187,5 +192,18 @@ partial class VisualElementHeader : UISelectionObjectHeader
 
         SearchField = new InspectorSearchField();
         Add(SearchField);
+    }
+
+    void OnNameChanged(ChangeEvent<string> evt)
+    {
+        if (evt.target != m_NameField || evt.previousValue == evt.newValue)
+            return;
+
+        // An unnamed element is a valid state here, unlike in the Hierarchy, whose regex needs a character.
+        if (string.IsNullOrEmpty(evt.newValue) || VisualElementNodeTypeHandler.elementNameRegex.IsMatch(evt.newValue))
+            return;
+
+        m_NameField.SetValueWithoutNotify(evt.previousValue);
+        evt.StopPropagation();
     }
 }

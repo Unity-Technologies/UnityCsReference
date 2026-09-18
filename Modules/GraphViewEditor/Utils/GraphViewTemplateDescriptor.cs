@@ -169,6 +169,11 @@ namespace UnityEditor.Experimental.GraphView
         [SerializeField] private string toolKey;
 
         /// <summary>
+        /// Tool-authored search terms, used to match templates when QuickSearch's index isn't ready.
+        /// </summary>
+        [SerializeField] internal DataBag searchTerms = default;
+
+        /// <summary>
         /// Internal use only: make the bound with the asset
         /// </summary>
         [NonSerialized]

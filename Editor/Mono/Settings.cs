@@ -335,6 +335,7 @@ namespace UnityEditor
         public static implicit operator float(SavedFloat s) => s.value;
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal class SavedBool : SavedValue<bool>
     {
         public SavedBool(string name, bool value) : base(name, value) { }

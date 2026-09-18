@@ -24,7 +24,7 @@ namespace UnityEngine.TextCore.Text
         /// List containing the characters of the given font asset.
         /// </summary>
         [Obsolete(
-            "characterTable is deprecated and will be removed in a future release. Advanced Text Generator (ATG) text backend no longer requires character data.",
+            "characterTable is deprecated and will be removed in a future release. Advanced Text Generator (ATG) text backend no longer requires character data. Use TryGetGlyphIndex and TryGetGlyphMetrics to query glyph data.",
             false)]
         public List<Character> characterTable
         {
@@ -36,7 +36,7 @@ namespace UnityEngine.TextCore.Text
         /// Dictionary used to lookup characters contained in the font asset or its fallbacks by their unicode values.
         /// </summary>
         [Obsolete(
-            "characterLookupTable is deprecated and will be removed in a future release. Advanced Text Generator (ATG) text backend no longer requires character data.",
+            "characterLookupTable is deprecated and will be removed in a future release. Advanced Text Generator (ATG) text backend no longer requires character data. Use TryGetGlyphIndex and TryGetGlyphMetrics to query glyph data.",
             false)]
         public Dictionary<uint, Character> characterLookupTable
         {
@@ -65,7 +65,7 @@ namespace UnityEngine.TextCore.Text
         /// List of glyphs contained in the font asset.
         /// </summary>
         [Obsolete(
-            "glyphTable is deprecated and will be removed in a future release.",
+            "glyphTable is deprecated and will be removed in a future release. Use TryGetGlyphMetrics to query glyph metrics.",
             false)]
         public List<Glyph> glyphTable
         {
@@ -77,7 +77,7 @@ namespace UnityEngine.TextCore.Text
         /// Dictionary used to lookup glyphs contained in the font asset by their index.
         /// </summary>
         [Obsolete(
-            "glyphLookupTable is deprecated and will be removed in a future release.",
+            "glyphLookupTable is deprecated and will be removed in a future release. Use TryGetGlyphMetrics to query glyph metrics.",
             false)]
         public Dictionary<uint, Glyph> glyphLookupTable
         {

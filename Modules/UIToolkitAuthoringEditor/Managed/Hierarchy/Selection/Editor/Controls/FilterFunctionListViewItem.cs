@@ -181,6 +181,14 @@ namespace Unity.UIToolkit.Editor
             var f = m_FilterFunction;
             if (evt.newValue is float floatValue)
             {
+                var declarations = f.GetDefinition()?.parameters;
+                if (declarations != null && paramIndex < declarations.Length)
+                {
+                    float clamped = declarations[paramIndex].ClampFloat(floatValue);
+                    if (clamped != floatValue && field is FloatField floatField)
+                        floatField.SetValueWithoutNotify(clamped);
+                    floatValue = clamped;
+                }
                 f.SetParameter(paramIndex, new FilterParameter(floatValue));
             }
             else if (evt.newValue is Color colorValue)

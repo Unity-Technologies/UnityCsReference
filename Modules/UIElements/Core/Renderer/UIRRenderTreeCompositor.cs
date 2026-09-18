@@ -142,6 +142,11 @@ namespace UnityEngine.UIElements.UIR
         [NoAutoStaticsCleanup] // per-material log dedup: a persistently broken filter logs once without hiding other filters' failures
         static readonly HashSet<EntityId> s_EffectDrawErrorLogged = new();
 
+        // Snapshotted once per frame: the underlying graphics caps are a native read, and they change
+        // when the device is re-created (graphics API switch, RenderDoc load), so they can't be cached longer.
+        int m_MaxBlockWidth;
+        int m_MaxBlockHeight;
+
         public RenderTreeCompositor(RenderTreeManager owner)
         {
             m_RenderTreeManager = owner;
@@ -160,6 +165,9 @@ namespace UnityEngine.UIElements.UIR
 
             if (rootRenderTree == null)
                 return;
+
+            m_MaxBlockWidth = RenderTreeAtlas.maxBlockWidth;
+            m_MaxBlockHeight = RenderTreeAtlas.maxBlockHeight;
 
             BuildDrawOperationTree(rootRenderTree);
             UpdateDrawBounds_PostOrder(m_RootOperation);
@@ -294,6 +302,17 @@ namespace UnityEngine.UIElements.UIR
                 PostProcessingMargins writeMargins = new();
 
                 DrawOperation parentOp = op.parent;
+                float scale = op.renderTree.rootRenderData.owner.scaledPixelsPerPoint;
+
+                // Last resort when the content alone exceeds the GPU limit: crop it so the texture
+                // can always be created; a failed creation renders nothing at all (UUM-134044).
+                if (parentOp != null && ExceedsAtlasLimits(UIRUtility.CastToRectInt(r), scale))
+                {
+                    r.width = Mathf.Min(r.width, Mathf.Floor(m_MaxBlockWidth / scale) - 1);
+                    r.height = Mathf.Min(r.height, Mathf.Floor(m_MaxBlockHeight / scale) - 1);
+                    LogTextureLimitError(op, UIRUtility.CastToRectInt(bounds.Value), scale, "the content was cropped");
+                }
+
                 if (parentOp?.type == DrawOperationType.Effect)
                 {
                     // Inflate for the parent read and write margins
@@ -301,6 +320,16 @@ namespace UnityEngine.UIElements.UIR
                     writeMargins = FilterHelper.GetWriteMargins(parentOp.FilterPass, parentOp.filter);
                     var inflated = UIRUtility.InflateByMargins(UIRUtility.InflateByMargins(r, readMargins), writeMargins);
                     rectInt = UIRUtility.CastToRectInt(inflated);
+
+                    if (ExceedsAtlasLimits(rectInt, scale))
+                    {
+                        // Rendering without margins (the effect reads edge-clamped) beats failing to
+                        // create the texture and not rendering the element at all.
+                        LogTextureLimitError(op, rectInt, scale, "the filter margins were discarded");
+                        readMargins = new();
+                        writeMargins = new();
+                        rectInt = UIRUtility.CastToRectInt(r);
+                    }
 
                     var sourceBounds = r;
                     sourceBounds = UIRUtility.InflateByMargins(sourceBounds, writeMargins);
@@ -310,7 +339,6 @@ namespace UnityEngine.UIElements.UIR
                     // Store the texel offsets in "pixels" since we do not know the texture size yet.
                     // They will be converted to UVs once rendered.
                     // Scale by DPI to convert from points to physical pixels.
-                    float scale = op.renderTree.rootRenderData.owner.scaledPixelsPerPoint;
                     op.parent.drawSourceTexOffsets = new Vector4(
                         readMargins.left * scale,
                         readMargins.top * scale,
@@ -348,6 +376,32 @@ namespace UnityEngine.UIElements.UIR
                     }
                 }
             }
+        }
+
+        bool ExceedsAtlasLimits(RectInt rect, float scale)
+        {
+            // Non-positive limits mean the graphics caps aren't usable yet; cropping against them would
+            // produce negative sizes, which is worse than letting the texture allocation report the failure.
+            if (m_MaxBlockWidth <= 0 || m_MaxBlockHeight <= 0)
+                return false;
+
+            return Mathf.CeilToInt(rect.width * scale) > m_MaxBlockWidth
+                || Mathf.CeilToInt(rect.height * scale) > m_MaxBlockHeight;
+        }
+
+        [NoAutoStaticsCleanup] // per-element log dedup (identity hash, keeps no element reference): the oversize condition persists across frames
+        static readonly HashSet<int> s_TextureLimitErrorLogged = new();
+
+        void LogTextureLimitError(DrawOperation op, RectInt rect, float scale, string action)
+        {
+            var ve = op.visualElement;
+            if (!s_TextureLimitErrorLogged.Add(ve?.GetHashCode() ?? 0))
+                return;
+
+            int width = Mathf.CeilToInt(rect.width * scale);
+            int height = Mathf.CeilToInt(rect.height * scale);
+            Debug.LogError($"The filter on element '{ve}' requires a {width}x{height} texture, which exceeds the " +
+                $"maximum supported size ({m_MaxBlockWidth}x{m_MaxBlockHeight}); {action}.");
         }
 
         // In the future, we could reuse textures, but for now we simply allocate one TextureId for each renderTree.

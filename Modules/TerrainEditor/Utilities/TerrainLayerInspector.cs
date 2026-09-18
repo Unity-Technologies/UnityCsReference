@@ -237,8 +237,14 @@ namespace UnityEditor
             // See also: TerrainLitGUI in HDRP, TerrainLitShaderGUI in URP.
             if (diffuseTexture != null && TextureHasAlpha(ref diffuseTexture))
             {
-                terrainLayer.smoothnessSource = (UnityEngine.TerrainLayerSmoothnessSource)EditorGUILayout.EnumPopup(
+                EditorGUI.BeginChangeCheck();
+                var smoothnessSource = (UnityEngine.TerrainLayerSmoothnessSource)EditorGUILayout.EnumPopup(
                     EditorGUIUtility.TrTextContent("Smoothness Source"), terrainLayer.smoothnessSource);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(terrainLayer, "Terrain Layer Smoothness Source");
+                    terrainLayer.smoothnessSource = smoothnessSource;
+                }
                 if (terrainLayer.smoothnessSource == TerrainLayerSmoothnessSource.DiffuseAlphaChannel)
                 {
                     GUIStyle warnStyle = new GUIStyle(GUI.skin.label);

@@ -5540,6 +5540,9 @@
     <Compile Include="..\..\Modules\ContentBuild\Editor\Managed\GameManagerDependencyInfo.cs">
       <Link>Modules\ContentBuild\Editor\Managed\GameManagerDependencyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ContentBuild\Editor\Managed\LoadableBlobIdEditorUtility.bindings.cs">
+      <Link>Modules\ContentBuild\Editor\Managed\LoadableBlobIdEditorUtility.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ContentBuild\Editor\Managed\ObjectIdentifier.bindings.cs">
       <Link>Modules\ContentBuild\Editor\Managed\ObjectIdentifier.bindings.cs</Link>
     </Compile>
@@ -8260,6 +8263,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Windows\ITemplateHelper.cs">
       <Link>Modules\GraphViewEditor\Windows\ITemplateHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Windows\TemplateQueryMatcher.cs">
+      <Link>Modules\GraphViewEditor\Windows\TemplateQueryMatcher.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Windows\TemplateSearchProvider.cs">
       <Link>Modules\GraphViewEditor\Windows\TemplateSearchProvider.cs</Link>
@@ -16145,6 +16151,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\BoxModelField.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\BoxModelField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\CompositeStyleRow.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\CompositeStyleRow.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\OverrideBarManipulator.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Hierarchy\Selection\Editor\Controls\StylePropertyField\OverrideBarManipulator.cs</Link>
     </Compile>
@@ -17152,7 +17161,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_uan24_xr/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_ybc893_l/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

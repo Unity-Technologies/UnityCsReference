@@ -142,12 +142,12 @@ namespace Unity.Profiling.Editor.UI
             LoadedCapturesHaveChanged();
         }
 
-        public bool ValidateName(string fileName)
+        public static bool ValidateName(string fileName)
         {
             return fileName.IndexOfAny(Path.GetInvalidFileNameChars()) == -1;
         }
 
-        public bool PathLengthIsValid(string sourceFilePath, string targetFileName)
+        public static bool PathLengthIsValid(string sourceFilePath, string targetFileName)
         {
             // The highlights suffix is the longest, and if we're renaming, that
             // will need changing too, so try with that.
@@ -179,7 +179,7 @@ namespace Unity.Profiling.Editor.UI
             return true;
         }
 
-        public bool CanRename(string sourceFilePath, string targetFileName)
+        public static bool CanRename(string sourceFilePath, string targetFileName)
         {
             var isRaw = sourceFilePath.EndsWith(k_FileExtensionRaw);
             var targetFilePath = Path.Combine(
@@ -394,7 +394,7 @@ namespace Unity.Profiling.Editor.UI
             return m_CaptureFolderWatcher.Directory.FullName;
         }
 
-        string GetOrCreateCaptureFolderPath()
+        static string GetOrCreateCaptureFolderPath()
         {
             var captureFolderPath = ProfilerUserSettings.AbsoluteProfilerCaptureStoragePath;
             if (!Directory.Exists(captureFolderPath) && ProfilerUserSettings.UsingDefaultProfilerCaptureStoragePath())

@@ -381,19 +381,19 @@ namespace Unity.Profiling.Editor.UI
                 return false;
             }
 
-            if (!m_CaptureDataService.ValidateName(newCaptureName))
+            if (!CaptureDataService.ValidateName(newCaptureName))
             {
                 ShowRenameWarning("Name contains invalid characters");
                 return false;
             }
 
-            if (!m_CaptureDataService.PathLengthIsValid(Model.FullPath, newCaptureName))
+            if (!CaptureDataService.PathLengthIsValid(Model.FullPath, newCaptureName))
             {
                 ShowRenameWarning("File path is too long");
                 return false;
             }
 
-            if (!m_CaptureDataService.CanRename(Model.FullPath, newCaptureName) && Model.Name != newCaptureName)
+            if (!CaptureDataService.CanRename(Model.FullPath, newCaptureName) && Model.Name != newCaptureName)
             {
                 ShowRenameWarning("Capture with the same name already exists");
                 return false;
@@ -420,13 +420,13 @@ namespace Unity.Profiling.Editor.UI
             if (string.IsNullOrEmpty(newCaptureName) || newCaptureName == Model.Name)
                 return;
 
-            if (!m_CaptureDataService.ValidateName(newCaptureName))
+            if (!CaptureDataService.ValidateName(newCaptureName))
                 return;
 
-            if (!m_CaptureDataService.PathLengthIsValid(Model.FullPath, newCaptureName))
+            if (!CaptureDataService.PathLengthIsValid(Model.FullPath, newCaptureName))
                 return;
 
-            if (!m_CaptureDataService.CanRename(Model.FullPath, newCaptureName))
+            if (!CaptureDataService.CanRename(Model.FullPath, newCaptureName))
                 return;
 
             m_CaptureDataService.Rename(Model.FullPath, newCaptureName);

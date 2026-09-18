@@ -33,6 +33,10 @@ namespace UnityEditor.Build
 
         /// <summary>A manifest file (.json).</summary>
         public const string Manifest = "manifest";
+
+        /// <summary>An opaque binary blob registered during asset import (.blob). May carry a
+        /// user suffix ("loadableblob:&lt;category&gt;").</summary>
+        public const string LoadableBlob = "loadableblob";
     }
 
     /// <summary>
@@ -152,6 +156,9 @@ namespace UnityEditor.Build
         {
             get
             {
+                if (Category != null && Category.StartsWith(BuildArtifactCategory.LoadableBlob, StringComparison.Ordinal))
+                    return ".blob";
+
                 switch (Category)
                 {
                     case BuildArtifactCategory.Texture:

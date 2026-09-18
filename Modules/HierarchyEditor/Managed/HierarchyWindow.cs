@@ -176,6 +176,16 @@ namespace Unity.Hierarchy.Editor
         public HierarchyView View => m_HierarchyView;
 
         /// <summary>
+        /// Gets the <see cref="HierarchyWindow"/> the user interacted with most recently, or <see langword="null"/>
+        /// when none is open.
+        /// </summary>
+        internal static HierarchyWindow LastInteractedWindow
+        {
+            [VisibleToOtherModules]
+            get => s_LastInteractedHierarchy;
+        }
+
+        /// <summary>
         /// Registers a <see cref="HierarchyNodeTypeHandler"/> for the <see cref="HierarchyWindow"/>.
         /// </summary>
         /// <typeparam name="T">The <see cref="HierarchyNodeTypeHandler"/> type to register.</typeparam>

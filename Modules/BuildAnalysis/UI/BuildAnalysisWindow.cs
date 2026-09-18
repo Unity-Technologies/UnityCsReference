@@ -58,17 +58,54 @@ namespace UnityEditor.Build.Analysis
 
         private SelectionGate m_Gate;
 
+        private GUID m_PendingSelection;
+
         [MenuItem("Window/Analysis/Build Analysis")]
         internal static void ShowWindow()
         {
+            ShowWindow(default);
+        }
+
+        /// <summary>
+        /// Open the Build Analysis window and select the build with the given session GUID.
+        /// Pass an empty GUID to open the window without changing the current selection.
+        /// If no build matches the GUID, the window still opens and a warning is logged.
+        /// </summary>
+        internal static void ShowWindow(GUID buildSessionGUID)
+        {
             if (CommandService.Exists(k_OpenWindowCommand))
             {
-                CommandService.Execute(k_OpenWindowCommand, CommandHint.Menu);
+                CommandService.Execute(k_OpenWindowCommand, CommandHint.Menu, buildSessionGUID);
                 return;
             }
 
             var window = GetWindow<BuildAnalysisWindow>(false);
             window.minSize = new Vector2(750, 400);
+
+            // Request the build selection. The UI may not be built yet (CreateGUI can be deferred to a
+            // later editor tick), in which case this no-ops now and CreateGUI re-runs it once the
+            // build list exists. An empty GUID leaves the current selection untouched.
+            window.m_PendingSelection = buildSessionGUID;
+            window.ApplyPendingSelection();
+        }
+
+        private void ApplyPendingSelection()
+        {
+            // m_BuildListPanel is null until CreateGUI runs, keep the request pending until then.
+            if (m_PendingSelection.Empty() || m_BuildListPanel == null)
+                return;
+
+            var buildSessionGUID = m_PendingSelection;
+            m_PendingSelection = default;
+
+            // Force a refresh from BuildHistory.
+            // A caller can link to a build it just produced. BuildHistoryWatcher only polls
+            // ~1Hz, so m_BuildListPanel's list can be stale and would not yet contain that build session guid.
+            m_Service.Refresh();
+            RefreshBuildList();
+
+            if (!m_BuildListPanel.SelectBuild(buildSessionGUID))
+                Debug.LogWarning($"{BuildAnalysisConstants.k_ConsoleLogPrefix} No build session GUID found for '{buildSessionGUID}'.");
         }
 
         private void OnEnable()
@@ -141,6 +178,7 @@ namespace UnityEditor.Build.Analysis
             m_SplitView.fixedPaneInitialDimension = splitterPos;
 
             RefreshBuildList();
+            ApplyPendingSelection();
         }
 
         private void SetupInspectorToggle()

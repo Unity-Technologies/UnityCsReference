@@ -593,6 +593,9 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
 
         AddElementCommand.Execute(CommandSources.Hierarchy, elementType, m_Stage.EditedVisualTreeAsset, parentAsset, adjustedIndex, variantName);
 
+        // A new element has no name to identify it by until the user gives it one.
+        RequestRenameOfPendingSelection();
+
         m_Stage.RequestRefresh();
 
         return DragVisualMode.Copy;
@@ -817,6 +820,10 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
         var toSelects = GetDelayedSelectionRequests();
         if (toSelects is { Count: > 0 })
         {
+            var beginRename = ConsumeBeginRenameRequest();
+            var resolvedCount = 0;
+            var resolvedNode = HierarchyNode.Null;
+
             viewModel.ClearFlags(HierarchyNodeFlags.Selected);
             var selectionSet = false;
             foreach (var vea in toSelects)
@@ -829,6 +836,8 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                     if (parentNode != Hierarchy.Root && parentNode != HierarchyNode.Null)
                         viewModel.SetFlagsRecursive(parentNode, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Parents);
                     viewModel.SetFlags(node, HierarchyNodeFlags.Selected);
+                    ++resolvedCount;
+                    resolvedNode = node;
                     if (TryGetSelectionObject(node, out var entityId))
                     {
                         if (selectionSet)
@@ -848,6 +857,10 @@ internal class VisualElementEditingNodeHandler : VisualElementNodeTypeHandler, I
                 }
             }
             toSelects.Clear();
+
+            // A rename only makes sense for a single new element; a batch (paste, multi-drop) never asks for one.
+            if (beginRename && resolvedCount == 1)
+                FrameAndBeginRename(in resolvedNode);
         }
     }
 

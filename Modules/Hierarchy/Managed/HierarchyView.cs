@@ -1270,6 +1270,27 @@ namespace Unity.Hierarchy
             m_PostUpdateActionQueue.PushBack(action);
         }
 
+        // Deferred because the caller is inside the update that creates the node, and held in m_ScheduledItem so
+        // the existing rename cancellation applies.
+        [VisibleToOtherModules]
+        internal void ScheduleFrameAndBeginRename(in HierarchyNode node)
+        {
+            HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).ScheduleFrameAndBeginRename({node})");
+            CancelScheduledRename();
+
+            var target = node;
+            m_ScheduledItem = schedule.Execute(() =>
+            {
+                m_ScheduledItem = null;
+
+                if (m_Hierarchy is not { IsCreated: true } || !m_Hierarchy.Exists(in target))
+                    return;
+
+                Frame(in target);
+                BeginRename(in target);
+            });
+        }
+
         [VisibleToOtherModules]
         internal void BeginRename(in HierarchyNode node)
         {

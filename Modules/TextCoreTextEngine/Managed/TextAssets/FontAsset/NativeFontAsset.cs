@@ -269,6 +269,9 @@ namespace UnityEngine.TextCore.Text
         static extern void UpdateBoldWeight(IntPtr ptr, float boldWeight);
         static extern void UpdateBoldSpacing(IntPtr ptr, int boldSpacing);
 
+        static extern bool TryGetGlyphIndex(IntPtr ptr, uint unicode, out uint glyphIndex);
+        static extern bool TryGetGlyphMetrics(IntPtr ptr, uint glyphIndex, out GlyphMetrics metrics);
+
         [FreeFunction("FontAsset::Destroy")]
         static extern void Destroy(IntPtr ptr, IntPtr managedObject);
 

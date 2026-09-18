@@ -370,6 +370,10 @@ static class MenuUtility
         else
         {
             AddElementCommand.Execute(CommandSources.Menus, request.ElementType, stage.EditedVisualTreeAsset, parentVea, -1, request.VariantName);
+
+            // A new element has no name to identify it by until the user gives it one. An instance already reads as
+            // the document it came from, so it is left alone, the way a prefab instance is.
+            UIToolkitStageUtility.RequestRenameOfPendingSelection();
         }
 
         stage.RequestRefresh();

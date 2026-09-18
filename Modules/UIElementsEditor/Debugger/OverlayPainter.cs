@@ -60,7 +60,36 @@ namespace UnityEditor.UIElements.Debugger
         protected Dictionary<VisualElement, OverlayData> m_OverlayData = new Dictionary<VisualElement, OverlayData>();
         protected List<VisualElement> m_CleanUpOverlay = new List<VisualElement>();
 
-        public virtual void Draw(MeshGenerationContext mgc)
+        // World-space projection state, only valid during Draw(). When the debugged panel is a
+        // world-space panel, its elements are in world space while the debugger overlay panel maps
+        // 1:1 to the target display, so geometry must be projected through the rendering camera.
+        // A panel may batch multiple root panel components on different layers, each potentially
+        // rendered by a different camera, so the camera is resolved per panel component.
+        private bool m_ProjectToScreen;
+        private Vector2 m_ProjectionTargetSize;
+        private int m_ProjectionTargetDisplay;
+        private Camera[] m_SortedCameras;
+        private readonly Dictionary<IPanelComponent, Camera> m_ComponentCameras = new();
+        private VisualElement m_LastProjectionElement;
+        private Matrix4x4 m_LastDocumentToWorld;
+        private Camera m_LastProjectionCamera;
+
+        public void Draw(MeshGenerationContext mgc)
+        {
+            if (!BeginOverlayProjection(mgc))
+                return;
+
+            try
+            {
+                DrawContent(mgc);
+            }
+            finally
+            {
+                EndOverlayProjection();
+            }
+        }
+
+        protected virtual void DrawContent(MeshGenerationContext mgc)
         {
             PaintAllOverlay(mgc);
 
@@ -69,6 +98,151 @@ namespace UnityEditor.UIElements.Debugger
                 m_OverlayData.Remove(ve);
             }
             m_CleanUpOverlay.Clear();
+        }
+
+        // Returns false when the debugged panel is world-space but the projection state cannot be
+        // built; nothing should be drawn in that case.
+        private bool BeginOverlayProjection(MeshGenerationContext mgc)
+        {
+            m_ProjectToScreen = false;
+
+            var overlayPanel = mgc.visualElement?.elementPanel as Panel;
+            if (overlayPanel?.overlayedOverPanel is not BaseRuntimePanel { drawsInCameras: true } runtimePanel)
+                return true;
+
+            var targetSize = PanelDebug.GetTargetDisplaySize(runtimePanel);
+            if (targetSize == Vector2.zero)
+                return false;
+
+            m_ProjectionTargetSize = targetSize;
+            m_ProjectionTargetDisplay = runtimePanel.targetDisplay;
+
+            // Non-allocating equivalent of Camera.allCameras (same as world-space picking).
+            Array.Resize(ref m_SortedCameras, Camera.allCamerasCount);
+            Camera.GetAllCameras(m_SortedCameras);
+            Array.Sort(m_SortedCameras, (a, b) => a.depth.CompareTo(b.depth));
+
+            // Only activate the projection once all the state above is fully assigned.
+            m_ProjectToScreen = true;
+            return true;
+        }
+
+        private void EndOverlayProjection()
+        {
+            m_ComponentCameras.Clear();
+            m_LastProjectionElement = null;
+            m_LastProjectionCamera = null;
+            m_ProjectToScreen = false;
+        }
+
+        private Camera GetCameraForComponent(IPanelComponent panelComponent)
+        {
+            if (m_ComponentCameras.TryGetValue(panelComponent, out var camera))
+                return camera;
+
+            camera = FindComponentCamera(panelComponent);
+            m_ComponentCameras[panelComponent] = camera; // Also cache misses
+            return camera;
+        }
+
+        // Closest to deepest, take the first camera that can see the component's layer.
+        private Camera FindComponentCamera(IPanelComponent panelComponent)
+        {
+            for (var i = m_SortedCameras.Length - 1; i >= 0; i--)
+            {
+                var camera = m_SortedCameras[i];
+                if (camera.targetDisplay != m_ProjectionTargetDisplay)
+                    continue;
+
+                if ((camera.cullingMask & (1 << panelComponent.gameObject.layer)) != 0)
+                    return camera;
+            }
+
+            return null;
+        }
+
+        // True while drawing for a world-space target panel; geometry must go through TryProjectPoint.
+        protected bool projectionActive => m_ProjectToScreen;
+
+        protected bool TryProjectPoint(Camera camera, Vector3 worldPoint, out Vector2 overlayPoint)
+        {
+            var screenPoint = camera.WorldToScreenPoint(worldPoint);
+            if (screenPoint.z <= 0)
+            {
+                overlayPoint = default;
+                return false;
+            }
+
+            overlayPoint = new Vector2(screenPoint.x, m_ProjectionTargetSize.y - screenPoint.y);
+            return true;
+        }
+
+        // ve.worldTransform only maps up to document space. For world-space panels, the transform
+        // of the GameObject holding the root panel component must be composed in to reach world
+        // space, and the projection must go through the camera that renders that component.
+        // The result is cached for the last element since painters typically project many
+        // primitives for the same element in a row.
+        protected bool TryGetElementProjection(VisualElement ve, out Matrix4x4 documentToWorld, out Camera camera)
+        {
+            if (ve == m_LastProjectionElement)
+            {
+                documentToWorld = m_LastDocumentToWorld;
+                camera = m_LastProjectionCamera;
+                return camera != null;
+            }
+
+            m_LastProjectionElement = ve;
+            m_LastProjectionCamera = null;
+            documentToWorld = default;
+            camera = null;
+
+            var panelComponent = ve.FindRootPanelComponent();
+            if (panelComponent == null)
+                return false;
+
+            camera = GetCameraForComponent(panelComponent);
+            if (camera == null)
+                return false;
+
+            documentToWorld = panelComponent.gameObject.transform.localToWorldMatrix;
+            m_LastDocumentToWorld = documentToWorld;
+            m_LastProjectionCamera = camera;
+            return true;
+        }
+
+        // Temporarily makes the camera behave like it would in a normal Update by recomputing the
+        // pixelRect from the rect and the display size, because outside of the camera's own render
+        // loop the pixelRect reflects whatever surface was rendered last (same as world-space
+        // picking). Keep the window as narrow as possible around the WorldToScreenPoint calls and
+        // restore the returned rect with EndCameraScreenProjection.
+        protected Rect BeginCameraScreenProjection(Camera camera)
+        {
+            var oldPixelRect = camera.pixelRect;
+            camera.pixelRect = new Rect(camera.rect.position * m_ProjectionTargetSize, camera.rect.size * m_ProjectionTargetSize);
+            return oldPixelRect;
+        }
+
+        protected static void EndCameraScreenProjection(Camera camera, Rect oldPixelRect)
+        {
+            camera.pixelRect = oldPixelRect;
+        }
+
+        private bool TryProjectRect(VisualElement ve, Rect localRect, out Vector2 p0, out Vector2 p1, out Vector2 p2, out Vector2 p3)
+        {
+            p0 = p1 = p2 = p3 = default;
+
+            if (!TryGetElementProjection(ve, out var documentToWorld, out var camera))
+                return false;
+
+            var m = documentToWorld * ve.worldTransform;
+            var oldPixelRect = BeginCameraScreenProjection(camera);
+            bool projected =
+                TryProjectPoint(camera, m.MultiplyPoint3x4(new Vector3(localRect.xMin, localRect.yMin, 0)), out p0) &&
+                TryProjectPoint(camera, m.MultiplyPoint3x4(new Vector3(localRect.xMax, localRect.yMin, 0)), out p1) &&
+                TryProjectPoint(camera, m.MultiplyPoint3x4(new Vector3(localRect.xMax, localRect.yMax, 0)), out p2) &&
+                TryProjectPoint(camera, m.MultiplyPoint3x4(new Vector3(localRect.xMin, localRect.yMax, 0)), out p3);
+            EndCameraScreenProjection(camera, oldPixelRect);
+            return projected;
         }
 
         private void PaintAllOverlay(MeshGenerationContext mgc)
@@ -96,6 +270,71 @@ namespace UnityEditor.UIElements.Debugger
         }
 
         protected abstract void DrawOverlayData(MeshGenerationContext mgc, OverlayData overlayData);
+
+        // Draws a rect expressed in the element's local coordinates.
+        protected void DrawElementRect(MeshGenerationContext mgc, VisualElement ve, Rect localRect, Color color, float alpha)
+        {
+            if (!projectionActive)
+            {
+                DrawRect(mgc, ve.LocalToWorld(localRect), color, alpha);
+                return;
+            }
+
+            if (!TryProjectRect(ve, localRect, out var p0, out var p1, out var p2, out var p3))
+                return;
+
+            color.a = alpha;
+            DrawQuad(mgc, p0, p1, p2, p3, color);
+        }
+
+        // Draws the outline of a rect expressed in the element's local coordinates.
+        protected void DrawElementBorder(MeshGenerationContext mgc, VisualElement ve, Rect localRect, Color color, float alpha)
+        {
+            if (!projectionActive)
+            {
+                DrawBorder(mgc, ve.LocalToWorld(localRect), color, alpha);
+                return;
+            }
+
+            if (!TryProjectRect(ve, localRect, out var p0, out var p1, out var p2, out var p3))
+                return;
+
+            DrawLine(mgc, p0, p1, color, alpha);
+            DrawLine(mgc, p1, p2, color, alpha);
+            DrawLine(mgc, p2, p3, color, alpha);
+            DrawLine(mgc, p3, p0, color, alpha);
+        }
+
+        protected void DrawQuad(MeshGenerationContext mgc, Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, Color color)
+        {
+            color *= mgc.visualElement?.playModeTintColor ?? Color.white;
+
+            var mesh = mgc.Allocate(4, 6);
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(p0.x, p0.y, Vertex.nearZ), tint = color });
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(p1.x, p1.y, Vertex.nearZ), tint = color });
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(p2.x, p2.y, Vertex.nearZ), tint = color });
+            mesh.SetNextVertex(new Vertex() { position = new Vector3(p3.x, p3.y, Vertex.nearZ), tint = color });
+
+            mesh.SetNextIndex(0);
+            mesh.SetNextIndex(1);
+            mesh.SetNextIndex(2);
+            mesh.SetNextIndex(0);
+            mesh.SetNextIndex(2);
+            mesh.SetNextIndex(3);
+        }
+
+        protected void DrawLine(MeshGenerationContext mgc, Vector2 v0, Vector2 v1, Color wireColor, float alpha)
+        {
+            var v = (v1 - v0);
+            var leftPerp = new Vector2(v.y, -v.x).normalized * 0.5f;
+            var p0 = v0 + leftPerp;
+            var p1 = v1 + leftPerp;
+            var p2 = v1 - leftPerp;
+            var p3 = v0 - leftPerp;
+
+            wireColor.a = alpha;
+            DrawQuad(mgc, p0, p1, p2, p3, wireColor);
+        }
 
         protected void DrawRect(MeshGenerationContext mgc, Rect rect, Color color, float alpha)
         {
@@ -181,21 +420,20 @@ namespace UnityEditor.UIElements.Debugger
         private void DrawHighlights(MeshGenerationContext mgc, OverlayData od)
         {
             var ve = od.element;
-            Rect contentRect = ve.LocalToWorld(ve.contentRect);
 
             FillHighlightRects(od.element);
 
             var contentFlag = od.content;
             if ((contentFlag & OverlayContent.Content) == OverlayContent.Content)
             {
-                DrawRect(mgc, contentRect, kHighlightContentColor.Color, kHighlightContentColor.Color.a);
+                DrawElementRect(mgc, ve, ve.contentRect, kHighlightContentColor.Color, kHighlightContentColor.Color.a);
             }
 
             if ((contentFlag & OverlayContent.Padding) == OverlayContent.Padding)
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    DrawRect(mgc, m_PaddingRects[i], kHighlightPaddingColor.Color, kHighlightPaddingColor.Color.a);
+                    DrawElementRect(mgc, ve, m_PaddingRects[i], kHighlightPaddingColor.Color, kHighlightPaddingColor.Color.a);
                 }
             }
 
@@ -203,7 +441,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    DrawRect(mgc, m_BorderRects[i], kHighlightBorderColor.Color, kHighlightBorderColor.Color.a);
+                    DrawElementRect(mgc, ve, m_BorderRects[i], kHighlightBorderColor.Color, kHighlightBorderColor.Color.a);
                 }
             }
 
@@ -211,15 +449,16 @@ namespace UnityEditor.UIElements.Debugger
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    DrawRect(mgc, m_MarginRects[i], kHighlightMarginColor.Color, kHighlightMarginColor.Color.a);
+                    DrawElementRect(mgc, ve, m_MarginRects[i], kHighlightMarginColor.Color, kHighlightMarginColor.Color.a);
                 }
             }
         }
 
+        // Fills the padding/border/margin rects in the element's local coordinates.
         private void FillHighlightRects(VisualElement ve)
         {
             var style = ve.resolvedStyle;
-            Rect contentRect = ve.LocalToWorld(ve.contentRect);
+            Rect contentRect = ve.contentRect;
 
             // Paddings
             float paddingLeft = style.paddingLeft;
@@ -332,8 +571,8 @@ namespace UnityEditor.UIElements.Debugger
 
         protected override void DrawOverlayData(MeshGenerationContext mgc, OverlayData od)
         {
-            DrawRect(mgc, od.element.worldBound, kRepaintColor.Color, kRepaintColor.Color.a);
-            DrawBorder(mgc, od.element.worldBound, kRepaintOutlineColor.Color, kRepaintOutlineColor.Color.a * 4);
+            DrawElementRect(mgc, od.element, od.element.rect, kRepaintColor.Color, kRepaintColor.Color.a);
+            DrawElementBorder(mgc, od.element, od.element.rect, kRepaintOutlineColor.Color, kRepaintOutlineColor.Color.a * 4);
         }
     }
 
@@ -359,21 +598,21 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        public override void Draw(MeshGenerationContext mgc)
+        protected override void DrawContent(MeshGenerationContext mgc)
         {
-            base.Draw(mgc);
+            base.DrawContent(mgc);
 
             if (selectedElement == null)
                 return;
 
             var color = kSelectedBoundColor.Color;
-            DrawBorder(mgc, selectedElement.worldBound, color, color.a);
+            DrawElementBorder(mgc, selectedElement, selectedElement.rect, color, color.a);
         }
 
         protected override void DrawOverlayData(MeshGenerationContext mgc, OverlayData od)
         {
             var color = kBoundColor.Color;
-            DrawBorder(mgc, od.element.worldBound, color, color.a);
+            DrawElementBorder(mgc, od.element, od.element.rect, color, color.a);
         }
     }
 
@@ -398,9 +637,9 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        public override void Draw(MeshGenerationContext mgc)
+        protected override void DrawContent(MeshGenerationContext mgc)
         {
-            base.Draw(mgc);
+            base.DrawContent(mgc);
 
             if (selectedElement != null)
                 DrawWireframe(mgc, selectedElement, kSelectedColor.Color, kSelectedColor.Color.a);
@@ -413,18 +652,13 @@ namespace UnityEditor.UIElements.Debugger
 
         void DrawWireframe(MeshGenerationContext mgc, VisualElement ve, Color wireColor, float alpha)
         {
-            var verts = new List<Vector2>(64);
+            var verts = new List<Vector3>(64);
             var cmd = ve.renderData.firstHeadCommand;
 
-            VisualElement coordinateRelativeTo = null;
-            if (ve.renderHints.HasFlag( RenderHints.BoneTransform))
-            {
-                coordinateRelativeTo = ve;
-            }
-            else
-            {
-                coordinateRelativeTo = ve.renderData.groupTransformAncestor?.owner;
-            }
+            // Mesh vertices are stored in element-local space; the transforms (ElementInfo x/y
+            // offset, bone matrix and render-tree transform) are applied at render time and
+            // compose into the element's worldTransform (local to document space).
+            var toDocument = ve.worldTransform;
 
             while (cmd != null && cmd.owner.owner == ve)
             {
@@ -437,51 +671,56 @@ namespace UnityEditor.UIElements.Debugger
                     {
                         var index = indexSlice[(int)cmd.mesh.allocIndices.start + cmd.indexOffset + i];
                         var vert = vertSlice[index];
-                        verts.Add(coordinateRelativeTo == null ? vert.position : coordinateRelativeTo.LocalToWorld(vert.position));
+                        verts.Add(toDocument.MultiplyPoint3x4(vert.position));
                     }
                 }
                 cmd = cmd.next;
             }
-            DrawTriangles(mgc, verts, wireColor, alpha);
+
+            // The verts are in document space at this point; bring them to world space before projection.
+            if (projectionActive)
+            {
+                if (!TryGetElementProjection(ve, out var documentToWorld, out var camera))
+                    return;
+
+                for (int i = 0; i < verts.Count; i++)
+                    verts[i] = documentToWorld.MultiplyPoint3x4(verts[i]);
+
+                var oldPixelRect = BeginCameraScreenProjection(camera);
+                DrawTriangles(mgc, verts, camera, wireColor, alpha);
+                EndCameraScreenProjection(camera, oldPixelRect);
+            }
+            else
+            {
+                DrawTriangles(mgc, verts, null, wireColor, alpha);
+            }
         }
 
-        void DrawTriangles(MeshGenerationContext mgc, List<Vector2> verts, Color wireColor, float alpha)
+        void DrawTriangles(MeshGenerationContext mgc, List<Vector3> verts, Camera camera, Color wireColor, float alpha)
         {
             var count = verts.Count;
             for (int i = 0; i < count; i += 3)
             {
-                var v0 = verts[i];
-                var v1 = verts[i + 1];
-                var v2 = verts[i + 2];
+                if (!TryGetOverlayPoint(verts[i], camera, out var v0) ||
+                    !TryGetOverlayPoint(verts[i + 1], camera, out var v1) ||
+                    !TryGetOverlayPoint(verts[i + 2], camera, out var v2))
+                    continue;
+
                 DrawLine(mgc, v0, v1, wireColor, alpha);
                 DrawLine(mgc, v1, v2, wireColor, alpha);
                 DrawLine(mgc, v2, v0, wireColor, alpha);
             }
         }
 
-        void DrawLine(MeshGenerationContext mgc, Vector2 v0, Vector2 v1, Color wireColor, float alpha)
+        bool TryGetOverlayPoint(Vector3 vert, Camera camera, out Vector2 overlayPoint)
         {
-            var v = (v1 - v0);
-            var leftPerp = new Vector2(v.y, -v.x).normalized * 0.5f;
-            var p0 = v0 + leftPerp;
-            var p1 = v1 + leftPerp;
-            var p2 = v1 - leftPerp;
-            var p3 = v0 - leftPerp;
+            if (!projectionActive)
+            {
+                overlayPoint = vert;
+                return true;
+            }
 
-            wireColor.a = alpha;
-
-            var mesh = mgc.Allocate(4, 6);
-            mesh.SetNextVertex(new Vertex() { position = new Vector3(p0.x, p0.y, Vertex.nearZ), tint = wireColor });
-            mesh.SetNextVertex(new Vertex() { position = new Vector3(p1.x, p1.y, Vertex.nearZ), tint = wireColor });
-            mesh.SetNextVertex(new Vertex() { position = new Vector3(p2.x, p2.y, Vertex.nearZ), tint = wireColor });
-            mesh.SetNextVertex(new Vertex() { position = new Vector3(p3.x, p3.y, Vertex.nearZ), tint = wireColor });
-
-            mesh.SetNextIndex(0);
-            mesh.SetNextIndex(1);
-            mesh.SetNextIndex(2);
-            mesh.SetNextIndex(0);
-            mesh.SetNextIndex(2);
-            mesh.SetNextIndex(3);
+            return TryProjectPoint(camera, vert, out overlayPoint);
         }
     }
 }

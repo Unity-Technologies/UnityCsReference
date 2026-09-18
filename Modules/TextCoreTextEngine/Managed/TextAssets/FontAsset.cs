@@ -1495,6 +1495,48 @@ namespace UnityEngine.TextCore.Text
 
 
         /// <summary>
+        /// Tries to get the index of the glyph mapped to the given Unicode code point in the font asset's source font.
+        /// </summary>
+        /// <remarks>
+        /// This is the nominal character-to-glyph mapping from the font's character map. Text shaping can substitute
+        /// different glyphs at render time, for example for ligatures or complex scripts.
+        /// </remarks>
+        /// <param name="unicode">The Unicode code point to look up.</param>
+        /// <param name="glyphIndex">The index of the glyph mapped to the code point, or 0 if the font has none.</param>
+        /// <returns>Returns true if the font has a glyph for the code point. Otherwise, returns false.</returns>
+        public bool TryGetGlyphIndex(uint unicode, out uint glyphIndex)
+        {
+            glyphIndex = 0;
+            var native = nativeFontAsset;
+            if (native == IntPtr.Zero)
+                return false;
+
+            return TryGetGlyphIndex(native, unicode, out glyphIndex);
+        }
+
+        /// <summary>
+        /// Tries to get the metrics of the glyph at the given glyph index.
+        /// </summary>
+        /// <remarks>
+        /// Metrics are expressed in pixels at the font asset's <see cref="faceInfo"/> point size. To get values for
+        /// another font size, multiply them by that size divided by <see cref="FaceInfo.pointSize"/>. Glyphs without
+        /// a visual representation, such as spaces, have zero width and height but a valid horizontal advance.
+        /// This query reads the font data directly and doesn't add the glyph to the atlas.
+        /// </remarks>
+        /// <param name="glyphIndex">The index of the glyph in the font asset's source font.</param>
+        /// <param name="metrics">The metrics of the glyph, or default if the font has no glyph at that index.</param>
+        /// <returns>Returns true if the font has a glyph at the given index. Otherwise, returns false.</returns>
+        public bool TryGetGlyphMetrics(uint glyphIndex, out GlyphMetrics metrics)
+        {
+            metrics = default;
+            var native = nativeFontAsset;
+            if (native == IntPtr.Zero)
+                return false;
+
+            return TryGetGlyphMetrics(native, glyphIndex, out metrics);
+        }
+
+        /// <summary>
         /// Get the glyph index for the given Unicode.
         /// This overload of GetGlyphIndex does not return the success status.
         /// </summary>

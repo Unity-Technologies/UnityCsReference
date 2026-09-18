@@ -250,6 +250,32 @@ namespace UnityEngine.UIElements
         {
             RenderOverlaysBeforePriority(displayIndex, float.MaxValue);
             currentOverlayIndex = -1;
+            RenderWorldSpaceDebuggerOverlayPanels(displayIndex);
+        }
+
+        // World-space panels are drawn by the render nodes and never go through Panel.Render(),
+        // so the debugger overlay panel piggyback in Panel.Render() never runs for them. Composite
+        // their debugger overlays over the display, after all screen overlay panels.
+        private static void RenderWorldSpaceDebuggerOverlayPanels(int displayIndex)
+        {
+            foreach (var panel in GetWorldSpacePlayerPanels())
+            {
+                if (panel.targetDisplay != displayIndex)
+                    continue;
+
+                if (panel.panelDebug?.debuggerOverlayPanel is not Panel overlayPanel)
+                    continue;
+
+                // This is called after the camera(s) are done rendering, so the last camera
+                // viewport will leak here. The debugger overlay must composite over the whole
+                // target, so force a fullscreen viewport (same as BaseRuntimePanel.Render()).
+                var rt = RenderTexture.active;
+                int width = rt != null ? rt.width : BaseRuntimePanel.getScreenRenderingWidth(displayIndex);
+                int height = rt != null ? rt.height : BaseRuntimePanel.getScreenRenderingHeight(displayIndex);
+                GL.Viewport(new Rect(0, 0, width, height));
+
+                overlayPanel.Render();
+            }
         }
 
         public static void RepaintPanels(bool onlyOffscreen)
