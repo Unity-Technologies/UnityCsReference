@@ -38,17 +38,16 @@ namespace UnityEngine.UIElements
             m_IsNone = false;
         }
 
-        internal static Curvature Initial()
-        {
-            return new Curvature(new Angle(0), new Angle(0));
-        }
+        // The initial value of -unity-curvature is `none` (see InitialStyle), so anything else here makes
+        // style.unityCurvature = StyleKeyword.Initial disagree with -unity-curvature: initial in USS.
+        internal static Curvature Initial() => None();
 
         /// <summary>
         /// Returns a Curvature that applies no bend (flat).
         /// </summary>
         public static Curvature None()
         {
-            Curvature none = Initial();
+            Curvature none = new Curvature(new Angle(0), new Angle(0));
             none.m_IsNone = true;
             return none;
         }

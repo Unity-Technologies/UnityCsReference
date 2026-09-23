@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -16,6 +17,10 @@ namespace Unity.UIToolkit.Editor;
 [UxmlElement]
 sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementChangeProcessor
 {
+    internal const string refreshMarkerName = "MatchingSelectorsElement.Refresh";
+    [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
+    static readonly ProfilerMarker k_RefreshMarker = new(refreshMarkerName);
+
     sealed class MatchingSelectorElement : Foldout
     {
         [NoAutoStaticsCleanup] // text-field pool, safe to persist
@@ -222,6 +227,8 @@ sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementCha
 
     void IVisualElementChangeProcessor.ProcessChanges(BaseVisualElementPanel p, AuthoringChanges changes)
     {
+        // Layout-only bumps (e.g. a text change) cannot alter matched selectors or the inline rule,
+        // so layoutChanged is deliberately not checked here.
         if (!changes.stylingContextChanged.Contains(m_Target) &&
             !changes.styleChanged.Contains(m_Target))
             return;
@@ -235,6 +242,7 @@ sealed partial class MatchingSelectorsElement : VisualElement, IVisualElementCha
 
     void Refresh()
     {
+        using var markerScope = k_RefreshMarker.Auto();
         m_MatchedRulesExtractor.Clear();
         if (m_Target != null)
             m_MatchedRulesExtractor.FindMatchingRules(m_Target);

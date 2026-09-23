@@ -39,8 +39,6 @@ namespace UnityEditor.Build.Analysis
         private const string k_InspectorToggleDisabledTooltip = "The inspector is only available on the Assets tab";
 
         private const string k_HelpButtonTooltip = "Open Build Analysis documentation";
-        // Manual topic slug (Documentation/ManualDocs/md/build-analysis-window-reference.md).
-        private const string k_DocumentationPage = "build-analysis-window-reference";
 
         private const string k_LoadingMessage = "Analyzing build…";
 
@@ -232,19 +230,13 @@ namespace UnityEditor.Build.Analysis
 
         private void SetupHelpButton(VisualElement tabViewport)
         {
-            var helpButton = new ToolbarButton(() => Help.BrowseURL(GetDocumentationUrl()))
+            var helpButton = new ToolbarButton(() => Help.BrowseURL(BuildAnalysisDocumentation.WindowReferenceUrl))
             {
                 name = "help-button",
                 tooltip = k_HelpButtonTooltip,
             };
             helpButton.AddToClassList("help-button");
             tabViewport.Add(helpButton);
-        }
-
-        private static string GetDocumentationUrl()
-        {
-            var version = UnityEditorInternal.InternalEditorUtility.GetUnityVersion();
-            return $"https://docs.unity3d.com/{version.Major}.{version.Minor}/Documentation/Manual/{k_DocumentationPage}.html";
         }
 
         private void SetupTabs()
@@ -320,13 +312,25 @@ namespace UnityEditor.Build.Analysis
             if (!m_Service.TryGetBuildSummary(selection.BuildSessionGUID, out var summary))
                 return false;
 
-            if (!m_ExternalViews.TryClaim(summary))
+            if (m_ExternalViews.TryClaim(summary))
+            {
+                TakeOverContentArea(selection);
+                return true;
+            }
+
+            if (m_Service.CanDrawDefaultReport(selection.BuildSessionGUID))
                 return false;
 
+            m_ExternalViews.ShowMissingDrawer(summary);
+            TakeOverContentArea(selection);
+            return true;
+        }
+        
+        private void TakeOverContentArea(BuildEntry selection)
+        {
             m_Gate.Begin(selection.BuildSessionGUID);
             m_TabHost.Apply(null);
             m_LoadingOverlay.Hide();
-            return true;
         }
 
         // Apply for both selection and regenerate: show the overlay, await the result, and

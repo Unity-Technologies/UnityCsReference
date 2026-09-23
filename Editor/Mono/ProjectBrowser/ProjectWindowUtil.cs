@@ -1016,14 +1016,19 @@ namespace UnityEditor
             return ProjectBrowser.GetItemType(entityId) == ProjectBrowser.ItemType.SavedFilter;
         }
 
-        internal static void StartDrag(EntityId draggedEntityId, List<EntityId> selectedInstanceIDs)
+        internal static void StartDrag(EntityId draggedEntityId, List<EntityId> selectedInstanceIDs, DragAndDrop.PreviewData previewData = default)
         {
             if (draggedEntityId == ProjectBrowser.kPackagesFolderInstanceId)
                 return;
 
             DragAndDrop.PrepareStartDrag();
 
-            string title = "";
+            DragAndDrop.SetDragPreviewOwnerId(previewData.ownerId);
+
+            // Null for callers that supply no style — the folder tree, Favorites.
+            DragAndDrop.SetDragPreviewLabelStyle(previewData.labelStyle);
+
+            var title = string.Empty;
             if (IsFavoritesItem(draggedEntityId))
             {
                 DragAndDrop.SetGenericData(k_DraggingFavoriteGenericData, draggedEntityId);
@@ -1031,20 +1036,58 @@ namespace UnityEditor
             else
             {
                 // Normal assets dragging
-                bool isFolder = IsFolder(draggedEntityId);
+                var isFolder = IsFolder(draggedEntityId);
                 DragAndDrop.objectReferences = GetDragAndDropObjects(draggedEntityId, selectedInstanceIDs);
                 DragAndDrop.SetGenericData(k_IsFolderGenericData, isFolder ? "isFolder" : "");
-                string[] paths = GetDragAndDropPaths(draggedEntityId, selectedInstanceIDs);
-                if (paths.Length > 0)
-                    DragAndDrop.paths = paths;
+                var dragPaths = GetDragAndDropPathsWithEntityIds(draggedEntityId, selectedInstanceIDs);
+                if (dragPaths.paths.Length > 0)
+                    DragAndDrop.paths = dragPaths.paths;
 
-                if (DragAndDrop.objectReferences.Length > 1)
-                    title = "<Multiple>";
-                else
-                    title = ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromEntityId(draggedEntityId));
+                DragAndDrop.SetDragPreviewLayout(
+                    BuildDragPreviewOffsets(dragPaths.entityIds, previewData.itemCenters, draggedEntityId),
+                    previewData.itemSize,
+                    previewData.listMode,
+                    BuildDragPreviewVisibleRect(previewData.visibleRect, previewData.itemCenters, draggedEntityId));
+
+                title = DragAndDrop.objectReferences.Length > 1 ? "<Multiple>" : ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromEntityId(draggedEntityId));
             }
 
             DragAndDrop.StartDrag(title);
+        }
+
+        // Flat (dx, dy) array of each item's grid center relative to the grabbed item.
+        internal static float[] BuildDragPreviewOffsets(List<EntityId> pathEntityIds, IReadOnlyDictionary<EntityId, Vector2> itemCenters, EntityId draggedEntityId)
+        {
+            if (itemCenters == null || pathEntityIds is not { Count: > 0 } ||
+                !itemCenters.TryGetValue(draggedEntityId, out var anchor))
+            {
+                return [];
+            }
+
+            var offsets = new float[pathEntityIds.Count * 2];
+            for (var i = 0; i < pathEntityIds.Count; i++)
+            {
+                // Items without a known center stay at (0, 0), i.e. under the cursor.
+                if (!itemCenters.TryGetValue(pathEntityIds[i], out var c))
+                    continue;
+
+                var idx = i * 2;
+                offsets[idx] = c.x - anchor.x;
+                offsets[idx + 1] = c.y - anchor.y;
+            }
+            return offsets;
+        }
+
+        // Moved into the same relative space as BuildDragPreviewOffsets.
+        internal static Rect BuildDragPreviewVisibleRect(Rect visibleRect, IReadOnlyDictionary<EntityId, Vector2> itemCenters, EntityId draggedEntityId)
+        {
+            if (itemCenters == null || visibleRect.width <= 0f || visibleRect.height <= 0f ||
+                !itemCenters.TryGetValue(draggedEntityId, out var anchor))
+            {
+                return default;
+            }
+
+            return new Rect(visibleRect.x - anchor.x, visibleRect.y - anchor.y, visibleRect.width, visibleRect.height);
         }
 
         internal static Object[] GetDragAndDropObjects(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
@@ -1072,46 +1115,72 @@ namespace UnityEditor
             return outList.ToArray();
         }
 
+        // 'entityIds' is index-aligned with 'paths', so callers can align per-item data.
+        internal readonly struct DragAndDropPaths
+        {
+            public string[] paths { get; }
+            public List<EntityId> entityIds { get; }
+
+            public DragAndDropPaths(string[] paths, List<EntityId> entityIds)
+            {
+                this.paths = paths;
+                this.entityIds = entityIds;
+            }
+        }
+
         internal static string[] GetDragAndDropPaths(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
+        {
+            return GetDragAndDropPathsWithEntityIds(draggedInstanceID, selectedInstanceIDs).paths;
+        }
+
+        internal static DragAndDropPaths GetDragAndDropPathsWithEntityIds(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
         {
             // Only main assets contribute a path: GetAssetPath on a sub asset returns its containing
             // file, so it can only repeat the main asset's path. 'seen' also serves the dragged item's
             // already-covered check below.
             List<string> paths = new List<string>();
+            List<EntityId> pathEntityIds = new List<EntityId>();
             HashSet<string> seen = new HashSet<string>();
             foreach (EntityId entityId in selectedInstanceIDs)
             {
                 if (AssetDatabase.IsMainAsset(entityId))
-                    AddPath(AssetDatabase.GetAssetPath(entityId), paths, seen);
+                    AddPath(entityId, AssetDatabase.GetAssetPath(entityId), paths, pathEntityIds, seen);
             }
 
-            string dragPath = AssetDatabase.GetAssetPath(draggedInstanceID);
+            // Not gated on IsMainAsset: a sub-asset resolves to its container,
+            // which is what dragging one out has always carried.
+            var dragPath = AssetDatabase.GetAssetPath(draggedInstanceID);
 
             // A builtin resource or scene object. The selection's paths are dropped too, as before.
             if (string.IsNullOrEmpty(dragPath))
-                return Array.Empty<string>();
+            {
+                pathEntityIds.Clear();
+                return new DragAndDropPaths(Array.Empty<string>(), pathEntityIds);
+            }
 
             // Already covered by the selection.
             if (seen.Contains(dragPath))
-                return paths.ToArray();
+                return new DragAndDropPaths(paths.ToArray(), pathEntityIds);
 
             // Ctrl/cmd extends the selection with the grabbed item. Event.current is null outside a GUI
             // event, where no modifier can be held; reading it unguarded used to throw.
             Event currentEvent = Event.current;
             if (currentEvent != null && (currentEvent.control || currentEvent.command))
             {
-                AddPath(dragPath, paths, seen);
-                return paths.ToArray();
+                AddPath(draggedInstanceID, dragPath, paths, pathEntityIds, seen);
+                return new DragAndDropPaths(paths.ToArray(), pathEntityIds);
             }
 
-            return new[] { dragPath };
+            return new DragAndDropPaths(new[] { dragPath }, [draggedInstanceID]);
         }
 
-        // Skips empties and paths already carried.
-        static void AddPath(string path, List<string> paths, HashSet<string> seen)
+        static void AddPath(EntityId entityId, string path, List<string> paths, List<EntityId> pathEntityIds, HashSet<string> seen)
         {
             if (!string.IsNullOrEmpty(path) && seen.Add(path))
+            {
                 paths.Add(path);
+                pathEntityIds.Add(entityId);
+            }
         }
 
         // Returns instanceID of folders (and main asset if input is a subasset) up until and including the Assets folder

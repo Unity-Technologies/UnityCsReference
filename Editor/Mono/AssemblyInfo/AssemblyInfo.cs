@@ -210,6 +210,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Testing.HDRP_EditModeTests")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Core.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.RenderPipelines.Core.Editor")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.ShaderGraph.Editor")]
 [assembly: InternalsVisibleTo("Unity.Testing.SRP.Universal.Foundation.Editor")]
 

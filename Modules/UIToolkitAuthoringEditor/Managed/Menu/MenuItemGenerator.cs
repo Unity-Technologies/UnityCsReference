@@ -103,6 +103,9 @@ internal static partial class MenuItemGenerator
 
     public static bool TryGetTypeForMenuPath(string fullMenuPath, out Type type)
     {
+        if (StandardElementMenuItems.TryGetTypeForMenuPath(fullMenuPath, out type))
+            return true;
+
         foreach (var control in GetAvailableControlTypes())
         {
             if ($"{k_MenuPrefix}/{control.GetMenuPath()}" == fullMenuPath)
@@ -152,20 +155,17 @@ internal static partial class MenuItemGenerator
             );
         }
 
-        foreach (var basePath in k_BaseLibraryPaths)
+        // "Standard Elements/UI Library..." is a static [MenuItem] (StandardElementMenuItems).
+        if (HasControlsUnderBasePath(k_ProjectElementsPath))
         {
-            if (HasControlsUnderBasePath(basePath))
-            {
-                var menuPath = $"{k_GameObjectMenuPath}/{basePath}/UI Library...";
-                Menu.AddMenuItem(
-                    menuPath,
-                    "",
-                    false,
-                    s_HighestItemPriority + k_LibraryMenuItemPriorityOffset,
-                    UIElementsProvider.OpenUIElementsPicker,
-                    null
-                );
-            }
+            Menu.AddMenuItem(
+                $"{k_GameObjectMenuPath}/{k_ProjectElementsPath}/UI Library...",
+                "",
+                false,
+                s_HighestItemPriority + k_LibraryMenuItemPriorityOffset,
+                UIElementsProvider.OpenUIElementsPicker,
+                null
+            );
         }
 
         // Add separator after the "Project Elements" subgroup
@@ -188,14 +188,8 @@ internal static partial class MenuItemGenerator
             Menu.RemoveMenuItem($"{k_GameObjectMenuPath}/{k_ProjectElementsPath}");
         }
 
-        foreach (var basePath in k_BaseLibraryPaths)
-        {
-            if (HasControlsUnderBasePath(basePath))
-            {
-                var menuPath = $"{k_GameObjectMenuPath}/{basePath}/UI Library...";
-                Menu.RemoveMenuItem(menuPath);
-            }
-        }
+        if (HasControlsUnderBasePath(k_ProjectElementsPath))
+            Menu.RemoveMenuItem($"{k_GameObjectMenuPath}/{k_ProjectElementsPath}/UI Library...");
     }
 
     static bool HasControlsUnderBasePath(string basePath)
@@ -212,15 +206,15 @@ internal static partial class MenuItemGenerator
 
     static List<ControlTypeInfo> GetControlElements()
     {
-        s_HighestItemPriority = k_DefaultStandardElementsPriority;
+        s_HighestItemPriority = k_DefaultProjectElementsPriority;
 
-        var standardElements = ListPool<(LibraryTypeKey libraryType, string libraryPath)>.Get();
         var projectElements = ListPool<(LibraryTypeKey libraryType, string libraryPath)>.Get();
-        var libraryTypeKeys = LibraryContent.GetAllLibraryTypes();
+        // Variants are surfaced in the UI Library only, not in the GameObject menu, so their (costly)
+        // configurator discovery is left for the UI Library to trigger.
+        var libraryTypeKeys = LibraryContent.GetAllLibraryTypes(includeVariants: false);
 
         foreach (var (key, item) in libraryTypeKeys)
         {
-            // Variants are surfaced in the UI Library only, not in the GameObject menu.
             if (key.variantName != null)
                 continue;
 
@@ -228,21 +222,17 @@ internal static partial class MenuItemGenerator
             if (string.IsNullOrEmpty(menuPath))
                 continue;
 
-            if (menuPath.StartsWith(k_BaseLibraryPaths[0]))
-                standardElements.Add((key, menuPath));
-            else if (menuPath.StartsWith(k_BaseLibraryPaths[1]))
+            // Built-in controls have static [MenuItem] entries (StandardElementMenuItems).
+            if (menuPath.StartsWith(k_BaseLibraryPaths[1]))
                 projectElements.Add((key, menuPath));
         }
 
-        standardElements.Sort(CompareControlElements);
         projectElements.Sort(CompareControlElements);
 
         var result = new List<ControlTypeInfo>();
 
-        AddControlTypesWithPriority(result, standardElements, k_DefaultStandardElementsPriority);
         AddControlTypesWithPriority(result, projectElements, k_DefaultProjectElementsPriority);
 
-        ListPool<(LibraryTypeKey type, string libraryPath)>.Release(standardElements);
         ListPool<(LibraryTypeKey type, string libraryPath)>.Release(projectElements);
         return result;
     }

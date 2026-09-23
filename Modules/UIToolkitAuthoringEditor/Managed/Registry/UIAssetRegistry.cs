@@ -28,7 +28,7 @@ namespace Unity.UIToolkit.Editor;
 /// </remarks>
 [FilePath("Library/UIAssetRegistry.asset", FilePathAttribute.Location.ProjectFolder)]
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, ISerializationCallbackReceiver
+internal sealed partial class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, ISerializationCallbackReceiver
 {
     [SerializeField] List<AssetBaseline> m_SerializedBaselines = new();
 
@@ -105,6 +105,13 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
     /// </remarks>
     public static UIAssetRegistry LiveInstance => s_Live;
 
+    /// <summary>
+    /// Raised when the singleton comes alive, so load-time code can observe the registry without
+    /// forcing its creation.
+    /// </summary>
+    [AutoStaticsCleanupOnCodeReload] // subscribers re-subscribe per instance after a reload
+    public static event Action<UIAssetRegistry> LiveInstanceCreated;
+
     /// <summary>Raised when an asset first becomes tracked (its first reference is opened).</summary>
     public event Action<UnityEngine.Object> AssetTracked;
 
@@ -155,6 +162,7 @@ internal sealed class UIAssetRegistry : ScriptableSingleton<UIAssetRegistry>, IS
     void OnEnable()
     {
         s_Live = this;
+        LiveInstanceCreated?.Invoke(this);
 
         UICommandQueue.GroupEnded += OnGroupEnded;
         UICommandQueue.RegisterHandlerForCategory(CommandCategory.Save, OnToolSaveBoundary);

@@ -18,33 +18,34 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler
     {
         private PhysicsCore2DProfilerView m_Root;
 
-        // Set once a marker lookup has failed and been reported, so a missing marker warns once rather than on every selected frame.
-        [AutoStaticsCleanup]
-        private static bool s_MarkerWarningIssued;
-
         public PhysicsCore2DProfilerViewController(ProfilerWindow profilerWindow)
             : base(profilerWindow)
         {
             profilerWindow.SelectedFrameIndexChanged += OnProfilerFrameChange;
         }
 
-        internal static (PhysicsCore2DFrameData[] frameData, Unity.U2D.Physics.PhysicsWorld.WorldCounters counter, float[])
+        internal static (PhysicsCore2DFrameData[] frameData, byte[] worldNames, Unity.U2D.Physics.PhysicsWorld.WorldCounters counter, float[])
             ExtractFrameData(long frameIndex)
         {
             int selectedFrameIndexInt32 = Convert.ToInt32(frameIndex);
             PhysicsCore2DFrameData[] capturedFrameData = Array.Empty<PhysicsCore2DFrameData>();
+            byte[] capturedWorldNames = Array.Empty<byte>();
             Unity.U2D.Physics.PhysicsWorld.WorldCounters counter = default;
-            float[] profilerMarkerValues = new float[PhysicsCore2DProfilerMarkers.k_MarkerNames.Length];
+            float[] profilerMarkerValues = new float[PhysicsCore2DProfilerMarkers.markerNames.Length];
             try
             {
                 using (RawFrameDataView frameData = UnityEditorInternal.ProfilerDriver.GetRawFrameDataView(selectedFrameIndexInt32, 0))
                 {
                     // The selected frame can have aged out of the profiler's ring buffer, or carry no data for the main thread.
                     if (frameData == null || !frameData.valid)
-                        return (capturedFrameData, counter, profilerMarkerValues);
+                        return (capturedFrameData, capturedWorldNames, counter, profilerMarkerValues);
 
                     var data = frameData.GetFrameMetaData<PhysicsCore2DFrameData>(
-                         PhysicsCore2DProfilerMarkers.k_PhysicsCore2DProfilerProjectId, 0);
+                         PhysicsCore2DProfilerMarkers.k_PhysicsCore2DProfilerProjectId, PhysicsCore2DProfilerMarkers.k_PhysicsCore2DFrameDataTag);
+
+                    // The names travel as one blob the rows slice into, so a row costs only its eight-byte slice.
+                    var worldNames = frameData.GetFrameMetaData<byte>(
+                         PhysicsCore2DProfilerMarkers.k_PhysicsCore2DProfilerProjectId, PhysicsCore2DProfilerMarkers.k_PhysicsCore2DWorldNamesTag);
 
                     // Extract counters from profiler markers
                     int markerId = frameData.GetMarkerId(PhysicsCore2DProfilerMarkers.k_BodyCountCounterName);
@@ -83,18 +84,17 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler
                         capturedFrameData = data.ToArray();
                     }
 
-                    int[] profilerMarkerIds = new int[PhysicsCore2DProfilerMarkers.k_MarkerNames.Length];
-                    for(int i = 0; i < PhysicsCore2DProfilerMarkers.k_MarkerNames.Length; ++i)
+                    if (worldNames.Length > 0)
                     {
-                        profilerMarkerIds[i] = frameData.GetMarkerId(PhysicsCore2DProfilerMarkers.k_MarkerNames[i]);
-
-                        // A missing marker means the managed catalogue has drifted from the native registrations. Report it once rather than per selected frame.
-                        if (profilerMarkerIds[i] == FrameDataView.invalidMarkerId && !s_MarkerWarningIssued)
-                        {
-                            s_MarkerWarningIssued = true;
-                            Debug.LogWarning($"{PhysicsCore2DProfilerMarkers.k_MarkerNames[i]} marker id is invalid, please make sure the marker name is correct and the marker is properly registered.");
-                        }
+                        capturedWorldNames = worldNames.ToArray();
                     }
+
+                    // Ids belong to the capture, not to this process, so each name is resolved against the
+                    // frame's own table. A name this capture never recorded resolves to the invalid id, which
+                    // simply matches no sample below.
+                    int[] profilerMarkerIds = new int[PhysicsCore2DProfilerMarkers.markerNames.Length];
+                    for(int i = 0; i < PhysicsCore2DProfilerMarkers.markerNames.Length; ++i)
+                        profilerMarkerIds[i] = frameData.GetMarkerId(PhysicsCore2DProfilerMarkers.markerNames[i]);
 
                     int sampleCount = frameData.sampleCount;
                     for (int i = 0; i < sampleCount; ++i)
@@ -117,7 +117,7 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler
                 // The absent-frame cases return empty above, so anything arriving here is a real failure worth reporting.
                 Debug.LogException(exception);
             }
-            return (capturedFrameData, counter, profilerMarkerValues);
+            return (capturedFrameData, capturedWorldNames, counter, profilerMarkerValues);
         }
 
         void OnProfilerFrameChange(long frameIndex)
@@ -127,7 +127,7 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler
 
             if (frameIndex < 0)
             {
-                m_Root?.SetCapturedFrameData(Array.Empty<PhysicsCore2DFrameData>(), default);
+                m_Root?.SetCapturedFrameData(Array.Empty<PhysicsCore2DFrameData>(), Array.Empty<byte>(), default);
                 m_Root?.SetStatistic(default);
                 return;
             }
@@ -138,8 +138,8 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler
             if (!m_Root.IsLiveUpdateEnabled())
                 return;
 
-            var (modules, counter, profilerMarkerValues) = ExtractFrameData(frameIndex);
-            m_Root.SetCapturedFrameData(modules, profilerMarkerValues);
+            var (modules, worldNames, counter, profilerMarkerValues) = ExtractFrameData(frameIndex);
+            m_Root.SetCapturedFrameData(modules, worldNames, profilerMarkerValues);
             m_Root.SetStatistic(counter);
         }
 

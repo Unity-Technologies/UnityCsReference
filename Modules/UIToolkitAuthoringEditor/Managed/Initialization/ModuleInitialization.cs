@@ -17,7 +17,6 @@ namespace Unity.UIToolkit.Editor
         [RequiredByNativeCode]
         public static void Initialize()
         {
-            StyleInspectorDefaultContent.Prepare();
             VisualElementAnimationAuthoringHandler.Register();
         }
     }

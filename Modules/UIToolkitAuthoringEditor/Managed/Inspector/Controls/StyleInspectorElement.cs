@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using Unity.Properties;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -64,6 +65,10 @@ internal sealed partial class StyleInspectorElement : VisualElement, IVisualElem
     public static BindingId ContentAssetProperty = nameof(ContentAsset);
     [NoAutoStaticsCleanup] // immutable binding id, safe to persist
     public static BindingId IsReadOnlyProperty = nameof(IsReadOnly);
+
+    internal const string refreshMarkerName = "StyleInspectorElement.Refresh";
+    [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
+    static readonly ProfilerMarker k_RefreshMarker = new(refreshMarkerName);
 
     public const string UssClassName = "unity-style-inspector";
     public const string InspectorFlexColumnModeClassName = UssClassName + "--flex-column";
@@ -343,6 +348,7 @@ internal sealed partial class StyleInspectorElement : VisualElement, IVisualElem
     /// </summary>
     internal void Refresh()
     {
+        using var _ = k_RefreshMarker.Auto();
         if (m_Context != null && m_Target.IsValid())
         {
             switch (m_Target.Type)

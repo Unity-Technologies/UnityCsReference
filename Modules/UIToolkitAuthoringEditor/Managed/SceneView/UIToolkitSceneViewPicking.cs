@@ -35,8 +35,12 @@ namespace Unity.UIToolkit.Editor
 
         const float k_PickingQuadCameraOffset = 0.001f;
 
-        static RenderPickingResult RenderForPicking(in RenderPickingArgs args)
+        internal static RenderPickingResult RenderForPicking(in RenderPickingArgs args)
         {
+            // The FindObjectsByType scans below are too costly to run on every picking pass without UI in play.
+            if (!AnyWorldSpacePlayerPanel())
+                return default;
+
             // Store system ignore/filter set and type for use in resolve callback
             // The resolve callback doesn't receive the args, so we need to store it here
             s_SystemIgnoreSet = args.renderObjectSetInternal as HashSet<Object>;
@@ -80,6 +84,19 @@ namespace Unity.UIToolkit.Editor
             }
 
             return new RenderPickingResult(s_PickedPanels.Count, ResolvePickedElementByRaycast);
+        }
+
+        static bool AnyWorldSpacePlayerPanel()
+        {
+            using var _ = UnityEngine.Pool.ListPool<Panel>.Get(out var panels);
+            UIElementsUtility.GetAllPanels(panels, ContextType.Player);
+            foreach (var panel in panels)
+            {
+                if (panel.drawsInCameras)
+                    return true;
+            }
+
+            return false;
         }
 
         static void RenderPanelBoundsForPicking(IPanelComponent component, int pickingID)

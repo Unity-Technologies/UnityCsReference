@@ -317,6 +317,16 @@ namespace UnityEditor.TextCore.Text
             return true;
         }
 
+        void OnEnable()
+        {
+            EditorApplication.projectChanged += OnProjectChanged;
+        }
+
+        void OnDisable()
+        {
+            EditorApplication.projectChanged -= OnProjectChanged;
+        }
+
         void OnFocus()
         {
             // Assets may have been converted or edited elsewhere while the window was unfocused.
@@ -325,6 +335,51 @@ namespace UnityEditor.TextCore.Text
 
             foreach (Entry entry in m_Entries)
                 entry.staleGlyphIndices = null;
+            RefreshAll();
+        }
+
+        // Existing entries keep their status and options so converted assets stay listed as done.
+        internal void OnProjectChanged()
+        {
+            if (m_ListView == null)
+                return;
+
+            var known = new HashSet<UnityEngine.Object>();
+            bool changed = false;
+            foreach (Entry entry in m_Entries)
+            {
+                entry.staleGlyphIndices = null;
+                if (entry.asset == null)
+                    continue;
+                known.Add(entry.asset);
+                string path = AssetDatabase.GetAssetPath(entry.asset);
+                if (path != entry.path)
+                {
+                    entry.path = path;
+                    changed = true;
+                }
+            }
+
+            foreach (UnityEngine.Object asset in ActiveProvider.ScanStaticAssets())
+            {
+                if (!known.Add(asset))
+                    continue;
+                m_Entries.Add(new Entry
+                {
+                    asset = asset,
+                    path = AssetDatabase.GetAssetPath(asset),
+                    keepBakedData = ActiveProvider.DefaultKeepBakedData(asset),
+                });
+                changed = true;
+            }
+
+            if (changed)
+            {
+                Entry selected = SelectedEntry;
+                m_Entries.Sort((a, b) => string.CompareOrdinal(a.path, b.path));
+                if (selected != null)
+                    m_ListView.SetSelectionWithoutNotify(new[] { m_Entries.IndexOf(selected) });
+            }
             RefreshAll();
         }
 

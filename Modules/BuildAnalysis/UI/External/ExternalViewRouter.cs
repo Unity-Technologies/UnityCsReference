@@ -13,11 +13,17 @@ namespace UnityEditor.Build.Analysis
     /// </summary>
     internal sealed class ExternalViewRouter
     {
+        internal const string k_MissingDrawerName = "external-missing-drawer";
+        internal const string k_MissingDrawerDescriptionName = "external-missing-drawer__description";
+        internal const string k_MissingDrawerActionName = "external-missing-drawer__action";
+
         private readonly VisualElement m_ContentArea;
         private readonly VisualElement m_BuiltInContent;
         private readonly Dictionary<string, ExternalDrawerView> m_Views = new Dictionary<string, ExternalDrawerView>();
 
         private ExternalDrawerView m_Claimed;
+
+        private VisualElement m_MissingDrawerPane;
 
         public ExternalViewRouter(VisualElement contentArea, VisualElement builtInContent)
         {
@@ -58,6 +64,8 @@ namespace UnityEditor.Build.Analysis
             if (!m_Views.TryGetValue(summary.ProducerPackage, out var claimed))
                 return false;
 
+            RemoveMissingDrawerPane();
+
             if (!ReferenceEquals(m_Claimed, claimed))
             {
                 m_Claimed?.ClearSelection();
@@ -72,17 +80,109 @@ namespace UnityEditor.Build.Analysis
             return true;
         }
 
+        /// <summary>
+        /// Takes the content area for a build nothing can draw and says so, rather than leaving the tabs empty.
+        /// </summary>
+        public void ShowMissingDrawer(BuildReportSummary summary)
+        {
+            Release();
+
+            m_MissingDrawerPane = CreateMissingDrawerPane(summary);
+
+            m_BuiltInContent.style.display = DisplayStyle.None;
+            m_ContentArea.Add(m_MissingDrawerPane);
+        }
+
         /// <summary>Takes the content area back and restores the window's own tabs.</summary>
         public void Release()
         {
-            if (m_Claimed == null)
-                return;
+            RemoveMissingDrawerPane();
 
-            m_Claimed.ClearSelection();
-            m_Claimed.Root.RemoveFromHierarchy();
-            m_Claimed = null;
+            if (m_Claimed != null)
+            {
+                m_Claimed.ClearSelection();
+                m_Claimed.Root.RemoveFromHierarchy();
+                m_Claimed = null;
+            }
 
             m_BuiltInContent.style.display = StyleKeyword.Null;
+        }
+
+        private void RemoveMissingDrawerPane()
+        {
+            m_MissingDrawerPane?.RemoveFromHierarchy();
+            m_MissingDrawerPane = null;
+        }
+
+        private static VisualElement CreateMissingDrawerPane(BuildReportSummary summary)
+        {
+            var pane = new VisualElement { name = k_MissingDrawerName };
+            pane.AddToClassList(k_MissingDrawerName);
+
+            var description = new Label(MissingDrawerMessage(summary)) { name = k_MissingDrawerDescriptionName };
+            description.AddToClassList(k_MissingDrawerDescriptionName);
+            pane.Add(description);
+
+            var action = CreateMissingDrawerAction(summary.ProducerPackage);
+            action.name = k_MissingDrawerActionName;
+            action.AddToClassList(k_MissingDrawerActionName);
+            pane.Add(action);
+
+            return pane;
+        }
+
+        // An empty state carries a single action, so the package is offered when there is one to install
+        // and the documentation otherwise.
+        private static Button CreateMissingDrawerAction(string producerPackage)
+        {
+            if (string.IsNullOrEmpty(producerPackage))
+            {
+                return new Button(() => Help.BrowseURL(BuildAnalysisDocumentation.WindowReferenceUrl))
+                {
+                    text = "Read more"
+                };
+            }
+
+            return new Button(() => PackageManager.UI.Window.Open(producerPackage))
+            {
+                text = "View in Package Manager"
+            };
+        }
+
+        internal static string MissingDrawerMessage(BuildReportSummary summary)
+        {
+            return MissingDrawerMessage(summary, IsProducerPackageInstalled(summary.ProducerPackage));
+        }
+
+        // Takes the package state, so tests do not depend on what the running project has installed.
+        internal static string MissingDrawerMessage(BuildReportSummary summary, bool producerPackageInstalled)
+        {
+            var producer = string.IsNullOrEmpty(summary.BuildTypeName) ? summary.BuildName : summary.BuildTypeName;
+
+            var madeBy = string.IsNullOrEmpty(producer)
+                ? "This build was made outside the Unity build pipeline."
+                : $"This build was made by {producer}.";
+
+            return $"{madeBy} {MissingReportReason(summary.ProducerPackage, producerPackageInstalled)}";
+        }
+
+        private static string MissingReportReason(string producerPackage, bool producerPackageInstalled)
+        {
+            // A build naming no package is one of ours, so its report is missing rather than undrawable.
+            if (string.IsNullOrEmpty(producerPackage))
+                return "Its report is unavailable. The build may have been interrupted, or its report deleted.";
+
+            if (!producerPackageInstalled)
+                return $"To view its report, install the {producerPackage} package.";
+
+            return $"The installed {producerPackage} package cannot display its report. " +
+                "Update the package, or check the Console for errors loading it.";
+        }
+
+        private static bool IsProducerPackageInstalled(string producerPackage)
+        {
+            return !string.IsNullOrEmpty(producerPackage)
+                && PackageManager.PackageInfo.FindForPackageName(producerPackage) != null;
         }
     }
 }

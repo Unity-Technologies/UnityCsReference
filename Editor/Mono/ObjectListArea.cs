@@ -465,6 +465,12 @@ namespace UnityEditor
             get { return m_LocalAssets.ItemCount; }
         }
 
+        // Same space as LocalGroup's grid rects, matching IsSelectionFramed.
+        internal Rect gridVisibleRect
+        {
+            get { return new Rect(0f, m_State.m_ScrollPosition.y, m_VisibleRect.width, m_TotalRect.height); }
+        }
+
         internal bool IsSelectionFramed()
         {
             int idx = GetSelectedAssetIdx();

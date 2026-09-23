@@ -43,7 +43,7 @@ internal enum RectangleSelectionMode
 }
 
 [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-internal static class UIToolkitAuthoringSettings
+internal static partial class UIToolkitAuthoringSettings
 {
     private const string k_DisplayOptions = "UIAuthoring.DisplayOptions";
     private const string k_NewVisualTreeAssetLocation = "UIAuthoring.NewVisualTreeAssetLocation";
@@ -55,16 +55,16 @@ internal static class UIToolkitAuthoringSettings
     private const string k_RectangleSelectionMode = "UIAuthoring.RectangleSelectionMode";
     private const RectangleSelectionMode DefaultRectangleSelectionMode = RectangleSelectionMode.AnyOverlap;
 
-    [NoAutoStaticsCleanup] // every subscriber unsubscribes in its own teardown, safe to persist
+    [AutoStaticsCleanupOnCodeReload] // subscribers re-subscribe per instance after a reload
     internal static event Action<UIHierarchyDisplayOptions> DisplayOptionsChanged;
 
-    [NoAutoStaticsCleanup]
+    [AutoStaticsCleanupOnCodeReload]
     internal static event Action<AutoOpenMode> AutoOpenUIViewportWindowChanged;
 
-    [NoAutoStaticsCleanup]
+    [AutoStaticsCleanupOnCodeReload]
     internal static event Action<AutoOpenMode> AutoOpenStyleSheetsWindowChanged;
 
-    [NoAutoStaticsCleanup]
+    [AutoStaticsCleanupOnCodeReload]
     internal static event Action<RectangleSelectionMode> RectangleSelectionModeChanged;
 
     [NoAutoStaticsCleanup]

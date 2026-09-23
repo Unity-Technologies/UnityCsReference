@@ -54,12 +54,12 @@ static partial class UIAssetRegistrySceneTracking
     }
 
     // The registry only exists once something is tracked, so its reimport signal is subscribed separately from
-    // the load-time hooks (see Init).
+    // the load-time hooks (see OnPanelTracked).
     static void SubscribeToAssetReloads()
     {
         var registry = UIAssetRegistry.instance;
 
-        // Init retries itself until the selection registry has bootstrapped, so this can run more than once.
+        // Runs once per tracked panel, so keep it idempotent.
         registry.AssetReloaded -= OnAssetReloaded;
         registry.AssetReloaded += OnAssetReloaded;
     }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Modules;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Scripting.ScriptCompilation;
@@ -485,10 +486,15 @@ namespace UnityEditor.Compilation
             {
                 var assembly = editorCompilation.GetCustomTargetAssemblyFromName(assemblyName);
 
+                var buildTarget = EditorUserBuildSettings.activeBuildTarget;
+
                 var scriptAssemblySettings = new ScriptAssemblySettings()
                 {
-                    BuildTarget = EditorUserBuildSettings.activeBuildTarget,
-                    CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation
+                    BuildTarget = buildTarget,
+                    CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingWithAsserts | EditorScriptCompilationOptions.BuildingWithInstrumentation,
+                    // Without this the platform's own defines are missing, so define constraints that depend on
+                    // them are reported as unsatisfied in the assembly definition Inspector.
+                    CompilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension()
                 };
 
                 return editorCompilation.GetTargetAssemblyDefines(assembly, scriptAssemblySettings);

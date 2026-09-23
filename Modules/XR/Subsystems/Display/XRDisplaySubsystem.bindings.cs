@@ -420,6 +420,18 @@ namespace UnityEngine.XR
             ///<remarks>This pointer can be passed to <see cref="CommandBuffer.ConfigureFoveatedRendering"/> by the scriptable rendering pipeline implementation.</remarks>
             public IntPtr foveatedRenderingInfo;
 
+            ///<summary>Reference stencil value used by Temporal Pixel Synthesis to exclude pixels from temporal reuse.</summary>
+            ///<remarks>Pixels where <c>(stencil &amp; motionVectorStencilMask) == motionVectorStencilValue</c> are excluded. Only meaningful when <see cref="isTemporalPixelSynthesisActive"/> is <c>true</c>.</remarks>
+            public int motionVectorStencilValue;
+
+            ///<summary>Bitmask of the stencil bits that Temporal Pixel Synthesis tests when excluding pixels from temporal reuse.</summary>
+            ///<remarks>Stencil buffers are 8 bit, so this is expected to fit in the range 0-255. Only meaningful when <see cref="isTemporalPixelSynthesisActive"/> is <c>true</c>.</remarks>
+            public int motionVectorStencilMask;
+
+            ///<summary>Whether Temporal Pixel Synthesis is active for this render pass.</summary>
+            ///<remarks>When <c>true</c>, the XR compositor performs the temporal resolve and any upscaling, so the render pipeline must not run its own temporal anti-aliasing, jitter, or upscaler.</remarks>
+            public bool isTemporalPixelSynthesisActive;
+
             ///<summary>Gets an <see cref="XRRenderParameter" /> for a specific <see cref="XRRenderPass" />.</summary>
             ///<param name="camera">
             ///  <see cref="Camera" /> for the basis of the view and projection.</param>

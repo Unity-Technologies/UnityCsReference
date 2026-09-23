@@ -326,6 +326,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             "ui.test-framework",
             "visualeffectgraph",
             "xr.core-utils",
+            "xr.openxr",
         };
 
         [NoAutoStaticsCleanup] // immutable package ruleset file path computed once, safe to persist across reload

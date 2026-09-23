@@ -3,6 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+
+using Unity.Profiling.LowLevel;
+using Unity.Profiling.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.U2D.PhysicsCore2D.Profiler
@@ -24,256 +28,46 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler
 
         [NoAutoStaticsCleanup]
         public static readonly Guid k_PhysicsCore2DProfilerProjectId = new Guid("4844E8B7-EB08-4D4B-B3E2-9B50F84AC562");
+        // Metadata tags, which must stay in step with PhysicsCore2DProfiler.cpp on the native side.
         public const int k_PhysicsCore2DFrameDataTag = 0;
+        public const int k_PhysicsCore2DWorldNamesTag = 1;
+
+        // The markers the native module registers, read back from the profiler itself rather than listed
+        // here. A list kept by hand drifts as markers are added and removed natively: a name that is no
+        // longer registered resolves to nothing, and a marker missing from the list never appears at all.
+        public static string[] markerNames => s_MarkerNames ??= BuildMarkerNames();
+
+        // Every registered marker carrying the module's name prefix, sorted so the order does not depend on
+        // the order the markers happened to register in. Counters are left out, since the view sums sample
+        // times and a counter has none.
+        static string[] BuildMarkerNames()
+        {
+            var handles = new List<ProfilerRecorderHandle>();
+            ProfilerRecorderHandle.GetAvailable(handles);
+
+            var names = new List<string>();
+
+            foreach (var handle in handles)
+            {
+                var description = ProfilerRecorderHandle.GetDescription(handle);
+                if ((description.Flags & MarkerFlags.Counter) != 0)
+                    continue;
+
+                if (description.Name.StartsWith(k_MarkerNamePrefix, StringComparison.Ordinal))
+                    names.Add(description.Name);
+            }
+
+            names.Sort(StringComparer.Ordinal);
+            return names.ToArray();
+        }
+
+        #region Internal
+
+        const string k_MarkerNamePrefix = "PhysicsCore2D.";
 
         [NoAutoStaticsCleanup]
-        public static readonly string[] k_MarkerNames =
-        {
-            "PhysicsCore2D.TransformChanged",
-            "PhysicsCore2D.TransformParentHierarchyChanged",
-            "PhysicsCore2D.PhysicsWorld.Create",
-            "PhysicsCore2D.PhysicsWorld.Destroy",
-            "PhysicsCore2D.PhysicsWorld.WriteDefinition",
-            "PhysicsCore2D.PhysicsWorld.ReadDefinition",
-            "PhysicsCore2D.PhysicsWorld.Simulate",
-            "PhysicsCore2D.PhysicsWorld.SimulateBatch",
-            "PhysicsCore2D.PhysicsWorld.Simulate.StepWorlds",
-            "PhysicsCore2D.PhysicsWorld.PreSimulate",
-            "PhysicsCore2D.PhysicsWorld.PostSimulate",
-            "PhysicsCore2D.PhysicsWorld.ProcessTransformWriteTweens",
-            "PhysicsCore2D.PhysicsWorld.SyncInterpolation",
-            "PhysicsCore2D.PhysicsWorld.SetTransformWriteTweens",
-            "PhysicsCore2D.PhysicsWorld.SetTransform",
-            "PhysicsCore2D.PhysicsWorld.SetTransformAccess",
-            "PhysicsCore2D.PhysicsWorld.WriteTransforms",
-            "PhysicsCore2D.PhysicsWorld.WriteTransforms.CalculateWorldTransformWrite",
-            "PhysicsCore2D.PhysicsWorld.WriteTransforms.SortTransformWriteTeens",
-            "PhysicsCore2D.PhysicsWorld.WriteTransforms.SetTransformAccessArray",
-            "PhysicsCore2D.PhysicsWorld.WriteTransformTweens",
-            "PhysicsCore2D.PhysicsWorld.WriteTransformTweensSync",
-            "PhysicsCore2D.PhysicsWorld.TestOverlapAABB",
-            "PhysicsCore2D.PhysicsWorld.TestOverlapShape",
-            "PhysicsCore2D.PhysicsWorld.TestOverlapShapeProxy",
-            "PhysicsCore2D.PhysicsWorld.TestOverlapPoint",
-            "PhysicsCore2D.PhysicsWorld.TestOverlapCircleGeometry",
-            "PhysicsCore2D.PhysicsWorld.TestOverlapCapsuleGeometry",
-            "PhysicsCore2D.PhysicsWorld.TestOverlapPolygonGeometry",
-            "PhysicsCore2D.PhysicsWorld.TestOverlapSegmentGeometry",
-            "PhysicsCore2D.PhysicsWorld.TestOverlapChainSegmentGeometry",
-            "PhysicsCore2D.PhysicsWorld.OverlapAABB",
-            "PhysicsCore2D.PhysicsWorld.OverlapShape",
-            "PhysicsCore2D.PhysicsWorld.OverlapShapeProxy",
-            "PhysicsCore2D.PhysicsWorld.OverlapPoint",
-            "PhysicsCore2D.PhysicsWorld.OverlapCircleGeometry",
-            "PhysicsCore2D.PhysicsWorld.OverlapCapsuleGeometry",
-            "PhysicsCore2D.PhysicsWorld.OverlapPolygonGeometry",
-            "PhysicsCore2D.PhysicsWorld.OverlapSegmentGeometry",
-            "PhysicsCore2D.PhysicsWorld.OverlapChainSegmentGeometry",
-            "PhysicsCore2D.PhysicsWorld.CastRay",
-            "PhysicsCore2D.PhysicsWorld.CastShape",
-            "PhysicsCore2D.PhysicsWorld.CastShapeProxy",
-            "PhysicsCore2D.PhysicsWorld.CastMover",
-            "PhysicsCore2D.PhysicsWorld.DrawCircleGeometry",
-            "PhysicsCore2D.PhysicsWorld.DrawCapsuleGeometry",
-            "PhysicsCore2D.PhysicsWorld.DrawPolygonGeometry",
-            "PhysicsCore2D.PhysicsWorld.DrawSegmentGeometry",
-            "PhysicsCore2D.PhysicsWorld.DrawQueryCastRay",
-            "PhysicsCore2D.PhysicsWorld.DrawQueryShapeProxy",
-            "PhysicsCore2D.PhysicsWorld.DrawQueryCastResult",
-            "PhysicsCore2D.PhysicsWorld.DrawQueryWorldCastResult",
-            "PhysicsCore2D.PhysicsWorld.DrawShapeProxy",
-            "PhysicsCore2D.PhysicsWorld.DrawBox",
-            "PhysicsCore2D.PhysicsWorld.DrawCircle",
-            "PhysicsCore2D.PhysicsWorld.DrawCapsule",
-            "PhysicsCore2D.PhysicsWorld.DrawPoint",
-            "PhysicsCore2D.PhysicsWorld.DrawLine",
-            "PhysicsCore2D.PhysicsWorld.DrawLineStrip",
-            "PhysicsCore2D.PhysicsWorld.DrawTransformAxis",
-            "PhysicsCore2D.DrawWorld",
-            "PhysicsCore2D.DrawWorld.UpdateLifetimes",
-            "PhysicsCore2D.DrawWorld.CompileDrawResults",
-            "PhysicsCore2D.PhysicsWorld.DrawShapes",
-            "PhysicsCore2D.PhysicsWorld.GetBodyUpdateUserData",
-            "PhysicsCore2D.PhysicsWorld.GetBodyUpdateCallbackTargets",
-            "PhysicsCore2D.PhysicsWorld.GetTriggerCallbackTargets",
-            "PhysicsCore2D.PhysicsWorld.GetContactCallbackTargets",
-            "PhysicsCore2D.PhysicsWorld.GetJointThresholdCallbackTargets",
-            "PhysicsCore2D.PhysicsWorld.AutoBodyUpdateCallbacks",
-            "PhysicsCore2D.PhysicsWorld.AutoContactCallbacks",
-            "PhysicsCore2D.PhysicsWorld.AutoTriggerCallbacks",
-            "PhysicsCore2D.PhysicsWorld.AutoJointThresholdCallbacks",
-            "PhysicsCore2D.PhysicsWorld.QueueTask",
-            "PhysicsCore2D.PhysicsWorld.FinishTask",
-            "PhysicsCore2D.PhysicsWorld.Explode",
-            "PhysicsCore2D.PhysicsBody.Create",
-            "PhysicsCore2D.PhysicsBody.CreateBatch",
-            "PhysicsCore2D.PhysicsBody.Destroy",
-            "PhysicsCore2D.PhysicsBody.DestroyBatch",
-            "PhysicsCore2D.PhysicsBody.WriteDefinition",
-            "PhysicsCore2D.PhysicsBody.ReadDefinition",
-            "PhysicsCore2D.PhysicsBody.SetPosition",
-            "PhysicsCore2D.PhysicsBody.SetRotation",
-            "PhysicsCore2D.PhysicsBody.SetTransform",
-            "PhysicsCore2D.PhysicsBody.SetTransformTarget",
-            "PhysicsCore2D.PhysicsBody.SetBatchTransform",
-            "PhysicsCore2D.PhysicsBody.GetBatchTransform",
-            "PhysicsCore2D.PhysicsBody.GetBatchTransformObjects",
-            "PhysicsCore2D.PhysicsBody.SetLinearVelocity",
-            "PhysicsCore2D.PhysicsBody.SetAngularVelocity",
-            "PhysicsCore2D.PhysicsBody.ApplyForce",
-            "PhysicsCore2D.PhysicsBody.ApplyForceToCenter",
-            "PhysicsCore2D.PhysicsBody.ApplyTorque",
-            "PhysicsCore2D.PhysicsBody.ApplyLinearImpulse",
-            "PhysicsCore2D.PhysicsBody.ApplyLinearImpulseToCenter",
-            "PhysicsCore2D.PhysicsBody.ApplyAngularImpulse",
-            "PhysicsCore2D.PhysicsBody.ApplyBuoyancy",
-            "PhysicsCore2D.PhysicsBody.ApplyBuoyancyOverlap",
-            "PhysicsCore2D.PhysicsBody.ApplyWind",
-            "PhysicsCore2D.PhysicsBody.ApplyWindOverlap",
-            "PhysicsCore2D.PhysicsBody.SetBatchVelocity",
-            "PhysicsCore2D.PhysicsBody.SetBatchForce",
-            "PhysicsCore2D.PhysicsBody.SetBatchImpulse",
-            "PhysicsCore2D.PhysicsBody.GetBatchVelocity",
-            "PhysicsCore2D.PhysicsBody.SetBodyType",
-            "PhysicsCore2D.PhysicsBody.SetMassConfiguration",
-            "PhysicsCore2D.PhysicsBody.ApplyMassFromShapes",
-            "PhysicsCore2D.PhysicsBody.MassOverride",
-            "PhysicsCore2D.PhysicsBody.SetAwake",
-            "PhysicsCore2D.PhysicsBody.SetEnabled",
-            "PhysicsCore2D.PhysicsBody.SetFastRotationAllowed",
-            "PhysicsCore2D.PhysicsBody.SetFastCollisionsAllowed",
-            "PhysicsCore2D.PhysicsBody.SetContactEvents",
-            "PhysicsCore2D.PhysicsBody.SetHitEvents",
-            "PhysicsCore2D.PhysicsBody.GetShapes",
-            "PhysicsCore2D.PhysicsBody.GetJoints",
-            "PhysicsCore2D.PhysicsBody.GetContacts",
-            "PhysicsCore2D.PhysicsBody.Draw",
-            "PhysicsCore2D.PhysicsBody.userData",
-            "PhysicsCore2D.PhysicsBody.ownerUserData",
-            "PhysicsCore2D.PhysicsBody.transformObject",
-            "PhysicsCore2D.PhysicsBody.transformWriteMode",
-            "PhysicsCore2D.PolygonGeometry.CreateBox",
-            "PhysicsCore2D.PolygonGeometry.Create",
-            "PhysicsCore2D.PolygonGeometry.CreatePolygons",
-            "PhysicsCore2D.ChainSegmentGeometry.CreateSegments",
-            "PhysicsCore2D.ChainSegmentGeometry.UpdateSegments",
-            "PhysicsCore2D.PhysicsShape.CreateCircle",
-            "PhysicsCore2D.PhysicsShape.CreateCapsule",
-            "PhysicsCore2D.PhysicsShape.CreatePolygon",
-            "PhysicsCore2D.PhysicsShape.CreateSegment",
-            "PhysicsCore2D.PhysicsShape.CreateChainSegment",
-            "PhysicsCore2D.PhysicsShape.CreateShapeBatch",
-            "PhysicsCore2D.PhysicsShape.Destroy",
-            "PhysicsCore2D.PhysicsShape.DestroyBatch",
-            "PhysicsCore2D.PhysicsShape.WriteDefinition",
-            "PhysicsCore2D.PhysicsShape.ReadDefinition",
-            "PhysicsCore2D.PhysicsShape.SetDensity",
-            "PhysicsCore2D.PhysicsShape.SetContactFilter",
-            "PhysicsCore2D.PhysicsShape.SetCircleGeometry",
-            "PhysicsCore2D.PhysicsShape.SetCapsuleGeometry",
-            "PhysicsCore2D.PhysicsShape.SetPolygonGeometry",
-            "PhysicsCore2D.PhysicsShape.SetSegmentGeometry",
-            "PhysicsCore2D.PhysicsShape.SetChainSegmentGeometry",
-            "PhysicsCore2D.PhysicsShape.SetBatchCircleGeometry",
-            "PhysicsCore2D.PhysicsShape.SetBatchCapsuleGeometry",
-            "PhysicsCore2D.PhysicsShape.SetBatchPolygonGeometry",
-            "PhysicsCore2D.PhysicsShape.SetBatchSegmentGeometry",
-            "PhysicsCore2D.PhysicsShape.SetBatchChainSegmentGeometry",
-            "PhysicsCore2D.PhysicsShape.OverlapPoint",
-            "PhysicsCore2D.PhysicsShape.ClosestPoint",
-            "PhysicsCore2D.PhysicsShape.CastRay",
-            "PhysicsCore2D.PhysicsShape.CastShape",
-            "PhysicsCore2D.PhysicsShape.GetContacts",
-            "PhysicsCore2D.PhysicsShape.GetTriggerVisitors",
-            "PhysicsCore2D.PhysicsShape.ApplyBuoyancy",
-            "PhysicsCore2D.PhysicsShape.ApplyWind",
-            "PhysicsCore2D.PhysicsShape.FilterContactCallback",
-            "PhysicsCore2D.PhysicsShape.PreSolveCallback",
-            "PhysicsCore2D.PhysicsShape.Draw",
-            "PhysicsCore2D.PhysicsShape.userData",
-            "PhysicsCore2D.PhysicsShape.ownerUserData",
-            "PhysicsCore2D.PhysicsChain.Create",
-            "PhysicsCore2D.PhysicsChain.Destroy",
-            "PhysicsCore2D.PhysicsChain.UpdateVertices",
-            "PhysicsCore2D.PhysicsChain.userData",
-            "PhysicsCore2D.PhysicsChain.ownerUserData",
-            "PhysicsCore2D.PhysicsJoint.Destroy",
-            "PhysicsCore2D.PhysicsJoint.DestroyBatch",
-            "PhysicsCore2D.PhysicsJoint.Draw",
-            "PhysicsCore2D.PhysicsJoint.userData",
-            "PhysicsCore2D.PhysicsJoint.ownerUserData",
-            "PhysicsCore2D.PhysicsDistanceJoint.Create",
-            "PhysicsCore2D.PhysicsDistanceJoint.WriteDefinition",
-            "PhysicsCore2D.PhysicsDistanceJoint.ReadDefinition",
-            "PhysicsCore2D.PhysicsRelativeJoint.Create",
-            "PhysicsCore2D.PhysicsRelativeJoint.WriteDefinition",
-            "PhysicsCore2D.PhysicsRelativeJoint.ReadDefinition",
-            "PhysicsCore2D.PhysicsIgnoreJoint.Create",
-            "PhysicsCore2D.PhysicsIgnoreJoint.WriteDefinition",
-            "PhysicsCore2D.PhysicsIgnoreJoint.ReadDefinition",
-            "PhysicsCore2D.PhysicsSliderJoint.Create",
-            "PhysicsCore2D.PhysicsSliderJoint.WriteDefinition",
-            "PhysicsCore2D.PhysicsSliderJoint.ReadDefinition",
-            "PhysicsCore2D.PhysicsHingeJoint.Create",
-            "PhysicsCore2D.PhysicsHingeJoint.WriteDefinition",
-            "PhysicsCore2D.PhysicsHingeJoint.ReadDefinition",
-            "PhysicsCore2D.PhysicsFixedJoint.Create",
-            "PhysicsCore2D.PhysicsFixedJoint.WriteDefinition",
-            "PhysicsCore2D.PhysicsFixedJoint.ReadDefinition",
-            "PhysicsCore2D.PhysicsWheelJoint.Create",
-            "PhysicsCore2D.PhysicsWheelJoint.WriteDefinition",
-            "PhysicsCore2D.PhysicsWheelJoint.ReadDefinition",
-            "PhysicsCore2D.PhysicsComposer.Create",
-            "PhysicsCore2D.PhysicsComposer.Destroy",
-            "PhysicsCore2D.PhysicsComposer.DestroyAll",
-            "PhysicsCore2D.PhysicsComposer.AddLayer",
-            "PhysicsCore2D.PhysicsComposer.RemoveLayer",
-            "PhysicsCore2D.PhysicsComposer.ClearLayers",
-            "PhysicsCore2D.PhysicsComposer.GetLayerCount",
-            "PhysicsCore2D.PhysicsComposer.GetLayerHandles",
-            "PhysicsCore2D.PhysicsComposer.GetComposers",
-            "PhysicsCore2D.PhysicsComposer.CreatePolygons",
-            "PhysicsCore2D.PhysicsComposer.CreateConvexHulls",
-            "PhysicsCore2D.PhysicsComposer.CreateChains",
-            "PhysicsCore2D.PhysicsComposer.GetGeometryIslands",
-            "PhysicsCore2D.PhysicsComposer.AddVertexGeometryPath",
-            "PhysicsCore2D.PhysicsComposer.AddCircleGeometryPath",
-            "PhysicsCore2D.PhysicsComposer.AddCapsuleGeometryPath",
-            "PhysicsCore2D.PhysicsComposer.AddPolygonGeometryPath",
-            "PhysicsCore2D.PhysicsComposer.AddPolygonGeometryPathWithRadius",
-            "PhysicsCore2D.PhysicsComposer.AddRawGeometryPath",
-            "PhysicsCore2D.PhysicsComposer.AddShapeGeometryPath",
-            "PhysicsCore2D.PhysicsComposer.CreateLayerPaths",
-            "PhysicsCore2D.PhysicsComposer.CreateGeometryPaths",
-            "PhysicsCore2D.PhysicsComposer.TessellationPaths",
-            "PhysicsCore2D.PhysicsComposer.Tessellation",
-            "PhysicsCore2D.PhysicsComposer.Tessellation.ConstructPolygons",
-            "PhysicsCore2D.PhysicsDestructor.Fragment",
-            "PhysicsCore2D.PhysicsDestructor.FragmentMasked",
-            "PhysicsCore2D.PhysicsDestructor.Slice",
-            "PhysicsCore2D.PhysicsSpace.Create",
-            "PhysicsCore2D.PhysicsSpace.Destroy",
-            "PhysicsCore2D.PhysicsSpace.DestroyAll",
-            "PhysicsCore2D.PhysicsSpace.GetSpaces",
-            "PhysicsCore2D.PhysicsSpace.GetSourceWorld",
-            "PhysicsCore2D.PhysicsSpace.Clone",
-            "PhysicsCore2D.PhysicsSpace.CreateProxy",
-            "PhysicsCore2D.PhysicsSpace.CreateProxyShapes",
-            "PhysicsCore2D.PhysicsSpace.DestroyProxy",
-            "PhysicsCore2D.PhysicsSpace.ClearProxies",
-            "PhysicsCore2D.PhysicsSpace.GetProxyAABB",
-            "PhysicsCore2D.PhysicsSpace.SetBatchProxyAABB",
-            "PhysicsCore2D.PhysicsSpace.GetBatchProxyAABB",
-            "PhysicsCore2D.PhysicsSpace.GetProxyCategories",
-            "PhysicsCore2D.PhysicsSpace.GetBatchProxyCategories",
-            "PhysicsCore2D.PhysicsSpace.SetBatchProxyCategories",
-            "PhysicsCore2D.PhysicsSpace.GetProxyUserHandle",
-            "PhysicsCore2D.PhysicsSpace.SetProxyUserHandle",
-            "PhysicsCore2D.PhysicsSpace.GetBatchProxyUserHandle",
-            "PhysicsCore2D.PhysicsSpace.CastRay",
-            "PhysicsCore2D.PhysicsSpace.CastShape",
-            "PhysicsCore2D.PhysicsSpace.OverlapAABB",
-            "PhysicsCore2D.PhysicsSpace.SyncShapes",
-        };
+        static string[] s_MarkerNames;
+
+        #endregion
     }
 }

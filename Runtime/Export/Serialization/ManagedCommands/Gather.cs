@@ -323,12 +323,7 @@ internal static unsafe partial class SerializationBackendManagedCommands
         pos += sizeof(GatherRecurseClassEntry);
         byte* nestedEnd = pos + nestedBytes;
 
-        // Reuse VRT's materialize-if-null helper — same field set
-        // (fieldOffset / runtimeTypeHandle / ctorFunctionPtr), same behavior
-        // (writes back to the field slot so the materialized instance shows
-        // up in the user's data the same way the write transfer would
-        // materialize a null class field). GetOrCreateVrtInstance returns
-        // null only when UnmarshalSystemType fails (no runtimeTypeHandle).
+        // Null returns for a missing or abstract type; CreateVrtInstance reports the latter.
         object obj = GetOrCreateVrtInstance(ref baseAddr, fieldOffset, rth, cfp);
         if (obj == null)
         {
@@ -380,6 +375,8 @@ internal static unsafe partial class SerializationBackendManagedCommands
         var entry = (GatherRecurseClassArrayEntry*)pos;
         uint nestedBytes = entry->nestedByteCount;
         uint fieldOffset = entry->fieldOffset;
+        IntPtr rth = entry->runtimeTypeHandle;
+        IntPtr cfp = entry->ctorFunctionPtr;
         pos += sizeof(GatherRecurseClassArrayEntry);
         byte* nestedStart = pos;
         byte* nestedEnd = nestedStart + nestedBytes;
@@ -392,18 +389,12 @@ internal static unsafe partial class SerializationBackendManagedCommands
             return;
         }
 
-        // Null elements are skipped, NOT materialized: a null element
-        // serializes as an empty/default container slot on disk with no live
-        // SerializeReference refs, and missing-type entries can only exist at
-        // paths the previous write actually traversed — which the legacy
-        // RemapPPtrTransfer walk also skipped for null elements. Materializing
-        // here would mutate the user's data (arr[i] no longer null) and waste
-        // work walking a default-initialized instance that has nothing the
-        // accumulator hasn't already seen via real refs.
+        // The write side instantiates null elements too, and each consumes an
+        // inline-RefId slot per [SerializeReference] site (UUM-150957).
         int nestedDepth = indexDepth < kMaxGatherIndexDepth ? indexDepth + 1 : indexDepth;
         for (int e = 0; e < arr.Length; e++)
         {
-            object elem = arr[e];
+            object elem = GetOrCreateVrtElement(arr, e, rth, cfp);
             if (elem == null)
                 continue;
             if (indexDepth < kMaxGatherIndexDepth)
@@ -416,9 +407,6 @@ internal static unsafe partial class SerializationBackendManagedCommands
                     emitCallbacks, collectMissingTypes, indexStack, nestedDepth);
             }
         }
-        // Always end at nestedEnd, even if no element was walked (all null).
-        // Skipping nested bytes is just pointer advancement — no need to walk
-        // entry-by-entry now that the byte size is stored.
         pos = nestedEnd;
     }
 
@@ -431,6 +419,8 @@ internal static unsafe partial class SerializationBackendManagedCommands
         var entry = (GatherRecurseClassListEntry*)pos;
         uint nestedBytes = entry->nestedByteCount;
         uint fieldOffset = entry->fieldOffset;
+        IntPtr rth = entry->runtimeTypeHandle;
+        IntPtr cfp = entry->ctorFunctionPtr;
         pos += sizeof(GatherRecurseClassListEntry);
         byte* nestedStart = pos;
         byte* nestedEnd = nestedStart + nestedBytes;
@@ -452,11 +442,11 @@ internal static unsafe partial class SerializationBackendManagedCommands
         }
         object[] items = Unsafe.As<byte[], object[]>(ref itemsBytes);
 
-        // Null elements skipped — see RecurseClassArray for rationale.
+        // Null elements materialized — see RecurseClassArray.
         int nestedDepth = indexDepth < kMaxGatherIndexDepth ? indexDepth + 1 : indexDepth;
         for (int e = 0; e < size; e++)
         {
-            object elem = items[e];
+            object elem = GetOrCreateVrtElement(items, e, rth, cfp);
             if (elem == null)
                 continue;
             if (indexDepth < kMaxGatherIndexDepth)

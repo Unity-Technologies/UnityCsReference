@@ -39,9 +39,9 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler
             splitView.style.display = DisplayStyle.Flex;
         }
 
-        public void SetCapturedFrameData(PhysicsCore2DFrameData[] frameData, float[] profilerMarkerValues)
+        public void SetCapturedFrameData(PhysicsCore2DFrameData[] frameData, byte[] worldNames, float[] profilerMarkerValues)
         {
-            m_PhysicsCore2DModuleView.SetData(frameData, profilerMarkerValues);
+            m_PhysicsCore2DModuleView.SetData(frameData, worldNames, profilerMarkerValues);
         }
 
         public void SetStatistic(Unity.U2D.Physics.PhysicsWorld.WorldCounters counter)

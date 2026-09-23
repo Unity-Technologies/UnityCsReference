@@ -841,7 +841,7 @@ namespace UnityEditor
             m_FolderTree.Init(m_TreeViewRect,
                 new ProjectBrowserColumnOneTreeViewDataSource(m_FolderTree, m_SkipHiddenPackages),
                 new ProjectBrowserColumnOneTreeViewGUI(m_FolderTree),
-                new ProjectBrowserColumnOneTreeViewDragging(m_FolderTree)
+                new ProjectBrowserColumnOneTreeViewDragging(m_FolderTree, this)
             );
             m_FolderTree.ReloadData();
         }

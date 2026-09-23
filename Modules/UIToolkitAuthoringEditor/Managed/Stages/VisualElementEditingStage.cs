@@ -414,7 +414,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         if (m_DisplayState is DisplayState.None or DisplayState.Deferred)
         {
             OpenForDisplay();
-            AuthoringPanelWasCreated.Invoke(this);
+            AuthoringPanelWasCreated?.Invoke(this);
             return;
         }
 

@@ -24,6 +24,7 @@ namespace UnityEditor.TextCore.Text
             FontAsset.SetSourceFontGUID += TextEditorResourceManager.SetSourceFontGUID;
             FontAsset.ResolveDynamicSourceFont += FontSubsetterManager.ResolveDynamicSourceFont;
             FontAsset.EditorApplicationIsUpdating += () => EditorApplication.isUpdating;
+            FontAsset.EditorIsBuildingPlayer += () => BuildPipeline.isBuildingPlayer;
 
             // Callback to handle clearing dynamic font asset data when closing the Editor
             EditorApplication.quitting += () =>

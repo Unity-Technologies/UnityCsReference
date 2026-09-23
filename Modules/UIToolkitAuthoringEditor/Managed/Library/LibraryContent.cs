@@ -22,8 +22,10 @@ namespace Unity.UIToolkit.Editor
         const string k_ShowInternalControlsPrefKey = "UIToolkit.UILibrary.ShowInternalControls";
         const string k_ShowPackageControlsPrefKey = "UIToolkit.UILibrary.ShowPackageControls";
 
-        [NoAutoStaticsCleanup] // library-type cache, safe to persist
-        static readonly Dictionary<LibraryTypeKey, LibraryItem> s_LibraryTypes = GenerateLibraryTypeFromSerializedDataTypes();
+        [AutoStaticsCleanupOnCodeReload] // caches user Type refs; cleared on reload so unloaded assemblies aren't pinned
+        static Dictionary<LibraryTypeKey, LibraryItem> s_LibraryTypes;
+        [AutoStaticsCleanupOnCodeReload]
+        static bool s_VariantsGenerated;
         [AutoStaticsCleanupOnCodeReload] // caches user Assembly refs; cleared on reload so unloaded assemblies aren't pinned
         static readonly Dictionary<Assembly, bool> s_IsPackageAssembly = new();
 
@@ -53,25 +55,65 @@ namespace Unity.UIToolkit.Editor
                 var typeKey = new LibraryTypeKey(declaringType, key);
                 var typeItem = new LibraryItem(typeKey.name, typeKey, libraryPath);
                 dictionary.Add(typeKey, typeItem);
-
-                foreach (var variantName in ElementConfiguratorRegistry.GetVariantNames(declaringType))
-                {
-                    var variantKey = new LibraryTypeKey(declaringType, key, $"{typeKey.name} ({variantName})", variantName);
-                    var variantItem = new LibraryItem(variantKey.name, variantKey, libraryPath);
-                    dictionary.Add(variantKey, variantItem);
-                }
             }
 
             return dictionary;
         }
 
+        // Variant discovery is what forces ElementConfiguratorRegistry's TypeCache scans, so it is kept
+        // out of the base table and only runs for callers that surface variants (the UI Library).
+        static void AddVariantLibraryTypes(Dictionary<LibraryTypeKey, LibraryItem> dictionary)
+        {
+            var serializedDataTypes = UxmlSerializedDataRegistry.SerializedDataTypes;
+            foreach (var (key, type) in serializedDataTypes)
+            {
+                if (!IsValidSerializedDataType(type))
+                    continue;
+
+                var declaringType = type.DeclaringType;
+                var variantNames = ElementConfiguratorRegistry.GetVariantNames(declaringType);
+                if (variantNames.Count == 0)
+                    continue;
+
+                var libraryPath = ResolveLibraryPath(declaringType);
+                var typeKey = new LibraryTypeKey(declaringType, key);
+                foreach (var variantName in variantNames)
+                {
+                    var variantKey = new LibraryTypeKey(declaringType, key, $"{typeKey.name} ({variantName})", variantName);
+                    dictionary.Add(variantKey, new LibraryItem(variantKey.name, variantKey, libraryPath));
+                }
+            }
+        }
+
+        static Dictionary<LibraryTypeKey, LibraryItem> GetLibraryTypes(bool includeVariants)
+        {
+            s_LibraryTypes ??= GenerateLibraryTypeFromSerializedDataTypes();
+
+            if (includeVariants && !s_VariantsGenerated)
+            {
+                s_VariantsGenerated = true;
+                AddVariantLibraryTypes(s_LibraryTypes);
+            }
+
+            return s_LibraryTypes;
+        }
+
+        // For testing purposes
+        internal static void ResetCache()
+        {
+            s_LibraryTypes = null;
+            s_VariantsGenerated = false;
+        }
+
         /// <summary>
         /// Get all the LibraryTypeKey pairing for the LibraryItem.
         /// </summary>
+        /// <param name="includeVariants">Whether the table should also contain the configurator-declared
+        /// variants. Pass <see langword="false"/> when only the base types are surfaced.</param>
         /// <returns>An IReadOnlyDictionary of all the LibraryTypeKeys with their respective LibraryItems.</returns>
-        public static IReadOnlyDictionary<LibraryTypeKey, LibraryItem> GetAllLibraryTypes()
+        public static IReadOnlyDictionary<LibraryTypeKey, LibraryItem> GetAllLibraryTypes(bool includeVariants = true)
         {
-            return s_LibraryTypes;
+            return GetLibraryTypes(includeVariants);
         }
 
         /// <summary>
@@ -81,7 +123,7 @@ namespace Unity.UIToolkit.Editor
         /// <returns>The LibraryItem associated to the LibraryTypeKey, or null if the key is not found.</returns>
         public static LibraryItem GetLibraryItemByLibraryKey(LibraryTypeKey key)
         {
-            return s_LibraryTypes.GetValueOrDefault(key);
+            return GetLibraryTypes(includeVariants: key.variantName != null).GetValueOrDefault(key);
         }
 
         /// <summary>
@@ -104,7 +146,7 @@ namespace Unity.UIToolkit.Editor
             var declaredType = type.IsNested ? type.DeclaringType : type;
             var key = new LibraryTypeKey(declaredType, declaredType.FullName);
 
-            s_LibraryTypes.TryGetValue(key, out var item);
+            GetLibraryTypes(includeVariants: false).TryGetValue(key, out var item);
             return item;
         }
 

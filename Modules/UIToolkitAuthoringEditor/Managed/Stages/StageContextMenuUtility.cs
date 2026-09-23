@@ -560,6 +560,12 @@ internal static class StageContextMenuUtility
             return;
         }
 
+        if (VisualElementEditingUtility.WouldCauseCircularDependency(vea, relativePath))
+        {
+            EditorUtility.DisplayDialog("Invalid Path", "Cannot overwrite a UXML file that the selected element instantiates.", "OK");
+            return;
+        }
+
         var parentVea = vea.parentAsset as VisualElementAsset ?? originalVta.visualTree;
 
         using (ListPool<UxmlAsset>.Get(out var roots))

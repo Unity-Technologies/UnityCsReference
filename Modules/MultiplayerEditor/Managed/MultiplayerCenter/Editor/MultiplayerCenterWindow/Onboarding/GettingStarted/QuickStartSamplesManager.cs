@@ -32,6 +32,9 @@ namespace Unity.Multiplayer.Center.Editor
             EditorApplication.delayCall += ExecuteInitStepsForSample;
         }
 
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action<string> SampleImportStarted;
+
         const string k_LogTag = "[" + nameof(QuickStartSamplesManager) + "]";
         const string k_QuickStartPackageID = "com.unity.multiplayer.center.quickstart";
         const string k_InitializationStepID = "QuickStart-Initialization";
@@ -70,6 +73,8 @@ namespace Unity.Multiplayer.Center.Editor
             foreach (var sample in GetSamplesFrom(quickstart))
             {
                 if (System.IO.Path.GetFileName(sample.resolvedPath) != sampleId) { continue; }
+
+                SampleImportStarted?.Invoke(sampleId);
 
                 EditorPrefs.SetString(k_InitializationStepID, sampleId);
                 if (sample.Import(Sample.ImportOptions.HideImportWindow |

@@ -528,6 +528,9 @@ internal sealed partial class VisualElementSelectionRegistry : IVisualElementCha
 
     UISelectionObject CreateSelectionObject(VisualElement element, Panel panel)
     {
+        // First selection object means authoring is in play: warm up the style inspector ahead of it opening.
+        StyleInspectorDefaultContent.Prepare();
+
         var editFlags = GetEditFlags(element, panel);
 
         UISelectionObject selectionObject;

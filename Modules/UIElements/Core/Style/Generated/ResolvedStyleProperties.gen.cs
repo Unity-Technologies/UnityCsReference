@@ -75,6 +75,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId minHeightProperty = "resolvedStyle." + nameof(IResolvedStyle.minHeight);
             internal static readonly BindingId minWidthProperty = "resolvedStyle." + nameof(IResolvedStyle.minWidth);
             internal static readonly BindingId opacityProperty = "resolvedStyle." + nameof(IResolvedStyle.opacity);
+            internal static readonly BindingId overflowProperty = "resolvedStyle." + nameof(IResolvedStyle.overflow);
             internal static readonly BindingId paddingBottomProperty = "resolvedStyle." + nameof(IResolvedStyle.paddingBottom);
             internal static readonly BindingId paddingLeftProperty = "resolvedStyle." + nameof(IResolvedStyle.paddingLeft);
             internal static readonly BindingId paddingRightProperty = "resolvedStyle." + nameof(IResolvedStyle.paddingRight);

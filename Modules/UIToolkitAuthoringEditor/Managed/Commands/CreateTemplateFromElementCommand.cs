@@ -76,8 +76,18 @@ sealed class CreateTemplateFromElementCommand : Command<CreateTemplateFromElemen
         templateAsset.serializedData = new TemplateContainer.UxmlSerializedData();
         var typeDesc = UxmlSerializedDataRegistry.GetDescription(typeof(TemplateContainer).FullName);
         var attr = typeDesc.FindAttributeWithPropertyName(nameof(TemplateContainer.templateUXML));
-        var uxmlValue = new TemplateContainer.TemplateUXML { templateId = vta.GetTemplateNameFromPath(assetPath) };
+        var uxmlValue = new TemplateContainer.TemplateUXML
+        {
+            templateAsset = m_Template,
+            templateId = vta.GetTemplateNameFromPath(assetPath)
+        };
         attr.SetSerializedValue(templateAsset.serializedData, uxmlValue, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
+
+        // The instance takes over the extracted element's name so USS and UQuery written
+        // against that name keep targeting the same position in the document.
+        if (m_ElementToTemplatize.TryGetAttributeValue("name", out var elementName) && !string.IsNullOrEmpty(elementName))
+            UxmlAssetUtilities.SetAttributeAndSyncSerializedData(templateAsset, "name", elementName);
+
         vta.ReparentElementInDocument(templateAsset, m_ParentAsset, insertionIndex);
 
         using var toSelectHandle = ListPool<VisualElementAsset>.Get(out var toSelect);

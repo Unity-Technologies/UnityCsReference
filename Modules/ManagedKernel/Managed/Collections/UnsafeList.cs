@@ -880,10 +880,11 @@ namespace Unity.Collections.LowLevel.Unsafe
                 return Ptr;
             }
 
-            // Excluded from docs: the generator cannot match a conversion operator declared in a
-            // nested type to its assembly entry, and crashes on the unmatched member. Same treatment
-            // as the equivalent NativeArray<T>.ReadOnly operator.
-            ///<exclude />
+            /// <summary>
+            /// Implicit cast to ReadOnlySpan&lt;T&gt;.
+            /// </summary>
+            /// <param name="container">Container to cast to ReadOnlySpan&lt;T&gt;.</param>
+            /// <returns>ReadOnlySpan&lt;T&gt; view of this container.</returns>
             public static implicit operator ReadOnlySpan<T>(in ReadOnly container)
             {
                 return container.AsReadOnlySpan();
@@ -998,8 +999,11 @@ namespace Unity.Collections.LowLevel.Unsafe
             /// <returns>A pointer to the data.</returns>
             public readonly T* GetUnsafeReadOnlyPtr() => Ptr;
 
-            // Excluded from docs: see the note on the ReadOnly cast above.
-            ///<exclude />
+            /// <summary>
+            /// Implicit cast to ReadOnlySpan&lt;T&gt;.
+            /// </summary>
+            /// <param name="container">Container to cast to ReadOnlySpan&lt;T&gt;.</param>
+            /// <returns>ReadOnlySpan&lt;T&gt; view of this container.</returns>
             public static implicit operator ReadOnlySpan<T>(in ParallelReader container) => container.AsReadOnlySpan();
 
             /// <summary>

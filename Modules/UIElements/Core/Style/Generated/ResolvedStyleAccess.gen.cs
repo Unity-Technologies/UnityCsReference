@@ -77,6 +77,7 @@ namespace UnityEngine.UIElements
         public StyleFloat minHeight => ve.ResolveLengthValue(ve.computedStyle.minHeight, false);
         public StyleFloat minWidth => ve.ResolveLengthValue(ve.computedStyle.minWidth, true);
         public float opacity => ve.computedStyle.opacity;
+        public Overflow overflow => ve.computedStyle.overflow == OverflowInternal.Visible ? Overflow.Visible : Overflow.Hidden;
         public float paddingBottom => ve.layoutNode.LayoutPaddingBottom;
         public float paddingLeft => ve.layoutNode.LayoutPaddingLeft;
         public float paddingRight => ve.layoutNode.LayoutPaddingRight;
@@ -242,6 +243,8 @@ namespace UnityEngine.UIElements
         StyleFloat IResolvedStyle.minWidth => resolvedStyle.minWidth;
 
         float IResolvedStyle.opacity => resolvedStyle.opacity;
+
+        Overflow IResolvedStyle.overflow => resolvedStyle.overflow;
 
         float IResolvedStyle.paddingBottom => resolvedStyle.paddingBottom;
 

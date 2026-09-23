@@ -1081,11 +1081,12 @@ namespace UnityEditor.UIElements
             pingBtn.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
             pingBtn.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
             pingBtn.style.backgroundRepeat = new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat);
-            pingBtn.style.alignItems = Align.FlexEnd;
             pingBtn.tooltip = UIToolkitProfilerToolbarHelpers.PingTooltip;
             pingBtn.style.width = 22;
             pingBtn.style.minWidth = 22;
             pingBtn.style.maxWidth = 22;
+            pingBtn.style.height = 16;
+            pingBtn.style.alignSelf = Align.Center;
             pingBtn.style.flexShrink = 0;
             pingBtn.clicked += () =>
             {

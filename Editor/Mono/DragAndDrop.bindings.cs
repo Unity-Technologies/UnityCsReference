@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
@@ -315,6 +314,45 @@ namespace UnityEditor
         public static extern DragAndDropVisualMode visualMode { get; set; }
 
         public static extern void AcceptDrag();
+
+        internal struct PreviewData
+        {
+            public EntityId ownerId { get; set; }
+            public IReadOnlyDictionary<EntityId, Vector2> itemCenters { get; set; }
+            public float itemSize { get; set; }
+            public bool listMode { get; set; }
+
+            // Scrolled-to area, in the same space as itemCenters.
+            public Rect visibleRect { get; set; }
+
+            // Null when the caller has none; SetDragPreviewLabelStyle then falls back to the editor's label style.
+            public GUIStyle labelStyle { get; set; }
+        }
+
+        [NativeMethod("SetDragPreviewOwnerId")]
+        internal static extern void SetDragPreviewOwnerId(EntityId ownerId);
+
+        [NativeMethod("SetDragPreviewLayout")]
+        internal static extern void SetDragPreviewLayout(float[] itemOffsets, float itemSize, bool listMode, Rect visibleRect);
+
+        [NativeMethod("SetDragPreviewLabelStyle")]
+        private static extern void SetDragPreviewLabelStyle_Internal(Color color, string fontName, float fontSize);
+
+        internal static void SetDragPreviewLabelStyle(GUIStyle style)
+        {
+            var resolved = style ?? EditorStyles.label;
+            // Not GUI.skin?.font: ?. skips Unity's null check, so a destroyed skin would throw here
+            // rather than fall through.
+            var skin = GUI.skin;
+            var font = resolved.font ?? (skin != null ? skin.font : null) ?? EditorStyles.label.font;
+            var fontSize = 0f;
+
+            if (style != null)
+                fontSize = style.fontSize > 0 ? style.fontSize : (font ? font.fontSize : 0f);
+
+            SetDragPreviewLabelStyle_Internal(resolved.normal.textColor, font ? font.name : "", fontSize);
+        }
+
         [NativeMethod("PrepareStartDrag")]
         private static extern void PrepareStartDrag_Internal();
         [NativeMethod("Cleanup")]

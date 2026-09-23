@@ -224,7 +224,8 @@ static class MenuUtility
 
     /// <summary>
     /// The panel component an add lands in when the selection names no document of its own: the one on the
-    /// selected GameObject, or a new one — created along with the document it renders.
+    /// selected GameObject, the one on the hierarchy's default parent, or a new one — created along with the
+    /// document it renders.
     /// </summary>
     /// <returns>
     /// <see langword="false"/> when none could be resolved, which includes the user declining to create a new
@@ -233,25 +234,51 @@ static class MenuUtility
     static bool TryResolveTargetPanelComponent(GameObject selectedGo, bool parentNewGameObjectUnderSelection,
         out IPanelComponent component)
     {
-        var existingPanel = (IPanelComponent)selectedGo?.GetComponent<PanelRenderer>()
-                            ?? selectedGo?.GetComponent<UIDocument>();
+        var existingPanel = PanelComponentOn(selectedGo);
+        if (existingPanel != null)
+            return UsePanelOrAssignNewAsset(existingPanel, out component);
 
-        if ((Component)existingPanel)
+        // An explicit context target wins over the default parent, the way it does for plain GameObject
+        // creation: the new panel hangs under the selected GameObject.
+        if (parentNewGameObjectUnderSelection && selectedGo != null)
+            return TryCreatePanelRendererAndAsset(selectedGo, null, out component);
+
+        // With no target of its own, the add honors the hierarchy's default parent: an add lands in its
+        // document when it renders one, and a new panel hangs under it otherwise.
+        var defaultParent = SceneView.GetDefaultParentObjectIfSet();
+        var defaultParentGo = defaultParent != null ? defaultParent.gameObject : null;
+
+        var defaultParentPanel = PanelComponentOn(defaultParentGo);
+        if (defaultParentPanel != null)
+            return UsePanelOrAssignNewAsset(defaultParentPanel, out component);
+
+        // No panel anywhere the add may target: create a new one rather than adopting another that happens to
+        // be in the scene.
+        return TryCreatePanelRendererAndAsset(defaultParentGo, null, out component);
+    }
+
+    static IPanelComponent PanelComponentOn(GameObject go)
+    {
+        if (go == null)
+            return null;
+        if (go.TryGetComponent<PanelRenderer>(out var renderer))
+            return renderer;
+        if (go.TryGetComponent<UIDocument>(out var document))
+            return document;
+        return null;
+    }
+
+    static bool UsePanelOrAssignNewAsset(IPanelComponent panel, out IPanelComponent component)
+    {
+        if (panel.visualTreeAsset != null)
         {
-            if (existingPanel.visualTreeAsset != null)
-            {
-                component = existingPanel;
-                return true;
-            }
-
-            // No usable VTA on the GameObject. Reuse the existing component (so we don't leave an empty Panel
-            // sitting next to the new one) rather than creating another one beside it.
-            return TryCreatePanelRendererAndAsset(null, existingPanel, out component);
+            component = panel;
+            return true;
         }
 
-        // No panel on the selection: create a new one rather than adopting another that happens to be in the
-        // scene. It hangs under the selected GameObject when the add asked to parent there.
-        return TryCreatePanelRendererAndAsset(parentNewGameObjectUnderSelection ? selectedGo : null, null, out component);
+        // No usable VTA on the GameObject. Reuse the existing component (so we don't leave an empty Panel
+        // sitting next to the new one) rather than creating another one beside it.
+        return TryCreatePanelRendererAndAsset(null, panel, out component);
     }
 
     /// <summary>

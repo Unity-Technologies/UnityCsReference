@@ -123,6 +123,7 @@ sealed class UnpackTemplatesCommand : Command<UnpackTemplatesCommand>
             {
                 ApplyAttributeOverrides(templateAsset.attributeOverrides, linkedVtaCopy);
                 PropagateAttributeOverridesToNestedTemplates(templateAsset.attributeOverrides, linkedVtaCopy);
+                PropagateComponentAttributeOverridesToNestedTemplates(templateAsset.componentAttributeOverrides, linkedVtaCopy);
                 // Converts propagated name-path overrides to integer-ID serializedDataOverrides before Swallow.
                 UxmlSerializer.CreateSerializedDataOverrides(linkedVtaCopy);
                 ApplyComponentAttributeOverrides(templateAsset.componentAttributeOverrides, linkedVtaCopy);
@@ -248,9 +249,7 @@ sealed class UnpackTemplatesCommand : Command<UnpackTemplatesCommand>
             {
                 if (!attributeOverride.NamesPathMatchesElementNamesPath(namePath))
                     continue;
-                vea.SetAttribute(attributeOverride.m_AttributeName, attributeOverride.m_Value);
-                if (vea.serializedData != null)
-                    UxmlSerializer.TryParseSerializedAttribute(attributeOverride.m_AttributeName, attributeOverride.m_Value, vea.serializedData, new CreationContext(linkedVtaCopy));
+                UxmlAssetUtilities.SetAttributeAndSyncSerializedData(vea, attributeOverride.m_AttributeName, attributeOverride.m_Value);
             }
         }
     }
@@ -320,37 +319,74 @@ sealed class UnpackTemplatesCommand : Command<UnpackTemplatesCommand>
                 continue;
 
             BuildNamePath(nestedTemplate, namePath);
-            if (namePath.Count == 0)
-                continue;
 
             foreach (var attributeOverride in overrides)
             {
-                var overridePath = attributeOverride.m_NamesPath;
-                if (overridePath == null || overridePath.Length <= namePath.Count)
-                    continue;
-
-                var isPrefix = true;
-                for (var i = 0; i < namePath.Count; i++)
-                {
-                    if (namePath[i] != overridePath[i])
-                    {
-                        isPrefix = false;
-                        break;
-                    }
-                }
-
-                if (!isPrefix)
-                    continue;
-
-                var subPath = new string[overridePath.Length - namePath.Count];
-                for (var i = 0; i < subPath.Length; i++)
-                    subPath[i] = overridePath[namePath.Count + i];
-
-                nestedTemplate.SetAttributeOverride(attributeOverride.m_AttributeName, attributeOverride.m_Value, subPath);
+                var forwardedPath = GetForwardedNamesPath(attributeOverride.m_NamesPath, namePath);
+                if (forwardedPath != null)
+                    nestedTemplate.SetAttributeOverride(attributeOverride.m_AttributeName, attributeOverride.m_Value, forwardedPath);
             }
         }
     }
 
+    // Component overrides address elements the same way attribute overrides do, so overrides that
+    // reach inside a nested instance must be forwarded to it just like the attribute ones above.
+    static void PropagateComponentAttributeOverridesToNestedTemplates(List<TemplateAsset.ComponentAttributeOverride> overrides, VisualTreeAsset linkedVtaCopy)
+    {
+        if (overrides == null || overrides.Count == 0)
+            return;
+
+        using var pathHandle = ListPool<string>.Get(out var namePath);
+
+        foreach (var asset in linkedVtaCopy.DepthFirstTraversal())
+        {
+            if (asset is not TemplateAsset nestedTemplate)
+                continue;
+
+            BuildNamePath(nestedTemplate, namePath);
+
+            foreach (var componentOverride in overrides)
+            {
+                if (componentOverride.m_ComponentData == null)
+                    continue;
+
+                var forwardedPath = GetForwardedNamesPath(componentOverride.m_NamesPath, namePath);
+                if (forwardedPath != null)
+                    nestedTemplate.AddComponentAttributeOverride(forwardedPath, componentOverride.m_ComponentData);
+            }
+        }
+    }
+
+    // The names path of an override, rebased onto a nested template instance: legacy single-name
+    // overrides match by name at any depth and are forwarded unchanged; longer paths are forwarded
+    // with the instance's own names-path prefix trimmed off. Null when the override cannot reach
+    // inside the instance.
+    static string[] GetForwardedNamesPath(string[] overridePath, List<string> nestedTemplateNamePath)
+    {
+        if (overridePath == null || overridePath.Length == 0)
+            return null;
+
+        if (overridePath.Length == 1)
+            return overridePath;
+
+        if (overridePath.Length <= nestedTemplateNamePath.Count)
+            return null;
+
+        for (var i = 0; i < nestedTemplateNamePath.Count; i++)
+        {
+            if (nestedTemplateNamePath[i] != overridePath[i])
+                return null;
+        }
+
+        var subPath = new string[overridePath.Length - nestedTemplateNamePath.Count];
+        for (var i = 0; i < subPath.Length; i++)
+            subPath[i] = overridePath[nestedTemplateNamePath.Count + i];
+
+        return subPath;
+    }
+
+    // Names-path segments are ancestor template-instance names plus the asset's own name; plain
+    // ancestor elements never contribute (see UxmlSerializer.CreateSerializedDataOverride).
     static void BuildNamePath(UxmlAsset asset, List<string> path)
     {
         path.Clear();
@@ -358,6 +394,7 @@ sealed class UnpackTemplatesCommand : Command<UnpackTemplatesCommand>
         while (current != null && current.HasParent())
         {
             if (current is VisualElementAsset vea &&
+                (current == asset || current is TemplateAsset) &&
                 vea.TryGetAttributeValue("name", out var n) &&
                 !string.IsNullOrEmpty(n))
             {

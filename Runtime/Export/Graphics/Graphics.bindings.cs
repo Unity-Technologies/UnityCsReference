@@ -716,9 +716,12 @@ namespace UnityEngine
         extern internal static OpenGLESVersion GetMinOpenGLESVersion();
         public static OpenGLESVersion minOpenGLESVersion { get { return GetMinOpenGLESVersion(); } }
 
-
         [FreeFunction("GraphicsScripting::GetActiveColorBuffer")] extern private static RenderBuffer GetActiveColorBuffer();
         [FreeFunction("GraphicsScripting::GetActiveDepthBuffer")] extern private static RenderBuffer GetActiveDepthBuffer();
+
+        [FreeFunction("GraphicsScripting::HasBackBufferDepthStencil")]
+        extern private static bool HasBackBufferDepthStencil();
+        internal static bool backBufferHasDepthStencil { get { return HasBackBufferDepthStencil(); } }
 
         [FreeFunction("GraphicsScripting::SetNullRT")] extern private static void Internal_SetNullRT();
         [NativeMethod(Name = "GraphicsScripting::SetGfxRT", IsFreeFunction = true, ThrowsException = true)]

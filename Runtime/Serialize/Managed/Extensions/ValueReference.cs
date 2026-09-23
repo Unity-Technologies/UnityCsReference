@@ -62,24 +62,102 @@ internal static unsafe partial class SerializationBackendManagedCommands
         if (obj != null)
             return obj;
 
+        obj = CreateVrtInstance(runtimeTypeHandle, ctorFunctionPtr);
+        if (obj == null)
+            return null;
+        slot = obj;
+        return obj;
+    }
+
+    // The native write side materializes the same element (SetupManagedObjectTransferer).
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe object GetOrCreateVrtElement(
+        object[] items, int index, IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr)
+    {
+        object obj = items[index];
+        return obj ?? CreateVrtElement(items, index, runtimeTypeHandle, ctorFunctionPtr);
+    }
+
+    // Split out because an EH region would make the caller ineligible for inlining.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe object CreateVrtElement(
+        object[] items, int index, IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr)
+    {
+        object obj = CreateVrtInstance(runtimeTypeHandle, ctorFunctionPtr);
+        if (obj == null)
+            return null;
+        try
+        {
+            items[index] = obj;
+        }
+        catch (ArrayTypeMismatchException)
+        {
+            // Covariant array: stelem.ref rejects the declared type, so use the array's own.
+            object typed = CreateArrayElementInstance(items.GetType().GetElementType());
+            if (typed != null)
+            {
+                items[index] = typed;
+                return typed;
+            }
+            // Abstract element type: store unchecked rather than leave the slot
+            // null, which would shift every later reference (UUM-150957).
+            ref byte elemAddr = ref Unsafe.AddByteOffset(
+                ref Unsafe.As<ObjectWrapper>((object)items).Data,
+                V2LayoutFacts.ArrayDataOffset + (nint)index * IntPtr.Size);
+            Unsafe.As<byte, object>(ref elemAddr) = obj;
+        }
+        return obj;
+    }
+
+    // The abstract check lives here because V2CreateInstanceFallback's other
+    // callers only ever reach it with a registered, therefore concrete, type.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe object CreateVrtInstance(IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr)
+    {
         Type type = UnmarshalSystemType(runtimeTypeHandle);
         if (type == null)
             return null;
-        // ctorFunctionPtr is baked at build time on every backend (see
-        // CreateWrapperInstance); zero means the type has no parameterless ctor.
-        obj = RuntimeHelpers.GetUninitializedObject(type);
-        if (ctorFunctionPtr != IntPtr.Zero)
+        if (type.IsAbstract)
+        {
+            ReportAbstractVrtType(type);
+            return null;
+        }
+        return V2CreateInstanceFallback(type, ctorFunctionPtr);
+    }
+
+    // Unreachable today; a silent return would desynchronize the write pass (UUM-150957).
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe void ReportAbstractVrtType(Type type)
+    {
+        s_V2CommandExceptionHandler(new InvalidOperationException(
+            $"Serialization gather cannot materialize a by-value instance of abstract type {type}."));
+    }
+
+    // Reflection: the command stream carries no handle or ctor for the array's own element type.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe object CreateArrayElementInstance(Type elementType)
+    {
+        if (elementType == null || elementType.IsAbstract || elementType.IsValueType)
+            return null;
+        object obj = RuntimeHelpers.GetUninitializedObject(elementType);
+        ConstructorInfo ctor = elementType.GetConstructor(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            null, Type.EmptyTypes, null);
+        if (ctor != null)
         {
             try
             {
-                ((delegate*<object, void>)ctorFunctionPtr)(obj);
+                ctor.Invoke(obj, null);
+            }
+            catch (TargetInvocationException e)
+            {
+                s_V2CommandExceptionHandler(e.InnerException ?? e);
             }
             catch (Exception e)
             {
-                Debug.LogException(e);
+                s_V2CommandExceptionHandler(e);
             }
         }
-        slot = obj;
         return obj;
     }
 

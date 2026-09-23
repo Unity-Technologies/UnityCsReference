@@ -82,11 +82,13 @@ namespace Unity.Multiplayer.Center.Editor
             {
                 RestorePendingPackages();
                 PackageIcon.PackageOpened += OnPackageIconOpened;
+                QuickStartSamplesManager.SampleImportStarted += OnSampleImportStarted;
                 Events.registeredPackages += OnPackagesRegistered;
             });
             m_Root.RegisterCallback<DetachFromPanelEvent>(_ =>
             {
                 PackageIcon.PackageOpened -= OnPackageIconOpened;
+                QuickStartSamplesManager.SampleImportStarted -= OnSampleImportStarted;
                 Events.registeredPackages -= OnPackagesRegistered;
                 SavePendingPackages();
             });
@@ -222,6 +224,12 @@ namespace Unity.Multiplayer.Center.Editor
             m_PendingPackages[packageId] = tier;
         }
 
+        void OnSampleImportStarted(string sampleId)
+        {
+            if (TryGetCurrentRecommendation(out var recommendation))
+                SendPackageInstalledEvent(recommendation.CorePackages, RecommendationTier.Essential);
+        }
+
         void OnPackagesRegistered(PackageRegistrationEventArgs args)
         {
             var installed = new Dictionary<RecommendationTier, List<string>>();
@@ -252,13 +260,17 @@ namespace Unity.Multiplayer.Center.Editor
             var newPackages = new List<string>();
             foreach (var package in packages)
             {
-                if (!IsInstalled(package))
-                    newPackages.Add(package);
+                if (IsInstalled(package))
+                    continue;
+
+                m_PendingPackages.Remove(package);
+                newPackages.Add(package);
             }
 
             if (newPackages.Count == 0)
                 return;
 
+            SavePendingPackages();
             PackageInstalledEvent.Send(new PackageInstalledData(
                 SelectedGameGenre.Genre,
                 tier,

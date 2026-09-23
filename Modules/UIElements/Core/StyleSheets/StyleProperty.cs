@@ -1177,8 +1177,7 @@ namespace UnityEngine.UIElements
             var val1 = new StylePropertyValue() { handle = values[0], sheet = styleSheet };
             var val2 = valCount > 1 ? new StylePropertyValue { handle = values[1], sheet = styleSheet } : default;
 
-            value = StylePropertyReader.ReadCurvature(valCount, val1, val2);
-            return true;
+            return StylePropertyReader.TryReadCurvature(valCount, val1, val2, out value);
         }
 
         /// <summary>

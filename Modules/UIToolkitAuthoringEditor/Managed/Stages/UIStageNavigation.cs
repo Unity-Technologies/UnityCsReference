@@ -19,20 +19,20 @@ namespace Unity.UIToolkit.Editor;
 /// to reach its destination reports as the single transition the user asked for.
 /// </summary>
 [InitializeOnLoad]
-static class UIStageNavigation
+static partial class UIStageNavigation
 {
     /// <summary>
     /// Raised once a navigation has settled, with the stage it settled on. Replaces
     /// <see cref="StageNavigationManager.afterSuccessfullySwitchedToStage"/> for the UI authoring tools.
     /// </summary>
-    [NoAutoStaticsCleanup] // every subscriber unsubscribes in its own teardown, safe to persist
+    [AutoStaticsCleanupOnCodeReload] // subscribers re-subscribe per instance after a reload
     public static event Action<Stage> StageSettled;
 
     /// <summary>
     /// Raised before a navigation leaves its starting stage, with the stage it is heading for first. Replaces
     /// <see cref="StageNavigationManager.stageChanging"/> for the UI authoring tools.
     /// </summary>
-    [NoAutoStaticsCleanup]
+    [AutoStaticsCleanupOnCodeReload]
     public static event Action<Stage, Stage> StageChanging;
 
     [NoAutoStaticsCleanup] // scratch state for one synchronous navigation, never spans a reload

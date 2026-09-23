@@ -46,16 +46,16 @@ namespace Unity.UI.Builder
 
             if (type != null)
             {
+                #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                 item = LibraryContent.GetDefaultLibraryItem(type);
                 // Cache the builder icons.
                 if (item != null)
                 {
                     icon = item.icon;
                     largeIcon = item.largeIcon;
-                    #pragma warning disable UAL0015 // rebuilt/resubscribed wholesale on the next reload via this object's own lifecycle; a stale value in the interim is never observed
                     AssignIcon();
-                    #pragma warning restore UAL0015
                 }
+                #pragma warning restore UAL0015
             }
         }
 

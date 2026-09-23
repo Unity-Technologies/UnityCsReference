@@ -18,15 +18,33 @@ namespace Unity.UIToolkit.Editor;
 /// </summary>
 static class VisualElementEditingUtility
 {
-    public static bool WillCauseCircularDependency(VisualTreeAsset visualTreeAsset, HashSet<string> visitedPaths)
+    /// <summary>
+    /// Whether <paramref name="visualTreeAsset"/> or any template it (transitively) instantiates is one of
+    /// <paramref name="targetPaths"/>. Shared dependencies are visited once and are not themselves a cycle.
+    /// </summary>
+    public static bool WillCauseCircularDependency(VisualTreeAsset visualTreeAsset, HashSet<string> targetPaths)
     {
-        if (!visitedPaths.Add(AssetDatabase.GetAssetPath(visualTreeAsset)))
-            return true;
+        using var visitedHandle = HashSetPool<VisualTreeAsset>.Get(out var visited);
+        using var pendingHandle = ListPool<VisualTreeAsset>.Get(out var pending);
+        pending.Add(visualTreeAsset);
 
-        foreach (var template in visualTreeAsset.templateDependencies)
+        while (pending.Count > 0)
         {
-            if (WillCauseCircularDependency(template, visitedPaths))
+            var current = pending[^1];
+            pending.RemoveAt(pending.Count - 1);
+            if (current == null || !visited.Add(current))
+                continue;
+            if (targetPaths.Contains(AssetDatabase.GetAssetPath(current)))
                 return true;
+            foreach (var dependency in current.templateDependencies)
+                pending.Add(dependency);
+
+            // A template registered by path alone still creates the dependency once it resolves.
+            foreach (var entry in current.usings)
+            {
+                if (entry.asset == null && !string.IsNullOrEmpty(entry.path) && targetPaths.Contains(entry.path))
+                    return true;
+            }
         }
 
         return false;
@@ -53,11 +71,11 @@ static class VisualElementEditingUtility
         if (template == null)
             return true;
 
-        using var _ = HashSetPool<string>.Get(out var visitedPaths);
-        CollectNestingDocuments(targetDocument, dropParent, visitedPaths);
+        using var _ = HashSetPool<string>.Get(out var nestingDocumentPaths);
+        CollectNestingDocuments(targetDocument, dropParent, nestingDocumentPaths);
 
         // Nothing resolved means we cannot prove the drop is safe; refuse it.
-        return visitedPaths.Count == 0 || WillCauseCircularDependency(template, visitedPaths);
+        return nestingDocumentPaths.Count == 0 || WillCauseCircularDependency(template, nestingDocumentPaths);
     }
 
     /// <summary>
@@ -66,27 +84,27 @@ static class VisualElementEditingUtility
     /// panel component hosting it.
     /// </summary>
     static void CollectNestingDocuments(VisualTreeAsset targetDocument, VisualElement dropParent,
-        HashSet<string> visitedPaths)
+        HashSet<string> nestingDocumentPaths)
     {
-        AddAssetPath(targetDocument, visitedPaths);
+        AddAssetPath(targetDocument, nestingDocumentPaths);
 
         for (var current = dropParent; current != null; current = current.hierarchy.parent)
         {
             // The panel component owns the outermost document; nothing above it belongs to a document.
             if (current is IPanelComponentRootElement rootElement)
             {
-                AddAssetPath(rootElement.panelComponent?.visualTreeAsset, visitedPaths);
+                AddAssetPath(rootElement.panelComponent?.visualTreeAsset, nestingDocumentPaths);
                 break;
             }
 
-            AddAssetPath(current.visualTreeAssetSource, visitedPaths);
+            AddAssetPath(current.visualTreeAssetSource, nestingDocumentPaths);
         }
     }
 
-    static void AddAssetPath(VisualTreeAsset visualTreeAsset, HashSet<string> visitedPaths)
+    static void AddAssetPath(VisualTreeAsset visualTreeAsset, HashSet<string> paths)
     {
         if (visualTreeAsset != null)
-            visitedPaths.Add(AssetDatabase.GetAssetPath(visualTreeAsset));
+            paths.Add(AssetDatabase.GetAssetPath(visualTreeAsset));
     }
 
     /// <summary>
@@ -104,6 +122,60 @@ static class VisualElementEditingUtility
         foreach (var template in templates)
         {
             if (WillCauseCircularDependency(targetDocument, parentElement, template))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Whether saving <paramref name="asset"/> and everything below it as a template at
+    /// <paramref name="templatePath"/> would overwrite a template that subtree (transitively) instantiates,
+    /// leaving the saved template instantiating itself.
+    /// </summary>
+    public static bool WouldCauseCircularDependency(UxmlAsset asset, string templatePath)
+    {
+        if (asset == null || string.IsNullOrEmpty(templatePath))
+            return false;
+
+        using var templatesHandle = ListPool<VisualTreeAsset>.Get(out var templates);
+        CollectInstantiatedTemplates(asset, templates);
+        using var _ = HashSetPool<string>.Get(out var targetPaths);
+        // Asset-database paths always use forward slashes; a caller may pass an OS path.
+        targetPaths.Add(templatePath.Replace('\\', '/'));
+
+        if (SubtreeReferencesUnresolvedPath(asset, targetPaths))
+            return true;
+
+        foreach (var template in templates)
+        {
+            if (WillCauseCircularDependency(template, targetPaths))
+                return true;
+        }
+
+        return false;
+    }
+
+    // An instance whose template did not resolve still names its target by path; saving the new
+    // template at that path makes the reference resolve to a file instantiating itself.
+    static bool SubtreeReferencesUnresolvedPath(UxmlAsset asset, HashSet<string> targetPaths)
+    {
+        if (asset is TemplateAsset instance && instance.ResolveTemplate() == null &&
+            instance.visualTreeAsset is { } owner)
+        {
+            foreach (var entry in owner.usings)
+            {
+                if (entry.asset == null && entry.alias == instance.templateAlias &&
+                    !string.IsNullOrEmpty(entry.path) && targetPaths.Contains(entry.path))
+                {
+                    return true;
+                }
+            }
+        }
+
+        for (var i = 0; i < asset.childCount; ++i)
+        {
+            if (SubtreeReferencesUnresolvedPath(asset[i], targetPaths))
                 return true;
         }
 

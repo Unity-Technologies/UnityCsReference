@@ -263,10 +263,11 @@ namespace Unity.Collections
             return new ReadOnly(m_Data, ref m_Safety);
         }
 
-        // Excluded from docs: the generator cannot match a conversion operator returning a nested
-        // type to its assembly entry, and crashes on the unmatched member. Use AsReadOnly() instead,
-        // which is documented.
-        ///<exclude />
+        /// <summary>
+        /// Returns a read-only native reference that aliases the content of a native reference.
+        /// </summary>
+        /// <param name="nativeReference">NativeReference to alias.</param>
+        /// <returns>A read-only native reference that aliases the content of a native reference.</returns>
         public static implicit operator ReadOnly(NativeReference<T> nativeReference)
         {
             return nativeReference.AsReadOnly();

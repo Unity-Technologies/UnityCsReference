@@ -127,6 +127,7 @@ namespace UnityEditor.Search
             }
             if (flags.HasAny(RefreshFlags.DisplayModeChanged))
             {
+                Refresh();
                 OnDisplayModeChanged(null);
             }
         }

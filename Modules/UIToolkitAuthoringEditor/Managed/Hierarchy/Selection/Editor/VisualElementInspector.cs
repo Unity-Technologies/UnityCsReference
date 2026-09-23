@@ -5,6 +5,7 @@
 #pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using System.IO;
+using Unity.Profiling;
 using Unity.Properties;
 using Unity.UIToolkit.Editor.Utilities;
 using UnityEditor;
@@ -20,6 +21,9 @@ internal sealed partial class VisualElementInspector : UIInspector
 {
     public static readonly BindingId ElementProperty = nameof(Element);
     public static readonly BindingId EditFlagsProperty = nameof(EditFlags);
+
+    internal const string setElementMarkerName = "VisualElementInspector.SetElement";
+    static readonly ProfilerMarker k_SetElementMarker = new(setElementMarkerName);
 
     public const string UssClass = "unity-visual-element-inspector";
     public const string BindingsSectionViewClass = UssClass + "__bindings-section";
@@ -69,6 +73,7 @@ internal sealed partial class VisualElementInspector : UIInspector
         {
             if (m_Element == value)
                 return;
+            using var _ = k_SetElementMarker.Auto();
             m_Element = value;
 
             if (m_Element == null)

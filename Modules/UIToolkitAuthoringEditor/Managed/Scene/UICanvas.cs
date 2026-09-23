@@ -482,7 +482,9 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
     {
         // If only the `visualTree` changed, we don't need to repaint the render texture. This happens because we apply
         // the panel settings on the panel, but then we need to override some settings such as the 'visualTree`'s size.
-        if (changes.styleChanged.Count == 1 && changes.styleChanged.Contains(panelElementPanel.visualTree))
+        if (OnlyContains(changes.styleChanged, panelElementPanel.visualTree) &&
+            OnlyContains(changes.layoutChanged, panelElementPanel.visualTree) &&
+            (changes.styleChanged.Count > 0 || changes.layoutChanged.Count > 0))
             return;
 
         if (m_PanelElement == null || PanelElement.SubPanel == null)
@@ -490,6 +492,11 @@ partial class UICanvas : VisualElement, IVisualElementChangeProcessor
 
         PanelElement.SubPanel.visualTree.MarkDirtyRepaint();
         m_DocumentRoot.IncrementVersion(VersionChangeType.Repaint);
+    }
+
+    static bool OnlyContains(HashSet<VisualElement> set, VisualElement element)
+    {
+        return set.Count == 0 || (set.Count == 1 && set.Contains(element));
     }
 
     void IVisualElementChangeProcessor.EndProcessing(BaseVisualElementPanel panelElementPanel)

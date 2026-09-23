@@ -20,7 +20,7 @@ namespace Unity.Hierarchy
         static readonly HierarchyFlattenedNode s_Null;
         readonly HierarchyNode m_Node;
         readonly HierarchyNodeType m_Type;
-        readonly int m_SelfVersion;
+        readonly uint m_SelfVersion;
         readonly int m_ParentOffset;
         readonly int m_NextSiblingOffset;
         readonly int m_ChildIndex;

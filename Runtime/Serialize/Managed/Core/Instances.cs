@@ -141,6 +141,13 @@ internal static unsafe partial class SerializationBackendManagedCommands
         Type type = UnmarshalSystemType(runtimeTypeHandle);
         if (type == null)
             return null;
+        return V2CreateInstanceFallback(type, ctorFunctionPtr);
+    }
+
+    // For callers that already resolved the Type, so the handle is unmarshalled once.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object V2CreateInstanceFallback(Type type, IntPtr ctorFunctionPtr)
+    {
         object obj = RuntimeHelpers.GetUninitializedObject(type);
         if (ctorFunctionPtr != IntPtr.Zero)
         {

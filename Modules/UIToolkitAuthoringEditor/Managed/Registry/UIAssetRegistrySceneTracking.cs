@@ -34,10 +34,6 @@ static partial class UIAssetRegistrySceneTracking
 
     static void Init()
     {
-        // Ensure the registry is alive so it reconciles external changes even before any tool opens an asset.
-        _ = UIAssetRegistry.instance;
-        SubscribeToAssetReloads();
-
         var selection = VisualElementSelectionRegistry.Instance;
         if (selection == null)
         {
@@ -72,12 +68,15 @@ static partial class UIAssetRegistrySceneTracking
         if (panel == null)
             return;
 
+        // The registry singleton is only forced alive here, on the first tracked panel; with nothing
+        // tracked there is nothing for it to reconcile.
         UIAssetRegistry.instance.AttachPanel(
             panel,
             panel,
             roots => PanelDependencyTracker.CollectPanelComponentRoots(panel, roots),
             ResolveSceneAssetAccess);
 
+        SubscribeToAssetReloads();
         ApplyLiveReloadPolicy(panel);
     }
 
@@ -87,7 +86,7 @@ static partial class UIAssetRegistrySceneTracking
             return;
 
         RestoreLiveReload(panel);
-        UIAssetRegistry.instance.DetachPanel(panel);
+        UIAssetRegistry.LiveInstance?.DetachPanel(panel);
     }
 
     // Any element with a VisualElementAsset is editable in the Main Stage (including inside nested templates),
@@ -100,7 +99,8 @@ static partial class UIAssetRegistrySceneTracking
     // converges to clean and is a harmless no-op.
     static void OnFileMenuSaved()
     {
+        // LiveInstance: without a live registry nothing is tracked, so there is nothing to save.
         if (UIToolkitStageUtility.IsAuthoringActiveInMainStage)
-            UIAssetRegistry.instance.SaveAll();
+            UIAssetRegistry.LiveInstance?.SaveAll();
     }
 }

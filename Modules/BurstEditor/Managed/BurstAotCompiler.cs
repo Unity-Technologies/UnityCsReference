@@ -1903,6 +1903,9 @@ static void BurstSetup()
                         errorMessageBuilder.Append(matchVersion.Success ?
                             "Burst compiler (" + matchVersion.Groups[1].Value + ") failed running" :
                             "Burst compiler failed running");
+                        // On Unix a signalled process reports 128+signal, so this separates
+                        // SIGSEGV (139) and an OOM SIGKILL (137) from bcl's own failure exits
+                        errorMessageBuilder.Append(" with exit code ").Append(p.ExitCode);
                         errorMessageBuilder.AppendLine();
                         errorMessageBuilder.AppendLine();
                         // Don't output the path if we are not burst-debugging or the exe exist

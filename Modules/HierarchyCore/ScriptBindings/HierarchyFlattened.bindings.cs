@@ -31,7 +31,7 @@ namespace Unity.Hierarchy
         IntPtr m_Ptr;
         internal readonly Hierarchy m_Hierarchy;
         ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
-        int m_Version;
+        uint m_Version;
         readonly bool m_IsOwner;
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Unity.Hierarchy
             get => m_FlattenedNodes;
         }
 
-        internal int Version
+        internal uint Version
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => m_Version;
@@ -96,7 +96,7 @@ namespace Unity.Hierarchy
         /// <param name="flattenedNodesPtr">The flattened nodes native pointer.</param>
         /// <param name="flattenedNodesCount">The flattened node count.</param>
         /// <param name="version">The version.</param>
-        HierarchyFlattened(IntPtr nativePtr, Hierarchy hierarchy, IntPtr flattenedNodesPtr, int flattenedNodesCount, int version)
+        HierarchyFlattened(IntPtr nativePtr, Hierarchy hierarchy, IntPtr flattenedNodesPtr, int flattenedNodesCount, uint version)
         {
             m_Ptr = nativePtr;
             m_Hierarchy = hierarchy;
@@ -259,7 +259,7 @@ namespace Unity.Hierarchy
         {
             readonly HierarchyFlattened m_HierarchyFlattened;
             readonly ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
-            readonly int m_Version;
+            readonly uint m_Version;
             int m_Index;
 
             internal Enumerator(HierarchyFlattened hierarchyFlattened)
@@ -303,18 +303,18 @@ namespace Unity.Hierarchy
         internal static HierarchyFlattened FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyFlattened)GCHandle.FromIntPtr(handlePtr).Target : null;
 
         [FreeFunction("HierarchyFlattenedBindings::Create", IsThreadSafe = true)]
-        static extern IntPtr Create(IntPtr handlePtr, Hierarchy hierarchy, out IntPtr nodesPtr, out int nodesCount, out int version);
+        static extern IntPtr Create(IntPtr handlePtr, Hierarchy hierarchy, out IntPtr nodesPtr, out int nodesCount, out uint version);
 
         [FreeFunction("HierarchyFlattenedBindings::Destroy", IsThreadSafe = true)]
         static extern void Destroy(IntPtr nativePtr);
 
         #region Called from native
         [RequiredByNativeCode]
-        static IntPtr CreateHierarchyFlattened(IntPtr nativePtr, IntPtr hierarchyPtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, int version) =>
+        static IntPtr CreateHierarchyFlattened(IntPtr nativePtr, IntPtr hierarchyPtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, uint version) =>
             GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyFlattened(nativePtr, Hierarchy.FromIntPtr(hierarchyPtr), flattenedNodesPtr, flattenedNodesCount, version)));
 
         [RequiredByNativeCode]
-        static void UpdateHierarchyFlattened(IntPtr handlePtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, int version)
+        static void UpdateHierarchyFlattened(IntPtr handlePtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, uint version)
         {
             var hierarchyFlattened = FromIntPtr(handlePtr);
             hierarchyFlattened.m_FlattenedNodes = new ReadOnlyNativeVector<HierarchyFlattenedNode>(flattenedNodesPtr, flattenedNodesCount);

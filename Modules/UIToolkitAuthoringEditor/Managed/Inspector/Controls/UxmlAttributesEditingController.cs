@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using Unity.Properties;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -16,6 +18,10 @@ namespace Unity.UIToolkit.Editor;
 /// </summary>
 class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcessor
 {
+    internal const string updateDecoratorsMarkerName = "UxmlAttributesEditingController.UpdateDecorators";
+    [NoAutoStaticsCleanup] // immutable profiler marker, safe to persist
+    static readonly ProfilerMarker k_UpdateDecoratorsMarker = new(updateDecoratorsMarkerName);
+
     const string k_ToggleButtonGroupValueFieldName = "valueUXML";
     const string k_ToggleButtonGroupStateLengthFieldName = "m_Length";
 
@@ -263,6 +269,7 @@ class UxmlAttributesEditingController : IDisposable, IVisualElementChangeProcess
 
     void UpdateDecoratorsForBoundProperties()
     {
+        using var _ = k_UpdateDecoratorsMarker.Auto();
         using var listHandle = ListPool<BindingInfo>.Get(out var bindingInfos);
         context.element?.GetBindingInfos(bindingInfos);
 

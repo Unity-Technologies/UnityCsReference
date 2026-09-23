@@ -33,7 +33,7 @@ namespace Unity.Hierarchy
         internal readonly HierarchyFlattened m_HierarchyFlattened;
         ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
         ReadOnlyNativeVector<HierarchyNode> m_Nodes;
-        int m_Version;
+        uint m_Version;
         readonly bool m_IsOwner;
         Dictionary<int, IHierarchyNodeTypeHandlerViewModelState> m_HandlerStates;
 
@@ -112,7 +112,7 @@ namespace Unity.Hierarchy
             get => m_Nodes;
         }
 
-        internal int Version
+        internal uint Version
         {
             [VisibleToOtherModules("UnityEngine.HierarchyModule")]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -172,7 +172,7 @@ namespace Unity.Hierarchy
         /// <param name="nodesPtr">The native pointer to the nodes.</param>
         /// <param name="nodesCount">The number of nodes.</param>
         /// <param name="version">The hierarchy view model version.</param>
-        HierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, int version)
+        HierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, uint version)
         {
             m_Ptr = nativePtr;
             m_Hierarchy = hierarchyFlattened.m_Hierarchy;
@@ -318,6 +318,17 @@ namespace Unity.Hierarchy
         /// Gets the root node of the hierarchy view model.
         /// </summary>
         /// <returns>The root <see cref="HierarchyNode"/> of the hierarchy view model.</returns>
+        /// <example>
+        /// The following example adds an action to a context menu that you can use to select the nearest common ancestor of the GameObjects you have selected in the Hierarchy window. The action appears in the **Hierarchy Samples** submenu of the context menu. The example uses `GetRoot` to exclude the root node from being selected as a common ancestor in the Hierarchy window.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/SelectCommonAncestor`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Select two or more GameObjects.
+        ///3. In the Hierarchy window, right-click and select **Hierarchy Samples**, then **Select Common Ancestor**.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/SelectCommonAncestor/SelectCommonAncestor.cs"/>
+        /// </example>
         [NativeMethod(IsThreadSafe = true)]
         public extern HierarchyNode GetRoot();
 
@@ -326,6 +337,17 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node to get the parent for.</param>
         /// <returns>The parent <see cref="HierarchyNode"/> of the specified node.</returns>
+        /// <example>
+        /// The following example adds an action to a context menu that you can use to select the nearest common ancestor of the GameObjects you have selected in the Hierarchy window. The action appears in the **Hierarchy Samples** submenu of the context menu. The example uses `GetParent` to advance two nodes up the hierarchy in a single loop to find their closest common ancestor.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/SelectCommonAncestor`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Select two or more GameObjects.
+        ///3. In the Hierarchy window, right-click and select **Hierarchy Samples**, then **Select Common Ancestor**.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/SelectCommonAncestor/SelectCommonAncestor.cs"/>
+        /// </example>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern HierarchyNode GetParent(in HierarchyNode node);
 
@@ -342,6 +364,11 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node to count children for.</param>
         /// <returns>The number of direct child nodes of the specified hierarchy node.</returns>
+        /// <example>
+        /// The following example displays how many children each collapsed item has in the Hierarchy window. It uses `GetChildrenCount` to check whether a collapsed item has children before displaying the label.
+        /// To use this example, save the script in a folder called `Assets/Editor/CountWhenCollapsed`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CountWhenCollapsed/CountWhenCollapsed.cs"/>
+        /// </example>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetChildrenCount(in HierarchyNode node);
 
@@ -383,6 +410,17 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The <see cref="HierarchyNode"/> to get the depth for.</param>
         /// <returns>The depth level of the <see cref="HierarchyNode"/>.</returns>
+        /// <example>
+        /// The following example adds an action to a context menu that you can use to select the nearest common ancestor of the GameObjects you have selected in the Hierarchy window. The action appears in the **Hierarchy Samples** submenu of the context menu. The example uses `GetDepth` to compare two nodes and advance the deeper one upward when finding the nearest common ancestor of all selected nodes.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/SelectCommonAncestor`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Select two or more GameObjects.
+        ///3. In the Hierarchy window, right-click and select **Hierarchy Samples**, then **Select Common Ancestor**.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/SelectCommonAncestor/SelectCommonAncestor.cs"/>
+        /// </example>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetDepth(in HierarchyNode node);
 
@@ -449,6 +487,31 @@ namespace Unity.Hierarchy
         /// <param name="node">The root hierarchy node to set flags on recursively.</param>
         /// <param name="flags">The flags to set on the hierarchy node and its descendants.</param>
         /// <param name="direction">The direction of the recursion operation.</param>
+        /// <example>
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses `SetFlagsRecursive` to add a hover flag to a parent node and all of its child nodes when your mouse enters a connector line in the Hierarchy window. 
+        ///
+        /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
+        ///
+        /// To use this example, save the script and USS files in a folder called `Assets/Editor/Connectors`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_dark.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_dark.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_light.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_light.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example creates a context menu item that collapses all nodes in the Hierarchy window except the paths to the selected items. The action appears in the **Hierarchy Samples** submenu of the context menu. It uses `SetFlagsRecursive` to expand the ancestors of the selected nodes.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CollapseOthers/CollapseOthers.cs"/>
+        /// </example>
+        /// <seealso cref="ClearFlagsRecursive(in HierarchyNode, HierarchyNodeFlags, HierarchyTraversalDirection)"/>
         public void SetFlagsRecursive(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction) => SetFlagsRecursiveNode(in node, flags, direction);
 
         /// <summary>
@@ -472,6 +535,17 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node to check for the specified flags.</param>
         /// <param name="flags">The flags to check on the hierarchy node.</param>
         /// <returns><see langword="true"/> if all of the flags are set, <see langword="false"/> otherwise.</returns>
+        /// <example>
+        /// The following example adds an action to a context menu that you can use to select the nearest common ancestor of the GameObjects you have selected in the Hierarchy window. The action appears in the **Hierarchy Samples** submenu of the context menu. The example uses `HasFlags` to check whether the common ancestor is itself selected, and if so, returns the ancestor's parent instead.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/SelectCommonAncestor`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Select two or more GameObjects.
+        ///3. In the Hierarchy window, right-click and select **Hierarchy Samples**, then **Select Common Ancestor**.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/SelectCommonAncestor/SelectCommonAncestor.cs"/>
+        /// </example>
         public bool HasFlags(in HierarchyNode node, HierarchyNodeFlags flags) => HasFlagsNode(in node, flags);
 
         /// <summary>
@@ -479,6 +553,10 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="flags">The flags to count matching hierarchy nodes for.</param>
         /// <returns>The number of nodes that have all of the flags set.</returns>
+        /// <example>
+        /// The following example creates a context menu item that collapses all nodes in the Hierarchy window except the paths to the selected items. The action appears in the **Hierarchy Samples** submenu of the context menu. It uses `HasFlagsCount` to count the number of selected and expanded nodes in the Hierarchy window.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CollapseOthers/CollapseOthers.cs"/>
+        /// </example>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int HasFlagsCount(HierarchyNodeFlags flags);
 
@@ -495,6 +573,11 @@ namespace Unity.Hierarchy
         /// <param name="node">The hierarchy node to check for the absence of the specified flags.</param>
         /// <param name="flags">The flags to verify are absent on the hierarchy node.</param>
         /// <returns><see langword="true"/> if all of the flags are not set, <see langword="false"/> otherwise.</returns>
+        /// <example>
+        /// The following example displays how many children each collapsed item has in the Hierarchy window. It uses `DoesNotHaveFlags` to check whether a node is collapsed and has children before adding the label to the left of the item name.
+        /// To use this example, save the script in a folder called `Assets/Editor/CountWhenCollapsed`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CountWhenCollapsed/CountWhenCollapsed.cs"/>
+        /// </example>
         public bool DoesNotHaveFlags(in HierarchyNode node, HierarchyNodeFlags flags) => DoesNotHaveFlagsNode(in node, flags);
 
         /// <summary>
@@ -527,6 +610,10 @@ namespace Unity.Hierarchy
         /// Clears the specified flags on all hierarchy nodes.
         /// </summary>
         /// <param name="flags">The flags to clear on all hierarchy nodes in the view model.</param>
+        /// <example>
+        /// The following example creates a context menu item that collapses all nodes in the Hierarchy window except the paths to the selected items. The action appears in the **Hierarchy Samples** submenu of the context menu. It uses `ClearFlags` to perform the initial collapse.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CollapseOthers/CollapseOthers.cs"/>
+        /// </example>
         public void ClearFlags(HierarchyNodeFlags flags) => ClearFlagsAll(flags);
 
         /// <summary>
@@ -564,6 +651,27 @@ namespace Unity.Hierarchy
         /// <param name="node">The root hierarchy node to clear flags on recursively.</param>
         /// <param name="flags">The flags to clear on the hierarchy node and its descendants.</param>
         /// <param name="direction">The direction of the recursion operation.</param>
+        /// <example>
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses `ClearFlagsRecursive` to remove a hover flag set on a parent node and all of its child nodes when your mouse leaves a connector line in the Hierarchy window. 
+        ///
+        /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
+        ///
+        /// To use this example, save the script and USS files in a folder called `Assets/Editor/Connectors`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_dark.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_dark.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_light.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_light.uss"/>
+        /// </example>
+        /// <seealso cref="SetFlagsRecursive(in HierarchyNode, HierarchyNodeFlags, HierarchyTraversalDirection)"/>
         public void ClearFlagsRecursive(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction) => ClearFlagsRecursiveNode(in node, flags, direction);
 
         /// <summary>
@@ -672,6 +780,10 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="flags">The flags to match when enumerating hierarchy nodes.</param>
         /// <returns>An enumerable that iterates over all nodes with all of the specified flags set.</returns>
+        /// <example>
+        /// The following example creates a context menu item that collapses all nodes in the Hierarchy window except the paths to the selected items. The action appears in the **Hierarchy Samples** submenu of the context menu. It uses `EnumerateNodesWithFlags` to iterate the selected nodes and expand the path to each one.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CollapseOthers/CollapseOthers.cs"/>
+        /// </example>
         public HierarchyViewModelNodesEnumerable EnumerateNodesWithFlags(HierarchyNodeFlags flags) => new HierarchyViewModelNodesEnumerable(this, flags, HasFlagsNode);
 
         /// <summary>
@@ -800,7 +912,7 @@ namespace Unity.Hierarchy
         {
             readonly HierarchyViewModel m_ViewModel;
             readonly ReadOnlyNativeVector<HierarchyNode> m_Nodes;
-            readonly int m_Version;
+            readonly uint m_Version;
             int m_Index;
 
             internal Enumerator(HierarchyViewModel hierarchyViewModel)
@@ -930,7 +1042,7 @@ namespace Unity.Hierarchy
         internal static HierarchyViewModel FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyViewModel)GCHandle.FromIntPtr(handlePtr).Target : null;
 
         [FreeFunction("HierarchyViewModelBindings::Create", IsThreadSafe = true)]
-        static extern IntPtr Create(IntPtr handlePtr, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags, out IntPtr nodesPtr, out int nodesCount, out IntPtr indicesPtr, out int indicesCount, out int version);
+        static extern IntPtr Create(IntPtr handlePtr, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags, out IntPtr nodesPtr, out int nodesCount, out IntPtr indicesPtr, out int indicesCount, out uint version);
 
         [FreeFunction("HierarchyViewModelBindings::Destroy", IsThreadSafe = true)]
         static extern void Destroy(IntPtr nativePtr);
@@ -1027,11 +1139,11 @@ namespace Unity.Hierarchy
 
         #region Called from native
         [RequiredByNativeCode]
-        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, IntPtr flattenedPtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, int version) =>
+        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, IntPtr flattenedPtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, uint version) =>
             GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyViewModel(nativePtr, HierarchyFlattened.FromIntPtr(flattenedPtr), flattenedNodesPtr, flattenedNodesCount, nodesPtr, nodesCount, version)));
 
         [RequiredByNativeCode]
-        static void UpdateHierarchyViewModel(IntPtr handlePtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, int version)
+        static void UpdateHierarchyViewModel(IntPtr handlePtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, uint version)
         {
             var viewModel = FromIntPtr(handlePtr);
             viewModel.m_FlattenedNodes = new ReadOnlyNativeVector<HierarchyFlattenedNode>(flattenedNodesPtr, flattenedNodesCount);

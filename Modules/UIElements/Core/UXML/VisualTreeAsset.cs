@@ -94,7 +94,7 @@ namespace UnityEngine.UIElements
         private static readonly List<int> s_VeaIdsPath = new List<int>();
 
         [Serializable]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
         internal partial struct UsingEntry
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -191,7 +191,7 @@ namespace UnityEngine.UIElements
 
         internal List<UsingEntry> usings
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
             get => m_Usings;
         }
 

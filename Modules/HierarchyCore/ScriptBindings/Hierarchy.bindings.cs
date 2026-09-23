@@ -83,14 +83,14 @@ namespace Unity.Hierarchy
         /// <summary>
         /// The version of the hierarchy.
         /// </summary>
-        internal int Version
+        internal uint Version
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 unsafe
                 {
-                    return *(int*)m_VersionPtr;
+                    return *(uint*)m_VersionPtr;
                 }
             }
         }

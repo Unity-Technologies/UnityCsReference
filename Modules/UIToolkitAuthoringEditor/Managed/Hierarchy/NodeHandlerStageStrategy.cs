@@ -200,7 +200,13 @@ sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrateg
     {
         base.Initialize(handler);
 
-        UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
+        // Observe the asset registry without forcing the singleton alive on every reload; subscribe
+        // as soon as it exists.
+        var assetRegistry = UIAssetRegistry.LiveInstance;
+        if (assetRegistry != null)
+            assetRegistry.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
+        else
+            UIAssetRegistry.LiveInstanceCreated += OnAssetRegistryCreated;
 
         var registry = VisualElementSelectionRegistry.Instance;
         if (registry == null)
@@ -219,6 +225,7 @@ sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrateg
 
     public override void Dispose()
     {
+        UIAssetRegistry.LiveInstanceCreated -= OnAssetRegistryCreated;
         var assetRegistry = UIAssetRegistry.LiveInstance;
         if (assetRegistry != null)
             assetRegistry.AssetDirtyStateChanged -= OnAssetDirtyStateChanged;
@@ -231,6 +238,12 @@ sealed class MainStageNodeHandlerStrategy(Stage stage) : NodeHandlerStageStrateg
         }
 
         base.Dispose();
+    }
+
+    void OnAssetRegistryCreated(UIAssetRegistry registry)
+    {
+        UIAssetRegistry.LiveInstanceCreated -= OnAssetRegistryCreated;
+        registry.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
     }
 
     // The `Foo.uxml` rows carry the unsaved-changes marker — both the document rows and the template path

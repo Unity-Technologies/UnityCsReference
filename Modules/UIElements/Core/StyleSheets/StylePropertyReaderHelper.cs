@@ -219,15 +219,45 @@ namespace UnityEngine.UIElements.StyleSheets
 
         static public Curvature ReadCurvature(int valCount, StylePropertyValue val1, StylePropertyValue val2)
         {
+            TryReadCurvature(valCount, val1, val2, out var curvature);
+            return curvature;
+        }
+
+        // False when the declaration is invalid, so a caller can tell a dropped value from an authored none.
+        static public bool TryReadCurvature(int valCount, StylePropertyValue val1, StylePropertyValue val2, out Curvature curvature)
+        {
             if (val1.handle.valueType == StyleValueType.Keyword && (StyleValueKeyword)val1.handle.valueIndex == StyleValueKeyword.None)
             {
-                return Curvature.None();
+                curvature = Curvature.None();
+                return true;
+            }
+
+            // Invalid declarations still reach the reader; fall back rather than read the wrong handle type.
+            if (!IsAngleValue(val1) || (valCount > 1 && !IsAngleValue(val2)))
+            {
+                curvature = Curvature.None();
+                return false;
             }
 
             // One angle bends the horizontal axis only; two angles bend both. Sign selects concave vs. convex.
             Angle x = ReadAngle(val1);
             Angle y = valCount > 1 ? ReadAngle(val2) : new Angle(0);
-            return new Curvature(x, y);
+            curvature = new Curvature(x, y);
+            return true;
+        }
+
+        static bool IsAngleValue(StylePropertyValue value)
+        {
+            var valueType = value.handle.valueType;
+            if (valueType != StyleValueType.Dimension && valueType != StyleValueType.Float)
+            {
+                return false;
+            }
+
+            // Dimension.ToAngle() reinterprets any other unit as degrees, so a length or a non-zero
+            // unitless number would silently bend the element instead of being dropped.
+            var dimension = value.sheet.ReadDimension(value.handle);
+            return dimension.IsAngle() || (dimension.IsUnitless() && Mathf.Approximately(dimension.value, 0f));
         }
 
         static bool TryReadEnum(StyleEnumType enumType, StylePropertyValue value, out int intValue)

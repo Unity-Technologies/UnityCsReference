@@ -61,9 +61,14 @@ namespace UnityEngine.UIElements
         public HashSet<VisualElement> removedFromPanel { get; } = new();
 
         /// <summary>
-        /// Elements who have changed styles.
+        /// Elements whose style values have changed.
         /// </summary>
         public HashSet<VisualElement> styleChanged { get; } = new();
+
+        /// <summary>
+        /// Elements whose layout-affecting properties have changed.
+        /// </summary>
+        public HashSet<VisualElement> layoutChanged { get; } = new();
 
         /// <summary>
         /// Elements where the styling context has changed.
@@ -84,6 +89,7 @@ namespace UnityEngine.UIElements
             return addedOrMovedElements.Count > 0 ||
                    removedFromPanel.Count > 0 ||
                    styleChanged.Count > 0 ||
+                   layoutChanged.Count > 0 ||
                    stylingContextChanged.Count > 0 ||
                    bindingContextChanged.Count > 0;
         }
@@ -96,6 +102,7 @@ namespace UnityEngine.UIElements
             addedOrMovedElements.Clear();
             removedFromPanel.Clear();
             styleChanged.Clear();
+            layoutChanged.Clear();
             stylingContextChanged.Clear();
             bindingContextChanged.Clear();
         }
@@ -126,8 +133,13 @@ namespace UnityEngine.UIElements
         /// Any changes related to styling properties (inline styles, computed styles, etc.)
         /// </summary>
         private const VersionChangeType k_StyleChangedFlags =
-            VersionChangeType.Layout |
             VersionChangeType.Styles;
+
+        /// <summary>
+        /// Any changes related to properties that may impact the layout.
+        /// </summary>
+        private const VersionChangeType k_LayoutChangedFlags =
+            VersionChangeType.Layout;
 
         /// <summary>
         /// Any changes related to the styling context (style sheet, uss classes, etc.)
@@ -204,6 +216,9 @@ namespace UnityEngine.UIElements
 
             if ((versionChangeType & k_StyleChangedFlags) != 0)
                 m_Accumulator.styleChanged.Add(ve);
+
+            if ((versionChangeType & k_LayoutChangedFlags) != 0)
+                m_Accumulator.layoutChanged.Add(ve);
 
             if ((versionChangeType & k_StylingContextChangedFlags) != 0)
                 m_Accumulator.stylingContextChanged.Add(ve);

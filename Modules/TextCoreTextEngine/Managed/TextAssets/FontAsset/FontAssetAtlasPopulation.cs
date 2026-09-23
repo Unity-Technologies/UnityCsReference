@@ -519,11 +519,10 @@ namespace UnityEngine.TextCore.Text
                 return isMissingCharacters ? false : true;
             }
 
-            // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
+            if (!TryResizeAtlasTexture())
             {
-                m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
-                FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
+                missingUnicodes = unicodes;
+                return false;
             }
 
             Glyph[] glyphs;
@@ -644,12 +643,8 @@ namespace UnityEngine.TextCore.Text
                     return true;
             }
 
-            // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
-            {
-                m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
-                FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
-            }
+            if (!TryResizeAtlasTexture())
+                return false;
 
             bool allGlyphsAddedToTexture = false;
             while (!allGlyphsAddedToTexture)
@@ -864,6 +859,22 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        // A build empties the atlas before it writes its data, and the Editor can still repaint in
+        // between, so growing the atlas back now would put it into the build.
+        bool TryResizeAtlasTexture()
+        {
+            var texture = m_AtlasTextures[m_AtlasTextureIndex];
+            if (texture.width > 1 && texture.height > 1)
+                return true;
+
+            if (m_ClearedForBuild && (EditorIsBuildingPlayer?.Invoke() ?? false))
+                return false;
+
+            texture.Reinitialize(m_AtlasWidth, m_AtlasHeight);
+            FontEngine.ResetAtlasTexture(texture);
+            return true;
+        }
+
         bool TryAddGlyphToAtlas(uint glyphIndex, out Glyph glyph, bool populateLigatures = true)
         {
             glyph = null;
@@ -873,12 +884,8 @@ namespace UnityEngine.TextCore.Text
                 return false;
             }
 
-            // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
-            {
-                m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
-                FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
-            }
+            if (!TryResizeAtlasTexture())
+                return false;
 
             // Set texture upload mode to batching texture.Apply()
             // This will be set back to true in TryAddGlyphToTexture

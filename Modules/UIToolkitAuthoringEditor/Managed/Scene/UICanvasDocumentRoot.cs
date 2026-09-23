@@ -545,7 +545,8 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
     void IVisualElementChangeProcessor.ProcessChanges(BaseVisualElementPanel panelElementPanel, AuthoringChanges changes)
     {
         using var _ = HashSetPool<VisualElementSelection>.Get(out var updateSet);
-        if (panelElementPanel is PanelElement.RuntimePanel runtimePanel && changes.styleChanged.Contains(runtimePanel.Root))
+        if (panelElementPanel is PanelElement.RuntimePanel runtimePanel &&
+            (changes.styleChanged.Contains(runtimePanel.Root) || changes.layoutChanged.Contains(runtimePanel.Root)))
         {
             foreach (var selection in m_ElementSelections)
                 updateSet.Add(selection);
@@ -553,6 +554,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         else
         {
             PopulateUpdateSet(m_ElementSelections, changes.styleChanged, updateSet);
+            PopulateUpdateSet(m_ElementSelections, changes.layoutChanged, updateSet);
         }
 
         var firstSelection = true;

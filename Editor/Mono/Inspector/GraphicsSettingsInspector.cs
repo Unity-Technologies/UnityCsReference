@@ -141,8 +141,8 @@ namespace UnityEditor
 
             var lightBakerSection = m_CurrentRoot.Q<VisualElement>("LightBakerSection");
             lightBakerSection.style.display = DisplayStyle.Flex;
-            SetupUnityComputeLightBakerInfoBox(lightBakerSection);
-            BindEnumField<LightBaker>(m_CurrentRoot, "DefaultLightBaker");
+            var updateLightBakerInfoBox = SetupUnityComputeLightBakerInfoBox(lightBakerSection);
+            BindEnumField(m_CurrentRoot, "DefaultLightBaker", updateLightBakerInfoBox);
 
             BindEnumField<DefaultMeshBufferTarget>(m_CurrentRoot, "DefaultMeshBufferTarget");
             m_DefaultMeshBufferTargetField = m_CurrentRoot.MandatoryQ<EnumField>("DefaultMeshBufferTarget");
@@ -416,11 +416,11 @@ namespace UnityEditor
         }
 
         // Binds the enum field to access and modify the serialized data on disk directly.
-        void BindEnumField<T>(VisualElement content, string fieldName) where T : struct, Enum
+        void BindEnumField<T>(VisualElement content, string fieldName, Action<T> onValueChange = null) where T : struct, Enum
         {
             var enumField = content.MandatoryQ<EnumField>(fieldName);
             var enumFieldProperty = serializedObject.FindProperty(enumField.bindingPath);
-            UIElementsEditorUtility.BindSerializedProperty<T>(enumField, enumFieldProperty);
+            UIElementsEditorUtility.BindSerializedProperty<T>(enumField, enumFieldProperty, onValueChange);
         }
 
         void UpdateDefaultMeshBufferTargetFieldState(PlayModeStateChange state) => UpdateDefaultMeshBufferTargetFieldState();
@@ -440,13 +440,11 @@ namespace UnityEditor
 
         internal const string k_UnityComputeLightBakerInfoBoxDismissedKey = "GraphicsSettingsInspector.UnityComputeLightBakerInfoBox.Dismissed";
 
-        void SetupUnityComputeLightBakerInfoBox(VisualElement lightBakerSection)
+        Action<LightBaker> SetupUnityComputeLightBakerInfoBox(VisualElement lightBakerSection)
         {
             var infoBox = lightBakerSection.Q<HelpBox>("UnityComputeLightBakerInfoBox");
             if (infoBox == null)
-                return;
-
-            var enumField = lightBakerSection.Q<EnumField>("DefaultLightBaker");
+                return null;
 
             infoBox.buttonText = L10n.Tr("Don't show again", null);
             infoBox.onButtonClicked += () =>
@@ -455,17 +453,12 @@ namespace UnityEditor
                 infoBox.style.display = DisplayStyle.None;
             };
 
-            void UpdateVisibility()
+            return lightBaker =>
             {
-                bool isUnityCompute = enumField != null && (LightBaker)enumField.value == LightBaker.UnityComputeLightBaker;
                 bool dismissed = EditorPrefs.GetBool(k_UnityComputeLightBakerInfoBoxDismissedKey, false);
-                infoBox.style.display = isUnityCompute && !dismissed ? DisplayStyle.Flex : DisplayStyle.None;
-            }
-
-            if (enumField != null)
-                enumField.RegisterValueChangedCallback(_ => UpdateVisibility());
-
-            UpdateVisibility();
+                bool visible = lightBaker == LightBaker.UnityComputeLightBaker && !dismissed;
+                infoBox.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            };
         }
 
         void UpdateBuildProfileGraphicsSettingsOverrideWarning()

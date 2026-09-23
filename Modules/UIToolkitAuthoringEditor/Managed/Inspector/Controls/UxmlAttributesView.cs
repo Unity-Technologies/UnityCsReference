@@ -4,6 +4,7 @@
 
 #pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
+using Unity.Profiling;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -16,6 +17,9 @@ namespace Unity.UIToolkit.Editor;
 partial class UxmlAttributesView : VisualElement
 {
     public const string UssClassName = "unity-uxml-attributes-view";
+
+    internal const string rebindMarkerName = "UxmlAttributesView.Rebind";
+    static readonly ProfilerMarker k_RebindMarker = new(rebindMarkerName);
 
     UxmlAttributesEditingContext m_Context;
     readonly UxmlSerializedDataPropertyView m_RootPropertyView;
@@ -84,6 +88,7 @@ partial class UxmlAttributesView : VisualElement
 
     public void Rebind()
     {
+        using var _ = k_RebindMarker.Auto();
         m_RootPropertyView.Unbind();
 
         if (Context != null && Context.rootSerializedObject != null)

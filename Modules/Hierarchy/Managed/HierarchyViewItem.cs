@@ -83,21 +83,82 @@ namespace Unity.Hierarchy
         /// Gets the <see cref="VisualElement"/> that displays the icon of the item.
         /// Add a USS class to this element to display a custom icon for the item type.
         /// </summary>
+        /// <example>
+        /// The following example changes the icon a GameObject uses in the Hierarchy window if it has a specified tag. It uses `Icon` to add a custom USS class to the icon element of items whose GameObject has the `Favorite` tag. 
+        ///
+        /// The example requires a USS file called `ChangeNodeIcon.uss` and a tag called `Favorite`.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/ChangeNodeIcon`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Copy the styles from the USS example on this page. Save them in a USS file called `ChangeNodeIcon.uss` in the same `Assets/Editor/ChangeNodeIcon` folder. 
+        ///3. Create a tag called `Favorite`: select a GameObject, open the **Tag** dropdown in the **Inspector** window, and select **Add Tag**.
+        ///4. Assign the `Favorite` tag to a GameObject to change the icon it displays.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeNodeIcon/ChangeNodeIcon.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `ChangeNodeIcon.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeNodeIcon/ChangeNodeIcon.uss"/>
+        /// </example>
         public VisualElement Icon => m_Icon;
 
         /// <summary>
-        /// Gets the <see cref="VisualElement"/> that represents the overlay icon of the item. This element is hidden by default.
+        /// Gets the <see cref="VisualElement"/> that represents an icon that overlays over the icon of the item. This element is hidden by default.
         /// </summary>
+        /// <remarks>
+        ///  Typically used to add an icon that indicates the state of the item. For example, you can use this to display an icon over a GameObject's icon that indicates a prefab has a broken reference. 
+        /// </remarks>
+        /// <example>
+        /// The following example adds a custom tooltip that displays in the Hierarchy window when you hover over any GameObject that has a custom component named `Notes` attached to it. It uses `OverlayIcon` to add the custom overlay indicator to the icon of the GameObject. 
+        ///
+        /// The example requires a USS file called `CustomTooltip.uss` and a custom MonoBehaviour script called `Notes.cs`.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/CustomTooltip`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Copy the styles from the USS example on this page. Save them in a USS file called `CustomTooltip.uss` in the same `Assets/Editor/CustomTooltip` folder. 
+        ///3. Save the `Notes.cs` script outside of an `Editor` folder, because MonoBehaviour scripts in an `Editor` folder can't be attached to GameObjects.
+        ///4. Add the `Notes` component to a GameObject.
+        ///5. In the **Inspector** window, enter text in the **Note** field of the `Notes` component.
+        ///6. In the Hierarchy window, hover over the name of the GameObject to display the text as a tooltip. A small overlay indicator also displays in the corner of the icon of any GameObject that has a note.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CustomTooltip/CustomTooltip.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `CustomTooltip.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CustomTooltip/CustomTooltip.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows the `Notes` component that the CustomTooltip example uses.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Runtime/Notes.cs"/>
+        /// </example>
         public VisualElement OverlayIcon => m_OverlayIcon;
 
         /// <summary>
         /// Gets the left-aligned <see cref="VisualElement"/> container to the right of the <see cref="Name"/>.
         /// </summary>
+        /// <example>
+        /// The following example displays how many children each collapsed item has in the Hierarchy window. It uses `LeftCustomContainer` to host a `Label` that shows the number of child nodes in parentheses next to any collapsed item.
+        /// To use this example, save the script in a folder called `Assets/Editor/CountWhenCollapsed`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CountWhenCollapsed/CountWhenCollapsed.cs"/>
+        /// </example>
         public VisualElement LeftCustomContainer => m_LeftCustomContainer;
 
         /// <summary>
         /// Gets the right-aligned <see cref="VisualElement"/> container on the right side of this <see cref="HierarchyViewItem"/>.
         /// </summary>
+        /// <example>
+        /// The following example adds a button next to a GameObject in the Hierarchy window if that GameObject is a prefab instance. You can select the button to locate and highlight the prefab asset in the **Project** window. It uses `RightCustomContainer` to host the button. 
+        ///
+        /// The example requires a USS file called `PrefabActionButtons.uss`.
+        /// To use this example, save the script and USS file in a folder called `Assets/Editor/PrefabActionButtons`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/PrefabActionButtons/PrefabActionButtons.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `PrefabActionButtons.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/PrefabActionButtons/PrefabActionButtons.uss"/>
+        /// </example>
         public VisualElement RightCustomContainer => m_RightCustomContainer;
 
         /// <summary>
@@ -129,6 +190,34 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Gets the <see cref="VisualElement"/> that represents the entire row container of this <see cref="HierarchyViewItem"/>.
         /// </summary>
+        /// <example>
+        /// The following example changes the row background color of the Hierarchy window for GameObjects that have an `Enemy` component attached to them. It uses `RowContainer` to apply a custom USS class to the entire row. 
+        ///
+        /// The example requires two USS files for theme-based styling: `ChangeRowColor_dark.uss` for the Dark theme, and `ChangeRowColor_light.uss` for the Light theme. 
+        ///
+        /// It also requires a custom MonoBehaviour script called `Enemy.cs`.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/ChangeRowColor`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Copy the styles from the USS examples on this page. Save them in USS files called `ChangeRowColor_dark.uss` and `ChangeRowColor_light.uss` in the same `Assets/Editor/ChangeRowColor` folder. 
+        ///3. Save the `Enemy.cs` script outside of an `Editor` folder, because MonoBehaviour scripts in an `Editor` folder can't be attached to GameObjects.
+        ///4. Add the `Enemy` component to a GameObject. The background color of the row of that GameObject changes in the Hierarchy window.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeRowColor/ChangeRowColor.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `ChangeRowColor_dark.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeRowColor/ChangeRowColor_dark.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `ChangeRowColor_light.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeRowColor/ChangeRowColor_light.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows the `Enemy` component that the ChangeRowColor example uses.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Runtime/Enemy.cs"/>
+        /// </example>
         public VisualElement RowContainer
         {
             get

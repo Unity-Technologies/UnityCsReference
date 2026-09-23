@@ -426,6 +426,17 @@ internal static class UxmlAssetUtilities
     }
 
     /// <summary>
+    /// Sets an attribute value in both stores of <paramref name="asset"/>: the UXML properties bag and,
+    /// when present, the serialized data (flagged as overridden in UXML).
+    /// </summary>
+    public static void SetAttributeAndSyncSerializedData(VisualElementAsset asset, string attributeName, string value)
+    {
+        asset.SetAttribute(attributeName, value);
+        if (asset.serializedData != null)
+            UxmlSerializer.TryParseSerializedAttribute(attributeName, value, asset.serializedData, new CreationContext(asset.visualTreeAsset));
+    }
+
+    /// <summary>
     /// Sets an attribute value on a UXML asset with support for template instance overrides.
     /// </summary>
     /// <param name="attributeName">The name of the attribute to set.</param>

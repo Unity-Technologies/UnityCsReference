@@ -102,10 +102,23 @@ internal partial class StyleInspectorDefaultContent : VisualElement
         }
     }
 
+    [AutoStaticsCleanupOnCodeReload]
+    static bool s_Prepared;
+
+    // For testing purposes
+    internal static bool prepared => s_Prepared;
+    internal static int pooledCount => s_StyleInspectorDefaultContentPool.CountInactive;
+    internal static void ResetWarmup()
+    {
+        s_Prepared = false;
+        s_StyleInspectorDefaultContentPool.Clear();
+    }
+
     public static void Prepare()
     {
-        if (Application.isBuildingEditorResources)
+        if (s_Prepared || Application.isBuildingEditorResources)
             return;
+        s_Prepared = true;
 
         // A lot of time is spent on Mono.JIT during the first frame, so we'll create the elements by blocks across multiple frames.
         var defaultContent = DefaultContent;

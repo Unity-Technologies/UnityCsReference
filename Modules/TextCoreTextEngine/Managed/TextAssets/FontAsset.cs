@@ -815,9 +815,35 @@ namespace UnityEngine.TextCore.Text
         internal static Func<Font, string> SetSourceFontGUID;
         [AutoStaticsCleanupOnCodeReload]
         internal static Func<bool> EditorApplicationIsUpdating;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static Func<bool> EditorIsBuildingPlayer;
         // Returns the font m_SourceFontFile should target in Dynamic mode: an active subset sub-asset, else the editor ref.
         [AutoStaticsCleanupOnCodeReload]
         internal static Func<FontAsset, Font> ResolveDynamicSourceFont;
+
+        // Set by TextCorePreBuildProcessor once it has emptied this asset, cleared by TextCorePostBuildProcessor.
+        internal bool m_ClearedForBuild;
+
+        internal static void OnBuildCompletedForAll()
+        {
+            for (var i = 0; i < s_CallbackInstances.Count; i++)
+                if (s_CallbackInstances[i].TryGetTarget(out var target) && target.m_ClearedForBuild)
+                    target.OnBuildCompleted();
+        }
+
+        internal void OnBuildCompleted()
+        {
+            m_ClearedForBuild = false;
+
+            if (m_CharacterLookupDictionary == null)
+                return;
+
+            // A suppressed glyph add sends the generator to a fallback, and the fallback's character is
+            // cached in this asset's lookup. A lookup hit never retries the add, so without dropping
+            // those entries the atlas would stay empty and the fallback in use for good.
+            ClearFallbackCharacterTable();
+            TextEventManager.ON_FONT_PROPERTY_CHANGED(true, this);
+        }
 
         /// <summary>
         /// Weak reference to all <see cref="FontAsset"/> instances.

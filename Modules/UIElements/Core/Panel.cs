@@ -943,6 +943,7 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal bool drawsInCameras
         {
+            [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
             get => m_DrawsInCameras;
         }
 

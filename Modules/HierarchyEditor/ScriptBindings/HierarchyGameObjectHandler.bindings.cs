@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Scripting.LifecycleManagement;
@@ -125,6 +126,24 @@ namespace Unity.Hierarchy.Editor
         /// </summary>
         /// <param name="node">The <see cref="HierarchyNode"/> to get the <see cref="GameObject"/> for.</param>
         /// <returns>The <see cref="GameObject"/> that corresponds to the specified <see cref="HierarchyNode"/>.</returns>
+        /// <example>
+        /// The following example changes the icon a GameObject uses in the Hierarchy window if it has a specified tag. It uses `GetGameObject` to retrieve the GameObject for each bound item and applies a custom USS icon class to GameObjects with the `Favorite` tag. 
+        ///
+        /// The example requires a USS file called `ChangeNodeIcon.uss` and a tag called `Favorite`.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save this script in a folder called `Assets/Editor/ChangeNodeIcon`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Copy the styles from the USS example on this page. Save them in a USS file called `ChangeNodeIcon.uss` in the same `Assets/Editor/ChangeNodeIcon` folder. 
+        ///3. Create a tag called `Favorite`: select a GameObject, open the **Tag** dropdown in the **Inspector** window, and select **Add Tag**.
+        ///4. Assign the `Favorite` tag to a GameObject to change the icon it displays.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeNodeIcon/ChangeNodeIcon.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `ChangeNodeIcon.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeNodeIcon/ChangeNodeIcon.uss"/>
+        /// </example>
         [NativeMethod(IsThreadSafe = true)]
         public extern GameObject GetGameObject(in HierarchyNode node);
 
@@ -1112,6 +1131,24 @@ namespace Unity.Hierarchy.Editor
 
         [FreeFunction("HierarchyGameObjectHandlerBindings::SetPendingExternalDrop", HasExplicitThis = true)]
         extern void SetPendingExternalDrop(HierarchyNode parentNode, int dropIndex);
+
+        #region Marked as obsolete warning in 6.7
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected override void SearchBegin(HierarchySearchQueryDescriptor query)
+        {
+        }
+
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected override bool SearchMatch(in HierarchyNode node) => false;
+
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected override void SearchEnd()
+        {
+        }
+        #endregion
 
         #region Called from native
         [RequiredByNativeCode(Optional = true)]

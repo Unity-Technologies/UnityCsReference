@@ -257,6 +257,7 @@ namespace UnityEditor
 
         internal bool showLightingVisualizationPanel => this.showExposureSettings || this.showBackfaceHighlightsToggle || this.showLightmapResolutionToggle || this.currentDrawModeMayUseInteractiveLightBakingData;
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static Transform GetDefaultParentObjectIfSet()
         {
             Transform parentObject = null;

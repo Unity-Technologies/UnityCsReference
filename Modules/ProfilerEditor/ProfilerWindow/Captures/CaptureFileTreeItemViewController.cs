@@ -44,6 +44,7 @@ namespace Unity.Profiling.Editor.UI
         // State
         readonly CaptureDataService m_CaptureDataService;
         readonly ProfilerWindow m_ProfilerWindow;
+        readonly Action<CaptureFileTreeItemViewController> m_OnEditStarted;
         long m_LastClickTimestamp;
         bool m_IsLoaded;
 
@@ -52,20 +53,22 @@ namespace Unity.Profiling.Editor.UI
         VisualElement m_MenuButton;
         Label m_OpenCaptureTag;
         TextField m_RenameField;
-        TextElement m_RenameFieldInputArea;
         VisualElement m_RenameFieldTextInput;
         TextField m_ChangeFPSField;
-        TextElement m_ChangeFPSFieldInputArea;
         readonly Label m_WarningMessage;
-        ScrollView m_ScrollView;
 
-        public CaptureFileTreeItemViewController(CaptureFileModel model, CaptureDataService captureDataService, ScreenshotsManager screenshotsManager, ProfilerWindow profilerWindow, Label warningLabel) :
+        // The two inline editors this row owns. Both behave identically; see InlineTextEditor.
+        InlineTextEditor m_RenameEditor;
+        InlineTextEditor m_FPSEditor;
+
+        public CaptureFileTreeItemViewController(CaptureFileModel model, CaptureDataService captureDataService, ScreenshotsManager screenshotsManager, ProfilerWindow profilerWindow, Label warningLabel, Action<CaptureFileTreeItemViewController> onEditStarted = null) :
             base(model, screenshotsManager)
         {
             m_CaptureDataService = captureDataService;
             m_StrLenMaxFPS = ProfilerUserSettings.k_MaximumTargetFramesPerSecond.ToString().Length;
             m_ProfilerWindow = profilerWindow;
             m_WarningMessage = warningLabel;
+            m_OnEditStarted = onEditStarted;
             m_CaptureDataService.LoadedCapturesChanged += RefreshLoadedState;
         }
 
@@ -88,7 +91,8 @@ namespace Unity.Profiling.Editor.UI
             if (disposing)
             {
                 m_CaptureDataService.LoadedCapturesChanged -= RefreshLoadedState;
-                UnregisterScrollHandler();
+                m_RenameEditor?.Detach();
+                m_FPSEditor?.Detach();
                 if (m_RenameField is { visible: true })
                 {
                     HideRenameWarning();
@@ -118,25 +122,24 @@ namespace Unity.Profiling.Editor.UI
             m_Container = view.Q(k_UxmlOpenButton);
             m_OpenCaptureTag = view.Q<Label>(k_UxmlOpenCaptureTag);
             m_RenameField = view.Q<TextField>(k_UxmlRenameField);
-            m_RenameFieldInputArea = m_RenameField?.Q<TextElement>();
             m_RenameFieldTextInput = m_RenameField?.Q(TextField.textInputUssName);
             m_ChangeFPSField = view.Q<TextField>(k_UxmlChangeFPSField);
-            m_ChangeFPSFieldInputArea = m_ChangeFPSField?.Q<TextElement>();
             m_MenuButton = view.Q(k_UxmlMenuButton);
         }
 
-        bool KeyEventEnterPressedOrSimilar(KeyDownEvent evt)
+        protected override void ViewLoaded()
         {
-            return evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter ||
-                evt.character == '\n' || evt.character == '\r' || evt.character == 0x10;
+            // Event callbacks must be registered exactly once. RefreshView can run multiple times
+            // over the view controller's life (e.g. DoFPSChange calls it), so registering here would
+            // otherwise accumulate duplicate handlers on every refresh.
+            RegisterViewCallbacks();
+
+            // Base implementation performs the first RefreshView.
+            base.ViewLoaded();
         }
 
-        protected override void RefreshView()
+        void RegisterViewCallbacks()
         {
-            base.RefreshView();
-
-            Debug.Assert(Model != null);
-
             m_Container.RegisterCallback<MouseUpEvent>(evt =>
             {
                 if ((MouseButton)evt.button == MouseButton.RightMouse)
@@ -171,72 +174,31 @@ namespace Unity.Profiling.Editor.UI
                 evt.StopImmediatePropagation();
             });
 
-            m_RenameField.isDelayed = true;
-            m_RenameField.SetValueWithoutNotify(Model.Name);
-            m_RenameField.RegisterCallback<KeyDownEvent>(evt =>
-            {
-                if (KeyEventEnterPressedOrSimilar(evt))
-                {
-                    if (!ValidateInput(m_RenameField.text))
-                    {
-                        // Don't allow input field to finish editing
-                        // if input value is invalid
-                        evt.StopImmediatePropagation();
-                        m_RenameField.focusController.IgnoreEvent(evt);
-                    }
-                }
-                else if (evt.keyCode == KeyCode.Escape)
-                {
-                    // Undo any edits
-                    m_RenameField.SetValueWithoutNotify(Model.Name);
-                    ResetRenameState();
-                    evt.StopImmediatePropagation();
-                }
-            }, TrickleDown.TrickleDown);
-            m_RenameField.RegisterCallback<KeyUpEvent>(_ =>
-            {
-                // We validate it separately, overwise m_RenameField.text
-                // will have value before key input is applied
-                ValidateInput(m_RenameField.text);
-            });
-            m_RenameField.RegisterCallback<MouseUpEvent>(evt =>
-            {
-                // Block mouse events, so that it doesn't cause open when
-                // we edit input field and click on it
-                evt.StopImmediatePropagation();
-            });
-            m_RenameField.RegisterCallback<FocusOutEvent>(_ =>
-            {
-                // We don't validate here, as otherwise we can end up
-                // in situation of invalid input and lost focus, which
-                // is hard to exit (you'll need to focus and press `esc`)
-                TryRename(m_RenameField.text);
-                ResetRenameState();
-            });
+            // Both fields are inline editors with identical behaviour; InlineTextEditor owns the
+            // commit/discard/select/scroll-cancel rules so that the two cannot drift apart.
+            m_RenameEditor = new InlineTextEditor(
+                m_RenameField,
+                m_Name,
+                readValue: () => Model.Name,
+                commit: TryRename,
+                validate: ValidateInput,
+                closed: HideRenameWarning);
 
-            m_ChangeFPSField.isDelayed = true;
-            m_ChangeFPSField.RegisterCallback<KeyDownEvent>(evt =>
-            {
-                if (evt.keyCode == KeyCode.Escape)
-                {
-                    // Undo any edits
-                    m_ChangeFPSField.SetValueWithoutNotify(GetFramerateTarget().ToString());
-                    ResetFPSChangeState();
-                    evt.StopImmediatePropagation();
-                }
-            }, TrickleDown.TrickleDown);
-            m_ChangeFPSField.RegisterCallback<MouseUpEvent>(evt =>
-            {
-                // Block mouse events, so that it doesn't cause open when
-                // we edit input field and click on it
-                evt.StopImmediatePropagation();
-            });
-            m_ChangeFPSField.RegisterCallback<FocusOutEvent>(evt =>
-            {
-                m_ChangeFPSField.text = ValidateFPSInput(m_ChangeFPSField.text);
-                TryChangeFPS(m_ChangeFPSField.text);
-                ResetFPSChangeState();
-            });
+            m_FPSEditor = new InlineTextEditor(
+                m_ChangeFPSField,
+                m_FPSTarget,
+                readValue: () => GetFramerateTarget().ToString(),
+                commit: TryChangeFPS,
+                sanitize: ValidateFPSInput);
+        }
+
+        protected override void RefreshView()
+        {
+            base.RefreshView();
+
+            Debug.Assert(Model != null);
+
+            m_RenameField.SetValueWithoutNotify(Model.Name);
 
             RefreshLoadedState();
         }
@@ -263,7 +225,7 @@ namespace Unity.Profiling.Editor.UI
             });
             menu.AddItem(k_CaptureOptionMenuItemRename, false, () =>
             {
-                DelayedAction(RenameCapture);
+                RenameCapture();
             });
             menu.AddItem(k_CaptureOptionMenuItemBrowse, false, () =>
             {
@@ -283,7 +245,7 @@ namespace Unity.Profiling.Editor.UI
 
                 menu.AddItem(new GUIContent(k_TargetFPSMenu + "Custom"), false, () =>
                 {
-                    DelayedAction(EditCaptureFPS);
+                    EditCaptureFPS();
                 });
             }
 
@@ -313,56 +275,66 @@ namespace Unity.Profiling.Editor.UI
 
         void RenameCapture()
         {
-            if (View.panel == null)
+            if (!TryRunWhenAttached(RenameCapture))
                 return;
 
-            UIUtility.SwitchVisibility(m_RenameField, m_Name);
-            m_RenameField.SetValueWithoutNotify(m_Name.text);
-            RegisterScrollHandler();
-            FocusRenameField();
+            BeginEdit(m_RenameEditor);
         }
 
-        void RegisterScrollHandler()
+        void BeginEdit(InlineTextEditor fieldEdit)
         {
-            if (m_ScrollView != null)
-                return;
+            // Only one field may be edited at a time. Opening a kebab menu moves focus to a
+            // native menu window, so a row that is already editing never receives a FocusOutEvent
+            // to close itself; the list stops the previously editing row, and the calls below stop
+            // this row's other field.
+            //
+            // Never cancel the field being opened. Closing it schedules a FocusOutEvent that is not
+            // always dispatched in the same frame, and Open clears the guard that would have
+            // suppressed it - so that stale blur would commit and close the field just reopened.
+            // Selecting the same command twice (kebab -> Rename, then Rename again) is the path
+            // that reaches this. Reopening an already-open field is safe on its own: nothing is
+            // hidden, so no blur is generated.
+            m_OnEditStarted?.Invoke(this);
 
-            // Find and store the ScrollView ancestor so we can reliably unregister later,
-            // even if the View gets detached from the hierarchy (e.g., during virtualization)
-            m_ScrollView = View.GetFirstAncestorOfType<ScrollView>();
-            if (m_ScrollView != null)
-            {
-                // Listen to vertical scroller value changes to catch all scroll methods:
-                // mouse wheel, scrollbar dragging, scrollbar clicking, keyboard navigation, etc.
-                m_ScrollView.verticalScroller.valueChanged += OnScrollDuringRename;
-            }
+            if (fieldEdit != m_RenameEditor)
+                m_RenameEditor?.Cancel();
+
+            if (fieldEdit != m_FPSEditor)
+                m_FPSEditor?.Cancel();
+
+            // Dialogs and menus do not restore focus to a detached EditorWindow on their own. This
+            // only asks for it - the platform finishes handing focus over asynchronously, which the
+            // edit field waits out by retrying.
+            EditorWindow.FocusWindowIfItsOpen<ProfilerWindow>();
+
+            fieldEdit?.Open();
         }
 
-        void UnregisterScrollHandler()
+        // Abandon whichever edit this row has open, without applying it. Used by the list when
+        // another row starts editing.
+        internal void CancelActiveEdit()
         {
-            // Use the stored reference instead of searching the hierarchy,
-            // since the View may already be detached when this is called
-            if (m_ScrollView != null)
-            {
-                m_ScrollView.verticalScroller.valueChanged -= OnScrollDuringRename;
-                m_ScrollView = null;
-            }
+            m_RenameEditor?.Cancel();
+            m_FPSEditor?.Cancel();
         }
 
-        void OnScrollDuringRename(float _)
+        // Returns true if the view is attached and the caller may proceed now. If it is currently
+        // detached, schedules the action to run once it re-attaches and returns false.
+        bool TryRunWhenAttached(Action action)
         {
-            if (m_RenameField.visible)
-            {
-                m_RenameField.SetValueWithoutNotify(Model.Name);
-                ResetRenameState();
-            }
+            if (View.panel != null)
+                return true;
+
+            View.RegisterCallbackOnce<AttachToPanelEvent>(_ => action());
+            return false;
         }
 
         void EditCaptureFPS()
         {
-            UIUtility.SwitchVisibility(m_ChangeFPSField, m_FPSTarget);
-            m_ChangeFPSField.SetValueWithoutNotify(GetFramerateTarget().ToString());
-            FocusFPSField();
+            if (!TryRunWhenAttached(EditCaptureFPS))
+                return;
+
+            BeginEdit(m_FPSEditor);
         }
 
         void DeleteCapture()
@@ -448,38 +420,6 @@ namespace Unity.Profiling.Editor.UI
             }
 
             DoFPSChange(parsedFPS);
-        }
-
-        void FocusRenameField()
-        {
-            // We need this because dialogs don't restore
-            // EditorWindow focus, if it's a detached window
-            EditorWindow.FocusWindowIfItsOpen<ProfilerWindow>();
-
-            // Delay field re-focus so that EditorWindow has time to get focus
-            DelayedAction(() => m_RenameFieldInputArea.Focus());
-        }
-
-        void FocusFPSField()
-        {
-            // We need this because dialogs don't restore
-            // EditorWindow focus, if it's a detached window
-            EditorWindow.FocusWindowIfItsOpen<ProfilerWindow>();
-
-            // Delay field re-focus so that EditorWindow has time to get focus
-            DelayedAction(() => m_ChangeFPSFieldInputArea.Focus());
-        }
-
-        void ResetRenameState()
-        {
-            UnregisterScrollHandler();
-            UIUtility.SwitchVisibility(m_RenameField, m_Name, false);
-            HideRenameWarning();
-        }
-
-        void ResetFPSChangeState()
-        {
-            UIUtility.SwitchVisibility(m_ChangeFPSField, m_FPSTarget, false);
         }
 
         void DelayedAction(Action action, int framesDelay = 2)
