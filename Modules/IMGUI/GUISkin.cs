@@ -257,7 +257,10 @@ namespace UnityEngine
             if (m_verticalScrollbarDownButton == null) m_verticalScrollbarDownButton = new GUIStyle();
             if (m_ScrollView == null) m_ScrollView = new GUIStyle();
 
-            m_Styles = new Dictionary<string, GUIStyle>(StringComparer.OrdinalIgnoreCase);
+            if (m_Styles == null)
+                m_Styles = new Dictionary<string, GUIStyle>(StringComparer.OrdinalIgnoreCase);
+            else
+                m_Styles.Clear();
 
             m_Styles["box"] = m_box;
             m_box.name = "box";

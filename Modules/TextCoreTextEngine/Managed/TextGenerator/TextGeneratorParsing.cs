@@ -1592,15 +1592,11 @@ namespace UnityEngine.TextCore.Text
 
                     if ((isWhiteSpace || charCode == k_ZeroWidthSpace || (charCode == k_HyphenMinus && (m_CharacterCount <= 0 || char.IsWhiteSpace((char)textInfo.textElementInfo[m_CharacterCount - 1].character) == false)) || charCode == k_SoftHyphen) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != k_NoBreakSpace && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
                     {
-                        // Ignore Hyphen (0x2D) when preceded by a whitespace
-                        if ((charCode == k_HyphenMinus && m_CharacterCount > 0 && char.IsWhiteSpace((char)textInfo.textElementInfo[m_CharacterCount - 1].character)) == false)
-                        {
-                            isFirstWordOfLine = false;
-                            shouldSaveHardLineBreak = true;
+                        isFirstWordOfLine = false;
+                        shouldSaveHardLineBreak = true;
 
-                            //Reset soft line breaking point since we now have a valid hard break point.
-                            m_SavedSoftLineBreakState.previousWordBreak = -1;
-                        }
+                        // Reset soft line breaking point since we now have a valid hard break point.
+                        m_SavedSoftLineBreakState.previousWordBreak = -1;
                     }
                     // Handling for East Asian scripts
                     else if (m_IsNonBreakingSpace == false && (TextGeneratorUtilities.IsHangul(charCode) && textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false || TextGeneratorUtilities.IsCJK(charCode)))

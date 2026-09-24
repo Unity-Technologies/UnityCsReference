@@ -588,6 +588,10 @@ namespace UnityEditor
             }
             finally
             {
+                // ScriptableRenderPipeline might call SetRenderTarget. Restore the preview render target.
+                if (allowScriptableRenderPipeline && GraphicsSettings.isScriptableRenderPipelineEnabled)
+                    Graphics.SetRenderTarget(m_RenderTexture);
+                
                 camera.fieldOfView = saveFieldOfView;
                 Unsupported.useScriptableRenderPipeline = oldAllowPipes;
             }

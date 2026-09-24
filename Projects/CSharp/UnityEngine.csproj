@@ -1833,6 +1833,9 @@
     <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontEngineMarshallingCommon.cs">
       <Link>Modules\TextCoreFontEngine\Managed\FontEngineMarshallingCommon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontFaceHandle.cs">
+      <Link>Modules\TextCoreFontEngine\Managed\FontFaceHandle.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreFontEngine\Managed\FontFeatureCommon.cs">
       <Link>Modules\TextCoreFontEngine\Managed\FontFeatureCommon.cs</Link>
     </Compile>
