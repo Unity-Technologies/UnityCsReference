@@ -259,6 +259,28 @@ namespace UnityEngine.UIElements.UIR
             m_BackdropFilterRenderDatas.Remove(renderData);
         }
 
+        // Re-record the backdrop-filters at or under this element, whose recorded rect bakes in its clip.
+        // Testing each registered entry's parent chain is cheaper than walking the subtree.
+        public void RefreshBackdropFilterDescendantsOf(RenderData ancestor)
+        {
+            if (m_BackdropFilterRenderDatas.Count == 0)
+                return;
+
+            foreach (RenderData rd in m_BackdropFilterRenderDatas)
+            {
+                for (RenderData p = rd; p != null; p = p.parent)
+                {
+                    if (p != ancestor)
+                        continue;
+
+                    // Skip if already scheduled to regenerate this pass.
+                    if ((rd.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0)
+                        OnRenderDataVisualsChanged(rd, false);
+                    break;
+                }
+            }
+        }
+
         // Re-tessellate the backdrop-filters nested under the moved group (their world-derived UVs went stale).
         // Testing each registered entry's group-ancestor chain is cheaper than walking the subtree. UI-5170.
         public void RefreshBackdropFilterDescendantsOfGroup(RenderData group)

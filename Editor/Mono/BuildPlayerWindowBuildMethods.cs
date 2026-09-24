@@ -377,6 +377,14 @@ namespace UnityEditor
                         defaultName = Path.GetDirectoryName(defaultName);
                 }
 
+                // Prevent file extension stacking on file extensions MacOS natively  does not support
+                if (Application.platform == RuntimePlatform.OSXEditor && !String.IsNullOrEmpty(defaultName)
+                                                                      && !String.IsNullOrEmpty(extension)
+                    && String.Equals(FileUtil.GetPathExtension(defaultName), extension, StringComparison.OrdinalIgnoreCase))
+                {
+                        defaultName = Path.GetFileNameWithoutExtension(defaultName);
+                }
+
                 string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target, subtarget);
 
                 string path;

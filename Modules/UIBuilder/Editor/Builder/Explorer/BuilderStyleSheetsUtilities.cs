@@ -95,7 +95,7 @@ namespace Unity.UI.Builder
         static string DisplaySaveFileDialogForUSS()
         {
             var path = BuilderDialogsUtility.DisplaySaveFileDialog(
-                "Save USS File", null, null, "uss");
+                "Save USS File", null, "New USS", "uss");
             return path;
         }
 

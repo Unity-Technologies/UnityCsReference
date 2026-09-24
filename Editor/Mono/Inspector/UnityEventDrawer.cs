@@ -182,11 +182,11 @@ namespace UnityEditorInternal
                 {
                     listener = pListener,
                     mode = pListener.FindPropertyRelative(kModePath),
-                    arguments = arguments,
                     callState = pListener.FindPropertyRelative(kCallStatePath),
                     listenerTarget = listenerTarget,
                     methodName = pListener.FindPropertyRelative(kMethodNamePath),
-                    objectArgument = arguments.FindPropertyRelative(kObjectArgument)
+                    objectArgument = arguments.FindPropertyRelative(kObjectArgument),
+                    objectArgumentAssemblyTypeName = arguments.FindPropertyRelative(kObjectArgumentAssemblyTypeName)
                 };
 
                 var eventItem = element as UnityEventItem;

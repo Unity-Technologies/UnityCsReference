@@ -246,6 +246,8 @@ namespace Unity.UIToolkit.Editor
                     vea.serializedData = description.CreateDefaultSerializedData();
                 }
 
+                ElementConfiguratorRegistry.Configure(elementType, libItem.libraryType.variantName, vta, vea);
+
                 return vta;
             }
             catch (Exception e)

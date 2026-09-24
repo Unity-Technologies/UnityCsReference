@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
@@ -16,6 +17,12 @@ namespace Unity.UI.Builder
 
         // Used for testing
         internal static int CannotOpenDisplayDialogComplexDefaultValue = 0;
+
+        // Used for testing: records the default file name requested for the most recent save-file dialog,
+        // captured even when the dialog itself cannot be shown (e.g. in tests), so tests can assert on it
+        // without a real dialog ever appearing.
+        [NoAutoStaticsCleanup] // Plain string test hook overwritten on every call; holds no managed references, safe to persist across code reload.
+        internal static string s_LastSaveFileDialogDefaultName;
 
         public static bool DisplayDialog(string title, string message)
         {
@@ -89,6 +96,8 @@ namespace Unity.UI.Builder
 
         public static string DisplaySaveFileDialog(string title, string directory, string defaultName, string extension)
         {
+            s_LastSaveFileDialogDefaultName = defaultName;
+
             if (cannotOpenDialogs)
                 return null;
 

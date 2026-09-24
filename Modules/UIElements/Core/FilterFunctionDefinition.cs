@@ -261,8 +261,13 @@ namespace UnityEngine.UIElements
         /// <summary>Indicates if the shader must return a color in the gamma color space.</summary>
         public bool writesGamma { get; internal set; }
 
-        /// <summary>The DPI scaling factor of the render tree.</summary>
+        /// <summary>The number of pixels per point in the texture being filtered. Multiply point-based parameter values by this factor to convert them to pixels.</summary>
         public float scaledPixelsPerPoint { get; internal set; }
+
+        // Per-axis variant (geometric mean = scaledPixelsPerPoint): the backdrop path can carry a
+        // non-uniform content scale, and axis-bound parameters (drop-shadow offsets, per-pass blur
+        // sigmas) must not route through the scalar approximation.
+        internal Vector2 perAxisScaledPixelsPerPoint { get; set; }
     }
 
     /// <summary>

@@ -145,6 +145,26 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Raised when a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>. Use this event to customize the view item.
         /// </summary>
+        /// <example>
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses the instance-level `BindViewItem` event to register a per-view binding handler that adds the visual connector lines between each parent and child item in the Hierarchy window. 
+        ///
+        /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
+        ///
+        /// To use this example, save the script and USS files in a folder called `Assets/Editor/Connectors`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_dark.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_dark.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_light.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_light.uss"/>
+        /// </example>
         public event BindViewItemEventHandler BindViewItem;
 
         /// <summary>
@@ -270,6 +290,26 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Whether the <see cref="HierarchyView"/> is filtering nodes.
         /// </summary>
+        /// <example>
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses `Filtering` to detect when the Hierarchy is in search mode, and sets the connector depth to 0 because filtering flattens the tree. 
+        ///
+        /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
+        ///
+        /// To use this example, save the script and USS files in a folder called `Assets/Editor/Connectors`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_dark.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_dark.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_light.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_light.uss"/>
+        /// </example>
         public bool Filtering => m_HierarchyViewModel.Filtering;
 
         /// <summary>
@@ -604,6 +644,17 @@ namespace Unity.Hierarchy
         /// Sets the current selection to a single node and deselects all other nodes.
         /// </summary>
         /// <param name="node">The <see cref="HierarchyNode"/> to set as the selection.</param>
+        /// <example>
+        /// The following example adds an action to a context menu that you can use to select the nearest common ancestor of the GameObjects you have selected in the Hierarchy window. The action appears in the **Hierarchy Samples** submenu of the context menu. The example uses `SetSelection` to select the common ancestor, then calls `HierarchyView.Frame` to scroll the ancestor into view.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/SelectCommonAncestor`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Select two or more GameObjects.
+        ///3. In the Hierarchy window, right-click and select **Hierarchy Samples**, then **Select Common Ancestor**.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/SelectCommonAncestor/SelectCommonAncestor.cs"/>
+        /// </example>
         public void SetSelection(in HierarchyNode node)
         {
             using (var _ = new HierarchyViewModelFlagsChangeScope(m_HierarchyViewModel))
@@ -1025,6 +1076,17 @@ namespace Unity.Hierarchy
         /// Frames the specified node. This expands the node's ancestors and scrolls to the node.
         /// </summary>
         /// <param name="node">The <see cref="HierarchyNode"/> to frame.</param>
+        /// <example>
+        /// The following example adds an action to a context menu that you can use to select the nearest common ancestor of the GameObjects you have selected in the Hierarchy window. The action appears in the **Hierarchy Samples** submenu of the context menu. The example uses `Frame` to scroll the common ancestor into view after selecting the node.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/SelectCommonAncestor`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Select two or more GameObjects.
+        ///3. In the Hierarchy window, right-click and select **Hierarchy Samples**, then **Select Common Ancestor**.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/SelectCommonAncestor/SelectCommonAncestor.cs"/>
+        /// </example>
         public void Frame(in HierarchyNode node)
         {
             HierarchyLogging.Log($"HierarchyView({GetHashCode():X}).FrameNode({node})");

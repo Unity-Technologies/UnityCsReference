@@ -383,6 +383,7 @@ namespace UnityEngine.UIElements.UIR
         // The only place user filter code executes; must run while no render target is bound.
         // Null-material passes never render, so their slot is skipped. writesGamma only differs per
         // pass for the compositor's force-gamma rule (last rendered slot gets lastPassWritesGamma).
+        // Uniform-scale convenience; the Vector2 overload carries the per-axis backdrop content scale.
         public static void InvokeFilterCallbacks(
             System.ReadOnlySpan<UnmanagedFilterFunction> filters,
             List<MaterialPropertyBlock> blocks,
@@ -391,6 +392,21 @@ namespace UnityEngine.UIElements.UIR
             bool lastPassWritesGamma,
             float scaledPixelsPerPoint)
         {
+            InvokeFilterCallbacks(filters, blocks, readsGamma, writesGamma, lastPassWritesGamma,
+                new Vector2(scaledPixelsPerPoint, scaledPixelsPerPoint));
+        }
+
+        public static void InvokeFilterCallbacks(
+            System.ReadOnlySpan<UnmanagedFilterFunction> filters,
+            List<MaterialPropertyBlock> blocks,
+            bool readsGamma,
+            bool writesGamma,
+            bool lastPassWritesGamma,
+            Vector2 scaledPixelsPerPoint)
+        {
+            // The public context value stays a scalar (geometric mean); axis-bound parameters read
+            // the per-axis vector, which differs per axis under a non-uniform backdrop content scale.
+            float scalarScaledPixelsPerPoint = Mathf.Sqrt(scaledPixelsPerPoint.x * scaledPixelsPerPoint.y);
             // The last-rendered slot only matters when its gamma differs from the other passes
             // (compositor force-gamma rule); when writesGamma == lastPassWritesGamma the distinction
             // is moot, so skip the extra chain walk (always the case for the backdrop-filter path).
@@ -434,7 +450,8 @@ namespace UnityEngine.UIElements.UIR
                                 filterPassIndex = j,
                                 readsGamma = readsGamma,
                                 writesGamma = isLastPass ? lastPassWritesGamma : writesGamma,
-                                scaledPixelsPerPoint = scaledPixelsPerPoint
+                                scaledPixelsPerPoint = scalarScaledPixelsPerPoint,
+                                perAxisScaledPixelsPerPoint = scaledPixelsPerPoint
                             });
                         }
                         catch (Exception e)

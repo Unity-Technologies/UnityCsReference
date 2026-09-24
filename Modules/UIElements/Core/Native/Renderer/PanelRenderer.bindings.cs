@@ -632,7 +632,26 @@ namespace UnityEngine.UIElements
             else
                 panelSettings?.AttachAndInsertPanelComponentToVisualTree(this);
 
+            InvokeUIReloadCallbacksOnSubTree();
+        }
+
+        // UUM-152408: a nested renderer processed before its parent inserts its root into a parent
+        // root that has no panel yet, so its own flush is a no-op and the callback stays pending.
+        // Attaching this renderer attaches those child roots transitively; flush them too.
+        void InvokeUIReloadCallbacksOnSubTree()
+        {
             InvokeUIReloadCallbacks();
+
+            if (m_ChildrenContent == null || m_ChildrenContent.m_AttachedPanelComponents.Count == 0)
+                return;
+
+            // A callback can mutate the children list (e.g., by disabling a child), so iterate a copy.
+            var children = new List<IPanelComponent>(m_ChildrenContent.m_AttachedPanelComponents);
+            foreach (var child in children)
+            {
+                if (child is PanelRenderer childRenderer && childRenderer != null)
+                    childRenderer.InvokeUIReloadCallbacksOnSubTree();
+            }
         }
 
         void AddChildAndInsertContentToVisualTree(PanelRenderer child)

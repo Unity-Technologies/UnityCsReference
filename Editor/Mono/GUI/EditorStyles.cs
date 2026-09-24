@@ -400,6 +400,30 @@ namespace UnityEditor
         internal static GUIStyle dropDownList { get { return s_Current.m_DropDownList; } }
         private GUIStyle m_DropDownList;
 
+        internal static GUIStyle advancedDropdownItem => s_Current.m_AdvancedDropdownItem;
+        private GUIStyle m_AdvancedDropdownItem;
+
+        internal static GUIStyle advancedDropdownItemFaint => s_Current.m_AdvancedDropdownItemFaint;
+        private GUIStyle m_AdvancedDropdownItemFaint;
+
+        internal static GUIStyle advancedDropdownBackground => s_Current.m_AdvancedDropdownBackground;
+        private GUIStyle m_AdvancedDropdownBackground;
+
+        internal static GUIStyle advancedDropdownHeader => s_Current.m_AdvancedDropdownHeader;
+        private GUIStyle m_AdvancedDropdownHeader;
+
+        internal static GUIStyle advancedDropdownCheckmark => s_Current.m_AdvancedDropdownCheckmark;
+        private GUIStyle m_AdvancedDropdownCheckmark;
+
+        internal static GUIStyle defaultLineSeparator => s_Current.m_DefaultLineSeparator;
+        private GUIStyle m_DefaultLineSeparator;
+
+        internal static GUIStyle arrowNavigationRight => s_Current.m_ArrowNavigationRight;
+        private GUIStyle m_ArrowNavigationRight;
+
+        internal static GUIStyle arrowNavigationLeft => s_Current.m_ArrowNavigationLeft;
+        private GUIStyle m_ArrowNavigationLeft;
+
         internal static GUIStyle dropDownToggleButton { get { return s_Current.m_DropDownToggleButton; } }
         private GUIStyle m_DropDownToggleButton;
         internal static GUIStyle minMaxStateDropdown { get { return s_Current.m_MinMaxStateDropdown; } }
@@ -529,6 +553,21 @@ namespace UnityEditor
             m_ToolbarSlider = GetStyle("ToolbarSlider");
             m_MinMaxHorizontalSliderThumb = GetStyle("MinMaxHorizontalSliderThumb");
             m_DropDownList = GetStyle("DropDownButton");
+            m_AdvancedDropdownItem = GetStyle("DD ItemStyle");
+            var faintColor = EditorGUIUtility.isProSkin ? new Color(0.5f, 0.5f, 0.5f, 1f) : new Color(0.25f, 0.25f, 0.25f, 1f);
+            m_AdvancedDropdownItemFaint = new GUIStyle(m_AdvancedDropdownItem);
+            m_AdvancedDropdownItemFaint.normal.textColor = faintColor;
+            m_AdvancedDropdownItemFaint.hover.textColor = faintColor;
+            m_AdvancedDropdownItemFaint.active.textColor = faintColor;
+            m_AdvancedDropdownItemFaint.focused.textColor = faintColor;
+            m_AdvancedDropdownBackground = GetStyle("DD Background");
+            // A copy: the ellipsis and padding tweaks must not mutate the skin's own style instance.
+            m_AdvancedDropdownHeader = new GUIStyle(GetStyle("DD HeaderStyle")) { clipping = TextClipping.Ellipsis };
+            m_AdvancedDropdownHeader.padding.left = 20;
+            m_AdvancedDropdownCheckmark = GetStyle("DD ItemCheckmark");
+            m_DefaultLineSeparator = GetStyle("DefaultLineSeparator");
+            m_ArrowNavigationRight = GetStyle("ArrowNavigationRight");
+            m_ArrowNavigationLeft = GetStyle("ArrowNavigationLeft");
             m_DropDownToggleButton = GetStyle("DropDownToggleButton");
             m_MinMaxStateDropdown = GetStyle("IN MinMaxStateDropdown");
             m_ProgressBarBack = GetStyle("ProgressBarBack");

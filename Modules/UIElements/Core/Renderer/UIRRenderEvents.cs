@@ -387,10 +387,18 @@ namespace UnityEngine.UIElements.UIR
 
         static void ResetRenderData(RenderTreeManager renderTreeManager, RenderData renderData)
         {
-            // Captured before renderData.renderTree is cleared below; the backdrop-filter teardown needs it. UI-5170.
             RenderTree renderTree = renderData.renderTree;
             renderTree.ChildWillBeRemoved(renderData);
             CommandManipulator.ResetCommands(renderTreeManager, renderData);
+
+            // Ahead of every teardown it depends on: the state lives in the extra data freed below, and a root
+            // render data's tree is pooled just below too, which would clear the registry we unregister from.
+            if (renderData.hasBackdropFilterAllocated)
+            {
+                BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
+                renderTreeManager.panel?.DecrementBackdropFilterCount();
+                renderTree.UnregisterBackdropFilter(renderData);
+            }
 
             if (renderData.parent == null)
             {
@@ -484,15 +492,8 @@ namespace UnityEngine.UIElements.UIR
             }
             renderTreeManager.visualChangesProcessor.ReleaseChainRef(renderData.m_EffectiveModifiers);
 
-            if (renderData.hasBackdropFilterAllocated)
-            {
-                BackdropFilterHelper.ReleaseBackdropFilterResources(renderTreeManager, renderData);
-                renderTreeManager.panel?.DecrementBackdropFilterCount();
-                renderTree.UnregisterBackdropFilter(renderData);
-            }
-
             // Removal can occur without the chain ever becoming empty, so drop any registration the
-            // sync paths didn't; the blocks themselves were already returned by FreeExtraData above.
+            // sync paths didn't; the blocks themselves were already returned by the backdrop release above.
             if (renderData.isRegisteredForFilterCallbacks)
                 renderTreeManager.UnregisterFilterCallbackElement(renderData, RenderDataFlags.RegisteredForFilterCallbacks);
             if (renderData.isRegisteredForBackdropFilterCallbacks)
@@ -596,9 +597,16 @@ namespace UnityEngine.UIElements.UIR
                     // We need to add/remove scissor push/pop commands
                     mustRepaintThis = true;
 
-                if (newClippingMethod == ClipMethod.ShaderDiscard || oldClippingMethod == ClipMethod.ShaderDiscard && RenderData.AllocatesID(renderData.clipRectID))
-                    // We must update the clipping rects.
+                // A group transform keeps an owned clipRectID here (the else above skips its reassignment), so the
+                // second term is live for one.
+                if (newClippingMethod == ClipMethod.ShaderDiscard
+                    || oldClippingMethod == ClipMethod.ShaderDiscard && RenderData.AllocatesID(renderData.clipRectID))
                     mustProcessSizeChange = true;
+
+                // The transition changes what this element clips its descendants to, and their backdrop-filter
+                // meshes bake that clip into their recorded rect. Scissor and group transitions get no
+                // hierarchical repaint, so re-record just those elements rather than walking the whole subtree.
+                renderData.renderTree.RefreshBackdropFilterDescendantsOf(renderData);
             }
 
             if (clipRectIDChanged)
@@ -859,8 +867,9 @@ namespace UnityEngine.UIElements.UIR
                 UpdateZeroScaling(renderData);
             }
 
-            // Backdrop-filter UVs depend on world transform, so meshes regen on transform change.
-            // Gate on the allocated flag so panels with no backdrop-filter (e.g. world-space) skip this.
+            // The recorded rect bakes in both the world transform and the clip, so it goes stale on a size-only
+            // change as well -- hence outside the transformChanged check above. Re-recording is what this walk
+            // uniquely provides; clippingRect is already invalidated subtree-wide by the hierarchy flags updater.
             if (renderData.hasBackdropFilterAllocated &&
                 (renderData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0)
                 renderData.renderTree.OnRenderDataVisualsChanged(renderData, false);
@@ -926,10 +935,11 @@ namespace UnityEngine.UIElements.UIR
                     child = child.nextSibling;
                 }
             }
-            else if (transformChanged)
+            else
             {
-                // Recursion stops at group transforms (descendants ride the group matrix). Backdrop-filters are
-                // the exception: their UVs track the world transform, which moved — refresh them via the registry. UI-5170.
+                // Recursion stops at group transforms (descendants ride the group matrix). Backdrop-filters are the
+                // exception: their recorded rect bakes both the world transform and this group's clip, so a size
+                // change here invalidates it just as a transform change does. UI-5170.
                 renderData.renderTree.RefreshBackdropFilterDescendantsOfGroup(renderData);
             }
         }

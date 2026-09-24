@@ -25,10 +25,10 @@ namespace Unity.Scripting.LifecycleManagement
     internal sealed class CodeLoadedScope : LifecycleScope
     {
         public static readonly string ScopeName = "CodeLoaded";
+
+        // Callers compare their own captured generation against this to detect stale async work.
         private static int _codeLoadedGeneration;
-        static AsyncLocal<int> _executionContextGeneration = new AsyncLocal<int>();
         public static int CurrentCodeLoadedGeneration => _codeLoadedGeneration;
-        public static int ExecutionContextGeneration => _executionContextGeneration.Value;
 
         private static CancellationTokenSource? _cancellationTokenSource;
 
@@ -43,15 +43,13 @@ namespace Unity.Scripting.LifecycleManagement
         internal static int IncrementCodeLoadedGeneration()
         {
             RecycleCancellationTokenSource();
-            var generation = ++_codeLoadedGeneration;
-            _executionContextGeneration.Value = generation;
-            return generation;
+            return ++_codeLoadedGeneration;
         }
 
-        public static void CancelIfNotInCorrectGeneration()
+        // Generation should be captured by the caller when the async work started.
+        public static void CancelIfNotInGeneration(int generation)
         {
-
-            if (_executionContextGeneration.Value != _codeLoadedGeneration)
+            if (generation != _codeLoadedGeneration)
             {
                 throw new OperationCanceledException(
                     "Running async code belongs to the previous CodeLoaded scope and must be cancelled before Code Reload");

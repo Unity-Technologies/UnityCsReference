@@ -62,12 +62,16 @@ namespace UnityEngine
         Action _continuation;
         CancellationTokenRegistration? _cancelTokenRegistration;
         DoubleBufferedAwaitableList _managedCompletionQueue;
+
+        // Captured at creation since Awaitable never flows ExecutionContext, so an AsyncLocal read later wouldn't be reliable.
+        int _codeLoadedGenerationAtCreation;
         private Awaitable() { }
 
         internal static Awaitable NewManagedAwaitable()
         {
             var awaitable = _pool.Value.Get();
             awaitable._handle = AwaitableHandle.ManagedHandle;
+            awaitable._codeLoadedGenerationAtCreation = CodeLoadedScope.CurrentCodeLoadedGeneration;
             return awaitable;
         }
 
@@ -76,6 +80,7 @@ namespace UnityEngine
         {
             var awaitable = _pool.Value.Get();
             awaitable._handle = nativeHandle;
+            awaitable._codeLoadedGenerationAtCreation = CodeLoadedScope.CurrentCodeLoadedGeneration;
             unsafe
             {
                 AttachManagedGCHandleToNativeAwaitable(nativeHandle, (UIntPtr)(void*)GCHandle.ToIntPtr(GCHandle.Alloc(awaitable)));
@@ -226,13 +231,14 @@ namespace UnityEngine
                 _exceptionToRethrow = null;
                 _managedCompletionQueue = null;
                 _continuation = null;
+                var codeLoadedGenerationAtCreation = _codeLoadedGenerationAtCreation;
                 if (!ptr.IsManaged && !ptr.IsNull)
                 {
                     ReleaseNativeAwaitable(ptr);
                 }
                 _pool.Value.Release(this);
                 toRethrow?.Throw();
-                CodeLoadedScope.CancelIfNotInCorrectGeneration();
+                CodeLoadedScope.CancelIfNotInGeneration(codeLoadedGenerationAtCreation);
             }
             finally
             {

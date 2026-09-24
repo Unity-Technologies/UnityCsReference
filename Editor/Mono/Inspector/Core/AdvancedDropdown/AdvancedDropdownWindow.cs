@@ -17,8 +17,7 @@ namespace UnityEditor.IMGUI.Controls
     {
         private static class Styles
         {
-            [NoAutoStaticsCleanup] // mutated in static ctor (padding), cannot be readonly
-            public static GUIStyle background = "DD Background";
+            public static GUIStyle background => EditorStyles.advancedDropdownBackground;
             [NoAutoStaticsCleanup] // mutated in static ctor (padding), cannot be readonly
             public static GUIStyle previewHeader = new GUIStyle(EditorStyles.label);
             [NoAutoStaticsCleanup] // mutated in static ctor (padding), cannot be readonly

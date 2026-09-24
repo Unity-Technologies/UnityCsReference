@@ -56,7 +56,7 @@ namespace Unity.UIToolkit.Editor
         public static string DisplaySaveFileDialogForUSS()
         {
             var directory = Application.dataPath;
-            var newPath = EditorUtility.SaveFilePanel( "Save USS File", directory, null, "uss");
+            var newPath = EditorUtility.SaveFilePanel( "Save USS File", directory, "New USS", "uss");
 
             if (string.IsNullOrWhiteSpace(newPath))
                 return null;

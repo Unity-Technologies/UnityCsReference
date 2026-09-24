@@ -33,7 +33,7 @@ namespace UnityEditor.UIElements.Debugger
             set
             {
                 // Do this before the early return as the selected element is null for the first callback
-                style.display = value == null ? DisplayStyle.None : DisplayStyle.Flex;
+                style.display = value.IsLive() ? DisplayStyle.Flex : DisplayStyle.None;
 
                 if (m_SelectedElement == value)
                     return;
@@ -43,7 +43,6 @@ namespace UnityEditor.UIElements.Debugger
 
 
                 m_BoxModelView.selectedElement = m_SelectedElement;
-                m_attributeSection.RefreshIfNeeded();
                 m_LayoutInfo.Update(m_PanelDebug, selectedElement);
 
                 this.Query<IMGUIContainer>().ForEach( i => i.IncrementVersion(VersionChangeType.Layout));
@@ -152,7 +151,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 m_PickingBoundingBox.style.display = UIToolkitProjectSettings.EnableLowLevelDebugger? DisplayStyle.Flex:DisplayStyle.None;
 
-                if (panel == null || selectedElement == null)
+                if (panel == null || !selectedElement.IsLive())
                 {
                     m_WorldBound.text = "";
                     m_WorldClip.text = "";
@@ -219,11 +218,11 @@ namespace UnityEditor.UIElements.Debugger
                 m_pickingMode.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.pickingMode = (PickingMode)v.newValue; } });
 
                 Add(m_pseudoStyles = new EnumFlagsField("Pseudo States", PseudoStates.None) { tooltip = "This pseudo style only represent the visual state of the element." });
-                m_pseudoStyles.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.pseudoStates = (PseudoStates)v.newValue; } });
+                m_pseudoStyles.RegisterValueChangedCallback((v) => { if (m_SelectedElement.IsLive()) { m_SelectedElement.pseudoStates = (PseudoStates)v.newValue; } });
 
                 Add(m_enabled = new("Enabled"));
                 m_enabled.Add(new Label() { name = k_enabledLabelName });
-                m_enabled.RegisterValueChangedCallback((v) => { if (m_SelectedElement != null) { m_SelectedElement.SetEnabled(v.newValue); } });
+                m_enabled.RegisterValueChangedCallback((v) => { if (m_SelectedElement.IsLive()) { m_SelectedElement.SetEnabled(v.newValue); } });
 
                 Add(m_foccusable = new TextField("Focusable") { isReadOnly = true });
 
@@ -246,6 +245,9 @@ namespace UnityEditor.UIElements.Debugger
                         var item = new TextField();
                         item.RegisterValueChangedCallback(t =>
                         {
+                            if (!m_SelectedElement.IsLive())
+                                return;
+
                             m_SelectedElement.RemoveFromClassList(t.previousValue);
                             m_SelectedElement.AddToClassList(t.newValue);
                             SyncClassList();
@@ -341,6 +343,9 @@ namespace UnityEditor.UIElements.Debugger
 
             private void AddNewClass()
             {
+                if (!m_SelectedElement.IsLive())
+                    return;
+
                 // Attempt to add a new unique class name using a simple suffix
                 // - newStyle
                 // - newStyle1
@@ -360,6 +365,9 @@ namespace UnityEditor.UIElements.Debugger
 
             private void RemoveLastClass()
             {
+                if (!m_SelectedElement.IsLive())
+                    return;
+
                 var classes = m_SelectedElement.GetClassesForIteration();
                 m_SelectedElement.RemoveFromClassList(classes[^1]);
             }

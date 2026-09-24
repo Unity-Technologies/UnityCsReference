@@ -48,6 +48,10 @@ namespace Unity.Profiling.Editor.UI
         Dictionary<int, CaptureFileTreeItemViewController> m_TreeViewControllers;
         ToolbarSearchField m_SearchField;
 
+        // The row currently showing an in-place edit field, if any. The list owns this because only one
+        // row may edit at a time and a row cannot see its siblings.
+        CaptureFileTreeItemViewController m_EditingItem;
+
         readonly struct CaptureItemData
         {
             public CaptureItemData(string name, bool sessionGroup, CaptureFileModel fileData)
@@ -80,6 +84,12 @@ namespace Unity.Profiling.Editor.UI
             if (disposing)
             {
                 m_CaptureDataService.AllCapturesChanged -= RefreshView;
+
+                // The window outlives this controller and would keep its view alive.
+                if (m_ProfilerWindow != null && m_ProfilerWindow.rootVisualElement != null)
+                    m_ProfilerWindow.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(OnWindowGeometryChanged);
+
+                m_EditingItem = null;
                 foreach (var captureItemData in m_TreeViewControllers)
                     captureItemData.Value.Dispose();
             }
@@ -157,6 +167,11 @@ namespace Unity.Profiling.Editor.UI
 
                 if (found)
                     continue;
+
+                // Drop the editing reference before disposing, or it keeps the disposed
+                // controller and its whole view alive until some other row is edited.
+                if (ReferenceEquals(m_EditingItem, keyValuePair.Value))
+                    m_EditingItem = null;
 
                 keyValuePair.Value.Dispose();
                 itemsToClear.Add(keyValuePair.Key);
@@ -241,6 +256,18 @@ namespace Unity.Profiling.Editor.UI
             });
         }
 
+        // Called by a row as it starts editing one of its fields (rename or target frame time).
+        // Opening a kebab menu moves focus to a native menu window, so a row that is already
+        // editing never receives a FocusOutEvent to close itself, which left two editable fields
+        // open at once.
+        void OnItemEditStarted(CaptureFileTreeItemViewController item)
+        {
+            if (m_EditingItem != null && m_EditingItem != item && !m_EditingItem.IsDisposed)
+                m_EditingItem.CancelActiveEdit();
+
+            m_EditingItem = item;
+        }
+
         void ImportCapture()
         {
             var path = EditorUtility.OpenFilePanelWithFilters("Import Profiler Capture",
@@ -265,6 +292,55 @@ namespace Unity.Profiling.Editor.UI
             m_CapturesCollection.viewDataKey = k_TreePersistencyKey;
             m_NoCapturesMessage = view.Q(k_UxmlNoCapturesHint);
             m_SearchField = view.Q<ToolbarSearchField>(k_UxmlSearchField);
+
+            RegisterEditCancelOnUserScroll();
+            RegisterEditCancelOnWindowResize();
+        }
+
+        // An in-place edit field sits on a row, so scrolling the list moves it away from the capture
+        // it is editing. Cancel on genuine user scroll input only: the scroller's valueChanged is not
+        // a user-input signal - it also fires when the scroller clamps after a content-size change,
+        // including the change caused by showing the field, which closed it in the frame it opened
+        // (UUM-143329). Wheel plus a press on the scroller covers the ways the list can be scrolled
+        // while a field is being edited; arrow and page keys go to the focused field rather
+        // than to the collection view, and Escape already cancels explicitly.
+        //
+        // The list owns this rather than the row: it owns the ScrollView and already tracks which
+        // row is editing, so the row does not have to reach up out of its own subtree.
+        void RegisterEditCancelOnUserScroll()
+        {
+            var scrollView = m_CapturesCollection?.Q<ScrollView>();
+            if (scrollView == null)
+                return;
+
+            scrollView.RegisterCallback<WheelEvent>(_ => CancelActiveRowEdit(), TrickleDown.TrickleDown);
+            scrollView.verticalScroller.RegisterCallback<PointerDownEvent>(_ => CancelActiveRowEdit(), TrickleDown.TrickleDown);
+        }
+
+        // Measures the window, not the list: a geometry change inside the list is caused by the
+        // edit field itself, and cancelling on that is UUM-143329.
+        void RegisterEditCancelOnWindowResize()
+        {
+            // != rather than ?., which does not go through UnityEngine.Object's equality.
+            if (m_ProfilerWindow == null || m_ProfilerWindow.rootVisualElement == null)
+                return;
+
+            m_ProfilerWindow.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnWindowGeometryChanged);
+        }
+
+        void OnWindowGeometryChanged(GeometryChangedEvent evt)
+        {
+            // The event also fires for a move, and once for the panel's first layout.
+            if (evt.oldRect.size == evt.newRect.size)
+                return;
+
+            CancelActiveRowEdit();
+        }
+
+        void CancelActiveRowEdit()
+        {
+            if (m_EditingItem is { IsDisposed: false })
+                m_EditingItem.CancelActiveEdit();
         }
 
         VisualElement MakeTreeItem()
@@ -308,7 +384,7 @@ namespace Unity.Profiling.Editor.UI
                 var itemId = m_CapturesCollection.GetIdForIndex(index);
 
                 if (!m_TreeViewControllers.TryGetValue(itemId, out var viewController))
-                    viewController = new CaptureFileTreeItemViewController(itemData.FileData, m_CaptureDataService, m_ScreenshotsManager, m_ProfilerWindow, m_CaptureRenameWarningLabel);
+                    viewController = new CaptureFileTreeItemViewController(itemData.FileData, m_CaptureDataService, m_ScreenshotsManager, m_ProfilerWindow, m_CaptureRenameWarningLabel, OnItemEditStarted);
 
                 viewController.IsLoaded = m_ProfilerWindow.CaptureFileIsOpen(itemData.FileData.FullPath);
 

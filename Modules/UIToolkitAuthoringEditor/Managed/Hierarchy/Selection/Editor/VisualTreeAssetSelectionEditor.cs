@@ -21,7 +21,7 @@ internal class VisualTreeAssetSelectionEditor : UnityEditor.Editor
     {
         var inspector = new VisualTreeAssetInspector
         {
-            VisualTreeAsset = Target.panelComponent?.visualTreeAsset
+            VisualTreeAsset = PanelComponentUtils.IsAlive(Target.panelComponent) ? Target.panelComponent.visualTreeAsset : null,
         };
 
         var binding = new DataBinding
@@ -32,9 +32,9 @@ internal class VisualTreeAssetSelectionEditor : UnityEditor.Editor
             bindingMode = BindingMode.ToTarget
         };
 
-        binding.sourceToUiConverters.AddConverter((ref UIDocument document) => document.visualTreeAsset);
-        binding.sourceToUiConverters.AddConverter((ref PanelRenderer renderer) => renderer.visualTreeAsset);
-        binding.sourceToUiConverters.AddConverter((ref IPanelComponent panelComponent) => panelComponent?.visualTreeAsset);
+        binding.sourceToUiConverters.AddConverter((ref UIDocument document) => document != null ? document.visualTreeAsset : null);
+        binding.sourceToUiConverters.AddConverter((ref PanelRenderer renderer) => renderer != null ? renderer.visualTreeAsset : null);
+        binding.sourceToUiConverters.AddConverter((ref IPanelComponent panelComponent) => PanelComponentUtils.IsAlive(panelComponent) ? panelComponent.visualTreeAsset : null);
 
         inspector.SetBinding(VisualTreeAssetInspector.VisualTreeAssetProperty, binding);
         return inspector;

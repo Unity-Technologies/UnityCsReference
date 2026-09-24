@@ -40,6 +40,23 @@ namespace Unity.Hierarchy
         /// <param name="hierarchyViewModel">The hierarchy view model.</param>
         /// <param name="node">The hierarchy node.</param>
         /// <returns>The hierarchy node type handler.</returns>
+        /// <example>
+        /// The following example adds context menu actions to the Hierarchy window to add or remove a specific component from a GameObject. The actions appear in the **Hierarchy Samples** submenu of the context menu. The example uses `GetNodeTypeHandler` to check whether each selected node is handled by a `HierarchyGameObjectHandler` and filters out nodes of other types. 
+        ///
+        /// The example requires a custom MonoBehaviour script called `Enemy.cs`.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/CustomContextMenuAction`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Save the `Enemy.cs` script outside of an `Editor` folder, because MonoBehaviour scripts in an `Editor` folder can't be attached to GameObjects.
+        ///3. In the Hierarchy window, right-click one or more GameObjects and open the **Hierarchy Samples** submenu. Select **Turn into Enemy** to add the `Enemy` component, or **Remove Enemy component** to remove it.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CustomContextMenuAction/CustomContextMenuAction.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows the `Enemy` component that the CustomContextMenuAction example uses.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Runtime/Enemy.cs"/>
+        /// </example>
         public static HierarchyNodeTypeHandler GetNodeTypeHandler(this HierarchyViewModel hierarchyViewModel, in HierarchyNode node)
         {
             var handlerBase = hierarchyViewModel.GetNodeTypeHandlerBase(in node);

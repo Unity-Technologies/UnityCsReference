@@ -531,7 +531,7 @@ namespace UnityEditor.UIElements.Debugger
 
             protected virtual void UpdateVisiblity()
             {
-                style.display = (m_SelectedElement != null) && (!m_IsLowLevel || UIToolkitProjectSettings.EnableLowLevelDebugger) ? DisplayStyle.Flex : DisplayStyle.None;
+                style.display = m_SelectedElement.IsLive() && (!m_IsLowLevel || UIToolkitProjectSettings.EnableLowLevelDebugger) ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             protected abstract void Refresh();
@@ -1159,6 +1159,8 @@ namespace UnityEditor.UIElements.Debugger
         {
             base.EditorUpdate();
 
+            DropSelectionIfReleased();
+
             (panelDebug?.debuggerOverlayPanel as Panel)?.UpdateAnimations();
         }
 
@@ -1172,6 +1174,8 @@ namespace UnityEditor.UIElements.Debugger
 
         public override void Refresh()
         {
+            DropSelectionIfReleased();
+
             if (!m_Context.pickElement)
             {
                 var selectedElement = m_Context.selectedElement;
@@ -1180,7 +1184,7 @@ namespace UnityEditor.UIElements.Debugger
                 //we should not lose the selection when the tree has changed.
                 if (selectedElement != m_Context.selectedElement)
                 {
-                    if (m_Context.selectedElement == null && selectedElement.panel == panelDebug.panel)
+                    if (m_Context.selectedElement == null && panelDebug != null && selectedElement.panel == panelDebug.panel)
                         SelectElement(selectedElement);
                 }
 
@@ -1213,6 +1217,13 @@ namespace UnityEditor.UIElements.Debugger
 
             panelDebug?.MarkDirtyRepaint();
             panelDebug?.MarkDebugContainerDirtyRepaint();
+        }
+
+        void DropSelectionIfReleased()
+        {
+            var selected = m_Context.selectedElement;
+            if (selected != null && !selected.IsLive())
+                SelectElement(null);
         }
 
         void OnGenerateVisualContent(MeshGenerationContext mgc)

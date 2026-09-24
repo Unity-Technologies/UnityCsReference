@@ -855,6 +855,23 @@ internal static unsafe class SerializationBackendManagedCommands
     // fieldOffsets). Avoids a GCHandle.
     private sealed class ObjectWrapper { public byte Data; }
 
+    // Byte offset from an object's first-field ref (ObjectWrapper.Data) to an
+    // SZArray's first element. It is a runtime constant, identical for every
+    // element type. It lives in a nested holder with an explicit static
+    // constructor (precise-init semantics) so the outer class stays safe to
+    // touch where the Unsafe assembly cannot bind; the holder's constructor
+    // runs at first field access, which only executor code performs.
+    private static class LayoutFacts
+    {
+        internal static readonly nint ArrayDataOffset;
+
+        static LayoutFacts()
+        {
+            byte[] probe = new byte[1];
+            ArrayDataOffset = Unsafe.ByteOffset(ref Unsafe.As<ObjectWrapper>((object)probe).Data, ref probe[0]);
+        }
+    }
+
     // Local mirror of UnityEngine.Bindings.SystemReflectionMarshalling.UnmarshalSystemType.
     // Inlined here because this file is also compiled as TestAttributes::
     // ExternalCSharpResource into the native test fixture's auxiliary C#
@@ -1822,7 +1839,8 @@ internal static unsafe class SerializationBackendManagedCommands
     // the two opcode spaces, only the surrounding struct layout differs.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe object GetOrCreateVrtInstance(
-        ref byte baseAddr, uint fieldOffset, IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr)
+        ref byte baseAddr, uint fieldOffset, IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr,
+        bool callerHandlesNull)
     {
         ref object slot = ref Unsafe.As<byte, object>(
             ref Unsafe.AddByteOffset(ref baseAddr, (nint)fieldOffset));
@@ -1830,12 +1848,73 @@ internal static unsafe class SerializationBackendManagedCommands
         if (obj != null)
             return obj;
 
+        obj = CreateVrtInstance(runtimeTypeHandle, ctorFunctionPtr, callerHandlesNull);
+        if (obj == null)
+            return null;
+        slot = obj;
+        return obj;
+    }
+
+    // The native write side materializes the same element (SetupManagedObjectTransferer).
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe object GetOrCreateVrtElement(
+        object[] items, int index, IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr)
+    {
+        object obj = items[index];
+        return obj ?? CreateVrtElement(items, index, runtimeTypeHandle, ctorFunctionPtr);
+    }
+
+    // Split out because an EH region would make the caller ineligible for inlining.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe object CreateVrtElement(
+        object[] items, int index, IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr)
+    {
+        object obj = CreateVrtInstance(runtimeTypeHandle, ctorFunctionPtr, callerHandlesNull: true);
+        if (obj == null)
+            return null;
+        try
+        {
+            items[index] = obj;
+        }
+        catch (ArrayTypeMismatchException)
+        {
+            // Covariant array: stelem.ref rejects the declared type, so use the array's own.
+            object typed = CreateArrayElementInstance(items.GetType().GetElementType());
+            if (typed != null)
+            {
+                items[index] = typed;
+                return typed;
+            }
+            // Abstract element type: store unchecked rather than leave the slot
+            // null, which would shift every later reference (UUM-150957).
+            ref byte elemAddr = ref Unsafe.AddByteOffset(
+                ref Unsafe.As<ObjectWrapper>((object)items).Data,
+                LayoutFacts.ArrayDataOffset + (nint)index * IntPtr.Size);
+            Unsafe.As<byte, object>(ref elemAddr) = obj;
+        }
+        return obj;
+    }
+
+    // The abstract check lives here because the other construction paths in this
+    // file are only ever reached with a registered, therefore concrete, type.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe object CreateVrtInstance(
+        IntPtr runtimeTypeHandle, IntPtr ctorFunctionPtr, bool callerHandlesNull)
+    {
         Type type = UnmarshalSystemType(runtimeTypeHandle);
         if (type == null)
             return null;
+        // Only the gather's callers skip the subtree on null. The two ValueReference
+        // executor call sites dereference the result, so they keep the null set they
+        // had before the abstract arm existed: a handle that fails to unmarshal.
+        if (callerHandlesNull && type.IsAbstract)
+        {
+            ReportAbstractVrtType(type);
+            return null;
+        }
         // ctorFunctionPtr is baked at build time on every backend (see
         // CreateWrapperInstance); zero means the type has no parameterless ctor.
-        obj = RuntimeHelpers.GetUninitializedObject(type);
+        object obj = RuntimeHelpers.GetUninitializedObject(type);
         if (ctorFunctionPtr != IntPtr.Zero)
         {
             try
@@ -1847,7 +1926,43 @@ internal static unsafe class SerializationBackendManagedCommands
                 Debug.LogException(e);
             }
         }
-        slot = obj;
+        return obj;
+    }
+
+    // Unreachable today; a silent return would desynchronize the write pass (UUM-150957).
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ReportAbstractVrtType(Type type)
+    {
+        var e = new InvalidOperationException(
+            $"Serialization gather cannot materialize a by-value instance of abstract type {type}.");
+        Debug.LogException(e);
+    }
+
+    // Reflection: the command stream carries no handle or ctor for the array's own element type.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object CreateArrayElementInstance(Type elementType)
+    {
+        if (elementType == null || elementType.IsAbstract || elementType.IsValueType)
+            return null;
+        object obj = RuntimeHelpers.GetUninitializedObject(elementType);
+        ConstructorInfo ctor = elementType.GetConstructor(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            null, Type.EmptyTypes, null);
+        if (ctor != null)
+        {
+            try
+            {
+                ctor.Invoke(obj, null);
+            }
+            catch (TargetInvocationException e)
+            {
+                Debug.LogException(e.InnerException ?? e);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
         return obj;
     }
 
@@ -1896,7 +2011,8 @@ internal static unsafe class SerializationBackendManagedCommands
         else
         {
             // Class: ObjectWrapper.Data is the offset-zero reference for nested fieldOffsets.
-            object obj = GetOrCreateVrtInstance(ref baseAddr, header->fieldOffset, header->runtimeTypeHandle, header->ctorFunctionPtr);
+            object obj = GetOrCreateVrtInstance(ref baseAddr, header->fieldOffset, header->runtimeTypeHandle, header->ctorFunctionPtr,
+                callerHandlesNull: false);
             fixed (byte* nestedBase = &Unsafe.As<ObjectWrapper>(obj).Data)
             {
                 ExecuteWriteCommands(ctx, (IntPtr)nestedBase,
@@ -2241,13 +2357,8 @@ internal static unsafe class SerializationBackendManagedCommands
         pos += sizeof(GatherRecurseClassEntry);
         byte* nestedEnd = pos + nestedBytes;
 
-        // Reuse VRT's materialize-if-null helper — same field set
-        // (fieldOffset / runtimeTypeHandle / ctorFunctionPtr), same behavior
-        // (writes back to the field slot so the materialized instance shows
-        // up in the user's data the same way the write transfer would
-        // materialize a null class field). GetOrCreateVrtInstance returns
-        // null only when UnmarshalSystemType fails (no runtimeTypeHandle).
-        object obj = GetOrCreateVrtInstance(ref baseAddr, fieldOffset, rth, cfp);
+        // Null returns for a missing or abstract type; CreateVrtInstance reports the latter.
+        object obj = GetOrCreateVrtInstance(ref baseAddr, fieldOffset, rth, cfp, callerHandlesNull: true);
         if (obj == null)
         {
             pos = nestedEnd;
@@ -2298,6 +2409,8 @@ internal static unsafe class SerializationBackendManagedCommands
         var entry = (GatherRecurseClassArrayEntry*)pos;
         uint nestedBytes = entry->nestedByteCount;
         uint fieldOffset = entry->fieldOffset;
+        IntPtr rth = entry->runtimeTypeHandle;
+        IntPtr cfp = entry->ctorFunctionPtr;
         pos += sizeof(GatherRecurseClassArrayEntry);
         byte* nestedStart = pos;
         byte* nestedEnd = nestedStart + nestedBytes;
@@ -2310,18 +2423,12 @@ internal static unsafe class SerializationBackendManagedCommands
             return;
         }
 
-        // Null elements are skipped, NOT materialized: a null element
-        // serializes as an empty/default container slot on disk with no live
-        // SerializeReference refs, and missing-type entries can only exist at
-        // paths the previous write actually traversed — which the legacy
-        // RemapPPtrTransfer walk also skipped for null elements. Materializing
-        // here would mutate the user's data (arr[i] no longer null) and waste
-        // work walking a default-initialized instance that has nothing the
-        // accumulator hasn't already seen via real refs.
+        // The write side instantiates null elements too, and each consumes an
+        // inline-RefId slot per [SerializeReference] site (UUM-150957).
         int nestedDepth = indexDepth < kMaxGatherIndexDepth ? indexDepth + 1 : indexDepth;
         for (int e = 0; e < arr.Length; e++)
         {
-            object elem = arr[e];
+            object elem = GetOrCreateVrtElement(arr, e, rth, cfp);
             if (elem == null)
                 continue;
             if (indexDepth < kMaxGatherIndexDepth)
@@ -2334,9 +2441,6 @@ internal static unsafe class SerializationBackendManagedCommands
                     emitCallbacks, collectMissingTypes, indexStack, nestedDepth);
             }
         }
-        // Always end at nestedEnd, even if no element was walked (all null).
-        // Skipping nested bytes is just pointer advancement — no need to walk
-        // entry-by-entry now that the byte size is stored.
         pos = nestedEnd;
     }
 
@@ -2349,6 +2453,8 @@ internal static unsafe class SerializationBackendManagedCommands
         var entry = (GatherRecurseClassListEntry*)pos;
         uint nestedBytes = entry->nestedByteCount;
         uint fieldOffset = entry->fieldOffset;
+        IntPtr rth = entry->runtimeTypeHandle;
+        IntPtr cfp = entry->ctorFunctionPtr;
         pos += sizeof(GatherRecurseClassListEntry);
         byte* nestedStart = pos;
         byte* nestedEnd = nestedStart + nestedBytes;
@@ -2370,11 +2476,11 @@ internal static unsafe class SerializationBackendManagedCommands
         }
         object[] items = Unsafe.As<byte[], object[]>(ref itemsBytes);
 
-        // Null elements skipped — see RecurseClassArray for rationale.
+        // Null elements materialized — see RecurseClassArray.
         int nestedDepth = indexDepth < kMaxGatherIndexDepth ? indexDepth + 1 : indexDepth;
         for (int e = 0; e < size; e++)
         {
-            object elem = items[e];
+            object elem = GetOrCreateVrtElement(items, e, rth, cfp);
             if (elem == null)
                 continue;
             if (indexDepth < kMaxGatherIndexDepth)
@@ -4439,7 +4545,8 @@ internal static unsafe class SerializationBackendManagedCommands
         else
         {
             // Class: `fixed` pins the inner instance across native P/Invokes in the recursion.
-            object obj = GetOrCreateVrtInstance(ref baseAddr, header->fieldOffset, header->runtimeTypeHandle, header->ctorFunctionPtr);
+            object obj = GetOrCreateVrtInstance(ref baseAddr, header->fieldOffset, header->runtimeTypeHandle, header->ctorFunctionPtr,
+                callerHandlesNull: false);
             fixed (byte* nestedBase = &Unsafe.As<ObjectWrapper>(obj).Data)
             {
                 int innerSegmentSize = 0;

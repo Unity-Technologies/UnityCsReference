@@ -308,6 +308,26 @@ namespace Unity.Hierarchy.Editor
         /// This event provides the same functionality as <see cref="HierarchyNodeTypeHandler.OnBindView(HierarchyView)"/>
         /// but at the window level for global customization. Use <see cref="UnbindView"/> for symmetric cleanup.
         /// </remarks>
+        /// <example>
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses `BindView` to register a handler that adds connector lines with hover highlighting and click-to-collapse functionality. 
+        ///
+        /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
+        ///
+        /// To use this example, save the script and USS files in a folder called `Assets/Editor/Connectors`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_dark.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_dark.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_light.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_light.uss"/>
+        /// </example>
         [AutoStaticsCleanupOnCodeReload]
         public static event BindViewEventHandler BindView;
 
@@ -319,20 +339,69 @@ namespace Unity.Hierarchy.Editor
         /// This event provides the same functionality as <see cref="HierarchyNodeTypeHandler.OnUnbindView(HierarchyView)"/>
         /// but at the window level for global cleanup.
         /// </remarks>
+        /// <example>
+        /// The following example draws visual connector lines in the Hierarchy window to show the parent and child relationships between GameObjects. It uses `UnbindView` to clean up the per-view handler registered by `BindView`. 
+        ///
+        /// The example requires three USS files: `Connectors.uss` for the base styles, `Connectors_dark.uss` for the Dark theme, and `Connectors_light.uss` for the Light theme.
+        ///
+        /// To use this example, save the script and USS files in a folder called `Assets/Editor/Connectors`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_dark.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_dark.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `Connectors_light.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/Connectors/Connectors_light.uss"/>
+        /// </example>
         [AutoStaticsCleanupOnCodeReload]
         public static event UnbindViewEventHandler UnbindView;
 
         /// <summary>
         /// Raised when a <see cref="HierarchyViewItem"/> is bound to a <see cref="HierarchyView"/>. Use this event to customize the view item.
         /// </summary>
+        /// <example>
+        /// The following example changes the icon a GameObject uses in the Hierarchy window if it has a specified tag. It uses `BindViewItem` to register a handler that customizes each item as the window binds it, and applies a custom USS icon class to GameObjects with the `Favorite` tag. 
+        ///
+        /// The example requires a USS file called `ChangeNodeIcon.uss` and a tag called `Favorite`.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/ChangeNodeIcon`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Copy the styles from the USS example on this page. Save them in a USS file called `ChangeNodeIcon.uss` in the same `Assets/Editor/ChangeNodeIcon` folder. 
+        ///3. Create a tag called `Favorite`: select a GameObject, open the **Tag** dropdown in the **Inspector** window, and select **Add Tag**.
+        ///4. Assign the `Favorite` tag to a GameObject to change the icon it displays.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeNodeIcon/ChangeNodeIcon.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `ChangeNodeIcon.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/ChangeNodeIcon/ChangeNodeIcon.uss"/>
+        /// </example>
         [AutoStaticsCleanupOnCodeReload]
         public static event BindViewItemEventHandler BindViewItem;
 
         /// <summary>
         /// Raised when a <see cref="HierarchyViewItem"/> is unbound from a <see cref="HierarchyView"/>. Use this event to clean up the view item.
-        /// Note that hierarchy view items are recycled by handler, so unbinding doesn't mean destruction. For performance reasons, the recommended best practice is
+        /// Note that hierarchy view items are recycled by their handler, so unbinding doesn't mean destruction. For performance reasons, the recommended best practice is
         /// to not undo styles or modifications done during binding in this unbind event.
         /// </summary>
+        /// <example>
+        /// The following example adds a button next to a GameObject in the Hierarchy window if that GameObject is a prefab instance. You can select the button to locate and highlight the prefab asset in the **Project** window. It uses `UnbindViewItem` to remove custom buttons added to `HierarchyViewItem.RightCustomContainer` during binding, because view items are pooled and reused. 
+        ///
+        /// The example requires a USS file called `PrefabActionButtons.uss`.
+        /// To use this example, save the script and USS file in a folder called `Assets/Editor/PrefabActionButtons`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/PrefabActionButtons/PrefabActionButtons.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `PrefabActionButtons.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/PrefabActionButtons/PrefabActionButtons.uss"/>
+        /// </example>
         [AutoStaticsCleanupOnCodeReload]
         public static event UnbindViewItemEventHandler UnbindViewItem;
 
@@ -343,6 +412,10 @@ namespace Unity.Hierarchy.Editor
         /// This callback receives the <see cref="HierarchyViewItem"/> to create the context menu for and the <see cref="DropdownMenu"/> to populate.
         /// If the user right-clicks in empty space, the callback receives null for the view item.
         /// </remarks>
+        /// <example>
+        /// The following example creates a context menu item that collapses all nodes in the Hierarchy window except the paths to the selected items. The action appears in the **Hierarchy Samples** submenu of the context menu. It uses `PopulateContextMenu` to add the context menu action.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CollapseOthers/CollapseOthers.cs"/>
+        /// </example>
         [AutoStaticsCleanupOnCodeReload]
         public static event PopulateContextMenuEventHandler PopulateContextMenu;
 
@@ -353,6 +426,29 @@ namespace Unity.Hierarchy.Editor
         /// This callback receives the <see cref="HierarchyViewItem"/> to get the tooltip for, the
         /// StringBuilder to build the tooltip, and whether the <see cref="HierarchyView"/> is being filtered.
         /// </remarks>
+        /// <example>
+        /// The following example adds a custom tooltip that displays in the Hierarchy window when you hover over any GameObject that has a custom component named `Notes` attached to it. It uses `GetTooltip` to display the text of the `Notes` component as the tooltip. The example requires a USS file called `CustomTooltip.uss` and a custom MonoBehaviour script called `Notes.cs`.
+        ///
+        /// To use this example:
+        ///
+        ///1. Save the script in a folder called `Assets/Editor/CustomTooltip`. Scripts in an `Editor` folder can use the Hierarchy module API without additional setup. If you save the script outside of an `Editor` folder, you must enable the Hierarchy built-in module in the **Package Manager** window, which also adds the module to your Player builds.
+        ///2. Copy the styles from the USS example on this page. Save them in a USS file called `CustomTooltip.uss` in the same `Assets/Editor/CustomTooltip` folder. 
+        ///3. Save the `Notes.cs` script outside of the `Editor` folder, because MonoBehaviour scripts in an `Editor` folder can't be attached to GameObjects.
+        ///4. Add the `Notes` component to a GameObject.
+        ///5. In the **Inspector** window, enter text in the **Note** field of the `Notes` component.
+        ///6. In the Hierarchy window, hover over the name of the GameObject to display the text as a tooltip. A small overlay indicator also displays in the corner of the icon of any GameObject that has a note.
+        ///
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CustomTooltip/CustomTooltip.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to style `CustomTooltip.uss`.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Editor/CustomTooltip/CustomTooltip.uss"/>
+        /// </example>
+        /// <example>
+        /// The following example shows the `Notes` component that the CustomTooltip example uses.
+        /// <code source="../../../Tests/EditModeAndPlayModeTests/HierarchySamples/Assets/Runtime/Notes.cs"/>
+        /// </example>
+
         [AutoStaticsCleanupOnCodeReload]
         public static event GetTooltipEventHandler GetTooltip;
 
@@ -1127,6 +1223,8 @@ namespace Unity.Hierarchy.Editor
             {
                 case KeyCode.UpArrow:
                 case KeyCode.DownArrow:
+                case KeyCode.LeftArrow:
+                case KeyCode.RightArrow:
                 case KeyCode.Home:
                 case KeyCode.End:
                 case KeyCode.PageUp:

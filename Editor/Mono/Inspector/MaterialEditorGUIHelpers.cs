@@ -138,6 +138,7 @@ namespace UnityEditor
                 bool enableInstancing = EditorGUI.Toggle(r, Styles.enableInstancingLabel, (targets[0] as Material).enableInstancing);
                 if (scope.changed)
                 {
+                    RegisterPropertyChangeUndo("GPU Instancing");
                     foreach (Material material in targets)
                         material.enableInstancing = enableInstancing;
                 }
@@ -161,6 +162,7 @@ namespace UnityEditor
             bool doubleSidedGI = EditorGUI.Toggle(r, Styles.doubleSidedGILabel, (targets[0] as Material).doubleSidedGI);
             if (EditorGUI.EndChangeCheck())
             {
+                RegisterPropertyChangeUndo("Double Sided Global Illumination");
                 foreach (Material material in targets)
                     material.doubleSidedGI = doubleSidedGI;
             }

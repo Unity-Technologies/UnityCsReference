@@ -152,7 +152,7 @@ namespace UnityEditor.UIElements.Debugger
 
         private void RefreshFields()
         {
-            if (m_SelectedElement == null)
+            if (!m_SelectedElement.IsLive())
                 return;
 
             FindInlineStyles();

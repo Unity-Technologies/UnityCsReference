@@ -912,18 +912,9 @@ namespace UnityEditor
 
                 private static class Styles
                 {
-                    internal static GUIStyle lineStyleFaint = new GUIStyle("DD ItemStyle");
-                    internal static GUIStyle checkMark = "DD ItemCheckmark";
-                    public static GUIContent checkMarkContent = new GUIContent("✔");
-
-                    static Styles()
-                    {
-                        float val = EditorGUIUtility.isProSkin ? 0.5f : 0.25f;
-                        lineStyleFaint.active.textColor = new Color(val, val, val, 1f);
-                        lineStyleFaint.focused.textColor = new Color(val, val, val, 1f);
-                        lineStyleFaint.hover.textColor = new Color(val, val, val, 1f);
-                        lineStyleFaint.normal.textColor = new Color(val, val, val, 1f);
-                    }
+                    internal static GUIStyle lineStyleFaint => EditorStyles.advancedDropdownItemFaint;
+                    internal static GUIStyle checkMark => EditorStyles.advancedDropdownCheckmark;
+                    public static readonly GUIContent checkMarkContent = new GUIContent("✔");
                 }
 
                 internal override void DrawItem(AdvancedDropdownItem item, string name, Texture2D icon, bool enabled, bool drawArrow, bool selected, bool hasSearch)

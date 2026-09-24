@@ -371,6 +371,9 @@ namespace UnityEditor.UIElements.Debugger
 
     internal static class UIElementsDebuggerExtension
     {
+        // ReleaseResources flips a flag rather than replacing the element, so nothing notifies the debugger that its selection died.
+        public static bool IsLive(this VisualElement element) => element is { resourcesReleased: false };
+
         public static VisualElement GetRootVisualElement(this IPanel panel)
         {
             if (panel == null)
@@ -391,10 +394,7 @@ namespace UnityEditor.UIElements.Debugger
                 return -1;
 
             int index = 0;
-            var visualTree = panel.visualTree;
-            RecurseVisualElementIndex(visualTree, ve, ref index);
-
-            return index;
+            return RecurseVisualElementIndex(panel.visualTree, ve, ref index) ? index : -1;
         }
 
         public static VisualElement FindVisualElementByIndex(this IPanel panel, int index)

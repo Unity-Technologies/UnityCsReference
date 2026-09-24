@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
 using UnityEngine.TextCore.Text;
@@ -62,6 +63,21 @@ namespace UnityEngine.UIElements.StyleSheets
         internal delegate int GetCursorIdFunction(StyleSheet sheet, StyleValueHandle handle);
 
         internal static GetCursorIdFunction getCursorIdFunc = null;
+
+        // Styles re-resolve on every hover/layout/animation change, so a missing asset baked into a
+        // sheet would otherwise warn on each pass. A reimport reuses the sheet's EntityId and so
+        // stays deduped here; the importer logs its own warning for every import.
+        [NoAutoStaticsCleanup]
+        static HashSet<(EntityId sheet, string url)> s_WarnedMissingAssets;
+
+        static void WarnMissingAssetOnce(StyleSheet sheet, string format, string url)
+        {
+            s_WarnedMissingAssets ??= new HashSet<(EntityId, string)>();
+            if (!s_WarnedMissingAssets.Add((sheet.GetEntityId(), url)))
+                return;
+
+            Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, format, url, sheet.name), sheet);
+        }
 
         private List<StylePropertyValue> m_Values = new List<StylePropertyValue>();
         private List<int> m_ValueCount = new List<int>();
@@ -296,9 +312,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.MissingAssetReference:
                 {
                     var missingAssetUrl = value.sheet.ReadMissingAssetReferenceUrl(value.handle);
-                    Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
+                    WarnMissingAssetOnce(value.sheet,
                         "Missing font asset reference '{0}' in stylesheet '{1}'. The font asset may have been deleted or moved.",
-                        missingAssetUrl, value.sheet.name), value.sheet);
+                        missingAssetUrl);
                     break;
                 }
 
@@ -362,9 +378,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 case StyleValueType.MissingAssetReference:
                 {
                     var missingAssetUrl = value.sheet.ReadMissingAssetReferenceUrl(value.handle);
-                    Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
+                    WarnMissingAssetOnce(value.sheet,
                         "Missing asset reference '{0}' in stylesheet '{1}'. The asset may have been deleted or moved.",
-                        missingAssetUrl, value.sheet.name), value.sheet);
+                        missingAssetUrl);
                     break;
                 }
 

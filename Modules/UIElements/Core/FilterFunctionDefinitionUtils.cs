@@ -344,8 +344,10 @@ namespace UnityEngine.UIElements
         static void ApplyBlurSettings(MaterialPropertyBlock mpb, FilterPassContext context)
         {
             float sigma = Math.Max(0.0f, context.filterFunction.parameters[0].floatValue);
-            // Scale the sigma by DPI to maintain consistent blur radius across different DPI settings
-            float scaledSigma = sigma * context.scaledPixelsPerPoint;
+            // Pass 0 blurs horizontally, pass 1 vertically: each takes its own points-to-pixels axis,
+            // so a non-uniform content scale yields the matching elliptical Gaussian.
+            var ppp = context.perAxisScaledPixelsPerPoint;
+            float scaledSigma = sigma * (context.filterPassIndex == 0 ? ppp.x : ppp.y);
             mpb.SetFloat("_Sigma", scaledSigma);
         }
 
@@ -366,7 +368,9 @@ namespace UnityEngine.UIElements
         static void ApplyDropShadowBlurSettings(MaterialPropertyBlock mpb, FilterPassContext context)
         {
             float sigma = Math.Max(0.0f, context.filterFunction.parameters[2].floatValue);
-            float scaledSigma = sigma * context.scaledPixelsPerPoint;
+            // Pass 0 = horizontal, pass 1 = vertical (see ApplyBlurSettings).
+            var ppp = context.perAxisScaledPixelsPerPoint;
+            float scaledSigma = sigma * (context.filterPassIndex == 0 ? ppp.x : ppp.y);
             mpb.SetFloat("_Sigma", scaledSigma);
         }
 
@@ -406,9 +410,11 @@ namespace UnityEngine.UIElements
             float oy = func.parameters[1].floatValue;
             Color color = func.parameters[3].colorValue;
 
-            // Offset is in points; the shader expects physical pixels (it converts to UV via _MainTex_TexelSize).
-            float scale = context.scaledPixelsPerPoint;
-            mpb.SetVector("_ShadowOffset", new Vector4(ox * scale, oy * scale, 0, 0));
+            // Offset is in points; the shader expects physical pixels (it converts to UV via
+            // _MainTex_TexelSize). Per-axis: a translation routed through the scalar approximation
+            // would visibly misplace the shadow under a non-uniform content scale.
+            var scale = context.perAxisScaledPixelsPerPoint;
+            mpb.SetVector("_ShadowOffset", new Vector4(ox * scale.x, oy * scale.y, 0, 0));
 
             if (!context.readsGamma)
                 color = color.linear;

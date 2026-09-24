@@ -17,6 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action onOrganizationsChange;
         bool isUserInfoReady { get; }
         bool isUserLoggedIn { get; }
+        string projectOrgName { get; }
         string userPrimaryOrg { get; }
         string displayName { get; }
         string GetConfigurationURL(CloudConfigUrl config);
@@ -100,6 +101,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action onOrganizationsChange = delegate {};
         public bool isUserInfoReady => m_IsUserInfoReady;
         public bool isUserLoggedIn => m_IsUserInfoReady && m_HasAccessToken;
+        public string projectOrgName => UnityConnect.instance.projectInfo.organizationName;
         public string userPrimaryOrg => m_UserPrimaryOrg;
         public string displayName => m_DisplayName;
 

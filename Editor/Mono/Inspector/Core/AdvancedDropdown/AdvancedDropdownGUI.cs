@@ -16,14 +16,13 @@ namespace UnityEditor.IMGUI.Controls
     {
         private static class Styles
         {
-            public static readonly GUIStyle itemStyle = "DD ItemStyle";
-            public static readonly GUIStyle header = "DD HeaderStyle";
-            [NoAutoStaticsCleanup] // mutated in static ctor (padding/clipping), cannot be readonly
-            public static GUIStyle headerEllipsis = "DD HeaderStyle";
-            public static readonly GUIStyle checkMark = "DD ItemCheckmark";
-            public static readonly GUIStyle lineSeparator = "DefaultLineSeparator";
-            public static readonly GUIStyle rightArrow = "ArrowNavigationRight";
-            public static readonly GUIStyle leftArrow = "ArrowNavigationLeft";
+            public static GUIStyle itemStyle => EditorStyles.advancedDropdownItem;
+            public static GUIStyle header => EditorStyles.advancedDropdownHeader;
+            public static GUIStyle headerEllipsis => EditorStyles.advancedDropdownHeader;
+            public static GUIStyle checkMark => EditorStyles.advancedDropdownCheckmark;
+            public static GUIStyle lineSeparator => EditorStyles.defaultLineSeparator;
+            public static GUIStyle rightArrow => EditorStyles.arrowNavigationRight;
+            public static GUIStyle leftArrow => EditorStyles.arrowNavigationLeft;
             public static readonly GUIStyle searchFieldStyle = new GUIStyle(EditorStyles.toolbarSearchField)
             {
                 margin = new RectOffset(5, 4, 4, 5)
@@ -39,8 +38,6 @@ namespace UnityEditor.IMGUI.Controls
 
             static Styles()
             {
-                headerEllipsis.padding.left = 20;
-                headerEllipsis.clipping = TextClipping.Ellipsis;
                 helpBox = new GUIStyle(EditorStyles.helpBox)
                 {
                     padding = new RectOffset(8, 8, 8, 8),

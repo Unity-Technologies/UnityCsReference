@@ -220,17 +220,19 @@ namespace UnityEngine.UIElements.UIR
 
             // UV corners depend on world transform; UIRRepaintUpdater forces a visuals-changed
             // event for transform changes on backdrop-filter elements to keep these in sync.
-            BackdropFilterHelper.UpdateBackdropFilterUVCorners(ve, renderData);
+            ExtraRenderData backdrop = m_RenderTreeManager.GetExtraData(renderData);
+            if (!BackdropFilterHelper.UpdateBackdropFilterUVCorners(ve, renderData, backdrop))
+                return;
 
             var veRect = new Rect(0, 0, veSize.x, veSize.y);
 
             // Only the extents are consumed, so map the size directly: the render-time rect mapping
             // reads the active viewport, which means nothing during mesh generation.
-            Rect worldBound = ve.worldBound;
+            Rect recordedRect = backdrop.backdropFilterRecordedRect;
             float pixelsPerPoint = ve.scaledPixelsPerPoint;
             var texSize = new Vector2(
-                Mathf.RoundToInt(worldBound.width * pixelsPerPoint),
-                Mathf.RoundToInt(worldBound.height * pixelsPerPoint));
+                Mathf.RoundToInt(recordedRect.width * pixelsPerPoint),
+                Mathf.RoundToInt(recordedRect.height * pixelsPerPoint));
 
             var rectParams = new MeshGenerator.RectangleParams
             {
@@ -243,10 +245,10 @@ namespace UnityEngine.UIElements.UIR
                 scaleMode = ScaleMode.StretchToFill,
                 playmodeTintColor = ve.playModeTintColor,
                 // Set UV corners for proper rotation support via bilinear interpolation
-                uvTopLeft = renderData.backdropFilterUVTopLeft,
-                uvTopRight = renderData.backdropFilterUVTopRight,
-                uvBottomRight = renderData.backdropFilterUVBottomRight,
-                uvBottomLeft = renderData.backdropFilterUVBottomLeft,
+                uvTopLeft = backdrop.backdropFilterUVTopLeft,
+                uvTopRight = backdrop.backdropFilterUVTopRight,
+                uvBottomRight = backdrop.backdropFilterUVBottomRight,
+                uvBottomLeft = backdrop.backdropFilterUVBottomLeft,
                 uvCornersValid = true
             };
 
@@ -280,7 +282,7 @@ namespace UnityEngine.UIElements.UIR
             }
 
             // Draw using TextureId directly (texture will be bound during command execution by GenerateBackdropFilterTexture)
-            mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, renderData.backdropFilterTextureId, false);
+            mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, backdrop.backdropFilterTextureId, false);
         }
 
         protected override void DrawVisualElementBackground(MeshGenerationContext mgc)

@@ -1375,6 +1375,12 @@ namespace UnityEditor
 
         internal void SaveProfilingData()
         {
+            // Matches the toolbar Save button's disabled state: an empty recording has no
+            // frame data for ProfilerDriver.SaveProfile to serialize, producing a capture file
+            // that cannot be loaded back.
+            if (!ProfilerHasAnyFrames())
+                return;
+
             var dateString = DateTime.Now.ToLocalTime().ToString("yyyy-MM-dd_HH-mm-ss", System.Globalization.CultureInfo.InvariantCulture);
             var prodName = Application.productName;
 

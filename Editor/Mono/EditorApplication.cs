@@ -131,7 +131,6 @@ namespace UnityEditor
             foreach (var evt in m_QuittingEvent)
                 evt();
             editorApplicationQuit?.Invoke();
-            ScriptCompilers.Cleanup();
         }
 
         // Delegate to be called for every visible list item in the ProjectWindow on every OnGUI event.

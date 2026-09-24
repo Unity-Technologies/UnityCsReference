@@ -368,6 +368,19 @@ namespace UnityEngine.UIElements.UIR
                 RenderTreeAtlas.AtlasBlock block;
                 if (RenderTreeAtlas.ReserveSize(width, height, out block))
                 {
+                    // A clamped reserve squeezes the content; rescale the read-margin offsets to match (UUM-147797)
+                    if (op.parent.type == DrawOperationType.Effect && (block.width < width || block.height < height))
+                    {
+                        var texOffsets = op.parent.drawSourceTexOffsets;
+                        float scaleX = block.width / (float)width;
+                        float scaleY = block.height / (float)height;
+                        op.parent.drawSourceTexOffsets = new Vector4(
+                            texOffsets.x * scaleX,
+                            texOffsets.y * scaleY,
+                            texOffsets.z * scaleX,
+                            texOffsets.w * scaleY);
+                    }
+
                     op.dstAtlasBlock = block;
                     if (op.parent.type == DrawOperationType.RenderTree)
                     {

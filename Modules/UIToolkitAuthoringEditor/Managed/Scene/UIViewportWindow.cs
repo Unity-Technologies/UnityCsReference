@@ -92,7 +92,7 @@ partial class UIViewportWindow : EditorWindow
             if (m_StageId == value)
                 return;
 
-            ReleaseStage(m_StageId);
+            ReleaseStage();
             m_StageId = value;
             AcquireStage(m_StageId);
         }
@@ -155,7 +155,7 @@ partial class UIViewportWindow : EditorWindow
 
     void OnDestroy()
     {
-        ReleaseStage(StageId);
+        ReleaseStage();
     }
 
     void OnStageChanged(Stage stage)
@@ -274,8 +274,12 @@ partial class UIViewportWindow : EditorWindow
             m_Canvas.PanelElement.ThemeStyleSheet = null;
     }
 
-    void ReleaseStage(EntityId stageId)
+    void ReleaseStage()
     {
+        // The window can be destroyed before CreateGUI runs, for example while a window layout is loaded.
+        if (m_Canvas == null)
+            return;
+
         m_Canvas.DestroySettingsPermanently();
         ClearThemeMenu();
 

@@ -539,7 +539,15 @@ namespace UnityEngine.UIElements
             {
                 if (panelDebug != null)
                 {
-                    panelDebug.DetachAllDebuggers();
+                    try
+                    {
+                        panelDebug.DetachAllDebuggers();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
+
                     panelDebug = null;
                 }
                 if (ownerObject != null)
