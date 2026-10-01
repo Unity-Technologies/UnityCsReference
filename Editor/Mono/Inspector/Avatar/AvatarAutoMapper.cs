@@ -216,7 +216,31 @@ namespace UnityEditor
 
         private Dictionary<string, int> m_BoneHasKeywordDict;
         private Dictionary<string, int> m_BoneHasBadKeywordDict;
-        private Dictionary<int, BoneMatch> m_BoneMatchDict;
+
+        struct BoneMatchKey : IEquatable<BoneMatchKey>
+        {
+            public int boneIndex;
+            public EntityId transformId;
+            public EntityId parentId;
+            public EntityId grandParentId;
+
+            public bool Equals(BoneMatchKey other)
+            {
+                return boneIndex == other.boneIndex && transformId.Equals(other.transformId) && parentId.Equals(other.parentId) && grandParentId.Equals(other.grandParentId);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is BoneMatchKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(boneIndex, transformId, parentId, grandParentId);
+            }
+        }
+
+        private Dictionary<BoneMatchKey, BoneMatch> m_BoneMatchDict;
 
         private static int GetLeftBoneIndexFromRight(int rightIndex)
         {
@@ -280,7 +304,7 @@ namespace UnityEditor
         {
             m_BoneHasKeywordDict = new Dictionary<string, int>();
             m_BoneHasBadKeywordDict = new Dictionary<string, int>();
-            m_BoneMatchDict = new Dictionary<int, BoneMatch>();
+            m_BoneMatchDict = new Dictionary<BoneMatchKey, BoneMatch>();
             m_ValidBones = validBones;
         }
 
@@ -529,19 +553,21 @@ namespace UnityEditor
             return 0;
         }
 
-        private int GetMatchKey(BoneMatch parentMatch, Transform t, BoneMappingItem goalItem)
+        private BoneMatchKey GetMatchKey(BoneMatch parentMatch, Transform t, BoneMappingItem goalItem)
         {
             SimpleProfiler.Begin("GetMatchKey");
-            int key = goalItem.bone;
-            key += t.GetEntityId().GetHashCode() * 1000;
-            if (parentMatch != null)
-            {
-                key += parentMatch.bone.GetEntityId().GetHashCode() * 1000000;
-                if (parentMatch.parent != null)
-                    key += parentMatch.parent.bone.GetEntityId().GetHashCode() * 1000000000;
-            }
+            var tId = t.GetEntityId();
+            var parentId = parentMatch?.bone.GetEntityId() ?? EntityId.None;
+            var grandparentId = parentMatch?.parent?.bone.GetEntityId() ?? EntityId.None;
             SimpleProfiler.End();
-            return key;
+
+            return new BoneMatchKey
+            {
+                boneIndex = goalItem.bone,
+                transformId = tId,
+                parentId = parentId,
+                grandParentId = grandparentId
+            };
         }
 
         // Returns possible matches sorted with best-scoring ones first in the list
@@ -560,13 +586,8 @@ namespace UnityEditor
                 Transform t = current.bone;
                 if (current.level >= goalItem.minStep && (m_TreatDummyBonesAsReal || m_ValidBones == null || (m_ValidBones.ContainsKey(t) && m_ValidBones[t])))
                 {
-                    BoneMatch match;
                     var key = GetMatchKey(parentMatch, t, goalItem);
-                    if (m_BoneMatchDict.ContainsKey(key))
-                    {
-                        match = m_BoneMatchDict[key];
-                    }
-                    else
+                    if (!m_BoneMatchDict.TryGetValue(key, out var match))
                     {
                         match = new BoneMatch(parentMatch, t, goalItem);
 

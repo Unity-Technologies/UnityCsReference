@@ -10,8 +10,18 @@ namespace Unity.Multiplayer.PlayMode.Editor
 {
     internal static class MultiplayerStatusToolbarUtilities
     {
-        internal static MainToolbarContent GetStatusDropdownContent()
+        const string k_InvalidConfigurationLabel = "Setup required";
+        const string k_InvalidConfigurationTooltip = "This Scenario is not setup properly. Use the Play Mode Scenarios window to fix the issues.";
+
+        internal static MainToolbarContent GetStatusDropdownContent(bool isScenarioValid)
         {
+            // Configuration validity is reported ahead of execution state:
+            // with no valid configuration there is no Scenario to report a state for.
+            if (!isScenarioValid)
+            {
+                return new MainToolbarContent(k_InvalidConfigurationLabel, Icons.GetImage(Icons.ImageName.Warning), k_InvalidConfigurationTooltip);
+            }
+
             var state = ScenarioRunner.GetScenarioStatus();
             var stage = state.CurrentStage;
 

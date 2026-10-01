@@ -1214,6 +1214,9 @@
     <Compile Include="..\..\Modules\HierarchyCore\Managed\HierarchyViewNodesEnumerable.cs">
       <Link>Modules\HierarchyCore\Managed\HierarchyViewNodesEnumerable.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyCore\Managed\IHierarchyNodeTypeHandlerViewModelState.cs">
+      <Link>Modules\HierarchyCore\Managed\IHierarchyNodeTypeHandlerViewModelState.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyCore\Managed\IHierarchyProperty.cs">
       <Link>Modules\HierarchyCore\Managed\IHierarchyProperty.cs</Link>
     </Compile>
@@ -7129,7 +7132,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_rx45m7_d/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_4fjs8mx4/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

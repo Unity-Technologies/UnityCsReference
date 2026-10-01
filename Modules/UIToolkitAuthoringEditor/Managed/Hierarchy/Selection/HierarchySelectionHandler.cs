@@ -75,12 +75,20 @@ internal sealed partial class HierarchySelectionHandler : IVisualElementSelectio
             return;
         }
 
+        // The selection object is being re-associated to a new element, so the edit flags captured when it was
+        // first acquired may no longer apply (e.g. the document was edited and saved in a nested stage before
+        // returning to this one). Recompute them against the current editing context.
+        var editFlags = m_Manager?.GetEditFlags(element) ?? VisualElementEditFlags.None;
+
         if (instance is VisualElementSelection visualElementSelection)
         {
             visualElementSelection.Element?.ClearSelectionObject();
             visualElementSelection.Element = element;
+            visualElementSelection.EditFlags = editFlags;
             element.SetSelectionObject(visualElementSelection);
         }
+
+        instance.IsReadOnly = m_Manager == null || editFlags == VisualElementEditFlags.None;
 
         SelectionMapping[element] = new RefCountedSelection(instance, 1);
     }

@@ -23,16 +23,16 @@ namespace Unity.Hierarchy.Editor
         internal static extern HierarchyNodeType GetNodeType_HierarchySubSceneAuthoringHandler();
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern void SearchBeginNative(HierarchyGameObjectHandler handler, HierarchySearchQueryDescriptor query);
+        internal static extern void SearchBeginNative(HierarchyGameObjectHandler handler, HierarchySearchQueryDescriptor query, HierarchyViewModel viewModel);
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern bool SearchMatchNative(HierarchyGameObjectHandler handler, HierarchyNode node);
+        internal static extern bool SearchMatchNative(HierarchyGameObjectHandler handler, HierarchyNode node, HierarchyViewModel viewModel);
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern void SearchEndNative(HierarchyGameObjectHandler handler);
+        internal static extern void SearchEndNative(HierarchyGameObjectHandler handler, HierarchyViewModel viewModel);
 
         [NativeMethod(IsThreadSafe = true)]
-        internal static extern bool SearchMatchGameObjectNative(HierarchyGameObjectHandler handler, GameObject obj);
+        internal static extern bool SearchMatchGameObjectNative(HierarchyGameObjectHandler handler, GameObject obj, HierarchyViewModel viewModel);
 
         internal static bool IsScenePickingEnable(Scene scene) => SceneVisibilityManager.instance.GetScenePickingState(scene) == SceneVisibilityManager.ScenePickingState.PickingEnabledAll;
 

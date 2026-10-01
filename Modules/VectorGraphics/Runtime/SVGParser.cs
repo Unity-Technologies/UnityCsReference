@@ -532,9 +532,10 @@ namespace Unity.VectorGraphics
 
             var link = node["xlink:href"];
             var refFill = SVGAttribParser.ParseRelativeRef(link, svgObjects) as GradientFill;
-            var refFillData = refFill != null ? gradientExInfo[refFill] as LinearGradientExData : null;
+            var refExData = refFill != null ? gradientExInfo[refFill] as GradientExData : null;
+            var refFillData = refExData as LinearGradientExData;
 
-            bool relativeToWorld = refFillData != null ? refFillData.WorldRelative : false;
+            bool relativeToWorld = refExData != null ? refExData.WorldRelative : false;
             switch (node["gradientUnits"])
             {
                 case null:
@@ -574,7 +575,10 @@ namespace Unity.VectorGraphics
                     throw node.GetUnsupportedAttribValException("spreadMethod");
             }
 
-            var gradientTransform = SVGAttribParser.ParseTransform(node, "gradientTransform");
+            // Per SVG spec, attributes not specified on this element are inherited from the referenced gradient
+            var gradientTransform = node["gradientTransform"] == null && refExData != null
+                ? refExData.FillTransform
+                : SVGAttribParser.ParseTransform(node, "gradientTransform");
 
             GradientFill fill = CloneGradientFill(refFill);
             if (fill == null)
@@ -590,10 +594,10 @@ namespace Unity.VectorGraphics
             // nonetheless to give meaningful error messages to the user if any.
             currentContainerSize.Push(Vector2.one);
 
-            fillExData.X1 = node["x1"];
-            fillExData.Y1 = node["y1"];
-            fillExData.X2 = node["x2"];
-            fillExData.Y2 = node["y2"];
+            fillExData.X1 = node["x1"] ?? refFillData?.X1;
+            fillExData.Y1 = node["y1"] ?? refFillData?.Y1;
+            fillExData.X2 = node["x2"] ?? refFillData?.X2;
+            fillExData.Y2 = node["y2"] ?? refFillData?.Y2;
 
             // The calls below are ineffective but they validate the inputs and throw an error if wrong values are specified, so don't remove them
             AttribLengthVal(fillExData.X1, node, "x1", 0.0f, DimType.Width);
@@ -609,6 +613,7 @@ namespace Unity.VectorGraphics
             if (!string.IsNullOrEmpty(link) && !svgObjects.ContainsKey(link))
             {
                 // Reference may be defined later in the file. Save for postponed processing.
+                // Only the stops are inherited in this case, not the coordinates nor the transform.
                 if (!postponedStopData.ContainsKey(currentGradientLink))
                     postponedStopData.Add(currentGradientLink, new List<PostponedStopData>());
                 postponedStopData[currentGradientLink].Add(new PostponedStopData() { fill = fill });
@@ -776,9 +781,10 @@ namespace Unity.VectorGraphics
 
             var link = node["xlink:href"];
             var refFill = SVGAttribParser.ParseRelativeRef(link, svgObjects) as GradientFill;
-            var refFillData = refFill != null ? gradientExInfo[refFill] as RadialGradientExData : null;
+            var refExData = refFill != null ? gradientExInfo[refFill] as GradientExData : null;
+            var refFillData = refExData as RadialGradientExData;
 
-            bool relativeToWorld = refFillData != null ? refFillData.WorldRelative : false;
+            bool relativeToWorld = refExData != null ? refExData.WorldRelative : false;
             switch (node["gradientUnits"])
             {
                 case null:
@@ -818,7 +824,10 @@ namespace Unity.VectorGraphics
                     throw node.GetUnsupportedAttribValException("spreadMethod");
             }
 
-            var gradientTransform = SVGAttribParser.ParseTransform(node, "gradientTransform");
+            // Per SVG spec, attributes not specified on this element are inherited from the referenced gradient
+            var gradientTransform = node["gradientTransform"] == null && refExData != null
+                ? refExData.FillTransform
+                : SVGAttribParser.ParseTransform(node, "gradientTransform");
 
             GradientFill fill = CloneGradientFill(refFill);
             if (fill == null)
@@ -834,11 +843,11 @@ namespace Unity.VectorGraphics
             // nonetheless to give meaningful error messages to the user if any.
             currentContainerSize.Push(Vector2.one);
 
-            fillExData.Cx = node["cx"];
-            fillExData.Cy = node["cy"];
-            fillExData.Fx = node["fx"];
-            fillExData.Fy = node["fy"];
-            fillExData.R = node["r"];
+            fillExData.Cx = node["cx"] ?? refFillData?.Cx;
+            fillExData.Cy = node["cy"] ?? refFillData?.Cy;
+            fillExData.Fx = node["fx"] ?? refFillData?.Fx;
+            fillExData.Fy = node["fy"] ?? refFillData?.Fy;
+            fillExData.R = node["r"] ?? refFillData?.R;
 
             // The calls below are ineffective but they validate the inputs and throw an error if wrong values are specified, so don't remove them
             AttribLengthVal(fillExData.Cx, node, "cx", 0.5f, DimType.Width);
@@ -855,6 +864,7 @@ namespace Unity.VectorGraphics
             if (!string.IsNullOrEmpty(link) && !svgObjects.ContainsKey(link))
             {
                 // Reference may be defined later in the file. Save for postponed processing.
+                // Only the stops are inherited in this case, not the coordinates nor the transform.
                 if (!postponedStopData.ContainsKey(currentGradientLink))
                     postponedStopData.Add(currentGradientLink, new List<PostponedStopData>());
                 postponedStopData[currentGradientLink].Add(new PostponedStopData() { fill = fill });
@@ -2025,16 +2035,7 @@ namespace Unity.VectorGraphics
             if (fill == null || contours == null || contours.Length == 0)
                 return;
 
-            var min = new Vector2(float.MaxValue, float.MaxValue);
-            var max = new Vector2(-float.MaxValue, -float.MaxValue);
-            foreach (var contour in contours)
-            {
-                var bbox = VectorUtils.Bounds(contour.Segments);
-                min = Vector2.Min(min, bbox.min);
-                max = Vector2.Max(max, bbox.max);
-            }
-
-            Rect bounds = new Rect(min, max - min);
+            var bounds = VectorUtils.Bounds(contours);
 
             GradientExData extInfo = (GradientExData)gradientExInfo[gradientFill];
             var containerSize = nodeGlobalSceneState[node].ContainerSize;
@@ -2062,11 +2063,20 @@ namespace Unity.VectorGraphics
                         AttribLengthVal(linGradEx.Y2, null, null, 0.0f, DimType.Height));
 
                 var gradientVector = lineEnd - lineStart;
-                float gradientVectorInvLength = 1.0f / gradientVector.magnitude;
-                var scale = Matrix2D.Scale(new Vector2(bounds.width * gradientVectorInvLength, bounds.height * gradientVectorInvLength));
-                var rotation = Matrix2D.RotateLH(Mathf.Atan2(gradientVector.y, gradientVector.x));
-                var offset = Matrix2D.Translate(-lineStart);
-                gradTransform = scale * rotation * offset;
+                if (gradientVector.magnitude < VectorUtils.Epsilon)
+                {
+                    // Per SVG spec, a degenerate gradient vector paints with the color of the last stop
+                    var lastStopU = bounds.width > VectorUtils.Epsilon ? bounds.width : 1.0f;
+                    gradTransform = Matrix2D.Translate(new Vector2(lastStopU, 0.0f)) * Matrix2D.Scale(Vector2.zero);
+                }
+                else
+                {
+                    float gradientVectorInvLength = 1.0f / gradientVector.magnitude;
+                    var scale = Matrix2D.Scale(new Vector2(bounds.width * gradientVectorInvLength, bounds.height * gradientVectorInvLength));
+                    var rotation = Matrix2D.RotateLH(Mathf.Atan2(gradientVector.y, gradientVector.x));
+                    var offset = Matrix2D.Translate(-lineStart);
+                    gradTransform = scale * rotation * offset;
+                }
             }
             else if (extInfo is RadialGradientExData)
             {
@@ -2110,7 +2120,12 @@ namespace Unity.VectorGraphics
             currentContainerSize.Pop();
 
             var uvToWorld = extInfo.WorldRelative ? Matrix2D.Translate(bounds.min) * Matrix2D.Scale(bounds.size) : Matrix2D.identity;
-            var boundsInv = new Vector2(1.0f / bounds.width, 1.0f / bounds.height);
+
+            // A degenerate bounds dimension (e.g. a straight-line contour with a gradient stroke)
+            // maps to a constant UV instead of dividing by zero
+            var boundsInv = new Vector2(
+                bounds.width > VectorUtils.Epsilon ? 1.0f / bounds.width : 1.0f,
+                bounds.height > VectorUtils.Epsilon ? 1.0f / bounds.height : 1.0f);
             computedTransform = Matrix2D.Scale(boundsInv) * gradTransform * extInfo.FillTransform.Inverse() * uvToWorld;
         }
 

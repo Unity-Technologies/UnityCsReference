@@ -47,22 +47,29 @@ namespace UnityEditor.Connect
             // via the panel-aware helper, then pre-invert so the internal conversion cancels.
             var screenRect = EditorMenuExtensions.GUIToScreenRect(this, input.worldBound);
             var anchor = GUIUtility.ScreenToGUIRect(screenRect);
-            new SearchablePicker(this).Show(anchor);
+            new SearchablePicker(this, anchor.width).Show(anchor);
         }
 
         sealed class SearchablePicker : AdvancedDropdown
         {
+            const float k_MaxHeight = 400f;
+            // A very narrow anchor would ellipsify away most of every name; this also guards
+            // against a zero width, which would otherwise collapse the popup entirely.
+            const float k_MinWidth = 200f;
+
             readonly SearchableDropdownField m_Field;
             string[] m_Items;
 
-            public SearchablePicker(SearchableDropdownField field)
+            public SearchablePicker(SearchableDropdownField field, float anchorWidth)
                 : base(new AdvancedDropdownState())
             {
                 m_Field = field;
                 // AdvancedDropdown grows to fit content and only caps at the screen edge; for a
                 // field embedded in a settings tab, an org with many projects would flip the
                 // popup upward against the top of the screen. Cap the height so it stays anchored.
-                maximumSize = new Vector2(4000f, 400f);
+                // Capping the width keeps long project names inside the popup, where
+                // AdvancedDropdownGUI ellipsifies them, instead of running past its right edge.
+                maximumSize = new Vector2(Mathf.Max(anchorWidth, k_MinWidth), k_MaxHeight);
             }
 
             protected override AdvancedDropdownItem BuildRoot()
@@ -71,7 +78,8 @@ namespace UnityEditor.Connect
                 var root = new AdvancedDropdownItem(m_Field.label ?? string.Empty);
                 for (int i = 0; i < m_Items.Length; i++)
                 {
-                    var item = new AdvancedDropdownItem(m_Items[i]) { elementIndex = i };
+                    // The tooltip carries the full name for rows the width cap ellipsifies.
+                    var item = new AdvancedDropdownItem(m_Items[i]) { elementIndex = i, tooltip = m_Items[i] };
                     root.AddChild(item);
                 }
                 return root;

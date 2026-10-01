@@ -37,6 +37,8 @@ namespace UnityEditor.UIElements
         const string k_EnableDebuggerLowLevelName = "enable-debugger-low-level";
         const string k_DefaultRuntimeTheme = "default-runtime-theme";
         const string k_DefaultEditorTheme = "default-editor-theme";
+        const string k_ProjectPreviewThemeHelpBox = "project-preview-theme-help-box";
+        const string k_ProjectPreviewThemeHelpTopic = "UIB-interface-overview";
 
         private static readonly List<Type> s_ExtensionTypes = new();
 
@@ -195,6 +197,9 @@ namespace UnityEditor.UIElements
             {
                 UIToolkitProjectSettings.EnableLowLevelDebugger = e.newValue;
             });
+
+            var projectPreviewThemeHelpBox = rootElement.Q<HelpBox>(k_ProjectPreviewThemeHelpBox);
+            projectPreviewThemeHelpBox.linkHref = Help.FindHelpNamed(k_ProjectPreviewThemeHelpTopic);
 
             var defaultRuntimeThemeMenu = rootElement.Q<ProjectSettingsThemeDropdown>(k_DefaultRuntimeTheme);
 

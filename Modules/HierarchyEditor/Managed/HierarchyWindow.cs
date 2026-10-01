@@ -93,6 +93,7 @@ namespace Unity.Hierarchy.Editor
         Label m_StatusBar;
         bool m_ViewStateInit;
         bool m_HasSceneHandler;
+        HierarchyViewState m_StateBeforeSharedHierarchyChanged;
         CommandSubscriberHelper m_CommandSubscriberHelper;
 
         readonly List<HierarchyViewCellDescriptor> m_CellDescriptors = new();
@@ -104,8 +105,6 @@ namespace Unity.Hierarchy.Editor
 
         [SerializeField]
         string m_WindowGUID;
-        [SerializeField]
-        int m_UndoId;
         [SerializeField]
         readonly EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
 
@@ -134,7 +133,7 @@ namespace Unity.Hierarchy.Editor
 
             public static int GetHierarchyUndoId(HierarchyWindow hierarchyWindow)
             {
-                return hierarchyWindow.m_UndoId;
+                return HierarchyStageStack.CurrentUndoId;
             }
 
             public static void TriggerPlayModeStateChanged(HierarchyWindow hierarchyWindow, PlayModeStateChange mode) =>
@@ -196,22 +195,16 @@ namespace Unity.Hierarchy.Editor
             if (!HierarchyWindowManager.RegisterNodeTypeHandler<T>())
                 return;
 
-            // Instantiate the node type handlers for all enabled hierarchy windows.
-            // s_HierarchyWindows avoids Resources.FindObjectsOfTypeAll: it's empty during domain reload
-            // (statics reset before OnEnable runs), skipping a costly scan with no useful result.
-            foreach (var window in s_HierarchyWindows)
-            {
-                var hierarchy = window.m_Hierarchy;
-                if (hierarchy != null && hierarchy.IsCreated)
-                    HierarchyWindowManager.InstantiateNodeTypeHandlers(hierarchy);
-            }
+            // Back-fill the handler onto the hierarchies already shared by the open windows.
+            HierarchyStageStack.InstantiateNodeTypeHandlers();
         }
 
         /// <summary>
         /// Unregisters a hierarchy node type handler for the Hierarchy window.
         /// </summary>
         /// <remarks>
-        /// The change will take effect the next time the hierarchy window is instantiated.
+        /// The handler's existing nodes are not removed, because they can parent nodes owned by other handlers.
+        /// Call <see cref="HierarchyStageStack.Reload"/> to drop them.
         /// </remarks>
         /// <typeparam name="T">The type of the hierarchy node type handler.</typeparam>
         [VisibleToOtherModules]
@@ -478,8 +471,6 @@ namespace Unity.Hierarchy.Editor
 
             if (string.IsNullOrEmpty(m_WindowGUID))
                 m_WindowGUID = GUID.Generate().ToString();
-            if (m_UndoId == 0)
-                m_UndoId = m_WindowGUID.GetHashCode();
 
             // Load styling for the SearchField + Query Builder.
             SearchElement.AppendStyleSheets(rootVisualElement);
@@ -488,9 +479,8 @@ namespace Unity.Hierarchy.Editor
             LoadStyleSheet(rootVisualElement, EditorGUIUtility.isProSkin ? s_EditorStyleSheetDark : s_EditorStyleSheetLight);
             LoadStyleSheet(rootVisualElement, s_EditorStyleSheet);
 
-            // Create a new hierarchy with registered node type handlers.
-            m_Hierarchy = new Hierarchy();
-            HierarchyWindowManager.InstantiateNodeTypeHandlers(m_Hierarchy);
+            // Use the hierarchy shared by every window for the current stage. It outlives this window.
+            m_Hierarchy = HierarchyStageStack.Current;
 
             m_HierarchyView = new HierarchyView();
             m_HierarchyView.Bind += OnBindView;
@@ -550,16 +540,14 @@ namespace Unity.Hierarchy.Editor
 
             m_SelectionHandler = new HierarchyGlobalSelectionHandler(m_HierarchyView, m_LockTracker);
 
-            PrefabUtility.prefabInstanceUpdated += OnPrefabInstanceUpdated;
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
-
             StageNavigationManager.instance.stageChanging += OnStageChanging;
-            // Use afterSuccessfullySwitchedToStage instead of stageChanged. This is called after
-            // previous stages are closed, and avoids issues with view state restoration when recovering entityIds from GlobalObjectIds.
-            // Otherwise, we might restore from a previous preview stage.
-            StageNavigationManager.instance.afterSuccessfullySwitchedToStage += OnAfterSuccessfullySwitchedToStage;
             PrefabStage.prefabStageReloading += OnPrefabStageReloading;
-            PrefabStage.prefabStageReloaded += OnPrefabStageReloaded;
+
+            // HierarchyStageStack owns the stage transitions now, and raises these once the shared data for the
+            // new stage is ready, which is also after the previous stages are closed. Restoring view state any
+            // earlier would recover entityIds from GlobalObjectIds against a stage that is going away.
+            HierarchyStageStack.Changing += OnSharedHierarchyChanging;
+            HierarchyStageStack.Changed += OnSharedHierarchyChanged;
 
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown);
             rootVisualElement.RegisterCallback<KeyUpEvent>(OnKeyUp);
@@ -582,13 +570,10 @@ namespace Unity.Hierarchy.Editor
             EditorSettings.useLegacyHierarchyChanged += OnUseLegacyHierarchyChanged;
             HierarchyPreferences.GameObjectIconMode.valueChanged += OnGameObjectIconModeChanged;
 
-            // Now that the UI is initialized, set the hierarchy source.
-            m_HierarchyView.SetSourceHierarchy(m_Hierarchy);
+            // Now that the UI is initialized, set the hierarchy source. The flattened is shared too, so this
+            // window only packs its own view model.
+            m_HierarchyView.SetSourceHierarchyFlattened(m_Hierarchy, HierarchyStageStack.CurrentFlattened);
             m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
-
-            // Opt this hierarchy into Hierarchy-level undo/redo (cross-type child ordering on drops).
-            // Per-window stable id; cleaned up in OnDisable.
-            HierarchyUndoManager.Register(m_UndoId, m_Hierarchy);
 
             RefreshDescriptors();
 
@@ -639,12 +624,11 @@ namespace Unity.Hierarchy.Editor
                     s_LastInteractedHierarchy = s_HierarchyWindows[0];
             }
 
+            HierarchyStageStack.Changing -= OnSharedHierarchyChanging;
+            HierarchyStageStack.Changed -= OnSharedHierarchyChanged;
+
             PrefabStage.prefabStageReloading -= OnPrefabStageReloading;
-            PrefabStage.prefabStageReloaded -= OnPrefabStageReloaded;
-            StageNavigationManager.instance.afterSuccessfullySwitchedToStage -= OnAfterSuccessfullySwitchedToStage;
             StageNavigationManager.instance.stageChanging -= OnStageChanging;
-            PrefabUtility.prefabInstanceUpdated -= OnPrefabInstanceUpdated;
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
 
             if (m_CommandSubscriberHelper != null)
             {
@@ -678,9 +662,6 @@ namespace Unity.Hierarchy.Editor
 
             m_StageNavigationView?.Dispose();
 
-            // Drop the hierarchy undo registration before tearing down the view-model.
-            HierarchyUndoManager.Unregister(m_UndoId);
-
             if (m_HierarchyView != null)
             {
                 UnbindView?.Invoke(this, m_HierarchyView);
@@ -701,12 +682,8 @@ namespace Unity.Hierarchy.Editor
                 m_HierarchyView = null;
             }
 
-            if (m_Hierarchy != null)
-            {
-                if (m_Hierarchy.IsCreated)
-                    m_Hierarchy.Dispose();
-                m_Hierarchy = null;
-            }
+            // The hierarchy and its flattened belong to HierarchyStageStack, so only drop our reference.
+            m_Hierarchy = null;
 
             HierarchyAnalytics.RemoveWindow(this);
         }
@@ -969,48 +946,55 @@ namespace Unity.Hierarchy.Editor
             SaveStageViewState(previousStage);
         }
 
-        void OnAfterSuccessfullySwitchedToStage(Stage currentStage)
+        void OnSharedHierarchyChanging()
         {
-            // The search text follows the stage navigation like a stack: drilling into a newly opened
-            // stage starts a new empty search, while returning to a stage already in the stage history
-            // (e.g. going back up the breadcrumbs) restores the search it had when it was left (UUM-142149).
-            OnAfterSuccessfullySwitchedToStage(currentStage, restoreSearchText: currentStage.setSelectionAndScrollWhenBecomingCurrentStage);
+            // The shared data is about to be disposed with no replacement bound yet, so snapshot what this window
+            // is showing and stop referencing it before it goes away.
+            if (m_HierarchyView?.ViewModel != null && m_ViewStateInit)
+                m_StateBeforeSharedHierarchyChanged = m_HierarchyView.GetState(HierarchyViewState.Content.Stage);
+
+            m_HierarchyView?.SetSourceHierarchyFlattened(null, null);
+            m_Hierarchy = null;
         }
 
-        void OnAfterSuccessfullySwitchedToStage(Stage currentStage, bool restoreSearchText)
+        void OnSharedHierarchyChanged(HierarchyStageChange change)
         {
-            // Keep a reference to the current hierarchy to dispose it later
-            var oldHierarchy = m_Hierarchy;
+            if (m_HierarchyView == null)
+                return;
 
-            // Create and set the new hierarchy with registered node type handlers
-            m_Hierarchy = new Hierarchy();
-            HierarchyWindowManager.InstantiateNodeTypeHandlers(m_Hierarchy);
-
-            // Set the new hierarchy for the hierarchy view
-            m_HierarchyView.SetSourceHierarchy(m_Hierarchy);
+            m_Hierarchy = HierarchyStageStack.Current;
+            m_HierarchyView.SetSourceHierarchyFlattened(m_Hierarchy, HierarchyStageStack.CurrentFlattened);
             m_HierarchyView.ViewModel.QueryParser = new HierarchyEditorSearchQueryParser();
 
-            // Dispose the old hierarchy
-            if (oldHierarchy != null)
+            if (change != HierarchyStageChange.DataRebuilt)
             {
-                if (oldHierarchy.IsCreated)
-                    oldHierarchy.Dispose();
+                m_StateBeforeSharedHierarchyChanged = null;
+
+                var currentStage = StageUtility.GetCurrentStage();
+
+                // The search text follows the stage navigation like a stack: drilling into a newly opened stage
+                // starts a new empty search, while returning to a stage already in the stage history (e.g. going
+                // back up the breadcrumbs) restores the search it had when it was left (UUM-142149). A reload
+                // keeps the user in the same stage, so its search is always restored.
+                var restoreSearchText = change == HierarchyStageChange.StageReloaded ||
+                    currentStage.setSelectionAndScrollWhenBecomingCurrentStage;
+
+                LoadStageViewState(currentStage, restoreSearchText);
+                return;
             }
 
-            // Set the stage view state
-            LoadStageViewState(currentStage, restoreSearchText);
+            // Same stage, rebuilt data: restore what this window was showing rather than the persisted per-stage
+            // state, which belongs to a stage transition.
+            if (m_StateBeforeSharedHierarchyChanged != null)
+            {
+                SetViewState(m_StateBeforeSharedHierarchyChanged);
+                m_StateBeforeSharedHierarchyChanged = null;
+            }
         }
 
         void OnPrefabStageReloading(PrefabStage stage)
         {
             SaveStageViewState(stage);
-        }
-
-        void OnPrefabStageReloaded(PrefabStage stage)
-        {
-            // A reload keeps the user in the same stage, so the search saved in OnPrefabStageReloading
-            // is always restored.
-            OnAfterSuccessfullySwitchedToStage(stage, restoreSearchText: true);
         }
 
         void OnCutGameObjects(GameObject[] gameObjects)
@@ -1246,16 +1230,6 @@ namespace Unity.Hierarchy.Editor
             m_HierarchyView.SetColumnDescriptors(ColumnDescriptors, CellDescriptors, state);
         }
 
-        void OnPrefabInstanceUpdated(GameObject go)
-        {
-            if (go == null || !go)
-                return;
-
-            m_Hierarchy.SetDirty();
-        }
-
-        void OnUndoRedoPerformed() => m_HierarchyView.Source.SetDirty();
-
         internal void Update()
         {
             if (!m_HierarchyView.UpdateNeeded)
@@ -1408,7 +1382,7 @@ namespace Unity.Hierarchy.Editor
                 return;
 
             // A newly opened stage always starts with a new, empty search; only returning to a stage
-            // restores the search it had when it was left (see OnAfterSuccessfullySwitchedToStage).
+            // restores the search it had when it was left (see OnSharedHierarchyChanged).
             if (!restoreSearchText)
                 SetSearchText(string.Empty);
 

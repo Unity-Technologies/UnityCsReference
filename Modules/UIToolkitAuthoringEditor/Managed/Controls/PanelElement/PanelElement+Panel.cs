@@ -43,13 +43,52 @@ sealed partial class PanelElement : VisualElement
             base.TickSchedulingUpdaters();
         }
 
+        bool m_LoggedOnBeforeRenderException;
+
         public override void Render()
         {
+            Owner.m_TargetPrefilled = false;
+
             // Do not render if any dimension is 0, since this would lead to exception with the RenderTexture.
             if (Owner.SubPanelSize.x == 0 || Owner.SubPanelSize.y == 0)
                 return;
 
-            base.Render();
+            try
+            {
+                Owner.OnBeforeRender?.Invoke();
+                m_LoggedOnBeforeRenderException = false;
+            }
+            catch (Exception e)
+            {
+                // A partial prefill must not skip the clear, and a deterministic throw would log once per repaint.
+                Owner.m_TargetPrefilled = false;
+                if (!m_LoggedOnBeforeRenderException)
+                {
+                    m_LoggedOnBeforeRenderException = true;
+                    Debug.LogException(e);
+                }
+            }
+
+            if (!Owner.m_TargetPrefilled)
+            {
+                base.Render();
+                return;
+            }
+
+            // Restored in the finally: render paths outside the tick (the engine panel sweeps) never re-apply
+            // the panel settings, so a one-shot skip left in clearSettings would leak into their next render.
+            var restoreClearSettings = clearSettings;
+            var settings = clearSettings;
+            settings.clearColor = false;
+            clearSettings = settings;
+            try
+            {
+                base.Render();
+            }
+            finally
+            {
+                clearSettings = restoreClearSettings;
+            }
         }
     }
 
@@ -65,6 +104,15 @@ sealed partial class PanelElement : VisualElement
     public bool IsCreated => SubPanel != null && m_PanelOwner;
 
     public event OnAfterRepaintHandler OnAfterRepaint;
+
+    // Raised inside Render itself, so it wraps every render path, including the engine's panel sweeps.
+    public event Action OnBeforeRender;
+
+    bool m_TargetPrefilled;
+
+    // Valid during OnBeforeRender: skips the sub-panel's color clear for this render only.
+    // Internal until the callback carries a context object to scope this to (review r1093059).
+    internal void MarkTargetPrefilled() => m_TargetPrefilled = true;
 
     public ContextType ContextType
     {

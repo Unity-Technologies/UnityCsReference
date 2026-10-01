@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -30,8 +31,9 @@ namespace Unity.Hierarchy
         internal readonly HierarchyFlattened m_HierarchyFlattened;
         ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
         ReadOnlyNativeVector<HierarchyNode> m_Nodes;
-        int m_Version;
+        uint m_Version;
         readonly bool m_IsOwner;
+        Dictionary<int, IHierarchyNodeTypeHandlerViewModelState> m_HandlerStates;
 
         /// <summary>
         /// Delegate that is invoked when flags on hierarchy nodes are changed.
@@ -95,7 +97,7 @@ namespace Unity.Hierarchy
             get => m_Nodes;
         }
 
-        internal int Version
+        internal uint Version
         {
             [VisibleToOtherModules("UnityEngine.HierarchyModule")]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -155,7 +157,7 @@ namespace Unity.Hierarchy
         /// <param name="nodesPtr">The native pointer to the nodes.</param>
         /// <param name="nodesCount">The number of nodes.</param>
         /// <param name="version">The hierarchy view model version.</param>
-        HierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, int version)
+        HierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, uint version)
         {
             m_Ptr = nativePtr;
             m_Hierarchy = hierarchyFlattened.m_Hierarchy;
@@ -178,8 +180,70 @@ namespace Unity.Hierarchy
         /// </summary>
         public void Dispose()
         {
+            DestroyHandlerStates();
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Gets the state a node type handler keeps for this view model.
+        /// </summary>
+        /// <param name="nodeType">The node type of the handler owning the state.</param>
+        /// <param name="state">When this method returns, the state, or <see langword="null"/> when there is none.</param>
+        /// <typeparam name="T">The type of state the handler stores.</typeparam>
+        /// <returns><see langword="true"/> if the handler has state of that type, <see langword="false"/> otherwise.</returns>
+        public bool TryGetHandlerState<T>(HierarchyNodeType nodeType, out T state)
+            where T : class, IHierarchyNodeTypeHandlerViewModelState
+        {
+            state = m_HandlerStates != null && m_HandlerStates.TryGetValue(nodeType.Id, out var existing) ? existing as T : null;
+            return state != null;
+        }
+
+        /// <summary>
+        /// Gets the state a node type handler keeps for this view model, creating it when there is none.
+        /// </summary>
+        /// <param name="nodeType">The node type of the handler owning the state.</param>
+        /// <typeparam name="T">The type of state the handler stores.</typeparam>
+        /// <returns>The state.</returns>
+        public T GetOrCreateHandlerState<T>(HierarchyNodeType nodeType)
+            where T : class, IHierarchyNodeTypeHandlerViewModelState, new()
+        {
+            if (TryGetHandlerState<T>(nodeType, out var existing))
+                return existing;
+
+            var state = new T();
+            m_HandlerStates ??= new Dictionary<int, IHierarchyNodeTypeHandlerViewModelState>();
+            if (m_HandlerStates.TryGetValue(nodeType.Id, out var previous))
+                previous?.Dispose();
+
+            m_HandlerStates[nodeType.Id] = state;
+            return state;
+        }
+
+        /// <summary>
+        /// Disposes and forgets the state a node type handler keeps for this view model.
+        /// </summary>
+        /// <param name="nodeType">The node type of the handler owning the state.</param>
+        /// <returns><see langword="true"/> if there was state to destroy, <see langword="false"/> otherwise.</returns>
+        public bool DestroyHandlerState(HierarchyNodeType nodeType)
+        {
+            if (m_HandlerStates == null || !m_HandlerStates.TryGetValue(nodeType.Id, out var state))
+                return false;
+
+            state?.Dispose();
+            return m_HandlerStates.Remove(nodeType.Id);
+        }
+
+        // Handler state belongs to this view model, so nothing else is going to release it
+        internal void DestroyHandlerStates()
+        {
+            if (m_HandlerStates == null)
+                return;
+
+            foreach (var state in m_HandlerStates.Values)
+                state?.Dispose();
+
+            m_HandlerStates.Clear();
         }
 
         void Dispose(bool disposing)
@@ -830,7 +894,7 @@ namespace Unity.Hierarchy
         {
             readonly HierarchyViewModel m_ViewModel;
             readonly ReadOnlyNativeVector<HierarchyNode> m_Nodes;
-            readonly int m_Version;
+            readonly uint m_Version;
             int m_Index;
 
             internal Enumerator(HierarchyViewModel hierarchyViewModel)
@@ -960,7 +1024,7 @@ namespace Unity.Hierarchy
         internal static HierarchyViewModel FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyViewModel)GCHandle.FromIntPtr(handlePtr).Target : null;
 
         [FreeFunction("HierarchyViewModelBindings::Create", IsThreadSafe = true)]
-        static extern IntPtr Create(IntPtr handlePtr, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags, out IntPtr nodesPtr, out int nodesCount, out IntPtr indicesPtr, out int indicesCount, out int version);
+        static extern IntPtr Create(IntPtr handlePtr, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags, out IntPtr nodesPtr, out int nodesCount, out IntPtr indicesPtr, out int indicesCount, out uint version);
 
         [FreeFunction("HierarchyViewModelBindings::Destroy", IsThreadSafe = true)]
         static extern void Destroy(IntPtr nativePtr);
@@ -1057,11 +1121,11 @@ namespace Unity.Hierarchy
 
         #region Called from native
         [RequiredByNativeCode]
-        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, IntPtr flattenedPtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, int version) =>
+        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, IntPtr flattenedPtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, uint version) =>
             GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyViewModel(nativePtr, HierarchyFlattened.FromIntPtr(flattenedPtr), flattenedNodesPtr, flattenedNodesCount, nodesPtr, nodesCount, version)));
 
         [RequiredByNativeCode]
-        static void UpdateHierarchyViewModel(IntPtr handlePtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, int version)
+        static void UpdateHierarchyViewModel(IntPtr handlePtr, IntPtr flattenedNodesPtr, int flattenedNodesCount, IntPtr nodesPtr, int nodesCount, uint version)
         {
             var viewModel = FromIntPtr(handlePtr);
             viewModel.m_FlattenedNodes = new ReadOnlyNativeVector<HierarchyFlattenedNode>(flattenedNodesPtr, flattenedNodesCount);
@@ -1081,7 +1145,7 @@ namespace Unity.Hierarchy
         {
             var viewModel = FromIntPtr(handlePtr);
             foreach (var handler in viewModel.m_Hierarchy.EnumerateNodeTypeHandlersBase())
-                handler.Internal_SearchBegin(viewModel.Query);
+                handler.Internal_SearchBegin(viewModel.Query, viewModel);
         }
         #endregion
 

@@ -204,7 +204,6 @@ internal abstract class VisualElementNodeTypeHandler :
 
     private StyleSheet m_StyleSheet;
     private StyleSheet m_ThemeStyleSheet;
-    private ParsedQuery<VisualElement> m_ParsedQuery;
 
     private UIHierarchyDisplayOptions m_DisplayOptions;
 
@@ -296,22 +295,41 @@ internal abstract class VisualElementNodeTypeHandler :
         return NodeTypeName;
     }
 
-    /// <inheritdoc cref="HierarchyNodeTypeHandler.SearchBegin"/>>
-    protected sealed override void SearchBegin(HierarchySearchQueryDescriptor query)
+    // Per search state, kept on the view model running the pass so two of them never share a parsed query
+    sealed class SearchState : IHierarchyNodeTypeHandlerViewModelState
     {
-        m_ParsedQuery = m_QueryEngine.ParseQuery(query.ToString());
+        public ParsedQuery<VisualElement> ParsedQuery;
+        public string ParsedFrom;
+
+        public void Dispose() { }
+    }
+
+    /// <inheritdoc cref="HierarchyNodeTypeHandler.SearchBegin"/>>
+    protected sealed override void SearchBegin(HierarchySearchQueryDescriptor query, HierarchyViewModel viewModel)
+    {
+        // Kept on the view model, otherwise a second one ending its pass would null this out mid search
+        var state = viewModel.GetOrCreateHandlerState<SearchState>(GetNodeType());
+        var queryStr = query.ToString();
+        if (state.ParsedFrom != queryStr)
+        {
+            state.ParsedQuery = m_QueryEngine.ParseQuery(queryStr);
+            state.ParsedFrom = queryStr;
+        }
     }
 
     /// <inheritdoc cref="HierarchyNodeTypeHandler.SearchMatch"/>>
-    protected sealed override bool SearchMatch(in HierarchyNode node)
+    protected sealed override bool SearchMatch(in HierarchyNode node, HierarchyViewModel viewModel)
     {
-        return m_Mappings.TryGetValue(node, out var element) && m_ParsedQuery.Test(element);
+        return viewModel.TryGetHandlerState<SearchState>(GetNodeType(), out var state)
+            && m_Mappings.TryGetValue(node, out var element)
+            && state.ParsedQuery.Test(element);
     }
 
     /// <inheritdoc cref="HierarchyNodeTypeHandler.SearchEnd"/>>
-    protected sealed override void SearchEnd()
+    protected sealed override void SearchEnd(HierarchyViewModel viewModel)
     {
-        m_ParsedQuery = null;
+        // Invalidated per pass, a stale parsed query makes SearchMatch answer outside an active search
+        viewModel.DestroyHandlerState(GetNodeType());
     }
 
     protected override void OnBindItem(HierarchyViewItem item)

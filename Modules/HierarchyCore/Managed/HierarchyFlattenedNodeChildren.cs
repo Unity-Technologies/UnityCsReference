@@ -18,7 +18,7 @@ namespace Unity.Hierarchy
     {
         readonly HierarchyFlattened m_HierarchyFlattened;
         readonly HierarchyNode m_Node;
-        readonly int m_Version;
+        readonly uint m_Version;
         readonly int m_Count;
 
         internal HierarchyFlattenedNodeChildren(HierarchyFlattened hierarchyFlattened, in HierarchyNode node)

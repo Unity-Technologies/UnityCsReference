@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Animations;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 
@@ -319,7 +320,7 @@ namespace UnityEngine.UIElements
             Fixed
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private Position m_Position = Position.Relative;
 
         /// <summary>
@@ -337,7 +338,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private UIElements.WorldSpaceSizeMode m_WorldSpaceSizeMode = UIElements.WorldSpaceSizeMode.Fixed;
 
         /// <summary>
@@ -378,7 +379,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private PivotReferenceSize m_PivotReferenceSize;
 
         GameObject IPanelComponent.gameObject => this.gameObject;
@@ -394,7 +395,7 @@ namespace UnityEngine.UIElements
             set { m_PivotReferenceSize = value; }
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private Pivot m_Pivot;
 
         /// <summary>

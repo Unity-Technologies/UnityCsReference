@@ -8315,6 +8315,9 @@
     <Compile Include="..\..\Modules\HierarchyEditor\Managed\HierarchySearchView.cs">
       <Link>Modules\HierarchyEditor\Managed\HierarchySearchView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\HierarchyEditor\Managed\HierarchyStageStack.cs">
+      <Link>Modules\HierarchyEditor\Managed\HierarchyStageStack.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\HierarchyEditor\Managed\HierarchyViewCellDescriptorAttribute.cs">
       <Link>Modules\HierarchyEditor\Managed\HierarchyViewCellDescriptorAttribute.cs</Link>
     </Compile>
@@ -16718,6 +16721,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\AddElementDropManipulator.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\AddElementDropManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasBackdropTexture.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasBackdropTexture.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasManipulatorMessageEvent.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasManipulatorMessageEvent.cs</Link>
     </Compile>
@@ -17161,7 +17167,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_rx45m7_d/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_4fjs8mx4/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

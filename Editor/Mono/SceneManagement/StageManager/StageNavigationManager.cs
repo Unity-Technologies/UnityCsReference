@@ -413,6 +413,14 @@ namespace UnityEditor.SceneManagement
                 stage.SaveAsNew();
         }
 
+        // Returns false if the user clicked Cancel in the current stage's save dialog, otherwise true.
+        // Called from native code when the Editor is about to quit (Application::Terminate).
+        [RequiredByNativeCode]
+        internal static bool Internal_AskUserToSaveModifiedStageBeforeQuitting()
+        {
+            return instance.currentStage.AskUserToSaveModifiedStageBeforeSwitchingStage();
+        }
+
         [Serializable]
         internal class Analytics
         {

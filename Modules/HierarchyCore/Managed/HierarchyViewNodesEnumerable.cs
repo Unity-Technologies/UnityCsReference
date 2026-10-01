@@ -50,7 +50,7 @@ namespace Unity.Hierarchy
             readonly PredicateCallback m_Predicate;
             readonly HierarchyNodeFlags m_Flags;
             readonly ReadOnlyNativeVector<HierarchyFlattenedNode> m_FlattenedNodes;
-            readonly int m_Version;
+            readonly uint m_Version;
             int m_Index;
 
             internal Enumerator(HierarchyViewNodesEnumerable enumerable)

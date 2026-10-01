@@ -263,17 +263,6 @@ namespace UnityEditor.SceneManagement
             return StageUtility.GetStage(gameObject) as PrefabStage;
         }
 
-        [RequiredByNativeCode]
-        internal static bool SaveCurrentModifiedPrefabStagesIfUserWantsTo()
-        {
-            // Returns false if the user clicked Cancel to save otherwise returns true
-            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-            if (prefabStage != null)
-                return prefabStage.AskUserToSaveModifiedStageBeforeSwitchingStage();
-
-            return true;
-        }
-
         [UsedByNativeCode]
         internal static bool IsAssetPathOpenInAnyPrefabStage(string path)
         {

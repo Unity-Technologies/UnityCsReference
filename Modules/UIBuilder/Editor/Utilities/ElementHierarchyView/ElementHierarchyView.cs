@@ -218,12 +218,9 @@ namespace Unity.UI.Builder
                     case KeyCode.Escape:
                         if (explorerItem.IsRenamingActive())
                         {
-                            if (!explorerItem.IsRenameTextValid())
-                            {
-                                explorerItem.ResetRenamingField();
-                            }
-
+                            explorerItem.CancelRenaming();
                             Focus();
+                            evt.StopPropagation();
                         }
 
                         break;

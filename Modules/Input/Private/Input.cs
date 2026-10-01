@@ -131,21 +131,26 @@ namespace UnityEngineInternal.Input
         // Per-tick gate + before-update dispatch, called from native before acuiring event
         // buffer scope.
         // Checks onShouldRunUpdate first (back-compat gate), then fires onBeforeUpdate.
-        // Returns true to continue with the update (snapshot + onUpdate), false to skip.
+        // Writes 1 to continueUpdate to continue with the update (snapshot + onUpdate),
+        // 0 to skip. The result goes through an out parameter rather than a return value
+        // because Mono boxes value-type returns of scripting invocations on every call.
         // Note that onShouldRunUpdate gate may be transitioned to SetActiveUpdateMask in
         // the future, which gates earlier still (at the PlayerLoop hook in native).
         [RequiredByNativeCode]
-        internal static bool NotifyBeforeUpdate(NativeInputUpdateType updateType)
+        internal static void NotifyBeforeUpdate(NativeInputUpdateType updateType, out int continueUpdate)
         {
             NativeShouldRunUpdateCallback should = onShouldRunUpdate;
             if (should != null && !should(updateType))
-                return false;
+            {
+                continueUpdate = 0;
+                return;
+            }
 
             NativeBeforeUpdateCallback beforeCallback = onBeforeUpdate;
             if (beforeCallback != null)
                 beforeCallback(updateType);
 
-            return true;
+            continueUpdate = 1;
         }
 
         // Per-tick onUpdate dispatch, called from native after event buffer is acquired.

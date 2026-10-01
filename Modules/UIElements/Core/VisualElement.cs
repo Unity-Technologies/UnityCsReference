@@ -2029,11 +2029,7 @@ namespace UnityEngine.UIElements
         {
             if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
             {
-                if (e.rect != Rect.zero)
-                {
-                    e.rect = e.rect;
-                }
-                else
+                if (e.rect == Rect.zero)
                 {
                     // Clamp to world clip (UUM-109120)
                     var wb = element.worldBound;

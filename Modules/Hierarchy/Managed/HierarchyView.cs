@@ -74,7 +74,8 @@ namespace Unity.Hierarchy
         Unity.Hierarchy.Hierarchy m_Hierarchy;
         HierarchyFlattened m_HierarchyFlattened;
         HierarchyViewModel m_HierarchyViewModel;
-        int m_Version;
+        bool m_OwnsHierarchyFlattened;
+        uint m_Version;
 
         // Data update state
         UpdateStage m_UpdateStage = UpdateStage.First;
@@ -453,8 +454,24 @@ namespace Unity.Hierarchy
         /// <param name="hierarchy">The <see cref="Hierarchy"/> to set as the source.</param>
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
         public void SetSourceHierarchy(Unity.Hierarchy.Hierarchy hierarchy, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
+            => SetSource(hierarchy, null, true, defaultFlags);
+
+        /// <summary>
+        /// Sets the source hierarchy and a <see cref="HierarchyFlattened"/> owned by the caller, so that several
+        /// views can share one packed hierarchy instead of each packing its own.
+        /// </summary>
+        /// <param name="hierarchy">The <see cref="Hierarchy"/> backing <paramref name="hierarchyFlattened"/>.</param>
+        /// <param name="hierarchyFlattened">The <see cref="HierarchyFlattened"/> to read from. The caller keeps ownership.</param>
+        /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
+        [VisibleToOtherModules("UnityEditor.HierarchyModule")]
+        internal void SetSourceHierarchyFlattened(Unity.Hierarchy.Hierarchy hierarchy, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
+            => SetSource(hierarchy, hierarchyFlattened, false, defaultFlags);
+
+        void SetSource(Unity.Hierarchy.Hierarchy hierarchy, HierarchyFlattened hierarchyFlattened, bool ownsHierarchyFlattened, HierarchyNodeFlags defaultFlags)
         {
-            if (m_Hierarchy == hierarchy)
+            // Rebinding the very same source is a no-op. For a borrowed flattened the identity that matters is
+            // the flattened itself, since a new one can be handed over for the same hierarchy.
+            if (ownsHierarchyFlattened ? m_Hierarchy == hierarchy : m_HierarchyFlattened == hierarchyFlattened)
                 return;
 
             m_CollectionView.animation?.SkipAnimation();
@@ -500,10 +517,11 @@ namespace Unity.Hierarchy
             }
             if (m_HierarchyFlattened != null)
             {
-                if (m_HierarchyFlattened.IsCreated)
+                if (m_OwnsHierarchyFlattened && m_HierarchyFlattened.IsCreated)
                     m_HierarchyFlattened.Dispose();
                 m_HierarchyFlattened = null;
             }
+            m_OwnsHierarchyFlattened = false;
             m_Hierarchy = null; // User is responsible for disposing the hierarchy
 
             // If setting to null, we're done
@@ -512,7 +530,8 @@ namespace Unity.Hierarchy
 
             // Set the new hierarchy source
             m_Hierarchy = hierarchy;
-            m_HierarchyFlattened = new HierarchyFlattened(m_Hierarchy);
+            m_HierarchyFlattened = ownsHierarchyFlattened ? new HierarchyFlattened(m_Hierarchy) : hierarchyFlattened;
+            m_OwnsHierarchyFlattened = ownsHierarchyFlattened;
             m_HierarchyViewModel = new HierarchyViewModel(m_HierarchyFlattened, defaultFlags);
 
             // Force update data to ensure list view reads valid data when we set the items source

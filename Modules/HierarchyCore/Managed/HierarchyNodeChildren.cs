@@ -19,7 +19,7 @@ namespace Unity.Hierarchy
 
         readonly Hierarchy m_Hierarchy;
         readonly HierarchyNode* m_Ptr;
-        readonly int m_Version;
+        readonly uint m_Version;
         readonly int m_Count;
 
         internal HierarchyNodeChildren(Hierarchy hierarchy, IntPtr nodeChildrenPtr)

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Scripting.LifecycleManagement;
@@ -47,8 +48,6 @@ namespace Unity.Hierarchy.Editor
 
         HierarchyNodeType m_NodeType;
         HierarchyNodeType m_SubSceneNodeType;
-        ParsedQuery<GameObject> m_ParsedQuery;
-        SearchMonitorView m_SearchMonitorView;
         Transform m_CustomParentForNewGameObjects;
         SceneQueryEngine m_QueryEngine;
 
@@ -65,7 +64,17 @@ namespace Unity.Hierarchy.Editor
             }
         }
 
-        internal HierarchySearchQueryDescriptor CurrentFilter { get; set; }
+        // Per search state, kept on the view model running the pass so two of them never share a parsed query
+        sealed class SearchState : IHierarchyNodeTypeHandlerViewModelState
+        {
+            public HierarchySearchQueryDescriptor Filter;
+            public ParsedQuery<GameObject> ParsedQuery;
+            public SearchMonitorView MonitorView;
+            public string ParsedFrom;
+
+            public void Dispose() => MonitorView.Dispose();
+
+        }
 
         HierarchyGameObjectHandler()
         {
@@ -738,7 +747,7 @@ namespace Unity.Hierarchy.Editor
             return GetOrCreateNode(m_CustomParentForNewGameObjects.gameObject);
         }
 
-        protected override void SearchBegin(HierarchySearchQueryDescriptor query)
+        protected override void SearchBegin(HierarchySearchQueryDescriptor query, HierarchyViewModel viewModel)
         {
             // We know all the filter have been processed natively.
             var nonNativeFilters = new List<HierarchySearchFilter>(query.Filters.Length);
@@ -747,37 +756,56 @@ namespace Unity.Hierarchy.Editor
                 if (f.Name != "t" || k_SpecialTypes.Contains(f.Value))
                     nonNativeFilters.Add(f);
             }
-            CurrentFilter = new HierarchySearchQueryDescriptor(nonNativeFilters.ToArray());
-            var queryStr = CurrentFilter.BuildFilterQuery();
-            m_ParsedQuery = QueryEngine.engine.ParseQuery(queryStr);
-            // TODO Search: GetView needs to be per Window id.
-            m_SearchMonitorView = SearchMonitor.GetView();
+
+            var filter = new HierarchySearchQueryDescriptor(nonNativeFilters.ToArray());
+            var queryStr = filter.BuildFilterQuery();
+
+            var state = viewModel.GetOrCreateHandlerState<SearchState>(GetNodeType());
+            state.Filter = filter;
+            if (state.ParsedFrom != queryStr)
+            {
+                state.ParsedQuery = QueryEngine.engine.ParseQuery(queryStr);
+                state.ParsedFrom = queryStr;
+            }
+
+            // Only ParsedQuery.Test reads the monitor view, and acquiring one opens the property database file
+            // stream, whose path allocations are enough to trigger a collection, so an empty filter must not pay it
+#pragma warning disable UAL0018 // the view is scoped to a single search: it is acquired here and disposed in SearchEnd, so the property stores it wraps are never held past the search
+            state.MonitorView = filter.IsEmpty ? default : SearchMonitor.GetView();
+#pragma warning restore UAL0018
         }
 
-        protected override bool SearchMatch(in HierarchyNode node)
+        protected override bool SearchMatch(in HierarchyNode node, HierarchyViewModel viewModel)
         {
-            if (CurrentFilter != null && CurrentFilter.IsEmpty)
+            if (!viewModel.TryGetHandlerState<SearchState>(GetNodeType(), out var state))
+                return false;
+
+            if (state.Filter != null && state.Filter.IsEmpty)
             {
                 // Filter is empty, accept anything.
                 return true;
             }
 
-            if (CurrentFilter.Invalid || !m_ParsedQuery.valid)
+            if (state.Filter.Invalid || !state.ParsedQuery.valid)
                 return false;
 
             var go = GetGameObject(in node);
-            return IsGameObjectSearchMatch(go);
+            return state.ParsedQuery.Test(go);
         }
 
-        protected override void SearchEnd()
+        protected override void SearchEnd(HierarchyViewModel viewModel)
         {
-            m_SearchMonitorView.Dispose();
+            // Only the monitor view has to go, it is a view onto the property database and cannot outlive the pass
+            if (viewModel.TryGetHandlerState<SearchState>(GetNodeType(), out var state))
+            {
+                state.MonitorView.Dispose();
+                state.MonitorView = default;
+            }
         }
 
-        internal bool IsGameObjectSearchMatch(GameObject go)
-        {
-            return m_ParsedQuery.Test(go);
-        }
+        // The filter is per view model now, so tests need to say which one they are asking about
+        internal HierarchySearchQueryDescriptor GetCurrentFilter(HierarchyViewModel viewModel)
+            => viewModel.TryGetHandlerState<SearchState>(GetNodeType(), out var state) ? state.Filter : null;
 
         #region IHierarchySearchPropositionProvider
         IEnumerable<SearchProposition> IHierarchySearchPropositionProvider.FetchPropositions(HierarchyViewModel viewModel, SearchContext context, SearchPropositionOptions options)
@@ -1102,6 +1130,24 @@ namespace Unity.Hierarchy.Editor
 
         [FreeFunction("HierarchyGameObjectHandlerBindings::SetPendingExternalDrop", HasExplicitThis = true)]
         extern void SetPendingExternalDrop(HierarchyNode parentNode, int dropIndex);
+
+        #region Marked as obsolete warning in 6.7
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected override void SearchBegin(HierarchySearchQueryDescriptor query)
+        {
+        }
+
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected override bool SearchMatch(in HierarchyNode node) => false;
+
+        [Obsolete("Use the overload that takes a HierarchyViewModel.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected override void SearchEnd()
+        {
+        }
+        #endregion
 
         #region Called from native
         [RequiredByNativeCode(Optional = true)]

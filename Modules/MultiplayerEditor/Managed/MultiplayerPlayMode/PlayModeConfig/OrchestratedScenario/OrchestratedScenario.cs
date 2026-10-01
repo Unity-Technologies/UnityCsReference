@@ -66,7 +66,16 @@ namespace Unity.Multiplayer.PlayMode.Editor
 
         internal override IEnumerable<MainToolbarElement> CreateTopbarUI()
         {
-            yield return new MainToolbarDropdown(MultiplayerStatusToolbarUtilities.GetStatusDropdownContent(), MultiplayerStatusToolbarUtilities.ShowStatusPopup);
+            // A configuration that fails validation has no Scenario,
+            // and therefore no instance status to show. Warn in place of the status and disable the dropdown.
+            var isValid = IsValid(out _);
+
+            yield return new MainToolbarDropdown(
+                MultiplayerStatusToolbarUtilities.GetStatusDropdownContent(isValid),
+                MultiplayerStatusToolbarUtilities.ShowStatusPopup)
+            {
+                enabled = isValid
+            };
         }
 
         public void OnBeforeSerialize()

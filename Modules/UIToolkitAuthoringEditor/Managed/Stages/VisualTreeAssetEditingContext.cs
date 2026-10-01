@@ -157,9 +157,6 @@ internal readonly record struct VisualTreeAssetEditingContext
     {
         using (new AssetDatabase.AssetEditingScope())
         {
-            var rootPath = AssetDatabase.GetAssetPath(context.RootVisualTreeAsset);
-
-            var path = context.SubDocumentPath;
             if (context.SubDocumentPath != null && context.SubDocumentPath.Length > 0)
             {
                 var template = context.SubDocumentPath[^1];
@@ -169,35 +166,21 @@ internal readonly record struct VisualTreeAssetEditingContext
 
                 var editedPath = AssetDatabase.GetAssetPath(editedVisualTreeAsset);
                 AssetDatabase.ImportAsset(editedPath, ImportAssetOptions.ForceSynchronousImport);
-                path = new TemplateAsset[context.SubDocumentPath.Length];
-                var vta = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath);
-                for (var i = 0; i < context.SubDocumentPath.Length; ++i)
-                {
-                    var templateId = context.SubDocumentPath[i].id;
-                    foreach (var templateAsset in vta.DepthFirstTraversalOfType<TemplateAsset>())
-                    {
-                        if (templateAsset.id == templateId)
-                        {
-                            path[i] = templateAsset;
-                            vta = templateAsset.ResolveTemplate();
-                            break;
-                        }
-                    }
-                }
             }
             else
             {
                 ReimportReferencedStyleSheets(context.RootVisualTreeAsset);
+                var rootPath = AssetDatabase.GetAssetPath(context.RootVisualTreeAsset);
                 AssetDatabase.ImportAsset(rootPath, ImportAssetOptions.ForceSynchronousImport);
             }
-
-            return new VisualTreeAssetEditingContext(
-                AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(rootPath),
-                path,
-                context.SubDocumentOptions,
-                context.PanelSettings
-            );
         }
+
+        // The scope batches the imports above and only runs them when it closes, replacing the UxmlAsset
+        // instances of the reimported documents and of their dependents. The sub-document path can therefore
+        // only be rebuilt now: GetElementEditFlags compares it against the cloned elements' TemplateAsset
+        // chain by reference, and a path captured before the imports ran would report every element of the
+        // next clone as read-only.
+        return Reload(context);
 
         static void ReimportReferencedStyleSheets(VisualTreeAsset vta)
         {
