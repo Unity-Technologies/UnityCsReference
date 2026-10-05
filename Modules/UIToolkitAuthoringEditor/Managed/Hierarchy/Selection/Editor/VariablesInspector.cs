@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using HelpBox = UnityEngine.UIElements.HelpBox;
@@ -17,8 +18,14 @@ namespace Unity.UIToolkit.Editor
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [UxmlElement]
-    partial class VariablesInspector : VisualElement
+    partial class VariablesInspector : VisualElement, ITrackablePropertyProvider
     {
+        // Override rows key their per-property state by provider. Variables have no StylePropertyBinding
+        // to act as one, so the inspector stands in for them and pushes the state in itself; nothing is
+        // ever raised through these events.
+        event Action<ITrackablePropertyProvider, string, TrackedPropertyType> ITrackablePropertyProvider.OnTrackedPropertyChanged { add { } remove { } }
+        event Action<ITrackablePropertyProvider, string, bool, bool, bool> ITrackablePropertyProvider.OnTrackedPropertySourceChanged { add { } remove { } }
+
         public VariablesInspector()
         {
             m_VariablesListView = new ListView
@@ -134,6 +141,7 @@ namespace Unity.UIToolkit.Editor
 
         ListView m_VariablesListView;
         List<StyleProperty> m_VariablesItemsSource = new();
+        readonly HashSet<string> m_TrackedVariableNames = new();
         static readonly Regex k_ValidNameRegex = new(@"^$|^[a-zA-Z0-9-_]+$");
 
         const string k_EmptyListText = "Click the + icon to create a new Variable";
@@ -153,13 +161,13 @@ namespace Unity.UIToolkit.Editor
 
         const int k_DefaultMenuFontSize = 12;
 
-        protected virtual VariablesListItem CreateListItem() => new ();
+        protected virtual VariablesListItem CreateListItem() => new (m_VariablesListView);
 
         protected virtual StyleComplexSelector GetRootRule(StyleRule rule) { return null; }
 
         protected virtual void OnStyleSheetModified()
         {
-            UpdateOverrideFoldoutTrackedProperties();
+            UpdateOverrideRowsTrackedProperties();
         }
 
         protected virtual void AfterAddVariable()
@@ -189,6 +197,9 @@ namespace Unity.UIToolkit.Editor
         {
             var item = e as VariablesListItem;
             var listItem = m_VariablesItemsSource[i].values[0];
+
+            // A variable that exists in the rule is always set, so its row always shows the override bar.
+            item.showOverrideBar = true;
 
             item.itemValueField.enabledSelf = true;
             item.itemValueField.textEdition.AcceptCharacter = (c) => c != '"';
@@ -282,12 +293,14 @@ namespace Unity.UIToolkit.Editor
         {
             var item = e as VariablesListItem;
             EnableWarningBox(item, null, false);
+            item.showOverrideBar = false;
             item.RemoveManipulator(item.contextualMenuManipulator);
         }
 
         void DestroyItem(VisualElement e)
         {
             var item = e as VariablesListItem;
+            item.DetachOverrideBar();
             item.RemoveManipulator(item.contextualMenuManipulator);
             item.contextualMenuManipulator = null;
         }
@@ -373,6 +386,28 @@ namespace Unity.UIToolkit.Editor
                 }
             }
 
+            Undo.CollapseUndoOperations(undoGroup);
+
+            OnStyleSheetModified();
+            RefreshVariablesList();
+        }
+
+        public void UnsetAllVariables()
+        {
+            if (m_VariablesItemsSource.Count == 0)
+                return;
+
+            // Removing a property can synchronously replace m_VariablesItemsSource, so snapshot it first.
+            var properties = new List<StyleProperty>(m_VariablesItemsSource);
+            var undoGroup = Undo.GetCurrentGroup();
+            using (UICommandQueue.BeginGroup(StylePropertyBinding.k_UnsetText))
+            {
+                foreach (var prop in properties)
+                {
+                    if (prop != null)
+                        RemoveStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, styleRule, prop, m_VisualTreeAsset);
+                }
+            }
             Undo.CollapseUndoOperations(undoGroup);
 
             OnStyleSheetModified();
@@ -686,7 +721,7 @@ namespace Unity.UIToolkit.Editor
                     m_VariablesListView.Rebuild();
                 }
 
-                UpdateOverrideFoldoutTrackedProperties();
+                UpdateOverrideRowsTrackedProperties();
                 return;
             }
 
@@ -700,37 +735,36 @@ namespace Unity.UIToolkit.Editor
             m_VariablesItemsSource = newVariablesList;
             m_VariablesListView.itemsSource = m_VariablesItemsSource;
             m_VariablesListView.RefreshItems();
-            UpdateOverrideFoldoutTrackedProperties();
+            UpdateOverrideRowsTrackedProperties();
         }
 
-        void UpdateOverrideFoldoutTrackedProperties()
+        // A variable that exists in the rule is always set, so it overrides every row it sits under.
+        // Reporting to all of them, and not just the Variables foldout, is what makes the Styles foldout
+        // above it show the override bar when only variables are set on the element.
+        protected virtual void UpdateOverrideRowsTrackedProperties()
         {
-            // Find the parent OverrideFoldout that contains this VariablesInspector
-            var parentFoldout = GetFirstAncestorOfType<OverrideFoldout>();
-            if (parentFoldout == null)
-                return;
-
-            // Clear existing tracked properties
-            parentFoldout.trackedProperties.Clear();
-
-            // Add all variable names to the tracked properties
+            using var handle = HashSetPool<string>.Get(out var variableNames);
             foreach (var variable in m_VariablesItemsSource)
+                variableNames.Add(variable.name);
+
+            for (var ancestor = hierarchy.parent; ancestor != null; ancestor = ancestor.hierarchy.parent)
             {
-                parentFoldout.AddTrackedProperty(variable.name);
+                if (ancestor is not OverrideRow row)
+                    continue;
+
+                foreach (var name in m_TrackedVariableNames)
+                {
+                    if (!variableNames.Contains(name))
+                        row.ClearPropertyOverride(this, name);
+                }
+
+                foreach (var name in variableNames)
+                    row.MarkPropertyOverride(this, name);
             }
 
-            var nameCount = m_VariablesItemsSource.Count;
-            if (nameCount == 0)
-            {
-                parentFoldout.UpdateTrackedProperties(Array.Empty<string>());
-            }
-            else
-            {
-                var names = new string[nameCount];
-                for (var i = 0; i < nameCount; i++)
-                    names[i] = m_VariablesItemsSource[i].name;
-                parentFoldout.UpdateTrackedProperties(names);
-            }
+            m_TrackedVariableNames.Clear();
+            foreach (var name in variableNames)
+                m_TrackedVariableNames.Add(name);
         }
     }
 }

@@ -17,5 +17,10 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler
         public Unity.U2D.Physics.PhysicsWorld.WorldProfile worldProfile;
         public uint worldNameOffset;
         public uint worldNameLength;
+
+        // Tells one world's row from another's within a single capture, which a name cannot do since two worlds can share one.
+        // It is not a handle and names nothing in this process: the world it came from may be in a player, or already destroyed.
+        // So it is only ever compared against another row's, never turned back into a world and never shown to a reader.
+        public uint worldId;
     }
 }

@@ -8,6 +8,8 @@ using System.Linq;
 using Unity.ProjectAuditor.Editor.Core;
 using UnityEngine;
 
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+
 namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
     [Serializable]
@@ -19,6 +21,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
         [SerializeField] SerializableEnum<IssueCategory>[] m_Categories;
         [SerializeField] int m_ActiveViewIndex;
+        [SerializeField] Dictionary<SerializableEnum<IssueCategory>, TreeViewState> m_TreeViewStates = new Dictionary<SerializableEnum<IssueCategory>, TreeViewState>();
         HashSet<IssueCategory> m_PendingCategories;
         HashSet<string> m_PendingModuleNames;
 
@@ -82,7 +85,14 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
             var categories = m_Categories.ToValuesList();
-            categories.RemoveAll(c => c.IsObsolete());
+            for (int index = categories.Count - 1; index >= 0; index--)
+            {
+                if (categories[index].IsObsolete())
+                {
+                    m_TreeViewStates.Remove(categories[index]);
+                    categories.RemoveAt(index);
+                }
+            }
 
             if (m_Categories.Length != categories.Count)
             {
@@ -115,13 +125,23 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
                 }
 
                 var view = desc.Type != null ? (AnalysisView)Activator.CreateInstance(desc.Type, this) : new AnalysisView(this);
-                view.Create(desc, layout, rules, viewStates, window);
+                view.Create(desc, layout, rules, viewStates, window, GetOrCreateTreeViewState(category));
                 view.OnEnable();
                 views.Add(view);
             }
 
             m_Views = views.ToArray();
             m_AssistantController = new ProjectAuditorAssistantController();
+        }
+
+        TreeViewState GetOrCreateTreeViewState(IssueCategory category)
+        {
+            if (m_TreeViewStates.TryGetValue(category, out var state))
+                return state;
+
+            state = new TreeViewState();
+            m_TreeViewStates.Add(category, state);
+            return state;
         }
 
         public void ClearView(IssueCategory category)

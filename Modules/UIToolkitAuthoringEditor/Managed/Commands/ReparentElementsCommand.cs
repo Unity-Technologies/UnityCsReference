@@ -56,7 +56,7 @@ internal sealed class ReparentElementsCommand : Command<ReparentElementsCommand>
             return false;
         foreach (var asset in ChildrenAssets)
         {
-            if (asset == null)
+            if (asset == null || asset.visualTreeAsset == null)
                 return false;
         }
         return true;

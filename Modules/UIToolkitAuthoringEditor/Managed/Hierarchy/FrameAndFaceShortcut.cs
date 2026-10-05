@@ -17,6 +17,8 @@ namespace Unity.UIToolkit.Editor;
 // binding stays reserved for stock Frame Selected.
 static partial class FrameAndFaceShortcut
 {
+    internal const string ShortcutId = "UI Toolkit Authoring/Frame and Align Element to View";
+
     [AutoStaticsCleanupOnCodeReload]
     static ShortcutContext s_Context;
 
@@ -36,7 +38,7 @@ static partial class FrameAndFaceShortcut
             StageUtility.GetCurrentStage() is MainStage or VisualElementEditingStage;
     }
 
-    [Shortcut("UI Toolkit Authoring/Frame and Align Element to View", typeof(ShortcutContext), KeyCode.F, ShortcutModifiers.Alt)]
+    [Shortcut(ShortcutId, typeof(ShortcutContext), KeyCode.F, ShortcutModifiers.Alt)]
     static void OnShortcut(ShortcutArguments args)
         => RequestFramingCommand.Execute(CommandSources.Hierarchy, element: null, orientToFace: true);
 }

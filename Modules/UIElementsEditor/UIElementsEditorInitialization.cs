@@ -28,8 +28,6 @@ namespace UnityEditor.UIElements
                 UnityEngine.UIElements.UIElementsInitialization.InitializeUIElementsManaged();
                 VisualTreeAssetHierarchyDropHandler.Register();
 
-                // The setter pushes on change; also apply the persisted value at editor load so a saved setting takes effect.
-                UnityEngine.UIElements.Layout.LayoutNative.SetGridLayoutEnabled(UIToolkitProjectSettings.enableGridLayout);
                 UnityEngine.UIElements.PanelRenderer.RegisterPanelRendererAnimationBinding();
             }
             catch (Exception ex)

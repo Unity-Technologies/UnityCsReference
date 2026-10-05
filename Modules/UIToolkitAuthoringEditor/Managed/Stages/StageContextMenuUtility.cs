@@ -42,9 +42,13 @@ internal static class StageContextMenuUtility
     internal static readonly string ShowInProject = L10n.Tr("Show in Project", null);
     internal static readonly string GenerateSelector = L10n.Tr("Generate Selector From Element...", null);
     internal static readonly string SaveUxml = L10n.Tr("Save UXML", null);
+    internal static readonly string SaveUxmlFormat = L10n.Tr("Save {0}", null);
     internal static readonly string DiscardUxml = L10n.Tr("Discard UXML", null);
     internal static readonly string OpenAsset = L10n.Tr("Open Asset", null);
+    internal static readonly string SelectUxmlAsset = L10n.Tr("Select UXML Asset", null);
     internal static readonly string FindReferencesInScene = L10n.Tr("Find References In Scene", null);
+    internal static readonly string FrameSelection = L10n.Tr("Frame Selection", null);
+    internal static readonly string FrameAndAlignToView = L10n.Tr("Frame and Align to View", null);
 
     /// <summary>
     /// Appends "Open Asset" and "Find References In Scene" for the main-stage context menu.
@@ -184,7 +188,7 @@ internal static class StageContextMenuUtility
         if (isPanelComponentRootElement)
         {
             menu.AppendAction(
-                "Select VisualTreeAsset Asset",
+                SelectUxmlAsset,
                 ma => { EditorGUIUtility.PingObject(ma.userData as VisualTreeAsset); },
                 ma => (ma.userData as VisualTreeAsset) ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled,
                 vtaSource);
@@ -236,8 +240,26 @@ internal static class StageContextMenuUtility
 
     static void PopulateFrameOperations(VisualElement element, DropdownMenu menu)
     {
-        menu.AppendAction("Frame Selection", _ => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: false));
-        menu.AppendAction("Frame and Align to View", _ => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: true));
+        AppendAction(menu, FrameSelection, Menu.GetHotkey("Edit/Frame Selected in Window under Cursor"),
+            () => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: false));
+        AppendAction(menu, FrameAndAlignToView, GetShortcutHotkey(FrameAndFaceShortcut.ShortcutId),
+            () => RequestFramingCommand.Execute(CommandSources.Hierarchy, element, orientToFace: true));
+    }
+
+    // The native menu right-aligns hotkeys only in the encoded form Menu.GetHotkey uses (e.g. "&f"),
+    // not the human-readable ShortcutBinding.ToString().
+    internal static string GetShortcutHotkey(string shortcutId)
+    {
+        try
+        {
+            var binding = UnityEditor.ShortcutManagement.ShortcutManager.instance.GetShortcutBinding(shortcutId);
+            return UnityEditor.ShortcutManagement.KeyCombination.SequenceToMenuString(binding.keyCombinationSequence);
+        }
+        catch (ArgumentException)
+        {
+            // The shortcut registry may not know the id yet, e.g. before its delayed registration ran.
+            return null;
+        }
     }
 
     internal static void PopulateOpenActions(VisualElement element, DropdownMenu menu, CommandSources.CommandSource source)
@@ -641,6 +663,12 @@ internal static class StageContextMenuUtility
         window.rootVisualElement.schedule.Execute(() => window.FocusNewSelectorField(selector)).ExecuteLater(0);
     }
 
+    internal static string GetSaveUxmlLabel(VisualTreeAsset vta)
+    {
+        var fileName = vta ? Path.GetFileName(AssetDatabase.GetAssetPath(vta.GetEntityId())) : null;
+        return string.IsNullOrEmpty(fileName) ? SaveUxml : string.Format(SaveUxmlFormat, fileName);
+    }
+
     /// <summary>
     /// Appends "Save UXML" and "Discard UXML", which settle <paramref name="vta"/>'s file and nothing else:
     /// the style sheets it references, and any document that instantiates it, keep whatever they have unsaved.
@@ -653,7 +681,7 @@ internal static class StageContextMenuUtility
             : DropdownMenuAction.Status.Disabled;
 
         menu.AppendAction(
-            SaveUxml,
+            GetSaveUxmlLabel(vta),
             _ => UIAssetRegistry.instance.SaveSingleAsset(vta, CommandSources.Hierarchy),
             status);
 

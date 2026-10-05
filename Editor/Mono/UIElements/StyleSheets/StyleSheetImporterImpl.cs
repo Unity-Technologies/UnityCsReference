@@ -184,7 +184,8 @@ namespace UnityEditor.UIElements.StyleSheets
                 return null;
             }
 
-            m_Context?.DependsOnSourceAsset(path);
+            if (!URIHelpers.IsBuiltinResourcePath(path))
+                m_Context?.DependsOnSourceAsset(path);
 
             if (string.IsNullOrEmpty(subAssetPath))
                 return AssetDatabase.LoadMainAssetAtPath(path);
@@ -509,12 +510,15 @@ namespace UnityEditor.UIElements.StyleSheets
                         return;
                     }
 
-                    // explicit asset reference already loaded
-                    m_Context?.DependsOnArtifact(projectRelativePath);
+                    if (!response.isBuiltinResource)
+                    {
+                        // explicit asset reference already loaded
+                        m_Context?.DependsOnArtifact(projectRelativePath);
 
-                    // Necessary to avoid the warning "Import of asset setup artifact dependency to but dependency isn't used
-                    // and therefore not registered in the asset database". (UUM-68160)
-                    AssetDatabase.LoadAssetAtPath(projectRelativePath, typeof(Object));
+                        // Necessary to avoid the warning "Import of asset setup artifact dependency to but dependency isn't used
+                        // and therefore not registered in the asset database". (UUM-68160)
+                        AssetDatabase.LoadAssetAtPath(projectRelativePath, typeof(Object));
+                    }
                 }
                 else
                 {
@@ -1194,14 +1198,15 @@ namespace UnityEditor.UIElements.StyleSheets
                             importedStyleSheet = response.resolvedQueryAsset as UnityStyleSheet;
                             if (importedStyleSheet)
                             {
-                                m_Context?.DependsOnArtifact(projectRelativePath);
+                                if (!response.isBuiltinResource)
+                                    m_Context?.DependsOnArtifact(projectRelativePath);
                             }
                             else
                             {
                                 importedStyleSheet = DeclareDependencyAndLoad(projectRelativePath) as UnityStyleSheet;
                             }
 
-                            if (!response.isLibraryAsset)
+                            if (!response.isLibraryAsset && !response.isBuiltinResource)
                             {
                                 m_Context?.DependsOnImportedAsset(projectRelativePath);
                             }

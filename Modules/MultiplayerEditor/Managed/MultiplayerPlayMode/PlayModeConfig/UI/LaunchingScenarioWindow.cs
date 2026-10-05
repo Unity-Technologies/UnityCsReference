@@ -23,6 +23,8 @@ namespace Unity.Multiplayer.PlayMode.Editor
         private const string k_RunLabel = "Running";
         private const string k_CleanupLabel = "Stopping";
         private const string k_LoadingIconName = "LoadingIcon";
+        const string k_NoScenarioMessage =
+            "This window opens automatically when a Multiplayer Play Mode scenario starts. No scenario is starting right now.";
 
         private const int k_WindowWidth = 400;
         private const int k_WindowHeight = 130;
@@ -168,10 +170,15 @@ namespace Unity.Multiplayer.PlayMode.Editor
             progressBar.value = Mathf.Lerp(progressBar.value, progress, k_LerpFactor);
         }
 
-        void CreateGUI()
+        internal void CreateGUI()
         {
+            if (m_ScenarioConfig == null || m_ScenarioConfig.Scenario == null)
+            {
+                rootVisualElement.Add(new HelpBox(k_NoScenarioMessage, HelpBoxMessageType.Info));
+                return;
+            }
+
             m_ProgressBar = new ProgressBar() { lowValue = 0, highValue = 1, };
-            m_ScenarioConfig.Scenario.StatusRefreshed += OnScenarioStatusRefreshed;
 
             var LoadingIcon = new Image() { name = k_LoadingIconName, image = Icons.GetImage(Icons.ImageName.Loading) };
             UIUtils.Spin(LoadingIcon);

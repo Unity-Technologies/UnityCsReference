@@ -69,6 +69,10 @@ namespace Unity.ProjectAuditor.Editor
         /// <param name="child">The node to add as a child of this one.</param>
         internal void AddChild(DependencyNode child)
         {
+            // if any child is critical, make parent critical too
+            // this is to propagate perfCriticalContext up to the root of the hierarchy
+            if (child.PerfCriticalContext)
+                PerfCriticalContext = true;
             m_Children.Add(child);
         }
 

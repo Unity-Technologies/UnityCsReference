@@ -92,13 +92,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnCancelClicked()
         {
             ResetDraft();
+            PackageManagerSecuritySettingsAnalytics.SendEvent("cancelTrustPolicy", m_SettingsProxy.trustPolicyLevel, m_SettingsProxy.trustPolicyLevelDraft);
         }
 
         private void OnApplyClicked()
         {
-            m_SettingsProxy.trustPolicyLevel = m_SettingsProxy.trustPolicyLevelDraft;
+            var previousTrustPolicyLevel = m_SettingsProxy.trustPolicyLevel;
+            var newTrustPolicyLevel = m_SettingsProxy.trustPolicyLevelDraft;
+            m_SettingsProxy.trustPolicyLevel = newTrustPolicyLevel;
             m_SettingsProxy.ClearTrustPolicyLevelDraft();
-            PackageManagerWindowAnalytics.SendEvent(GetAnalyticsAction(m_SettingsProxy.trustPolicyLevel));
+            PackageManagerSecuritySettingsAnalytics.SendEvent("applyTrustPolicy", previousTrustPolicyLevel, newTrustPolicyLevel);
         }
 
         private void OnLearnMoreClicked()
@@ -107,17 +110,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             var url = $"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/upm-signature.html";
             m_ApplicationProxy.OpenURL(url);
             PackageManagerReadMoreClickedAnalytics.SendEvent("security-settings-read-more", url);
-        }
-
-        private static string GetAnalyticsAction(TrustPolicyLevel trustPolicyLevel)
-        {
-            return trustPolicyLevel switch
-            {
-                TrustPolicyLevel.Signed => "securitySettingSigned",
-                TrustPolicyLevel.AnyPackage => "securitySettingAnyPackage",
-                TrustPolicyLevel.TrustedOnly => "securitySettingTrustedOnly",
-                _ => string.Empty,
-            };
         }
 
         private static string GetSignatureOptionLabel(TrustPolicyLevel trustPolicyLevel)

@@ -107,8 +107,7 @@ public partial class LocalizedEntry<TEntry> : LocalizedReference where TEntry : 
         var localeId = locale != null ? locale.Identifier : default;
         if (TryGetCachedEntry(localeId, out var cached))
             return AwaitableUtility.FromResult(cached);
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return AwaitableUtility.FromResult<TEntry>(null);
         return ResolveAsync(database, locale, localeId, cancellationToken);
     }
@@ -146,8 +145,7 @@ public partial class LocalizedEntry<TEntry> : LocalizedReference where TEntry : 
         var localeId = locale != null ? locale.Identifier : default;
         if (TryGetCachedEntry(localeId, out var cached))
             return cached;
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return null;
         var entry = database.GetEntry(TableReference, TableEntryReference, locale, EnableFallback) as TEntry;
         CacheEntry(entry, localeId, missIsFinal: false);

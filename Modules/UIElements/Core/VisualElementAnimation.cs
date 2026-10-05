@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Experimental;
 
@@ -11,7 +12,15 @@ namespace UnityEngine.UIElements
 {
     public partial class VisualElement : ITransitionAnimations
     {
-        List<IValueAnimationUpdate> m_RunningAnimations;
+        List<IValueAnimationUpdate> runningAnimations
+        {
+            get
+            {
+                ref var data = ref animationData;
+                return Unsafe.IsNullRef(ref data) ? null : data.runningAnimations;
+            }
+        }
+
         private VisualElementAnimationSystem GetAnimationSystem()
         {
             if (elementPanel != null)
@@ -24,12 +33,9 @@ namespace UnityEngine.UIElements
 
         internal void RegisterAnimation(IValueAnimationUpdate anim)
         {
-            if (m_RunningAnimations == null)
-            {
-                m_RunningAnimations = new List<IValueAnimationUpdate>();
-            }
-
-            m_RunningAnimations.Add(anim);
+            ref var data = ref GetOrAddAnimationData();
+            data.runningAnimations ??= new List<IValueAnimationUpdate>();
+            data.runningAnimations.Add(anim);
 
             var sys = GetAnimationSystem();
 
@@ -41,10 +47,7 @@ namespace UnityEngine.UIElements
 
         internal void UnregisterAnimation(IValueAnimationUpdate anim)
         {
-            if (m_RunningAnimations != null)
-            {
-                m_RunningAnimations.Remove(anim);
-            }
+            runningAnimations?.Remove(anim);
 
             var sys = GetAnimationSystem();
 
@@ -58,10 +61,11 @@ namespace UnityEngine.UIElements
         {
             var sys = GetAnimationSystem();
 
-            if (m_RunningAnimations != null && m_RunningAnimations.Count > 0)
+            var running = runningAnimations;
+            if (running != null && running.Count > 0)
             {
                 if (sys != null)
-                    sys.UnregisterAnimations(m_RunningAnimations);
+                    sys.UnregisterAnimations(running);
             }
 
             elementPanel?.styleAnimationSystem?.CancelElementClipAnimation(this);
@@ -75,8 +79,9 @@ namespace UnityEngine.UIElements
             if (sys == null)
                 return;
 
-            if (m_RunningAnimations != null && m_RunningAnimations.Count > 0)
-                sys.RegisterAnimations(m_RunningAnimations);
+            var running = runningAnimations;
+            if (running != null && running.Count > 0)
+                sys.RegisterAnimations(running);
 
             // IncrementVersion is a no-op while elementPanel is null, so the dirty-element
             // bookkeeping for unity-animation-clip would be missed when the element first

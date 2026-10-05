@@ -403,6 +403,7 @@ namespace UnityEditor
         }
 
         [SerializeField] ulong m_OverrideSceneCullingMask;
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal ulong overrideSceneCullingMask
         {
             get { return m_OverrideSceneCullingMask; }

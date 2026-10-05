@@ -176,13 +176,14 @@ namespace UnityEngine.UIElements.StyleSheets
             // we need to find which sheets belongs to the element itself.
             VisualElement element = context.currentElement;
             int parentSheetIndex =  context.styleSheetCount - 1;
-            if (element.styleSheetList != null)
+            var elementSheets = element.styleSheetList;
+            if (elementSheets != null)
             {
                 // The number of style sheet for an element is the count of the styleSheetList + all imported style sheet
-                int elementSheetCount = element.styleSheetList.Count;
-                for (var i = 0; i < element.styleSheetList.Count; i++)
+                int elementSheetCount = elementSheets.Count;
+                for (var i = 0; i < elementSheets.Count; i++)
                 {
-                    var elementSheet = element.styleSheetList[i];
+                    var elementSheet = elementSheets[i];
                     if (elementSheet.flattenedRecursiveImports != null)
                         elementSheetCount += elementSheet.flattenedRecursiveImports.Count;
                 }

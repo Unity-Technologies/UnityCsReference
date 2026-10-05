@@ -29,6 +29,7 @@ sealed partial class UIViewport : VisualElement
     public const string UssClass = "unity-ui-viewport";
     public const string ToolbarUssClass = UssClass + "__toolbar";
     public const string ToolbarZoomMenuUssClass = ToolbarUssClass + "-zoom-menu";
+    public const string ToolbarSaveButtonUssClass = ToolbarUssClass + "-save-button";
     public const string ToolbarPreviewToggleUssClass = ToolbarUssClass + "-preview-button";
     public const string ToolbarFitViewportButtonUssClass = ToolbarUssClass + "-fit-button";
     public const string ToolbarViewMenuUssClass = ToolbarUssClass + "-view-menu";
@@ -40,11 +41,16 @@ sealed partial class UIViewport : VisualElement
 
     public const string BreadcrumbsName = UssClass + "__breadcrumbs-view";
 
+    internal static readonly string SaveTooltipFormat = L10n.Tr("Save {0}", null);
+    internal static readonly string SaveTooltipCleanFormat = L10n.Tr("{0} has no unsaved changes.", null);
+
     readonly VisualElement m_ViewportContainer;
     readonly VisualElement m_Surface;
     readonly UICanvas m_Canvas;
     readonly ToolbarMenu m_ZoomMenu;
+    readonly ToolbarButton m_SaveButton;
     readonly ToolbarMenu m_ViewMenu;
+    VisualTreeAsset m_SaveTarget;
     readonly UIViewportThemeMenu m_ThemeMenu;
     readonly ToolbarToggle m_PreviewToggle;
     readonly Button m_FitViewportButton;
@@ -103,6 +109,10 @@ sealed partial class UIViewport : VisualElement
         m_ZoomMenu = this.Q<ToolbarMenu>(className: ToolbarZoomMenuUssClass);
         SetupZoomMenu();
 
+        m_SaveButton = this.Q<ToolbarButton>(className: ToolbarSaveButtonUssClass);
+        m_SaveButton.clicked += OnSaveButtonClicked;
+        RefreshSaveButton();
+
         m_ViewMenu = this.Q<ToolbarMenu>(className: ToolbarViewMenuUssClass);
         SetupViewMenu();
 
@@ -122,9 +132,34 @@ sealed partial class UIViewport : VisualElement
         m_Canvas.OnViewportChanged(evt.newRect.size);
     }
 
+    /// <summary>The document the toolbar Save button settles; null hides the button.</summary>
+    internal void SetSaveTarget(VisualTreeAsset asset)
+    {
+        m_SaveTarget = asset;
+        RefreshSaveButton();
+    }
+
+    internal void RefreshSaveButton()
+    {
+        var path = m_SaveTarget ? AssetDatabase.GetAssetPath(m_SaveTarget.GetEntityId()) : null;
+        var hasAsset = !string.IsNullOrEmpty(path);
+        var canSave = hasAsset && UIAssetRegistry.LiveInstance?.CanSettleSingleAsset(m_SaveTarget) == true;
+        m_SaveButton.style.display = hasAsset ? DisplayStyle.Flex : DisplayStyle.None;
+        m_SaveButton.tooltip = !hasAsset ? null
+            : canSave ? string.Format(SaveTooltipFormat, path)
+            : string.Format(SaveTooltipCleanFormat, path);
+        m_SaveButton.SetEnabled(canSave);
+    }
+
+    void OnSaveButtonClicked()
+    {
+        if (m_SaveTarget && UIAssetRegistry.instance.CanSettleSingleAsset(m_SaveTarget))
+            UIAssetRegistry.instance.SaveSingleAsset(m_SaveTarget, CommandSources.Viewport);
+    }
+
     void OnContextMenuPointerUp(PointerUpEvent evt)
     {
-        if (m_PanManipulator.IsPanning || m_Canvas.PreviewMode)
+        if (m_PanManipulator.IsPanning || m_ZoomManipulator.IsZooming || m_Canvas.PreviewMode)
             return;
 
         var isSecondaryClick = evt.button == 1;
@@ -237,7 +272,6 @@ sealed partial class UIViewport : VisualElement
             }
         }
     }
-
 
     protected override void HandleEventBubbleUp(EventBase evt)
     {

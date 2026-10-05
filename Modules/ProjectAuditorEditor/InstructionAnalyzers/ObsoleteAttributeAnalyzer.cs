@@ -4,13 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
-using Unity.ProjectAuditor.Editor.CodeAnalysis;
 using Unity.ProjectAuditor.Editor.Core;
 using Unity.ProjectAuditor.Editor.Modules;
 using Unity.ProjectAuditor.Editor.UI.Framework;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
@@ -25,7 +26,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
         internal const string PAC0197 = nameof(PAC0197);
         internal const string PAC0198 = nameof(PAC0198);
 
-        static readonly Descriptor k_ObsoleteAttributeIssueDescriptor = new Descriptor
+        internal static readonly Descriptor k_ObsoleteAttributeIssueDescriptor = new Descriptor
             (
             PAC0194,
             "Use of Obsolete Code",
@@ -181,10 +182,7 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
                 {
                     if (ObsoleteLibrary.HasAnyUpgradeVersions)
                     {
-                        string methodName = callee.Name;
-                        if (methodName.StartsWith("get_", StringComparison.Ordinal))
-                            methodName = methodName.Substring("get_".Length);
-                        string fullName = callee.DeclaringType.FastFullName() + "." + methodName;
+                        string fullName = BuildObsoleteLookupKey((MethodReference)callee);
 
                         if (ObsoleteLibrary.LibraryDictionary.TryGetValue(fullName, out var reportItem))
                         {
@@ -398,6 +396,200 @@ namespace Unity.ProjectAuditor.Editor.InstructionAnalyzers
             }
 
             return null;
+        }
+
+        [ThreadStatic, NoAutoStaticsCleanup]
+        static StringBuilder ts_KeyBuilder;
+
+        internal static string BuildObsoleteLookupKey(MethodReference callee)
+        {
+            ParameterTypeSpec[] paramSpecs = null;
+            if (callee.HasParameters)
+            {
+                var parameters = callee.Parameters;
+                paramSpecs = new ParameterTypeSpec[parameters.Count];
+                for (int i = 0; i < parameters.Count; i++)
+                    paramSpecs[i] = ParameterTypeSpec.FromCecil(parameters[i].ParameterType);
+            }
+
+            // Reduce a constructed generic (ComponentLookup`1<MyComponent>) to its open type; the database records declaring types without their type arguments.
+            var declaringType = callee.DeclaringType;
+            while (declaringType is TypeSpecification specification)
+                declaringType = specification.ElementType;
+
+            return BuildObsoleteLookupKey(declaringType.FullName, callee.Name, paramSpecs);
+        }
+
+        // Builds the lookup key in the format used by ObsoleteDatabase.json:
+        //  - Property getters: "Namespace.Type.PropertyName" (no parentheses)
+        //  - Methods:          "Namespace.Type.MethodName(ParamType1,ParamType2,...)"
+        // Parameter types use C# language keywords for primitives (int, string, ...),
+        // short type names for everything else, "[]" for arrays, and "<T, U>" for generic args.
+        internal static string BuildObsoleteLookupKey(string declaringTypeFullName, string methodName, IReadOnlyList<ParameterTypeSpec> parameters)
+        {
+            bool isPropertyGetter = methodName.StartsWith("get_", StringComparison.Ordinal);
+            if (isPropertyGetter)
+                methodName = methodName.Substring("get_".Length);
+
+            var sb = ts_KeyBuilder ??= new StringBuilder();
+            sb.Clear();
+            AppendDeclaringTypeName(sb, declaringTypeFullName);
+            sb.Append('.');
+            sb.Append(methodName);
+
+            if (!isPropertyGetter)
+            {
+                sb.Append('(');
+                if (parameters != null)
+                {
+                    for (int i = 0; i < parameters.Count; i++)
+                    {
+                        if (i > 0)
+                            sb.Append(',');
+                        AppendParameterTypeName(sb, parameters[i]);
+                    }
+                }
+                sb.Append(')');
+            }
+
+            return sb.ToString();
+        }
+
+        // The database spells declaring types as open types with '.' between every segment, both for namespaces and
+        // for nested types ("Unity.Entities.ComponentLookup", "UnityEditor.CameraEditor.Settings"). Cecil keeps the
+        // generic arity suffix and separates nested types with '/'.
+        static void AppendDeclaringTypeName(StringBuilder sb, string cecilFullName)
+        {
+            bool inArity = false;
+            for (int i = 0; i < cecilFullName.Length; i++)
+            {
+                var c = cecilFullName[i];
+                if (c == '`')
+                {
+                    inArity = true;
+                }
+                else if (c == '/' || c == '.')
+                {
+                    inArity = false;
+                    sb.Append('.');
+                }
+                else if (!inArity)
+                {
+                    sb.Append(c);
+                }
+            }
+        }
+
+        static void AppendParameterTypeName(StringBuilder sb, ParameterTypeSpec type)
+        {
+            switch (type.TypeKind)
+            {
+                case ParameterTypeSpec.Kind.Array:
+                    AppendParameterTypeName(sb, type.Element);
+                    sb.Append("[]");
+                    return;
+
+                case ParameterTypeSpec.Kind.Pointer:
+                    AppendParameterTypeName(sb, type.Element);
+                    sb.Append('*');
+                    return;
+
+                case ParameterTypeSpec.Kind.ByReference:
+                    AppendParameterTypeName(sb, type.Element);
+                    return;
+
+                case ParameterTypeSpec.Kind.GenericInstance:
+                    AppendGenericInstanceTypeName(sb, type);
+                    return;
+
+                case ParameterTypeSpec.Kind.Simple:
+                    var keyword = GetCSharpKeyword(type.FullName);
+                    if (keyword != null)
+                        sb.Append(keyword);
+                    else
+                        AppendUnqualifiedTypeName(sb, type.Name);
+                    return;
+            }
+        }
+
+        static void AppendUnqualifiedTypeName(StringBuilder sb, string name)
+        {
+            // Strip generic arity suffix (e.g. "Dictionary`2" -> "Dictionary")
+            var tickIndex = name.IndexOf('`');
+            if (tickIndex >= 0)
+                sb.Append(name, 0, tickIndex);
+            else
+                sb.Append(name);
+        }
+
+        // The database keeps a nested type's qualifier only when that qualifier is generic
+        // ("NativeArray<int>.ReadOnly", "CoreEditorDrawer<T>.IDrawer"), and strips it otherwise because a
+        // non-generic qualifier cannot be told apart from a namespace in the sources it is scraped from.
+        // Cecil reports the whole nested chain and hoists the enclosing type's arguments onto the innermost
+        // type, so the arguments belong on the outermost segment and the nested names trail behind it.
+        static void AppendGenericInstanceTypeName(StringBuilder sb, ParameterTypeSpec type)
+        {
+            var fullName = type.FullName;
+            var outerEnd = fullName.IndexOf('/');
+            if (outerEnd < 0)
+                outerEnd = fullName.Length;
+
+            AppendTypeNameSegment(sb, fullName, fullName.LastIndexOf('.', outerEnd - 1) + 1, outerEnd);
+
+            sb.Append('<');
+            var args = type.GenericArguments;
+            for (int i = 0; i < args.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(", ");
+                AppendParameterTypeName(sb, args[i]);
+            }
+            sb.Append('>');
+
+            for (int segmentStart = outerEnd; segmentStart < fullName.Length;)
+            {
+                var segmentEnd = fullName.IndexOf('/', segmentStart + 1);
+                if (segmentEnd < 0)
+                    segmentEnd = fullName.Length;
+
+                sb.Append('.');
+                AppendTypeNameSegment(sb, fullName, segmentStart + 1, segmentEnd);
+                segmentStart = segmentEnd;
+            }
+        }
+
+        static void AppendTypeNameSegment(StringBuilder sb, string fullName, int start, int end)
+        {
+            var tickIndex = fullName.IndexOf('`', start);
+            if (tickIndex >= 0 && tickIndex < end)
+                end = tickIndex;
+
+            sb.Append(fullName, start, end - start);
+        }
+
+        // Roslyn can do this automatically via SpecialType. Use it when we migrate!
+        static string GetCSharpKeyword(string fullName)
+        {
+            switch (fullName)
+            {
+                case "System.Boolean": return "bool";
+                case "System.Byte": return "byte";
+                case "System.SByte": return "sbyte";
+                case "System.Int16": return "short";
+                case "System.UInt16": return "ushort";
+                case "System.Int32": return "int";
+                case "System.UInt32": return "uint";
+                case "System.Int64": return "long";
+                case "System.UInt64": return "ulong";
+                case "System.Single": return "float";
+                case "System.Double": return "double";
+                case "System.Decimal": return "decimal";
+                case "System.Char": return "char";
+                case "System.String": return "string";
+                case "System.Object": return "object";
+                case "System.Void": return "void";
+                default: return null;
+            }
         }
     }
 }

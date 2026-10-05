@@ -208,6 +208,10 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
                 // PointerCaptureOut doesn't always come back in time to hide the rectangle.
                 if (IsPanModifierHeld(pointerDownEvent.modifiers))
                     break;
+                // Same for zoom (Ctrl+Left on macOS), which captures the mouse on pointer-down, so the
+                // release never reaches us and the gesture would stay armed for the next pointer move.
+                if (IsZoomModifierHeld(pointerDownEvent.modifiers))
+                    break;
 
                 // We set the flag here, but we will capture lazily on first PointerMove past the drag threshold as
                 // capturing on every PointerDown stole the gesture from other potential manipulators (e.g. the canvas pan
@@ -520,6 +524,9 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         if (panelElement == null)
             return;
 
+        if (panelElement.CursorHost == this)
+            panelElement.CursorHost = null;
+
         ClearSelection();
         panelElement.SubPanel?.UnregisterChangeProcessor(this);
     }
@@ -529,6 +536,7 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         if (panelElement == null)
             return;
 
+        panelElement.CursorHost = this;
         panelElement.SubPanel?.RegisterChangeProcessor(this);
         // Rebuild the handles from the current selection when the panel is (re)acquired, e.g. re-entering the stage.
         OnSelectionChanged();
@@ -896,6 +904,14 @@ sealed partial class UICanvasDocumentRoot : VisualElement, IVisualElementChangeP
         if ((modifiers & EventModifiers.Alt) == 0)
             return false;
         return true;
+    }
+
+    // Matches the activator filter in UICanvasZoomManipulator: Ctrl+Left on macOS, Alt+Right elsewhere.
+    // Only the macOS half can collide with the left-button selection gesture. The match is exact, like
+    // ManipulatorActivationFilter's, so Shift+Ctrl and Cmd+Ctrl still reach the toggle-selection path.
+    internal static bool IsZoomModifierHeld(EventModifiers modifiers)
+    {
+        return false;
     }
 
     Rect CanvasRectFromDrag(Vector2 currentCanvasPosition) => Rect.MinMaxRect(

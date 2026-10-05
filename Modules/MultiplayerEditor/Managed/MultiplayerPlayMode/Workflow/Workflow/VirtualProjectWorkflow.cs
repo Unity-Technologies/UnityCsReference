@@ -175,7 +175,9 @@ namespace Unity.Multiplayer.PlayMode.Editor
         // cleared on code reload, so it has to be re-established on every load. A static constructor
         // would only run once per domain, leaving SystemDataStore.s_FileSystemDelegates null while every
         // read path dereferences it unguarded.
-        [OnCodeLoaded]
+        // CodeInitializing rather than CodeLoaded: this reaches the AssetDatabase through
+        // ProjectDataStore's version migration, which the code-reload restriction forbids.
+        [OnCodeInitializing]
         static void Initialize()
         {
             if (MigrationUtility.ShouldDisableMultiplayerPlayMode())

@@ -366,6 +366,11 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 return;
             }
 
+            var bindingPath = view.Context.serializedBasePath;
+
+            VisualElementAttributesInspectorElement.DiscardStaleRootField(
+                ref m_RootPropertyField, args, bindingPath);
+
             if (m_RootPropertyField == null)
             {
                 m_RootPropertyField = new PropertyField();
@@ -377,7 +382,7 @@ sealed partial class VisualElementComponentsInspectorElement : VisualElement
                 m_AttributesView.Add(m_RootPropertyField);
             }
 
-            m_RootPropertyField.bindingPath = view.Context.serializedBasePath;
+            m_RootPropertyField.bindingPath = bindingPath;
         }
 
         void HideDataFoldoutHeader()

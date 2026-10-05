@@ -1005,7 +1005,7 @@ namespace Unity.U2D.Physics
         /// <param name="allocator">The memory allocator to use for the results. This can only be <see cref="Unity.Collections.Allocator.Temp"/>, <see cref="Unity.Collections.Allocator.TempJob"/> or <see cref="Unity.Collections.Allocator.Persistent"/>.</param>
         /// <remarks>See <see cref="PhysicsBody.SetOwner(UnityEngine.Object)"/>.</remarks>
         /// <returns>The created bodies. This NativeArray must be disposed of after use otherwise leaks will occur. The exception to this is if the array is empty.</returns>
-        public static unsafe NativeArray<PhysicsBody> CreateBatch(PhysicsWorld world, PhysicsBodyDefinition definition, int bodyCount, UnityEngine.Object owner, int ownerKey, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsBody_CreateBatch(world, new ReadOnlySpan<PhysicsBodyDefinition>(&definition, 1), bodyCount, owner, ownerKey, allocator).ToNativeArray<PhysicsBody>();
+        public static NativeArray<PhysicsBody> CreateBatch(PhysicsWorld world, PhysicsBodyDefinition definition, int bodyCount, UnityEngine.Object owner, int ownerKey, Allocator allocator = Unity.Collections.Allocator.Temp) => PhysicsBody_CreateBatch(world, stackalloc PhysicsBodyDefinition[1] { definition }, bodyCount, owner, ownerKey, allocator).ToNativeArray<PhysicsBody>();
 
         /// <summary>
         /// Create a batch of bodies in the specified world.
@@ -1706,11 +1706,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="input">The fluid and force configuration. See <see cref="BuoyancyInput"/>.</param>
         /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
-        public unsafe readonly void ApplyBuoyancy(BuoyancyInput input, float deltaTime)
-        {
-            var body = this;
-            ApplyBuoyancy(input, new ReadOnlySpan<PhysicsBody>(&body, 1), deltaTime);
-        }
+        public readonly void ApplyBuoyancy(BuoyancyInput input, float deltaTime) => ApplyBuoyancy(input, stackalloc PhysicsBody[1] { this }, deltaTime);
 
         /// <summary>
         /// Apply buoyancy, flow and damping forces to every body in <paramref name="bodies"/> based on how their attached shapes are submerged in a fluid plane.
@@ -1760,11 +1756,7 @@ namespace Unity.U2D.Physics
         /// Sleeping bodies are woken automatically by Box2D when the per-shape force is non-trivial.
         /// </summary>
         /// <param name="input">The wind configuration. See <see cref="WindInput"/>.</param>
-        public unsafe readonly void ApplyWind(WindInput input)
-        {
-            var body = this;
-            ApplyWind(input, new ReadOnlySpan<PhysicsBody>(&body, 1));
-        }
+        public readonly void ApplyWind(WindInput input) => ApplyWind(input, stackalloc PhysicsBody[1] { this });
 
         /// <summary>
         /// Apply wind forces to every body in <paramref name="bodies"/> by iterating each body's attached shapes.
@@ -1854,11 +1846,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
-        {
-            var body = this;
-            SetOwner(new ReadOnlySpan<PhysicsBody>(&body, 1), owner, ownerKey);
-        }
+        public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => SetOwner(stackalloc PhysicsBody[1] { this }, owner, ownerKey);
 
         /// <summary>
         /// Set the owner object using the specified owner key.
@@ -2231,14 +2219,10 @@ namespace Unity.U2D.Physics
         /// The state persists until set to false, the body is destroyed, or <see cref="PhysicsWorld.ClearDrawSelected"/> clears the whole world.
         /// The body must also have <see cref="worldDrawing"/> enabled to be drawn.
         /// </remarks>
-        public unsafe readonly bool selectedDrawing
+        public readonly bool selectedDrawing
         {
             get => PhysicsBody_GetSelectedDrawing(this);
-            set
-            {
-                var body = this;
-                PhysicsBody_SetSelectedDrawing(new ReadOnlySpan<PhysicsBody>(&body, 1), value);
-            }
+            set => PhysicsBody_SetSelectedDrawing(stackalloc PhysicsBody[1] { this }, value);
         }
 
         /// <summary>

@@ -100,15 +100,7 @@ namespace UnityEditor.UIElements
             m_ListView.AddToClassList(listUssClassName);
             // Grows to its content up to this height, then scrolls internally; the inspector scrolls overall.
             m_ListView.style.maxHeight = 200;
-            m_ListView.onAdd += _ =>
-            {
-                if (m_Placeholder)
-                    m_Placeholder = false; // the placeholder row becomes the first real track
-                else
-                    m_Entries.Add(new Entry());
-                RefreshView();
-                Notify();
-            };
+            m_ListView.onAdd += _ => AddDefaultTrack();
             m_ListView.onRemove += _ =>
             {
                 if (m_Placeholder)
@@ -143,6 +135,17 @@ namespace UnityEditor.UIElements
         // Test-friendly mutators (mirror the +/- footer and the per-row repeat selector), so add/remove
         // logic can be exercised without simulating clicks in a panel.
         internal int entryCount => m_Entries.Count;
+
+        // The footer + button. From unset, the first add yields two tracks (the placeholder row becomes
+        // the first); a single-track grid is rarely the goal.
+        internal void AddDefaultTrack()
+        {
+            if (m_Placeholder)
+                m_Placeholder = false;
+            m_Entries.Add(new Entry());
+            RefreshView();
+            Notify();
+        }
 
         internal void AddTrack(GridTrackSize track)
         {

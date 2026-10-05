@@ -153,6 +153,8 @@ namespace UnityEngine.UIElements
             get { return this; }
         }
 
+        // Stays a field: CloneSetupRecursively sets it on every element of a cloned tree, so it is
+        // paid for by most elements anyway and private-component storage would cost more than it saves.
         private VisualTreeAsset m_VisualTreeAssetSource = null;
 
         /// <summary>

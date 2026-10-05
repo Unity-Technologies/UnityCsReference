@@ -63,6 +63,7 @@ namespace UnityEditor.SceneManagement
         extern private static void CallAwakeFromLoadOnSubHierarchyInternal([NotNull] GameObject prefabInstanceRoot);
 
         [StaticAccessor("StageUtility", StaticAccessorType.DoubleColon)]
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         extern internal static bool IsGizmoCulledBySceneCullingMasksOrFocusedScene([NotNull] GameObject gameObject, [NotNull] Camera camera);
     }
 }

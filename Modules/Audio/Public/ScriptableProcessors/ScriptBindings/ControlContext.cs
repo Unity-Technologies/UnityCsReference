@@ -266,9 +266,14 @@ namespace UnityEngine.Audio
         }
 
         /// <summary>
-        /// Allocate a <see cref="EffectInstance"/> with the specified processor and control state.
+        /// Allocate an <see cref="EffectInstance"/> with the specified processor and control state.
         /// </summary>
+        /// <remarks>
+        /// This can generally be used to process the audio of an <see cref="IAudioEffect"/>, potentially from within another processor.
+        /// </remarks>
         /// <seealso cref="IAudioEffect.CreateInstance(ControlContext,UnityEngine.Audio.AudioFormat?,EffectInstance.CreationParameters)"/>
+        /// <param name="processorState">The initial state available from the realtime thread.</param>
+        /// <param name="controlState">The initial state available from the control thread.</param>
         /// <param name="nestedFormat">
         /// If not null, the returned <see cref="EffectInstance"/> will be treated as nested and use this format.
         /// </param>
@@ -276,6 +281,9 @@ namespace UnityEngine.Audio
         /// Additional parameters and initialization state for the processor.
         /// This is generally received from <see cref="IAudioEffect.CreateInstance(ControlContext,UnityEngine.Audio.AudioFormat?,EffectInstance.CreationParameters)"/>
         /// </param>
+        /// <returns>
+        /// An <see cref="EffectInstance"/> you own and control, that must later be destroyed with <see cref="ControlContext.Destroy(EffectInstance)"/>.
+        /// </returns>
         public readonly EffectInstance AllocateEffect<TProcessor, TControl>(
             in TProcessor processorState,
             in TControl controlState,

@@ -150,7 +150,8 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     public void SetContext(VisualTreeAssetEditingContext context)
     {
         Context = context;
-        m_HeaderContent.text = EditedVisualTreeAsset.name;
+        if (EditedVisualTreeAsset != null)
+            m_HeaderContent.text = EditedVisualTreeAsset.name;
         m_HeaderContent.image = EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D;
     }
 
@@ -231,12 +232,25 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         return default;
     }
 
-    internal override ulong GetSceneCullingMask() { return 0; }
-
     internal override void SyncSceneViewToStage(SceneView sceneView)
     {
-        // VisualElementEditingStage renders via UIViewportWindow, not the SceneView.
-        // Leave the SceneView state unchanged.
+        // A non-default bit is required here for native gizmo culling to honor the focused scene set below.
+        sceneView.overrideSceneCullingMask = SceneCullingMasks.MainStageSceneViewObjects | GetSceneCullingMask();
+    }
+
+    internal override void OnPreSceneViewRender(SceneView sceneView)
+    {
+        // Nothing staged here lives in a scene, so every real GameObject counts as out of context.
+        StageUtility.EnableHidingForInContextEditingInSceneView(true);
+        StageUtility.SetFocusedScene(scene);
+        StageUtility.SetFocusedSceneContextRenderMode(StageUtility.ContextRenderMode.GreyedOut);
+    }
+
+    internal override void OnPostSceneViewRender(SceneView sceneView)
+    {
+        StageUtility.EnableHidingForInContextEditingInSceneView(false);
+        StageUtility.SetFocusedScene(default);
+        StageUtility.SetFocusedSceneContextRenderMode(StageUtility.ContextRenderMode.Normal);
     }
 
     internal override Stage GetContextStage()
@@ -281,7 +295,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
                 Context.RootVisualTreeAsset.CloneTree(subRoot);
                 break;
             case SubDocumentOptions.Isolation:
-                EditedVisualTreeAsset.CloneTree(subRoot);
+                EditedVisualTreeAsset?.CloneTree(subRoot);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -316,6 +330,7 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         UICommandQueue.RegisterHandlerForCategory(k_ExternalChangesTrackedCategories, CheckForBuilderChanges);
         UICommandQueue.RegisterHandlerForCategory(CommandCategory.Save, OnBuilderSave);
         UIAssetRegistry.instance.AssetReloaded += OnRegistryAssetReloaded;
+        UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
 
         // A stage whose document could not be resolved is torn down by the next stage tick, so nothing should
         // start resolving live elements against it.
@@ -343,10 +358,14 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
         UICommandQueue.GroupBegan -= OnGroupBegan;
         UICommandQueue.GroupEnded -= OnGroupEnded;
         UIAssetRegistry.LiveInstance?.AssetReloaded -= OnRegistryAssetReloaded;
+        UIAssetRegistry.LiveInstance?.AssetDirtyStateChanged -= OnAssetDirtyStateChanged;
     }
 
     protected internal override bool OnOpenStage()
     {
+        // Never shown (GetSceneAt keeps returning default): only its unique culling-mask bit is used.
+        base.OnOpenStage();
+
         if (m_DisplayState != DisplayState.Deferred)
             OpenForDisplay();
         return true;
@@ -383,9 +402,12 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     {
         if (StageUtility.GetCurrentStage() == this)
         {
-            foreach (var styleSheet in EditedVisualTreeAsset.GetAllReferencedStyleSheets())
+            if (EditedVisualTreeAsset != null)
             {
-                styleSheet.RequestRebuild(StyleSheet.RebuildOptions.Synchronous);
+                foreach (var styleSheet in EditedVisualTreeAsset.GetAllReferencedStyleSheets())
+                {
+                    styleSheet.RequestRebuild(StyleSheet.RebuildOptions.Synchronous);
+                }
             }
             UIElementsEditorUtility.ClearStyleCacheAfterUndoIfTracked(default);
             ReloadAssets();
@@ -428,9 +450,16 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
     protected internal override GUIContent CreateHeaderContent()
     {
         if (EditedVisualTreeAsset != null)
-            m_HeaderContent.text = EditedVisualTreeAsset.name;
+            m_HeaderContent.text = hasUnsavedChanges ? EditedVisualTreeAsset.name + "*" : EditedVisualTreeAsset.name;
 
         return m_HeaderContent;
+    }
+
+    // The SceneView breadcrumb holds m_HeaderContent by reference, so refreshing its text updates it in place.
+    void OnAssetDirtyStateChanged(UnityEngine.Object asset)
+    {
+        CreateHeaderContent();
+        SceneView.RepaintAll();
     }
 
     internal override bool SupportsSaving()
@@ -601,7 +630,8 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     private void ReloadAssets()
     {
-        Context = VisualTreeAssetEditingContext.Reload(Context);
+        if (VisualTreeAssetEditingContext.TryReload(Context, out var reloaded))
+            Context = reloaded;
     }
 
     private void ReimportAssets()
@@ -727,6 +757,9 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
                 if (template.visualTreeAsset != Context.SubDocumentPath[i - 1].ResolveTemplate())
                     return false;
             }
+
+            if (Context.SubDocumentPath.Length > 0 && !VisualTreeAssetEditingContext.CanResolveSubDocumentPath(Context))
+                return false;
         }
         return true;
     }
@@ -900,6 +933,11 @@ internal class VisualElementEditingStage : PreviewSceneStage, ISerializationCall
 
     internal override string GetErrorMessage()
     {
+        if (Context.SubDocumentPath is { Length: > 0 } && !VisualTreeAssetEditingContext.CanResolveSubDocumentPath(Context))
+        {
+            return $"The document '{EditedVisualTreeAsset?.name}' is no longer part of '{Context.RootVisualTreeAsset?.name}'.\n\nReturning to the main stage.";
+        }
+
         return "The UI document being edited is no longer valid.\n\nReturning to the main stage.";
     }
 }

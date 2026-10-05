@@ -211,6 +211,12 @@ namespace Unity.GraphToolkit.Editor
                 GraphView.RemoveElement(m_PortPreview);
             else
             {
+                if (GraphView is { GraphViewModel: { SpacePartitioningState: { } } })
+                {
+                    using var updater = GraphView.GraphViewModel.SpacePartitioningState.UpdateScope;
+                    updater.MarkGraphElementForRemoval(m_PortPreview);
+                }
+
                 // When the port is culled, Marker.OnTargetDetachedFromPanel already removed the preview
                 // from the hierarchy and registered OnTargetAttachedToPanel on the port. Without
                 // DisconnectFromTarget(), OnTargetAttachedToPanel would re-add the preview as a ghost
@@ -664,10 +670,10 @@ namespace Unity.GraphToolkit.Editor
         /// <inheritdoc />
         public override void RemoveFromRootView()
         {
-            base.RemoveFromRootView();
+            // RemovePortPreview needs GraphView, which base.RemoveFromRootView() nulls.
+            RemovePortPreview();
 
-            // When a port is removed, its marker should be removed as well.
-            m_PortPreview?.RemoveFromRootView();
+            base.RemoveFromRootView();
         }
 
         void PopulateMenuActionMap(Dictionary<string, Action> menuActionMap, ContextualMenuPopulateEvent evt)
@@ -1071,6 +1077,7 @@ namespace Unity.GraphToolkit.Editor
             }
 
             public bool HasContextualMenuBeenBuilt => m_Port.m_HasContextualMenuBeenBuilt;
+            public bool HasPortPreview => m_Port.m_PortPreview != null;
             public void CallBuildContextualMenu(ContextualMenuPopulateEvent e) => m_Port.BuildContextualMenu(e);
         }
     }

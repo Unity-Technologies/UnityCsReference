@@ -34,6 +34,14 @@ namespace Unity.UI.Builder
 
         protected override VariablesListItem CreateListItem() => new BuilderInspectorVariablesListItem();
 
+        protected override void UpdateOverrideRowsTrackedProperties()
+        {
+            base.UpdateOverrideRowsTrackedProperties();
+
+            variablesListView.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, variablesItemsSource.Count > 0);
+            m_Inspector.localStyles.UpdateStyleCategoryFoldoutOverrides();
+        }
+
         protected override void OnStyleSheetModified()
         {
             // Force immediate style resolution to update the element's variableContext

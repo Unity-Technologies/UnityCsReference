@@ -627,7 +627,11 @@ namespace UnityEditor.UIElements
                     var functionName = ctx.styleSheet.ReadFunctionName(handle);
                     var argStart = handleIndex + 2;
                     GetLastFunctionHandleIndex(ref ctx, handles, ref handleIndex);
-                    WriteFunction(ref ctx, functionName, handles.Slice(argStart, handleIndex - argStart));
+                    // A truncated function (no argument-count handle) leaves the walk before argStart.
+                    if (argStart <= handleIndex)
+                        WriteFunction(ref ctx, functionName, handles.Slice(argStart, handleIndex - argStart));
+                    else
+                        WriteFunction(ref ctx, functionName, Span<StyleValueHandle>.Empty);
                     // We need to rollback
                     --handleIndex;
                     break;
@@ -854,6 +858,8 @@ namespace UnityEditor.UIElements
                 return;
 
             ++index;
+            if (index >= handles.Length)
+                return;
             var argCount = ctx.styleSheet.ReadFloat(handles[index]);
 
             if (argCount <= 0)
@@ -863,7 +869,9 @@ namespace UnityEditor.UIElements
             }
 
             ++index;
-            for (var arg = 0; arg < argCount; ++arg)
+            // Serialized data may carry a stale arg count larger than the remaining handles
+            // (repeat() was once written with a flattened count), so clamp instead of throwing.
+            for (var arg = 0; arg < argCount && index < handles.Length; ++arg)
             {
                 if (handles[index].valueType == StyleValueType.Function)
                 {

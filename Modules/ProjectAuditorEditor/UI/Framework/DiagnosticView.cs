@@ -13,7 +13,6 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 {
     internal class DiagnosticView : AnalysisView
     {
-        public override string Description => $"A list of {m_Desc.DisplayName} issues found in the project.";
         public override bool OnlyCriticalIssues() { return m_OnlyCriticalIssues; }
         public override bool OnlyPerfCriticalIssues() { return m_OnlyPerfCriticalIssues; }
         public override bool OnlyFixableIssues() { return m_OnlyFixableIssues; }

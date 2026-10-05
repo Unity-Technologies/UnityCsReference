@@ -32,7 +32,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
         // InMemoryRepository is the cache, PlayerTagsData(JSON File) is the persistence.
         readonly InMemoryRepository<string, List<string>> m_TagsRepository = new();
         readonly string m_Path;
-        public readonly bool HasChangedVersion;
         PlayerTagsData m_PlayerTagsData;
 
         internal static ProjectDataStore GetMain()
@@ -60,7 +59,6 @@ namespace Unity.Multiplayer.PlayMode.Editor
             {
                 if (!string.IsNullOrWhiteSpace(m_PlayerTagsData.version))
                 {
-                    HasChangedVersion = true;
                     ReimportOldScenarioAssets();
                 }
 

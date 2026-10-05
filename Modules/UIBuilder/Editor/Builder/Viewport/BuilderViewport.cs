@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEditor;
 using UnityEditor.UIElements.Bindings;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -188,7 +189,8 @@ namespace Unity.UI.Builder
         public BuilderBindingsCache bindingsCache { get; set; }
         public bool isPreviewEnabled { get; private set; }
 
-        bool IShortcutContext.active => true;
+        // An always-active context would steal plain F from Frame Selected in other windows.
+        bool IShortcutContext.active => EditorWindow.focusedWindow == m_PaneWindow;
 
         public BuilderViewport(BuilderPaneWindow paneWindow, BuilderSelection selection, BuilderElementContextMenu contextMenuManipulator, BuilderBindingsCache bindingsCache = null)
         {

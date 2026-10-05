@@ -37,6 +37,7 @@ enum CompileTarget
 [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
 partial class MsBuildCompilation
 {
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal class CompilationMessage
     {
         public string AssemblyName;
@@ -444,9 +445,16 @@ partial class MsBuildCompilation
 
     private async Task<CompilationMessages> RunScriptCompilationAsync(string configuration)
     {
+        // Derive BuildTarget from configuration string for Player analysis (Editor analysis uses the active target)
+        BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
+        if (configuration.EndsWith("+Analysis", StringComparison.Ordinal))
+        {
+            if (!Enum.TryParse(configuration.Substring(0, configuration.Length - "+Analysis".Length), out buildTarget))
+                throw new ArgumentException($"{configuration} does not map to a known BuildTarget", "configuration");
+        }
+
         // Mirror the regular compilation path (TickCompilationPipeline): refresh the deferrable
         // props (defines, references, plugins, search paths, analyzers) before building.
-        var buildTarget = EditorUserBuildSettings.activeBuildTarget;
         var globalAnalyzers = _globalAnalyzers.Length > 0
             ? _globalAnalyzers
             : UnityEditorMSBuildPropsTargetsGeneration.GetBuiltinRoslynAnalyzerPaths();

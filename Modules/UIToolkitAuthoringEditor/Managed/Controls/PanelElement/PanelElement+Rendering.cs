@@ -294,6 +294,16 @@ sealed partial class PanelElement
         m_PreviousColorSpace = QualitySettings.activeColorSpace;
     }
 
+    internal static GraphicsFormat GetRenderTextureGraphicsFormat()
+    {
+        return GetRenderTextureGraphicsFormat(QualitySettings.activeColorSpace);
+    }
+
+    internal static GraphicsFormat GetRenderTextureGraphicsFormat(ColorSpace colorSpace)
+    {
+        return colorSpace == ColorSpace.Linear ? GraphicsFormat.R8G8B8A8_SRGB : GraphicsFormat.R8G8B8A8_UNorm;
+    }
+
     void CreateRenderTexture()
     {
         try
@@ -309,9 +319,8 @@ sealed partial class PanelElement
             }
             else
             {
-                var graphicsFormat = QualitySettings.activeColorSpace == ColorSpace.Linear ? GraphicsFormat.R8G8B8A8_SRGB : GraphicsFormat.R8G8B8A8_UNorm;
                 var depthStencilFormat = GraphicsFormatUtility.GetDepthStencilFormat(24, 8);
-                var descriptor = new RenderTextureDescriptor(m_SubPanelSize.x, m_SubPanelSize.y, graphicsFormat, depthStencilFormat);
+                var descriptor = new RenderTextureDescriptor(m_SubPanelSize.x, m_SubPanelSize.y, GetRenderTextureGraphicsFormat(), depthStencilFormat);
 
                 if (RenderTexture == null)
                 {

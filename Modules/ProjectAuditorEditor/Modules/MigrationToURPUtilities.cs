@@ -123,7 +123,7 @@ namespace Unity.ProjectAuditor.Editor.Modules
             if (existing != null)
                 return existing;
 
-            foreach (var type in UnityEditor.TypeCache.GetTypesDerivedFrom<IRenderPipelineAssetCreator>())
+            foreach (var type in TypeCache.GetTypesDerivedFrom<IRenderPipelineAssetCreator>())
             {
                 if (type.IsAbstract)
                     continue;

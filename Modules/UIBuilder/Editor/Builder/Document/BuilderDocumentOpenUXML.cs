@@ -518,7 +518,7 @@ namespace Unity.UI.Builder
             // StyleSheet Editing Mode: only the opened stylesheet is written; the host copy has no
             // file of its own, so the UXML path/save below never applies.
             if (isStyleSheetEditingMode)
-                return SaveOpenedStyleSheet();
+                return SaveOpenedStyleSheet(out needsFullRefresh);
 
             // Re-use or ask the user for the UXML path.
             var newUxmlPath = uxmlPath;
@@ -621,8 +621,10 @@ namespace Unity.UI.Builder
 
         // Saves the opened stylesheet to its own file. Wrapped in the same save commands as a document
         // save so sibling Builder windows and the other authoring tools resync their shared state.
-        bool SaveOpenedStyleSheet()
+        bool SaveOpenedStyleSheet(out bool needsFullRefresh)
         {
+            needsFullRefresh = false;
+
             var savedContext = new VisualTreeAssetEditingContext(visualTreeAsset);
             var ownerDocument = document;
             ownerDocument.isSavingOwnDocument = true;
@@ -655,8 +657,10 @@ namespace Unity.UI.Builder
                     m_DocumentBeingSavedExplicitly = false;
                 }
 
+                // The reload replaces the sheet's rules and selectors, so the caller has to rebuild
+                // every element caching one of them.
                 foreach (var openUSSFile in savedUSSFiles)
-                    openUSSFile.PostSaveToDiskChecksAndFixes();
+                    needsFullRefresh |= openUSSFile.PostSaveToDiskChecksAndFixes();
 
                 // If the reimport replaced the sheet instance, re-point the host root and the mode at
                 // the fresh one, then re-render.
@@ -668,6 +672,7 @@ namespace Unity.UI.Builder
                     m_OpenedStyleSheet = freshSheet;
                     m_ActiveStyleSheet = freshSheet;
                     ReloadDocumentToCanvas(m_CurrentDocumentRootElement);
+                    needsFullRefresh = true;
                 }
 
                 foreach (var openUSSFile in m_OpenUSSFiles)

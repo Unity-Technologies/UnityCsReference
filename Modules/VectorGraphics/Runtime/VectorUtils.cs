@@ -172,6 +172,19 @@ namespace Unity.VectorGraphics
             return (min.x != float.MaxValue) ? new Rect(min, max - min) : Rect.zero;
         }
 
+        internal static Rect Bounds(BezierContour[] contours)
+        {
+            var min = new Vector2(float.MaxValue, float.MaxValue);
+            var max = new Vector2(-float.MaxValue, -float.MaxValue);
+            foreach (var contour in contours)
+            {
+                var bbox = Bounds(contour.Segments);
+                min = Vector2.Min(min, bbox.min);
+                max = Vector2.Max(max, bbox.max);
+            }
+            return (min.x != float.MaxValue) ? new Rect(min, max - min) : Rect.zero;
+        }
+
         /// <summary>Builds a line segment.</summary>
         /// <param name="from">The starting position of the line segment</param>
         /// <param name="to">The ending position of the line segment</param>

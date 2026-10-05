@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Unity.Properties;
 using UnityEngine.Bindings;
@@ -130,8 +131,44 @@ namespace UnityEngine.UIElements
         [CreateProperty(ReadOnly = true)]
         public VisualElementStyleSheetSet styleSheets => new VisualElementStyleSheetSet(this);
 
+        // Absent until the element gets style sheets of its own, which in practice means panel and
+        // template roots.
+        ref VisualElementStyleSheetsComponent styleSheetsData
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if ((m_Flags & VisualElementFlags.HasStyleSheetsComponent) == 0)
+                    return ref NullComponentRef<VisualElementStyleSheetsComponent>();
+
+                return ref GetComponentRefOrNullRef<VisualElementStyleSheetsComponent>();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ref VisualElementStyleSheetsComponent GetOrAddStyleSheetsData()
+        {
+            ref var data = ref GetOrAddComponent<VisualElementStyleSheetsComponent>();
+            m_Flags |= VisualElementFlags.HasStyleSheetsComponent;
+            return ref data;
+        }
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEditor.UIToolkitAuthoringModule")]
-        internal List<StyleSheet> styleSheetList;
+        internal List<StyleSheet> styleSheetList
+        {
+            get
+            {
+                ref var data = ref styleSheetsData;
+                return Unsafe.IsNullRef(ref data) ? null : data.styleSheetList;
+            }
+            set
+            {
+                if (value == null && (m_Flags & VisualElementFlags.HasStyleSheetsComponent) == 0)
+                    return;
+
+                GetOrAddStyleSheetsData().styleSheetList = value;
+            }
+        }
 
         private static readonly Regex s_InternalStyleSheetPath = new Regex("^instanceId:[-0-9]+$", RegexOptions.Compiled);
 

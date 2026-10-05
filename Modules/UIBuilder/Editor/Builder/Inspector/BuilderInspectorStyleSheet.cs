@@ -4,7 +4,6 @@
 
 using Unity.UIToolkit.Editor;
 using UnityEngine.UIElements;
-using UnityEditor;
 
 namespace Unity.UI.Builder
 {
@@ -38,10 +37,8 @@ namespace Unity.UI.Builder
 
         void CreateNewSelector(string newSelectorString)
         {
-            Undo.RegisterCompleteObjectUndo(
-                styleSheet, BuilderConstants.AddNewSelectorUndoMessage);
-
-            BuilderSharedStyles.CreateNewSelector(currentVisualElement.parent, styleSheet, newSelectorString);
+            if (BuilderSharedStyles.CreateNewSelector(currentVisualElement.parent, styleSheet, newSelectorString) == null)
+                return;
 
             m_Selection.NotifyOfHierarchyChange(m_Inspector);
             m_Selection.NotifyOfStylingChange(m_Inspector);

@@ -65,7 +65,7 @@ namespace UnityEngine.UIElements
 
             AddToClassList(ussClassNameUnique);
 
-            generateVisualContent += OnGenerateVisualContent;
+            m_Flags |= VisualElementFlags.UseDefaultTextGenerateContent;
             edition.GetDefaultValueType = GetDefaultValueType;
         }
 

@@ -5,6 +5,7 @@
 using System;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 
@@ -12,6 +13,7 @@ namespace UnityEditor.SceneManagement
 {
     public static partial class StageUtility
     {
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal enum ContextRenderMode
         {
             Normal,
@@ -131,11 +133,13 @@ namespace UnityEditor.SceneManagement
             return IsPrefabInstanceHiddenForInContextEditingInternal(gameObject);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void EnableHidingForInContextEditingInSceneView(bool enable)
         {
             EnableHidingForInContextEditingInSceneViewInternal(enable);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void SetFocusedScene(Scene scene)
         {
             SetFocusedSceneInternal(scene.IsValid() ? scene.handle : SceneHandle.None);
@@ -146,6 +150,7 @@ namespace UnityEditor.SceneManagement
             return GetFocusedSceneInternal();
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal static void SetFocusedSceneContextRenderMode(ContextRenderMode contextRenderMode)
         {
             SetFocusedSceneContextRenderModeInternal(contextRenderMode);

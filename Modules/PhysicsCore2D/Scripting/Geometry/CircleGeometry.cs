@@ -105,8 +105,11 @@ namespace Unity.U2D.Physics
         public readonly NativeArray<PolygonGeometry> ToPolygons(PhysicsTransform transform, float curveStride = PhysicsComposer.DefaultCurveStride, Allocator allocator = Allocator.Temp) => PhysicsComposer.ToPolygons(this, transform, curveStride, allocator);
 
         /// <summary>
-        /// Check if the geometry is valid or not.
+        /// Whether the geometry describes a circle that can be used.
         /// </summary>
+        /// <remarks>
+        /// The center must be finite, and the radius must be finite and zero or greater.
+        /// </remarks>
         public readonly bool isValid => CircleGeometry_IsValid(this);
 
         /// <summary>

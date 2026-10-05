@@ -253,7 +253,8 @@ namespace Unity.ProjectAuditor.Editor
             EditorGUILayout.LabelField(Styles.Analysis, EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
 
-            SharedPreferencesGUI();
+            ProjectAreasPreferencesGUI();
+            SharedPreferencesGUI(ProjectAreasToAnalyze);
 
             GUILayout.Space(10f);
 
@@ -288,10 +289,13 @@ namespace Unity.ProjectAuditor.Editor
             GUILayout.Space(10f);
         }
 
-        internal static void SharedPreferencesGUI()
+        internal static void ProjectAreasPreferencesGUI()
         {
             ProjectAreasToAnalyze.Set((ProjectAreaFlags)EditorGUILayout.EnumFlagsField(Styles.ProjectAreaSelection, ProjectAreasToAnalyze, GUILayout.ExpandWidth(true)));
+        }
 
+        internal static void SharedPreferencesGUI(ProjectAreaFlags projectAreasToAnalyze)
+        {
             var selectedTarget = Array.IndexOf(s_SupportedBuildTargets, AnalysisTargetPlatform);
 
             // AnalysisTargetPlatform is not supported in this Unity Editor. Perhaps it was selected in a different Editor version.
@@ -304,7 +308,7 @@ namespace Unity.ProjectAuditor.Editor
             selectedTarget = EditorGUILayout.Popup(Styles.PlatformSelection, selectedTarget, s_PlatformContents);
             AnalysisTargetPlatform.Set(s_SupportedBuildTargets[selectedTarget]);
 
-            using (new EditorGUI.DisabledScope((ProjectAreasToAnalyze & ProjectAreaFlags.Code) == 0))
+            using (new EditorGUI.DisabledScope((projectAreasToAnalyze & ProjectAreaFlags.Code) == 0))
             {
                 CodeAnalysisGUI();
             }
@@ -365,6 +369,7 @@ namespace Unity.ProjectAuditor.Editor
                 // editor with the SettingsWindow search box (which otherwise copies this field's value into itself).
                 GUI.SetNextControlName("ProjectAuditor.SuppressedDiagnostics");
 
+                RoslynDiagnosticsLibrary.EnsureLoaded();
                 var hasLoadedDescriptors = (DescriptorLibrary.GetAllDescriptors().Count > 0);
                 SuppressedDiagnostics.Set(EditorGUILayout.DelayedTextField(Styles.SuppressedDiagnostics, SuppressedDiagnostics, GUILayout.ExpandWidth(true)));
                 using (new EditorGUI.DisabledScope(!hasLoadedDescriptors))

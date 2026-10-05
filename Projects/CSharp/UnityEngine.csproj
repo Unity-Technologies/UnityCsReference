@@ -4348,6 +4348,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Components\RequiresElementOfTypeAttribute.cs">
       <Link>Modules\UIElements\Core\Components\RequiresElementOfTypeAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Components\VisualElementPrivateComponents.cs">
+      <Link>Modules\UIElements\Core\Components\VisualElementPrivateComponents.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Components\VisualElementSelectorData.cs">
       <Link>Modules\UIElements\Core\Components\VisualElementSelectorData.cs</Link>
     </Compile>
@@ -8058,7 +8061,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_il0mgn7h/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_i4j7lbsg/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

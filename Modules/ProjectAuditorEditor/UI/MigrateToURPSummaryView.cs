@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using Unity.ProjectAuditor.Editor.Core;
+using Unity.ProjectAuditor.Editor.Modules;
 using Unity.ProjectAuditor.Editor.UI.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -15,6 +15,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         TopTen m_TopTen = NewTopTen();
         StatSeverities m_Severities;
+
+        public int RenderPipelineConverterIssueCount { get; private set; }
+        public int TotalIssueCount => m_Severities.TotalExcludingIgnored;
 
         public override string Description => "Resolve the following issues to migrate your project to the Universal Render Pipeline.";
 
@@ -40,6 +43,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             base.ResetStats();
             m_Severities = new StatSeverities();
+            RenderPipelineConverterIssueCount = 0;
         }
 
         protected override void RefreshStats()
@@ -56,6 +60,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                     continue;
 
                 AddSeverityStats(issue, ref m_Severities);
+                if ((issue.Id == MigrationToURPModule.k_ConverterItemDescriptor.Id) && !IsIgnoredOrHidden(issue))
+                    RenderPipelineConverterIssueCount++;
             }
         }
 

@@ -4,9 +4,11 @@
 
 using System;
 using Unity.Scripting.LifecycleManagement;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
+    [VisibleToOtherModules("UnityEditor.ProjectAuditorModule")]
     internal struct UnityVersion : IVersion<UnityVersion>
     {
         // ReleaseType enum must stay in sync with the native enum ReleaseType in UnityVersion.h
@@ -197,6 +199,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public UnityVersion Parse(string version, bool strict = false)
         {
             return UnityVersionParser.Parse(version, strict);
+        }
+
+        public static bool TryParse(string version, out UnityVersion? result, bool strict = false)
+        {
+            return UnityVersionParser.TryParse(version, out result, strict);
         }
 
         [NoAutoStaticsCleanup] // stateless version-traits singleton, safe to persist across reload

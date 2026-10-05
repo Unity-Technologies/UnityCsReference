@@ -15,6 +15,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using Unity.ProjectAuditor.Editor.Modules;
 using Unity.Scripting.LifecycleManagement;
+using Unity.Collections;
 
 namespace Unity.ProjectAuditor.Editor
 {
@@ -139,9 +140,8 @@ namespace Unity.ProjectAuditor.Editor
 #pragma warning disable UAC2001 // Avoid Linq
                 report.SessionInfo.Categories = reportCategories.Distinct().ToSerializableArray();
 #pragma warning restore UAC2001
-                report.SessionInfo.ProjectAreas |= analysisParams.ExistingReportProjectAreas;
 
-                if ((analysisParams.ExistingReportProjectAreas & ProjectAreaFlags.Code) != 0)
+                if (categories.Contains(IssueCategory.Code))
                 {
                     report.SessionInfo.CodeAnalysisFlags = analysisParams.CodeAnalysisFlags;
                     report.SessionInfo.CodeOwnerFlags = analysisParams.CodeOwnerFlags;
@@ -166,12 +166,7 @@ namespace Unity.ProjectAuditor.Editor
 #pragma warning disable UAC2001 // Avoid Linq
             var requestedModules = categories.SelectMany(GetModules).Distinct().ToArray();
             var supportedModules = requestedModules.Where(m => m != null).ToArray();
-#pragma warning restore UAC2001
 
-            if (Array.Exists(supportedModules, m => m is MigrationToURPModule))
-                report.SessionInfo.ReportIncludesUrpMigrationIssues = MigrationToURPUtilities.IsProjectFullyOnUrp();
-
-#pragma warning disable UAC2001 // Avoid Linq
             analysisParams.OnStarted?.Invoke(
                 report,
                 supportedModules.Select(m => m.Name).ToArray(),

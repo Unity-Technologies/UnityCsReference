@@ -225,6 +225,18 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
         m_SelectAncestorAction?.Invoke();
     }
 
+    // A root field can only hold a property from a shape the document no longer has after a reshape, which
+    // is the one change that reports the same element on both sides (UUM-151997).
+    internal static void DiscardStaleRootField(ref PropertyField rootField,
+        UxmlAttributesEditingContext.ContextChangedEventArgs args, string bindingPath)
+    {
+        if (rootField == null || args.oldElement != args.newElement || rootField.bindingPath == bindingPath)
+            return;
+
+        rootField.RemoveFromHierarchy();
+        rootField = null;
+    }
+
     void OnContextChanged(object sender, UxmlAttributesEditingContext.ContextChangedEventArgs args)
     {
         var view = sender as UxmlAttributesView;
@@ -242,6 +254,8 @@ sealed partial class VisualElementAttributesInspectorElement : VisualElement
         }
 
         var bindingPath = view.Context.serializedBasePath;
+
+        DiscardStaleRootField(ref m_RootPropertyField, args, bindingPath);
 
         if (m_RootPropertyField == null)
         {

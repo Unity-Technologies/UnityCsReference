@@ -88,7 +88,11 @@ namespace UnityEngine
     }
 
     ///<summary>This class can be used to implement any java interface. Any java vm method invocation matching the interface on the proxy object will automatically be passed to the c# implementation.</summary>
-    ///<remarks>**Note**: this API can be used from custom thread, but requires that thread to be attached to JVM first, see <see cref="AndroidJNI.AttachCurrentThread" />.</remarks>
+    ///<remarks>Unity invokes the proxy method on the Java thread that calls the interface method, which isn't always the Unity main thread. To dispatch work to the Unity main thread, use <see cref="Android.AndroidApplication.InvokeOnUnityMainThread" />, which blocks the calling thread until the delegate completes and has no effect in the Editor.
+    ///
+    ///Android requires UI operations, such as showing a dialog, to run on the Android UI thread. The following example wraps the dialog call in `runOnUiThread` for that reason. You can also use <see cref="Android.AndroidApplication.InvokeOnUIThread" /> to dispatch to that thread.
+    ///
+    ///**Note**: this API can be used from a custom thread, but requires that thread to be attached to JVM first. Refer to <see cref="AndroidJNI.AttachCurrentThread" />.</remarks>
     ///<example>
     ///  <code><![CDATA[
     /// // Opens an android date picker dialog and grabs the result using a callback.

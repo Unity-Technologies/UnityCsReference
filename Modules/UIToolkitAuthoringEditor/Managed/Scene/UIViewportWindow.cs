@@ -142,6 +142,7 @@ partial class UIViewportWindow : EditorWindow
         Selection.selectionChanged += OnSelectionChanged;
         s_OpenWindows.Add(this);
         UICommandQueue.RegisterHandler<RequestFramingCommand>(OnFramingRequested);
+        UIAssetRegistry.instance.AssetDirtyStateChanged += OnAssetDirtyStateChanged;
     }
 
     void OnDisable()
@@ -152,6 +153,7 @@ partial class UIViewportWindow : EditorWindow
         ObjectChangeEvents.changesPublished -= OnObjectChangesPublished;
         Selection.selectionChanged -= OnSelectionChanged;
         UICommandQueue.UnregisterHandler<RequestFramingCommand>(OnFramingRequested);
+        UIAssetRegistry.LiveInstance?.AssetDirtyStateChanged -= OnAssetDirtyStateChanged;
         s_OpenWindows.Remove(this);
         if (s_LastFocusedWindow == this)
             s_LastFocusedWindow = null;
@@ -203,6 +205,9 @@ partial class UIViewportWindow : EditorWindow
     }
 
     void OnStageChanged(Stage stage) => RefreshContext();
+
+    // Keeps the breadcrumb "*" and the Save button in step with unsaved edits.
+    void OnAssetDirtyStateChanged(UnityEngine.Object asset) => RefreshContextMetadata();
 
     // A deleted panel component is only reported here, and it is what the preview was resolved from.
     void OnHierarchyChanged() => RefreshContext();
@@ -398,6 +403,8 @@ partial class UIViewportWindow : EditorWindow
         UICommandQueue.RegisterHandler<ActiveStyleSheetChangedMessage>(ActiveStyleSheetChanged);
         UICommandQueue.RegisterHandler<GetCanvasThemeQuery>(GetCanvasThemeRequest);
 
+        m_Viewport.SetSaveTarget(document);
+
         m_Context.PopulateBreadcrumbs(m_Viewport);
     }
 
@@ -425,6 +432,7 @@ partial class UIViewportWindow : EditorWindow
         UICommandQueue.UnregisterHandler<GetCanvasThemeQuery>(GetCanvasThemeRequest);
 
         m_Viewport.ClearBreadcrumbs();
+        m_Viewport.SetSaveTarget(null);
 
         if (m_Context != null)
         {
@@ -460,6 +468,7 @@ partial class UIViewportWindow : EditorWindow
         }
 
         m_Canvas.HeaderTitle = m_Context.HeaderTitle;
+        m_Viewport.SetSaveTarget(m_Context.EditedVisualTreeAsset);
         m_Context.PopulateBreadcrumbs(m_Viewport);
     }
 

@@ -104,10 +104,11 @@ namespace UnityEngine.UIElements
             // We populate the ancestor filter in order for the Bloom filter detection to work.
             matchingContext.ancestorFilter.PushElement(target);
 
-            if (target.styleSheetList == null)
+            var sheets = target.styleSheetList;
+            if (sheets == null)
                 return;
 
-            foreach (StyleSheet sheet in target.styleSheetList)
+            foreach (StyleSheet sheet in sheets)
             {
                 // Skip deleted style sheets
                 if (sheet == null)

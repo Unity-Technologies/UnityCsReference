@@ -489,7 +489,7 @@ namespace Unity.GraphToolkit.Editor
             if (copyPasteData is { Constants: not null } && copyPasteData.Constants.Count > 0 && portModel.GetConnectedWires().Count == 0)
             {
                 constant = copyPasteData.Constants[0];
-                canPaste = CanPaste() && portModel.EmbeddedValue != null && portModel.EmbeddedValue.IsAssignableFrom(constant.Type);
+                canPaste = portModel.EmbeddedValue != null && portModel.EmbeddedValue.IsAssignableFrom(constant.Type);
             }
 
             evt.menu.AppendAction(L10n.Tr("Paste Value", null), _ =>

@@ -45,9 +45,14 @@ namespace Unity.ProjectAuditor.Editor.Core
 
         public static Descriptor GetDescriptor(int idAsInt)
         {
-            if (!s_Descriptors.TryGetValue(idAsInt, out var descriptor))
+            if (!TryGetDescriptor(idAsInt, out var descriptor))
                 throw new InvalidOperationException($"Descriptor with id {idAsInt} is not registered. Ensure Initialize() registers all descriptors used in Analyze(). This can happen if you report an issue without checking context.IsDescriptorEnabled(descriptor), for example if the issue is only applicable on a subset of platforms.");
             return descriptor;
+        }
+
+        public static bool TryGetDescriptor(int idAsInt, out Descriptor descriptor)
+        {
+            return s_Descriptors.TryGetValue(idAsInt, out descriptor);
         }
 
         public static bool HasDescriptor(int idAsInt)

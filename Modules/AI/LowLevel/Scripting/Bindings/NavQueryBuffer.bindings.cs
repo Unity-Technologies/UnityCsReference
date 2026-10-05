@@ -106,9 +106,11 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
             // because the atomic safety handle stores that state.
             var canRemoveSafety = AtomicSafetyHandle.GetAllowReadOrWriteAccess(m_Safety);
 
+            var wasSafetyRegistered = !AtomicSafetyHandle.IsTempMemoryHandle(m_Safety);
+
             AtomicSafetyHandle.DisposeHandle(ref m_Safety);
 
-            if (canRemoveSafety && m_NavMeshQuery != IntPtr.Zero)
+            if (wasSafetyRegistered && canRemoveSafety && m_NavMeshQuery != IntPtr.Zero)
                 RemoveQuerySafety(m_NavMeshQuery, m_Safety);
         }
         if (m_NavMeshQuery == IntPtr.Zero)
@@ -169,6 +171,8 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
     static extern void RemoveQuerySafety(IntPtr navMeshQuery, AtomicSafetyHandle handle);
 
     [NativeMethod(IsThreadSafe = true)]
+    [StaticAccessor("GetNavMeshManager()")]
+    [NativeName("GetManagedQueryUniqueId")]
     static extern uint GetUniqueId(IntPtr navMeshQuery);
 
     [NativeMethod(IsThreadSafe = true)]
@@ -198,8 +202,17 @@ public struct NavQueryBuffer : IDisposable, IEquatable<NavQueryBuffer>
                 throw new ObjectDisposedException(k_NoInternalQueryAllocatedErrorMessage);
         }
 
-        var currentUniqueId = GetUniqueId(m_NavMeshQuery);
-        if (currentUniqueId != m_SafetyUniqueId)
+        // A default buffer has no query to identify. It was never created, so it is not disposed either -
+        // a buffer that was disposed keeps an invalid handle and already threw above.
+        if (m_NavMeshQuery == IntPtr.Zero)
+            return;
+
+        // Only a Temp buffer needs the query id. For every other allocator AtomicSafetyHandle.DisposeHandle
+        // releases the version node and leaves the handle value in place, so a copy of the struct fails
+        // IsHandleValid above and the id would add nothing. For Temp it replaces the handle on the instance
+        // being disposed, and copies keep the original one, which stays valid until the end of the temp
+        // scope - the id is the only thing that detects a stale Temp copy.
+        if (AtomicSafetyHandle.IsTempMemoryHandle(m_Safety) && GetUniqueId(m_NavMeshQuery) != m_SafetyUniqueId)
             throw new ObjectDisposedException(k_NoInternalQueryAllocatedErrorMessage);
     }
 }

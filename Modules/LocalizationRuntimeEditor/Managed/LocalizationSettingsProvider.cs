@@ -28,6 +28,10 @@ class LocalizationSettingsProvider : SettingsProvider
 
     const string k_LocalesPath = "m_AvailableLocales";
 
+    const string k_PackageUpgradeStateType = "UnityEditor.Localization.Upgrade.UpgradeState, Unity.Localization.Editor";
+    const string k_PackageProviderType = "UnityEditor.Localization.UI.LocalizationSettingsProvider, Unity.Localization.Editor";
+    const string k_UseModuleProperty = "UseModule";
+
     [NoAutoStaticsCleanup] // loaded asset; outlives a code reload
     static VisualTreeAsset s_Card;
 
@@ -931,6 +935,22 @@ class LocalizationSettingsProvider : SettingsProvider
         return settings;
     }
 
+    // The com.unity.localization package's page owns Project/Localization until the project upgrades to the module.
+    internal static bool PackageOwnsSettingsPage(Type upgradeState, Type packageProvider)
+    {
+        var useModule = upgradeState?.GetProperty(k_UseModuleProperty);
+        if (useModule != null)
+            return !(bool)useModule.GetValue(null);
+
+        return upgradeState == null && packageProvider != null;
+    }
+
     [SettingsProvider]
-    static SettingsProvider CreateProvider() => new LocalizationSettingsProvider();
+    static SettingsProvider CreateProvider()
+    {
+        if (PackageOwnsSettingsPage(Type.GetType(k_PackageUpgradeStateType), Type.GetType(k_PackageProviderType)))
+            return null;
+
+        return new LocalizationSettingsProvider();
+    }
 }

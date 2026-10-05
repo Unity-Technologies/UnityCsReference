@@ -170,6 +170,13 @@ namespace Unity.UI.Builder
         {
             var foldout = (PersistedFoldout)(obj.userData as VisualElement)?.parent;
             Assert.IsNotNull(foldout);
+
+            if (foldout == m_Inspector.variablesSection.root)
+            {
+                m_Inspector.variablesSection.UnsetAllVariables();
+                return;
+            }
+
             List<VisualElement> styleFields;
 
             if (m_StyleCategories.TryGetValue(foldout, out styleFields))

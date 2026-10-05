@@ -35,10 +35,10 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler.UI
         HashSet<string> m_CollapsedKeys = LoadRowKeys(k_CollapsedKeysPref);
         HashSet<string> m_ExpandedKeys = LoadRowKeys(k_ExpandedKeysPref);
 
-        // Worlds and marker groups a reader has opened, which is not stored between sessions. A world's name
-        // is its own and a project can produce any number of them, and a marker group comes from whatever the
-        // module registers, so neither belongs in a preference that grows without bound. Both start closed,
-        // so remembering them for the session is enough to survive scrubbing the timeline.
+        // Worlds and marker groups a reader has opened, which is not stored between sessions. A world is known
+        // by an identifier meaningful only inside the capture it came from, and a marker group comes from
+        // whatever the module registers, so neither belongs in a preference that outlives either. Both start
+        // closed, so remembering them for the session is enough to survive scrubbing the timeline.
         HashSet<string> m_ExpandedSessionKeys = new();
 
         // The state each key was left in by the last rebuild. Every world's row for a timing shares that
@@ -188,8 +188,19 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler.UI
         {
             m_FrameData = frameData;
             m_WorldNames = worldNames;
+
+            // Two worlds can carry the same name, which leaves their comparison tied and the sort free to
+            // order them either way. Their identifiers break the tie, so a row holds its place from one
+            // frame to the next rather than trading places with its twin.
             if (m_FrameData != null)
-                Array.Sort(m_FrameData, (a, b) => string.Compare(WorldName(a), WorldName(b), StringComparison.Ordinal));
+            {
+                Array.Sort(m_FrameData, (a, b) =>
+                {
+                    var byName = string.Compare(WorldName(a), WorldName(b), StringComparison.Ordinal);
+                    return byName != 0 ? byName : a.worldId.CompareTo(b.worldId);
+                });
+            }
+
             m_ProfileMarkers = (profileMarkers != null && profileMarkers.Length == PhysicsCore2DProfilerMarkers.markerNames.Length)
                 ? profileMarkers : null;
             Rebuild();
@@ -285,7 +296,8 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler.UI
         }
 
         // A row whose state is kept for this session only, rather than stored. A timing's path is fixed and
-        // worth storing; a world's name and a marker group's name are neither fixed nor bounded.
+        // worth storing; a world's identifier means nothing once its capture is gone, and a marker group's
+        // name is neither fixed nor bounded.
         static bool IsSessionKey(string key)
         {
             return key.StartsWith(k_WorldKeyPrefix, StringComparison.Ordinal)
@@ -355,8 +367,12 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler.UI
             for (int i = 0; i < m_FrameData.Length; i++)
             {
                 var worldData = new PhysicsWorldTreeData(m_FrameData[i], WorldName(m_FrameData[i]));
-                int worldId = RegisterNode($"{k_WorldKeyPrefix}{worldData.name}");
-                var worldNode = TreeNodeData.CreateWorldNode(worldId, worldData);
+
+                // The row is keyed on the world's identifier rather than its name, so a world opened by a
+                // reader is the only one that opens: two worlds sharing a name share nothing else, and a
+                // world renamed while the profiler is open is still the same world and stays as it was left.
+                int rowId = RegisterNode($"{k_WorldKeyPrefix}{m_FrameData[i].worldId}");
+                var worldNode = TreeNodeData.CreateWorldNode(rowId, worldData);
 
                 // The step and everything under it, built exactly as the combined view builds it, so the two
                 // views are the same tree below their root and a row's key means the same thing in both.
@@ -365,7 +381,7 @@ namespace UnityEditor.U2D.PhysicsCore2D.Profiler.UI
                     BuildTimingItem(worldData.timing, string.Empty)
                 };
 
-                m_Data.Add(new TreeViewItemData<TreeNodeData>(worldId, worldNode, timingItems));
+                m_Data.Add(new TreeViewItemData<TreeNodeData>(rowId, worldNode, timingItems));
             }
         }
 

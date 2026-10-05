@@ -16,6 +16,7 @@ namespace Unity.UIToolkit.Editor
     internal partial class GridLineValueField : BaseField<GridLine>
     {
         static readonly string k_UssClassName = "unity-grid-line-field";
+        const string k_StyleFieldUssPath = "UIToolkitAuthoring/Inspector/Controls/StyleField.uss";
         static readonly List<string> k_Units = new() { "auto", "line", "span" };
 
         readonly TextField m_Text;
@@ -27,6 +28,10 @@ namespace Unity.UIToolkit.Editor
         public GridLineValueField(string label) : base(label, new VisualElement())
         {
             AddToClassList(k_UssClassName);
+
+            if (UnityEditor.EditorGUIUtility.Load(k_StyleFieldUssPath) is StyleSheet uss)
+                styleSheets.Add(uss);
+
             visualInput.style.flexDirection = FlexDirection.Row;
 
             m_Text = new TextField { isDelayed = true };
@@ -35,16 +40,19 @@ namespace Unity.UIToolkit.Editor
 
             // Like StyleLengthField: the unit popup floats in an absolutely-positioned container over the
             // right edge of the full-width text field so it sits flush, reusing the same USS classes.
-            m_Unit = new PopupField<string>(k_Units, 0);
+            // The keyword collapses to "-" in the closed popup, as in LengthField; the text reads "auto".
+            m_Unit = new PopupField<string>(k_Units, 0, u => u == "auto" ? "-" : u);
             m_Unit.AddToClassList("unity-style-field__options-popup");
-            m_Unit.style.width = 46; // wider than the length unit (24px) to fit "span" / "line" / "auto"
+            m_Unit.style.width = 46; // wider than the length unit (24px) to fit "span" / "line"
 
             var popupContainer = new VisualElement();
             popupContainer.AddToClassList("unity-style-field__options-popup-container");
             popupContainer.Add(m_Unit);
 
             visualInput.Add(m_Text);
-            visualInput.Add(popupContainer);
+            // Sibling of the input at the field root, like LengthField: the absolutely-positioned
+            // container anchors to the field's right edge so the popup overlays the text field.
+            hierarchy.Add(popupContainer);
 
             m_Text.RegisterValueChangedCallback(OnTextChanged);
             m_Unit.RegisterValueChangedCallback(OnUnitChanged);

@@ -40,7 +40,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         protected ViewDescriptor m_Desc;
         protected List<ReportItem> m_Issues = new List<ReportItem>();
         protected IssueLayout m_Layout;
-        protected IssueTable m_Table;
+        protected internal IssueTable m_Table;
         protected TextFilter m_TextFilter;
         protected ViewManager m_ViewManager;
         protected ProjectAuditorWindow m_Window;
@@ -103,7 +103,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             m_ViewManager = viewManager;
         }
 
-        public virtual void Create(ViewDescriptor descriptor, IssueLayout layout, SeverityRules rules, ViewStates viewStates, ProjectAuditorWindow window)
+        public virtual void Create(ViewDescriptor descriptor, IssueLayout layout, SeverityRules rules, ViewStates viewStates, ProjectAuditorWindow window, TreeViewState treeViewState)
         {
             m_Desc = descriptor;
             m_Rules = rules;
@@ -128,7 +128,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             if (m_Table != null)
                 return;
 
-            var state = new TreeViewState();
+            var state = treeViewState ?? new TreeViewState();
             var columns = new MultiColumnHeaderState.Column[layout.Properties.Length];
             for (var i = 0; i < layout.Properties.Length; i++)
             {
@@ -218,7 +218,7 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
 
             var rows = m_Table.GetRows();
 
-            if (rows == null || rows.Count == 0 || (rows.Count == 1 && rows[0].displayName == "No items"))
+            if (rows == null || rows.Count == 0 || m_Table.GetNumMatchingIssues() == 0)
                 return;
 
             var header = m_Table.multiColumnHeader;
@@ -826,6 +826,11 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
         public virtual bool Match(ReportItem issue)
         {
             return m_BaseFilter.Match(issue) && m_TextFilter.Match(issue);
+        }
+
+        internal bool MatchesPage(ReportItem issue)
+        {
+            return m_Window == null || m_Window.MatchesPage(issue);
         }
 
         internal void OnEnable()

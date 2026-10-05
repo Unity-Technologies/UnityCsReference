@@ -2378,6 +2378,8 @@ namespace Unity.UI.Builder
 
             var selectorString = BuilderConstants.UssSelectorClassNameSymbol + className;
             var newSelector = BuilderSharedStyles.CreateNewSelector(builder.viewport.styleSelectorElementContainer, styleSheet, selectorString);
+            if (newSelector == null)
+                return;
 
             currentVisualElement.AddToClassList(className);
             BuilderAssetUtilities.AddStyleClassToElementInAsset(m_Inspector.document, currentVisualElement, className);

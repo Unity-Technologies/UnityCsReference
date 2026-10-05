@@ -179,6 +179,8 @@ namespace Unity.UI.Builder
         internal static StyleComplexSelector CreateNewSelector(VisualElement selectorContainerElement, StyleSheet styleSheet, string selectorStr)
         {
             var complexSelector =  StyleSheetExtensions.AddSelector(styleSheet, selectorStr);
+            if (complexSelector == null)
+                return null;
 
             VisualElement styleSheetElement = null;
             foreach (var child in selectorContainerElement.Children())

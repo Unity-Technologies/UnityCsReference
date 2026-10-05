@@ -120,8 +120,12 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Check if the geometry is valid or not.
+        /// Whether the geometry describes a chain segment that can be used.
         /// </summary>
+        /// <remarks>
+        /// Both ghost vertices must be finite, and <see cref="ChainSegmentGeometry.segment"/> must itself be valid.
+        /// See <see cref="SegmentGeometry.isValid"/>.
+        /// </remarks>
         public readonly bool isValid => ChainSegmentGeometry_IsValid(this);
 
         /// <summary>

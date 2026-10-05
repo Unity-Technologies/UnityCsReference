@@ -45,8 +45,7 @@ public class LocalizedTable : LocalizedReference
     /// </example>
     public Awaitable<ResourceTable> GetTableAsync(CancellationToken cancellationToken = default)
     {
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return AwaitableUtility.FromResult<ResourceTable>(null);
         if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
         {
@@ -71,7 +70,8 @@ public class LocalizedTable : LocalizedReference
     /// </example>
     public ResourceTable GetTable()
     {
-        var database = LocalizationSettings.ResourceDatabase;
-        return database != null && !IsEmpty ? database.GetTable(TableReference, ResolveOverrideLocale()) : null;
+        return LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database)
+            ? database.GetTable(TableReference, ResolveOverrideLocale())
+            : null;
     }
 }

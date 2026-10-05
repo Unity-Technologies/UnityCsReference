@@ -185,6 +185,27 @@ namespace Unity.ProjectAuditor.Editor.UI.Framework
             }
         }
 
+        public static void DrawHelpBoxWithButton(string text, GUIContent buttonText, MessageType messageType, Action onClicked, params GUILayoutOption[] layoutOptions)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox, layoutOptions);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label(EditorGUIUtility.GetHelpIcon(messageType), GUILayout.ExpandWidth(false));
+            GUILayout.Space(5);
+            GUILayout.Label(text, EditorStyles.wordWrappedLabel, GUILayout.ExpandWidth(true));
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(5);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(buttonText))
+                onClicked();
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.EndVertical();
+        }
+
         public static void DrawSelectedText(string text)
         {
             const int kBorder = 4;

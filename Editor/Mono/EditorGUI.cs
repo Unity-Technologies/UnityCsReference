@@ -694,6 +694,9 @@ namespace UnityEditor
                 // The text setter skips the refresh when the text is unchanged, but the cached
                 // handle's native generation may have been evicted while unfocused (UUM-149393).
                 UpdateTextHandle();
+
+                // Presetting m_HasFocus skips OnFocus, so reveal the cursor ourselves (UUM-149213)
+                showCursor = true;
             }
 
             public virtual void EndEditing()

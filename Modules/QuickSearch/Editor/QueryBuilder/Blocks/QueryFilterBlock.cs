@@ -413,7 +413,14 @@ namespace UnityEditor.Search
             if (end == -1)
                 return false;
 
-            expression = SearchExpression.Parse(text, SearchExpressionParserFlags.None);
+            try
+            {
+                expression = SearchExpression.Parse(text, SearchExpressionParserFlags.None);
+            }
+            catch (SearchExpressionParseException)
+            {
+                return false;
+            }
             if (expression == null)
                 return false;
 

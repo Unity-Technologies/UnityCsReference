@@ -757,6 +757,7 @@ namespace UnityEngine.UIElements
         internal abstract void SetUpdater(IVisualTreeUpdater updater, VisualTreeUpdatePhase phase);
 
         // Need virtual for tests
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal virtual ICursorManager cursorManager { get; set; }
         public ContextualMenuManager contextualMenuManager { get; internal set; }
 
@@ -2148,6 +2149,12 @@ namespace UnityEngine.UIElements
     internal interface IRuntimePanelComponent
     {
         IPanel panel { get; set; }
+    }
+
+    // Distinguishes authoring/preview runtime panels from real game panels sharing the same panel list.
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
+    internal interface IAuthoringPanel
+    {
     }
 
     [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]

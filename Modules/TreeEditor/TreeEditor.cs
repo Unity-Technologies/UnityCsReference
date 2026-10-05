@@ -278,6 +278,9 @@ namespace TreeEditor
 
 
 
+        [MenuItem("GameObject/3D Object/Tree", true, 3001)]
+        static bool CreateNewTreeValidate() => ModeService.HasCapability(ModeCapability.AssetAuthoring, true);
+
         [MenuItem("GameObject/3D Object/Tree", false, 3001)]
         static void CreateNewTree(MenuCommand menuCommand)
         {

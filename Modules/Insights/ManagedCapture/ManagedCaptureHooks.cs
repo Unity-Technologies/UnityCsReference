@@ -34,8 +34,8 @@ namespace UnityEngine.ManagedCapture
         public static void OnMethodCalled(int eventType, string mediator, string method, object[] args)
             => ManagedCaptureHookEngine.DispatchFallback(eventType, mediator, method, args);
 
-        // eventType is the config's per-signal number, authored to match the unityapis registry's
-        // value for this (mediator, l1Event) pair.
+        // eventType is the config's per-signal number, authored to match the registry's value for
+        // this (mediator, l1Event) pair.
         public static void BeginEvent(int eventType, string l1Event, string mediator, string sourceMethod)
             => ManagedCaptureHookEngine.BeginEvent(eventType, l1Event, mediator, sourceMethod);
 

@@ -32,7 +32,7 @@ namespace UnityEditorInternal
 
             var path = OtaConfigPath;
             Directory.CreateDirectory(Path.GetDirectoryName(path));
-            File.WriteAllText(path, configJson);
+            File.WriteAllText(path, ManagedCaptureOtaCipher.Encrypt(configJson));
             return true;
         }
 
@@ -51,7 +51,12 @@ namespace UnityEditorInternal
                 if (!File.Exists(path))
                     return null;
 
-                var json = File.ReadAllText(path);
+                if (!ManagedCaptureOtaCipher.TryDecrypt(File.ReadAllText(path), out var json))
+                {
+                    Debug.LogWarning("[ManagedCapture] Ignoring persisted OTA config: could not be decrypted");
+                    return null;
+                }
+
                 if (IsValidConfig(json, out var reason))
                     return json;
 

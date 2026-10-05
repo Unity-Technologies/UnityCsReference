@@ -4,12 +4,13 @@
 
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor
 {
-     [UxmlElement]
+    [UxmlElement]
     internal partial class GridTemplatePreviewField : VisualElement
     {
         public static readonly BindingId columnsProperty = nameof(columns);
@@ -22,14 +23,12 @@ namespace Unity.UIToolkit.Editor
         public GridTemplatePreviewField()
         {
             AddToClassList(ussClassName);
-            style.marginLeft = 20;
-            style.marginRight = 9;
-            style.marginTop = 4;
-            style.marginBottom = 4;
+
+            if (EditorGUIUtility.Load(k_UssPath) is StyleSheet uss)
+                styleSheets.Add(uss);
 
             var label = new Label("Preview");
-            label.style.unityFontStyleAndWeight = UnityEngine.FontStyle.Bold;
-            label.style.marginBottom = 2;
+            label.AddToClassList(titleUssClassName);
             Add(label);
 
             m_Preview = new GridTemplatePreview();
@@ -59,5 +58,8 @@ namespace Unity.UIToolkit.Editor
         }
 
         public static readonly string ussClassName = "grid-template-preview-field";
+        public static readonly string titleUssClassName = ussClassName + "__title";
+
+        const string k_UssPath = "UIToolkitAuthoring/Inspector/Controls/GridTrackList.uss";
     }
 }

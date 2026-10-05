@@ -79,16 +79,6 @@ namespace Unity.ProjectAuditor.Editor
         public string HostPlatform;
 
         /// <summary>
-        /// The analyzed areas from the preferences.
-        /// </summary>
-        public SerializableEnum<ProjectAreaFlags> ProjectAreas;
-
-        /// <summary>
-        /// Whether the analysis ran on a project that was URP throughout, and so could report its URP migration issues.
-        /// </summary>
-        public bool ReportIncludesUrpMigrationIssues;
-
-        /// <summary>
         /// Scripting backend. For example, CoreCLR or IL2CPP.
         /// </summary>
         public SerializableEnum<ScriptingImplementation> ScriptingBackend;
@@ -149,21 +139,6 @@ namespace Unity.ProjectAuditor.Editor
         [SerializeField]
         private bool needsSaving;
         internal bool NeedsSaving { get => needsSaving; set => needsSaving = value; }
-
-        [SerializeField]
-        private bool migrationToURPConverterStepComplete;
-        internal bool MigrationToURPConverterStepComplete
-        {
-            get => migrationToURPConverterStepComplete;
-            set
-            {
-                if (migrationToURPConverterStepComplete == value)
-                    return;
-
-                migrationToURPConverterStepComplete = value;
-                needsSaving = true;
-            }
-        }
 
         [SerializeField]
         List<ModuleInfo> moduleMetadata = new List<ModuleInfo>();
@@ -253,8 +228,6 @@ namespace Unity.ProjectAuditor.Editor
                 HostName = System.Net.Dns.GetHostName(),
                 // It's not 2016 any more, but too many systems depend on operatingSystem thinking it is, so update mac's naming here
                 HostPlatform = SystemInfo.operatingSystem.Replace("Mac OS X", "macOS"),
-
-                ProjectAreas = (ProjectAreaFlags)UserPreferences.ProjectAreasToAnalyze,
 
                 ScriptingBackend = PlayerSettings.GetScriptingBackend(namedBuildTarget)
             };

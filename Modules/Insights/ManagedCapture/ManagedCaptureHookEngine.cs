@@ -14,7 +14,7 @@ namespace UnityEngine.ManagedCapture.Internal
     {
         [NoAutoStaticsCleanup] internal static Action<int, string, bool> LogEventOverride { get; set; }
 
-        // Off by default: payloads carry ad revenue and identifiers.
+        // Off by default: payloads carry values read out of the instrumented assembly.
         [NoAutoStaticsCleanup] static bool s_Verbose;
 
         [ThreadStatic, NoAutoStaticsCleanup] static EventRecord s_Record;
@@ -78,7 +78,7 @@ namespace UnityEngine.ManagedCapture.Internal
         // A suppressed class takes no part in correlation: it neither mints, reuses nor releases an id.
         // eventType is the config-authored number for this (mediator, l1Event) pair — the same value
         // crosses into native as the wire type (unity.managed_event.type) and appears in the payload
-        // as "mediation_class". Producer-agnostic: any IL-injected SDK's config supplies its own number.
+        // as "mediation_class". Producer-agnostic: each instrumented assembly's config supplies its own number.
         public static void BeginEvent(int eventType, string l1Event, string mediator, string sourceMethod)
         {
             // A nested open is only counted, so its Field and EndEvent calls cannot add to or close the
@@ -167,7 +167,7 @@ namespace UnityEngine.ManagedCapture.Internal
                 record.CorrelationId = correlationId;
             }
 
-            // Don't pin the SDK instance in a thread-static past the event.
+            // Don't pin the instrumented instance in a thread-static past the event.
             EventCorrelation.Clear();
 
             DispatchRecord(record, LogEventOverride);

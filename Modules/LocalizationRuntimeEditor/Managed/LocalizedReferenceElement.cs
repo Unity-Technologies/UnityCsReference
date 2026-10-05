@@ -542,9 +542,10 @@ abstract class LocalizedReferenceElement : VisualElement
 
     void WireMetadataButton(Button button)
     {
-        LocIcons.Apply(button, LocIcons.Metadata);
+        var hasData = m_SharedEntry.Metadata != null && m_SharedEntry.Metadata.HasData;
+        LocIcons.Apply(button, hasData ? LocIcons.MetadataOn : LocIcons.Metadata);
         button.tooltip = L10n.Tr("Metadata", null);
-        if (m_SharedEntry.Metadata != null && m_SharedEntry.Metadata.HasData)
+        if (hasData)
             button.AddToClassList(LocClasses.LocIconBtnActive);
         button.clicked += () =>
         {

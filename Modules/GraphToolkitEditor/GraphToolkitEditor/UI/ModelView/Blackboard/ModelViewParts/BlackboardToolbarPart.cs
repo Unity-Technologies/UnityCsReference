@@ -15,6 +15,8 @@ namespace Unity.GraphToolkit.Editor
     [UnityRestricted]
     internal class BlackboardToolbarPart : BaseModelViewPart
     {
+        static readonly string k_ButtonTooltip = L10n.Tr("This graph tool does not support any variable types.", null);
+
         /// <summary>
         /// The USS class of this part.
         /// </summary>
@@ -87,6 +89,13 @@ namespace Unity.GraphToolkit.Editor
             if (blackboardContentModel.HasDefaultButton())
             {
                 button.clickable.clicked += blackboard.CreateVariable;
+
+                if (!Blackboard.CanCreateVariable(blackboard))
+                {
+                    button.SetEnabled(false);
+                    button.tooltip = k_ButtonTooltip;
+                }
+
                 var icon = EditorGUIUtility.FindTexture("icon dropdown");
                 button = new Button(Background.FromTexture2D(icon));
                 button.AddToClassList(menuButtonUssClassname);

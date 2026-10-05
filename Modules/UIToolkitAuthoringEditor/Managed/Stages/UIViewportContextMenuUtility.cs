@@ -92,7 +92,8 @@ internal static class UIViewportContextMenuUtility
 
             using var toPasteHandle = ListPool<VisualElementAsset>.Get(out var toPasteList);
             for (var i = 0; i < cutElements.Count; ++i)
-                if (cutElements[i] != null) toPasteList.Add(cutElements[i]);
+                if (cutElements[i] != null && cutElements[i].visualTreeAsset != null)
+                    toPasteList.Add(cutElements[i]);
             if (toPasteList.Count == 0)
                 return false;
 

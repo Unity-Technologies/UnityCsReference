@@ -157,7 +157,7 @@ namespace UnityEngine.UIElements
             foreach (var ve in m_TransitionPropertyUpdateList)
             {
                 // Allow for transitions to be cancelled if matching transition property was removed.
-                if (ve.hasRunningAnimations || ve.hasCompletedAnimations)
+                if (ve.hasRunningOrCompletedAnimations)
                 {
                     ComputedTransitionUtils.UpdateComputedTransitions(ref ve.computedStyle, out var computedTransitions);
                     m_StyleContextHierarchyTraversal.CancelAnimationsWithNoTransitionProperty(computedTransitions, ve, ref ve.computedStyle);
@@ -398,11 +398,12 @@ namespace UnityEngine.UIElements
             }
 
             int originalStyleSheetCount = m_StyleMatchingContext.styleSheetCount;
-            if (element.styleSheetList != null)
+            var elementSheets = element.styleSheetList;
+            if (elementSheets != null)
             {
-                for (var i = 0; i < element.styleSheetList.Count; i++)
+                for (var i = 0; i < elementSheets.Count; i++)
                 {
-                    m_StyleMatchingContext.AddStyleSheet(element.styleSheetList[i]);
+                    m_StyleMatchingContext.AddStyleSheet(elementSheets[i]);
                 }
             }
 

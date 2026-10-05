@@ -342,6 +342,10 @@ namespace UnityEngine.UIElements
             return ref ((ManagedComponentBox<T>)slot.managedBox).Value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ref T NullComponentRef<T>() where T : struct, IVisualElementComponent
+            => ref UnsafeUtilityInternal.NullRef<T>();
+
         /// <summary>
         /// Returns a reference to the component of type <typeparamref name="T"/> attached to this
         /// element, or a null reference when the component is not attached. This method never adds
@@ -464,6 +468,9 @@ namespace UnityEngine.UIElements
         // free-queue and drops the slot arrays.
         internal void ReleaseComponentStorage(bool fromFinalizer = false)
         {
+            // The only place these clear: nothing removes a private component individually.
+            m_Flags &= ~VisualElementFlags.PrivateComponentMask;
+
             var slots = m_ComponentSlots;
             if (slots == null)
                 return;

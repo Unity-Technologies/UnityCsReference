@@ -1773,7 +1773,9 @@ namespace UnityEngine.UIElements
                 {
                     bool minmaxPattern = IsMinmaxPattern(track);
                     styleSheet.WriteFunction(ref values[index++], StyleValueFunction.Repeat);
-                    styleSheet.WriteFloat(ref values[index++], 2 + (minmaxPattern ? (2 + 3) : 1)); // enum, comma, <pattern>
+                    // Top-level arg count (enum, comma, <pattern>): a nested function counts as one arg,
+                    // matching the USS importer and the exporter's walker.
+                    styleSheet.WriteFloat(ref values[index++], 3);
                     styleSheet.WriteEnumAsString(ref values[index++], track.m_Kind == GridTrackKind.AutoFill ? "auto-fill" : "auto-fit");
                     styleSheet.WriteCommaSeparator(ref values[index++]);
                     if (minmaxPattern)

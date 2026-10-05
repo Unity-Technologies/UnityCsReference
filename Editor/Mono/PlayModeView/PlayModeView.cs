@@ -279,11 +279,28 @@ namespace UnityEditor
             return attributes.Length > 0 ? ((EditorWindowTitleAttribute)attributes[0]).title : type.Name;
         }
 
+        // Reads the title from the same place the window tab does, so the two always agree. It loads
+        // the window icon, so it cannot be called while asset loading is restricted.
+        protected static string GetLocalizedWindowTitle(Type type)
+        {
+            return GetLocalizedTitleContentFromType(type).text;
+        }
+
+        // Ordered by untranslated title, so the order does not shift with the Editor language.
         internal static Dictionary<Type, string> GetAvailableWindowTypes()
         {
-#pragma warning disable UAC2001 // Avoid Linq
-            return s_AvailableWindowTypes ?? (s_AvailableWindowTypes = TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)).OrderBy(GetWindowTitle).ToDictionary(t => t, GetWindowTitle));
-#pragma warning restore UAC2001
+            if (s_AvailableWindowTypes != null)
+                return s_AvailableWindowTypes;
+
+            var types = new List<Type>(TypeCache.GetTypesDerivedFrom(typeof(PlayModeView)));
+            types.Sort((a, b) => string.Compare(GetWindowTitle(a), GetWindowTitle(b), StringComparison.Ordinal));
+
+            var titles = new Dictionary<Type, string>(types.Count);
+            foreach (var type in types)
+                titles[type] = GetWindowTitle(type);
+
+            s_AvailableWindowTypes = titles;
+            return s_AvailableWindowTypes;
         }
 
         private void SetSerializedViews(Dictionary<string, string> serializedViews)

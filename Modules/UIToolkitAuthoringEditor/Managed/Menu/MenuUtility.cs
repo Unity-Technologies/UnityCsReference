@@ -354,9 +354,13 @@ static class MenuUtility
         return null;
     }
 
-    static bool TryCreatePanelRendererAndAsset(GameObject parent, IPanelComponent reusableComponent, out IPanelComponent component)
+    /// <summary>
+    /// Creates a new UI Document on disk, at the settings-configured default location or one the user picks.
+    /// </summary>
+    /// <returns><see langword="false"/> when the user declined to pick a location or the import failed.</returns>
+    internal static bool TryCreateNewVisualTreeAsset(out VisualTreeAsset asset)
     {
-        component = null;
+        asset = null;
 
         if (!TryResolveNewVisualTreeAssetPath(out var assetPath))
             return false;
@@ -367,9 +371,18 @@ static class MenuUtility
         File.WriteAllText(assetPath, contents);
         AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
 
-        var newVta = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(assetPath);
-        if (newVta == null)
+        asset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(assetPath);
+        return asset != null;
+    }
+
+    static bool TryCreatePanelRendererAndAsset(GameObject parent, IPanelComponent reusableComponent, out IPanelComponent component)
+    {
+        component = null;
+
+        if (!TryCreateNewVisualTreeAsset(out var newVta))
             return false;
+
+        var assetPath = AssetDatabase.GetAssetPath(newVta);
 
         var defaultPanelSettings = PlayModeMenuItems.GetPanelSettingsFromProjectOrCreate();
 

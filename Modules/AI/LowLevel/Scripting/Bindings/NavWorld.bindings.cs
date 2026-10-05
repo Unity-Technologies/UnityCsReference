@@ -49,9 +49,6 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
         "Create and use a new NavQueryBuffer.";
 
     [NativeMethod(IsThreadSafe = true)]
-    static extern bool IsWorldForQueryInternal(IntPtr navMesh, IntPtr query, uint queryUniqueId);
-
-    [NativeMethod(IsThreadSafe = true)]
     static extern bool IsValidWorldInternal(IntPtr navMesh, IntPtr immutableQuery, uint uniqueId);
 
     ///<exclude />
@@ -153,12 +150,22 @@ public struct NavWorld : IDisposable, IEquatable<NavWorld>
 
     readonly void CheckBufferMatchAndThrow(NavQueryBuffer queryBuffer)
     {
+        // IsWorldForQueryInternal dereferences the query pointer, so a buffer that still holds one has to
+        // be validated before that pointer reaches native code - a stale copy points at a destroyed query.
+        // A buffer with no pointer is safe to pass and keeps reporting as a mismatch rather than as
+        // disposed: a default buffer was never created for any world in the first place.
+        if (!queryBuffer.isNull)
+            queryBuffer.CheckValidAndThrow();
+
         if (!IsWorldForQueryInternal(m_NavMeshPtr, queryBuffer.navMeshQueryPtr, queryBuffer.worldUniqueId))
             throw new InvalidOperationException(
                 "The NavWorld methods cannot use a NavQueryBuffer created for a different NavWorld. " +
                 "Call the method with a NavQueryBuffer created for this NavWorld " +
                 $"(index {uniqueId} instead of {queryBuffer.worldUniqueId}).");
     }
+
+    [NativeMethod(IsThreadSafe = true)]
+    static extern bool IsWorldForQueryInternal(IntPtr navMesh, IntPtr query, uint queryUniqueId);
 
     static extern void AddWorldSafety(IntPtr navMesh, AtomicSafetyHandle handle);
 

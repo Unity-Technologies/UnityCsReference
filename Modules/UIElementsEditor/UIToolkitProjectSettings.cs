@@ -139,9 +139,6 @@ namespace UnityEditor.UIElements
                     return;
                 instance.m_EnableGridLayout = value;
                 instance.Save();
-                // Push to the native layout solver so display:grid switches between grid and its
-                // flex fallback live, then let grid-related UI react.
-                UnityEngine.UIElements.Layout.LayoutNative.SetGridLayoutEnabled(value);
                 onEnableGridLayoutChanged?.Invoke(value);
             }
         }

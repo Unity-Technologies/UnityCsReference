@@ -187,7 +187,10 @@ sealed class DocumentViewportContext : IUIViewportContext
             viewport.PushBreadcrumb(gameObject.name, EditorGUIUtility.ObjectContent(gameObject, typeof(GameObject)).image as Texture2D);
 
         if (m_Document)
-            viewport.PushBreadcrumb(m_Document.name, EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D);
+        {
+            var label = UIAssetRegistry.LiveInstance?.IsDirty(m_Document) == true ? m_Document.name + "*" : m_Document.name;
+            viewport.PushBreadcrumb(label, EditorGUIUtility.Load("VisualTreeAsset Icon") as Texture2D);
+        }
     }
 
     void CollectRoots(List<VisualTreeAsset> roots)

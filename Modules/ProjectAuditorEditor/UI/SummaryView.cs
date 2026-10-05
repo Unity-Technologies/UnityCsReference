@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.ProjectAuditor.Editor.Core;
+using Unity.Collections;
 using Unity.ProjectAuditor.Editor.UI.Framework;
 using Unity.ProjectAuditor.Editor.Utils;
 using UnityEditor;
@@ -123,7 +123,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         // Recompute the breakdown stats when the view is dirty. Subclasses can hook OnSummaryRefreshed
         // to refresh their own derived data at the same time.
-        protected void RefreshIfDirty()
+        protected internal void RefreshIfDirty()
         {
             if (!m_Dirty)
                 return;
@@ -183,7 +183,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         protected void AddSeverityStats(ReportItem newIssue, ref StatSeverities severities)
         {
-            if (newIssue.Severity == Severity.None || newIssue.Severity == Severity.Hidden || IsIgnored(newIssue))
+            if (IsIgnoredOrHidden(newIssue))
                 severities.Ignored++;
             else if (newIssue.Severity == Severity.Error)
                 severities.Error++;
@@ -258,6 +258,11 @@ namespace Unity.ProjectAuditor.Editor.UI
                 return true;
 
             return false;
+        }
+
+        protected bool IsIgnoredOrHidden(ReportItem issue)
+        {
+            return issue.Severity == Severity.None || issue.Severity == Severity.Hidden || IsIgnored(issue);
         }
 
         protected void DrawTopTenIssues(TopTen topTen, Func<ReportItem, bool> filter)
@@ -551,11 +556,10 @@ namespace Unity.ProjectAuditor.Editor.UI
                 new KeyValuePair<string, string>("Unity Version", sessionInfo.UnityVersion),
                 new KeyValuePair<string, string>("Project ID", sessionInfo.ProjectId),
                 new KeyValuePair<string, string>("Rules Version", sessionInfo.ProjectAuditorRulesVersion),
-                new KeyValuePair<string, string>("Project Areas", ObjectNames.NicifyVariableName(sessionInfo.ProjectAreas.Value.ToString())),
                 new KeyValuePair<string, string>("Analysis Platform", Formatting.GetModernBuildTargetName(sessionInfo.Platform)),
             ]);
 
-            if ((sessionInfo.ProjectAreas & ProjectAreaFlags.Code) != 0)
+            if (sessionInfo.Categories?.Contains(IssueCategory.Code) ?? false)
             {
                 keyValues.Add(new KeyValuePair<string, string>("Code Analysis Areas", ObjectNames.NicifyVariableName(sessionInfo.CodeAnalysisFlags.Value.ToString())));
                 if (Unsupported.IsDeveloperMode())

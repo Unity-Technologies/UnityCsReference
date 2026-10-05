@@ -16,6 +16,7 @@ using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 using Scene = UnityEngine.SceneManagement.Scene;
@@ -29,6 +30,7 @@ namespace UnityEditor
         public abstract void OnSelectionClosed(UnityObject selection);
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal partial class ObjectSelector : EditorWindow
     {
         // Styles used in the object selector
@@ -615,6 +617,7 @@ namespace UnityEditor
             SharedShow(obj, new RequiredTypeList(requiredTypes, property), objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, true, allowBuiltinResources, excludeSceneAssets);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
         internal void Show(UnityObject obj, Type requiredType, UnityObject objectBeingEdited, bool allowSceneObjects, List<EntityId> allowedEntityIds = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null, bool showNoneItem = true, bool allowBuiltinResources = true, bool excludeSceneAssets = false)
         {
             Show(obj, new Type[] { requiredType }, objectBeingEdited, allowSceneObjects, allowedEntityIds, onObjectSelectorClosed, onObjectSelectedUpdated, showNoneItem, allowBuiltinResources, excludeSceneAssets);

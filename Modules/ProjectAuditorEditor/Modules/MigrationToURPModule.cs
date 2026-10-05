@@ -24,15 +24,9 @@ namespace Unity.ProjectAuditor.Editor.Modules
         // so a scan can take a while to finish.
         const double k_ScanTimeoutSeconds = 600.0;
 
-        const string k_ModuleName = "Migration To URP";
+        internal const string k_ModuleName = "Migration To URP";
 
         internal const string PAA7000 = nameof(PAA7000);
-
-        internal static bool ReportRecordsConverterScan(Report report) =>
-            report?.SessionInfo != null &&
-            report.SessionInfo.ReportIncludesUrpMigrationIssues &&
-            report.TryGetModuleResult(k_ModuleName, out var result) &&
-            result == AnalysisResult.Success;
 
         internal static readonly Descriptor k_ConverterItemDescriptor = new Descriptor
             (
@@ -96,15 +90,14 @@ namespace Unity.ProjectAuditor.Editor.Modules
             var convertersType = Type.GetType(k_ConvertersTypeName);
 
             // Nothing to do if the migration checks aren't needed (eg using custom SRP), or if URP isn't installed
-            if (!k_ConverterItemDescriptor.IsSupported(analysisParams) || convertersType == null)
+            if (!k_ConverterItemDescriptor.IsSupported(analysisParams) || convertersType == null || !MigrationToURPUtilities.IsUrpPackageInstalled())
             {
                 analysisParams.OnModuleCompleted?.Invoke(Name, AnalysisResult.Success, 0);
                 yield break;
             }
 
             // Cancelling a scan is how we stop it when analysis is cancelled, so it's part of the API we need
-            var cancelScanMethod = convertersType.GetMethod("CancelScan", k_ConverterApiBindingFlags, null,
-                Type.EmptyTypes, null);
+            var cancelScanMethod = convertersType.GetMethod("CancelScan", k_ConverterApiBindingFlags, null, Type.EmptyTypes, null);
             if (cancelScanMethod == null)
             {
                 Debug.LogWarning($"[{ProjectAuditor.DisplayName}] Could not find the Render Pipeline Converter scan API on {convertersType.FullName}.");

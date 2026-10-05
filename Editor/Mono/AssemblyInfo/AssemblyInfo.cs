@@ -136,6 +136,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.DragAndDrop.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.SceneHierarchy.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Modules.Core.NestedPrefabsBackwardsCompatibility.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.CoreEditor.NestedPrefabsFrontEnd.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.PlayMode.Editor.Tests")]

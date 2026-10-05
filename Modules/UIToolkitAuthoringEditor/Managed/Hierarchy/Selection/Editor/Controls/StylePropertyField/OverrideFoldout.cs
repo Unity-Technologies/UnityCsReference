@@ -5,6 +5,7 @@
 #pragma warning disable UAL0015,UAL0018,UAL0019,UAL0020,UAL0021 // AutoStaticsCleanup usage analysis: UIToolkitAuthoringFramework not yet converted
 using System;
 using Unity.Properties;
+using Unity.UIToolkit.Editor.Utilities;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -221,14 +222,24 @@ namespace Unity.UIToolkit.Editor
             if (trackedProperties == null || trackedProperties.Count == 0)
                 return;
 
+            // Removing a variable can synchronously refresh this same set, so snapshot before iterating.
+            var propertyNames = new string[trackedProperties.Count];
+            trackedProperties.CopyTo(propertyNames);
+
             using (UICommandQueue.BeginGroup(StylePropertyBinding.k_UnsetText))
             {
                 switch (styleDiff.currentContextType)
                 {
                     case StyleDiff.ContextType.StyleSheet:
                     {
-                        foreach (var propertyName in trackedProperties)
+                        foreach (var propertyName in propertyNames)
                         {
+                            if (propertyName.StartsWith(VariablesInspector.k_VariablePrefix))
+                            {
+                                UnsetVariableProperty(propertyName, styleDiff.currentStyleSheet, styleDiff.currentRule);
+                                continue;
+                            }
+
                             var id = StylePropertyBinding.GetPropertyId(propertyName);
                             if (id != StylePropertyId.Unknown)
 
@@ -240,18 +251,48 @@ namespace Unity.UIToolkit.Editor
                     }
                     case StyleDiff.ContextType.VisualElement:
                     {
-                        foreach (var propertyName in trackedProperties)
+                        // styleDiff.currentRule can be stale until the next style refresh; read the element directly.
+                        var target = styleDiff.currentTarget;
+                        var vta = target?.visualTreeAssetSource;
+                        var vea = target?.visualElementAsset;
+                        var inlineSheet = vta != null ? vta.inlineSheet : null;
+                        var inlineRule = inlineSheet != null && vea != null && vea.ruleIndex >= 0 && vea.ruleIndex < inlineSheet.rules.Length
+                            ? inlineSheet.rules[vea.ruleIndex]
+                            : null;
+
+                        var unsetAnyVariable = false;
+                        foreach (var propertyName in propertyNames)
                         {
+                            if (propertyName.StartsWith(VariablesInspector.k_VariablePrefix))
+                            {
+                                unsetAnyVariable |= UnsetVariableProperty(propertyName, inlineSheet, inlineRule, vta);
+                                continue;
+                            }
+
                             var id = StylePropertyBinding.GetPropertyId(propertyName);
                             if (id != StylePropertyId.Unknown)
                                 UnsetInlineStylePropertyCommand.Execute(CommandSources.Inspector,
                                     styleDiff.currentTarget, id);
                         }
 
+                        // RemoveStyleRulePropertyCommand has no target element, so it can't refresh this itself.
+                        if (unsetAnyVariable && target != null)
+                            VisualElementUtility.UpdateInlineRuleOnAllClones(target, inlineSheet, inlineRule);
+
                         break;
                     }
                 }
             }
+        }
+
+        static bool UnsetVariableProperty(string propertyName, StyleSheet styleSheet, StyleRule rule, VisualTreeAsset visualTreeAsset = null)
+        {
+            var property = rule?.FindLastProperty(propertyName);
+            if (property == null)
+                return false;
+
+            RemoveStyleRulePropertyCommand.Execute(CommandSources.Inspector, styleSheet, rule, property, visualTreeAsset);
+            return true;
         }
 
         static void UnsetAllProperties(StyleDiff styleDiff)

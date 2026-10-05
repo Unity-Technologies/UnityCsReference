@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.IO;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
@@ -83,10 +84,8 @@ sealed class CreateTemplateFromElementCommand : Command<CreateTemplateFromElemen
         };
         attr.SetSerializedValue(templateAsset.serializedData, uxmlValue, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
 
-        // The instance takes over the extracted element's name so USS and UQuery written
-        // against that name keep targeting the same position in the document.
-        if (m_ElementToTemplatize.TryGetAttributeValue("name", out var elementName) && !string.IsNullOrEmpty(elementName))
-            UxmlAssetUtilities.SetAttributeAndSyncSerializedData(templateAsset, "name", elementName);
+        UxmlAssetUtilities.SetAttributeAndSyncSerializedData(
+            templateAsset, nameof(VisualElement.name), Path.GetFileNameWithoutExtension(assetPath));
 
         vta.ReparentElementInDocument(templateAsset, m_ParentAsset, insertionIndex);
 

@@ -310,7 +310,19 @@ static class VisualElementEditingUtility
     public static bool CanPasteContent()
     {
         var cut = Clipboard.GetClipboardForStage()?.GetCutElements();
-        return (cut != null && cut.Count > 0) || Clipboard.IsSystemCopyBufferUxml();
+        if (cut != null && cut.Count > 0)
+        {
+            foreach (var asset in cut)
+            {
+                if (asset != null && asset.visualTreeAsset != null)
+                    return true;
+            }
+
+            // Every cut element has since been deleted: there is nothing left to move, and both paste
+            // implementations only fall through to the copy-buffer branch when the cut list is empty.
+            return false;
+        }
+        return Clipboard.IsSystemCopyBufferUxml();
     }
 
     /// <summary>

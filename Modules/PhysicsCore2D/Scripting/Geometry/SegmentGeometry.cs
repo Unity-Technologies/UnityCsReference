@@ -85,8 +85,12 @@ namespace Unity.U2D.Physics
         }
 
         /// <summary>
-        /// Check if the geometry is valid or not.
+        /// Whether the geometry describes a segment that can be used.
         /// </summary>
+        /// <remarks>
+        /// Both points must be finite and further apart than <see cref="PhysicsWorld.minEdgeLength"/>.
+        /// See <see cref="SegmentGeometry.areEdgesValid"/> for the point separation on its own.
+        /// </remarks>
         public readonly bool isValid => SegmentGeometry_IsValid(this);
 
         /// <summary>

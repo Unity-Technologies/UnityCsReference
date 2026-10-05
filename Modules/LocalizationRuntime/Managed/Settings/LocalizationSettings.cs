@@ -37,14 +37,19 @@ namespace Unity.Localization;
 [HelpURL("localization/localization-settings-reference")]
 public partial class LocalizationSettings : ScriptableObject
 {
-    [AutoStaticsCleanup] // the wrapper type is reloadable; Initialize() re-registers the active settings
+    // Never cleaned up automatically, for both of the reasons SmartStringsSettings.s_Instance gives, and because PlayModeScope is entered after the editor registers the settings and before Awake.
+    [NoAutoStaticsCleanup]
     static LocalizationSettings s_Instance;
+
+    [AutoStaticsCleanup] // mirrors ResetStaticsForPlayMode()
+    static bool s_WarnedNoSettings;
 
     [VisibleToOtherModules("UnityEditor.LocalizationRuntimeModule")]
     internal static void ResetStaticsForPlayMode()
     {
         SelectedLocaleChanged = null;
         InitializationCompleted = null;
+        s_WarnedNoSettings = false;
         if (s_Instance != null)
         {
             // An initialization run still in flight belongs to the previous session; abandon it.
@@ -150,6 +155,27 @@ public partial class LocalizationSettings : ScriptableObject
     /// </summary>
     /// <remarks>Convenience accessor for the <see cref="Database"/> of the active <see cref="Instance"/>; resolves localized strings and assets.</remarks>
     public static ResourceDatabase ResourceDatabase => s_Instance != null ? s_Instance.m_ResourceDatabase : null;
+
+    // The resolve paths use this rather than ResourceDatabase: it reports a reference that has something to look up and nothing to look it up in.
+    internal static bool TryGetDatabaseForResolve(bool isEmpty, out ResourceDatabase database)
+    {
+        database = null;
+        if (isEmpty)
+            return false;
+        if (s_Instance != null)
+        {
+            database = s_Instance.m_ResourceDatabase;
+            return database != null;
+        }
+        if (!s_WarnedNoSettings)
+        {
+            s_WarnedNoSettings = true;
+            Debug.LogWarning("A localized value was resolved but no LocalizationSettings is registered, so it and " +
+                "every other localized value resolve as empty. Create the settings in Project Settings > Localization, " +
+                "or check that the project's settings asset still exists.");
+        }
+        return false;
+    }
 
     /// <summary>
     /// The default loading behaviour used by the reference accessors and their change events.

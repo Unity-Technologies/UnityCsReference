@@ -117,7 +117,7 @@ namespace UnityEngine.UIElements
                 UIElementsUtility.GetAllPanels(panels, ContextType.Player);
                 foreach (var panel in panels)
                 {
-                    if (!(panel is BaseRuntimePanel runtimePanel))
+                    if (!(panel is BaseRuntimePanel runtimePanel) || panel is IAuthoringPanel)
                         continue;
 
                     if (runtimePanel.drawsInCameras)
@@ -449,8 +449,10 @@ namespace UnityEngine.UIElements
 
         internal static void RemovePanelRenderer(PanelRenderer panelRenderer)
         {
-            var ps = panelRenderer.panelSettings as PanelSettings;
-            ps?.DetachPanelComponent(panelRenderer);
+            // The inherited panelSettings resolves parentUI, and while a prefab unloads that reloads a parent that is
+            // already gone
+            if (panelRenderer.rootVisualElement != null)
+                panelRenderer.ownPanelSettings?.DetachPanelComponent(panelRenderer);
 
             s_AllPanelRenderers.Remove(panelRenderer);
             s_DirtyPanelRenderers.Remove(panelRenderer);

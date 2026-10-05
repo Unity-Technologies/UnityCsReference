@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using Unity.Properties;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -296,7 +297,33 @@ namespace UnityEngine.UIElements
             hierarchy.Add(m_Container);
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            Callbacks.OnTooltip.Register(this);
             SetValueWithoutNotify(true);
+        }
+
+        void OnTooltip(TooltipEvent evt)
+        {
+            if (string.IsNullOrEmpty(tooltip))
+                return;
+
+            // The tooltip describes the header, so it must not apply to the content. (UUM-145747)
+            var hovered = evt.elementTarget;
+            var overHeader = hovered == this || hovered == m_Toggle || m_Toggle.Contains(hovered);
+            if (!overHeader)
+            {
+                evt.StopImmediatePropagation();
+                return;
+            }
+
+            if (evt.rect == Rect.zero)
+                evt.rect = m_Toggle.worldBound;
+        }
+
+        static class Callbacks
+        {
+            [NoAutoStaticsCleanup]
+            public static readonly EventCallbackDefinition<Foldout> OnTooltip =
+                EventCallback.Create<TooltipEvent, Foldout>(static (e, self) => self.OnTooltip(e));
         }
 
         void OnAttachToPanel(AttachToPanelEvent evt)

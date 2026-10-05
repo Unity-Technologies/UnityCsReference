@@ -56,6 +56,7 @@ namespace UnityEngine.UIElements.UIR
         // Value of the owner's isWorldSpaceRootPanelComponent at insertion time, which decides both the
         // render-chain cut and whether z-indexed descendants may be promoted past this element.
         CutsRenderChain = 1 << 12,
+        HasBackdropFilter = 1 << 13,
     }
 
     // This is intended for data that used infrequently, to such an extent, that it's not worth being directly in RenderChainVEData.
@@ -72,6 +73,21 @@ namespace UnityEngine.UIElements.UIR
         // callbacks never run while a render target is bound. The lists persist (empty) across pooled reuse.
         public List<MaterialPropertyBlock> filterCallbackPropertyBlocks;
         public List<MaterialPropertyBlock> backdropFilterCallbackPropertyBlocks;
+
+        // Backdrop-filter render state; live only while RenderData.hasBackdropFilterAllocated.
+        // The TextureId is a persistent handle, the RT is created during render and released next frame.
+        public TextureId backdropFilterTextureId;
+        public RenderTexture backdropFilterTemporaryTexture;
+
+        // Backdrop texture mapping, accounting for rotation.
+        public Vector2 backdropFilterUVBottomLeft;
+        public Vector2 backdropFilterUVTopLeft;
+        public Vector2 backdropFilterUVTopRight;
+        public Vector2 backdropFilterUVBottomRight;
+
+        // The element's world rect clipped to its ancestors, fixed at mesh-record time. The UV corners above
+        // are normalized within it, so the render phase sizes the texture from this and not from ve.worldBound.
+        public Rect backdropFilterRecordedRect;
     }
 
     struct GraphicEntry
@@ -114,24 +130,9 @@ namespace UnityEngine.UIElements.UIR
 
         public BasicNode<GraphicEntry> graphicEntries;
 
-        // Texture ID for backdrop-filter effect (persistent handle, texture bound during render).
-        // Validity doubles as the lifecycle oracle: see hasBackdropFilterAllocated.
-        public TextureId backdropFilterTextureId;
-
-        // Temporary RenderTexture for backdrop-filter (created during render, released next frame)
-        public RenderTexture backdropFilterTemporaryTexture;
-
-        // UV corners for backdrop-filter texture mapping (accounts for rotation)
-        // Order: bottom-left, top-left, top-right, bottom-right
-        public Vector2 backdropFilterUVBottomLeft;
-        public Vector2 backdropFilterUVTopLeft;
-        public Vector2 backdropFilterUVTopRight;
-        public Vector2 backdropFilterUVBottomRight;
-
-        // True when backdrop-filter resources are currently allocated for this render data
-        // (TextureId reserved, panel and descendant counters incremented).
-        // Synchronized against owner.hasBackdropFilter by RenderEvents.SyncBackdropFilterState.
-        public bool hasBackdropFilterAllocated => backdropFilterTextureId.IsValid();
+        // True while this render data's ExtraRenderData holds live backdrop-filter state. A flag rather than a
+        // derived check, so a pooled ExtraRenderData's stale fields can never read as allocated.
+        public bool hasBackdropFilterAllocated => (flags & RenderDataFlags.HasBackdropFilter) != 0;
 
         // Curved UI: true while the engine-owned curvature mesh modifier is registered on the
         // owner. Synchronized against owner.hasCurvature by UIRCurvatureMeshModifier.SyncState. Packed
@@ -203,12 +204,6 @@ namespace UnityEngine.UIElements.UIR
             compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
             backgroundAlpha = 0.0f;
             graphicEntries = null;
-            backdropFilterTextureId = TextureId.invalid;
-            backdropFilterTemporaryTexture = null;
-            backdropFilterUVBottomLeft = Vector2.zero;
-            backdropFilterUVTopLeft = Vector2.zero;
-            backdropFilterUVTopRight = Vector2.zero;
-            backdropFilterUVBottomRight = Vector2.zero;
             pendingRepaint = false;
             pendingHierarchicalRepaint = false;
             m_EffectiveModifiers = null;
@@ -481,7 +476,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        private static Rect IntersectClipRects(Rect rect, Rect parentRect)
+        internal static Rect IntersectClipRects(Rect rect, Rect parentRect)
         {
             float x1 = Mathf.Max(rect.xMin, parentRect.xMin);
             float x2 = Mathf.Min(rect.xMax, parentRect.xMax);

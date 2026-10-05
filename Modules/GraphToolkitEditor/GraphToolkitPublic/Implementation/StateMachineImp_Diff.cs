@@ -78,21 +78,37 @@ namespace Unity.GraphToolkit.Editor.Implementation
 
             m_DeletedPortToNodeGuid.Clear();
 
-            var changedStates = new List<ChangedState>(m_StateBuilders.Count);
-            foreach (var sb in m_StateBuilders.Values)
-                changedStates.Add(new ChangedState(sb.Element, sb.Guid, sb.Kinds));
+            List<ChangedState> changedStates = null;
+            if (m_StateBuilders.Count > 0)
+            {
+                changedStates = new List<ChangedState>(m_StateBuilders.Count);
+                foreach (var sb in m_StateBuilders.Values)
+                    changedStates.Add(new ChangedState(sb.Element, sb.Guid, sb.Kinds));
+            }
 
-            var changedTransitions = new List<ChangedTransition>(m_TransitionBuilders.Count);
-            foreach (var tb in m_TransitionBuilders.Values)
-                changedTransitions.Add(new ChangedTransition(tb.Element, tb.Guid, tb.Kinds));
+            List<ChangedTransition> changedTransitions = null;
+            if (m_TransitionBuilders.Count > 0)
+            {
+                changedTransitions = new List<ChangedTransition>(m_TransitionBuilders.Count);
+                foreach (var tb in m_TransitionBuilders.Values)
+                    changedTransitions.Add(new ChangedTransition(tb.Element, tb.Guid, tb.Kinds));
+            }
 
-            var changedVariables = new List<ChangedVariable>(m_VariableBuilders.Count);
-            foreach (var vb in m_VariableBuilders.Values)
-                changedVariables.Add(new ChangedVariable(vb.Element, vb.Guid, vb.Kinds));
+            List<ChangedVariable> changedVariables = null;
+            if (m_VariableBuilders.Count > 0)
+            {
+                changedVariables = new List<ChangedVariable>(m_VariableBuilders.Count);
+                foreach (var vb in m_VariableBuilders.Values)
+                    changedVariables.Add(new ChangedVariable(vb.Element, vb.Guid, vb.Kinds));
+            }
 
-            var changedSubgraphStates = new List<ChangedSubgraphState>(m_SubgraphStateBuilders.Count);
-            foreach (var ssb in m_SubgraphStateBuilders.Values)
-                changedSubgraphStates.Add(new ChangedSubgraphState(ssb.Element, ssb.Guid, ssb.Kinds));
+            List<ChangedSubgraphState> changedSubgraphStates = null;
+            if (m_SubgraphStateBuilders.Count > 0)
+            {
+                changedSubgraphStates = new List<ChangedSubgraphState>(m_SubgraphStateBuilders.Count);
+                foreach (var ssb in m_SubgraphStateBuilders.Values)
+                    changedSubgraphStates.Add(new ChangedSubgraphState(ssb.Element, ssb.Guid, ssb.Kinds));
+            }
 
             stateMachineLogger?.SetChangeData(changedStates, changedTransitions, changedVariables, changedSubgraphStates);
 

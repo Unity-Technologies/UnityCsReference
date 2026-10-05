@@ -104,6 +104,9 @@ namespace Unity.Hierarchy.Editor
         internal List<HierarchyViewColumnDescriptor> ColumnDescriptors => m_ColumnDescriptors;
         [SerializeField] HierarchyViewState m_ViewState;
 
+        HierarchyViewState m_PendingRestoreState;
+        bool m_RestoreQueued;
+
         [SerializeField]
         string m_WindowGUID;
         [SerializeField]
@@ -1274,6 +1277,36 @@ namespace Unity.Hierarchy.Editor
         {
             m_HierarchyView.SetColumnDescriptors(ColumnDescriptors, CellDescriptors, state);
         }
+
+        void OnPrefabInstanceUpdated(GameObject go)
+        {
+            if (go == null || !go)
+                return;
+
+            if (!m_RestoreQueued && StageNavigationManager.instance.currentStage is not MainStage)
+            {
+                m_PendingRestoreState = m_HierarchyView.GetState(HierarchyViewState.Content.Stage);
+                m_RestoreQueued = true;
+                EditorApplication.delayCall += RestorePendingViewState;
+            }
+
+            m_Hierarchy.SetDirty();
+        }
+
+        void RestorePendingViewState()
+        {
+            if (this == null)
+                return;
+
+            var state = m_PendingRestoreState;
+            m_PendingRestoreState = null;
+            m_RestoreQueued = false;
+
+            if (state != null)
+                SetViewState(state);
+        }
+
+        void OnUndoRedoPerformed() => m_HierarchyView.Source.SetDirty();
 
         internal void Update()
         {

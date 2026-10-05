@@ -100,6 +100,13 @@ namespace Unity.GraphToolkit.Editor
         }
 
         /// <inheritdoc />
+        protected override void PartOwnerRemovedFromView()
+        {
+            PortContainer?.RemovePortsFromRootView();
+            base.PartOwnerRemovedFromView();
+        }
+
+        /// <inheritdoc />
         public override void SetCullingState(GraphViewCullingState cullingState)
         {
             if (cullingState == GraphViewCullingState.Enabled)

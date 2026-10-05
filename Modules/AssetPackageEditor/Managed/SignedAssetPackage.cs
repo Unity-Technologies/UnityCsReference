@@ -3,12 +3,22 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.AssetPackage
 {
+    [RequiredByNativeCode(GenerateProxy = true)]
+    [StructLayout(LayoutKind.Sequential)]
+    [Serializable]
+    internal class SignatureResult
+    {
+        public bool succeeded;
+        public string errorMessage;
+    }
+
     internal class SignedAssetPackage
     {
         public const int Sha256IntegrityStringLength = 51;
@@ -17,31 +27,47 @@ namespace UnityEditor.AssetPackage
         public static string AttestationFilename => "package/.attestation.p7m";
 
         [RequiredByNativeCode]
-        public static void CreateSignedAssetPackage(string sourcePath, string destinationPath, string ownerOrgId)
+        public static SignatureResult CreateSignedAssetPackage(string sourcePath, string destinationPath,
+            string ownerOrgId)
         {
-            Tarball.CreateTarballFromFolder(sourcePath, destinationPath);
+            var result = new SignatureResult { succeeded = false, errorMessage = null };
 
-            if (!string.IsNullOrEmpty(ownerOrgId))
+            try
             {
-                var signatureService = new SignatureService();
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        await InsertAttestationFileIntoTarball(destinationPath, destinationPath, ownerOrgId, signatureService);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogError(L10n.Tr($"Package signature failed: {ex.Message}", null));
-                    }
-                }).Wait();
+                Tarball.CreateTarballFromFolder(sourcePath, destinationPath);
             }
+            catch (Exception ex)
+            {
+                result.errorMessage = ex.Message;
+                Debug.LogError(L10n.Tr($"Package tarball creation failed: {ex.Message}", null));
+                return result;
+            }
+
+            if (string.IsNullOrEmpty(ownerOrgId))
+                return result;
+
+            var signatureService = new SignatureService();
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await InsertAttestationFileIntoTarball(destinationPath, destinationPath, ownerOrgId,
+                        signatureService);
+                    result.succeeded = true;
+                }
+                catch (Exception ex)
+                {
+                    result.errorMessage = ex.Message;
+                    Debug.LogError(L10n.Tr($"Package signature failed: {ex.Message}", null));
+                }
+            }).Wait();
+            return result;
         }
 
         internal static async Task InsertAttestationFileIntoTarball(string sourcePath, string destinationPath, string ownerOrgId, SignatureService signatureService)
         {
             var tarball = Tarball.GetUncompressedTarball(sourcePath);
-            
+
             using (var sha256 = System.Security.Cryptography.SHA256.Create())
             {
                 var hash = sha256.ComputeHash(tarball.Span.ToArray());

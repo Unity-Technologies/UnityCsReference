@@ -44,6 +44,25 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        [NoAutoStaticsCleanup] // persist the cached texture; nulling it would orphan the native HideAndDontSave object
+        static Texture2D s_EmptyBackdrop;
+        // Bound when a capture is skipped: the recorded mesh still samples the TextureId, and an unbound
+        // dynamic id resolves to null, which leaves whatever was bound before showing through.
+        static Texture2D emptyBackdrop
+        {
+            get
+            {
+                if (s_EmptyBackdrop == null)
+                {
+                    s_EmptyBackdrop = new Texture2D(1, 1, TextureFormat.ARGB32, false);
+                    s_EmptyBackdrop.hideFlags = HideFlags.HideAndDontSave;
+                    s_EmptyBackdrop.SetPixel(0, 0, Color.clear);
+                    s_EmptyBackdrop.Apply();
+                }
+                return s_EmptyBackdrop;
+            }
+        }
+
         // Shaders sharing UnityUIEFilter.cginc read unity_uie_UVRect via GetFilterUVRect. The
         // compositor sets it per-pass for the regular `filter` style; backdrop-filter always
         // samples the full backdrop texture, so InvokeBackdropFilterCallbacks primes it to
@@ -62,31 +81,41 @@ namespace UnityEngine.UIElements.UIR
         // execution by GenerateBackdropFilterTexture.
         public static void AllocBackdropFilterTextureId(RenderTreeManager renderTreeManager, RenderData owner)
         {
-            if (owner.backdropFilterTextureId.IsValid())
+            if (owner.hasBackdropFilterAllocated)
                 return;
 
-            owner.backdropFilterTextureId = renderTreeManager.textureRegistry.AllocAndAcquireDynamic();
+            // The registry can be full; raising the flag on a failed alloc would make SyncBackdropFilterState
+            // count and register an element that has no texture.
+            TextureId textureId = renderTreeManager.textureRegistry.AllocAndAcquireDynamic();
+            if (!textureId.IsValid())
+                return;
+
+            renderTreeManager.GetOrAddExtraData(owner).backdropFilterTextureId = textureId;
+            owner.flags |= RenderDataFlags.HasBackdropFilter;
         }
 
         // Releases the TextureId and any pooled temporary RT. Safe to call when no resources are held.
         public static void ReleaseBackdropFilterResources(RenderTreeManager renderTreeManager, RenderData owner)
         {
-            if (owner.backdropFilterTextureId.IsValid())
-            {
-                renderTreeManager.textureRegistry.Release(owner.backdropFilterTextureId);
-                owner.backdropFilterTextureId = TextureId.invalid;
-            }
-
-            if (owner.backdropFilterTemporaryTexture != null)
-            {
-                RenderTexture.ReleaseTemporary(owner.backdropFilterTemporaryTexture);
-                owner.backdropFilterTemporaryTexture = null;
-            }
-
-            // Return the per-pass MPBs to the manager pool. On the element-removal path,
-            // FreeExtraData has already done this (the extra data is gone by the time this runs).
             if (owner.hasExtraData)
-                renderTreeManager.ReleaseFilterCallbackBlocks(renderTreeManager.GetExtraData(owner).backdropFilterCallbackPropertyBlocks);
+            {
+                ExtraRenderData extraData = renderTreeManager.GetExtraData(owner);
+
+                if (owner.hasBackdropFilterAllocated)
+                {
+                    renderTreeManager.textureRegistry.Release(extraData.backdropFilterTextureId);
+                    if (extraData.backdropFilterTemporaryTexture != null)
+                        RenderTexture.ReleaseTemporary(extraData.backdropFilterTemporaryTexture);
+
+                    extraData.backdropFilterTextureId = TextureId.invalid;
+                    extraData.backdropFilterTemporaryTexture = null;
+                    extraData.backdropFilterRecordedRect = Rect.zero;
+                    owner.flags &= ~RenderDataFlags.HasBackdropFilter;
+                }
+
+                // Return the per-pass MPBs to the manager pool; idempotent, so FreeExtraData may repeat it.
+                renderTreeManager.ReleaseFilterCallbackBlocks(extraData.backdropFilterCallbackPropertyBlocks);
+            }
         }
 
         // Scale of the element relative to its render tree root. The backdrop is captured
@@ -195,55 +224,83 @@ namespace UnityEngine.UIElements.UIR
                 blocks[i].SetVectorArray(FilterHelper.s_UVRectId, s_FullUVRectArray);
         }
 
-        // Recomputed every mesh-record pass: the UV corners depend on the world transform.
-        public static void UpdateBackdropFilterUVCorners(VisualElement ve, RenderData owner)
+        // Recomputed every mesh-record pass: the UV corners depend on the world transform. Returns false
+        // when there is nothing to capture, in which case the caller must not record a backdrop mesh.
+        public static bool UpdateBackdropFilterUVCorners(VisualElement ve, RenderData owner, ExtraRenderData extraData)
         {
-            Rect worldBound = ve.worldBound;
-            if (worldBound.width <= UIRUtility.k_Epsilon || worldBound.height <= UIRUtility.k_Epsilon)
-                return;
+            Rect recordedRect = ve.worldBound;
+            if (recordedRect.width <= UIRUtility.k_Epsilon || recordedRect.height <= UIRUtility.k_Epsilon)
+                return false;
 
-            ComputeBackdropFilterUVCorners(ve, worldBound, owner);
+            // The output texture spans this rect, so a zoomed element's world rect can exceed
+            // maxRenderTextureSize (UUM-149927). Only then fall back to the ancestor clip: the recorded rect
+            // sets the texel grid and the UV normalization, so clipping it unconditionally shifts the output of
+            // every clipped element by up to a pixel, and the capture is clamped to that clip regardless.
+            float scale = ve.scaledPixelsPerPoint;
+            int maxSize = SystemInfo.maxRenderTextureSize;
+            if (recordedRect.width * scale > maxSize || recordedRect.height * scale > maxSize)
+            {
+                // A nested tree's clippingRect is in the tree root's space rather than this rect's, so it
+                // cannot bound it.
+                if (owner.renderTree.rootRenderData.isNestedRenderTreeRoot)
+                    return false;
+
+                recordedRect = RenderData.IntersectClipRects(recordedRect, owner.clippingRect);
+                if (recordedRect.width <= UIRUtility.k_Epsilon || recordedRect.height <= UIRUtility.k_Epsilon)
+                    return false;
+
+                // clippingRect falls back to k_UnlimitedRect for an element with no panel, so still check.
+                if (recordedRect.width * scale > maxSize || recordedRect.height * scale > maxSize)
+                    return false;
+            }
+
+            extraData.backdropFilterRecordedRect = recordedRect;
+            ComputeBackdropFilterUVCorners(ve, recordedRect, extraData);
+            return true;
         }
 
-        // Maps each local corner to world space, then to a UV within the captured worldBound (handles rotation).
-        static void ComputeBackdropFilterUVCorners(VisualElement ve, Rect worldBound, RenderData owner)
+        // Maps each local corner to world space, then to a UV within the recorded rect (handles rotation).
+        static void ComputeBackdropFilterUVCorners(VisualElement ve, Rect recordedRect, ExtraRenderData extraData)
         {
             var veSize = ve.layoutSize;
             Matrix4x4 worldTransform = ve.worldTransform;
 
-            // UV = (worldPos - worldBound.min) / size. V is flipped: screen Y is down, texture V=0 is bottom.
-            float invWidth = worldBound.width > UIRUtility.k_Epsilon ? 1f / worldBound.width : 0f;
-            float invHeight = worldBound.height > UIRUtility.k_Epsilon ? 1f / worldBound.height : 0f;
+            // UV = (worldPos - recordedRect.min) / size. V is flipped: screen Y is down, texture V=0 is bottom.
+            float invWidth = recordedRect.width > UIRUtility.k_Epsilon ? 1f / recordedRect.width : 0f;
+            float invHeight = recordedRect.height > UIRUtility.k_Epsilon ? 1f / recordedRect.height : 0f;
 
-            // Maps a local corner to world space, then to its UV within worldBound (handles rotation). Local
-            // function called directly, so the capture of worldTransform/worldBound/inv* allocates nothing.
+            // Maps a local corner to world space, then to its UV within the rect. Local function called
+            // directly, so the capture of worldTransform/recordedRect/inv* allocates nothing.
             Vector2 CornerUV(float localX, float localY)
             {
                 Vector3 world = worldTransform.MultiplyPoint3x4(new Vector3(localX, localY, 0));
                 return new Vector2(
-                    (world.x - worldBound.x) * invWidth,
-                    1f - (world.y - worldBound.y) * invHeight);
+                    (world.x - recordedRect.x) * invWidth,
+                    1f - (world.y - recordedRect.y) * invHeight);
             }
 
             // Local corners: BL(0,h), TL(0,0), TR(w,0), BR(w,h)
-            owner.backdropFilterUVBottomLeft = CornerUV(0, veSize.y);
-            owner.backdropFilterUVTopLeft = CornerUV(0, 0);
-            owner.backdropFilterUVTopRight = CornerUV(veSize.x, 0);
-            owner.backdropFilterUVBottomRight = CornerUV(veSize.x, veSize.y);
+            extraData.backdropFilterUVBottomLeft = CornerUV(0, veSize.y);
+            extraData.backdropFilterUVTopLeft = CornerUV(0, 0);
+            extraData.backdropFilterUVTopRight = CornerUV(veSize.x, 0);
+            extraData.backdropFilterUVBottomRight = CornerUV(veSize.x, veSize.y);
         }
 
         // Captures the backdrop region, applies filters, and binds the result to the (pre-allocated) TextureId.
-        // The output RenderTexture is stored in RenderData and released next frame.
+        // The output RenderTexture is stored in the backdrop state and released next frame.
         public static void GenerateBackdropFilterTexture(DrawParams drawParams, VisualElement ve, RenderData owner)
         {
-            var textureRegistry = owner.renderTree.renderTreeManager.textureRegistry;
+            RenderTreeManager renderTreeManager = owner.renderTree.renderTreeManager;
+            var textureRegistry = renderTreeManager.textureRegistry;
 
             // The TextureId should already be allocated during mesh generation
-            if (!owner.backdropFilterTextureId.IsValid())
+            if (!owner.hasBackdropFilterAllocated)
                 return;
 
-            Rect worldBound = ve.worldBound;
-            if (worldBound.width <= UIRUtility.k_Epsilon || worldBound.height <= UIRUtility.k_Epsilon)
+            ExtraRenderData extraData = renderTreeManager.GetExtraData(owner);
+
+            Rect recordedRect = extraData.backdropFilterRecordedRect;
+            if (recordedRect.width <= UIRUtility.k_Epsilon || recordedRect.height <= UIRUtility.k_Epsilon)
                 return;
 
             // A render tree backed by a nested RT projects in the tree root's space, not panel space,
@@ -284,7 +341,7 @@ namespace UnityEngine.UIElements.UIR
             Vector2 contentScale;
             if (!isNestedRT)
             {
-                pixelRect = RenderChainCommand.RectPointsToPixels(worldBound, drawBounds.min, scaleX, scaleY, activeViewport);
+                pixelRect = RenderChainCommand.RectPointsToPixels(recordedRect, drawBounds.min, scaleX, scaleY, activeViewport);
                 if (pixelRect.width <= 0 || pixelRect.height <= 0)
                     return;
 
@@ -337,7 +394,26 @@ namespace UnityEngine.UIElements.UIR
                     return;
             }
 
-            // Clamp to source bounds; worldBound can extend past the RT (custom Camera.rect, split-screen),
+            // Last resort: a nested tree projects through the active viewport, a scale the bound applied when
+            // the rect was recorded cannot account for. Skipping beats a failed allocation, but the recorded
+            // mesh still draws this TextureId, so wipe last frame's RT or it shows as a stale, mis-scaled backdrop.
+            int maxRenderTextureSize = SystemInfo.maxRenderTextureSize;
+            if (pixelRect.width > maxRenderTextureSize || pixelRect.height > maxRenderTextureSize)
+            {
+                if (extraData.backdropFilterTemporaryTexture != null)
+                {
+                    RenderTexture oldRT = RenderTexture.active;
+                    RenderTexture.active = extraData.backdropFilterTemporaryTexture;
+                    GL.Clear(false, true, Color.clear);
+                    RenderTexture.active = oldRT;
+                }
+                else
+                    textureRegistry.UpdateDynamic(extraData.backdropFilterTextureId, emptyBackdrop);
+
+                return;
+            }
+
+            // Clamp to source bounds; the recorded rect can extend past the RT (custom Camera.rect, split-screen),
             // which would make the CopyTexture below throw on out-of-range coords.
             if (!ClampCapture(ref captureRect, new RectInt(0, 0, source.width, source.height)))
                 return;
@@ -348,7 +424,7 @@ namespace UnityEngine.UIElements.UIR
 
             // Release only after UpdateDynamic rebinds the TextureId below; releasing now could let the
             // GetTemporary calls recycle this RT while it's still bound.
-            RenderTexture previousFrameRT = owner.backdropFilterTemporaryTexture;
+            RenderTexture previousFrameRT = extraData.backdropFilterTemporaryTexture;
 
             RenderTexture backdrop = CaptureBackdrop(source, captureRect, colorSpace);
             if (backdrop == null)
@@ -436,6 +512,9 @@ namespace UnityEngine.UIElements.UIR
                 colorSpace
             );
             outputTexture.filterMode = FilterMode.Bilinear;
+            // The texture spans the clipped rect while the mesh spans the whole element, so the recorded UVs
+            // leave [0,1]; pooled RTs default to Repeat, which would sample the opposite edge at a clipped one.
+            outputTexture.wrapMode = TextureWrapMode.Clamp;
 
             var srcOffset = new Vector2Int(innerRect.xMin - captureRect.xMin, innerRect.yMin - captureRect.yMin);
             int destX = innerRect.xMin - pixelRect.xMin;
@@ -445,8 +524,8 @@ namespace UnityEngine.UIElements.UIR
                 : innerRect.yMin - pixelRect.yMin;
             BlitToTarget(filtered, outputTexture, new RectInt(destX, destY, innerRect.width, innerRect.height), srcOffset);
 
-            textureRegistry.UpdateDynamic(owner.backdropFilterTextureId, outputTexture);
-            owner.backdropFilterTemporaryTexture = outputTexture;
+            textureRegistry.UpdateDynamic(extraData.backdropFilterTextureId, outputTexture);
+            extraData.backdropFilterTemporaryTexture = outputTexture;
 
             // Now safe to release the previous frame's RT: the TextureId no longer references it.
             if (previousFrameRT != null)

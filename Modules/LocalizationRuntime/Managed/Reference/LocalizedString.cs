@@ -109,8 +109,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
     /// </example>
     public Awaitable<string> GetLocalizedStringAsync(params object[] args)
     {
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return AwaitableUtility.FromResult(string.Empty);
         if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
         {
@@ -190,8 +189,7 @@ public partial class LocalizedString : LocalizedEntry<IStringEntry>, IVariable
 
     internal string ResolveWithScope(IVariableGroup parentScope, params object[] args)
     {
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return string.Empty;
         var entry = GetEntry();
         return database.FormatEntry(entry, ResolvingLocale(), args, Scope(parentScope));

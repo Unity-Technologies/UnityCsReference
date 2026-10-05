@@ -739,6 +739,9 @@
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePackageAddInfo.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfilePackageAddInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePackageInstaller.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfilePackageInstaller.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfilePlatformSettingsBase.cs</Link>
     </Compile>
@@ -8821,6 +8824,9 @@
     <Compile Include="..\..\Modules\InsightsEditor\ManagedCaptureDefaultConfig.cs">
       <Link>Modules\InsightsEditor\ManagedCaptureDefaultConfig.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\InsightsEditor\ManagedCaptureOtaCipher.cs">
+      <Link>Modules\InsightsEditor\ManagedCaptureOtaCipher.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\InsightsEditor\ManagedCaptureOtaConfig.cs">
       <Link>Modules\InsightsEditor\ManagedCaptureOtaConfig.cs</Link>
     </Compile>
@@ -10392,6 +10398,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerReadMoreClickedAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerReadMoreClickedAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerSecuritySettingsAnalytics.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerSecuritySettingsAnalytics.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerTrustWindowAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerTrustWindowAnalytics.cs</Link>
@@ -13048,6 +13057,15 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\CodeAnalysis\RoslynDiagnosticsLibrary.cs">
       <Link>Modules\ProjectAuditorEditor\CodeAnalysis\RoslynDiagnosticsLibrary.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\CodeQualityAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\CodeQualityAnalyzer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\DefaultCompilerMessageAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\DefaultCompilerMessageAnalyzer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\ObsoleteMessageAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\CompilerMessageAnalyzers\ObsoleteMessageAnalyzer.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\AnalysisContext.cs">
       <Link>Modules\ProjectAuditorEditor\Core\API\AnalysisContext.cs</Link>
     </Compile>
@@ -13062,6 +13080,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\CodeModuleAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\Core\API\CodeModuleAnalyzer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\CodeModuleCompilerMessageAnalyzer.cs">
+      <Link>Modules\ProjectAuditorEditor\Core\API\CodeModuleCompilerMessageAnalyzer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\API\CodeModuleInstructionAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\Core\API\CodeModuleInstructionAnalyzer.cs</Link>
@@ -13156,9 +13177,6 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\PropertyDefinition.cs">
       <Link>Modules\ProjectAuditorEditor\Core\PropertyDefinition.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\RoslynTextLookup.cs">
-      <Link>Modules\ProjectAuditorEditor\Core\RoslynTextLookup.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Core\SerializableEnum.cs">
       <Link>Modules\ProjectAuditorEditor\Core\SerializableEnum.cs</Link>
     </Compile>
@@ -13188,6 +13206,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\InstructionAnalyzers\ObsoleteAttributeAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\InstructionAnalyzers\ObsoleteAttributeAnalyzer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\InstructionAnalyzers\ParameterTypeSpec.cs">
+      <Link>Modules\ProjectAuditorEditor\InstructionAnalyzers\ParameterTypeSpec.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\InstructionAnalyzers\UnsupportedOnWebGLAnalyzer.cs">
       <Link>Modules\ProjectAuditorEditor\InstructionAnalyzers\UnsupportedOnWebGLAnalyzer.cs</Link>
@@ -13230,6 +13251,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\MigrationToURPUtilities.cs">
       <Link>Modules\ProjectAuditorEditor\Modules\MigrationToURPUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\PackageManifestDatabase.cs">
+      <Link>Modules\ProjectAuditorEditor\Modules\PackageManifestDatabase.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\Modules\PackagesModule.cs">
       <Link>Modules\ProjectAuditorEditor\Modules\PackagesModule.cs</Link>
@@ -13360,14 +13384,14 @@
     <Compile Include="..\..\Modules\ProjectAuditorEditor\UI\Framework\ViewStates.cs">
       <Link>Modules\ProjectAuditorEditor\UI\Framework\ViewStates.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProjectAuditorEditor\UI\HomePage.cs">
+      <Link>Modules\ProjectAuditorEditor\UI\HomePage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\UI\MigrateToCoreCLRSummaryView.cs">
       <Link>Modules\ProjectAuditorEditor\UI\MigrateToCoreCLRSummaryView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\UI\MigrateToURPSummaryView.cs">
       <Link>Modules\ProjectAuditorEditor\UI\MigrateToURPSummaryView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProjectAuditorEditor\UI\MigrationWizardRunner.cs">
-      <Link>Modules\ProjectAuditorEditor\UI\MigrationWizardRunner.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProjectAuditorEditor\UI\MigrationWorkflowView.cs">
       <Link>Modules\ProjectAuditorEditor\UI\MigrationWorkflowView.cs</Link>
@@ -17494,6 +17518,9 @@
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\AddElementDropManipulator.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\AddElementDropManipulator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasBackdropTexture.cs">
+      <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasBackdropTexture.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasManipulatorMessageEvent.cs">
       <Link>Modules\UIToolkitAuthoringEditor\Managed\Scene\CanvasManipulatorMessageEvent.cs</Link>
     </Compile>
@@ -17942,9 +17969,9 @@
       <Link>artifacts\MonolithicEditorDlls\InternalsVisibleTo.cs</Link>
     </Compile>
     <Reference Include="..\..\artifacts\Stevedore\unity-compiler-win-x64_605f\Unity.CompilationPipeline.Common\Unity.CompilationPipeline.Common.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_cbff\buildTools\UnityEditor.MSBuild.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_cbff\buildTools\Unity.BuildService.dll" />
-    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_cbff\asmDefToCSProj\AsmDefToCSProjLib.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_1e1b\buildTools\UnityEditor.MSBuild.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_1e1b\buildTools\Unity.BuildService.dll" />
+    <Reference Include="..\..\artifacts\Stevedore\msbu-tools_1e1b\asmDefToCSProj\AsmDefToCSProjLib.dll" />
     <Reference Include="..\..\External\Unity.Cecil\builds\lib\net40\Unity.Cecil.dll" />
     <Reference Include="..\..\External\ExCSS\builds\builds\lib\netstandard2.0\ExCSS.Unity.dll" />
     <Reference Include="..\..\Tools\Bee\build\Distribution\BeeDriver2\Bee.BeeDriver2.dll" />
@@ -17977,7 +18004,7 @@
     </PropertyGroup>
   </Target>
   <ItemGroup>
-    <Analyzer Include="/tmp/uitoolkit_gen_il0mgn7h/Unity.UIToolkit.SourceGenerator.dll" />
+    <Analyzer Include="/tmp/uitoolkit_gen_i4j7lbsg/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />

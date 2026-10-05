@@ -4,13 +4,48 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
     public partial class VisualElement
     {
-        internal List<MeshModifierRegistration> m_MeshModifiers;
+        // Absent until the element registers a mesh modifier.
+        ref VisualElementPaintingComponent paintingData
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if ((m_Flags & VisualElementFlags.HasPaintingComponent) == 0)
+                    return ref NullComponentRef<VisualElementPaintingComponent>();
+
+                return ref GetComponentRefOrNullRef<VisualElementPaintingComponent>();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        ref VisualElementPaintingComponent GetOrAddPaintingData()
+        {
+            ref var data = ref GetOrAddComponent<VisualElementPaintingComponent>();
+            m_Flags |= VisualElementFlags.HasPaintingComponent;
+            return ref data;
+        }
+
+        internal List<MeshModifierRegistration> meshModifiers
+        {
+            get
+            {
+                ref var data = ref paintingData;
+                return Unsafe.IsNullRef(ref data) ? null : data.meshModifiers;
+            }
+        }
+
+        internal List<MeshModifierRegistration> GetOrCreateMeshModifiers()
+        {
+            ref var data = ref GetOrAddPaintingData();
+            return data.meshModifiers ??= new List<MeshModifierRegistration>();
+        }
 
         /// <summary>
         /// Registers a modifier that runs after this element's mesh generation completes, before
@@ -27,9 +62,9 @@ namespace UnityEngine.UIElements
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            m_MeshModifiers ??= new List<MeshModifierRegistration>();
+            var modifiers = GetOrCreateMeshModifiers();
             long id = UIRUtility.GetNextMeshModifierId();
-            m_MeshModifiers.Add(new MeshModifierRegistration(callback, recursive, priority, id));
+            modifiers.Add(new MeshModifierRegistration(callback, recursive, priority, id));
 
             DirtyForMeshModifierChange(recursive);
         }
@@ -43,20 +78,21 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public void ClearMeshModifiers()
         {
-            if (m_MeshModifiers == null || m_MeshModifiers.Count == 0)
+            var modifiers = meshModifiers;
+            if (modifiers == null || modifiers.Count == 0)
                 return;
 
             bool anyRecursive = false;
-            for (int i = 0; i < m_MeshModifiers.Count; ++i)
+            for (int i = 0; i < modifiers.Count; ++i)
             {
-                if (m_MeshModifiers[i].recursive)
+                if (modifiers[i].recursive)
                 {
                     anyRecursive = true;
                     break;
                 }
             }
 
-            m_MeshModifiers.Clear();
+            modifiers.Clear();
             DirtyForMeshModifierChange(anyRecursive);
         }
 
@@ -69,15 +105,16 @@ namespace UnityEngine.UIElements
         /// <param name="callback">The callback reference passed to <see cref="AddMeshModifier"/>.</param>
         public void RemoveMeshModifier(MeshModificationCallback callback)
         {
-            if (callback == null || m_MeshModifiers == null)
+            var modifiers = meshModifiers;
+            if (callback == null || modifiers == null)
                 return;
 
-            for (int i = 0; i < m_MeshModifiers.Count; ++i)
+            for (int i = 0; i < modifiers.Count; ++i)
             {
-                if (m_MeshModifiers[i].callback == callback)
+                if (modifiers[i].callback == callback)
                 {
-                    bool wasRecursive = m_MeshModifiers[i].recursive;
-                    m_MeshModifiers.RemoveAt(i);
+                    bool wasRecursive = modifiers[i].recursive;
+                    modifiers.RemoveAt(i);
                     DirtyForMeshModifierChange(wasRecursive);
                     return;
                 }

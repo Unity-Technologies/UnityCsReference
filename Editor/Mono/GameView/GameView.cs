@@ -10,7 +10,6 @@ using UnityEditor.SceneManagement;
 using UnityEditor.Modules;
 using System.Globalization;
 using UnityEngine.Rendering;
-using System.Linq;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using UnityEngine.XR;
@@ -590,6 +589,27 @@ namespace UnityEditor
                 || FrameCapture.IsDestinationSupported(FrameCaptureDestination.GPUTraceDocument);
         }
 
+        // Matched by type: the window tab carries the translated title, so matching by name misses it.
+        internal int GetPlayModeViewTypePopup(out Type[] types, out string[] names)
+        {
+            var availableTypes = GetAvailableWindowTypes();
+            types = new Type[availableTypes.Count];
+            names = new string[availableTypes.Count];
+
+            var selectedIndex = 0;
+            var i = 0;
+            foreach (var availableType in availableTypes)
+            {
+                types[i] = availableType.Key;
+                names[i] = GetLocalizedWindowTitle(availableType.Key);
+                if (availableType.Key == GetType())
+                    selectedIndex = i;
+                i++;
+            }
+
+            return selectedIndex;
+        }
+
         private void DoToolbarGUI()
         {
             if (Event.current.isKey || Event.current.type == EventType.Used)
@@ -599,23 +619,15 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                var availableTypes = GetAvailableWindowTypes();
-                if (availableTypes.Count > 1)
+                if (GetAvailableWindowTypes().Count > 1)
                 {
-#pragma warning disable UAC2001 // Avoid Linq
-                    var typeNames = availableTypes.Values.ToList();
-#pragma warning restore UAC2001
-#pragma warning disable UAC2001 // Avoid Linq
-                    var types = availableTypes.Keys.ToList();
-#pragma warning restore UAC2001
-                    int viewIndex = EditorGUILayout.Popup(typeNames.IndexOf(titleContent.text), typeNames.ToArray(),
+                    var selectedIndex = GetPlayModeViewTypePopup(out var types, out var typeNames);
+                    int viewIndex = EditorGUILayout.Popup(selectedIndex, typeNames,
                         EditorStyles.toolbarPopup,
                         GUILayout.Width(90));
-                    if (viewIndex == -1)
-                        viewIndex = 0;
 
                     EditorGUILayout.Space();
-                    if (types[viewIndex] != typeof(GameView))
+                    if (viewIndex != selectedIndex)
                     {
                         SwapMainWindow(types[viewIndex]);
                     }

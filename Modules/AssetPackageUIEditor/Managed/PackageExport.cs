@@ -71,7 +71,7 @@ namespace UnityEditor
         public ExportPackageItem[] items => m_ExportPackageItems;
 
         public bool isOrgSelected => m_SelectedOrgIndex > -1;
-        
+
         internal static class Styles
         {
             public static readonly GUIStyle title = "LargeBoldLabel";
@@ -279,7 +279,11 @@ namespace UnityEditor
                     menu.AddItem(
                         new GUIContent(m_OrganizationInfos[capturedIndex].name),
                         m_SelectedOrgIndex == capturedIndex,
-                        () => m_SelectedOrgIndex = capturedIndex
+                        () =>
+                        {
+                            m_SelectedOrgIndex = capturedIndex;
+                            SendAnalyticsEvent("selectOrganization");
+                        }
                     );
                 }
 
@@ -484,10 +488,10 @@ namespace UnityEditor
                 if (i.enabledStatus > 0)
                     numSelectedAssets++;
             }
-            AssetExportWindowAnalytics.SendEvent(action, numSelectedAssets, numTotalAssets, m_IncludeDependencies);
+            AssetExportWindowAnalytics.SendEvent(action, numSelectedAssets, numTotalAssets, m_IncludeDependencies, m_IncludeScripts, m_SelectedOrgIndex > -1 ? m_OrganizationInfos[m_SelectedOrgIndex].foreignKey : string.Empty);
         }
 
-        [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey)]
+        [AnalyticInfo(eventName: k_EventName, vendorKey: k_VendorKey, version: 2)]
         internal class AssetExportWindowAnalytics : IAnalytic
         {
             private const string k_EventName = "assetExportWindow";
@@ -500,10 +504,12 @@ namespace UnityEditor
                 public int num_selected_assets;
                 public int num_total_assets;
                 public bool include_dependencies;
+                public bool include_scripts;
+                public string organization_id;
             }
 
             private Data m_Data;
-            private AssetExportWindowAnalytics(string action, int numSelectedAsset, int numTotalAssets, bool includeDependencies)
+            private AssetExportWindowAnalytics(string action, int numSelectedAsset, int numTotalAssets, bool includeDependencies, bool includeScripts, string organizationId)
             {
                 m_Data = new Data
                 {
@@ -511,6 +517,8 @@ namespace UnityEditor
                     num_selected_assets = numSelectedAsset,
                     num_total_assets = numTotalAssets,
                     include_dependencies = includeDependencies,
+                    include_scripts = includeScripts,
+                    organization_id = organizationId
                 };
             }
 
@@ -521,9 +529,9 @@ namespace UnityEditor
                 return data != null;
             }
 
-            public static void SendEvent(string action, int numSelectedAsset, int numTotalAssets, bool includeDependencies)
+            public static void SendEvent(string action, int numSelectedAsset, int numTotalAssets, bool includeDependencies, bool includeScripts, string organizationId)
             {
-                EditorAnalytics.SendAnalytic(new AssetExportWindowAnalytics(action, numSelectedAsset, numTotalAssets, includeDependencies));
+                EditorAnalytics.SendAnalytic(new AssetExportWindowAnalytics(action, numSelectedAsset, numTotalAssets, includeDependencies, includeScripts, organizationId));
             }
         }
     }

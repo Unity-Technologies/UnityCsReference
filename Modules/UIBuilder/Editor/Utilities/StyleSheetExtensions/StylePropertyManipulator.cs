@@ -1012,7 +1012,7 @@ namespace Unity.UI.Builder
                         {
                             // Non-var() function (e.g. gradient) — skip its args so the outer walk
                             // doesn't stumble on inner commas.
-                            currentIndex += argCount - 1;
+                            currentIndex = SkipFunctionArgs(styleSheet, propertyHandles, currentIndex, argCount);
                             return StylePropertyPart.Create();
                         }
 
@@ -1059,6 +1059,28 @@ namespace Unity.UI.Builder
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+        }
+
+        // index points at the first argument; skips argCount top-level arguments, where a nested
+        // function (with its own count and args) is a single argument, and returns the index of the
+        // last argument handle (the walk convention of ResolveValueOrVariable). Clamped so a stale
+        // over-count in serialized data cannot walk out of bounds.
+        static int SkipFunctionArgs(StyleSheet styleSheet, Span<StyleValueHandle> handles, int index, int argCount)
+        {
+            for (var arg = 0; arg < argCount && index < handles.Length; ++arg)
+            {
+                if (handles[index].valueType == StyleValueType.Function && index + 1 < handles.Length)
+                {
+                    var nestedArgCount = (int)styleSheet.ReadFloat(handles[index + 1]);
+                    index = SkipFunctionArgs(styleSheet, handles, index + 2, nestedArgCount) + 1;
+                }
+                else
+                {
+                    ++index;
+                }
+            }
+
+            return index - 1;
         }
 
         static StylePropertyManipulator ResolveVariable(

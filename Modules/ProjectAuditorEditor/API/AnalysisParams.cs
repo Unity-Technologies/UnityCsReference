@@ -105,10 +105,6 @@ namespace Unity.ProjectAuditor.Editor
         [NonSerialized]
         internal Report ExistingReport;
 
-        // Passed along by the UI to ensure the session info is updated when we analyze extra areas after the initial analysis
-        [NonSerialized]
-        internal ProjectAreaFlags ExistingReportProjectAreas;
-
         [NonSerialized]
         internal Predicate<string> AssetPathFilter;
 

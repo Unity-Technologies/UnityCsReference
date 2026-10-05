@@ -39,7 +39,7 @@ namespace Unity.EngineDiagnostics
 
         public static extern bool IsEventAllowed(int eventType);
 
-        // Pushed by native on OnConfigurationReady, and read from the SDK callback threads the
+        // Pushed by native on OnConfigurationReady, and read from the callback threads the
         // ManagedCapture hooks run on. Only ever replaced, never mutated, so readers need no lock.
         [NoAutoStaticsCleanup] static int[] s_BlockedEventTypes;
 

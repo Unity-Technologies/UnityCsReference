@@ -93,6 +93,7 @@ namespace UnityEngine.UIElements
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIToolkitAuthoringModule")]
     internal interface ICursorManager
     {
         void SetCursor(Cursor cursor);

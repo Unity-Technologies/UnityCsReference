@@ -196,13 +196,24 @@ namespace Unity.Hierarchy.Editor
             HierarchyViewPrefabStyleUtility.ClearNavigationButton(item);
         }
 
-        // A stage with no scene, such as the UI Toolkit authoring stage, has nowhere to put a GameObject.
+        // A stage that shows no scene, such as the UI Toolkit authoring stage, has nowhere to put a GameObject.
+        // Only the scenes a stage exposes count: a stage may hold a hidden preview scene for its own bookkeeping.
         static bool StageHasGameObjects
         {
             get
             {
                 var stage = StageNavigationManager.instance.currentStage;
-                return stage is MainStage || (stage is PreviewSceneStage previewStage && previewStage.scene.IsValid());
+                if (stage is MainStage)
+                    return true;
+                if (stage is not PreviewSceneStage previewStage)
+                    return false;
+
+                for (int i = 0; i < previewStage.sceneCount; ++i)
+                {
+                    if (previewStage.GetSceneAt(i).IsValid())
+                        return true;
+                }
+                return false;
             }
         }
 

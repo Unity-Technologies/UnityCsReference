@@ -5,6 +5,7 @@
 using Unity.Scripting.LifecycleManagement;
 using System;
 using System.Collections.Generic;
+using UnityEngine.Animations;
 using UnityEngine.Assertions;
 using UnityEngine.Bindings;
 
@@ -340,7 +341,7 @@ namespace UnityEngine.UIElements
             Fixed
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private Position m_Position = Position.Relative;
 
         /// <summary>
@@ -358,7 +359,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private UIElements.WorldSpaceSizeMode m_WorldSpaceSizeMode = UIElements.WorldSpaceSizeMode.Fixed;
 
         /// <summary>
@@ -399,7 +400,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private PivotReferenceSize m_PivotReferenceSize;
 
         GameObject IPanelComponent.gameObject => this.gameObject;
@@ -415,7 +416,7 @@ namespace UnityEngine.UIElements
             set { m_PivotReferenceSize = value; }
         }
 
-        [SerializeField]
+        [SerializeField, NotKeyable]
         private Pivot m_Pivot;
 
         /// <summary>
@@ -532,7 +533,7 @@ namespace UnityEngine.UIElements
         // Serialized opt-out gate for the generated accessibility hierarchy, evaluated before this
         // document's tree is ever walked. Only drawn in the inspector while the experimental
         // accessibility project setting is on.
-        [SerializeField, HideInInspector]
+        [SerializeField, HideInInspector, NotKeyable]
         private bool m_GenerateAccessibilityHierarchy = true;
 
         /// <summary>
@@ -735,6 +736,8 @@ namespace UnityEngine.UIElements
             {
                 m_WorldSpaceCollider = gameObject.AddComponent<BoxCollider>();
                 m_WorldSpaceCollider.isTrigger = panelSettings.colliderIsTrigger;
+                // Keep the generated collider out of saved scenes and prefabs.
+                m_WorldSpaceCollider.hideFlags = HideFlags.DontSave;
             }
 
             // Setting BoxCollider.center or BoxCollider.size triggers some work even if the value doesn't change.
@@ -1080,7 +1083,10 @@ namespace UnityEngine.UIElements
         {
             EnabledDocumentCount--;
             PointerDeviceState.RemovePanelComponentData(this);
-            RemoveWorldSpaceCollider();
+
+            // Outside play mode the removal is a DestroyImmediate, which the engine rejects mid-(de)activation.
+            if (Application.isPlaying || gameObject.activeInHierarchy)
+                RemoveWorldSpaceCollider();
 
             if (m_RootVisualElement != null)
             {

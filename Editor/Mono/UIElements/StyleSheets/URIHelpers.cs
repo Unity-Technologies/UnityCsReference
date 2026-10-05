@@ -117,6 +117,16 @@ namespace UnityEditor.UIElements.StyleSheets
 
             public bool isLibraryAsset =>
                 resolvedProjectRelativePath?.StartsWith("Library/", StringComparison.Ordinal) ?? false;
+
+            public bool isBuiltinResource => IsBuiltinResourcePath(resolvedProjectRelativePath);
+        }
+
+        // These paths map to constant GUIDs the SourceAssetDB never holds, so any path dependency on them fails the import. (UUM-147936)
+        public static bool IsBuiltinResourcePath(string path)
+        {
+            return string.Equals(path, "Resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(path, "Library/unity default resources", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(path, "Library/unity editor resources", StringComparison.OrdinalIgnoreCase);
         }
 
         public static URIValidationResult ValidAssetURL(string assetPath, string path, out string errorToken, out string resolvedProjectRelativePath)

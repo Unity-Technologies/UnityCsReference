@@ -101,7 +101,7 @@ namespace Unity.U2D.Physics
         /// 
         /// NOTE: If the handle comes from another physics object, it will not destroy that object and a warning will be issued.
         /// </summary>
-        public unsafe readonly void Destroy() { var handle = this; DestroyBatch(new ReadOnlySpan<PhysicsHandle>(&handle, 1)); }
+        public readonly void Destroy() => DestroyBatch(stackalloc PhysicsHandle[1] { this });
 
         /// <summary>
         /// Destroy the specified span of <see cref="PhysicsHandle"/>.

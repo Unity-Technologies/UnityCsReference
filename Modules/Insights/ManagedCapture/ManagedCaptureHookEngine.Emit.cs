@@ -15,13 +15,12 @@ namespace UnityEngine.ManagedCapture.Internal
 {
     internal static partial class ManagedCaptureHookEngine
     {
-        // Envelope fields: shared by every event, written flat regardless of which event object is
-        // open. Anything else lands nested under the event's own key.
+        // Written flat in the envelope rather than nested under the event key. The engine writes
+        // the origin itself, so a configuration that also supplies one of these must not have it
+        // duplicated inside the event object.
         [NoAutoStaticsCleanup] static readonly HashSet<string> s_EnvelopeFieldNames = new HashSet<string>(new[]
         {
-            "mediation_class", "mediator", "source_method", "ad_impression_id",
-            "ad_unit_id", "ad_format", "ad_network", "placement",
-            "creative_id", "instance_name", "auction_id",
+            "source_method",
         });
 
         const int k_EventBufferCapacity = 512;
@@ -253,7 +252,7 @@ namespace UnityEngine.ManagedCapture.Internal
             if (verbose)
                 Debug.Log($"[ManagedCapture] eventType={eventType} {json}");
 
-            // A throw here would propagate into the SDK's own callback.
+            // A throw here would propagate into the instrumented assembly's own callback.
             try
             {
                 if (overrideAction != null)

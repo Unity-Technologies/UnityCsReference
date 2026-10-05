@@ -2826,12 +2826,16 @@ namespace UnityEngine
         extern internal Object generatorObject { get; set; }
 
         /// <summary>
-        /// Gets the effect instance for a specific IAudioEffect component attached to this AudioSource's GameObject.
+        /// Gets a handle to the effect instantiated from a specific <see cref="IAudioEffect" /> component attached to this <see cref="AudioSource" />'s GameObject.
         /// </summary>
-        /// <param name="effectComponent">The component implementing IAudioEffect.</param>
+        /// <remarks>
+        /// Use this for runtime scripting control of an attached effect while it is playing, for example to send messages
+        /// with <see cref="ControlContext.SendMessage" />. Since the <see cref="AudioSource" /> owns the instance, check for
+        /// its existence using <see cref="ControlContext.Exists" />.
+        /// </remarks>
+        /// <param name="effectComponent">Component implementing <see cref="IAudioEffect" /> on the same GameObject as this <see cref="AudioSource" />.</param>
         /// <typeparam name="TComponent">The concrete component type. Must derive from <see cref="Component"/> so that <see cref="ScriptableObject"/>-based <see cref="UnityEngine.Audio.IAudioEffect"/> implementations are rejected at compile time.</typeparam>
-        /// <returns>The ProcessorInstance for the effect, or default if not found.</returns>
-        /// <remarks>Use this to get runtime access to effect parameters via the Pipe/messaging system.</remarks>
+        /// <returns>The <see cref="ProcessorInstance" /> for the effect, or a default-initialized instance if the component has no instantiated effect.</returns>
         public ProcessorInstance GetEffectInstance<TComponent>(TComponent effectComponent)
             where TComponent : Component, UnityEngine.Audio.IAudioEffect
         {

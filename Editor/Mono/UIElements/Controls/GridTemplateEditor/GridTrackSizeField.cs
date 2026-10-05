@@ -170,6 +170,19 @@ namespace UnityEditor.UIElements
             Notify();
         }
 
+        static string UnitTooltip(string unit) => unit switch
+        {
+            k_Px => "Pixels",
+            k_Pct => "Percent of the container's size",
+            k_Fr => "Fraction: a share of the remaining free space",
+            k_Auto => "Sized by content, growing to fill free space",
+            k_Min => "min-content: the smallest size the content allows",
+            k_Max => "max-content: the content's preferred size",
+            k_Minmax => "minmax(min, max): sized within a range",
+            k_Fit => "fit-content(limit): content size clamped to a limit",
+            _ => string.Empty
+        };
+
         void UpdateLayout()
         {
             var unit = m_Unit.value;
@@ -177,6 +190,7 @@ namespace UnityEditor.UIElements
             bool isFit = unit == k_Fit;
             bool isNumeric = unit is k_Px or k_Pct or k_Fr;
 
+            m_Unit.tooltip = UnitTooltip(unit);
             m_ValueArea.Clear();
             // Reserve room for the (absolutely positioned) unit popup only when the nested fields fill the
             // value area; a plain text box intentionally runs under the unit for the flush look.

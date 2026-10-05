@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//#define PA_DRAW_LOGO
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,14 +17,12 @@ using UnityEditor;
 using UnityEngine;
 
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
-using UnityEditor.PackageManager.Requests;
-using UnityEditor.PackageManager;
 
 namespace Unity.ProjectAuditor.Editor.UI
 {
     internal partial class ProjectAuditorWindow : EditorWindow, IHasCustomMenu, IIssueFilter
     {
-        enum AnalysisState
+        internal enum AnalysisState
         {
             Initializing,
             Initialized,
@@ -63,7 +59,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        ProjectAuditor m_ProjectAuditor;
+        internal ProjectAuditor m_ProjectAuditor;
         IProgress m_Progress;
         bool m_ShouldRefresh;
         AnalyticsReporter.Analytic m_AnalyzeButtonAnalytic;
@@ -85,15 +81,11 @@ namespace Unity.ProjectAuditor.Editor.UI
         [SerializeField] bool[] m_AssemblyReadOnlyFlags;
         [SerializeField] string m_AssemblySelectionSummary;
         [SerializeField] internal Report m_Report;
-        [SerializeField] AnalysisState m_AnalysisState = AnalysisState.Initializing;
+        [SerializeField] internal AnalysisState m_AnalysisState = AnalysisState.Initializing;
         [SerializeField] ViewStates m_ViewStates = new ViewStates();
         [SerializeField] internal ViewManager m_ViewManager;
 
         static readonly string k_ReportAutoSaveFilename = "projectauditor-report-autosave.projectauditor";
-
-        const ProjectAreaFlags k_MigrationToURPAreas =
-            ProjectAreaFlags.ProjectSettings | ProjectAreaFlags.Code |
-            ProjectAreaFlags.Assets | ProjectAreaFlags.GameObjects;
 
         // The navigation tree shown in the view selection tree view.
         // Rebuilt from code in OnEnable, so it doesn't need to be serialized.
@@ -111,6 +103,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         // True when the Home page (preferences / Start Analysis) is shown; otherwise the normal
         // analysis panels are shown. Defaults to Home on open.
         [SerializeField] bool m_ShowHomePage = true;
+        [SerializeField] HomePage m_HomePage = new HomePage();
 
         // The page currently shown, and the extra issue filter it applies to the active view. Both are
         // derived from the page tree (built in code), so they're not serialized.
@@ -118,48 +111,6 @@ namespace Unity.ProjectAuditor.Editor.UI
         Func<ReportItem, bool> m_CurrentPageIssueFilter;
 
         Vector2 m_PreviousWindowSize;
-
-        [AutoStaticsCleanupOnCodeReload]
-        static AddRequest RulesPackageInstallRequest;
-
-        static void RulesPackageInstallProgressCallback()
-        {
-            var wnd = GetWindow(typeof(ProjectAuditorWindow)) as ProjectAuditorWindow;
-            if (wnd != null)
-                wnd.Repaint();
-
-            if (RulesPackageInstallRequest.IsCompleted)
-            {
-                if (RulesPackageInstallRequest.Status == StatusCode.Success)
-                {
-                    Debug.Log("Installed: " + RulesPackageInstallRequest.Result.packageId);
-                    Events.registeredPackages += OnRulesPackageRegistered;
-                }
-                else if (RulesPackageInstallRequest.Status >= StatusCode.Failure)
-                {
-                    Debug.Log(RulesPackageInstallRequest.Error.message);
-                }
-
-                EditorApplication.update -= RulesPackageInstallProgressCallback;
-                RulesPackageInstallRequest = null;
-            }
-        }
-
-        static void OnRulesPackageRegistered(PackageRegistrationEventArgs args)
-        {
-#pragma warning disable UAC2001
-            foreach (var p in args.added.Concat(args.changedTo))
-#pragma warning restore UAC2001
-            {
-                if (p.name == ProjectAuditorRulesPackage.Name)
-                {
-                    Events.registeredPackages -= OnRulesPackageRegistered;
-                    ProjectAuditorRulesPackage.Initialize();
-                    Instance?.m_ProjectAuditor?.InitModules();
-                    return;
-                }
-            }
-        }
 
         private static Page[] GetDefaultPages()
         {
@@ -387,7 +338,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             // The selected page can restrict which of its category's issues are shown, letting the same
             // view appear under more than one page with a different subset each.
-            if (m_CurrentPageIssueFilter != null && !m_CurrentPageIssueFilter(issue))
+            if (!MatchesPage(issue))
                 return false;
 
             var viewDesc = activeView.Desc;
@@ -420,6 +371,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             return true;
         }
 
+        internal bool MatchesPage(ReportItem issue)
+        {
+            return m_CurrentPageIssueFilter == null || m_CurrentPageIssueFilter(issue);
+        }
+
         bool m_tryingFallback = false;
 
         void OnEnable()
@@ -429,6 +385,15 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             if (m_ProjectAuditor == null)
                 m_ProjectAuditor = new ProjectAuditor();
+
+            // The window's serialized state (including m_ShowHomePage) survives a full Editor restart
+            // via the window layout, so on the first OnEnable of a new Editor session, force the Home
+            // page rather than restoring whatever page was showing when the Editor was last closed.
+            if (!SessionState.GetBool("ProjectAuditor.WindowSessionActive", false))
+            {
+                SessionState.SetBool("ProjectAuditor.WindowSessionActive", true);
+                m_ShowHomePage = true;
+            }
 
             // Throw away old version, if restored from serialized window state (these code paths skip the version checking we get during Report.Load)
             // e.g. after a domain reload, or from a previous editor session via the window layout.
@@ -568,7 +533,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             m_ViewManager.OnAnalysisRequested += category =>
             {
-                AuditCategories(ProjectAreaFlags.None, GetAnalysisCategoriesFor(category));
+                AuditCategories(GetAnalysisCategoriesFor(category));
                 var page = FindPageForCategory(category);
                 if (page != null)
                     OnSelectedNonAnalyzedPage(page);
@@ -783,7 +748,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         void OnDisable()
         {
             CancelAnalysis();
-            AutosaveReport();
+            AutosaveReport(m_Report);
 
             // Make sure 'dirty' scriptable objects are saved to their corresponding assets
             AssetDatabase.SaveAssets();
@@ -813,15 +778,13 @@ namespace Unity.ProjectAuditor.Editor.UI
                 {
                     DrawViewSelection();
 
-                    var migrationWorkflow = ShowsMigrationWorkflow();
-
-                    if (m_ShowHomePage || (!IsAnalysisValid() && !migrationWorkflow))
+                    if (m_ShowHomePage || !IsAnalysisValid())
                     {
-                        DrawHome();
+                        m_HomePage.OnGUI();
                     }
                     else
                     {
-                        if (!m_IsNonAnalyzedViewSelected || migrationWorkflow)
+                        if (!m_IsNonAnalyzedViewSelected)
                         {
                             using (new EditorGUILayout.VerticalScope())
                             {
@@ -842,18 +805,6 @@ namespace Unity.ProjectAuditor.Editor.UI
                     }
                 }
             }
-        }
-
-        // Unlike every other page, the migration workflow drives the project rather than reading a
-        // report, so it is drawn instead of Home before an analysis has been run. Initializing is
-        // excluded because the window has not finished setting its views up.
-        bool ShowsMigrationWorkflow()
-        {
-            return m_AnalysisState == AnalysisState.Initialized &&
-                !m_ShowHomePage &&
-                m_ViewManager != null &&
-                m_ViewManager.IsValid() &&
-                m_ViewManager.GetActiveView() is MigrationWorkflowView;
         }
 
         internal void GoToHomePage()
@@ -877,24 +828,8 @@ namespace Unity.ProjectAuditor.Editor.UI
                     GUILayout.FlexibleSpace();
 
                     var boxWidth = Mathf.Min(650.0f, EditorGUIUtility.currentViewWidth - LayoutSize.kTreeViewWidth - 20.0f);
-                    EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.Width(boxWidth));
-
-                    EditorGUILayout.BeginHorizontal();
                     var info = string.Format(Contents.PendingAnalyzeInfoText, tabName);
-                    GUILayout.Label(EditorGUIUtility.GetHelpIcon(MessageType.Info), GUILayout.ExpandWidth(false));
-                    GUILayout.Space(5);
-                    GUILayout.Label(info, EditorStyles.wordWrappedLabel, GUILayout.ExpandWidth(true));
-                    EditorGUILayout.EndHorizontal();
-
-                    GUILayout.Space(5);
-
-                    EditorGUILayout.BeginHorizontal();
-                    GUILayout.FlexibleSpace();
-                    if (GUILayout.Button(Contents.OpenBackgroundTasks))
-                        Progress.ShowDetails(false);
-                    EditorGUILayout.EndHorizontal();
-
-                    EditorGUILayout.EndVertical();
+                    Utility.DrawHelpBoxWithButton(info, Contents.OpenBackgroundTasks, MessageType.Info, () => Progress.ShowDetails(false), GUILayout.Width(boxWidth));
 
                     GUILayout.FlexibleSpace();
                     EditorGUILayout.EndHorizontal();
@@ -926,8 +861,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                         if (validPreferences)
                         {
-                            var area = GetPageProjectArea(selectedPage.id);
-                            AuditCategories(area, selectedPage.AllCategories);
+                            AuditCategories(selectedPage.AllCategories);
                             OnSelectedNonAnalyzedPage(selectedPage);
                         }
                     }
@@ -1072,7 +1006,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 Category = IssueCategory.MigrateToURPSummary,
                 DisplayName = "Migrate to URP",
-                Type = typeof(MigrationWorkflowView),
+                Type = typeof(MigrateToURPSummaryView),
             });
             ViewDescriptor.Register(new ViewDescriptor
             {
@@ -1416,7 +1350,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             Repaint();
         }
 
-        void Analyze()
+        internal void Analyze(ProjectAreaFlags areasToAnalyze, CodeAnalysisFlags codeAnalysisFlags, PageId targetSummaryPage)
         {
             m_AnalyzeButtonAnalytic = AnalyticsReporter.BeginAnalytic();
 
@@ -1431,9 +1365,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             var analysisParams = new AnalysisParams
             {
-                Categories = GetSelectedCategories().ToSerializableArray(),
+                Categories = GetSelectedCategories(areasToAnalyze).ToSerializableArray(),
                 Platform = GetSelectedAnalysisPlatform(),
-                CodeAnalysisFlags = GetSelectedCompilationFlags(),
+                CodeAnalysisFlags = codeAnalysisFlags,
                 CodeOwnerFlags = GetSelectedCodeOwnerFlags(),
 
                 OnIncomingIssues = issues =>
@@ -1467,7 +1401,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     m_Report.DisplayName = reportDisplayName;
                     m_Report.NeedsSaving = true;
 
-                    EditorApplication.delayCall += AutosaveReport;
+                    EditorApplication.delayCall += () => AutosaveReport(m_Report);
 
                     InitializeViewSelection(true);
                 }
@@ -1475,8 +1409,9 @@ namespace Unity.ProjectAuditor.Editor.UI
 
             InitializeViews(analysisParams.Rules, false);
 
-            // Leave the Home page and show the Summary (Optimization) while analysis runs.
-            ShowPage(FindPage(PageId.Optimization));
+            // Leave the Home page and show the specified summary page while analysis runs.
+            if (targetSummaryPage != PageId.None)
+                ShowPage(FindPage(targetSummaryPage));
 
             m_Progress = new ProgressBar();
             m_ProjectAuditor.AuditAsync(analysisParams, m_Progress);
@@ -1490,7 +1425,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                 Repaint();
         }
 
-        internal void AuditCategories(ProjectAreaFlags areas, IReadOnlyList<IssueCategory> categories)
+        internal void AuditCategories(IReadOnlyList<IssueCategory> categories)
         {
             if (m_ProjectAuditor == null)
                 m_ProjectAuditor = new ProjectAuditor();
@@ -1517,10 +1452,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             {
                 Categories = actualCategories.ToSerializableArray(),
                 Platform = m_Report.SessionInfo.Platform,
-                CodeAnalysisFlags = GetSelectedCompilationFlags(),
+                CodeAnalysisFlags = (CodeAnalysisFlags)UserPreferences.CodeAnalysisFlags,
                 CodeOwnerFlags = GetSelectedCodeOwnerFlags(),
                 ExistingReport = m_Report,
-                ExistingReportProjectAreas = areas,
                 OnIncomingIssues = issues =>
                 {
                     foreach (var view in views)
@@ -1551,7 +1485,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
                     m_Report.NeedsSaving = true;
 
-                    EditorApplication.delayCall += AutosaveReport;
+                    EditorApplication.delayCall += () => AutosaveReport(m_Report);
 
                     InitializeViewSelection(true);
                 }
@@ -1564,7 +1498,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         public void AnalyzeShaderVariants()
         {
             var shadersPage = FindPage(PageId.Shaders);
-            AuditCategories(GetPageProjectArea(PageId.Shaders), shadersPage.AllCategories);
+            AuditCategories(shadersPage.AllCategories);
             OnSelectedNonAnalyzedPage(shadersPage);
             GUIUtility.ExitGUI();
         }
@@ -1628,11 +1562,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             return platform;
         }
 
-        CodeAnalysisFlags GetSelectedCompilationFlags()
-        {
-            return UserPreferences.CodeAnalysisFlags;
-        }
-
         CodeOwnerFlags GetSelectedCodeOwnerFlags()
         {
             if (Unsupported.IsDeveloperMode())
@@ -1640,11 +1569,9 @@ namespace Unity.ProjectAuditor.Editor.UI
             return CodeOwnerFlags.User;
         }
 
-        IssueCategory[] GetSelectedCategories()
+        internal IssueCategory[] GetSelectedCategories(ProjectAreaFlags categories)
         {
-            var selectedCategories = UserPreferences.ProjectAreasToAnalyze;
             var requestedCategories = new List<IssueCategory>();
-            ProjectAreaFlags categories = selectedCategories;
 
             if (categories.HasFlag(ProjectAreaFlags.Code))
                 requestedCategories.AddRange(FindPage(PageId.Code).AllCategories);
@@ -1676,25 +1603,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
 
             return new[] { category };
-        }
-
-        // Re-audits the full category set, not just the user's selected areas. False means no analysis started
-        internal bool ReanalyzeMigrationToURP()
-        {
-            if (m_Report == null)
-                return false;
-
-            // A report loaded from another project is read-only here: the analysis audits the open project, and its
-            // results would be written into that report.
-            if (!m_Report.IsForCurrentProject())
-                return false;
-
-            if (m_AnalysisState == AnalysisState.InProgress || m_ViewManager.HasPendingCategories())
-                return false;
-
-            AuditCategories(k_MigrationToURPAreas,
-                GetAnalysisCategoriesFor(IssueCategory.MigrateToURPSummary));
-            return true;
         }
 
         ProjectAreaFlags GetPageProjectArea(PageId id)
@@ -1873,168 +1781,7 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        // Draws the Home page: preferences, rules install and the Start Analysis button.
-        void DrawHome()
-        {
-
-            const int k_SpacingHeight = 24;
-
-            // Darkish grey box filling the window
-            EditorGUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-
-            // Draw centered in the window, with equal space to the left and right
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.FlexibleSpace();
-
-                // Begin drawing top to bottom
-                using (new EditorGUILayout.VerticalScope(GUILayout.MinWidth(512), GUILayout.ExpandWidth(true)))
-                {
-                    GUILayout.FlexibleSpace();
-
-
-                    // Title
-                    using (new EditorGUILayout.HorizontalScope(GUILayout.ExpandWidth(true)))
-                    {
-                        GUILayout.FlexibleSpace();
-                        using (new EditorGUILayout.VerticalScope(GUILayout.ExpandWidth(true)))
-                        {
-                            EditorGUILayout.LabelField(Contents.WelcomeTextTitle, SharedStyles.TitleLabel, GUILayout.ExpandWidth(true));
-                            EditorGUILayout.Space(k_SpacingHeight);
-                            EditorGUILayout.LabelField(Contents.WelcomeText, SharedStyles.WelcomeTextArea, GUILayout.MaxWidth(512));
-                        }
-                        GUILayout.FlexibleSpace();
-                    }
-
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        GUILayout.FlexibleSpace();
-                        using (new EditorGUILayout.VerticalScope(GUILayout.MaxWidth(350)))
-                        {
-                            GUILayout.Space(k_SpacingHeight);
-                            using (new EditorGUI.DisabledScope(RulesPackageInstallRequest != null))
-                                UserPreferences.SharedPreferencesGUI();
-                            GUILayout.Space(k_SpacingHeight);
-                        }
-                        GUILayout.FlexibleSpace();
-                    }
-
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        GUILayout.FlexibleSpace();
-
-                        const int k_ButtonWidth = 140;
-                        using (new EditorGUILayout.VerticalScope(GUILayout.Width(k_ButtonWidth)))
-                        {
-                            // Analyze button
-                            using (new EditorGUI.DisabledScope((m_AnalysisState == AnalysisState.InProgress) || (ProjectAuditorRulesPackage.IsInstalled == false) || (RulesPackageInstallRequest != null)))
-                            {
-                                var content = ProjectAuditorRulesPackage.IsInstalled ? Contents.AnalyzeButton : Contents.AnalyzeButtonDisabled;
-                                if (GUILayout.Button(content, GUILayout.Width(k_ButtonWidth), GUILayout.Height(30)))
-                                {
-                                    bool canAnalyze = true;
-
-                                    // m_Report can be null here (e.g. after cancelling an analysis)
-                                    // In this case, there is nothing to save/discard.
-                                    if (m_Report != null && m_Report.NeedsSaving)
-                                    {
-                                        DialogResult response = DialogResult.DefaultAction;
-                                        if (m_AnalysisState == AnalysisState.Valid)
-                                            response = EditorDialog.DisplayComplexDecisionDialog(k_Discard, k_DiscardQuestion, "Discard", "Save", "Cancel");
-                                        else
-                                            response = EditorUtility.DisplayDialog(k_Discard, k_DiscardQuestion, "Discard", "Cancel") ? DialogResult.DefaultAction : DialogResult.Cancel;
-
-                                        if (response == DialogResult.AlternateAction)
-                                        {
-                                            if (!SaveReport(out var _))
-                                                canAnalyze = false;
-                                        }
-                                        else if (response == DialogResult.Cancel)
-                                        {
-                                            canAnalyze = false;
-                                        }
-                                    }
-
-                                    if (canAnalyze)
-                                    {
-                                        var projectAreas = UserPreferences.ProjectAreasToAnalyze;
-                                        if (projectAreas == ProjectAreaFlags.None)
-                                        {
-                                            canAnalyze = false;
-                                            if (EditorUtility.DisplayDialog(k_EnableAreas, k_EnableAreasQuestion, "Ok", "Cancel"))
-                                            {
-                                                UserPreferences.ProjectAreasToAnalyze.Set(ProjectAreaFlags.All);
-                                                projectAreas.Set(ProjectAreaFlags.All);
-                                                canAnalyze = true;
-                                            }
-                                        }
-
-                                        if ((projectAreas & ProjectAreaFlags.Code) != 0)
-                                        {
-                                            if (canAnalyze)
-                                                canAnalyze = ValidateCodeAnalysisWithPopup();
-                                        }
-                                    }
-
-                                    if (canAnalyze)
-                                    {
-                                        Analyze();
-                                        GUIUtility.ExitGUI();
-                                    }
-                                }
-                            }
-
-                            // Install rules
-                            using (new EditorGUI.DisabledScope((m_AnalysisState == AnalysisState.InProgress) || (ProjectAuditorRulesPackage.IsLatest) || (RulesPackageInstallRequest != null)))
-                            {
-                                var content = Contents.InstallRulesButton;
-                                if (RulesPackageInstallRequest != null)
-                                {
-                                    int frame = Utility.GetStatusWheelFrame();
-                                    content = Contents.UpdateRulesButtonInProgress[frame];
-                                }
-                                else if (ProjectAuditorRulesPackage.IsLatest)
-                                {
-                                    content = Contents.UpdateRulesButtonDisabled;
-                                }
-                                else if (ProjectAuditorRulesPackage.IsInstalled)
-                                {
-                                    content = Contents.UpdateRulesButton;
-                                }
-
-                                if (GUILayout.Button(content, GUILayout.Width(k_ButtonWidth), GUILayout.Height(30)))
-                                {
-                                    RulesPackageInstallRequest = Client.Add(ProjectAuditorRulesPackage.Name);
-                                    EditorApplication.update += RulesPackageInstallProgressCallback;
-                                }
-                            }
-
-                            // Preferences button
-                            using (new EditorGUILayout.HorizontalScope())
-                            {
-                                GUILayout.FlexibleSpace();
-                                if (GUILayout.Button("All Preferences", SharedStyles.LinkLabel, GUILayout.Height(30)))
-                                {
-                                    EditorInterop.OpenProjectAuditorPreferences();
-                                }
-                                GUILayout.FlexibleSpace();
-                            }
-                        }
-                        GUILayout.FlexibleSpace();
-                    }
-
-                    GUILayout.FlexibleSpace();
-                    GUILayout.FlexibleSpace();
-                    GUILayout.FlexibleSpace();
-                }
-
-                GUILayout.FlexibleSpace();
-            }
-
-            EditorGUILayout.EndVertical();
-        }
-
-        bool ValidateCodeAnalysisWithPopup()
+        internal static bool ValidateCodeAnalysisWithPopup()
         {
             bool validPreferences = true;
             var codeAnalysisFlags = UserPreferences.CodeAnalysisFlags;
@@ -2380,11 +2127,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             }
         }
 
-        bool SaveReport(out string path)
+        internal static bool SaveReport(Report report, out string path)
         {
             // Avoid unsupported save name characters from the report's displayname (project name)
             var invalidChars = Path.GetInvalidFileNameChars();
-            var reportDisplayName = new StringBuilder(m_Report.DisplayName);
+            var reportDisplayName = new StringBuilder(report.DisplayName);
             foreach (var c in invalidChars)
             {
                 reportDisplayName.Replace(c, '_');
@@ -2393,11 +2140,11 @@ namespace Unity.ProjectAuditor.Editor.UI
             path = EditorUtility.SaveFilePanel(k_SaveToFile, UserPreferences.LoadSavePath, reportDisplayName.ToString(), "projectauditor");
             if (path.Length != 0)
             {
-                m_Report.NeedsSaving = false;
-                m_Report.DisplayName = Path.GetFileNameWithoutExtension(path);
+                report.NeedsSaving = false;
+                report.DisplayName = Path.GetFileNameWithoutExtension(path);
 
-                m_Report.Save(path);
-                AutosaveReport();
+                report.Save(path);
+                AutosaveReport(report);
 
                 UserPreferences.LoadSavePath = Path.GetDirectoryName(path);
 
@@ -2409,7 +2156,7 @@ namespace Unity.ProjectAuditor.Editor.UI
 
         void SaveCurrentReport()
         {
-            if (SaveReport(out var path))
+            if (SaveReport(m_Report, out var path))
             {
                 EditorUtility.RevealInFinder(path);
                 AnalyticsReporter.SendEvent(AnalyticsReporter.UIButton.Save, AnalyticsReporter.BeginAnalytic());
@@ -2421,11 +2168,15 @@ namespace Unity.ProjectAuditor.Editor.UI
             var path = EditorUtility.OpenFilePanel(k_LoadFromFile, UserPreferences.LoadSavePath, "projectauditor");
             if (path.Length != 0)
             {
-                LoadReportFromFile(path);
+                if (LoadReportFromFile(path))
+                {
+                    m_ShowHomePage = false;
+                    ShowPage(FindPage(PageId.Optimization));
+                }
             }
         }
 
-        void LoadReportFromFile(string path)
+        bool LoadReportFromFile(string path)
         {
             Report newReport = Report.Load(path, out var errorMessage);
             var fileWasManuallySaved = path != GetAutosaveFilename();
@@ -2441,7 +2192,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     Debug.LogWarning(k_LoadingAutosaveFailedVersion + "\n" + errorMessage);
                     DeleteAutosave();
                 }
-                return;
+                return false;
             }
 
             if (newReport.NumTotalIssues == 0)
@@ -2455,7 +2206,7 @@ namespace Unity.ProjectAuditor.Editor.UI
                     Debug.LogWarning(k_LoadingAutosaveFailed);
                     DeleteAutosave();
                 }
-                return;
+                return false;
             }
 
             m_Report = newReport;
@@ -2482,13 +2233,12 @@ namespace Unity.ProjectAuditor.Editor.UI
             UpdateAssemblySelection();
 
             m_ViewManager.MarkViewColumnWidthsAsDirty();
-
-            // switch to summary view after loading
-            ShowPage(FindPage(PageId.Optimization));
             m_ViewManager.GetActiveView().SetSearch("");
+
+            return true;
         }
 
-        string GetAutosaveFilename()
+        static string GetAutosaveFilename()
         {
             var projectPath = ProjectAuditor.ProjectPath;
             var libraryPath = Path.Combine(projectPath, "Library");
@@ -2496,10 +2246,10 @@ namespace Unity.ProjectAuditor.Editor.UI
             return Path.Combine(libraryPath, k_ReportAutoSaveFilename);
         }
 
-        void AutosaveReport()
+        internal static void AutosaveReport(Report report)
         {
-            if (m_Report?.IsValid() ?? false)
-                m_Report.Save(GetAutosaveFilename());
+            if (report?.IsValid() ?? false)
+                report.Save(GetAutosaveFilename());
         }
 
         void TryLoadAutosavedReport()
@@ -2559,11 +2309,7 @@ namespace Unity.ProjectAuditor.Editor.UI
         const string k_ReportMismatch = "Report is from another project";
         const string k_ReportMismatchDetail = "This report does not match the currently loaded project.  Some features may be unavailable.";
         const string k_SaveToFile = "Save report to projectauditor file";
-        const string k_Discard = "Start New Analysis";
-        const string k_DiscardQuestion = "If you start a new analysis, the current report will be discarded.";
-        const string k_EnableAreas = "No Project Areas selected";
         const string k_EnableCodeOwners = "No Code Owners selected";
-        const string k_EnableAreasQuestion = "Enable all analysis areas and continue?\n\nAreas can be individually toggled in the Project Auditor section of Preferences.";
         const string k_EnableCodeOwnersQuestion = "Enable user code analysis and continue?\n\nCode owners can be individually toggled in the Project Auditor section of Preferences.";
         const string k_NoCodeSelected = "Invalid Code Analysis Areas";
         const string k_NoCodeSelectedMessage = "Please select either Editor, Player or both.";
@@ -2586,19 +2332,6 @@ namespace Unity.ProjectAuditor.Editor.UI
         {
             public static readonly GUIContent WindowTitle = new GUIContent(ProjectAuditor.DisplayName);
 
-            public static readonly GUIContent AnalyzeButton =
-                new GUIContent("Start Analysis", "Analyze Project and list all issues found.");
-            public static readonly GUIContent AnalyzeButtonDisabled =
-                new GUIContent("Start Analysis", $"Please install the rules package to analyze your project ({ProjectAuditorRulesPackage.Name}).");
-
-            public static readonly GUIContent InstallRulesButton =
-                new GUIContent("Install Rules", $"Please install the rules package to analyze your project ({ProjectAuditorRulesPackage.Name}).");
-            public static readonly GUIContent UpdateRulesButton =
-                new GUIContent("Update Rules", $"Please update your rules package to the latest version ({ProjectAuditorRulesPackage.Name}@{ProjectAuditorRulesPackage.LatestVersion}).");
-            public static readonly GUIContent UpdateRulesButtonDisabled =
-                new GUIContent("Update Rules", "Everything is up to date!");
-            public static readonly GUIContent[] UpdateRulesButtonInProgress;
-
             public static readonly GUIContent SaveButton = Utility.GetIcon(Utility.IconType.Save, "Save current report to projectauditor file");
             public static readonly GUIContent LoadButton = Utility.GetIcon(Utility.IconType.Load, "Load report from projectauditor file");
             public static readonly GUIContent LoadButtonDisabled = Utility.GetIcon(Utility.IconType.Load, $"Please install the rules package to load reports ({ProjectAuditorRulesPackage.Name}).");
@@ -2614,14 +2347,6 @@ namespace Unity.ProjectAuditor.Editor.UI
             public static readonly GUIContent AreaFilterSelect = L10n.TextContent("Select", "Select performance areas to display", null, null);
             public static readonly GUIContent FiltersFoldout = L10n.TextContent("Filters", "Filtering Criteria", null, null);
 
-
-            public static readonly GUIContent WelcomeTextTitle = new GUIContent($"Welcome to {ProjectAuditor.DisplayName}");
-
-            public static readonly GUIContent WelcomeText = new GUIContent(
-@"Select <b>Install Rules</b> to install the Rules package and enable project analysis. 
-To generate a report, select the project area, platform, and code to analyze then select <b>Start Analysis</b>."
-            );
-
             public static readonly GUIContent Clear = new GUIContent("Clear");
             public static readonly GUIContent Refresh = new GUIContent("Refresh");
 
@@ -2635,13 +2360,6 @@ To generate a report, select the project area, platform, and code to analyze the
             public static readonly GUIContent ProjectAreaSelection = new GUIContent("Project Areas", "Select project areas to analyze.");
             public static readonly GUIContent PlatformSelection = new GUIContent("Platform", "Select the target platform.");
             public static readonly GUIContent CompilationModeSelection = new GUIContent("Compilation Mode", "Select the compilation mode.");
-
-            static Contents()
-            {
-                UpdateRulesButtonInProgress = new GUIContent[12];
-                for (int i = 0; i < 12; i++)
-                    UpdateRulesButtonInProgress[i] = L10n.TextContentWithIcon(" Installing Rules...", null, "WaitSpin" + i.ToString("00"), null);
-            }
         }
     }
 }

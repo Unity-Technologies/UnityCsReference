@@ -603,7 +603,7 @@ partial class ResourceTablesWindow : EditorWindow
     VisualElement EmptyState(string glyphIcon, string title, string hint, string buttonText, Action onButton)
     {
         var root = m_EmptyStateTemplate.Instantiate();
-        LocIcons.Apply(root.Q("glyph"), glyphIcon);
+        LocIcons.ApplyGlyph(root.Q("glyph"), glyphIcon);
         root.Q<Label>("title").text = title;
         var hintLabel = root.Q<Label>("hint");
         if (string.IsNullOrEmpty(hint))

@@ -426,12 +426,31 @@ public partial class UxmlAttributeFieldDecorator : VisualElement, ITrackableProp
         m_OverrideRow.Add(m_ContentContainer);
         RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
         RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+        RegisterCallback<ChangeEvent<UnityEngine.Object>>(RefuseCircularTemplate, TrickleDown.TrickleDown);
 
         m_RefreshBinding = new RefreshBinding(this);
         this.SetBinding(k_RefreshBindingId, m_RefreshBinding);
 
         boundProperty = property;
         SetupContextMenu();
+    }
+
+    void RefuseCircularTemplate(ChangeEvent<UnityEngine.Object> evt)
+    {
+        if (evt.newValue is not VisualTreeAsset template || context?.element == null)
+            return;
+
+        // Only the decorator nearest the field handles it, so the warning names the right attribute.
+        if (evt.target is VisualElement field && field.GetFirstAncestorOfType<UxmlAttributeFieldDecorator>() != this)
+            return;
+
+        var editedVta = context.rootSerializedObject?.targetObject as VisualTreeAsset;
+        if (!VisualElementEditingUtility.WillCauseCircularDependency(editedVta, context.element, template))
+            return;
+
+        Debug.LogWarning($"Cannot assign '{template.name}' to '{boundAttributeDescription?.name}' because it would create a circular reference.");
+        evt.StopPropagation();
+        (evt.target as INotifyValueChanged<UnityEngine.Object>)?.SetValueWithoutNotify(evt.previousValue);
     }
 
     internal void RebindProperty(SerializedProperty property)

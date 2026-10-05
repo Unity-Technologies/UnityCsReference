@@ -97,13 +97,13 @@ namespace UnityEditor.DeviceSimulation
         private void InitPlayModeViewSwapMenu()
         {
             var playModeViewTypeMenu = rootVisualElement.Q<ToolbarMenu>("playmode-view-menu");
-            playModeViewTypeMenu.text = GetWindowTitle(GetType());
+            playModeViewTypeMenu.text = GetLocalizedWindowTitle(GetType());
 
             var types = GetAvailableWindowTypes();
             foreach (var type in types)
             {
                 var status = type.Key == GetType() ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
-                playModeViewTypeMenu.menu.AppendAction(type.Value, action => SwapMainWindow(type.Key), action => status);
+                playModeViewTypeMenu.menu.AppendAction(GetLocalizedWindowTitle(type.Key), action => SwapMainWindow(type.Key), action => status);
             }
         }
 

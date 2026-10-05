@@ -10,7 +10,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -146,11 +145,10 @@ namespace Unity.UI.Builder
 
         public static StyleComplexSelector AddSelector(this StyleSheet styleSheet, string complexSelectorStr, string undoMessage = null)
         {
-            if (!CSSSpec.ValidateSelector(complexSelectorStr) &&
-                !SelectorUtility.ExtractSelectorsAndSpecificityFromString(complexSelectorStr, out var s, out var sp, out var error))
+            if (!SelectorUtility.ExtractSelectorsAndSpecificityFromString(complexSelectorStr, out _, out _, out var error))
             {
-                    Builder.ShowWarning(error);
-                    return null;
+                Builder.ShowWarning(error);
+                return null;
             }
 
             if (string.IsNullOrEmpty(undoMessage))

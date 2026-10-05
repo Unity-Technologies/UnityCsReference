@@ -37,8 +37,8 @@ namespace Unity.UIToolkit.Editor
         Texture2D m_Texture;
         ColorSpace m_TextureColorSpace;
 
-        // test access
         internal Texture2D texture => m_Texture;
+        internal int cellSize => m_CellSize;
 
         public CheckerboardBackground()
         {
@@ -192,6 +192,7 @@ namespace Unity.UIToolkit.Editor
             m_Texture = new Texture2D(k_TextureSize, k_TextureSize)
             {
                 filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Repeat, // sampled with UVs outside 0..1
                 hideFlags = HideFlags.HideAndDontSave
             };
 

@@ -228,6 +228,8 @@ namespace UnityEditor.Build.Profile
             BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
             BuildProfileContext.activeProfileChanged += OnActiveProfileChanged;
             ActiveBuildTargetListener.activeBuildTargetChanged += OnActiveBuildTargetChanged;
+            Undo.undoRedoEvent -= OnUndoRedo;
+            Undo.undoRedoEvent += OnUndoRedo;
         }
 
         public void OnDisable()
@@ -236,6 +238,7 @@ namespace UnityEditor.Build.Profile
 
             BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
             ActiveBuildTargetListener.activeBuildTargetChanged -= OnActiveBuildTargetChanged;
+            Undo.undoRedoEvent -= OnUndoRedo;
 
             if (m_BuildProfileDataSource != null)
             {
@@ -801,6 +804,13 @@ namespace UnityEditor.Build.Profile
         {
             m_ProfileListViews.Rebuild();
             UpdateFormButtonState(m_BuildProfileSelection.Get(0));
+        }
+
+        // Undo/redo restores the values but does not paint the window. Most of the settings are drawn
+        // in IMGUI containers, which only refresh on a panel repaint.
+        void OnUndoRedo(in UndoRedoInfo info)
+        {
+            Repaint();
         }
 
         void RebuildBuildProfileEditor(BuildProfile profile)

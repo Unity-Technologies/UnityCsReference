@@ -2,9 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.IO;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Unity.UIToolkit.Editor;
@@ -14,16 +17,23 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
 {
     public const string UssClass = "unity-visual-tree-asset-inspector-actions-view";
     public const string MenuButtonUssClass = UssClass + "__menu-button";
+    public const string OpenInContextButtonUssClass = UssClass + "__open-in-context-button";
     public const string HiddenUssClass = UssClass + "--hidden";
 
     internal static readonly string SaveTextFormat = L10n.Tr("Save {0}", null);
     internal static readonly string SelectInProjectText = L10n.Tr("Select in Project", null);
     internal static readonly string OpenInContextText = L10n.Tr("Open in Context", null);
+    internal static readonly string OpenInIsolationText = L10n.Tr("Open in Isolation", null);
     internal static readonly string MenuButtonTooltip = L10n.Tr("Asset actions", null);
 
     private const string k_VisualTreeAsset = "UIToolkitAuthoring/Inspector/VisualTreeAssetInspectorActionsView.uxml";
 
+    // Tests swap in a GenericDropdownMenu, which they can inspect and click; the OS menu cannot be driven.
+    [AutoStaticsCleanupOnCodeReload]
+    internal static Func<AbstractGenericMenu> CreateMenuOverride;
+
     private readonly Button m_MenuButton;
+    private readonly Button m_OpenInContextButton;
 
     private VisualTreeAsset m_VisualTreeAsset;
     private TemplateAsset[] m_SubDocumentPath;
@@ -89,6 +99,10 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
         m_MenuButton.tooltip = MenuButtonTooltip;
         m_MenuButton.clicked += ShowMenu;
 
+        m_OpenInContextButton = this.Q<Button>(className: OpenInContextButtonUssClass);
+        m_OpenInContextButton.tooltip = OpenInContextText;
+        m_OpenInContextButton.clicked += OpenInContext;
+
         UpdateControlStates();
     }
 
@@ -96,6 +110,11 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
     {
         m_CanOpenInContext = enabled;
         m_OpenInContextDisabledTooltip = disabledTooltip;
+
+        m_OpenInContextButton.SetEnabled(enabled);
+        m_OpenInContextButton.tooltip = enabled || string.IsNullOrEmpty(disabledTooltip)
+            ? OpenInContextText
+            : disabledTooltip;
     }
 
     public void UpdateControlStates()
@@ -106,11 +125,12 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
             isAssetPathValid = !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(m_VisualTreeAsset.GetEntityId()));
 
         m_MenuButton.EnableInClassList(HiddenUssClass, !isAssetPathValid);
+        m_OpenInContextButton?.EnableInClassList(HiddenUssClass, !isAssetPathValid);
     }
 
     private void ShowMenu()
     {
-        var menu = new GenericDropdownMenu();
+        var menu = CreateMenuOverride != null ? CreateMenuOverride() : new GenericOSMenu();
 
         var assetAtMenuTime = m_VisualTreeAsset;
         var saveText = GetSaveItemText(assetAtMenuTime);
@@ -130,9 +150,11 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
         else
         {
             menu.AddDisabledItem(OpenInContextText, false);
-            if (!string.IsNullOrEmpty(m_OpenInContextDisabledTooltip))
-                SetItemTooltip(menu, OpenInContextText, m_OpenInContextDisabledTooltip);
+            if (menu is GenericDropdownMenu dropdownMenu && !string.IsNullOrEmpty(m_OpenInContextDisabledTooltip))
+                SetItemTooltip(dropdownMenu, OpenInContextText, m_OpenInContextDisabledTooltip);
         }
+
+        menu.AddItem(OpenInIsolationText, false, OpenInIsolation);
 
         menu.AddItem(StageContextMenuUtility.OpenInUIBuilder, false, OpenInUIBuilder);
 
@@ -168,6 +190,21 @@ partial class VisualTreeAssetInspectorActionsView : VisualElement
     private void OpenInContext()
     {
         var options = m_SubDocumentPath is { Length: > 0 } ? SubDocumentOptions.InContext : SubDocumentOptions.None;
+        var rootVisualTreeAsset = m_SubDocumentPath is { Length: > 0 } ? m_SubDocumentPath[0].visualTreeAsset : m_VisualTreeAsset;
+
+        var context = new VisualTreeAssetEditingContext(
+            rootVisualTreeAsset,
+            m_SubDocumentPath,
+            options,
+            PanelSettings
+        );
+
+        UIStageNavigation.Navigate(context, BreadcrumbBar.SeparatorStyle.Line);
+    }
+
+    private void OpenInIsolation()
+    {
+        var options = m_SubDocumentPath is { Length: > 0 } ? SubDocumentOptions.Isolation : SubDocumentOptions.None;
         var rootVisualTreeAsset = m_SubDocumentPath is { Length: > 0 } ? m_SubDocumentPath[0].visualTreeAsset : m_VisualTreeAsset;
 
         var context = new VisualTreeAssetEditingContext(

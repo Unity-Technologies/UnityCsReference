@@ -128,6 +128,15 @@ namespace UnityEngineInternal.Input
                 callback(deviceId, deviceDescriptor);
         }
 
+        // Gate-only query, called from native before the pending-device flag is consumed so a
+        // gated tick does not pay for device discovery dispatch (UUM-148220).
+        [RequiredByNativeCode]
+        internal static void ShouldRunUpdate(NativeInputUpdateType updateType, out int shouldRun)
+        {
+            NativeShouldRunUpdateCallback should = onShouldRunUpdate;
+            shouldRun = (should == null || should(updateType)) ? 1 : 0;
+        }
+
         // Per-tick gate + before-update dispatch, called from native before acuiring event
         // buffer scope.
         // Checks onShouldRunUpdate first (back-compat gate), then fires onBeforeUpdate.

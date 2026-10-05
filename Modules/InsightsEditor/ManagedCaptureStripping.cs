@@ -26,7 +26,7 @@ namespace UnityEditorInternal
         // Provider handed to the linker, feature-gated with the same conditions as
         // InsightsModuleStripping (Engine Diagnostics enabled and supported on the active target).
         // When diagnostics is off the Insights module/bindings are stripped, so feeding managed-capture
-        // rules to the linker would inject ManagedCaptureHooks calls into an SDK whose hook target no
+        // rules to the linker would inject ManagedCaptureHooks calls into an assembly whose hook target no
         // longer ships. Returns null when the feature is off, or when the resolved config (baked or
         // OTA) has nothing to inject, so the linker skips injection entirely either way.
         static string ProvideConfig()

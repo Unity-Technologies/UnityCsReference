@@ -215,16 +215,19 @@ namespace Unity.UI.Builder
             if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(newSelectorStr))
             {
                 Builder.ShowWarning(BuilderConstants.StyleSelectorValidationSpacialCharacters);
-                m_NewSelectorField.schedule.Execute(() =>
-                {
-                    m_NewSelectorField.value = selectorStr;
-                    m_NewSelectorField.SelectAll();
-                });
+                RestoreNewSelectorField(selectorStr);
                 return false;
             }
 
             var selectorContainerElement = m_Viewport.styleSelectorElementContainer;
             var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, newSelectorStr);
+
+            // AddSelector has already shown the parse error.
+            if (newComplexSelector == null)
+            {
+                RestoreNewSelectorField(selectorStr);
+                return false;
+            }
 
             m_Selection.NotifyOfStylingChange();
 
@@ -235,6 +238,15 @@ namespace Unity.UI.Builder
             if (newSelectorElement != null)
                 m_Selection.Select(null, newSelectorElement);
             return true;
+        }
+
+        void RestoreNewSelectorField(string selectorStr)
+        {
+            m_NewSelectorField.schedule.Execute(() =>
+            {
+                m_NewSelectorField.value = selectorStr;
+                m_NewSelectorField.SelectAll();
+            });
         }
 
         void SetUpAddUSSMenu()

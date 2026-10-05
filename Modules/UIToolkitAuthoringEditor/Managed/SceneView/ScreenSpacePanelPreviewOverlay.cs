@@ -43,12 +43,25 @@ namespace Unity.UIToolkit.Editor
         const string k_SelectionHighlightUssClass = k_RootUssClass + "__selection-highlight";
         const string k_SelectionOutlineUssClass = k_RootUssClass + "__selection-outline";
         const string k_EmptyStateUssClass = k_RootUssClass + "__empty-state";
+        const string k_EmptyStateTitleUssClass = k_EmptyStateUssClass + "-title";
+        const string k_EmptyStateBodyUssClass = k_EmptyStateUssClass + "-body";
+        const string k_AssignButtonsUssClass = k_RootUssClass + "__assign-buttons";
         const string k_EditButtonUssClass = k_RootUssClass + "__edit-button";
         const string k_HiddenUssClass = k_RootUssClass + "--hidden";
 
-        // Compact default; resizable (the framework remembers the user's size).
+        static readonly string k_NoSourceTitle = L10n.Tr("No source assigned", null);
+        static readonly string k_NoSourceBody = L10n.Tr("Assign a UI Document to the Panel Renderer's Source Asset field, or create one to start.", null);
+        static readonly string k_NoVisibleContentTitle = L10n.Tr("Preview not available", null);
+        static readonly string k_NoVisibleContentBody = L10n.Tr("Elements may not be visible or have a defined size.", null);
+        static readonly string k_CreateNewText = L10n.Tr("Create New", null);
+        static readonly string k_AssignExistingText = L10n.Tr("Assign Existing", null);
+        static readonly string k_EditInViewportText = L10n.Tr("Edit in UI Viewport", null);
+        static readonly string k_AssignUndoText = L10n.Tr("Assign UI Document", null);
+
+        // Compact default; resizable (the framework remembers the user's size). The minimum still fits
+        // the no-source empty state: its explanation text and both assign CTAs.
         static readonly Vector2 k_DefaultSize = new(240, 200);
-        static readonly Vector2 k_MinSize = new(160, 140);
+        static readonly Vector2 k_MinSize = new(200, 200);
         static readonly Vector2 k_MaxSize = new(2000, 2000);
 
         // Fallback when the panel has no usable reference resolution.
@@ -64,8 +77,14 @@ namespace Unity.UIToolkit.Editor
         VisualElement m_Screen;
         CheckerboardBackground m_Checkerboard;
         VisualElement m_SelectionHighlightLayer;
-        Label m_EmptyState;
+        VisualElement m_EmptyState;
+        Label m_EmptyStateTitle;
+        Label m_EmptyStateBody;
+        VisualElement m_AssignButtons;
         Button m_EditButton;
+
+        // Whether the last layout found painted content; false shows the "Preview not available" state.
+        bool m_HasVisibleContent;
 
         // Pooled selection outlines, one per highlighted element; extras hidden, not destroyed.
         readonly List<VisualElement> m_SelectionHighlights = new();
@@ -124,8 +143,8 @@ namespace Unity.UIToolkit.Editor
             m_ContentTracker = new ContentTracker(this);
         }
 
-        // ITransientOverlay: shown only while a screen-space panel is selected.
-        public bool visible => IsScreenSpace(m_Target);
+        // ITransientOverlay: shown only while a screen-space panel is selected and not already staged in the UI Viewport.
+        public bool visible => IsScreenSpace(m_Target) && !IsStaging(m_Target.visualTreeAsset, m_Target.panelSettings);
 
         public override VisualElement CreatePanelContent()
         {
@@ -168,15 +187,25 @@ namespace Unity.UIToolkit.Editor
             m_SelectionHighlightLayer.AddToClassList(k_SelectionHighlightLayerUssClass);
             m_Screen.Add(m_SelectionHighlightLayer);
 
-            m_EmptyState = new Label
-            {
-                name = "empty-state",
-                text = L10n.Tr("No UI Document assigned", null),
-            };
+            m_EmptyState = new VisualElement { name = "empty-state" };
             m_EmptyState.AddToClassList(k_EmptyStateUssClass);
             m_PreviewContainer.Add(m_EmptyState);
 
-            m_EditButton = new Button(EditInViewport) { name = "edit-button", text = L10n.Tr("Edit in UI Viewport", null) };
+            m_EmptyStateTitle = new Label { name = "empty-state-title" };
+            m_EmptyStateTitle.AddToClassList(k_EmptyStateTitleUssClass);
+            m_EmptyState.Add(m_EmptyStateTitle);
+
+            m_EmptyStateBody = new Label { name = "empty-state-body" };
+            m_EmptyStateBody.AddToClassList(k_EmptyStateBodyUssClass);
+            m_EmptyState.Add(m_EmptyStateBody);
+
+            m_AssignButtons = new VisualElement { name = "assign-buttons" };
+            m_AssignButtons.AddToClassList(k_AssignButtonsUssClass);
+            m_AssignButtons.Add(new Button(CreateNewSourceAsset) { name = "create-new-button", text = k_CreateNewText });
+            m_AssignButtons.Add(new Button(ShowAssignExistingSelector) { name = "assign-existing-button", text = k_AssignExistingText });
+            root.Add(m_AssignButtons);
+
+            m_EditButton = new Button(EditInViewport) { name = "edit-button", text = k_EditInViewportText };
             m_EditButton.AddToClassList(k_EditButtonUssClass);
             root.Add(m_EditButton);
 
@@ -251,6 +280,9 @@ namespace Unity.UIToolkit.Editor
             m_SelectionHighlightLayer = null;
             m_SelectionHighlights.Clear();
             m_EmptyState = null;
+            m_EmptyStateTitle = null;
+            m_EmptyStateBody = null;
+            m_AssignButtons = null;
             m_EditButton = null;
 
             DestroyPreviewPanel();
@@ -367,7 +399,7 @@ namespace Unity.UIToolkit.Editor
         {
             var stagePanel = (StageUtility.GetCurrentStage() as VisualElementEditingStage)?.GetAuthoringPanel();
             if (element.panel == null || (stagePanel != null && element.panel == stagePanel))
-                element = VisualElementToolUtility.FindFirstSceneInstanceOfAsset(element.visualElementAsset);
+                element = VisualElementToolUtility.FindFirstSceneInstanceOfAsset(element);
 
             return element != null ? VisualElementSceneViewOverlay.FindPanelComponentForElement(element) : null;
         }
@@ -396,6 +428,10 @@ namespace Unity.UIToolkit.Editor
             TrackContent();
             m_ContentDirty = false;
 
+            // Assume painted content until the first layout measures it, so a re-bind doesn't flash
+            // the empty state.
+            m_HasVisibleContent = true;
+
             RefreshContentState();
             RequestLayout();
         }
@@ -417,6 +453,7 @@ namespace Unity.UIToolkit.Editor
                 highlight.EnableInClassList(k_HiddenUssClass, true);
             ResetCycleState();
 
+            m_HasVisibleContent = false;
             RefreshContentState();
         }
 
@@ -462,24 +499,28 @@ namespace Unity.UIToolkit.Editor
                 CollectContentAssets(dependency, result);
         }
 
-        // Show the empty-state prompt vs. the preview, and keep the CTA label in sync.
+        // Decides between the preview and the two empty states: no source assigned (assign/create CTAs)
+        // and a document whose content paints nothing (edit CTA).
         void RefreshContentState()
         {
             if (m_PreviewContainer == null)
                 return;
 
             var hasTarget = m_Target != null;
-            var hasContent = hasTarget && m_Target.visualTreeAsset != null;
+            var hasDocument = hasTarget && m_Target.visualTreeAsset != null;
+            var showPreview = hasDocument && m_HasVisibleContent;
 
-            m_EmptyState?.EnableInClassList(k_HiddenUssClass, !(hasTarget && !hasContent));
-            m_Screen?.EnableInClassList(k_HiddenUssClass, !hasContent);
-            m_Checkerboard?.EnableInClassList(k_HiddenUssClass, !hasContent);
+            m_Screen?.EnableInClassList(k_HiddenUssClass, !showPreview);
+            m_Checkerboard?.EnableInClassList(k_HiddenUssClass, !showPreview);
 
-            if (m_EditButton != null)
-            {
-                m_EditButton.EnableInClassList(k_HiddenUssClass, !hasTarget);
-                m_EditButton.text = L10n.Tr(hasContent ? "Edit in UI Viewport" : "Open UI Viewport", null);
-            }
+            m_EmptyState?.EnableInClassList(k_HiddenUssClass, !hasTarget || showPreview);
+            if (m_EmptyStateTitle != null)
+                m_EmptyStateTitle.text = hasDocument ? k_NoVisibleContentTitle : k_NoSourceTitle;
+            if (m_EmptyStateBody != null)
+                m_EmptyStateBody.text = hasDocument ? k_NoVisibleContentBody : k_NoSourceBody;
+
+            m_AssignButtons?.EnableInClassList(k_HiddenUssClass, !hasTarget || hasDocument);
+            m_EditButton?.EnableInClassList(k_HiddenUssClass, !hasDocument);
         }
 
         // Reflect the bound document in the overlay title (e.g. "UI Preview · PauseScreen").
@@ -642,6 +683,43 @@ namespace Unity.UIToolkit.Editor
             return true;
         }
 
+        void CreateNewSourceAsset()
+        {
+            if (!IsAlive(m_Target) || !MenuUtility.TryCreateNewVisualTreeAsset(out var asset))
+                return;
+
+            AssignSourceAsset(asset);
+        }
+
+        void ShowAssignExistingSelector()
+        {
+            if (!IsAlive(m_Target))
+                return;
+
+            ObjectSelector.get.Show(m_Target.visualTreeAsset, typeof(VisualTreeAsset), null, false,
+                onObjectSelectorClosed: obj => AssignSourceAsset(obj as VisualTreeAsset));
+        }
+
+        void AssignSourceAsset(VisualTreeAsset asset)
+        {
+            if (asset == null || !IsAlive(m_Target))
+                return;
+
+            if (m_Target is Object component)
+            {
+                Undo.RecordObject(component, k_AssignUndoText);
+                m_Target.visualTreeAsset = asset;
+                // A direct field set on a prefab instance is lost on scene reload unless it is
+                // recorded as a property override.
+                PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+                EditorUtility.SetDirty(component);
+            }
+            else
+            {
+                m_Target.visualTreeAsset = asset;
+            }
+        }
+
         // Stages the bound document and opens/focuses the UI Viewport (no duplicate if already staging it).
         void EditInViewport()
         {
@@ -726,7 +804,8 @@ namespace Unity.UIToolkit.Editor
             m_PanelElement.FrameUpdate();
 
             // Auto-fit: zoom/center into the painted UI to trim empty space (no-op if it already fills).
-            if (TryComputeContentBounds(out var content))
+            var hasVisibleContent = TryComputeContentBounds(out var content);
+            if (hasVisibleContent)
             {
                 var zoom = Mathf.Min(displaySize.x / content.width, displaySize.y / content.height) * k_ContentFitPadding;
                 zoom = Mathf.Clamp(zoom, 1f, k_MaxContentZoom);
@@ -736,6 +815,12 @@ namespace Unity.UIToolkit.Editor
                     m_PanelElement.ScaleFactor = fit * zoom;
                     m_PanelElement.FrameUpdate();
                 }
+            }
+
+            if (hasVisibleContent != m_HasVisibleContent)
+            {
+                m_HasVisibleContent = hasVisibleContent;
+                RefreshContentState();
             }
 
             UpdateSelectionHighlights();
@@ -793,6 +878,13 @@ namespace Unity.UIToolkit.Editor
         static bool PaintsContent(VisualElement element)
         {
             var resolved = element.resolvedStyle;
+
+            if (resolved.visibility != Visibility.Visible || resolved.opacity <= k_MinVisibleAlpha)
+                return false;
+
+            // A custom painter draws content the style-based checks below cannot see.
+            if (element.generateVisualContent != null)
+                return true;
 
             if (resolved.backgroundColor.a > k_MinVisibleAlpha)
                 return true;
@@ -952,6 +1044,16 @@ namespace Unity.UIToolkit.Editor
             }
 
             m_PanelElement.FrameUpdate();
+
+            // Style-only edits re-render without a re-clone or layout request, so while the empty state
+            // is up keep probing for content that became visible.
+            if (!m_HasVisibleContent && TryComputeContentBounds(out _))
+            {
+                m_HasVisibleContent = true;
+                RefreshContentState();
+                RequestLayout();
+            }
+
             UpdateSelectionHighlights();
         }
 
@@ -1010,6 +1112,14 @@ namespace Unity.UIToolkit.Editor
         }
 
         internal void CollectSelectedElementsForTests() => CollectSelectedElements();
+
+        internal void AssignSourceAssetForTests(VisualTreeAsset asset) => AssignSourceAsset(asset);
+
+        internal void SetHasVisibleContentForTests(bool value)
+        {
+            m_HasVisibleContent = value;
+            RefreshContentState();
+        }
 
         // Shown outlines, in layout order.
         internal List<VisualElement> GetVisibleSelectionHighlightsForTests()

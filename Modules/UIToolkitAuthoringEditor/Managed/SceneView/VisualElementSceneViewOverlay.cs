@@ -181,7 +181,7 @@ namespace Unity.UIToolkit.Editor
                 // re-resolve via the asset and update the cache so we keep drawing the outline.
                 if (element.panel == null)
                 {
-                    element = VisualElementToolUtility.FindFirstSceneInstanceOfAsset(element.visualElementAsset);
+                    element = VisualElementToolUtility.FindFirstSceneInstanceOfAsset(element);
                     if (element == null)
                         continue;
                     s_SelectedElements[i] = element;
@@ -262,11 +262,10 @@ namespace Unity.UIToolkit.Editor
             sceneElement = null;
             panelComponent = null;
 
-            var asset = cloneElement.visualElementAsset;
-            if (asset == null)
+            if (cloneElement.visualElementAsset == null)
                 return false;
 
-            foreach (var (pc, match) in VisualElementToolUtility.EnumerateScenePanelInstancesOfAsset(asset))
+            foreach (var (pc, match) in VisualElementToolUtility.EnumerateScenePanelInstancesOfAsset(cloneElement))
             {
                 sceneElement = match;
                 panelComponent = pc;
@@ -326,12 +325,11 @@ namespace Unity.UIToolkit.Editor
             return true;
         }
 
-        // For a clone element selected via a UXML editing stage, walks every scene panel that
-        // could be displaying the same UXML (matched by visualElementAsset.id) and draws outlines
-        // for the corresponding scene element in each. Mirrors what the picker does in reverse.
+        // For a clone element selected via a UXML editing stage, draws outlines over the scene
+        // element(s) it corresponds to. Mirrors what the picker does in reverse.
         static void DrawOutlinesForSceneInstancesOfClone(VisualElement cloneElement)
         {
-            foreach (var (panelComponent, sceneElement) in VisualElementToolUtility.EnumerateScenePanelInstancesOfAsset(cloneElement.visualElementAsset))
+            foreach (var (panelComponent, sceneElement) in VisualElementToolUtility.EnumerateScenePanelInstancesOfAsset(cloneElement))
             {
                 DrawPanelOutlineOnce(panelComponent);
                 DrawElementOutline(sceneElement, panelComponent);

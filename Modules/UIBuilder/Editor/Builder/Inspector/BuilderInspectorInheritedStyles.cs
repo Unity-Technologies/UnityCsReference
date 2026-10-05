@@ -244,12 +244,14 @@ namespace Unity.UI.Builder
             if (mainStyleSheet == null)
                 return;
 
-            PreAddStyleClass(className);
-
             // Create new selector in main StyleSheet.
             var selectorString = BuilderConstants.UssSelectorClassNameSymbol + className;
             var selectorsRootElement = BuilderSharedStyles.GetSelectorContainerElement(m_Selection.documentRootElement);
             var newSelector = BuilderSharedStyles.CreateNewSelector(selectorsRootElement, mainStyleSheet, selectorString);
+            if (newSelector == null)
+                return;
+
+            PreAddStyleClass(className);
 
             // Transfer all properties from inline styles rule to new selector.
             mainStyleSheet.TransferRulePropertiesToSelector(
@@ -392,7 +394,8 @@ namespace Unity.UI.Builder
                     return;
 
                 var selectorsRootElement = BuilderSharedStyles.GetSelectorContainerElement(m_Selection.documentRootElement);
-                BuilderSharedStyles.CreateNewSelector(selectorsRootElement, mainStyleSheet, selectorString);
+                if (BuilderSharedStyles.CreateNewSelector(selectorsRootElement, mainStyleSheet, selectorString) == null)
+                    return;
 
                 m_Selection.NotifyOfStylingChange();
                 m_Selection.NotifyOfHierarchyChange();

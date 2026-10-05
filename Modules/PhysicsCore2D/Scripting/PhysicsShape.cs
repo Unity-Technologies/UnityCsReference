@@ -1642,11 +1642,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="input">The fluid and force configuration. See <see cref="PhysicsBody.BuoyancyInput"/>.</param>
         /// <param name="deltaTime">The simulation step duration in seconds. Used to clamp damping so it cannot overshoot in a single step.</param>
-        public unsafe readonly void ApplyBuoyancy(PhysicsBody.BuoyancyInput input, float deltaTime)
-        {
-            var shape = this;
-            ApplyBuoyancy(input, new ReadOnlySpan<PhysicsShape>(&shape, 1), deltaTime);
-        }
+        public readonly void ApplyBuoyancy(PhysicsBody.BuoyancyInput input, float deltaTime) => ApplyBuoyancy(input, stackalloc PhysicsShape[1] { this }, deltaTime);
 
         /// <summary>
         /// Apply buoyancy, flow and damping forces to every shape in <paramref name="shapes"/> based on how each is submerged in a fluid plane.
@@ -1677,11 +1673,7 @@ namespace Unity.U2D.Physics
         /// Sleeping bodies are woken automatically by Box2D when the per-shape force is non-trivial.
         /// </summary>
         /// <param name="input">The wind configuration. See <see cref="PhysicsBody.WindInput"/>.</param>
-        public unsafe readonly void ApplyWind(PhysicsBody.WindInput input)
-        {
-            var shape = this;
-            ApplyWind(input, new ReadOnlySpan<PhysicsShape>(&shape, 1));
-        }
+        public readonly void ApplyWind(PhysicsBody.WindInput input) => ApplyWind(input, stackalloc PhysicsShape[1] { this });
 
         /// <summary>
         /// Apply wind forces to every shape in <paramref name="shapes"/>.
@@ -1956,7 +1948,7 @@ namespace Unity.U2D.Physics
         /// <param name="otherShape">The other shape to check the distance of.</param>
         /// <param name="useRadii">Whether to use the radii of both shapes or not.</param>
         /// <returns>The distance result.</returns>
-        public unsafe readonly PhysicsQuery.DistanceResult Distance(PhysicsShape otherShape, bool useRadii = true) => Distance(otherShape, otherShape.body.transform, useRadii);
+        public readonly PhysicsQuery.DistanceResult Distance(PhysicsShape otherShape, bool useRadii = true) => Distance(otherShape, otherShape.body.transform, useRadii);
 
         /// <summary>
         /// Get the minimum distance between this shape and the specified shape.
@@ -2158,11 +2150,7 @@ namespace Unity.U2D.Physics
         /// </summary>
         /// <param name="owner">The object that owns this key. This can be NULL if not required but is recommended as the key is formed in part by the hash-code of the owner object.</param>
         /// <param name="ownerKey">The owner key to be used. If zero then a new owner key is created. You can use <see cref="PhysicsWorld.CreateOwnerKey(UnityEngine.Object)"/> for this value although any non-zero integer will work.</param>
-        public unsafe readonly void SetOwner(UnityEngine.Object owner, int ownerKey)
-        {
-            var shape = this;
-            SetOwner(new ReadOnlySpan<PhysicsShape>(&shape, 1), owner, ownerKey);
-        }
+        public readonly void SetOwner(UnityEngine.Object owner, int ownerKey) => SetOwner(stackalloc PhysicsShape[1] { this }, owner, ownerKey);
 
         /// <summary>
         /// Set the owner object using the specified owner key.
@@ -2393,14 +2381,10 @@ namespace Unity.U2D.Physics
         /// The state persists until set to false, the shape is destroyed, or <see cref="PhysicsWorld.ClearDrawSelected"/> clears the whole world.
         /// The shape must also have <see cref="worldDrawing"/> enabled to be drawn.
         /// </remarks>
-        public unsafe readonly bool selectedDrawing
+        public readonly bool selectedDrawing
         {
             get => PhysicsShape_GetSelectedDrawing(this);
-            set
-            {
-                var shape = this;
-                PhysicsShape_SetSelectedDrawing(new ReadOnlySpan<PhysicsShape>(&shape, 1), value);
-            }
+            set => PhysicsShape_SetSelectedDrawing(stackalloc PhysicsShape[1] { this }, value);
         }
 
         /// <summary>

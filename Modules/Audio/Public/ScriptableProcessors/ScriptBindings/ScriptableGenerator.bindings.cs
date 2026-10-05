@@ -136,7 +136,9 @@ namespace UnityEngine.Audio
     /// through the instance obtained from <see cref="AudioSource.generatorInstance"/>.
     /// </remarks>
     /// <example>
-    /// <code source="../../../../../Tests/EditModeAndPlayModeTests/Audio/Assets/DocCodeExamples/SAP_HowToUseGenerator.cs"/>
+    /// The following example implements a sine tone generator and exposes it as a component you can
+    /// assign to the <see cref="AudioSource.generator"/> property.
+    /// <code source="../../../../../Documentation/ManualDocs/com.unity.documentation-examples/Audio/Scripts/ScriptableAudioPipeline/GeneratorExample.cs" region="example-generator"/>
     /// </example>
     public unsafe partial struct GeneratorInstance : IEquatable<GeneratorInstance>
     {

@@ -142,8 +142,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
     /// </example>
     public Awaitable<TObject> GetLocalizedAssetAsync()
     {
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return AwaitableUtility.FromResult<TObject>(null);
         if (LocalizationSettings.PreferredLoading == LoadingPreference.Synchronous)
         {
@@ -180,8 +179,7 @@ public partial class LocalizedAsset<TObject> : LocalizedEntry<IAssetEntry> where
     /// </example>
     public TObject GetLocalizedAsset()
     {
-        var database = LocalizationSettings.ResourceDatabase;
-        if (database == null || IsEmpty)
+        if (!LocalizationSettings.TryGetDatabaseForResolve(IsEmpty, out var database))
             return null;
         var entry = GetEntry();
         return database.LoadLocalizedAsset<TObject>(entry, ResolvingLocale());

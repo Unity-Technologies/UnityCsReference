@@ -1122,9 +1122,7 @@ namespace UnityEngine.UIElements.StyleSheets
                         if (autoFill || autoFit)
                         {
                             // repeat(auto-fill|auto-fit, <track>): exactly one track pattern (the count
-                            // resolves at layout time). Reading a single entry rather than iterating argCount
-                            // keeps this robust to the writer emitting a flattened arg count for a nested
-                            // pattern (StyleProperty.WriteGridTrackSize) vs the importer's top-level count.
+                            // resolves at layout time), so read a single entry rather than iterating argCount.
                             if (index < valueCount && GetValueType(index) == StyleValueType.CommaSeparator) ++index;
                             var pattern = index < valueCount ? ReadTrackEntry(ref index) : GridTrackSize.Auto();
                             list.Add(autoFill ? GridTrackSize.RepeatAutoFill(pattern) : GridTrackSize.RepeatAutoFit(pattern));

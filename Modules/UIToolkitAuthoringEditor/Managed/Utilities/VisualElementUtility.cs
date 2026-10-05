@@ -186,6 +186,30 @@ static class VisualElementUtility
         return exact ?? corresponding;
     }
 
+    public static IEnumerable<VisualElement> FindCorrespondingElements(this VisualElement root, VisualElement reference, bool requireExactLength)
+    {
+        var asset = reference?.visualElementAsset;
+        if (root == null || asset == null)
+            yield break;
+
+        using var _ = ListPool<int>.Get(out var referencePath);
+        if (!VisualElementReferenceTools.TryGetInMemoryPath(reference, referencePath))
+            yield break;
+
+        using var __ = ListPool<int>.Get(out var candidatePath);
+        foreach (var candidate in root.Query<VisualElement>().Where(e => AssetsMatch(e.visualElementAsset, asset)).Build())
+        {
+            if (!VisualElementReferenceTools.TryGetInMemoryPath(candidate, candidatePath))
+                continue;
+            if (!PathsCorrespond(referencePath, candidatePath))
+                continue;
+            if (requireExactLength && candidatePath.Count != referencePath.Count)
+                continue;
+
+            yield return candidate;
+        }
+    }
+
     // Root-to-leaf id paths, compared leaf-aligned.
     static bool PathsCorrespond(List<int> a, List<int> b)
     {

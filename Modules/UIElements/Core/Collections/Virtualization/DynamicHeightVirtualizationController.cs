@@ -1083,7 +1083,9 @@ namespace UnityEngine.UIElements
             item.onGeometryChanged -= m_GeometryChangedCallback;
             var index = item.index;
 
-            UnregisterItemHeight(index);
+            if (IsIndexOutOfBounds(index))
+                UnregisterItemHeight(index);
+
             base.ReleaseItem(activeItemsIndex);
             m_WaitingCache.Remove(index);
         }
